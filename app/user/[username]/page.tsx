@@ -1,0 +1,351 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  User,
+  Award,
+  Trophy,
+  BookOpen,
+  MessageSquare,
+  Calendar,
+  Zap,
+  TrendingUp
+} from 'lucide-react';
+import Link from 'next/link';
+
+interface UserProfile {
+  id: string;
+  username: string;
+  bio: string;
+  sports_role: string;
+  dao1_did_nft: string;
+  xp_total: number;
+  created_at: string;
+  streak_count: number;
+  stats: {
+    lessonsCompleted: number;
+    articlesRead: number;
+    forumPosts: number;
+    forumTopics: number;
+    rank: number;
+  };
+  recentActivity: Array<{
+    id: string;
+    type: string;
+    description: string;
+    xp: number;
+    created_at: string;
+  }>;
+}
+
+export default function UserProfilePage() {
+  const params = useParams();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [params.username]);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch(`/api/users/${params.username}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setProfile(data.profile);
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
+    setLoading(false);
+  };
+
+  const getLevel = (xp: number) => {
+    if (xp >= 10000) return 'Legend';
+    if (xp >= 5000) return 'Master';
+    if (xp >= 3333) return 'Hall of Fame';
+    if (xp >= 1000) return 'Expert';
+    if (xp >= 555) return 'Advanced';
+    if (xp >= 369) return 'Intermediate';
+    if (xp >= 99) return 'Beginner';
+    return 'Newcomer';
+  };
+
+  const getTimeSince = (date: string) => {
+    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    return new Date(date).toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Loading profile...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="text-center py-12">
+              <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">User Not Found</h3>
+              <p className="text-gray-600 mb-4">This user doesn't exist.</p>
+              <Link href="/education/leaderboard">
+                <Button>View Leaderboard</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <Card className="mb-6">
+              <CardContent className="p-8">
+                <div className="flex items-start gap-6">
+                  <Avatar className="h-24 w-24">
+                    <AvatarFallback className="text-3xl">
+                      {profile.username.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-bold">{profile.username}</h1>
+                      <Badge className="bg-blue-600 text-lg px-3 py-1">
+                        {getLevel(profile.xp_total)}
+                      </Badge>
+                    </div>
+
+                    {profile.sports_role && (
+                      <p className="text-gray-600 mb-3">{profile.sports_role}</p>
+                    )}
+
+                    {profile.bio && (
+                      <p className="text-gray-700 mb-4 max-w-2xl">{profile.bio}</p>
+                    )}
+
+                    <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>Joined {new Date(profile.created_at).toLocaleDateString()}</span>
+                      </div>
+                      {profile.streak_count > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-orange-500" />
+                          <span>{profile.streak_count} day streak</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-4xl font-bold text-blue-600 mb-1">
+                      {profile.xp_total.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Total XP</div>
+                    {profile.stats.rank > 0 && (
+                      <Badge variant="outline" className="mt-2">
+                        <Trophy className="h-3 w-3 mr-1" />
+                        Rank #{profile.stats.rank}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid md:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Lessons Completed
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                    <span className="text-2xl font-bold">{profile.stats.lessonsCompleted}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Articles Read
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-green-600" />
+                    <span className="text-2xl font-bold">{profile.stats.articlesRead}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Forum Topics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-purple-600" />
+                    <span className="text-2xl font-bold">{profile.stats.forumTopics}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Forum Posts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-orange-600" />
+                    <span className="text-2xl font-bold">{profile.stats.forumPosts}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Tabs defaultValue="activity" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+                <TabsTrigger value="stats">Statistics</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="activity">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Activity</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {profile.recentActivity.length > 0 ? (
+                      <div className="space-y-3">
+                        {profile.recentActivity.map((activity) => (
+                          <div
+                            key={activity.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Award className="h-5 w-5 text-blue-600" />
+                              <div>
+                                <p className="font-medium">{activity.description}</p>
+                                <p className="text-sm text-gray-500">
+                                  {getTimeSince(activity.created_at)}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge className="bg-blue-600">+{activity.xp} XP</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-gray-600 py-8">No recent activity</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="stats">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Learning Progress</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-300">Lessons Completed</span>
+                        <span className="font-bold text-blue-600">
+                          {profile.stats.lessonsCompleted}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-300">Articles Read</span>
+                        <span className="font-bold text-blue-600">
+                          {profile.stats.articlesRead}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-300">Current Level</span>
+                        <span className="font-bold text-blue-600">
+                          {getLevel(profile.xp_total)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Community Engagement</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-300">Forum Topics Created</span>
+                        <span className="font-bold text-blue-600">
+                          {profile.stats.forumTopics}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-300">Forum Posts</span>
+                        <span className="font-bold text-blue-600">
+                          {profile.stats.forumPosts}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-300">Leaderboard Rank</span>
+                        <span className="font-bold text-blue-600">
+                          #{profile.stats.rank}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

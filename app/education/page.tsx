@@ -1,0 +1,410 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getMultilingualContent } from '@/lib/i18n';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Trophy, Users, Zap, Target, Award, TrendingUp, Star } from 'lucide-react';
+
+export default function EducationPage() {
+  const { user } = useAuth();
+  const { language, t } = useLanguage();
+  const [stats, setStats] = useState<any>(null);
+  const [topCourses, setTopCourses] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/education/stats');
+        const data = await response.json();
+        if (data.success) {
+          setStats(data.stats);
+          setTopCourses(data.topCourses);
+          setLeaderboard(data.topLeaderboard);
+        }
+      } catch (error) {
+        console.error('Failed to fetch education stats:', error);
+      }
+      setLoading(false);
+    };
+
+    fetchData();
+  }, []);
+
+  const getLevelBadge = (level: string) => {
+    switch (level) {
+      case 'beginner':
+        return <Badge className="bg-green-600">{t('education.level.beginner')}</Badge>;
+      case 'intermediate':
+        return <Badge className="bg-yellow-600">{t('education.level.intermediate')}</Badge>;
+      case 'advanced':
+        return <Badge className="bg-red-600">{t('education.level.advanced')}</Badge>;
+      default:
+        return <Badge>{t('education.level.unknown')}</Badge>;
+    }
+  };
+
+  const getLevel = (xp: number) => {
+    if (xp >= 10000) return t('education.level.legend');
+    if (xp >= 5000) return t('education.level.master');
+    if (xp >= 3333) return t('education.level.hallOfFame');
+    if (xp >= 1000) return t('education.level.expert');
+    if (xp >= 555) return t('education.level.advanced');
+    if (xp >= 369) return t('education.level.intermediate');
+    if (xp >= 99) return t('education.level.beginner');
+    return t('education.level.newcomer');
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      <main className="flex-1">
+        <section className="relative bg-gradient-to-br from-blue-600 via-cyan-600 to-blue-700 text-white py-20 md:py-28">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center space-y-6">
+              <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+                {t('education.hero.title')}
+              </h1>
+              <p className="text-xl md:text-2xl text-blue-100">
+                {t('education.hero.subtitle')}
+              </p>
+              <p className="text-lg text-blue-50 max-w-3xl mx-auto">
+                {t('education.hero.description')}
+              </p>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0">
+            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 80C1200 80 1320 70 1380 65L1440 60V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
+            </svg>
+          </div>
+        </section>
+
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600 dark:text-gray-300">{t('education.loadingStats')}</p>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-4 gap-6 mb-12">
+                  <Card className="text-center">
+                    <CardContent className="pt-6">
+                      <BookOpen className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+                      <div className="text-3xl font-bold text-blue-600">{stats?.totalCourses || 0}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">{t('education.stats.courses')}</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="text-center">
+                    <CardContent className="pt-6">
+                      <Target className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+                      <div className="text-3xl font-bold text-blue-600">{stats?.totalLessons || 0}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">{t('education.stats.lessons')}</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="text-center">
+                    <CardContent className="pt-6">
+                      <Users className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+                      <div className="text-3xl font-bold text-blue-600">{stats?.activeUsers || 0}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">{t('education.stats.activeUsers')}</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="text-center">
+                    <CardContent className="pt-6">
+                      <Zap className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+                      <div className="text-3xl font-bold text-blue-600">{stats?.totalXPDistributed?.toLocaleString() || 0}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">{t('education.stats.xpDistributed')}</div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {user && (
+                <Card className="mb-12 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Star className="h-6 w-6 text-blue-600" />
+                      {t('education.myProgress')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">{t('dashboard.currentXp') || 'Current XP'}</div>
+                        <div className="text-2xl font-bold text-blue-600">{user.xp_total} XP</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">{t('dashboard.level')}</div>
+                        <div className="text-2xl font-bold text-blue-600">{getLevel(user.xp_total)}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">{t('dashboard.streak')}</div>
+                        <div className="text-2xl font-bold text-blue-600">{user.streak_count} {t('dashboard.days')}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-gray-50 dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  {t('education.featured.title')}
+                </h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300">
+                  {t('education.featuredDesc') || 'Start your learning journey with our most popular courses'}
+                </p>
+              </div>
+
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                </div>
+              ) : topCourses.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-300">{t('education.noCourses') || 'No courses available yet'}</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid md:grid-cols-3 gap-6 mb-8">
+                  {topCourses.slice(0, 3).map((course) => {
+                    const title = getMultilingualContent(course.title, language);
+                    const description = getMultilingualContent(course.description, language);
+                    const isLocked = course.xp_required > (user?.xp_total || 0);
+                    const modulesArray = Array.isArray(course.modules) ? course.modules : [];
+                    const lessonsCount = modulesArray.reduce((acc: number, mod: any) => {
+                      const lessonsArray = Array.isArray(mod.lessons) ? mod.lessons : [];
+                      return acc + lessonsArray.length;
+                    }, 0);
+
+                    return (
+                      <Card key={course.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader>
+                          <div className="flex justify-between items-start mb-2">
+                            {getLevelBadge(course.level)}
+                            <Badge variant="outline">{course.xp_required} XP</Badge>
+                          </div>
+                          <CardTitle className="text-xl">{title}</CardTitle>
+                          <CardDescription className="line-clamp-2">{description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                              <BookOpen className="h-4 w-4" />
+                              <span>{modulesArray.length} {t('education.modules')} • {lessonsCount} {t('education.lessons')}</span>
+                            </div>
+                            {isLocked ? (
+                              <Button variant="outline" className="w-full" disabled>
+                                {t('education.unlockAt') || 'Unlock at'} {course.xp_required} XP
+                              </Button>
+                            ) : (
+                              <Link href={`/education/courses/${course.id}`}>
+                                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                                  {t('education.startCourse') || 'Start Course'}
+                                </Button>
+                              </Link>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="text-center">
+                <Link href="/education/courses">
+                  <Button size="lg" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                    {t('education.viewAll') || t('dashboard.viewAll')} {t('education.courses')}
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                    {t('education.xp.title')}
+                  </h2>
+                  <p className="text-lg text-gray-600 mb-6">
+                    {t('education.xp.description')}
+                  </p>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <BookOpen className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold">{t('education.completeLessons')}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{t('education.completeLessonsDesc')}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Award className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold">{t('education.readArticles')}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{t('education.readArticlesDesc')}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Users className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold">{t('education.forumParticipation')}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{t('education.forumParticipationDesc')}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <TrendingUp className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold">{t('education.dailyStreaks')}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{t('education.dailyStreaksDesc')}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-8">
+                    <Link href="/education/xp">
+                      <Button size="lg" variant="outline">
+                        {t('education.learnMoreXP')}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-100 to-cyan-100 p-8 rounded-lg">
+                  <h3 className="text-xl font-bold mb-6 text-center">{t('education.xpLevels')}</h3>
+                  <div className="space-y-3">
+                    {[
+                      { levelKey: 'newcomer', xp: '0-98 XP' },
+                      { levelKey: 'beginner', xp: '99-368 XP' },
+                      { levelKey: 'intermediate', xp: '369-554 XP' },
+                      { levelKey: 'advanced', xp: '555-999 XP' },
+                      { levelKey: 'expert', xp: '1,000-3,332 XP' },
+                      { levelKey: 'hallOfFame', xp: '3,333-4,999 XP' },
+                      { levelKey: 'master', xp: '5,000-9,999 XP' },
+                      { levelKey: 'legend', xp: '10,000+ XP' },
+                    ].map((item) => (
+                      <div key={item.levelKey} className="bg-white p-4 rounded-lg flex justify-between items-center">
+                        <span className="font-semibold">{t(`education.level.${item.levelKey}`)}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">{item.xp}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-gray-50 dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  {t('education.leaderboard.title')}
+                </h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300">
+                  See who's leading the way in Web3 education
+                </p>
+              </div>
+
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-300">{t('education.noLeaderboard')}</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <div className="space-y-4 mb-8">
+                    {leaderboard.slice(0, 5).map((learner, index) => (
+                      <Card key={learner.id} className={index < 3 ? 'border-2 border-blue-500' : ''}>
+                        <CardContent className="flex items-center gap-4 p-6">
+                          <div className={`text-2xl font-bold ${index === 0 ? 'text-yellow-600' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-600' : 'text-gray-600'}`}>
+                            #{index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-semibold text-lg">{learner.username}</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-300">{learner.country}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-blue-600">{learner.xp_total}</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-300">XP</div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  <div className="text-center">
+                    <Link href="/education/leaderboard">
+                      <Button size="lg" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                        View Full Leaderboard
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-blue-600 text-white">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              {t('education.cta.title')}
+            </h2>
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+              {t('education.cta.subtitle')}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {!user ? (
+                <Link href="/signup">
+                  <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8">
+                    {t('cta.startJourney')}
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/education/courses">
+                  <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8">
+                    {t('cta.explore')} Courses
+                  </Button>
+                </Link>
+              )}
+              <Link href="/blog">
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 px-8">
+                  {t('cta.exploreBlog')}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
