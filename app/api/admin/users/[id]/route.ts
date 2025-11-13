@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { requireAdmin } from '@/lib/middleware';
 
 export async function GET(
@@ -13,13 +13,16 @@ export async function GET(
   }
 
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('id, username, email, full_name, role, xp_total, created_at, country, bio, sports_role, telegram, dao1_did_nft, wallet_address, website, youtube, linkhub, facebook, instagram, profile_unlocked, email_verified, last_login, streak_count, avatar_url')
+      .select(
+        'id, username, email, full_name, role, xp_total, created_at, country, bio, sports_role, telegram, dao1_did_nft, wallet_address, website, youtube, linkhub, facebook, instagram, profile_unlocked, email_verified, last_login, streak_count, avatar_url'
+      )
       .eq('id', params.id)
       .maybeSingle();
 
     if (error || !user) {
+      console.error('Error fetching user:', error);
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
@@ -28,7 +31,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      user
+      user,
     });
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -55,6 +58,7 @@ export async function PATCH(
     const body = await request.json();
     const { role, xp_total, email_verified, profile_unlocked } = body;
 
+    // validação de role
     if (role && !['Super Admin', 'Admin', 'Member'].includes(role)) {
       return NextResponse.json(
         { success: false, error: 'Invalid role' },
@@ -64,16 +68,28 @@ export async function PATCH(
 
     if (role === 'Super Admin' && currentUser.role !== 'Super Admin') {
       return NextResponse.json(
-        { success: false, error: 'Only Super Admins can create other Super Admins' },
+        {
+          success: false,
+          error: 'Only Super Admins can create other Super Admins',
+        },
         { status: 403 }
       );
     }
 
-    const { data: targetUser } = await supabase
+    // buscar utilizador alvo
+    const { data: targetUser, error: targetError } = await supabaseAdmin
       .from('users')
       .select('id, role')
       .eq('id', params.id)
       .maybeSingle();
+
+    if (targetError) {
+      console.error('Error loading target user:', targetError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to load target user' },
+        { status: 500 }
+      );
+    }
 
     if (!targetUser) {
       return NextResponse.json(
@@ -84,11 +100,15 @@ export async function PATCH(
 
     if (targetUser.role === 'Super Admin' && currentUser.role !== 'Super Admin') {
       return NextResponse.json(
-        { success: false, error: 'Only Super Admins can modify other Super Admins' },
+        {
+          success: false,
+          error: 'Only Super Admins can modify other Super Admins',
+        },
         { status: 403 }
       );
     }
 
+    // construir objeto de updates
     const updates: any = {};
     if (role !== undefined) updates.role = role;
     if (xp_total !== undefined) updates.xp_total = xp_total;
@@ -102,36 +122,48 @@ export async function PATCH(
       );
     }
 
-    const { data: updatedUser, error } = await supabase
+    // aplicar update com supabaseAdmin (service role)
+    const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('users')
       .update(updates)
       .eq('id', params.id)
-      .select('id, username, email, full_name, role, xp_total, created_at, country')
+      .select(
+        'id, username, email, full_name, role, xp_total, created_at, country'
+      )
       .single();
 
-    if (error) {
-      console.error('Error updating user:', error);
+    if (updateError) {
+      console.error('Error updating user:', updateError);
       return NextResponse.json(
-        { success: false, error: 'Failed to update user' },
+        {
+          success: false,
+          error: updateError.message || 'Failed to update user',
+        },
         { status: 500 }
       );
     }
 
-    await supabase
-      .from('xp_transactions')
-      .insert({
-        user_id: currentUser.id,
-        action: `Updated user ${targetUser.id} - Changed: ${Object.keys(updates).join(', ')}`,
-        xp_earned: 0,
-        reference_type: 'admin_action'
-      });
+    // registar ação em xp_transactions (não bloqueia resposta se falhar)
+    const { error: txError } = await supabaseAdmin.from('xp_transactions').insert({
+      user_id: currentUser.id,
+      action: `Updated user ${targetUser.id} - Changed: ${Object.keys(
+        updates
+      ).join(', ')}`,
+      xp_earned: 0,
+      reference_type: 'admin_action',
+    });
+
+    if (txError) {
+      console.error('Error inserting xp_transaction:', txError);
+      // não fazemos return de erro aqui para não estragar o update bem sucedido
+    }
 
     return NextResponse.json({
       success: true,
-      user: updatedUser
+      user: updatedUser,
     });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in PATCH /api/admin/users/[id]:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
