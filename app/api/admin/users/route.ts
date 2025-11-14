@@ -24,7 +24,7 @@ export async function GET(
     if (error) {
       console.error('Error fetching user:', error);
       return NextResponse.json(
-        { success: false, error: 'Failed to load user' },
+        { success: false, error: error.message || 'Failed to load user', details: error },
         { status: 500 }
       );
     }
@@ -65,7 +65,7 @@ export async function PATCH(
     const body = await request.json();
     const { role, xp_total, email_verified, profile_unlocked } = body;
 
-    // 1) Validação básica do role
+    // Validar role
     if (role && !['Super Admin', 'Admin', 'Member'].includes(role)) {
       return NextResponse.json(
         { success: false, error: 'Invalid role' },
@@ -73,7 +73,7 @@ export async function PATCH(
       );
     }
 
-    // 2) Só Super Admin pode criar outro Super Admin
+    // Só Super Admin cria outro Super Admin
     if (role === 'Super Admin' && currentUser.role !== 'Super Admin') {
       return NextResponse.json(
         {
@@ -84,7 +84,7 @@ export async function PATCH(
       );
     }
 
-    // 3) Carregar o utilizador alvo
+    // Buscar utilizador alvo
     const { data: targetUser, error: targetError } = await supabaseAdmin
       .from('users')
       .select('id, role')
@@ -94,7 +94,7 @@ export async function PATCH(
     if (targetError) {
       console.error('Error loading target user:', targetError);
       return NextResponse.json(
-        { success: false, error: 'Failed to load target user' },
+        { success: false, error: targetError.message || 'Failed to load target user', details: targetError },
         { status: 500 }
       );
     }
@@ -106,7 +106,7 @@ export async function PATCH(
       );
     }
 
-    // 4) Só Super Admin pode mexer noutro Super Admin
+    // Só Super Admin mexe em outro Super Admin
     if (targetUser.role === 'Super Admin' && currentUser.role !== 'Super Admin') {
       return NextResponse.json(
         {
@@ -117,8 +117,8 @@ export async function PATCH(
       );
     }
 
-    // 5) Construir o objeto de updates
-    const updates: any = {};
+    // Construir updates
+    const updates: Record<string, any> = {};
     if (role !== undefined) updates.role = role;
     if (xp_total !== undefined) updates.xp_total = xp_total;
     if (email_verified !== undefined) updates.email_verified = email_verified;
@@ -131,7 +131,7 @@ export async function PATCH(
       );
     }
 
-    // 6) Fazer o UPDATE no Supabase (com service role)
+    // UPDATE no Supabase com service role
     const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updates)
@@ -153,18 +153,21 @@ export async function PATCH(
       );
     }
 
-    // 7) Log da ação de admin (se falhar, não bloqueia a resposta)
-    const logResult = await supabaseAdmin.from('xp_transactions').insert({
-      user_id: currentUser.userId,
-      action: `Updated user ${targetUser.id} - Changed: ${Object.keys(
-        updates
-      ).join(', ')}`,
-      xp_earned: 0,
-      reference_type: 'admin_action',
-    });
+    // Log da ação de admin (se falhar, só registo, não estraga o PATCH)
+    const { error: logError } = await supabaseAdmin
+      .from('xp_transactions')
+      .insert({
+        user_id: currentUser.userId,
+        action: `Updated user ${targetUser.id} - Changed: ${Object.keys(
+          updates
+        ).join(', ')}`,
+        xp_earned: 0,
+        reference_type: 'admin_action',
+      });
 
-    if (logResult.error) {
-      console.error('Error logging admin action in xp_transactions:', logResult.error);
+    if (logError) {
+      console.error('Error logging admin action:', logError);
+      // Não devolvemos erro ao cliente – é só logging
     }
 
     return NextResponse.json({
