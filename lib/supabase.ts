@@ -1,38 +1,41 @@
 // lib/supabase.ts
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
-// ⚠ Estes nomes de variáveis assumem que usas estes envs:
-// NEXT_PUBLIC_SUPABASE_URL
-// NEXT_PUBLIC_SUPABASE_ANON_KEY
-// SUPABASE_SERVICE_ROLE_KEY
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY'
+// Verificações mínimas (estas duas tens SEMPRE, tanto em Bolt como em Netlify)
+if (!supabaseUrl) {
+  throw new Error('Missing Supabase env var: NEXT_PUBLIC_SUPABASE_URL');
+}
+
+if (!supabaseAnonKey) {
+  throw new Error('Missing Supabase env var: NEXT_PUBLIC_SUPABASE_ANON_KEY');
+}
+
+// Cliente normal (anon) – usado em quase toda a app
+export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
+
+// Cliente admin (service role) – usado só em rotas de servidor protegidas
+// No Netlify tens a env, por isso aqui fica configurado.
+// Em desenvolvimento, se não tiveres a env, fica `null` e apenas faz log.
+export const supabaseAdmin =
+  supabaseServiceRoleKey
+    ? createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      })
+    : (null as any);
+
+if (!supabaseServiceRoleKey && process.env.NODE_ENV !== 'production') {
+  console.warn(
+    'SUPABASE_SERVICE_ROLE_KEY not set – admin client is disabled in dev.',
   );
 }
 
-// Cliente “normal” (usar no frontend e em APIs normais)
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-
-// Cliente “admin” (service role) – usar só em rotas de servidor protegidas (admin)
-if (!supabaseServiceRoleKey) {
-  throw new Error(
-    'Missing Supabase env var: SUPABASE_SERVICE_ROLE_KEY (service role)'
-  );
-}
-
-export const supabaseAdmin: SupabaseClient = createClient(
-  supabaseUrl,
-  supabaseServiceRoleKey,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+// 👇 Isto resolve o erro de build:
+// alguns ficheiros fazem `import { createClient } from "@/lib/supabase"`
+export { createSupabaseClient as createClient };
