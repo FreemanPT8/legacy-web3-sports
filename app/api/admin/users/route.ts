@@ -24,7 +24,11 @@ export async function GET(
     if (error) {
       console.error('Error fetching user:', error);
       return NextResponse.json(
-        { success: false, error: error.message || 'Failed to load user', details: error },
+        {
+          success: false,
+          error:
+            `Supabase GET error: ${error.message ?? 'unknown'} | ${JSON.stringify(error, null, 2)}`,
+        },
         { status: 500 }
       );
     }
@@ -94,7 +98,15 @@ export async function PATCH(
     if (targetError) {
       console.error('Error loading target user:', targetError);
       return NextResponse.json(
-        { success: false, error: targetError.message || 'Failed to load target user', details: targetError },
+        {
+          success: false,
+          error:
+            `Supabase targetUser error: ${targetError.message ?? 'unknown'} | ${JSON.stringify(
+              targetError,
+              null,
+              2
+            )}`,
+        },
         { status: 500 }
       );
     }
@@ -146,28 +158,28 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: error.message || 'Failed to update user',
-          details: error,
+          error:
+            `Supabase UPDATE error: ${error.message ?? 'unknown'} | ${JSON.stringify(
+              error,
+              null,
+              2
+            )}`,
         },
         { status: 500 }
       );
     }
 
-    // Log da ação de admin (se falhar, só registo, não estraga o PATCH)
-    const { error: logError } = await supabaseAdmin
-      .from('xp_transactions')
-      .insert({
-        user_id: currentUser.userId,
-        action: `Updated user ${targetUser.id} - Changed: ${Object.keys(
-          updates
-        ).join(', ')}`,
-        xp_earned: 0,
-        reference_type: 'admin_action',
-      });
+    // Log da ação de admin (se falhar, não estraga o PATCH)
+    const { error: logError } = await supabaseAdmin.from('xp_transactions').insert({
+      user_id: currentUser.userId,
+      action: `Updated user ${targetUser.id} - Changed: ${Object.keys(updates).join(', ')}`,
+      xp_earned: 0,
+      reference_type: 'admin_action',
+    });
 
     if (logError) {
       console.error('Error logging admin action:', logError);
-      // Não devolvemos erro ao cliente – é só logging
+      // Não estraga o resultado principal
     }
 
     return NextResponse.json({
