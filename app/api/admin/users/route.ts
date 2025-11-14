@@ -65,6 +65,7 @@ export async function PATCH(
     const body = await request.json();
     const { role, xp_total, email_verified, profile_unlocked } = body;
 
+    // 1) Validação básica do role
     if (role && !['Super Admin', 'Admin', 'Member'].includes(role)) {
       return NextResponse.json(
         { success: false, error: 'Invalid role' },
@@ -72,6 +73,7 @@ export async function PATCH(
       );
     }
 
+    // 2) Só Super Admin pode criar outro Super Admin
     if (role === 'Super Admin' && currentUser.role !== 'Super Admin') {
       return NextResponse.json(
         {
@@ -82,6 +84,7 @@ export async function PATCH(
       );
     }
 
+    // 3) Carregar o utilizador alvo
     const { data: targetUser, error: targetError } = await supabaseAdmin
       .from('users')
       .select('id, role')
@@ -103,6 +106,7 @@ export async function PATCH(
       );
     }
 
+    // 4) Só Super Admin pode mexer noutro Super Admin
     if (targetUser.role === 'Super Admin' && currentUser.role !== 'Super Admin') {
       return NextResponse.json(
         {
@@ -113,6 +117,7 @@ export async function PATCH(
       );
     }
 
+    // 5) Construir o objeto de updates
     const updates: any = {};
     if (role !== undefined) updates.role = role;
     if (xp_total !== undefined) updates.xp_total = xp_total;
@@ -126,6 +131,7 @@ export async function PATCH(
       );
     }
 
+    // 6) Fazer o UPDATE no Supabase (com service role)
     const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updates)
@@ -138,13 +144,17 @@ export async function PATCH(
     if (error) {
       console.error('Error updating user:', error);
       return NextResponse.json(
-        { success: false, error: 'Failed to update user' },
+        {
+          success: false,
+          error: error.message || 'Failed to update user',
+          details: error,
+        },
         { status: 500 }
       );
     }
 
-    // Log da ação de admin – não é obrigatório, mas mantém a lógica anterior
-    await supabaseAdmin.from('xp_transactions').insert({
+    // 7) Log da ação de admin (se falhar, não bloqueia a resposta)
+    const logResult = await supabaseAdmin.from('xp_transactions').insert({
       user_id: currentUser.userId,
       action: `Updated user ${targetUser.id} - Changed: ${Object.keys(
         updates
@@ -152,6 +162,10 @@ export async function PATCH(
       xp_earned: 0,
       reference_type: 'admin_action',
     });
+
+    if (logResult.error) {
+      console.error('Error logging admin action in xp_transactions:', logResult.error);
+    }
 
     return NextResponse.json({
       success: true,
