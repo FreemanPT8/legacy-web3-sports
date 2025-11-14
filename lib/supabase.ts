@@ -1,13 +1,8 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
-
-export function createClient() {
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey);
-}
+// ----------------------
+// Types
+// ----------------------
 
 export type Database = {
   public: {
@@ -41,9 +36,43 @@ export type Database = {
           streak_updated_at: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['users']['Row'], 'id' | 'created_at'>;
-        Update: Partial<Database['public']['Tables']['users']['Insert']>;
+        Insert: Omit<
+          Database['public']['Tables']['users']['Row'],
+          'id' | 'created_at'
+        >;
+        Update: Partial<
+          Database['public']['Tables']['users']['Insert']
+        >;
       };
     };
   };
 };
+
+// ----------------------
+// Clients
+// ----------------------
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+// Cliente público (frontend, operações normais com RLS aplicada)
+export const supabase = createSupabaseClient<Database>(
+  supabaseUrl,
+  supabaseAnonKey
+);
+
+// Mantemos esta função para compatibilidade com o resto do código
+export function createClient() {
+  return createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey);
+}
+
+// Service role – para rotas de ADMIN no backend (ignora RLS)
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+export const supabaseAdmin = serviceRoleKey
+  ? createSupabaseClient<Database>(supabaseUrl, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+      },
+    })
+  : supabase;
