@@ -69,11 +69,8 @@ export default function UserManagementPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('/api/admin/users', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+        // cookies HTTP-only são enviados automaticamente
+        const response = await fetch('/api/admin/users');
         const data = await response.json();
         if (data.success) {
           setUsers(data.users || []);
@@ -110,11 +107,7 @@ export default function UserManagementPage() {
 
   const handleViewUser = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      const response = await fetch(`/api/admin/users/${userId}`);
       const data = await response.json();
       if (data.success) {
         setViewUserModal(data.user);
@@ -136,11 +129,7 @@ export default function UserManagementPage() {
 
   const handleEditUser = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      const response = await fetch(`/api/admin/users/${userId}`);
       const data = await response.json();
       if (data.success) {
         setEditUserModal(data.user);
@@ -171,7 +160,6 @@ export default function UserManagementPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
           role: editRole,
@@ -187,11 +175,7 @@ export default function UserManagementPage() {
         });
         setEditUserModal(null);
 
-        const usersResponse = await fetch('/api/admin/users', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+        const usersResponse = await fetch('/api/admin/users');
         const usersData = await usersResponse.json();
         if (usersData.success) {
           setUsers(usersData.users || []);
