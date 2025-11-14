@@ -44,7 +44,7 @@ interface UserDetail {
 
 export default function UserManagementPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<any[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
@@ -68,16 +68,44 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     const fetchUsers = async () => {
+      const token = getToken();
+
+      if (!token) {
+        console.error('No token found in AuthContext/localStorage');
+        setLoadingData(false);
+        toast({
+          title: 'Error',
+          description: 'No authentication token found. Please log in again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       try {
-        // cookies HTTP-only são enviados automaticamente
-        const response = await fetch('/api/admin/users');
+        const response = await fetch('/api/admin/users', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = await response.json();
         if (data.success) {
           setUsers(data.users || []);
           setFilteredUsers(data.users || []);
+        } else {
+          console.error('Failed to load users:', data.error);
+          toast({
+            title: 'Error',
+            description: data.error || 'Failed to load users',
+            variant: 'destructive',
+          });
         }
       } catch (error) {
         console.error('Failed to fetch users:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch users',
+          variant: 'destructive',
+        });
       }
       setLoadingData(false);
     };
@@ -85,7 +113,7 @@ export default function UserManagementPage() {
     if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
       fetchUsers();
     }
-  }, [user]);
+  }, [user, getToken, toast]);
 
   useEffect(() => {
     let filtered = users;
@@ -106,8 +134,22 @@ export default function UserManagementPage() {
   }, [searchQuery, roleFilter, users]);
 
   const handleViewUser = async (userId: string) => {
+    const token = getToken();
+    if (!token) {
+      toast({
+        title: 'Error',
+        description: 'No authentication token found. Please log in again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/admin/users/${userId}`);
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
       if (data.success) {
         setViewUserModal(data.user);
@@ -128,8 +170,22 @@ export default function UserManagementPage() {
   };
 
   const handleEditUser = async (userId: string) => {
+    const token = getToken();
+    if (!token) {
+      toast({
+        title: 'Error',
+        description: 'No authentication token found. Please log in again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/admin/users/${userId}`);
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
       if (data.success) {
         setEditUserModal(data.user);
@@ -154,12 +210,23 @@ export default function UserManagementPage() {
   const handleSaveUser = async () => {
     if (!editUserModal) return;
 
+    const token = getToken();
+    if (!token) {
+      toast({
+        title: 'Error',
+        description: 'No authentication token found. Please log in again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const response = await fetch(`/api/admin/users/${editUserModal.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           role: editRole,
@@ -175,7 +242,11 @@ export default function UserManagementPage() {
         });
         setEditUserModal(null);
 
-        const usersResponse = await fetch('/api/admin/users');
+        const usersResponse = await fetch('/api/admin/users', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const usersData = await usersResponse.json();
         if (usersData.success) {
           setUsers(usersData.users || []);
