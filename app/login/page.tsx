@@ -87,6 +87,16 @@ export default function LoginPage() {
                 required
               />
             </div>
+
+            {/* Link para recuperação de palavra-passe */}
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Esqueceste a palavra-passe?
+              </Link>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
