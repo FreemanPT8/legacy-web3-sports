@@ -1,23 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Normalização de locales vindos do frontend
-const LOCALE_MAP: Record<string, string> = {
-  en: 'en',
-  'en-US': 'en',
-  'en-GB': 'en',
-  pt: 'pt-PT',
-  'pt-PT': 'pt-PT',
-  es: 'es',
-  'es-ES': 'es',
-  fr: 'fr',
-  'fr-FR': 'fr',
-  de: 'de',
-  'de-DE': 'de',
-  it: 'it',
-  'it-IT': 'it',
-};
-
 // Tipo para a linha que vem de sports_localized + relação sports
 type SportsLocalizedRow = {
   sport_id: string;
@@ -27,16 +10,31 @@ type SportsLocalizedRow = {
   } | null;
 };
 
+function normalizeLocale(rawLocale: string | null): string {
+  if (!rawLocale) return 'en';
+
+  // ex: "pt-PT" -> "pt", "en-US" -> "en"
+  const base = rawLocale.split('-')[0].toLowerCase();
+
+  switch (base) {
+    case 'pt':
+    case 'en':
+    case 'es':
+    case 'fr':
+    case 'de':
+    case 'it':
+      return base;
+    default:
+      return 'en';
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
 
-    const rawLocale = searchParams.get('locale') || 'en';
-
-    const normalizedLocale =
-      LOCALE_MAP[rawLocale] ||
-      LOCALE_MAP[rawLocale.toLowerCase()] ||
-      'en';
+    const rawLocale = searchParams.get('locale');
+    const normalizedLocale = normalizeLocale(rawLocale);
 
     const { data, error } = await supabaseAdmin
       .from('sports_localized')
