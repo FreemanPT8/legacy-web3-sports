@@ -414,7 +414,7 @@ export default function OnboardingPage() {
                     <Label htmlFor="email">{t('onboarding.email')} *</Label>
                     <Input
                       id="email"
-                      type="email'
+                      type="email"
                       placeholder="your@email.com"
                       value={formData.email}
                       onChange={(e) =>
