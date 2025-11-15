@@ -3,24 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { COUNTRIES, HOUSES_OF_SPORTS, SPORTS_ROLES } from '@/lib/i18n';
@@ -32,6 +20,127 @@ type SportOption = {
   code: string;
   name: string;
 };
+
+// --- Helpers de língua simples (sem tocar no i18n global) ---
+
+type SimpleLang = 'en' | 'pt' | 'es';
+
+function normalizeLang(lang: string): SimpleLang {
+  if (lang === 'pt') return 'pt';
+  if (lang === 'es') return 'es';
+  return 'en';
+}
+
+function getOtherSportOptionLabel(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'Outro desporto';
+    case 'es':
+      return 'Otro deporte';
+    default:
+      return 'Other sport';
+  }
+}
+
+function getOtherSportPlaceholder(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'Especifica o teu desporto / disciplina';
+    case 'es':
+      return 'Especifica tu deporte / disciplina';
+    default:
+      return 'Please specify your sport / discipline';
+  }
+}
+
+function getOtherRolePlaceholder(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'Especifica o teu papel no desporto';
+    case 'es':
+      return 'Especifica tu papel en el deporte';
+    default:
+      return 'Please specify your role in sports';
+  }
+}
+
+function getLoadingSportsLabel(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'A carregar desportos...';
+    case 'es':
+      return 'Cargando deportes...';
+    default:
+      return 'Loading sports...';
+  }
+}
+
+// Toasts / mensagens de validação
+function getValidationTexts(lang: string) {
+  const L = normalizeLang(lang);
+  if (L === 'pt') {
+    return {
+      missingRequiredTitle: 'Campos obrigatórios em falta',
+      missingRequiredDesc: 'Preenche todos os campos obrigatórios.',
+      invalidMessageTitle: 'Mensagem inválida',
+      invalidMessageDesc: 'A mensagem deve ter entre 8 e 8888 caracteres.',
+      otherSportTitle: 'Especifica o teu desporto',
+      otherSportDesc: 'Escolheste "Outro desporto". Especifica qual.',
+      otherRoleTitle: 'Especifica o teu papel',
+      otherRoleDesc: 'Escolheste "Outro papel". Especifica o teu papel no desporto.',
+      submitSuccessTitle: 'Candidatura enviada!',
+      submitSuccessDesc:
+        'Um responsável de uma House vai contactar-te em 24-48 horas pelo método de contacto que escolheste.',
+      submitFailedTitle: 'Falha ao enviar a candidatura',
+      submitFailedFallback: 'Tenta novamente, por favor.',
+      networkErrorTitle: 'Erro de rede',
+      networkErrorDesc: 'Verifica a tua ligação e tenta novamente.',
+    };
+  }
+
+  if (L === 'es') {
+    return {
+      missingRequiredTitle: 'Faltan campos obligatorios',
+      missingRequiredDesc: 'Completa todos los campos obligatorios.',
+      invalidMessageTitle: 'Mensaje inválido',
+      invalidMessageDesc: 'El mensaje debe tener entre 8 y 8888 caracteres.',
+      otherSportTitle: 'Especifica tu deporte',
+      otherSportDesc: 'Has elegido "Otro deporte". Especifica cuál.',
+      otherRoleTitle: 'Especifica tu papel',
+      otherRoleDesc: 'Has elegido "Otro papel". Especifica tu papel en el deporte.',
+      submitSuccessTitle: '¡Solicitud enviada!',
+      submitSuccessDesc:
+        'Un responsable de una House te contactará en 24-48 horas por tu método de contacto preferido.',
+      submitFailedTitle: 'Error al enviar la solicitud',
+      submitFailedFallback: 'Vuelve a intentarlo, por favor.',
+      networkErrorTitle: 'Error de red',
+      networkErrorDesc: 'Comprueba tu conexión e inténtalo de nuevo.',
+    };
+  }
+
+  // EN (default)
+  return {
+    missingRequiredTitle: 'Missing required fields',
+    missingRequiredDesc: 'Please fill in all required fields',
+    invalidMessageTitle: 'Invalid message length',
+    invalidMessageDesc: 'Message must be between 8 and 8888 characters',
+    otherSportTitle: 'Please specify your sport',
+    otherSportDesc: 'You selected "Other sport". Please specify which sport.',
+    otherRoleTitle: 'Please specify your role',
+    otherRoleDesc: 'You selected "Other role". Please specify your role in sports.',
+    submitSuccessTitle: 'Application submitted!',
+    submitSuccessDesc:
+      'A House admin will contact you within 24-48 hours via your preferred contact method.',
+    submitFailedTitle: 'Submission failed',
+    submitFailedFallback: 'Please try again',
+    networkErrorTitle: 'Network error',
+    networkErrorDesc: 'Please check your connection and try again',
+  };
+}
 
 export default function OnboardingPage() {
   const { toast } = useToast();
@@ -116,11 +225,12 @@ export default function OnboardingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const v = getValidationTexts(language);
 
     if (!formData.email || !formData.full_name || !formData.country) {
       toast({
-        title: 'Missing required fields',
-        description: 'Please fill in all required fields',
+        title: v.missingRequiredTitle,
+        description: v.missingRequiredDesc,
         variant: 'destructive',
       });
       return;
@@ -128,35 +238,28 @@ export default function OnboardingPage() {
 
     if (formData.message.length < 8 || formData.message.length > 8888) {
       toast({
-        title: 'Invalid message length',
-        description: 'Message must be between 8 and 8888 characters',
+        title: v.invalidMessageTitle,
+        description: v.invalidMessageDesc,
         variant: 'destructive',
       });
       return;
     }
 
     // validação específica para “Outro desporto”
-    if (
-      formData.sports_category === 'other_sport' &&
-      !formData.sports_category_other.trim()
-    ) {
+    if (formData.sports_category === 'other_sport' && !formData.sports_category_other.trim()) {
       toast({
-        title: 'Please specify your sport',
-        description: 'You selected "Other sport". Please specify which sport.',
+        title: v.otherSportTitle,
+        description: v.otherSportDesc,
         variant: 'destructive',
       });
       return;
     }
 
     // validação específica para “Outro papel”
-    if (
-      formData.sports_role === 'other_role' &&
-      !formData.sports_role_other.trim()
-    ) {
+    if (formData.sports_role === 'Other role' && !formData.sports_role_other.trim()) {
       toast({
-        title: 'Please specify your role',
-        description:
-          'You selected "Other role". Please specify your role in sports.',
+        title: v.otherRoleTitle,
+        description: v.otherRoleDesc,
         variant: 'destructive',
       });
       return;
@@ -172,7 +275,7 @@ export default function OnboardingPage() {
         payload.sports_category = payload.sports_category_other.trim();
       }
 
-      if (payload.sports_role === 'other_role') {
+      if (payload.sports_role === 'Other role') {
         payload.sports_role = payload.sports_role_other.trim();
       }
 
@@ -190,9 +293,8 @@ export default function OnboardingPage() {
 
       if (data.success) {
         toast({
-          title: 'Application submitted!',
-          description:
-            'A House admin will contact you within 24-48 hours via your preferred contact method.',
+          title: v.submitSuccessTitle,
+          description: v.submitSuccessDesc,
         });
         setFormData({
           email: '',
@@ -214,16 +316,16 @@ export default function OnboardingPage() {
         setStep(1);
       } else {
         toast({
-          title: 'Submission failed',
-          description: data.error || 'Please try again',
+          title: v.submitFailedTitle,
+          description: data.error || v.submitFailedFallback,
           variant: 'destructive',
         });
       }
     } catch (error) {
       console.error('Onboarding submit error:', error);
       toast({
-        title: 'Network error',
-        description: 'Please check your connection and try again',
+        title: v.networkErrorTitle,
+        description: v.networkErrorDesc,
         variant: 'destructive',
       });
     }
@@ -239,12 +341,8 @@ export default function OnboardingPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8 text-center">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                {t('onboarding.title')}
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
-                {t('onboarding.subtitle')}
-              </p>
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">{t('onboarding.title')}</h1>
+              <p className="text-lg text-gray-600 dark:text-gray-300">{t('onboarding.subtitle')}</p>
             </div>
 
             <Card className="mb-8 bg-gradient-to-br from-blue-50 to-cyan-50">
@@ -257,9 +355,7 @@ export default function OnboardingPage() {
                     <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
                       1
                     </div>
-                    <p className="text-sm font-semibold mb-1">
-                      {t('onboarding.fillForm')}
-                    </p>
+                    <p className="text-sm font-semibold mb-1">{t('onboarding.fillForm')}</p>
                     <p className="text-xs text-gray-600 dark:text-gray-300">
                       {t('onboarding.fillFormDesc')}
                     </p>
@@ -318,7 +414,7 @@ export default function OnboardingPage() {
                     <Label htmlFor="email">{t('onboarding.email')} *</Label>
                     <Input
                       id="email"
-                      type="email"
+                      type="email'
                       placeholder="your@email.com"
                       value={formData.email}
                       onChange={(e) =>
@@ -329,35 +425,25 @@ export default function OnboardingPage() {
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">
-                        {t('onboarding.phone')}
-                      </Label>
+                      <Label htmlFor="phone">{t('onboarding.phone')}</Label>
                       <Input
                         id="phone"
                         type="tel"
                         placeholder="+1234567890"
                         value={formData.phone}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            phone: e.target.value,
-                          })
+                          setFormData({ ...formData, phone: e.target.value })
                         }
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="telegram">
-                        {t('onboarding.telegram')}
-                      </Label>
+                      <Label htmlFor="telegram">{t('onboarding.telegram')}</Label>
                       <Input
                         id="telegram"
                         placeholder="@yourusername"
                         value={formData.telegram}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            telegram: e.target.value,
-                          })
+                          setFormData({ ...formData, telegram: e.target.value })
                         }
                       />
                     </div>
@@ -375,26 +461,19 @@ export default function OnboardingPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="full_name">
-                      {t('onboarding.fullName')} *
-                    </Label>
+                    <Label htmlFor="full_name">{t('onboarding.fullName')} *</Label>
                     <Input
                       id="full_name"
                       placeholder="John Doe"
                       value={formData.full_name}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          full_name: e.target.value,
-                        })
+                        setFormData({ ...formData, full_name: e.target.value })
                       }
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="country">
-                      {t('onboarding.country')} *
-                    </Label>
+                    <Label htmlFor="country">{t('onboarding.country')} *</Label>
                     <Select
                       value={formData.country}
                       onValueChange={(value) =>
@@ -402,9 +481,7 @@ export default function OnboardingPage() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('onboarding.selectCountry')}
-                        />
+                        <SelectValue placeholder={t('onboarding.selectCountry')} />
                       </SelectTrigger>
                       <SelectContent className="max-h-[200px]">
                         {COUNTRIES.map((country) => (
@@ -450,24 +527,19 @@ export default function OnboardingPage() {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('onboarding.selectSport')}
-                        />
+                        <SelectValue placeholder={t('onboarding.selectSport')} />
                       </SelectTrigger>
                       <SelectContent>
                         {sportsLoading && (
                           <SelectItem value="loading" disabled>
-                            Loading sports...
+                            {getLoadingSportsLabel(language)}
                           </SelectItem>
                         )}
 
                         {!sportsLoading && sports.length > 0 && (
                           <>
                             {sports.map((sport) => (
-                              <SelectItem
-                                key={sport.code}
-                                value={sport.code}
-                              >
+                              <SelectItem key={sport.code} value={sport.code}>
                                 {sport.name}
                               </SelectItem>
                             ))}
@@ -477,23 +549,20 @@ export default function OnboardingPage() {
                         {/* Fallback para o caso da API falhar: usa HOUSES_OF_SPORTS antiga */}
                         {!sportsLoading && sports.length === 0 && (
                           <>
-                            {HOUSES_OF_SPORTS[language].map(
-                              (sportLabel, index) => (
-                                <SelectItem
-                                  key={sportLabel}
-                                  value={HOUSES_OF_SPORTS.en[index]}
-                                >
-                                  {sportLabel}
-                                </SelectItem>
-                              ),
-                            )}
+                            {HOUSES_OF_SPORTS[language].map((sportLabel: any, index: number) => (
+                              <SelectItem
+                                key={String(sportLabel)}
+                                value={String(HOUSES_OF_SPORTS.en[index])}
+                              >
+                                {String(sportLabel)}
+                              </SelectItem>
+                            ))}
                           </>
                         )}
 
                         {/* Opção "Outro desporto" */}
                         <SelectItem value="other_sport">
-                          {t('onboarding.otherSportOption') ??
-                            'Other sport'}
+                          {getOtherSportOptionLabel(language)}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -503,15 +572,11 @@ export default function OnboardingPage() {
                   {otherSport && (
                     <div className="space-y-2">
                       <Label htmlFor="sports_category_other">
-                        {t('onboarding.otherSportPlaceholder') ??
-                          'Please specify your sport'}
+                        {getOtherSportPlaceholder(language)}
                       </Label>
                       <Input
                         id="sports_category_other"
-                        placeholder={
-                          t('onboarding.otherSportPlaceholder') ??
-                          'Describe your sport or discipline'
-                        }
+                        placeholder={getOtherSportPlaceholder(language)}
                         value={formData.sports_category_other}
                         onChange={(e) =>
                           setFormData((prev) => ({
@@ -526,9 +591,7 @@ export default function OnboardingPage() {
 
                   {/* Persona / Role */}
                   <div className="space-y-2">
-                    <Label htmlFor="sports_role">
-                      {t('onboarding.yourRole')}
-                    </Label>
+                    <Label htmlFor="sports_role">{t('onboarding.yourRole')}</Label>
                     <Select
                       value={formData.sports_role}
                       onValueChange={(value) => {
@@ -536,7 +599,7 @@ export default function OnboardingPage() {
                           ...prev,
                           sports_role: value,
                         }));
-                        const isOther = value === 'other_role';
+                        const isOther = value === 'Other role'; // valor canónico em inglês
                         setOtherRole(isOther);
                         if (!isOther) {
                           setFormData((prev) => ({
@@ -547,21 +610,17 @@ export default function OnboardingPage() {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('onboarding.selectRole')}
-                        />
+                        <SelectValue placeholder={t('onboarding.selectRole')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {SPORTS_ROLES[language].map(
-                          (role: any, index: number) => (
-                            <SelectItem
-                              key={role?.value ?? String(index)}
-                              value={role?.value ?? String(role)}
-                            >
-                              {role?.label ?? String(role)}
-                            </SelectItem>
-                          ),
-                        )}
+                        {SPORTS_ROLES[language].map((roleLabel: any, index: number) => (
+                          <SelectItem
+                            key={String(roleLabel.code)}
+                            value={SPORTS_ROLES.en[index].code}
+                          >
+                            {String(roleLabel.label)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -570,15 +629,11 @@ export default function OnboardingPage() {
                   {otherRole && (
                     <div className="space-y-2">
                       <Label htmlFor="sports_role_other">
-                        {t('onboarding.otherRolePlaceholder') ??
-                          'Please specify your role'}
+                        {getOtherRolePlaceholder(language)}
                       </Label>
                       <Input
                         id="sports_role_other"
-                        placeholder={
-                          t('onboarding.otherRolePlaceholder') ??
-                          'Describe your role in sports'
-                        }
+                        placeholder={getOtherRolePlaceholder(language)}
                         value={formData.sports_role_other}
                         onChange={(e) =>
                           setFormData((prev) => ({
@@ -597,9 +652,7 @@ export default function OnboardingPage() {
                     </Label>
                     <Input
                       id="organization"
-                      placeholder={t(
-                        'onboarding.organizationPlaceholder',
-                      )}
+                      placeholder={t('onboarding.organizationPlaceholder')}
                       value={formData.organization}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -662,15 +715,10 @@ export default function OnboardingPage() {
                     <Label>{t('onboarding.areasOfInterest')}</Label>
                     <div className="grid md:grid-cols-2 gap-3">
                       {interests.map((interest) => (
-                        <div
-                          key={interest}
-                          className="flex items-center space-x-2"
-                        >
+                        <div key={interest} className="flex items-center space-x-2">
                           <Checkbox
                             id={interest}
-                            checked={formData.interests.includes(
-                              interest,
-                            )}
+                            checked={formData.interests.includes(interest)}
                             onCheckedChange={() =>
                               handleInterestToggle(interest)
                             }
