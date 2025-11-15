@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Mapa simples para normalizar locales que possam vir da app
+// Normalização de locales vindos do frontend
 const LOCALE_MAP: Record<string, string> = {
   en: 'en',
   'en-US': 'en',
@@ -18,19 +18,26 @@ const LOCALE_MAP: Record<string, string> = {
   'it-IT': 'it',
 };
 
+// Tipo para a linha que vem de sports_localized + relação sports
+type SportsLocalizedRow = {
+  sport_id: string;
+  name: string;
+  sports?: {
+    code?: string | null;
+  } | null;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
 
-    // locale enviado pelo frontend: ?locale=pt, ?locale=es, etc.
     const rawLocale = searchParams.get('locale') || 'en';
 
     const normalizedLocale =
-      LOCALE_MAP[rawLocale] || LOCALE_MAP[rawLocale.toLowerCase()] || 'en';
+      LOCALE_MAP[rawLocale] ||
+      LOCALE_MAP[rawLocale.toLowerCase()] ||
+      'en';
 
-    // Buscar das tabelas:
-    // - sports_localized (name + locale)
-    // - sports (code) via foreign key sport_id
     const { data, error } = await supabaseAdmin
       .from('sports_localized')
       .select(
@@ -58,12 +65,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const sports =
-      data?.map((row) => ({
-        id: row.sport_id,
-        code: (row as any).sports?.code ?? null,
-        name: row.name,
-      })) ?? [];
+    const rows = (data ?? []) as SportsLocalizedRow[];
+
+    const sports = rows.map((row) => ({
+      id: row.sport_id,
+      code: row.sports?.code ?? null,
+      name: row.name,
+    }));
 
     return NextResponse.json({
       success: true,
