@@ -3,12 +3,24 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { COUNTRIES, HOUSES_OF_SPORTS, SPORTS_ROLES } from '@/lib/i18n';
@@ -124,7 +136,10 @@ export default function OnboardingPage() {
     }
 
     // validação específica para “Outro desporto”
-    if (formData.sports_category === 'other_sport' && !formData.sports_category_other.trim()) {
+    if (
+      formData.sports_category === 'other_sport' &&
+      !formData.sports_category_other.trim()
+    ) {
       toast({
         title: 'Please specify your sport',
         description: 'You selected "Other sport". Please specify which sport.',
@@ -134,10 +149,14 @@ export default function OnboardingPage() {
     }
 
     // validação específica para “Outro papel”
-    if (formData.sports_role === 'Other role' && !formData.sports_role_other.trim()) {
+    if (
+      formData.sports_role === 'other_role' &&
+      !formData.sports_role_other.trim()
+    ) {
       toast({
         title: 'Please specify your role',
-        description: 'You selected "Other role". Please specify your role in sports.',
+        description:
+          'You selected "Other role". Please specify your role in sports.',
         variant: 'destructive',
       });
       return;
@@ -153,7 +172,7 @@ export default function OnboardingPage() {
         payload.sports_category = payload.sports_category_other.trim();
       }
 
-      if (payload.sports_role === 'Other role') {
+      if (payload.sports_role === 'other_role') {
         payload.sports_role = payload.sports_role_other.trim();
       }
 
@@ -220,8 +239,12 @@ export default function OnboardingPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8 text-center">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">{t('onboarding.title')}</h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300">{t('onboarding.subtitle')}</p>
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">
+                {t('onboarding.title')}
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                {t('onboarding.subtitle')}
+              </p>
             </div>
 
             <Card className="mb-8 bg-gradient-to-br from-blue-50 to-cyan-50">
@@ -234,7 +257,9 @@ export default function OnboardingPage() {
                     <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
                       1
                     </div>
-                    <p className="text-sm font-semibold mb-1">{t('onboarding.fillForm')}</p>
+                    <p className="text-sm font-semibold mb-1">
+                      {t('onboarding.fillForm')}
+                    </p>
                     <p className="text-xs text-gray-600 dark:text-gray-300">
                       {t('onboarding.fillFormDesc')}
                     </p>
@@ -304,25 +329,35 @@ export default function OnboardingPage() {
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">{t('onboarding.phone')}</Label>
+                      <Label htmlFor="phone">
+                        {t('onboarding.phone')}
+                      </Label>
                       <Input
                         id="phone"
                         type="tel"
                         placeholder="+1234567890"
                         value={formData.phone}
                         onChange={(e) =>
-                          setFormData({ ...formData, phone: e.target.value })
+                          setFormData({
+                            ...formData,
+                            phone: e.target.value,
+                          })
                         }
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="telegram">{t('onboarding.telegram')}</Label>
+                      <Label htmlFor="telegram">
+                        {t('onboarding.telegram')}
+                      </Label>
                       <Input
                         id="telegram"
                         placeholder="@yourusername"
                         value={formData.telegram}
                         onChange={(e) =>
-                          setFormData({ ...formData, telegram: e.target.value })
+                          setFormData({
+                            ...formData,
+                            telegram: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -340,19 +375,26 @@ export default function OnboardingPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="full_name">{t('onboarding.fullName')} *</Label>
+                    <Label htmlFor="full_name">
+                      {t('onboarding.fullName')} *
+                    </Label>
                     <Input
                       id="full_name"
                       placeholder="John Doe"
                       value={formData.full_name}
                       onChange={(e) =>
-                        setFormData({ ...formData, full_name: e.target.value })
+                        setFormData({
+                          ...formData,
+                          full_name: e.target.value,
+                        })
                       }
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="country">{t('onboarding.country')} *</Label>
+                    <Label htmlFor="country">
+                      {t('onboarding.country')} *
+                    </Label>
                     <Select
                       value={formData.country}
                       onValueChange={(value) =>
@@ -360,7 +402,9 @@ export default function OnboardingPage() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={t('onboarding.selectCountry')} />
+                        <SelectValue
+                          placeholder={t('onboarding.selectCountry')}
+                        />
                       </SelectTrigger>
                       <SelectContent className="max-h-[200px]">
                         {COUNTRIES.map((country) => (
@@ -406,7 +450,9 @@ export default function OnboardingPage() {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={t('onboarding.selectSport')} />
+                        <SelectValue
+                          placeholder={t('onboarding.selectSport')}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {sportsLoading && (
@@ -418,7 +464,10 @@ export default function OnboardingPage() {
                         {!sportsLoading && sports.length > 0 && (
                           <>
                             {sports.map((sport) => (
-                              <SelectItem key={sport.code} value={sport.code}>
+                              <SelectItem
+                                key={sport.code}
+                                value={sport.code}
+                              >
                                 {sport.name}
                               </SelectItem>
                             ))}
@@ -428,20 +477,23 @@ export default function OnboardingPage() {
                         {/* Fallback para o caso da API falhar: usa HOUSES_OF_SPORTS antiga */}
                         {!sportsLoading && sports.length === 0 && (
                           <>
-                            {HOUSES_OF_SPORTS[language].map((sportLabel, index) => (
-                              <SelectItem
-                                key={sportLabel}
-                                value={HOUSES_OF_SPORTS.en[index]}
-                              >
-                                {sportLabel}
-                              </SelectItem>
-                            ))}
+                            {HOUSES_OF_SPORTS[language].map(
+                              (sportLabel, index) => (
+                                <SelectItem
+                                  key={sportLabel}
+                                  value={HOUSES_OF_SPORTS.en[index]}
+                                >
+                                  {sportLabel}
+                                </SelectItem>
+                              ),
+                            )}
                           </>
                         )}
 
                         {/* Opção "Outro desporto" */}
                         <SelectItem value="other_sport">
-                          {t('onboarding.otherSportOption') ?? 'Other sport'}
+                          {t('onboarding.otherSportOption') ??
+                            'Other sport'}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -474,7 +526,9 @@ export default function OnboardingPage() {
 
                   {/* Persona / Role */}
                   <div className="space-y-2">
-                    <Label htmlFor="sports_role">{t('onboarding.yourRole')}</Label>
+                    <Label htmlFor="sports_role">
+                      {t('onboarding.yourRole')}
+                    </Label>
                     <Select
                       value={formData.sports_role}
                       onValueChange={(value) => {
@@ -482,7 +536,7 @@ export default function OnboardingPage() {
                           ...prev,
                           sports_role: value,
                         }));
-                        const isOther = value === 'Other role'; // valor canónico em inglês
+                        const isOther = value === 'other_role';
                         setOtherRole(isOther);
                         if (!isOther) {
                           setFormData((prev) => ({
@@ -493,17 +547,21 @@ export default function OnboardingPage() {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={t('onboarding.selectRole')} />
+                        <SelectValue
+                          placeholder={t('onboarding.selectRole')}
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {SPORTS_ROLES[language].map((roleLabel, index) => (
-                          <SelectItem
-                            key={roleLabel}
-                            value={SPORTS_ROLES.en[index]}
-                          >
-                            {roleLabel}
-                          </SelectItem>
-                        ))}
+                        {SPORTS_ROLES[language].map(
+                          (role: any, index: number) => (
+                            <SelectItem
+                              key={role?.value ?? String(index)}
+                              value={role?.value ?? String(role)}
+                            >
+                              {role?.label ?? String(role)}
+                            </SelectItem>
+                          ),
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -540,7 +598,7 @@ export default function OnboardingPage() {
                     <Input
                       id="organization"
                       placeholder={t(
-                        'onboarding.organizationPlaceholder'
+                        'onboarding.organizationPlaceholder',
                       )}
                       value={formData.organization}
                       onChange={(e) =>
@@ -604,10 +662,15 @@ export default function OnboardingPage() {
                     <Label>{t('onboarding.areasOfInterest')}</Label>
                     <div className="grid md:grid-cols-2 gap-3">
                       {interests.map((interest) => (
-                        <div key={interest} className="flex items-center space-x-2">
+                        <div
+                          key={interest}
+                          className="flex items-center space-x-2"
+                        >
                           <Checkbox
                             id={interest}
-                            checked={formData.interests.includes(interest)}
+                            checked={formData.interests.includes(
+                              interest,
+                            )}
                             onCheckedChange={() =>
                               handleInterestToggle(interest)
                             }
