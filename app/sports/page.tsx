@@ -543,16 +543,21 @@ export default function OnboardingPage() {
                       <SelectTrigger>
                         <SelectValue placeholder={t('onboarding.selectRole')} />
                       </SelectTrigger>
-                      <SelectContent>
-                        {SPORTS_ROLES[language].map((roleLabel, index) => (
-                          <SelectItem
-                            key={roleLabel.code}
-                            value={SPORTS_ROLES.en[index].code}
-                          >
-                            {roleLabel.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                     <SelectContent>
+  {(SPORTS_ROLES[language] as any[]).map((roleLabel: any, index: number) => {
+    const roleEn = (SPORTS_ROLES.en as any[])[index];
+
+    return (
+      <SelectItem
+        key={roleLabel.code ?? roleLabel ?? index}
+        value={roleEn.code ?? roleEn}
+      >
+        {roleLabel.label ?? roleLabel}
+      </SelectItem>
+    );
+  })}
+</SelectContent>
+
                     </Select>
                   </div>
 
