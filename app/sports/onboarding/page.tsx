@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,13 +13,25 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { COUNTRIES, HOUSES_OF_SPORTS, SPORTS_ROLES } from '@/lib/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Mail, Phone, MessageSquare, User, MapPin, Trophy, Briefcase, Lightbulb } from 'lucide-react';
+import { Mail, Phone, MessageSquare, User, Trophy, Lightbulb } from 'lucide-react';
+
+type SportOption = {
+  id: string;
+  code: string;
+  name: string;
+};
 
 export default function OnboardingPage() {
   const { toast } = useToast();
   const { language, t } = useLanguage();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  // nova state para lista de desportos vinda da API
+  const [sports, setSports] = useState<SportOption[]>([]);
+  const [sportsLoading, setSportsLoading] = useState(false);
+  const [sportsError, setSportsError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     email: '',
     phone: '',
@@ -31,7 +43,9 @@ export default function OnboardingPage() {
     organization: '',
     web3_experience: '',
     interests: [] as string[],
-    message: ''
+    message: '',
+    other_sport: '',
+    other_sports_role: '',
   });
 
   const interests = [
@@ -42,15 +56,45 @@ export default function OnboardingPage() {
     'Athlete Tokenization',
     'Blockchain Ticketing',
     'DeFi for Athletes',
-    'Sports Metaverse'
+    'Sports Metaverse',
   ];
 
+  // Buscar desportos da API sempre que a language muda
+  useEffect(() => {
+    const fetchSports = async () => {
+      setSportsLoading(true);
+      setSportsError(null);
+
+      try {
+        const res = await fetch(`/api/sports?locale=${language}`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        if (data.success && Array.isArray(data.sports)) {
+          setSports(data.sports);
+        } else {
+          setSports([]);
+          setSportsError('Unable to load sports list.');
+        }
+      } catch (err) {
+        console.error('Error loading sports from API:', err);
+        setSports([]);
+        setSportsError('Unable to load sports list.');
+      } finally {
+        setSportsLoading(false);
+      }
+    };
+
+    fetchSports();
+  }, [language]);
+
   const handleInterestToggle = (interest: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       interests: prev.interests.includes(interest)
-        ? prev.interests.filter(i => i !== interest)
-        : [...prev.interests, interest]
+        ? prev.interests.filter((i) => i !== interest)
+        : [...prev.interests, interest],
     }));
   };
 
@@ -61,7 +105,7 @@ export default function OnboardingPage() {
       toast({
         title: 'Missing required fields',
         description: 'Please fill in all required fields',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
@@ -70,7 +114,27 @@ export default function OnboardingPage() {
       toast({
         title: 'Invalid message length',
         description: 'Message must be between 8 and 8888 characters',
-        variant: 'destructive'
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // validação específica para “Outro” desporto
+    if (formData.sports_category === 'other' && !formData.other_sport.trim()) {
+      toast({
+        title: 'Please specify your sport',
+        description: 'You selected "Other" as sport. Please specify which sport.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // validação específica para “Outro” persona/role
+    if (formData.sports_role === 'other' && !formData.other_sports_role.trim()) {
+      toast({
+        title: 'Please specify your role',
+        description: 'You selected "Other" as role. Please specify your role in sports.',
+        variant: 'destructive',
       });
       return;
     }
@@ -78,10 +142,25 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
+      // preparar payload para não partir o backend:
+      // se escolheram "other", substituímos pelo texto
+      const payload: any = { ...formData };
+
+      if (payload.sports_category === 'other') {
+        payload.sports_category = payload.other_sport.trim();
+      }
+      if (payload.sports_role === 'other') {
+        payload.sports_role = payload.other_sports_role.trim();
+      }
+
+      // não enviamos os campos auxiliares para o backend
+      delete payload.other_sport;
+      delete payload.other_sports_role;
+
       const response = await fetch('/api/forms/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -89,7 +168,8 @@ export default function OnboardingPage() {
       if (data.success) {
         toast({
           title: 'Application submitted!',
-          description: 'A House admin will contact you within 24-48 hours via your preferred contact method.',
+          description:
+            'A House admin will contact you within 24-48 hours via your preferred contact method.',
         });
         setFormData({
           email: '',
@@ -102,21 +182,24 @@ export default function OnboardingPage() {
           organization: '',
           web3_experience: '',
           interests: [],
-          message: ''
+          message: '',
+          other_sport: '',
+          other_sports_role: '',
         });
         setStep(1);
       } else {
         toast({
           title: 'Submission failed',
           description: data.error || 'Please try again',
-          variant: 'destructive'
+          variant: 'destructive',
         });
       }
     } catch (error) {
+      console.error('Onboarding submit error:', error);
       toast({
         title: 'Network error',
         description: 'Please check your connection and try again',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
 
@@ -132,9 +215,7 @@ export default function OnboardingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="mb-8 text-center">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{t('onboarding.title')}</h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
-                {t('onboarding.subtitle')}
-              </p>
+              <p className="text-lg text-gray-600 dark:text-gray-300">{t('onboarding.subtitle')}</p>
             </div>
 
             <Card className="mb-8 bg-gradient-to-br from-blue-50 to-cyan-50">
@@ -148,41 +229,58 @@ export default function OnboardingPage() {
                       1
                     </div>
                     <p className="text-sm font-semibold mb-1">{t('onboarding.fillForm')}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">{t('onboarding.fillFormDesc')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                      {t('onboarding.fillFormDesc')}
+                    </p>
                   </div>
                   <div className="text-center">
                     <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
                       2
                     </div>
-                    <p className="text-sm font-semibold mb-1">{t('onboarding.adminReview')}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">{t('onboarding.adminReviewDesc')}</p>
+                    <p className="text-sm font-semibold mb-1">
+                      {t('onboarding.adminReview')}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                      {t('onboarding.adminReviewDesc')}
+                    </p>
                   </div>
                   <div className="text-center">
                     <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
                       3
                     </div>
-                    <p className="text-sm font-semibold mb-1">{t('onboarding.emailContact')}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">{t('onboarding.emailContactDesc')}</p>
+                    <p className="text-sm font-semibold mb-1">
+                      {t('onboarding.emailContact')}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                      {t('onboarding.emailContactDesc')}
+                    </p>
                   </div>
                   <div className="text-center">
                     <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
                       4
                     </div>
-                    <p className="text-sm font-semibold mb-1">{t('onboarding.zoomMeeting')}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">{t('onboarding.zoomMeetingDesc')}</p>
+                    <p className="text-sm font-semibold mb-1">
+                      {t('onboarding.zoomMeeting')}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                      {t('onboarding.zoomMeetingDesc')}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <form onSubmit={handleSubmit}>
+              {/* Step 1 - Contactos */}
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Mail className="h-5 w-5 text-blue-600" />
                     {t('onboarding.step1')}
                   </CardTitle>
-                  <CardDescription>{t('onboarding.howReach')} {t('onboarding.atLeastOne')}</CardDescription>
+                  <CardDescription>
+                    {t('onboarding.howReach')} {t('onboarding.atLeastOne')}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -192,7 +290,9 @@ export default function OnboardingPage() {
                       type="email"
                       placeholder="your@email.com"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       required
                     />
                   </div>
@@ -204,7 +304,9 @@ export default function OnboardingPage() {
                         type="tel"
                         placeholder="+1234567890"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -213,13 +315,16 @@ export default function OnboardingPage() {
                         id="telegram"
                         placeholder="@yourusername"
                         value={formData.telegram}
-                        onChange={(e) => setFormData({ ...formData, telegram: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, telegram: e.target.value })
+                        }
                       />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Step 2 - Dados pessoais básicos */}
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -234,13 +339,20 @@ export default function OnboardingPage() {
                       id="full_name"
                       placeholder="John Doe"
                       value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, full_name: e.target.value })
+                      }
                       required
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="country">{t('onboarding.country')} *</Label>
-                    <Select value={formData.country} onValueChange={(value) => setFormData({ ...formData, country: value })}>
+                    <Select
+                      value={formData.country}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, country: value })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder={t('onboarding.selectCountry')} />
                       </SelectTrigger>
@@ -256,6 +368,7 @@ export default function OnboardingPage() {
                 </CardContent>
               </Card>
 
+              {/* Step 3 - Desporto + Role */}
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -264,48 +377,156 @@ export default function OnboardingPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Desporto */}
                   <div className="space-y-2">
-                    <Label htmlFor="sports_category">{t('onboarding.sportInterest')}</Label>
-                    <Select value={formData.sports_category} onValueChange={(value) => setFormData({ ...formData, sports_category: value })}>
+                    <Label htmlFor="sports_category">
+                      {t('onboarding.sportInterest')}
+                    </Label>
+                    <Select
+                      value={formData.sports_category}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          sports_category: value,
+                          // se mudar a opção, limpamos o "other" se não for other
+                          other_sport: value === 'other' ? formData.other_sport : '',
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder={t('onboarding.selectSport')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {HOUSES_OF_SPORTS[language].map((sport, index) => (
-                          <SelectItem key={sport} value={HOUSES_OF_SPORTS.en[index]}>
-                            {sport}
+                        {sportsLoading && (
+                          <SelectItem value="loading" disabled>
+                            Loading sports...
                           </SelectItem>
-                        ))}
+                        )}
+
+                        {!sportsLoading && sports.length > 0 && (
+                          <>
+                            {sports.map((sport) => (
+                              <SelectItem key={sport.code} value={sport.code}>
+                                {sport.name}
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+
+                        {/* Fallback para o caso da API falhar: usa HOUSES_OF_SPORTS antiga */}
+                        {!sportsLoading && sports.length === 0 && (
+                          <>
+                            {HOUSES_OF_SPORTS[language].map((sportLabel, index) => (
+                              <SelectItem
+                                key={sportLabel}
+                                value={HOUSES_OF_SPORTS.en[index]}
+                              >
+                                {sportLabel}
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+
+                        {/* Opção "Outro" */}
+                        <SelectItem value="other">
+                          Other sport / Outro desporto
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Campo extra quando escolhe "Outro" desporto */}
+                  {formData.sports_category === 'other' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="other_sport">
+                        Please specify your sport / Especifica o teu desporto
+                      </Label>
+                      <Input
+                        id="other_sport"
+                        placeholder="Ex: Parkour, Capoeira Contemporânea..."
+                        value={formData.other_sport}
+                        onChange={(e) =>
+                          setFormData({ ...formData, other_sport: e.target.value })
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {/* Persona / Role */}
                   <div className="space-y-2">
                     <Label htmlFor="sports_role">{t('onboarding.yourRole')}</Label>
-                    <Select value={formData.sports_role} onValueChange={(value) => setFormData({ ...formData, sports_role: value })}>
+                    <Select
+                      value={formData.sports_role}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          sports_role: value,
+                          other_sports_role:
+                            value === 'other' ? formData.other_sports_role : '',
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder={t('onboarding.selectRole')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {SPORTS_ROLES[language].map((role, index) => (
-                          <SelectItem key={role} value={SPORTS_ROLES.en[index]}>
-                            {role}
+                        {SPORTS_ROLES[language].map((roleLabel, index) => (
+                          <SelectItem
+                            key={roleLabel}
+                            value={SPORTS_ROLES.en[index]}
+                          >
+                            {roleLabel}
                           </SelectItem>
                         ))}
+                        <SelectItem value="other">
+                          Other role / Outro papel
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Campo extra quando escolhe "Outro" role */}
+                  {formData.sports_role === 'other' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="other_sports_role">
+                        Please specify your role / Especifica o teu papel
+                      </Label>
+                      <Input
+                        id="other_sports_role"
+                        placeholder="Ex: Gestor, Adepto, Jornalista Desportivo..."
+                        value={formData.other_sports_role}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            other_sports_role: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <Label htmlFor="organization">{t('onboarding.organization')}</Label>
+                    <Label htmlFor="organization">
+                      {t('onboarding.organization')}
+                    </Label>
                     <Input
                       id="organization"
-                      placeholder={t('onboarding.organizationPlaceholder')}
+                      placeholder={t(
+                        'onboarding.organizationPlaceholder'
+                      )}
                       value={formData.organization}
-                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          organization: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Step 4 - Web3 + interesses */}
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -315,17 +536,39 @@ export default function OnboardingPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="web3_experience">{t('onboarding.web3Experience')}</Label>
-                    <Select value={formData.web3_experience} onValueChange={(value) => setFormData({ ...formData, web3_experience: value })}>
+                    <Label htmlFor="web3_experience">
+                      {t('onboarding.web3Experience')}
+                    </Label>
+                    <Select
+                      value={formData.web3_experience}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          web3_experience: value,
+                        })
+                      }
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder={t('onboarding.selectExperience')} />
+                        <SelectValue
+                          placeholder={t('onboarding.selectExperience')}
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">{t('onboarding.experienceNone')}</SelectItem>
-                        <SelectItem value="beginner">{t('onboarding.experienceBeginner')}</SelectItem>
-                        <SelectItem value="intermediate">{t('onboarding.experienceIntermediate')}</SelectItem>
-                        <SelectItem value="advanced">{t('onboarding.experienceAdvanced')}</SelectItem>
-                        <SelectItem value="expert">{t('onboarding.experienceExpert')}</SelectItem>
+                        <SelectItem value="none">
+                          {t('onboarding.experienceNone')}
+                        </SelectItem>
+                        <SelectItem value="beginner">
+                          {t('onboarding.experienceBeginner')}
+                        </SelectItem>
+                        <SelectItem value="intermediate">
+                          {t('onboarding.experienceIntermediate')}
+                        </SelectItem>
+                        <SelectItem value="advanced">
+                          {t('onboarding.experienceAdvanced')}
+                        </SelectItem>
+                        <SelectItem value="expert">
+                          {t('onboarding.experienceExpert')}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -337,7 +580,9 @@ export default function OnboardingPage() {
                           <Checkbox
                             id={interest}
                             checked={formData.interests.includes(interest)}
-                            onCheckedChange={() => handleInterestToggle(interest)}
+                            onCheckedChange={() =>
+                              handleInterestToggle(interest)
+                            }
                           />
                           <label
                             htmlFor={interest}
@@ -352,6 +597,7 @@ export default function OnboardingPage() {
                 </CardContent>
               </Card>
 
+              {/* Step 5 - Mensagem */}
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -361,19 +607,28 @@ export default function OnboardingPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <Label htmlFor="message">{t('onboarding.yourMessage')} * (8-8888 {t('onboarding.characters')})</Label>
+                    <Label htmlFor="message">
+                      {t('onboarding.yourMessage')} * (8-8888{' '}
+                      {t('onboarding.characters')})
+                    </Label>
                     <Textarea
                       id="message"
                       rows={6}
                       placeholder={t('onboarding.messagePlaceholder')}
                       value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          message: e.target.value,
+                        })
+                      }
                       required
                       minLength={8}
                       maxLength={8888}
                     />
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {formData.message.length}/8888 {t('onboarding.characters')}
+                      {formData.message.length}/8888{' '}
+                      {t('onboarding.characters')}
                     </p>
                   </div>
                 </CardContent>
@@ -385,7 +640,9 @@ export default function OnboardingPage() {
                 className="w-full bg-blue-600 hover:bg-blue-700"
                 disabled={loading}
               >
-                {loading ? t('onboarding.submitting') : t('onboarding.submitBtn')}
+                {loading
+                  ? t('onboarding.submitting')
+                  : t('onboarding.submitBtn')}
               </Button>
             </form>
           </div>
