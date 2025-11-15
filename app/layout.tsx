@@ -1,16 +1,18 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from '@/components/ui/toaster';
 
-const inter = Inter({ subsets: ['latin'] });
+// Antes usávamos Inter de next/font/google, que agora está removido
+// Mantemos só um objeto com className vazio para não rebentar o JSX
+const inter = { className: '' };
 
 export const metadata: Metadata = {
   title: 'LEGACY - Gamified Web3 Education Platform',
-  description: 'Master Web3 on Apertum Blockchain. Earn XP, unlock content, and lead the leaderboard.',
+  description:
+    'Master Web3 on Apertum Blockchain. Earn XP, unlock content, and lead the leaderboard.',
 };
 
 export default function RootLayout({
