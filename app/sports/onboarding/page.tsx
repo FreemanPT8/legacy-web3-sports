@@ -27,10 +27,14 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // nova state para lista de desportos vinda da API
+  // lista de desportos vinda da API
   const [sports, setSports] = useState<SportOption[]>([]);
   const [sportsLoading, setSportsLoading] = useState(false);
   const [sportsError, setSportsError] = useState<string | null>(null);
+
+  // controlo de "Outro desporto" e "Outro papel"
+  const [otherSport, setOtherSport] = useState(false);
+  const [otherRole, setOtherRole] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -39,13 +43,13 @@ export default function OnboardingPage() {
     full_name: '',
     country: '',
     sports_category: '',
+    sports_category_other: '',
     sports_role: '',
+    sports_role_other: '',
     organization: '',
     web3_experience: '',
     interests: [] as string[],
     message: '',
-    other_sport: '',
-    other_sports_role: '',
   });
 
   const interests = [
@@ -119,21 +123,21 @@ export default function OnboardingPage() {
       return;
     }
 
-    // validação específica para “Outro” desporto
-    if (formData.sports_category === 'other' && !formData.other_sport.trim()) {
+    // validação específica para “Outro desporto”
+    if (formData.sports_category === 'other_sport' && !formData.sports_category_other.trim()) {
       toast({
         title: 'Please specify your sport',
-        description: 'You selected "Other" as sport. Please specify which sport.',
+        description: 'You selected "Other sport". Please specify which sport.',
         variant: 'destructive',
       });
       return;
     }
 
-    // validação específica para “Outro” persona/role
-    if (formData.sports_role === 'other' && !formData.other_sports_role.trim()) {
+    // validação específica para “Outro papel”
+    if (formData.sports_role === 'Other role' && !formData.sports_role_other.trim()) {
       toast({
         title: 'Please specify your role',
-        description: 'You selected "Other" as role. Please specify your role in sports.',
+        description: 'You selected "Other role". Please specify your role in sports.',
         variant: 'destructive',
       });
       return;
@@ -143,19 +147,19 @@ export default function OnboardingPage() {
 
     try {
       // preparar payload para não partir o backend:
-      // se escolheram "other", substituímos pelo texto
       const payload: any = { ...formData };
 
-      if (payload.sports_category === 'other') {
-        payload.sports_category = payload.other_sport.trim();
+      if (payload.sports_category === 'other_sport') {
+        payload.sports_category = payload.sports_category_other.trim();
       }
-      if (payload.sports_role === 'other') {
-        payload.sports_role = payload.other_sports_role.trim();
+
+      if (payload.sports_role === 'Other role') {
+        payload.sports_role = payload.sports_role_other.trim();
       }
 
       // não enviamos os campos auxiliares para o backend
-      delete payload.other_sport;
-      delete payload.other_sports_role;
+      delete payload.sports_category_other;
+      delete payload.sports_role_other;
 
       const response = await fetch('/api/forms/onboarding', {
         method: 'POST',
@@ -178,14 +182,16 @@ export default function OnboardingPage() {
           full_name: '',
           country: '',
           sports_category: '',
+          sports_category_other: '',
           sports_role: '',
+          sports_role_other: '',
           organization: '',
           web3_experience: '',
           interests: [],
           message: '',
-          other_sport: '',
-          other_sports_role: '',
         });
+        setOtherSport(false);
+        setOtherRole(false);
         setStep(1);
       } else {
         toast({
@@ -384,14 +390,20 @@ export default function OnboardingPage() {
                     </Label>
                     <Select
                       value={formData.sports_category}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
+                      onValueChange={(value) => {
+                        setFormData((prev) => ({
+                          ...prev,
                           sports_category: value,
-                          // se mudar a opção, limpamos o "other" se não for other
-                          other_sport: value === 'other' ? formData.other_sport : '',
-                        })
-                      }
+                        }));
+                        const isOther = value === 'other_sport';
+                        setOtherSport(isOther);
+                        if (!isOther) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            sports_category_other: '',
+                          }));
+                        }
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t('onboarding.selectSport')} />
@@ -427,27 +439,35 @@ export default function OnboardingPage() {
                           </>
                         )}
 
-                        {/* Opção "Outro" */}
-                        <SelectItem value="other">
-                          Other sport / Outro desporto
+                        {/* Opção "Outro desporto" */}
+                        <SelectItem value="other_sport">
+                          {t('onboarding.otherSportOption') ?? 'Other sport'}
                         </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* Campo extra quando escolhe "Outro" desporto */}
-                  {formData.sports_category === 'other' && (
+                  {/* Campo extra quando escolhe "Outro desporto" */}
+                  {otherSport && (
                     <div className="space-y-2">
-                      <Label htmlFor="other_sport">
-                        Please specify your sport / Especifica o teu desporto
+                      <Label htmlFor="sports_category_other">
+                        {t('onboarding.otherSportPlaceholder') ??
+                          'Please specify your sport'}
                       </Label>
                       <Input
-                        id="other_sport"
-                        placeholder="Ex: Parkour, Capoeira Contemporânea..."
-                        value={formData.other_sport}
-                        onChange={(e) =>
-                          setFormData({ ...formData, other_sport: e.target.value })
+                        id="sports_category_other"
+                        placeholder={
+                          t('onboarding.otherSportPlaceholder') ??
+                          'Describe your sport or discipline'
                         }
+                        value={formData.sports_category_other}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            sports_category_other: e.target.value,
+                          }))
+                        }
+                        required
                       />
                     </div>
                   )}
@@ -457,14 +477,20 @@ export default function OnboardingPage() {
                     <Label htmlFor="sports_role">{t('onboarding.yourRole')}</Label>
                     <Select
                       value={formData.sports_role}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
+                      onValueChange={(value) => {
+                        setFormData((prev) => ({
+                          ...prev,
                           sports_role: value,
-                          other_sports_role:
-                            value === 'other' ? formData.other_sports_role : '',
-                        })
-                      }
+                        }));
+                        const isOther = value === 'Other role'; // valor canónico em inglês
+                        setOtherRole(isOther);
+                        if (!isOther) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            sports_role_other: '',
+                          }));
+                        }
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t('onboarding.selectRole')} />
@@ -478,29 +504,31 @@ export default function OnboardingPage() {
                             {roleLabel}
                           </SelectItem>
                         ))}
-                        <SelectItem value="other">
-                          Other role / Outro papel
-                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* Campo extra quando escolhe "Outro" role */}
-                  {formData.sports_role === 'other' && (
+                  {/* Campo extra quando escolhe "Outro papel" */}
+                  {otherRole && (
                     <div className="space-y-2">
-                      <Label htmlFor="other_sports_role">
-                        Please specify your role / Especifica o teu papel
+                      <Label htmlFor="sports_role_other">
+                        {t('onboarding.otherRolePlaceholder') ??
+                          'Please specify your role'}
                       </Label>
                       <Input
-                        id="other_sports_role"
-                        placeholder="Ex: Gestor, Adepto, Jornalista Desportivo..."
-                        value={formData.other_sports_role}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            other_sports_role: e.target.value,
-                          })
+                        id="sports_role_other"
+                        placeholder={
+                          t('onboarding.otherRolePlaceholder') ??
+                          'Describe your role in sports'
                         }
+                        value={formData.sports_role_other}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            sports_role_other: e.target.value,
+                          }))
+                        }
+                        required
                       />
                     </div>
                   )}
@@ -516,10 +544,10 @@ export default function OnboardingPage() {
                       )}
                       value={formData.organization}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           organization: e.target.value,
-                        })
+                        }))
                       }
                     />
                   </div>
@@ -542,10 +570,10 @@ export default function OnboardingPage() {
                     <Select
                       value={formData.web3_experience}
                       onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           web3_experience: value,
-                        })
+                        }))
                       }
                     >
                       <SelectTrigger>
@@ -617,10 +645,10 @@ export default function OnboardingPage() {
                       placeholder={t('onboarding.messagePlaceholder')}
                       value={formData.message}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           message: e.target.value,
-                        })
+                        }))
                       }
                       required
                       minLength={8}
