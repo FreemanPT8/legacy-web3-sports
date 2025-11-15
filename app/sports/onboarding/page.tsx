@@ -55,6 +55,18 @@ function getOtherSportPlaceholder(lang: string): string {
   }
 }
 
+function getOtherRoleOptionLabel(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'Outro papel';
+    case 'es':
+      return 'Otro papel';
+    default:
+      return 'Other role';
+  }
+}
+
 function getOtherRolePlaceholder(lang: string): string {
   const L = normalizeLang(lang);
   switch (L) {
@@ -256,7 +268,7 @@ export default function OnboardingPage() {
     }
 
     // validação específica para “Outro papel”
-    if (formData.sports_role === 'Other role' && !formData.sports_role_other.trim()) {
+    if (formData.sports_role === 'other_role' && !formData.sports_role_other.trim()) {
       toast({
         title: v.otherRoleTitle,
         description: v.otherRoleDesc,
@@ -275,7 +287,7 @@ export default function OnboardingPage() {
         payload.sports_category = payload.sports_category_other.trim();
       }
 
-      if (payload.sports_role === 'Other role') {
+      if (payload.sports_role === 'other_role') {
         payload.sports_role = payload.sports_role_other.trim();
       }
 
@@ -599,7 +611,7 @@ export default function OnboardingPage() {
                           ...prev,
                           sports_role: value,
                         }));
-                        const isOther = value === 'Other role'; // valor canónico em inglês
+                        const isOther = value === 'other_role'; // valor canónico interno
                         setOtherRole(isOther);
                         if (!isOther) {
                           setFormData((prev) => ({
@@ -613,14 +625,19 @@ export default function OnboardingPage() {
                         <SelectValue placeholder={t('onboarding.selectRole')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {SPORTS_ROLES[language].map((roleLabel: any, index: number) => (
+                        {SPORTS_ROLES[language].map((roleLabel: any) => (
                           <SelectItem
-                            key={String(roleLabel.code)}
-                            value={SPORTS_ROLES.en[index].code}
+                            key={String(roleLabel)}
+                            value={String(roleLabel)}
                           >
-                            {String(roleLabel.label)}
+                            {String(roleLabel)}
                           </SelectItem>
                         ))}
+
+                        {/* Opção "Outro papel" */}
+                        <SelectItem value="other_role">
+                          {getOtherRoleOptionLabel(language)}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
