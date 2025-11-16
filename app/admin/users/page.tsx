@@ -1,104 +1,240 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 type AdminUser = {
   id: string;
   username: string;
-  email: string | null;
   full_name: string | null;
-  role: string | null;
+  email: string;
+  role: string;
+  country: string | null;
   xp_total: number;
   created_at: string;
-  country: string | null;
 };
 
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
+  const { toast } = useToast();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
-  // 1) Proteger rota: só Super Admin / Admin
+  // 1) Proteção básica de rota no client
   useEffect(() => {
     if (loading) return;
-
     if (!user) {
       router.push('/login');
       return;
     }
-
     if (user.role !== 'Super Admin' && user.role !== 'Admin') {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
-  // 2) Buscar utilizadores com token no header
+  // 2) Buscar lista de utilizadores da API admin
   useEffect(() => {
     const fetchUsers = async () => {
-      setLoadingUsers(true);
-      setError(null);
-
+      setIsLoadingUsers(true);
       try {
         const token = getToken();
-        console.log('AdminUsersPage token =>', token); // só para debug
-
-        if (!token) {
-          setError('No auth token found in localStorage.');
-          setLoadingUsers(false);
-          return;
-        }
-
         const res = await fetch('/api/admin/users', {
-          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            // IMPORTANTE: mandar o token para o backend
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
         const data = await res.json();
-        console.log('AdminUsersPage /api/admin/users response =>', res.status, data);
 
         if (!res.ok || !data.success) {
-          setError(data.error || `Request failed with status ${res.status}`);
-          setLoadingUsers(false);
+          console.error('Error fetching admin users:', data);
+          toast({
+            title: 'Error loading users',
+            description: data.error || 'Failed to load users list.',
+            variant: 'destructive',
+          });
+          setUsers([]);
+          setFilteredUsers([]);
           return;
         }
 
         setUsers(data.users || []);
-      } catch (err: any) {
-        console.error('Error fetching admin users:', err);
-        setError(err?.message || 'Unexpected error fetching users');
+        setFilteredUsers(data.users || []);
+      } catch (err) {
+        console.error('Unexpected error fetching admin users:', err);
+        toast({
+          title: 'Network error',
+          description: 'Could not load users. Please try again.',
+          variant: 'destructive',
+        });
       } finally {
-        setLoadingUsers(false);
+        setIsLoadingUsers(false);
       }
     };
 
-    if (!loading) {
+    // só tenta carregar se tiver user válido
+    if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
       fetchUsers();
     }
-  }, [loading, getToken]);
+  }, [user, getToken, toast]);
 
-  const filteredUsers = users.filter((u) => {
-    const term = search.toLowerCase();
+  // 3) Filtro por texto
+  useEffect(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) {
+      setFilteredUsers(users);
+      return;
+    }
+
+    const next = users.filter((u) => {
+      const username = u.username?.toLowerCase() ?? '';
+      const name = u.full_name?.toLowerCase() ?? '';
+      const email = u.email?.toLowerCase() ?? '';
+      return (
+        username.includes(term) ||
+        name.includes(term) ||
+        email.includes(term)
+      );
+    });
+
+    setFilteredUsers(next);
+  }, [search, users]);
+
+  const stats = useMemo(() => {
+    const total = users.length;
+    const superAdmins = users.filter((u) => u.role === 'Super Admin').length;
+    const admins = users.filter((u) => u.role === 'Admin').length;
+    const members = users.filter((u) => u.role === 'Member').length;
+
+    return { total, superAdmins, admins, members };
+  }, [users]);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
+
+  // 4) Atualizar role de um utilizador
+  const handleChangeRole = async (
+    userId: string,
+    newRole: 'Super Admin' | 'Admin' | 'Member'
+  ) => {
+    if (!isSuperAdmin) {
+      toast({
+        title: 'Not allowed',
+        description: 'Only Super Admins can change roles.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // não deixamos remover o próprio Super Admin
+    if (user && user.id === userId && newRole !== 'Super Admin') {
+      toast({
+        title: 'Operation not allowed',
+        description: "You can't remove your own Super Admin role.",
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setUpdatingUserId(userId);
+      const token = getToken();
+
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast({
+          title: 'Error updating role',
+          description: data.error || 'Could not update user role.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // atualizar estado local
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+      setFilteredUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+
+      toast({
+        title: 'Role updated',
+        description: 'User role has been updated successfully.',
+      });
+    } catch (err) {
+      console.error('Error updating user role:', err);
+      toast({
+        title: 'Network error',
+        description: 'Could not update role. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'Super Admin':
+        return 'destructive' as const; // vermelho
+      case 'Admin':
+        return 'secondary' as const; // cinza
+      default:
+        return 'outline' as const; // branco
+    }
+  };
+
+  const formatDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString();
+    } catch {
+      return '-';
+    }
+  };
+
+  // Enquanto está a carregar ou user não pronto, mostramos só o layout vazio
+  if (loading) {
     return (
-      u.username.toLowerCase().includes(term) ||
-      (u.email ?? '').toLowerCase().includes(term) ||
-      (u.full_name ?? '').toLowerCase().includes(term)
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8 flex items-center justify-center">
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+        </main>
+        <Footer />
+      </div>
     );
-  });
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -106,81 +242,206 @@ export default function AdminUsersPage() {
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <h1 className="text-3xl md:text-4xl font-bold mb-6">
-              Admin Dashboard
-            </h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-6">
+            Admin Dashboard
+          </h1>
 
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
-                  Promote / demote Admins and Super Admins. Only Super Admins can change roles.
-                </CardDescription>
+          {/* STAT CARDS */}
+          <div className="grid gap-4 md:grid-cols-4 mb-6">
+            <Card>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">
+                  Total Users
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                  <Input
-                    placeholder="Search by username, name or email..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full md:w-80"
-                  />
-                  <Button type="button" variant="outline" onClick={() => setSearch('')}>
-                    Clear
-                  </Button>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold">{stats.total}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">
+                  Super Admins
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-red-600">
+                  {stats.superAdmins}
                 </div>
+              </CardContent>
+            </Card>
 
-                {loadingUsers && (
-                  <p className="text-gray-600 dark:text-gray-300">Loading users...</p>
-                )}
+            <Card>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Admins</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-gray-700">
+                  {stats.admins}
+                </div>
+              </CardContent>
+            </Card>
 
-                {!loadingUsers && error && (
-                  <p className="text-red-600 dark:text-red-400">{error}</p>
-                )}
-
-                {!loadingUsers && !error && filteredUsers.length === 0 && (
-                  <p className="text-gray-600 dark:text-gray-300">No users found.</p>
-                )}
-
-                {!loadingUsers && !error && filteredUsers.length > 0 && (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="border-b bg-gray-100 dark:bg-gray-900">
-                          <th className="text-left px-4 py-2">Username</th>
-                          <th className="text-left px-4 py-2">Name</th>
-                          <th className="text-left px-4 py-2">Email</th>
-                          <th className="text-left px-4 py-2">Role</th>
-                          <th className="text-left px-4 py-2">Country</th>
-                          <th className="text-left px-4 py-2">XP</th>
-                          <th className="text-left px-4 py-2">Created</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredUsers.map((u) => (
-                          <tr
-                            key={u.id}
-                            className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900"
-                          >
-                            <td className="px-4 py-2 font-semibold">{u.username}</td>
-                            <td className="px-4 py-2">{u.full_name ?? '—'}</td>
-                            <td className="px-4 py-2">{u.email ?? '—'}</td>
-                            <td className="px-4 py-2">{u.role ?? '—'}</td>
-                            <td className="px-4 py-2">{u.country ?? '—'}</td>
-                            <td className="px-4 py-2">{u.xp_total ?? 0}</td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {new Date(u.created_at).toLocaleDateString()}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+            <Card>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Members</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-blue-600">
+                  {stats.members}
+                </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* USER MANAGEMENT CARD */}
+          <Card>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Promote / demote Admins and Super Admins. Only Super Admins can
+                change roles.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {/* SEARCH */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <Input
+                  placeholder="Search by username, name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="max-w-md"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => setSearch('')}
+                  disabled={!search}
+                >
+                  Clear
+                </Button>
+              </div>
+
+              {/* TABLE */}
+              <div className="overflow-x-auto border rounded-lg bg-white dark:bg-gray-900">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        Username
+                      </th>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        Name
+                      </th>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        Email
+                      </th>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        Role
+                      </th>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        Country
+                      </th>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        XP
+                      </th>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        Created
+                      </th>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        Change Role
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {isLoadingUsers && (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          className="px-4 py-6 text-center text-gray-500"
+                        >
+                          Loading users...
+                        </td>
+                      </tr>
+                    )}
+
+                    {!isLoadingUsers && filteredUsers.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          className="px-4 py-6 text-center text-gray-500"
+                        >
+                          No users found.
+                        </td>
+                      </tr>
+                    )}
+
+                    {!isLoadingUsers &&
+                      filteredUsers.map((u) => (
+                        <tr key={u.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 font-medium">
+                            {u.username}
+                          </td>
+                          <td className="px-4 py-2">
+                            {u.full_name || <span className="text-gray-400">-</span>}
+                          </td>
+                          <td className="px-4 py-2">{u.email}</td>
+                          <td className="px-4 py-2">
+                            <Badge variant={getRoleBadgeVariant(u.role)}>
+                              {u.role}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-2">
+                            {u.country || (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2">{u.xp_total ?? 0}</td>
+                          <td className="px-4 py-2">
+                            {u.created_at ? formatDate(u.created_at) : '-'}
+                          </td>
+                          <td className="px-4 py-2">
+                            {isSuperAdmin ? (
+                              <Select
+                                disabled={updatingUserId === u.id}
+                                value={
+                                  (['Super Admin', 'Admin', 'Member'].includes(
+                                    u.role
+                                  )
+                                    ? u.role
+                                    : 'Member') as 'Super Admin' | 'Admin' | 'Member'
+                                }
+                                onValueChange={(value) =>
+                                  handleChangeRole(
+                                    u.id,
+                                    value as 'Super Admin' | 'Admin' | 'Member'
+                                  )
+                                }
+                              >
+                                <SelectTrigger className="w-[140px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Member">Member</SelectItem>
+                                  <SelectItem value="Admin">Admin</SelectItem>
+                                  <SelectItem value="Super Admin">
+                                    Super Admin
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <span className="text-xs text-gray-400">
+                                View only
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
 
