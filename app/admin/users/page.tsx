@@ -29,16 +29,21 @@ type AdminUser = {
   created_at: string;
 };
 
+type SortKey = 'username' | 'role' | 'country' | 'xp_total' | 'created_at';
+type SortDirection = 'asc' | 'desc';
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+
+  const [sortKey, setSortKey] = useState<SortKey>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // 1) Proteção básica de rota no client
   useEffect(() => {
@@ -75,12 +80,10 @@ export default function AdminUsersPage() {
             variant: 'destructive',
           });
           setUsers([]);
-          setFilteredUsers([]);
           return;
         }
 
         setUsers(data.users || []);
-        setFilteredUsers(data.users || []);
       } catch (err) {
         console.error('Unexpected error fetching admin users:', err);
         toast({
@@ -93,33 +96,69 @@ export default function AdminUsersPage() {
       }
     };
 
-    // só tenta carregar se tiver user válido
     if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
       fetchUsers();
     }
   }, [user, getToken, toast]);
 
-  // 3) Filtro por texto
-  useEffect(() => {
+  // 3) Filtro + ordenação (tudo num useMemo)
+  const filteredAndSortedUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) {
-      setFilteredUsers(users);
-      return;
+    let list = [...users];
+
+    if (term) {
+      list = list.filter((u) => {
+        const username = u.username?.toLowerCase() ?? '';
+        const name = u.full_name?.toLowerCase() ?? '';
+        const email = u.email?.toLowerCase() ?? '';
+        return (
+          username.includes(term) ||
+          name.includes(term) ||
+          email.includes(term)
+        );
+      });
     }
 
-    const next = users.filter((u) => {
-      const username = u.username?.toLowerCase() ?? '';
-      const name = u.full_name?.toLowerCase() ?? '';
-      const email = u.email?.toLowerCase() ?? '';
-      return (
-        username.includes(term) ||
-        name.includes(term) ||
-        email.includes(term)
-      );
+    list.sort((a, b) => {
+      let valA: string | number = '';
+      let valB: string | number = '';
+
+      switch (sortKey) {
+        case 'username':
+          valA = a.username?.toLowerCase() ?? '';
+          valB = b.username?.toLowerCase() ?? '';
+          break;
+        case 'role':
+          valA = a.role?.toLowerCase() ?? '';
+          valB = b.role?.toLowerCase() ?? '';
+          break;
+        case 'country':
+          valA = a.country?.toLowerCase() ?? '';
+          valB = b.country?.toLowerCase() ?? '';
+          break;
+        case 'xp_total':
+          valA = a.xp_total ?? 0;
+          valB = b.xp_total ?? 0;
+          break;
+        case 'created_at':
+        default:
+          valA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          valB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          break;
+      }
+
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortDirection === 'asc' ? valA - valB : valB - valA;
+      }
+
+      const strA = String(valA);
+      const strB = String(valB);
+      const result = strA.localeCompare(strB);
+      return sortDirection === 'asc' ? result : -result;
     });
 
-    setFilteredUsers(next);
-  }, [search, users]);
+    return list;
+  }, [users, search, sortKey, sortDirection]);
 
   const stats = useMemo(() => {
     const total = users.length;
@@ -146,7 +185,6 @@ export default function AdminUsersPage() {
       return;
     }
 
-    // não deixamos remover o próprio Super Admin
     if (user && user.id === userId && newRole !== 'Super Admin') {
       toast({
         title: 'Operation not allowed',
@@ -180,11 +218,7 @@ export default function AdminUsersPage() {
         return;
       }
 
-      // atualizar estado local
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
-      );
-      setFilteredUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
       );
 
@@ -207,11 +241,11 @@ export default function AdminUsersPage() {
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'Super Admin':
-        return 'destructive' as const; // vermelho
+        return 'destructive' as const;
       case 'Admin':
-        return 'secondary' as const; // cinza
+        return 'secondary' as const;
       default:
-        return 'outline' as const; // branco
+        return 'outline' as const;
     }
   };
 
@@ -223,7 +257,24 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Enquanto está a carregar ou user não pronto, mostramos só o layout vazio
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  };
+
+  const renderSortIcon = (key: SortKey) => {
+    if (sortKey !== key) return <span className="ml-1 text-xs text-gray-400">↕</span>;
+    return (
+      <span className="ml-1 text-xs text-gray-600">
+        {sortDirection === 'asc' ? '▲' : '▼'}
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -327,8 +378,14 @@ export default function AdminUsersPage() {
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Username
+                      <th
+                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('username')}
+                      >
+                        <span className="inline-flex items-center">
+                          Username
+                          {renderSortIcon('username')}
+                        </span>
                       </th>
                       <th className="px-4 py-2 text-left font-semibold">
                         Name
@@ -336,17 +393,41 @@ export default function AdminUsersPage() {
                       <th className="px-4 py-2 text-left font-semibold">
                         Email
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Role
+                      <th
+                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('role')}
+                      >
+                        <span className="inline-flex items-center">
+                          Role
+                          {renderSortIcon('role')}
+                        </span>
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Country
+                      <th
+                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('country')}
+                      >
+                        <span className="inline-flex items-center">
+                          Country
+                          {renderSortIcon('country')}
+                        </span>
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        XP
+                      <th
+                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('xp_total')}
+                      >
+                        <span className="inline-flex items-center">
+                          XP
+                          {renderSortIcon('xp_total')}
+                        </span>
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Created
+                      <th
+                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('created_at')}
+                      >
+                        <span className="inline-flex items-center">
+                          Created
+                          {renderSortIcon('created_at')}
+                        </span>
                       </th>
                       <th className="px-4 py-2 text-left font-semibold">
                         Change Role
@@ -365,7 +446,7 @@ export default function AdminUsersPage() {
                       </tr>
                     )}
 
-                    {!isLoadingUsers && filteredUsers.length === 0 && (
+                    {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
                       <tr>
                         <td
                           colSpan={8}
@@ -377,13 +458,15 @@ export default function AdminUsersPage() {
                     )}
 
                     {!isLoadingUsers &&
-                      filteredUsers.map((u) => (
+                      filteredAndSortedUsers.map((u) => (
                         <tr key={u.id} className="hover:bg-gray-50">
                           <td className="px-4 py-2 font-medium">
                             {u.username}
                           </td>
                           <td className="px-4 py-2">
-                            {u.full_name || <span className="text-gray-400">-</span>}
+                            {u.full_name || (
+                              <span className="text-gray-400">-</span>
+                            )}
                           </td>
                           <td className="px-4 py-2">{u.email}</td>
                           <td className="px-4 py-2">
