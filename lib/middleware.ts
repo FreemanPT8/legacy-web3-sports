@@ -6,13 +6,34 @@ export interface AuthenticatedRequest extends NextRequest {
   user?: JWTPayload;
 }
 
-export async function authenticateRequest(request: NextRequest): Promise<{
+/**
+ * Tenta autenticar o request lendo o token:
+ * 1) do header Authorization: Bearer <token>
+ * 2) dos cookies: auth_token, token, access_token
+ */
+export async function authenticateRequest(
+  request: NextRequest
+): Promise<{
   authenticated: boolean;
   user: JWTPayload | null;
   error?: string;
 }> {
+  // 1) Tentar via Authorization header
   const authHeader = request.headers.get('authorization');
-  const token = extractTokenFromHeader(authHeader);
+  let token = extractTokenFromHeader(authHeader);
+
+  // 2) Fallback: tentar via cookies (auth_token / token / access_token)
+  if (!token) {
+    const possibleCookieNames = ['auth_token', 'token', 'access_token'];
+
+    for (const name of possibleCookieNames) {
+      const cookieValue = request.cookies.get(name)?.value;
+      if (cookieValue) {
+        token = cookieValue;
+        break;
+      }
+    }
+  }
 
   if (!token) {
     return {
@@ -58,7 +79,9 @@ export async function authenticateRequest(request: NextRequest): Promise<{
   };
 }
 
-export async function requireAuth(request: NextRequest): Promise<{
+export async function requireAuth(
+  request: NextRequest
+): Promise<{
   success: boolean;
   user?: JWTPayload;
   response?: NextResponse;
@@ -81,7 +104,9 @@ export async function requireAuth(request: NextRequest): Promise<{
   };
 }
 
-export async function requireAdmin(request: NextRequest): Promise<{
+export async function requireAdmin(
+  request: NextRequest
+): Promise<{
   success: boolean;
   user?: JWTPayload;
   response?: NextResponse;
@@ -94,6 +119,7 @@ export async function requireAdmin(request: NextRequest): Promise<{
 
   const user = authResult.user!;
 
+  // Atenção: aqui usamos exatamente os valores da coluna "role" em users
   if (user.role !== 'Super Admin' && user.role !== 'Admin') {
     return {
       success: false,
@@ -110,15 +136,30 @@ export async function requireAdmin(request: NextRequest): Promise<{
   };
 }
 
+/**
+ * Helper opcional para extrair só o userId de um request,
+ * usado em algumas rotas.
+ */
 export function getUserIdFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');
-  const token = extractTokenFromHeader(authHeader);
+  let token = extractTokenFromHeader(authHeader);
+
+  if (!token) {
+    const possibleCookieNames = ['auth_token', 'token', 'access_token'];
+    for (const name of possibleCookieNames) {
+      const cookieValue = request.cookies.get(name)?.value;
+      if (cookieValue) {
+        token = cookieValue;
+        break;
+      }
+    }
+  }
 
   if (!token) return null;
 
   try {
     const base64Payload = token.split('.')[1];
-    const payload = JSON.parse(atob(base64Payload));
+    const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
     return payload.userId || null;
   } catch {
     return null;
