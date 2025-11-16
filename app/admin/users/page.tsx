@@ -29,7 +29,14 @@ type AdminUser = {
   created_at: string;
 };
 
-type SortKey = 'username' | 'role' | 'country' | 'xp_total' | 'created_at';
+type SortKey =
+  | 'username'
+  | 'full_name'
+  | 'email'
+  | 'role'
+  | 'country'
+  | 'xp_total'
+  | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
 export default function AdminUsersPage() {
@@ -41,11 +48,12 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // 1) Proteção básica de rota no client
+  // Proteção básica da rota no client
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -57,7 +65,7 @@ export default function AdminUsersPage() {
     }
   }, [user, loading, router]);
 
-  // 2) Buscar lista de utilizadores da API admin
+  // Buscar lista de utilizadores
   useEffect(() => {
     const fetchUsers = async () => {
       setIsLoadingUsers(true);
@@ -101,7 +109,7 @@ export default function AdminUsersPage() {
     }
   }, [user, getToken, toast]);
 
-  // 3) Filtro + ordenação (tudo num useMemo)
+  // Filtro + ordenação
   const filteredAndSortedUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
     let list = [...users];
@@ -127,6 +135,14 @@ export default function AdminUsersPage() {
         case 'username':
           valA = a.username?.toLowerCase() ?? '';
           valB = b.username?.toLowerCase() ?? '';
+          break;
+        case 'full_name':
+          valA = a.full_name?.toLowerCase() ?? '';
+          valB = b.full_name?.toLowerCase() ?? '';
+          break;
+        case 'email':
+          valA = a.email?.toLowerCase() ?? '';
+          valB = b.email?.toLowerCase() ?? '';
           break;
         case 'role':
           valA = a.role?.toLowerCase() ?? '';
@@ -171,7 +187,7 @@ export default function AdminUsersPage() {
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
-  // 4) Atualizar role de um utilizador
+  // Atualizar role
   const handleChangeRole = async (
     userId: string,
     newRole: 'Super Admin' | 'Admin' | 'Member'
@@ -238,6 +254,79 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Apagar utilizador
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (!isSuperAdmin) {
+      toast({
+        title: 'Not allowed',
+        description: 'Only Super Admins can delete users.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (user && user.id === userId) {
+      toast({
+        title: 'Operation not allowed',
+        description: "You can't delete your own account from here.",
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const confirmation = window.prompt(
+      `Type "delete" to permanently remove user "${username}". This action cannot be undone.`
+    );
+
+    if (confirmation !== 'delete') {
+      toast({
+        title: 'Deletion cancelled',
+        description: 'User was not deleted.',
+      });
+      return;
+    }
+
+    try {
+      setDeletingUserId(userId);
+      const token = getToken();
+
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast({
+          title: 'Error deleting user',
+          description: data.error || 'Could not delete user.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+
+      toast({
+        title: 'User deleted',
+        description: `User "${username}" has been removed.`,
+      });
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      toast({
+        title: 'Network error',
+        description: 'Could not delete user. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'Super Admin':
@@ -267,7 +356,8 @@ export default function AdminUsersPage() {
   };
 
   const renderSortIcon = (key: SortKey) => {
-    if (sortKey !== key) return <span className="ml-1 text-xs text-gray-400">↕</span>;
+    if (sortKey !== key)
+      return <span className="ml-1 text-xs text-gray-400">↕</span>;
     return (
       <span className="ml-1 text-xs text-gray-600">
         {sortDirection === 'asc' ? '▲' : '▼'}
@@ -352,7 +442,7 @@ export default function AdminUsersPage() {
               <CardTitle>User Management</CardTitle>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Promote / demote Admins and Super Admins. Only Super Admins can
-                change roles.
+                change roles or delete users.
               </p>
             </CardHeader>
             <CardContent>
@@ -387,11 +477,23 @@ export default function AdminUsersPage() {
                           {renderSortIcon('username')}
                         </span>
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Name
+                      <th
+                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('full_name')}
+                      >
+                        <span className="inline-flex items-center">
+                          Name
+                          {renderSortIcon('full_name')}
+                        </span>
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Email
+                      <th
+                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('email')}
+                      >
+                        <span className="inline-flex items-center">
+                          Email
+                          {renderSortIcon('email')}
+                        </span>
                       </th>
                       <th
                         className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
@@ -432,13 +534,16 @@ export default function AdminUsersPage() {
                       <th className="px-4 py-2 text-left font-semibold">
                         Change Role
                       </th>
+                      <th className="px-4 py-2 text-left font-semibold">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {isLoadingUsers && (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={9}
                           className="px-4 py-6 text-center text-gray-500"
                         >
                           Loading users...
@@ -449,7 +554,7 @@ export default function AdminUsersPage() {
                     {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={9}
                           className="px-4 py-6 text-center text-gray-500"
                         >
                           No users found.
@@ -515,6 +620,24 @@ export default function AdminUsersPage() {
                             ) : (
                               <span className="text-xs text-gray-400">
                                 View only
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2">
+                            {isSuperAdmin ? (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={deletingUserId === u.id}
+                                onClick={() =>
+                                  handleDeleteUser(u.id, u.username)
+                                }
+                              >
+                                {deletingUserId === u.id ? 'Deleting...' : 'Delete'}
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-gray-400">
+                                -
                               </span>
                             )}
                           </td>
