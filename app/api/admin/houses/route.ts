@@ -4,6 +4,38 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
+type HouseRow = {
+  id: string;
+  sport_id: string | null;
+  country_code: string | null;
+  status: string | null;
+  name_i18n: Record<string, string> | null;
+  created_at: string | null;
+};
+
+type HouseHeadRow = {
+  house_id: string;
+  admin_id: string;
+};
+
+type AdminAssignmentRow = {
+  id: string;
+  user_id: string;
+};
+
+type UserRow = {
+  id: string;
+  username: string | null;
+  full_name?: string | null;
+  role: string | null;
+  avatar_url?: string | null;
+};
+
+type HouseModeratorRow = {
+  house_id: string;
+  user_id: string;
+};
+
 export async function GET(request: NextRequest) {
   // 1) Garante que é Admin / Super Admin
   const authResult = await requireAdmin(request);
@@ -19,44 +51,188 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Supabase error in /api/admin/houses:', error);
+      console.error('Supabase error in /api/admin/houses (houses):', error);
       return NextResponse.json(
         { success: false, error: 'Supabase error loading houses' },
         { status: 500 }
       );
     }
 
-    // 3) Mapear para o formato que o frontend espera
-    const houses = (data ?? []).map((row: any) => {
+    const houses = (data ?? []) as HouseRow[];
+    if (houses.length === 0) {
+      return NextResponse.json({ success: true, houses: [] }, { status: 200 });
+    }
+
+    const houseIds = houses.map((h) => h.id);
+
+    // 3) Heads das houses
+    const { data: headsData, error: headsError } = await supabaseAdmin
+      .from('house_heads')
+      .select('house_id, admin_id')
+      .in('house_id', houseIds);
+
+    if (headsError) {
+      console.error('Supabase error in /api/admin/houses (heads):', headsError);
+      return NextResponse.json(
+        { success: false, error: 'Erro ao carregar Heads das Houses.' },
+        { status: 500 }
+      );
+    }
+
+    const heads = (headsData ?? []) as HouseHeadRow[];
+
+    // 4) Admin assignments dos heads
+    const adminIds = Array.from(new Set(heads.map((h) => h.admin_id)));
+
+    let adminAssignments: AdminAssignmentRow[] = [];
+    if (adminIds.length > 0) {
+      const { data: adminAssignData, error: adminAssignError } =
+        await supabaseAdmin
+          .from('admin_assignments')
+          .select('id, user_id')
+          .in('id', adminIds);
+
+      if (adminAssignError) {
+        console.error(
+          'Supabase error in /api/admin/houses (admin_assignments):',
+          adminAssignError
+        );
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Erro ao carregar Admin Assignments.',
+          },
+          { status: 500 }
+        );
+      }
+
+      adminAssignments = (adminAssignData ?? []) as AdminAssignmentRow[];
+    }
+
+    // 5) Moderadores por house
+    const { data: modsData, error: modsError } = await supabaseAdmin
+      .from('house_moderators')
+      .select('house_id, user_id')
+      .in('house_id', houseIds);
+
+    if (modsError) {
+      console.error(
+        'Supabase error in /api/admin/houses (moderators):',
+        modsError
+      );
+      return NextResponse.json(
+        { success: false, error: 'Erro ao carregar moderadores das Houses.' },
+        { status: 500 }
+      );
+    }
+
+    const moderatorsRows = (modsData ?? []) as HouseModeratorRow[];
+
+    // 6) Carregar utilizadores (heads + moderadores)
+    const headUserIds = adminAssignments.map((a) => a.user_id);
+    const moderatorUserIds = moderatorsRows.map((m) => m.user_id);
+    const allUserIds = Array.from(new Set([...headUserIds, ...moderatorUserIds]));
+
+    let users: UserRow[] = [];
+    if (allUserIds.length > 0) {
+      const { data: usersData, error: usersError } = await supabaseAdmin
+        .from('users')
+        .select('id, username, full_name, role, avatar_url')
+        .in('id', allUserIds);
+
+      if (usersError) {
+        console.error(
+          'Supabase error in /api/admin/houses (users):',
+          usersError
+        );
+        return NextResponse.json(
+          { success: false, error: 'Erro ao carregar utilizadores.' },
+          { status: 500 }
+        );
+      }
+
+      users = (usersData ?? []) as UserRow[];
+    }
+
+    const userById = new Map<string, UserRow>();
+    for (const u of users) {
+      userById.set(u.id, u);
+    }
+
+    const headByHouse = new Map<string, HouseHeadRow>();
+    for (const h of heads) {
+      headByHouse.set(h.house_id, h);
+    }
+
+    const adminAssignById = new Map<string, AdminAssignmentRow>();
+    for (const a of adminAssignments) {
+      adminAssignById.set(a.id, a);
+    }
+
+    const moderatorsByHouse = new Map<string, HouseModeratorRow[]>();
+    for (const m of moderatorsRows) {
+      const arr = moderatorsByHouse.get(m.house_id) ?? [];
+      arr.push(m);
+      moderatorsByHouse.set(m.house_id, arr);
+    }
+
+    const result = houses.map((row) => {
       const name_i18n = row.name_i18n || {};
 
       const status: HouseStatus =
         row.status === 'active' || row.status === 'under_construction'
-          ? row.status
+          ? (row.status as HouseStatus)
           : 'development';
 
       const title =
-        name_i18n.en ||
-        name_i18n.pt ||
-        name_i18n.es ||
-        name_i18n.fr ||
-        name_i18n.de ||
-        name_i18n.it ||
+        (name_i18n.en as string | undefined) ||
+        (name_i18n.pt as string | undefined) ||
+        (name_i18n.es as string | undefined) ||
+        (name_i18n.fr as string | undefined) ||
+        (name_i18n.de as string | undefined) ||
+        (name_i18n.it as string | undefined) ||
         'Unnamed House';
+
+      // Head
+      const headRow = headByHouse.get(row.id) || null;
+      let headUser: UserRow | null = null;
+      if (headRow) {
+        const admin = adminAssignById.get(headRow.admin_id) || null;
+        if (admin) {
+          headUser = userById.get(admin.user_id) || null;
+        }
+      }
+
+      // Moderators count
+      const mods = moderatorsByHouse.get(row.id) || [];
+      const moderators_count = mods.reduce((acc, mod) => {
+        if (userById.has(mod.user_id)) return acc + 1;
+        return acc;
+      }, 0);
 
       return {
         id: row.id as string,
-        sport_name: title as string,           // usamos o name_i18n
-        sport_code: row.sport_id ?? null,      // por agora só o id; depois trocamos pelo código real do desporto
-        country_code: row.country_code as string,
+        sport_name: title as string,
+        sport_code: (row.sport_id as string | null) ?? null,
+        country_code: (row.country_code as string | null) ?? '',
         status,
         created_at: row.created_at as string,
-        head: null,                            // vamos tratar disto mais tarde
-        moderators_count: 0,                   // idem
+        head: headUser
+          ? {
+              user_id: headUser.id,
+              username: headUser.username ?? null,
+              full_name: headUser.full_name ?? null,
+              avatar_url: headUser.avatar_url ?? null,
+            }
+          : null,
+        moderators_count,
       };
     });
 
-    return NextResponse.json({ success: true, houses });
+    return NextResponse.json(
+      { success: true, houses: result },
+      { status: 200 }
+    );
   } catch (err) {
     console.error('Unexpected error in /api/admin/houses:', err);
     return NextResponse.json(
