@@ -1,57 +1,50 @@
-import { SignJWT, jwtVerify } from 'jose';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
-const JWT_EXPIRATION = '24h';
-
-const secret = new TextEncoder().encode(JWT_SECRET);
+// lib/jwt.ts
+import jwt from 'jsonwebtoken';
 
 export interface JWTPayload {
   userId: string;
   username: string;
   email: string;
-  role: 'Super Admin' | 'Admin' | 'Member';
+  role: string;
   xp_total: number;
-  [key: string]: any;
 }
 
-export async function signToken(payload: JWTPayload): Promise<string> {
-  try {
-    const token = await new SignJWT(payload)
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime(JWT_EXPIRATION)
-      .setIssuer('legacy-platform')
-      .setAudience('legacy-users')
-      .sign(secret);
+const JWT_SECRET = process.env.JWT_SECRET;
 
-    return token;
-  } catch (error) {
-    console.error('Error signing token:', error);
-    throw new Error('Failed to generate authentication token');
+if (!JWT_SECRET) {
+  // Isto só corre no servidor, por isso é OK lançar erro aqui
+  console.warn(
+    '[JWT] JWT_SECRET is not set in environment variables. Tokens will not work correctly.'
+  );
+}
+
+// Cria um token JWT
+export function signToken(
+  payload: JWTPayload,
+  expiresIn: string | number = '7d'
+): string {
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured on the server');
   }
+
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
+// Verifica um token JWT e devolve o payload ou null
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
+  if (!JWT_SECRET) return null;
   try {
-    const { payload } = await jwtVerify(token, secret, {
-      issuer: 'legacy-platform',
-      audience: 'legacy-users',
-    });
-
-    return payload as unknown as JWTPayload;
-  } catch (error) {
-    console.error('Token verification failed:', error);
+    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+  } catch {
     return null;
   }
 }
 
-export function extractTokenFromHeader(authHeader: string | null): string | null {
-  if (!authHeader) return null;
-
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    return null;
+// Extrai o token do header Authorization
+export function extractTokenFromHeader(header: string | null): string | null {
+  if (!header) return null;
+  if (header.startsWith('Bearer ')) {
+    return header.slice('Bearer '.length).trim();
   }
-
-  return parts[1];
+  return header.trim() || null;
 }
