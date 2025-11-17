@@ -426,15 +426,6 @@ export default function AdminHouseDetailPage() {
     );
   }
 
-  const createdAtFormatted = useMemo(() => {
-    if (!house.created_at) return '';
-    try {
-      return format(new Date(house.created_at), 'yyyy-MM-dd HH:mm');
-    } catch {
-      return house.created_at;
-    }
-  }, [house.created_at]);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="container mx-auto py-10 space-y-6">
