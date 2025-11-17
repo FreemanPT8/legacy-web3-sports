@@ -1,5 +1,4 @@
 // app/api/auth/login/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -19,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1) Buscar o utilizador ao Supabase (username OU email)
+    // 1) Buscar o utilizador ao Supabase (por username OU email)
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select(
@@ -33,8 +32,8 @@ export async function POST(request: NextRequest) {
           'country',
           'avatar_url',
           'streak_count',
-          // APENAS a coluna correta
-          'password_hash'
+          // apenas a coluna correta que existe na tua DB
+          'password_hash',
         ].join(', ')
       )
       .or(`username.eq.${username},email.eq.${username}`)
@@ -58,42 +57,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2) Validar password hash
-    const hash: string | null =
-      (user as any).password_hash ?? null;
+    // 2) Obter o hash da password
+    const hash: string | null = (user as any).password_hash ?? null;
 
     if (!hash) {
-      console.error('User record has no password_hash column.');
+      console.error(
+        'User record has no password_hash. Check your users table columns.'
+      );
       return NextResponse.json(
         {
           success: false,
-          error: 'Authentication misconfigured: missing password_hash.',
+          error:
+            'Authentication is misconfigured on the server (no password hash).',
         },
         { status: 500 }
       );
     }
 
-    const isValid = await bcrypt.compare(password, hash);
+    // 3) Verificar password
+    const passwordOk = await bcrypt.compare(password, hash);
 
-    if (!isValid) {
+    if (!passwordOk) {
       return NextResponse.json(
-        { success: false, error: 'Invalid password' },
+        { success: false, error: 'Invalid username or password' },
         { status: 401 }
       );
     }
 
-    // 3) Criar JWT
+    // 4) Construir payload do token (respeitando o tipo JWTPayload)
     const payload: JWTPayload = {
-      id: user.id,
-      email: user.email,
+      userId: user.id, // <- aqui usamos userId, não id
       username: user.username,
+      email: user.email,
       role: user.role ?? 'Member',
       xp_total: user.xp_total ?? 0,
     };
 
     const token = signToken(payload, '7d');
 
-    // 4) User que o frontend espera
+    // 5) Construir objeto user que o frontend espera
     const safeUser = {
       id: user.id,
       username: user.username,
