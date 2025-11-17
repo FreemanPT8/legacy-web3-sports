@@ -1,0 +1,299 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Loader2, Trophy, ArrowLeft } from 'lucide-react';
+
+type HouseStatus = 'development' | 'under_construction' | 'active';
+
+type SportOption = {
+  id: string;
+  code: string | null;
+  name: string;
+};
+
+type SportsApiResponse = {
+  success: boolean;
+  error?: string;
+  sports?: SportOption[];
+};
+
+type CreateHouseResponse = {
+  success: boolean;
+  error?: string;
+};
+
+const statusOptions: { value: HouseStatus; label: string }[] = [
+  { value: 'active', label: 'Active' },
+  { value: 'under_construction', label: 'Under construction' },
+  { value: 'development', label: 'In development' },
+];
+
+export default function CreateHousePage() {
+  const router = useRouter();
+  const { user, getToken, loading: authLoading } = useAuth();
+
+  const [sports, setSports] = useState<SportOption[]>([]);
+  const [loadingSports, setLoadingSports] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [sportId, setSportId] = useState('');
+  const [countryCode, setCountryCode] = useState('PT');
+  const [status, setStatus] = useState<HouseStatus>('development');
+
+  const [creating, setCreating] = useState(false);
+
+  // Proteção de rota
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user || (user.role !== 'Super Admin' && user.role !== 'Admin')) {
+      router.push('/login');
+      return;
+    }
+  }, [authLoading, user, router]);
+
+  // Carregar lista de desportos
+  useEffect(() => {
+    const fetchSports = async () => {
+      setLoadingSports(true);
+      setError(null);
+
+      try {
+        const res = await fetch('/api/sports?locale=en');
+        const data: SportsApiResponse = await res.json();
+
+        if (!res.ok || !data.success || !data.sports) {
+          setError(data.error || 'Error loading sports list');
+          setLoadingSports(false);
+          return;
+        }
+
+        setSports(data.sports);
+      } catch (err) {
+        console.error('Error loading sports for House creation:', err);
+        setError('Unexpected error while loading sports');
+      } finally {
+        setLoadingSports(false);
+      }
+    };
+
+    fetchSports();
+  }, []);
+
+  const selectedSport = useMemo(
+    () => sports.find((s) => s.id === sportId) || null,
+    [sports, sportId]
+  );
+
+  const previewName = useMemo(() => {
+    if (!selectedSport) return '';
+    const base =
+      selectedSport.name || selectedSport.code || 'Unknown Sport';
+    const country = countryCode ? countryCode.toUpperCase() : '';
+    return `House of ${base} ${country}`.trim();
+  }, [selectedSport, countryCode]);
+
+  const handleCreate = async () => {
+    if (!sportId || !countryCode) {
+      setError('Please select a sport and define a country code.');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      setError(null);
+
+      const token = getToken();
+      if (!token) {
+        setError('No authentication token provided');
+        setCreating(false);
+        return;
+      }
+
+      const res = await fetch('/api/admin/houses', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sportId,
+          countryCode,
+          status,
+        }),
+      });
+
+      const data: CreateHouseResponse = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Error creating House of Sports');
+        setCreating(false);
+        return;
+      }
+
+      // Voltar para a lista de Houses
+      router.push('/admin/houses');
+    } catch (err) {
+      console.error('Error creating House of Sports:', err);
+      setError('Unexpected error while creating House of Sports');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (authLoading) return null;
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <button
+            onClick={() => router.push('/admin/houses')}
+            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Houses
+          </button>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Create House of Sports
+              </CardTitle>
+              <CardDescription>
+                Define the sport, country and initial status. The name will be
+                generated automatically from the sport + country.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {error && (
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                  {error}
+                </div>
+              )}
+
+              {/* SPORT */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Sport <span className="text-red-500">*</span>
+                </label>
+                {loadingSports ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading sports...
+                  </div>
+                ) : (
+                  <Select
+                    value={sportId}
+                    onValueChange={(val) => setSportId(val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a sport" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sports.map((sport) => (
+                        <SelectItem key={sport.id} value={sport.id}>
+                          {sport.name}{' '}
+                          {sport.code ? `(${sport.code.toUpperCase()})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* COUNTRY */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Country code (ISO) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  maxLength={2}
+                  value={countryCode}
+                  onChange={(e) =>
+                    setCountryCode(e.target.value.toUpperCase())
+                  }
+                  placeholder="ex: PT, ES, US..."
+                />
+                <p className="text-xs text-gray-500">
+                  For now we use the 2-letter ISO country code (e.g., PT, ES,
+                  US).
+                </p>
+              </div>
+
+              {/* STATUS */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Initial status</label>
+                <Select
+                  value={status}
+                  onValueChange={(val) => setStatus(val as HouseStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* PREVIEW DO NOME */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Preview name</label>
+                <div className="border rounded-md px-3 py-2 bg-gray-50 text-sm">
+                  {previewName || (
+                    <span className="text-gray-400">
+                      Select a sport and country to see the generated House
+                      name.
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <Button
+                  onClick={handleCreate}
+                  disabled={creating || !sportId || !countryCode}
+                >
+                  {creating && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
+                  Create House
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
