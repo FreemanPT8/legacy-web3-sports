@@ -1,4 +1,5 @@
 // app/api/auth/login/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -18,8 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1) Buscar o utilizador ao Supabase
-    // Tentamos por username OU email
+    // 1) Buscar o utilizador ao Supabase (username OU email)
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select(
@@ -33,9 +33,8 @@ export async function POST(request: NextRequest) {
           'country',
           'avatar_url',
           'streak_count',
-          // tentamos cobrir duas hipóteses de coluna de password
-          'password_hash',
-          'password',
+          // APENAS a coluna correta
+          'password_hash'
         ].join(', ')
       )
       .or(`username.eq.${username},email.eq.${username}`)
@@ -46,60 +45,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Supabase error: ${(error as any)?.message ?? 'unknown'}`,
+          error: `Supabase error: ${error.message ?? 'unknown'}`,
         },
         { status: 500 }
       );
     }
 
     if (!user) {
-      // Não revelamos se é username ou password
       return NextResponse.json(
-        { success: false, error: 'Invalid username or password' },
-        { status: 401 }
+        { success: false, error: 'User not found' },
+        { status: 404 }
       );
     }
 
-    // 2) Determinar qual campo contém o hash da password
+    // 2) Validar password hash
     const hash: string | null =
-      (user as any).password_hash || (user as any).password || null;
+      (user as any).password_hash ?? null;
 
     if (!hash) {
-      console.error(
-        'User record has no password hash. Check your users table columns.'
-      );
+      console.error('User record has no password_hash column.');
       return NextResponse.json(
         {
           success: false,
-          error:
-            'Authentication is misconfigured on the server (no password hash).',
+          error: 'Authentication misconfigured: missing password_hash.',
         },
         { status: 500 }
       );
     }
 
-    // 3) Verificar password
-    const passwordOk = await bcrypt.compare(password, hash);
+    const isValid = await bcrypt.compare(password, hash);
 
-    if (!passwordOk) {
+    if (!isValid) {
       return NextResponse.json(
-        { success: false, error: 'Invalid username or password' },
+        { success: false, error: 'Invalid password' },
         { status: 401 }
       );
     }
 
-    // 4) Construir payload do token
+    // 3) Criar JWT
     const payload: JWTPayload = {
-      userId: user.id,
-      username: user.username,
+      id: user.id,
       email: user.email,
+      username: user.username,
       role: user.role ?? 'Member',
       xp_total: user.xp_total ?? 0,
     };
 
     const token = signToken(payload, '7d');
 
-    // 5) Construir objeto user que o frontend espera
+    // 4) User que o frontend espera
     const safeUser = {
       id: user.id,
       username: user.username,
