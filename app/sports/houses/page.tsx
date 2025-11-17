@@ -1,23 +1,22 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-
 
 type HouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
 interface House {
   id: string;
-  title: string; // ex: "House of Sports Climbing Portugal"
+  title: string;
   sport_name: string | null;
   country_code: string;
   status: HouseStatus;
   head_username: string | null;
   head_full_name: string | null;
   moderators_count: number;
-  created_at: string;
+  created_at: string | null;
 }
 
 const STATUS_LABELS: Record<HouseStatus, string> = {
@@ -36,7 +35,7 @@ const STATUS_BADGE_CLASSES: Record<HouseStatus, string> = {
 };
 
 export default function HousesOfSportsPage() {
-  const { user, getToken } = useAuth();
+  const router = useRouter();
   const [houses, setHouses] = useState<House[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,28 +43,14 @@ export default function HousesOfSportsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | HouseStatus>('ALL');
 
-  // 1) Carregar Houses a partir da API admin
+  // 1) Carregar Houses a partir da API pública
   useEffect(() => {
     const fetchHouses = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const token = getToken();
-
-        if (!token) {
-          setError('No authentication token provided');
-          setLoading(false);
-          return;
-        }
-
-        const res = await fetch('/api/admin/houses', {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const res = await fetch('/api/sports/houses?locale=pt');
         const data = await res.json();
 
         if (!res.ok || !data.success) {
@@ -83,14 +68,8 @@ export default function HousesOfSportsPage() {
       }
     };
 
-    // Só tenta carregar se o user existir (estás autenticado)
-    if (user) {
-      fetchHouses();
-    } else {
-      setLoading(false);
-      setError('You must be logged in as Admin / Super Admin to view Houses.');
-    }
-  }, [user, getToken]);
+    fetchHouses();
+  }, []);
 
   // 2) Aplicar filtros e pesquisa
   const filteredHouses = useMemo(() => {
@@ -126,13 +105,16 @@ export default function HousesOfSportsPage() {
       <main className="flex-1 py-10">
         <div className="max-w-6xl mx-auto px-4">
           {/* Título + descrição */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-              Houses of Sports
-            </h1>
-            <p className="mt-2 text-sm text-gray-600">
-              View and manage Houses, Heads of House and House Moderators.
-            </p>
+          <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                Houses of Sports
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">
+                Discover the Web3 sport communities of LEGACY. Each House has a
+                leader, moderators and its own missions and events.
+              </p>
+            </div>
           </div>
 
           {/* Filtros */}
@@ -203,14 +185,15 @@ export default function HousesOfSportsPage() {
                 <p className="py-6 text-sm text-gray-500">Loading Houses…</p>
               ) : filteredHouses.length === 0 ? (
                 <p className="py-6 text-sm text-gray-500">
-                  No Houses found. Create the first House directly in the
-                  database or via future admin tools.
+                  No Houses found yet. Soon you&apos;ll see the official
+                  communities of each sport here.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-left text-sm">
                     <thead className="border-b border-gray-100 bg-gray-50 text-xs font-semibold uppercase text-gray-500">
                       <tr>
+                        <th className="px-3 py-3">House</th>
                         <th className="px-3 py-3">Sport</th>
                         <th className="px-3 py-3">Country</th>
                         <th className="px-3 py-3">Status</th>
@@ -221,7 +204,13 @@ export default function HousesOfSportsPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {filteredHouses.map((house) => (
-                        <tr key={house.id} className="hover:bg-gray-50/60">
+                        <tr
+                          key={house.id}
+                          className="hover:bg-gray-50/60 cursor-pointer"
+                          onClick={() =>
+                            router.push(`/sports/houses/${house.id}`)
+                          }
+                        >
                           <td className="px-3 py-3 align-top">
                             <div className="flex flex-col">
                               <span className="font-medium text-gray-900">
@@ -231,6 +220,11 @@ export default function HousesOfSportsPage() {
                                 {house.id}
                               </span>
                             </div>
+                          </td>
+                          <td className="px-3 py-3 align-top">
+                            <span className="text-sm text-gray-700">
+                              {house.sport_name || '-'}
+                            </span>
                           </td>
                           <td className="px-3 py-3 align-top">
                             <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-700">
