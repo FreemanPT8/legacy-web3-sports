@@ -581,7 +581,7 @@ export default function AdminHouseDetailPage() {
                       </div>
                       <Button
                         variant="outline"
-                        size="xs"
+                        size="sm"
                         disabled={removingModId === mod.id}
                         onClick={() => handleRemoveModerator(mod.id)}
                       >
