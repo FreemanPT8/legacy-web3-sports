@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import {
   Card,
   CardContent,
@@ -10,9 +12,17 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trophy, UserIcon, Shield, ArrowLeft } from 'lucide-react';
+import { Trophy, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
@@ -33,92 +43,46 @@ interface AdminHouse {
   moderators_count?: number;
 }
 
-interface HeadUser {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  email: string | null;
-  role: string | null;
-  avatar_url: string | null;
-}
-
-interface ModeratorUser {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  email: string | null;
-  role: string | null;
-  avatar_url: string | null;
-}
-
-interface ApiHouseListResponse {
+interface ApiResponse {
   success: boolean;
+  error?: string;
   houses?: AdminHouse[];
-  error?: string;
 }
 
-interface ApiHeadResponse {
-  success: boolean;
-  head: HeadUser | null;
-  error?: string;
-}
-
-interface ApiModeratorsResponse {
-  success: boolean;
-  moderators: ModeratorUser[];
-  error?: string;
-}
-
-interface ApiGenericResponse {
-  success: boolean;
-  error?: string;
-}
+const statusOptions: { value: 'all' | HouseStatus; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'under_construction', label: 'Under construction' },
+  { value: 'development', label: 'In development' },
+];
 
 function StatusBadge({ status }: { status: HouseStatus }) {
-  const map: Record<HouseStatus, { label: string; variant: string }> = {
-    active: { label: 'Active', variant: 'bg-green-100 text-green-800' },
-    under_construction: {
-      label: 'Under construction',
-      variant: 'bg-yellow-100 text-yellow-800',
-    },
-    development: {
-      label: 'In development',
-      variant: 'bg-gray-100 text-gray-800',
-    },
+  const map: Record<
+    HouseStatus,
+    { label: string; variant: 'default' | 'secondary' | 'outline' }
+  > = {
+    active: { label: 'Active', variant: 'default' },
+    under_construction: { label: 'In construction', variant: 'secondary' },
+    development: { label: 'In development', variant: 'outline' },
   };
-
-  const cfg = map[status] ?? map.development;
-
+  const config = map[status];
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.variant}`}
-    >
-      {cfg.label}
-    </span>
+    <Badge variant={config.variant} className="capitalize">
+      {config.label}
+    </Badge>
   );
 }
 
-export default function AdminHouseDetailPage() {
+export default function AdminHousesPage() {
   const router = useRouter();
-  const params = useParams<{ houseId: string }>();
-  const houseId = params?.houseId as string;
+  const { user, getToken, loading: authLoading } = useAuth();
 
-  const { user, loading: authLoading, getToken } = useAuth();
-
-  const [house, setHouse] = useState<AdminHouse | null>(null);
-  const [head, setHead] = useState<HeadUser | null>(null);
-  const [moderators, setModerators] = useState<ModeratorUser[]>([]);
-
+  const [houses, setHouses] = useState<AdminHouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [headUserIdInput, setHeadUserIdInput] = useState('');
-  const [modUserIdInput, setModUserIdInput] = useState('');
-
-  const [savingHead, setSavingHead] = useState(false);
-  const [removingHead, setRemovingHead] = useState(false);
-  const [savingMod, setSavingMod] = useState(false);
-  const [removingModId, setRemovingModId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | HouseStatus>('all');
 
   useEffect(() => {
     if (authLoading) return;
@@ -128,13 +92,7 @@ export default function AdminHouseDetailPage() {
       return;
     }
 
-    if (!houseId) {
-      setError('Invalid House ID');
-      setLoading(false);
-      return;
-    }
-
-    const fetchAll = async () => {
+    const fetchHouses = async () => {
       setLoading(true);
       setError(null);
 
@@ -146,481 +104,227 @@ export default function AdminHouseDetailPage() {
           return;
         }
 
-        const headers: HeadersInit = {
-          Authorization: `Bearer ${token}`,
-        };
-
-        // 1) Buscar lista de Houses e encontrar esta
-        const housesRes = await fetch('/api/admin/houses', {
+        const res = await fetch('/api/admin/houses', {
           method: 'GET',
-          headers,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
 
-        const housesJson: ApiHouseListResponse = await housesRes.json();
+        const data: ApiResponse = await res.json();
 
-        if (!housesJson.success || !housesJson.houses) {
-          setError(housesJson.error || 'Failed to load house');
+        if (!res.ok || !data.success) {
+          setError(data.error || 'Error loading Houses of Sports');
           setLoading(false);
           return;
         }
 
-        const current = housesJson.houses.find((h) => h.id === houseId);
-
-        if (!current) {
-          setError('House not found');
-          setLoading(false);
-          return;
-        }
-
-        setHouse(current);
-
-        // 2) Head atual
-        const headRes = await fetch(`/api/admin/houses/${houseId}/head`, {
-          method: 'GET',
-          headers,
-        });
-
-        const headJson: ApiHeadResponse = await headRes.json();
-        if (headJson.success) {
-          setHead(headJson.head);
-        } else {
-          setError(headJson.error || 'Failed to load head of house');
-        }
-
-        // 3) Moderadores
-        const modsRes = await fetch(
-          `/api/admin/houses/${houseId}/moderators`,
-          {
-            method: 'GET',
-            headers,
-          }
-        );
-
-        const modsJson: ApiModeratorsResponse = await modsRes.json();
-        if (modsJson.success && Array.isArray(modsJson.moderators)) {
-          setModerators(modsJson.moderators);
-        } else if (!modsJson.success) {
-          setError(modsJson.error || 'Failed to load moderators');
-        }
+        setHouses(data.houses || []);
       } catch (err) {
-        console.error('Error loading house detail:', err);
-        setError('Unexpected error loading house details');
+        console.error('Error loading houses in /admin/houses:', err);
+        setError('Unexpected error while loading Houses of Sports');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAll();
-  }, [authLoading, user, getToken, router, houseId]);
+    fetchHouses();
+  }, [authLoading, user, getToken, router]);
 
-  const createdAtFormatted = useMemo(() => {
-    if (!house?.created_at) return '';
-    try {
-      return format(new Date(house.created_at), 'yyyy-MM-dd HH:mm');
-    } catch {
-      return house.created_at;
-    }
-  }, [house?.created_at]);
+  const filtered = useMemo(() => {
+    return houses.filter((house) => {
+      if (statusFilter !== 'all' && house.status !== statusFilter) return false;
 
-  const handlePromoteHead = async () => {
-    if (!headUserIdInput.trim()) {
-      setError('Please provide a userId to promote as Head.');
-      return;
-    }
+      if (!search.trim()) return true;
+      const term = search.toLowerCase();
 
-    try {
-      setSavingHead(true);
-      setError(null);
+      const headName =
+        (house.head?.full_name || '') + ' ' + (house.head?.username || '');
 
-      const token = getToken();
-      if (!token) {
-        setError('No authentication token provided');
-        setSavingHead(false);
-        return;
-      }
-
-      const res = await fetch(`/api/admin/houses/${houseId}/head`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: headUserIdInput.trim() }),
-      });
-
-      const json: ApiHeadResponse = await res.json();
-
-      if (!json.success) {
-        setError(json.error || 'Failed to set Head of House');
-        return;
-      }
-
-      setHead(json.head);
-      setHeadUserIdInput('');
-    } catch (err) {
-      console.error('Error promoting Head of House:', err);
-      setError('Unexpected error while promoting Head of House');
-    } finally {
-      setSavingHead(false);
-    }
-  };
-
-  const handleRemoveHead = async () => {
-    if (!head) return;
-
-    try {
-      setRemovingHead(true);
-      setError(null);
-
-      const token = getToken();
-      if (!token) {
-        setError('No authentication token provided');
-        setRemovingHead(false);
-        return;
-      }
-
-      const res = await fetch(`/api/admin/houses/${houseId}/head`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const json: ApiGenericResponse = await res.json();
-
-      if (!json.success) {
-        setError(json.error || 'Failed to remove Head of House');
-        return;
-      }
-
-      setHead(null);
-    } catch (err) {
-      console.error('Error removing Head of House:', err);
-      setError('Unexpected error while removing Head of House');
-    } finally {
-      setRemovingHead(false);
-    }
-  };
-
-  const handleAddModerator = async () => {
-    if (!modUserIdInput.trim()) {
-      setError('Please provide a userId for the moderator.');
-      return;
-    }
-
-    try {
-      setSavingMod(true);
-      setError(null);
-
-      const token = getToken();
-      if (!token) {
-        setError('No authentication token provided');
-        setSavingMod(false);
-        return;
-      }
-
-      const res = await fetch(
-        `/api/admin/houses/${houseId}/moderators`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userId: modUserIdInput.trim() }),
-        }
+      return (
+        (house.sport_name || '').toLowerCase().includes(term) ||
+        (house.sport_code || '').toLowerCase().includes(term) ||
+        (house.country_code || '').toLowerCase().includes(term) ||
+        headName.toLowerCase().includes(term)
       );
+    });
+  }, [houses, search, statusFilter]);
 
-      const json = (await res.json()) as {
-        success: boolean;
-        error?: string;
-        moderator?: ModeratorUser;
-      };
-
-      if (!json.success) {
-        setError(json.error || 'Failed to add moderator');
-        return;
-      }
-
-      if (json.moderator) {
-        setModerators((prev) => {
-          const exists = prev.some((m) => m.id === json.moderator!.id);
-          if (exists) return prev;
-          return [...prev, json.moderator!];
-        });
-      }
-
-      setModUserIdInput('');
-    } catch (err) {
-      console.error('Error adding moderator:', err);
-      setError('Unexpected error while adding moderator');
-    } finally {
-      setSavingMod(false);
-    }
-  };
-
-  const handleRemoveModerator = async (userId: string) => {
-    try {
-      setRemovingModId(userId);
-      setError(null);
-
-      const token = getToken();
-      if (!token) {
-        setError('No authentication token provided');
-        setRemovingModId(null);
-        return;
-      }
-
-      const res = await fetch(
-        `/api/admin/houses/${houseId}/moderators`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userId }),
-        }
-      );
-
-      const json: ApiGenericResponse = await res.json();
-
-      if (!json.success) {
-        setError(json.error || 'Failed to remove moderator');
-        return;
-      }
-
-      setModerators((prev) => prev.filter((m) => m.id !== userId));
-    } catch (err) {
-      console.error('Error removing moderator:', err);
-      setError('Unexpected error while removing moderator');
-    } finally {
-      setRemovingModId(null);
-    }
-  };
-
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-gray-600">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Loading House details...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!house) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-700 mb-4">
-            {error || 'House not found or could not be loaded.'}
-          </p>
-          <Button variant="outline" onClick={() => router.push('/admin/houses')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Houses
-          </Button>
-        </div>
-      </div>
-    );
+  if (authLoading) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto py-10 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <button
-              onClick={() => router.push('/admin/houses')}
-              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-2"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Houses
-            </button>
-            <h1 className="text-3xl font-bold mb-1 flex items-center gap-2">
-              <Trophy className="h-7 w-7 text-yellow-500" />
-              {house.sport_name || 'Unknown sport'}
-            </h1>
-            <p className="text-gray-600">
-              House ID:{' '}
-              <span className="font-mono text-xs">{house.id}</span>
-            </p>
-          </div>
-          <div className="text-right space-y-1">
-            <StatusBadge status={house.status} />
-            <div className="text-xs text-gray-500">
-              Country:{' '}
-              <span className="uppercase font-mono">
-                {house.country_code}
-              </span>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Houses of Sports</h1>
+              <p className="text-gray-600">
+                View and manage Houses, Heads of House and House Moderators.
+              </p>
             </div>
-            <div className="text-xs text-gray-500">
-              Created: <span>{createdAtFormatted}</span>
-            </div>
+
+            <Button onClick={() => router.push('/admin/houses/create')}>
+              + Create new House
+            </Button>
           </div>
-        </div>
 
-        {error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-4 pb-4 text-red-800 text-sm">
-              {error}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Head + Moderators */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-500" />
-                Head of House
-              </CardTitle>
-              <CardDescription>
-                Define or update the leader responsible for this House.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {head ? (
-                <div className="flex items-center justify-between border rounded-lg p-3 bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <UserIcon className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="font-medium">
-                        {head.full_name || head.username || 'Unknown user'}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {head.email || 'No email'}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Role: {head.role || 'Member'}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={removingHead}
-                      onClick={handleRemoveHead}
-                    >
-                      {removingHead && (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
-                      Remove Head
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500">
-                  This House has no Head defined yet.
-                </div>
-              )}
-
-              <div className="border-t pt-4 space-y-2">
-                <p className="text-sm text-gray-700">
-                  Promote a user to Head of House by providing their{' '}
-                  <span className="font-mono text-xs">userId</span> (podes
-                  copiar do Supabase por agora – mais tarde fazemos pesquisa por
-                  username/email).
-                </p>
-                <div className="flex flex-col md:flex-row gap-2">
-                  <Input
-                    placeholder="User ID (uuid) do novo Head"
-                    value={headUserIdInput}
-                    onChange={(e) => setHeadUserIdInput(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handlePromoteHead}
-                    disabled={savingHead || !headUserIdInput.trim()}
-                  >
-                    {savingHead && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    Promote to Head
-                  </Button>
-                </div>
+          {/* Filtros */}
+          <Card className="mb-6">
+            <CardContent className="pt-6 flex flex-col md:flex-row gap-4 items-center">
+              <div className="flex-1 w-full">
+                <Input
+                  placeholder="Search by sport, country or Head of House..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
+              <div className="w-full md:w-60">
+                <Select
+                  value={statusFilter}
+                  onValueChange={(val) =>
+                    setStatusFilter(val as 'all' | HouseStatus)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch('');
+                  setStatusFilter('all');
+                }}
+              >
+                Clear filters
+              </Button>
             </CardContent>
           </Card>
 
+          {/* Erro */}
+          {error && (
+            <Card className="mb-4 border-red-200 bg-red-50">
+              <CardContent className="pt-4 pb-4 text-red-800 text-sm">
+                {error}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lista */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <UserIcon className="h-5 w-5 text-purple-500" />
-                Moderators
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Houses list
               </CardTitle>
               <CardDescription>
-                Manage House moderators (total: {moderators.length}).
+                Showing {filtered.length} of {houses.length} Houses.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2 max-h-64 overflow-auto border rounded-lg p-2 bg-gray-50">
-                {moderators.length === 0 ? (
-                  <div className="text-xs text-gray-500">
-                    No moderators yet.
-                  </div>
-                ) : (
-                  moderators.map((mod) => (
-                    <div
-                      key={mod.id}
-                      className="flex items-center justify-between text-sm bg-white rounded-md px-2 py-1 shadow-sm"
-                    >
-                      <div>
-                        <div className="font-medium">
-                          {mod.full_name || mod.username || 'Unknown'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {mod.email || 'No email'}
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={removingModId === mod.id}
-                        onClick={() => handleRemoveModerator(mod.id)}
-                      >
-                        {removingModId === mod.id && (
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        )}
-                        Remove
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="border-t pt-3 space-y-2">
-                <p className="text-xs text-gray-700">
-                  Add a moderator by{' '}
-                  <span className="font-mono text-[10px]">userId</span>.
-                </p>
-                <div className="flex flex-col gap-2">
-                  <Input
-                    placeholder="User ID (uuid) do moderador"
-                    value={modUserIdInput}
-                    onChange={(e) => setModUserIdInput(e.target.value)}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleAddModerator}
-                    disabled={savingMod || !modUserIdInput.trim()}
-                  >
-                    {savingMod && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    Add Moderator
-                  </Button>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Loading Houses of Sports...
                 </div>
-              </div>
+              ) : filtered.length === 0 ? (
+                <p className="py-8 text-center text-gray-500 text-sm">
+                  {houses.length === 0
+                    ? 'No Houses found. Create the first House via the Create button or directly in the database.'
+                    : 'No Houses match the current filters.'}
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-xs text-gray-500">
+                        <th className="py-2 px-3 text-left">Sport</th>
+                        <th className="py-2 px-3 text-left">Country</th>
+                        <th className="py-2 px-3 text-left">Status</th>
+                        <th className="py-2 px-3 text-left">Head of House</th>
+                        <th className="py-2 px-3 text-left">Moderators</th>
+                        <th className="py-2 px-3 text-left">Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((house) => (
+                        <tr
+                          key={house.id}
+                          className="border-b hover:bg-gray-50 cursor-pointer"
+                          onClick={() =>
+                            router.push(`/admin/houses/${house.id}`)
+                          }
+                        >
+                          <td className="py-2 px-3">
+                            <div className="font-medium">
+                              {house.sport_name || 'Unknown sport'}
+                            </div>
+                            <div className="text-xs text-gray-500 uppercase">
+                              {house.sport_code}
+                            </div>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className="uppercase text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                              {house.country_code}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3">
+                            <StatusBadge status={house.status} />
+                          </td>
+                          <td className="py-2 px-3">
+                            {house.head ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {house.head.full_name || house.head.username}
+                                </span>
+                                {house.head.username && (
+                                  <span className="text-xs text-gray-500">
+                                    @{house.head.username}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">
+                                No Head defined
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 text-xs text-gray-600">
+                            {house.moderators_count ?? 0}
+                          </td>
+                          <td className="py-2 px-3 text-xs text-gray-500">
+                            {house.created_at
+                              ? format(
+                                  new Date(house.created_at),
+                                  'dd/MM/yyyy'
+                                )
+                              : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }
