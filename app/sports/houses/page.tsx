@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
@@ -35,7 +35,6 @@ const STATUS_BADGE_CLASSES: Record<HouseStatus, string> = {
 };
 
 export default function HousesOfSportsPage() {
-  const router = useRouter();
   const [houses, setHouses] = useState<House[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -204,18 +203,15 @@ export default function HousesOfSportsPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {filteredHouses.map((house) => (
-                        <tr
-                          key={house.id}
-                          className="hover:bg-gray-50/60 cursor-pointer"
-                          onClick={() =>
-                            router.push(`/sports/houses/${house.id}`)
-                          }
-                        >
+                        <tr key={house.id} className="hover:bg-gray-50/60">
                           <td className="px-3 py-3 align-top">
                             <div className="flex flex-col">
-                              <span className="font-medium text-gray-900">
+                              <Link
+                                href={`/sports/houses/${house.id}`}
+                                className="font-medium text-gray-900 hover:underline"
+                              >
                                 {house.title}
-                              </span>
+                              </Link>
                               <span className="text-[11px] text-gray-400">
                                 {house.id}
                               </span>
