@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
-
-type HouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
 function normalizeLocale(raw?: string | null): SupportedLocale {
   if (!raw) return 'en';
@@ -25,8 +23,8 @@ type HouseRow = {
   id: string;
   sport_id: string;
   country_code: string | null;
-  status: string | null;
   name_i18n: Record<string, string> | null;
+  status: string | null; // 'development' | 'under_construction' | 'active'
   created_at: string | null;
 };
 
@@ -60,22 +58,11 @@ type HouseModeratorRow = {
   permissions: Record<string, any> | null;
 };
 
-// ---- helpers ----
+type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
-function resolveLocalizedName(
-  name_i18n: Record<string, string> | null,
-  locale: SupportedLocale,
-  fallback?: string | null
-): string {
-  if (name_i18n && name_i18n[locale]) return name_i18n[locale];
-  if (name_i18n && name_i18n.en) return name_i18n.en;
-  return fallback ?? '';
-}
-
-function normalizeStatus(raw?: string | null): HouseStatus {
-  const s = (raw || '').toUpperCase();
-  if (s === 'ACTIVE') return 'ACTIVE';
-  if (s === 'UNDER_CONSTRUCTION') return 'UNDER_CONSTRUCTION';
+function mapDbStatusToPublic(raw?: string | null): PublicHouseStatus {
+  if (raw === 'active') return 'ACTIVE';
+  if (raw === 'under_construction') return 'UNDER_CONSTRUCTION';
   return 'IN_DEVELOPMENT';
 }
 
@@ -85,12 +72,10 @@ export async function GET(request: NextRequest) {
     const rawLocale = searchParams.get('locale');
     const locale = normalizeLocale(rawLocale);
 
-    // 1) Houses (usar supabaseAdmin para ignorar RLS)
-    const { data: housesData, error: housesError } = await supabaseAdmin
+    // 1) Buscar todas as houses
+    const { data: housesData, error: housesError } = await supabase
       .from('houses_of_sports')
-      .select(
-        'id, sport_id, country_code, status, name_i18n, created_at'
-      );
+      .select('id, sport_id, country_code, name_i18n, status, created_at');
 
     if (housesError) {
       console.error('Error loading houses_of_sports:', housesError);
@@ -114,10 +99,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 2) Sports
+    // 2) Buscar sports correspondentes
     const sportIds = Array.from(new Set(houses.map((h) => h.sport_id)));
 
-    const { data: sportsData, error: sportsError } = await supabaseAdmin
+    const { data: sportsData, error: sportsError } = await supabase
       .from('sports')
       .select('id, code, name_i18n')
       .in('id', sportIds);
@@ -139,10 +124,10 @@ export async function GET(request: NextRequest) {
       sportById.set(s.id, s);
     }
 
-    // 3) Head of House
+    // 3) House heads
     const houseIds = houses.map((h) => h.id);
 
-    const { data: headsData, error: headsError } = await supabaseAdmin
+    const { data: headsData, error: headsError } = await supabase
       .from('house_heads')
       .select('house_id, admin_id')
       .in('house_id', houseIds);
@@ -160,14 +145,13 @@ export async function GET(request: NextRequest) {
 
     const heads = (headsData ?? []) as HouseHeadRow[];
 
-    // 4) Admin assignments
+    // 4) Admin assignments dos heads
     const adminIds = Array.from(new Set(heads.map((h) => h.admin_id)));
 
-    const { data: adminAssignData, error: adminAssignError } =
-      await supabaseAdmin
-        .from('admin_assignments')
-        .select('id, user_id')
-        .in('id', adminIds);
+    const { data: adminAssignData, error: adminAssignError } = await supabase
+      .from('admin_assignments')
+      .select('id, user_id')
+      .in('id', adminIds);
 
     if (adminAssignError) {
       console.error('Error loading admin_assignments:', adminAssignError);
@@ -183,11 +167,10 @@ export async function GET(request: NextRequest) {
     const adminAssignments = (adminAssignData ?? []) as AdminAssignmentRow[];
 
     // 5) Moderadores
-    const { data: moderatorsData, error: moderatorsError } =
-      await supabaseAdmin
-        .from('house_moderators')
-        .select('house_id, user_id, permissions')
-        .in('house_id', houseIds);
+    const { data: moderatorsData, error: moderatorsError } = await supabase
+      .from('house_moderators')
+      .select('house_id, user_id, permissions')
+      .in('house_id', houseIds);
 
     if (moderatorsError) {
       console.error('Error loading house_moderators:', moderatorsError);
@@ -202,14 +185,14 @@ export async function GET(request: NextRequest) {
 
     const moderatorsRows = (moderatorsData ?? []) as HouseModeratorRow[];
 
-    // 6) Users (heads + moderadores)
+    // 6) users envolvidos (heads + moderadores)
     const headUserIds = adminAssignments.map((a) => a.user_id);
     const modUserIds = moderatorsRows.map((m) => m.user_id);
     const allUserIds = Array.from(new Set([...headUserIds, ...modUserIds]));
 
     let users: UserRow[] = [];
     if (allUserIds.length > 0) {
-      const { data: usersData, error: usersError } = await supabaseAdmin
+      const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, username, full_name, role, avatar_url')
         .in('id', allUserIds);
@@ -233,7 +216,7 @@ export async function GET(request: NextRequest) {
       userById.set(u.id, u);
     }
 
-    // helpers
+    // helpers para encontrar head & mods de cada house
     const headByHouse = new Map<string, HouseHeadRow>();
     for (const h of heads) {
       headByHouse.set(h.house_id, h);
@@ -251,25 +234,18 @@ export async function GET(request: NextRequest) {
       moderatorsByHouse.set(m.house_id, arr);
     }
 
+    const resolveLocalizedName = (
+      name_i18n: Record<string, string> | null,
+      fallback?: string | null
+    ): string => {
+      if (name_i18n && name_i18n[locale]) return name_i18n[locale];
+      if (name_i18n && name_i18n.en) return name_i18n.en;
+      return fallback ?? '';
+    };
+
     // 7) montar resposta final
     const result = houses.map((house) => {
       const sport = sportById.get(house.sport_id) || null;
-
-      const sportName = sport
-        ? resolveLocalizedName(sport.name_i18n, locale, sport.code)
-        : null;
-
-      // Nome da House: vem de name_i18n (já sem "Sports")
-      const fallbackHouseName =
-        sportName && house.country_code
-          ? `House of ${sportName} ${house.country_code}`
-          : sportName || 'House of Sports';
-
-      const title = resolveLocalizedName(
-        house.name_i18n,
-        locale,
-        fallbackHouseName
-      );
 
       // Head da House
       const headRow = headByHouse.get(house.id) || null;
@@ -282,24 +258,62 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Moderadores count
+      // Moderadores
       const mods = moderatorsByHouse.get(house.id) || [];
-      const moderators_count = mods.reduce((acc, mod) => {
-        if (userById.has(mod.user_id)) return acc + 1;
-        return acc;
-      }, 0);
+      const moderators = mods
+        .map((mod) => {
+          const u = userById.get(mod.user_id) || null;
+          if (!u) return null;
+          return {
+            user_id: u.id,
+            username: u.username,
+            full_name: u.full_name ?? null,
+            role: u.role,
+            avatar_url: u.avatar_url ?? null,
+            permissions: mod.permissions ?? {},
+          };
+        })
+        .filter(Boolean) as Array<{
+          user_id: string;
+          username: string | null;
+          full_name: string | null;
+          role: string | null;
+          avatar_url: string | null;
+          permissions: Record<string, any>;
+        }>;
+
+      const publicStatus = mapDbStatusToPublic(house.status);
 
       return {
         id: house.id,
-        sport_id: house.sport_id,
-        title,
-        sport_name: sportName,
-        country_code: house.country_code ?? '',
-        status: normalizeStatus(house.status),
-        head_username: headUser?.username ?? null,
-        head_full_name: headUser?.full_name ?? null,
-        moderators_count,
-        created_at: house.created_at ?? null,
+        country_code: house.country_code,
+        status: publicStatus,
+        created_at: house.created_at,
+
+        sport: sport
+          ? {
+              id: sport.id,
+              code: sport.code,
+              name: resolveLocalizedName(sport.name_i18n, sport.code),
+            }
+          : null,
+
+        name: resolveLocalizedName(
+          house.name_i18n,
+          sport ? resolveLocalizedName(sport.name_i18n, sport.code) : null
+        ),
+
+        head: headUser
+          ? {
+              user_id: headUser.id,
+              username: headUser.username,
+              full_name: headUser.full_name ?? null,
+              role: headUser.role,
+              avatar_url: headUser.avatar_url ?? null,
+            }
+          : null,
+
+        moderators,
       };
     });
 
