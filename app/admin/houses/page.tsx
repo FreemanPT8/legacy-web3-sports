@@ -264,20 +264,19 @@ export default function AdminHousesPage() {
                     </thead>
                     <tbody>
                       {filtered.map((house) => (
-                        <tr
-                          key={house.id}
-                          className="border-b hover:bg-gray-50 cursor-pointer"
-                          onClick={() =>
-                            router.push(`/admin/houses/${house.id}`)
-                          }
-                        >
+                        <tr key={house.id} className="border-b">
                           <td className="py-2 px-3">
-                            <div className="font-medium">
-                              {house.sport_name || 'Unknown sport'}
-                            </div>
-                            <div className="text-xs text-gray-500 uppercase">
-                              {house.sport_code}
-                            </div>
+                            <Link
+                              href={`/admin/houses/${house.id}`}
+                              className="block"
+                            >
+                              <div className="font-medium text-blue-700 hover:underline">
+                                {house.sport_name || 'Unknown sport'}
+                              </div>
+                              <div className="text-xs text-gray-500 uppercase">
+                                {house.sport_code}
+                              </div>
+                            </Link>
                           </td>
                           <td className="py-2 px-3">
                             <span className="uppercase text-xs font-mono bg-gray-100 px-2 py-1 rounded">
