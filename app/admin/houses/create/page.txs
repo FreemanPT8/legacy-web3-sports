@@ -11,7 +11,6 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectTrigger,
@@ -158,7 +157,7 @@ export default function CreateHousePage() {
         return;
       }
 
-      // Ir para a lista de Houses (ou para a página de detalhes se quisermos)
+      // Ir para a lista de Houses
       router.push('/admin/houses');
     } catch (err) {
       console.error('Error creating House of Sports:', err);
@@ -173,6 +172,8 @@ export default function CreateHousePage() {
   };
 
   const isLoading = authLoading || loadingSports;
+
+  const noSportsDefined = !isLoading && sports.length === 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -212,6 +213,21 @@ export default function CreateHousePage() {
               <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Loading data...
+              </div>
+            ) : noSportsDefined ? (
+              <div className="py-6 text-sm text-gray-700">
+                <p className="mb-2 font-medium">
+                  No sports found in the platform.
+                </p>
+                <p className="mb-2">
+                  To create a House of Sports you first need to define at least
+                  one sport in the <code>sports</code> table of Supabase.
+                </p>
+                <p className="text-xs text-gray-500">
+                  After creating the sport (for example &quot;Climbing&quot;),
+                  come back to this page and the sport will be available in the
+                  dropdown.
+                </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
