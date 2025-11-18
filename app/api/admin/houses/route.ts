@@ -68,7 +68,6 @@ function toTitleCase(str: string): string {
 }
 
 // =========== GET /api/admin/houses ===========
-// Lista Houses com Head + nº de moderadores
 export async function GET(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
@@ -214,18 +213,14 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Moderators count (apenas utilizadores válidos)
+      // Moderators count
       const mods = moderatorsByHouse.get(row.id) || [];
       const moderators_count = mods.reduce((acc, mod) => {
         if (userById.has(mod.user_id)) return acc + 1;
         return acc;
       }, 0);
 
-      // Status normalizado:
-      // - se for 'active' mantém
-      // - se for 'under_construction' mantém
-      // - se não tiver status, mas tiver Head → 'under_construction'
-      // - caso contrário → 'development'
+      // Status normalizado
       let status: HouseStatus;
       if (row.status === 'active') {
         status = 'active';
@@ -279,7 +274,6 @@ export async function GET(request: NextRequest) {
 }
 
 // =========== POST /api/admin/houses ===========
-// Cria nova House com nome "House of {Sport} {País}"
 export async function POST(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
@@ -354,9 +348,13 @@ export async function POST(request: NextRequest) {
 
     const baseSportName = toTitleCase(baseSportNameRaw as string);
 
-    const houseNameEn = `House of ${baseSportName} ${countryLabel}`;
     const name_i18n = {
-      en: houseNameEn,
+      en: `House of ${baseSportName} ${countryLabel}`,
+      pt: `Casa de ${baseSportName} ${countryLabel}`,
+      es: `Casa de ${baseSportName} ${countryLabel}`,
+      fr: `Maison de ${baseSportName} ${countryLabel}`,
+      de: `Haus für ${baseSportName} ${countryLabel}`,
+      it: `Casa di ${baseSportName} ${countryLabel}`,
     };
 
     const { data: inserted, error: insertError } = await supabaseAdmin
