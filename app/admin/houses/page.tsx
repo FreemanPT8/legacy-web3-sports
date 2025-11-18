@@ -88,7 +88,6 @@ export default function AdminHousesPage() {
   useEffect(() => {
     if (authLoading) return;
 
-    // Se não estiver logado ou não for Admin / Super Admin, manda para login
     if (!user || (user.role !== 'Super Admin' && user.role !== 'Admin')) {
       router.push('/login');
       return;
@@ -155,12 +154,11 @@ export default function AdminHousesPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* HEADER GLOBAL */}
       <Header />
 
       <main className="flex-1 py-10">
         <div className="container mx-auto px-4 max-w-6xl">
-          {/* Header + botão criar */}
+          {/* Título + botão criar */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold mb-1">Houses of Sports</h1>
@@ -264,10 +262,15 @@ export default function AdminHousesPage() {
                     </thead>
                     <tbody>
                       {filtered.map((house) => (
-                        <tr key={house.id} className="border-b">
+                        <tr
+                          key={house.id}
+                          className="border-b hover:bg-gray-50 cursor-pointer"
+                          onClick={() => router.push(`/admin/houses/${house.id}`)}
+                        >
                           <td className="py-2 px-3">
                             <Link
                               href={`/admin/houses/${house.id}`}
+                              onClick={(e) => e.stopPropagation()}
                               className="block"
                             >
                               <div className="font-medium text-blue-700 hover:underline">
@@ -277,6 +280,9 @@ export default function AdminHousesPage() {
                                 {house.sport_code}
                               </div>
                             </Link>
+                            <div className="text-[10px] text-gray-400 mt-0.5">
+                              {house.id}
+                            </div>
                           </td>
                           <td className="py-2 px-3">
                             <span className="uppercase text-xs font-mono bg-gray-100 px-2 py-1 rounded">
@@ -326,7 +332,6 @@ export default function AdminHousesPage() {
         </div>
       </main>
 
-      {/* FOOTER GLOBAL */}
       <Footer />
     </div>
   );
