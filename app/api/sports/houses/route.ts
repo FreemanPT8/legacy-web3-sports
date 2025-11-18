@@ -1,3 +1,4 @@
+// app/api/sports/houses/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
@@ -17,15 +18,17 @@ function normalizeLocale(raw?: string | null): SupportedLocale {
   return 'en';
 }
 
-// ---- tipos dos rows Supabase ----
-
 type HouseRow = {
   id: string;
   sport_id: string;
   country_code: string | null;
   name_i18n: Record<string, string> | null;
-  status: string | null; // 'development' | 'under_construction' | 'active'
-  created_at: string | null;
+  status: 'development' | 'under_construction' | 'active' | null;
+  hero_title_i18n: Record<string, string> | null;
+  hero_subtitle_i18n: Record<string, string> | null;
+  description_i18n: Record<string, string> | null;
+  cover_image_url: string | null;
+  is_public: boolean | null;
 };
 
 type SportRow = {
@@ -47,7 +50,7 @@ type AdminAssignmentRow = {
 type UserRow = {
   id: string;
   username: string | null;
-  full_name?: string | null;
+  full_name: string | null;
   role: string | null;
   avatar_url?: string | null;
 };
@@ -58,12 +61,32 @@ type HouseModeratorRow = {
   permissions: Record<string, any> | null;
 };
 
-type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
+type PublicLifecycleStatus =
+  | 'IN_DEVELOPMENT'
+  | 'UNDER_CONSTRUCTION'
+  | 'ACTIVE';
 
-function mapDbStatusToPublic(raw?: string | null): PublicHouseStatus {
-  if (raw === 'active') return 'ACTIVE';
-  if (raw === 'under_construction') return 'UNDER_CONSTRUCTION';
+function mapLifecycleStatus(
+  dbStatus: HouseRow['status'],
+  hasHead: boolean
+): PublicLifecycleStatus {
+  if (dbStatus === 'active') return 'ACTIVE';
+  if (dbStatus === 'under_construction') return 'UNDER_CONSTRUCTION';
+
+  // development ou null
+  // se já tem Head mas ainda não actualizaste o status, tratamos como UNDER_CONSTRUCTION
+  if (hasHead) return 'UNDER_CONSTRUCTION';
   return 'IN_DEVELOPMENT';
+}
+
+function resolveLocalized(
+  obj: Record<string, string> | null,
+  locale: SupportedLocale,
+  fallback?: string | null
+): string {
+  if (obj && obj[locale]) return obj[locale];
+  if (obj && obj.en) return obj.en;
+  return fallback ?? '';
 }
 
 export async function GET(request: NextRequest) {
@@ -72,18 +95,29 @@ export async function GET(request: NextRequest) {
     const rawLocale = searchParams.get('locale');
     const locale = normalizeLocale(rawLocale);
 
-    // 1) Buscar todas as houses
+    // 1) Houses (apenas públicas)
     const { data: housesData, error: housesError } = await supabase
       .from('houses_of_sports')
-      .select('id, sport_id, country_code, name_i18n, status, created_at');
+      .select(
+        `
+        id,
+        sport_id,
+        country_code,
+        status,
+        name_i18n,
+        hero_title_i18n,
+        hero_subtitle_i18n,
+        description_i18n,
+        cover_image_url,
+        is_public
+      `
+      )
+      .eq('is_public', true);
 
     if (housesError) {
       console.error('Error loading houses_of_sports:', housesError);
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Erro ao carregar Houses of Sports.',
-        },
+        { success: false, error: 'Erro ao carregar Houses of Sports.' },
         { status: 500 }
       );
     }
@@ -99,9 +133,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 2) Buscar sports correspondentes
+    // 2) Sports
     const sportIds = Array.from(new Set(houses.map((h) => h.sport_id)));
-
     const { data: sportsData, error: sportsError } = await supabase
       .from('sports')
       .select('id, code, name_i18n')
@@ -110,10 +143,7 @@ export async function GET(request: NextRequest) {
     if (sportsError) {
       console.error('Error loading sports for houses:', sportsError);
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Erro ao carregar desportos das Houses.',
-        },
+        { success: false, error: 'Erro ao carregar desportos das Houses.' },
         { status: 500 }
       );
     }
@@ -124,9 +154,8 @@ export async function GET(request: NextRequest) {
       sportById.set(s.id, s);
     }
 
-    // 3) House heads
+    // 3) Heads
     const houseIds = houses.map((h) => h.id);
-
     const { data: headsData, error: headsError } = await supabase
       .from('house_heads')
       .select('house_id, admin_id')
@@ -135,19 +164,15 @@ export async function GET(request: NextRequest) {
     if (headsError) {
       console.error('Error loading house_heads:', headsError);
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Erro ao carregar Heads das Houses.',
-        },
+        { success: false, error: 'Erro ao carregar Heads das Houses.' },
         { status: 500 }
       );
     }
 
     const heads = (headsData ?? []) as HouseHeadRow[];
 
-    // 4) Admin assignments dos heads
+    // 4) Admin assignments
     const adminIds = Array.from(new Set(heads.map((h) => h.admin_id)));
-
     const { data: adminAssignData, error: adminAssignError } = await supabase
       .from('admin_assignments')
       .select('id, user_id')
@@ -156,10 +181,7 @@ export async function GET(request: NextRequest) {
     if (adminAssignError) {
       console.error('Error loading admin_assignments:', adminAssignError);
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Erro ao carregar Admin Assignments.',
-        },
+        { success: false, error: 'Erro ao carregar Admin Assignments.' },
         { status: 500 }
       );
     }
@@ -185,7 +207,7 @@ export async function GET(request: NextRequest) {
 
     const moderatorsRows = (moderatorsData ?? []) as HouseModeratorRow[];
 
-    // 6) users envolvidos (heads + moderadores)
+    // 6) Users (heads + moderadores)
     const headUserIds = adminAssignments.map((a) => a.user_id);
     const modUserIds = moderatorsRows.map((m) => m.user_id);
     const allUserIds = Array.from(new Set([...headUserIds, ...modUserIds]));
@@ -216,7 +238,6 @@ export async function GET(request: NextRequest) {
       userById.set(u.id, u);
     }
 
-    // helpers para encontrar head & mods de cada house
     const headByHouse = new Map<string, HouseHeadRow>();
     for (const h of heads) {
       headByHouse.set(h.house_id, h);
@@ -234,23 +255,13 @@ export async function GET(request: NextRequest) {
       moderatorsByHouse.set(m.house_id, arr);
     }
 
-    const resolveLocalizedName = (
-      name_i18n: Record<string, string> | null,
-      fallback?: string | null
-    ): string => {
-      if (name_i18n && name_i18n[locale]) return name_i18n[locale];
-      if (name_i18n && name_i18n.en) return name_i18n.en;
-      return fallback ?? '';
-    };
-
-    // 7) montar resposta final
+    // 7) Montar resultado final
     const result = houses.map((house) => {
       const sport = sportById.get(house.sport_id) || null;
 
-      // Head da House
+      // Head
       const headRow = headByHouse.get(house.id) || null;
       let headUser: UserRow | null = null;
-
       if (headRow) {
         const admin = adminAssignById.get(headRow.admin_id) || null;
         if (admin) {
@@ -267,52 +278,75 @@ export async function GET(request: NextRequest) {
           return {
             user_id: u.id,
             username: u.username,
-            full_name: u.full_name ?? null,
+            full_name: u.full_name,
             role: u.role,
             avatar_url: u.avatar_url ?? null,
             permissions: mod.permissions ?? {},
           };
         })
         .filter(Boolean) as Array<{
-          user_id: string;
-          username: string | null;
-          full_name: string | null;
-          role: string | null;
-          avatar_url: string | null;
-          permissions: Record<string, any>;
-        }>;
+        user_id: string;
+        username: string | null;
+        full_name: string | null;
+        role: string | null;
+        avatar_url: string | null;
+        permissions: Record<string, any>;
+      }>;
 
-      const publicStatus = mapDbStatusToPublic(house.status);
+      const hasHead = !!headUser;
+      const lifecycle_status = mapLifecycleStatus(house.status, hasHead);
+
+      const houseName = resolveLocalized(
+        house.name_i18n,
+        locale,
+        sport ? resolveLocalized(sport.name_i18n, locale, sport.code) : null
+      );
+
+      const heroTitle = resolveLocalized(
+        house.hero_title_i18n,
+        locale,
+        `House of ${houseName} ${
+          house.country_code ?? ''
+        }`.trim()
+      );
+
+      const heroSubtitle = resolveLocalized(
+        house.hero_subtitle_i18n,
+        locale,
+        'Uma comunidade Web3 para profissionais e entusiastas deste desporto.'
+      );
+
+      const description = resolveLocalized(
+        house.description_i18n,
+        locale,
+        'Em breve poderás encontrar missões, eventos, ranking e recompensas ligadas a esta House.'
+      );
 
       return {
         id: house.id,
         country_code: house.country_code,
-        status: publicStatus,
-        created_at: house.created_at,
-
+        lifecycle_status,
+        name: houseName,
+        hero_title: heroTitle,
+        hero_subtitle: heroSubtitle,
+        description,
+        cover_image_url: house.cover_image_url ?? null,
         sport: sport
           ? {
               id: sport.id,
               code: sport.code,
-              name: resolveLocalizedName(sport.name_i18n, sport.code),
+              name: resolveLocalized(sport.name_i18n, locale, sport.code),
             }
           : null,
-
-        name: resolveLocalizedName(
-          house.name_i18n,
-          sport ? resolveLocalizedName(sport.name_i18n, sport.code) : null
-        ),
-
         head: headUser
           ? {
               user_id: headUser.id,
               username: headUser.username,
-              full_name: headUser.full_name ?? null,
+              full_name: headUser.full_name,
               role: headUser.role,
               avatar_url: headUser.avatar_url ?? null,
             }
           : null,
-
         moderators,
       };
     });
