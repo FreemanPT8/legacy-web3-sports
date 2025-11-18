@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -161,10 +162,12 @@ export default function AdminHousesPage() {
               View and manage Houses, Heads of House and House Moderators.
             </p>
           </div>
-          <Button onClick={() => router.push('/admin/houses/create')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create new House
-          </Button>
+          <Link href="/admin/houses/create">
+            <Button type="button">
+              <Plus className="h-4 w-4 mr-2" />
+              Create new House
+            </Button>
+          </Link>
         </div>
 
         {/* Filtros */}
