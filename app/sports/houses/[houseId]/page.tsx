@@ -129,12 +129,18 @@ export default function HouseProfilePage() {
                         <span className="font-semibold">
                           {house.sport_name || 'this sport'}
                         </span>{' '}
-                        in <span className="font-semibold">{house.country_code}</span>.
+                        in{' '}
+                        <span className="font-semibold">
+                          {house.country_code}
+                        </span>
+                        .
                       </p>
                       {house.created_at && (
                         <p className="mt-1 text-xs text-gray-400">
                           Created on{' '}
-                          {new Date(house.created_at).toLocaleDateString('pt-PT')}
+                          {new Date(house.created_at).toLocaleDateString(
+                            'pt-PT'
+                          )}
                         </p>
                       )}
                     </div>
@@ -166,13 +172,13 @@ export default function HouseProfilePage() {
                     </h2>
                     <p className="text-sm text-gray-700">
                       This House will soon have its own missions, rankings and
-                      events connected to the Apertum blockchain. Members will be
-                      able to earn XP and collectibles by completing sport and
-                      Web3 challenges specific to this community.
+                      events connected to the Apertum blockchain. Members will
+                      be able to earn XP and collectibles by completing sport
+                      and Web3 challenges specific to this community.
                     </p>
                     <p className="mt-2 text-sm text-gray-600">
-                      For now, this is an experimental preview. More features will
-                      be unlocked as the LEGACY platform evolves.
+                      For now, this is an experimental preview. More features
+                      will be unlocked as the LEGACY platform evolves.
                     </p>
                   </div>
 
