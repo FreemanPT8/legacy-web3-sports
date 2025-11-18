@@ -61,7 +61,6 @@ export default function SportsPage() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [houses, setHouses] = useState<House[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -126,15 +125,18 @@ export default function SportsPage() {
             <div className="grid md:grid-cols-[2fr,1.3fr] gap-8 items-center">
               <div>
                 <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 mb-3">
-                  Desportos Web3 · LEGACY Houses
+                  Educação Web3 · Comunidades de Desporto
                 </span>
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
                   Web3 Sports
                 </h1>
                 <p className="mt-3 text-sm md:text-base text-gray-600 max-w-xl">
-                  Explora os desportos disponíveis na LEGACY. Cada disciplina
-                  pode ter a sua própria <strong>House of Sports</strong>,
-                  missões, rankings e recompensas on-chain.
+                  Explora como a LEGACY está a trazer a{' '}
+                  <strong>blockchain</strong>, a{' '}
+                  <strong>Apertum Blockchain</strong> e as{' '}
+                  <strong>comunidades Web3</strong> para o mundo do desporto.
+                  Cada disciplina pode ter a sua própria House of Sports, com
+                  missões, XP e recompensas on-chain.
                 </p>
 
                 {user ? (
@@ -143,13 +145,16 @@ export default function SportsPage() {
                     <span className="font-semibold">
                       @{user.username ?? 'member'}
                     </span>
-                    . Em breve vais poder juntar-te às Houses, ganhar XP e
-                    desbloquear benefícios da tua comunidade de desporto.
+                    . Completa o onboarding personalizado, segue as tuas Houses
+                    favoritas e desbloqueia cursos sobre Web3, comunidade e
+                    economia do desporto.
                   </p>
                 ) : (
                   <p className="mt-4 text-xs text-gray-500">
-                    Cria uma conta gratuita para seguir as Houses de cada
-                    desporto, participar em missões e ganhar XP.
+                    Cria uma conta gratuita para fazer o{' '}
+                    <strong>onboarding personalizado</strong>, aprender sobre
+                    blockchain, Web3 e comunidade no desporto, e juntar-te às
+                    Houses oficiais de cada disciplina.
                   </p>
                 )}
               </div>
@@ -189,16 +194,25 @@ export default function SportsPage() {
                 </div>
 
                 <div className="mt-4 border-t pt-3 text-[11px] text-gray-500">
-                  Cada House é a comunidade oficial de uma disciplina em
-                  determinado país. Em breve vais poder entrar, participar em
-                  missões e conversar no chat privado da tua House.
+                  Cada House é a comunidade oficial de um desporto num país.
+                  Em breve vais poder entrar, participar em missões, ganhar XP
+                  e participar no chat privado da tua House.
+                </div>
+
+                <div className="mt-3 text-right">
+                  <Link
+                    href="/sports/houses"
+                    className="inline-flex items-center text-[11px] font-medium text-blue-700 hover:text-blue-800"
+                  >
+                    Ver todas as Houses →
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* LISTA DE HOUSES AGRUPADAS POR STATUS */}
+        {/* LISTA DE HOUSES RESUMIDA */}
         <section className="max-w-6xl mx-auto px-4 py-8 space-y-8">
           {error && (
             <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 mb-4">
@@ -213,7 +227,7 @@ export default function SportsPage() {
               {/* ACTIVE */}
               <HousesSection
                 title="Active Houses"
-                description="Casas de desporto já ativas, com comunidade e missões a decorrer."
+                description="Comunidades de desporto que já estão a funcionar e a receber membros."
                 houses={housesByStatus.ACTIVE}
               />
 
@@ -227,7 +241,7 @@ export default function SportsPage() {
               {/* IN DEVELOPMENT */}
               <HousesSection
                 title="Houses em desenvolvimento"
-                description="Ideias de Houses que ainda estão a ser definidas. Em breve poderás acompanhar a evolução de cada uma."
+                description="Ideias de Houses que estão a ganhar forma. Acompanha a evolução de cada projeto."
                 houses={housesByStatus.IN_DEVELOPMENT}
               />
             </>
@@ -240,7 +254,8 @@ export default function SportsPage() {
             <h2 className="text-lg font-semibold mb-1">Todos os desportos</h2>
             <p className="text-xs text-gray-500 mb-4">
               Explora as disciplinas disponíveis. Algumas já têm House
-              associada, outras serão lançadas em breve.
+              associada, outras serão lançadas em breve. Cada desporto terá o
+              seu próprio ecossistema de conteúdo, missões e comunidade.
             </p>
 
             {loading ? (
@@ -299,6 +314,8 @@ function HousesSection({
     return null;
   }
 
+  const subset = houses.slice(0, 6); // mostra só até 6 aqui (resto está em /sports/houses)
+
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 mb-3">
@@ -309,7 +326,7 @@ function HousesSection({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {houses.map((house) => (
+        {subset.map((house) => (
           <Link
             key={house.id}
             href={`/sports/houses/${house.id}`}
