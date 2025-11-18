@@ -5,44 +5,67 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
-type HouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
+type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
 interface House {
   id: string;
-  title: string;
-  sport_name: string | null;
-  country_code: string;
-  status: HouseStatus;
-  head_username: string | null;
-  head_full_name: string | null;
-  moderators_count: number;
+  name: string;
+  country_code: string | null;
+  status: PublicHouseStatus;
   created_at: string | null;
+  sport: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
+  head: {
+    user_id: string;
+    username: string | null;
+    full_name: string | null;
+    role: string | null;
+    avatar_url: string | null;
+  } | null;
+  moderators: {
+    user_id: string;
+    username: string | null;
+    full_name: string | null;
+    role: string | null;
+    avatar_url: string | null;
+  }[];
 }
 
-const STATUS_LABELS: Record<HouseStatus, string> = {
-  IN_DEVELOPMENT: 'In Development',
-  UNDER_CONSTRUCTION: 'Under Construction',
+interface HousesApiResponse {
+  success: boolean;
+  houses?: House[];
+  error?: string;
+}
+
+const STATUS_LABELS: Record<PublicHouseStatus | 'ALL', string> = {
+  ALL: 'All statuses',
   ACTIVE: 'Active',
+  UNDER_CONSTRUCTION: 'Under construction',
+  IN_DEVELOPMENT: 'In development',
 };
 
-const STATUS_BADGE_CLASSES: Record<HouseStatus, string> = {
-  IN_DEVELOPMENT:
-    'inline-flex items-center rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-800',
-  UNDER_CONSTRUCTION:
-    'inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800',
+const STATUS_BADGE_CLASSES: Record<PublicHouseStatus, string> = {
   ACTIVE:
     'inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800',
+  UNDER_CONSTRUCTION:
+    'inline-flex items-center rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-800',
+  IN_DEVELOPMENT:
+    'inline-flex items-center rounded-full border border-gray-300 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700',
 };
 
-export default function HousesOfSportsPage() {
+export default function HousesCatalogPage() {
   const [houses, setHouses] = useState<House[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | HouseStatus>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | PublicHouseStatus>(
+    'ALL'
+  );
 
-  // 1) Carregar Houses a partir da API pública
   useEffect(() => {
     const fetchHouses = async () => {
       setLoading(true);
@@ -50,18 +73,18 @@ export default function HousesOfSportsPage() {
 
       try {
         const res = await fetch('/api/sports/houses?locale=pt');
-        const data = await res.json();
+        const data: HousesApiResponse = await res.json();
 
         if (!res.ok || !data.success) {
-          setError(data.error || 'Error loading Houses');
-          setLoading(false);
-          return;
+          throw new Error(data.error || 'Error loading Houses of Sports.');
         }
 
-        setHouses(data.houses ?? []);
-      } catch (err) {
-        console.error('Error fetching Houses:', err);
-        setError('Network error while loading Houses');
+        setHouses(data.houses || []);
+      } catch (err: any) {
+        console.error('Error loading Houses catalog:', err);
+        setError(
+          err?.message || 'Unexpected error while loading Houses of Sports.'
+        );
       } finally {
         setLoading(false);
       }
@@ -70,8 +93,7 @@ export default function HousesOfSportsPage() {
     fetchHouses();
   }, []);
 
-  // 2) Aplicar filtros e pesquisa
-  const filteredHouses = useMemo(() => {
+  const filtered = useMemo(() => {
     let list = [...houses];
 
     if (statusFilter !== 'ALL') {
@@ -81,67 +103,93 @@ export default function HousesOfSportsPage() {
     if (search.trim()) {
       const s = search.trim().toLowerCase();
       list = list.filter((h) => {
+        const sportName = h.sport?.name ?? '';
+        const sportCode = h.sport?.code ?? '';
+        const headName =
+          (h.head?.full_name || '') + ' ' + (h.head?.username || '');
+
         return (
-          h.title.toLowerCase().includes(s) ||
-          (h.sport_name ?? '').toLowerCase().includes(s) ||
-          h.country_code.toLowerCase().includes(s) ||
-          (h.head_username ?? '').toLowerCase().includes(s) ||
-          (h.head_full_name ?? '').toLowerCase().includes(s) ||
-          h.id.toLowerCase().includes(s)
+          h.name.toLowerCase().includes(s) ||
+          sportName.toLowerCase().includes(s) ||
+          sportCode.toLowerCase().includes(s) ||
+          (h.country_code ?? '').toLowerCase().includes(s) ||
+          headName.toLowerCase().includes(s)
         );
       });
     }
 
-    return list;
+    // ordenar por estado + data
+    return list.sort((a, b) => {
+      const order: Record<PublicHouseStatus, number> = {
+        ACTIVE: 0,
+        UNDER_CONSTRUCTION: 1,
+        IN_DEVELOPMENT: 2,
+      };
+      const diff = order[a.status] - order[b.status];
+      if (diff !== 0) return diff;
+
+      if (a.created_at && b.created_at) {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      return 0;
+    });
   }, [houses, search, statusFilter]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* HEADER GLOBAL */}
       <Header />
 
-      {/* CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 py-10">
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Título + descrição */}
-          <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                Houses of Sports
-              </h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Discover the Web3 sport communities of LEGACY. Each House has a
-                leader, moderators and its own missions and events.
-              </p>
-            </div>
+      <main className="flex-1">
+        <section className="border-b bg-white">
+          <div className="max-w-6xl mx-auto px-4 py-8">
+            <p className="text-xs uppercase text-gray-500 mb-1">
+              Web3 Sports · LEGACY Houses
+            </p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Houses of Sports
+            </h1>
+            <p className="mt-2 text-sm text-gray-600 max-w-2xl">
+              Aqui podes explorar todas as{' '}
+              <strong>Houses of Sports</strong> da plataforma: comunidades
+              oficiais de cada disciplina, organizadas por país. Algumas Houses
+              já estão ativas, outras estão em construção ou ainda em fase de
+              desenvolvimento.
+            </p>
+            <p className="mt-2 text-xs text-gray-500 max-w-2xl">
+              Utilizadores autenticados terão acesso a mais funcionalidades
+              (missões, XP, chat privado da House, etc.), mas esta página é
+              pública para qualquer pessoa descobrir o ecossistema.
+            </p>
           </div>
+        </section>
 
-          {/* Filtros */}
-          <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {/* FILTROS */}
+        <section className="max-w-6xl mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
             <div className="flex-1">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search by sport, country or Head of House..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Search by sport, country or Head of House..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
             </div>
 
             <div className="flex items-center gap-2">
               <select
                 value={statusFilter}
                 onChange={(e) =>
-                  setStatusFilter(e.target.value as 'ALL' | HouseStatus)
+                  setStatusFilter(
+                    e.target.value as 'ALL' | PublicHouseStatus
+                  )
                 }
                 className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
-                <option value="ALL">All</option>
+                <option value="ALL">All statuses</option>
                 <option value="ACTIVE">Active</option>
-                <option value="UNDER_CONSTRUCTION">Under Construction</option>
-                <option value="IN_DEVELOPMENT">In Development</option>
+                <option value="UNDER_CONSTRUCTION">Under construction</option>
+                <option value="IN_DEVELOPMENT">In development</option>
               </select>
 
               <button
@@ -157,119 +205,91 @@ export default function HousesOfSportsPage() {
             </div>
           </div>
 
-          {/* Mensagem de erro */}
+          <p className="mt-2 text-xs text-gray-500">
+            Showing {filtered.length} of {houses.length} Houses.
+          </p>
+        </section>
+
+        {/* LISTA DE HOUSES */}
+        <section className="max-w-6xl mx-auto px-4 pb-10">
           {error && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
-          {/* Lista de Houses */}
-          <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-100 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold text-gray-900">
-                    🏆 Houses list
-                  </span>
-                  <span className="text-xs font-medium text-gray-500">
-                    Showing {filteredHouses.length} of {houses.length} Houses.
-                  </span>
-                </div>
-              </div>
-            </div>
+          {loading ? (
+            <p className="py-6 text-sm text-gray-500">
+              A carregar Houses of Sports…
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="py-6 text-sm text-gray-500">
+              Nenhuma House corresponde aos filtros atuais.
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((house) => (
+                <Link
+                  key={house.id}
+                  href={`/sports/houses/${house.id}`}
+                  className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:border-blue-400 hover:shadow-md transition"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <h2 className="text-sm font-semibold text-gray-900">
+                        {house.name}
+                      </h2>
+                      {house.sport && (
+                        <p className="text-[11px] uppercase text-gray-400 mt-0.5">
+                          {house.sport.name} · {house.sport.code}
+                        </p>
+                      )}
+                    </div>
+                    {house.country_code && (
+                      <span className="text-[10px] font-mono uppercase bg-gray-100 rounded px-2 py-0.5">
+                        {house.country_code}
+                      </span>
+                    )}
+                  </div>
 
-            <div className="px-6 py-4">
-              {loading ? (
-                <p className="py-6 text-sm text-gray-500">Loading Houses…</p>
-              ) : filteredHouses.length === 0 ? (
-                <p className="py-6 text-sm text-gray-500">
-                  No Houses found yet. Soon you&apos;ll see the official
-                  communities of each sport here.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-left text-sm">
-                    <thead className="border-b border-gray-100 bg-gray-50 text-xs font-semibold uppercase text-gray-500">
-                      <tr>
-                        <th className="px-3 py-3">House</th>
-                        <th className="px-3 py-3">Sport</th>
-                        <th className="px-3 py-3">Country</th>
-                        <th className="px-3 py-3">Status</th>
-                        <th className="px-3 py-3">Head of House</th>
-                        <th className="px-3 py-3">Moderators</th>
-                        <th className="px-3 py-3">Created</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {filteredHouses.map((house) => (
-                        <tr key={house.id} className="hover:bg-gray-50/60">
-                          <td className="px-3 py-3 align-top">
-                            <div className="flex flex-col">
-                              <Link
-                                href={`/sports/houses/${house.id}`}
-                                className="font-medium text-gray-900 hover:underline"
-                              >
-                                {house.title}
-                              </Link>
-                              <span className="text-[11px] text-gray-400">
-                                {house.id}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 align-top">
-                            <span className="text-sm text-gray-700">
-                              {house.sport_name || '-'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 align-top">
-                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                              {house.country_code}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 align-top">
-                            <span className={STATUS_BADGE_CLASSES[house.status]}>
-                              {STATUS_LABELS[house.status]}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 align-top text-sm text-gray-700">
-                            {house.head_username ? (
-                              <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {house.head_full_name || house.head_username}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  @{house.head_username}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-gray-400">
-                                No Head defined
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-3 align-top text-sm text-gray-700">
-                            {house.moderators_count}
-                          </td>
-                          <td className="px-3 py-3 align-top text-sm text-gray-700">
-                            {house.created_at
-                              ? new Date(house.created_at).toLocaleDateString(
-                                  'pt-PT'
-                                )
-                              : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                  <div className="mb-2">
+                    <span className={STATUS_BADGE_CLASSES[house.status]}>
+                      {STATUS_LABELS[house.status]}
+                    </span>
+                  </div>
+
+                  {house.head ? (
+                    <p className="text-xs text-gray-600 mb-1">
+                      Head of House:{' '}
+                      <span className="font-medium">
+                        {house.head.full_name || house.head.username}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-1">
+                      Head of House a definir.
+                    </p>
+                  )}
+
+                  <p className="text-[11px] text-gray-500 mb-2">
+                    {house.moderators.length > 0
+                      ? `${house.moderators.length} moderator(es) a apoiar esta comunidade.`
+                      : 'Ainda não existem moderadores definidos.'}
+                  </p>
+
+                  {house.created_at && (
+                    <p className="text-[10px] text-gray-400">
+                      Created on{' '}
+                      {new Date(house.created_at).toLocaleDateString('pt-PT')}
+                    </p>
+                  )}
+                </Link>
+              ))}
             </div>
-          </section>
-        </div>
+          )}
+        </section>
       </main>
 
-      {/* FOOTER GLOBAL */}
       <Footer />
     </div>
   );
