@@ -1,21 +1,26 @@
+// app/sports/houses/[houseId]/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Loader2, ArrowLeft, Users, MessageCircle } from 'lucide-react';
+import Link from 'next/link';
 
-type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
+type PublicLifecycleStatus =
+  | 'IN_DEVELOPMENT'
+  | 'UNDER_CONSTRUCTION'
+  | 'ACTIVE';
 
-interface House {
+interface PublicHouse {
   id: string;
   name: string;
+  hero_title: string;
+  hero_subtitle: string;
+  description: string;
+  cover_image_url: string | null;
   country_code: string | null;
-  status: PublicHouseStatus;
-  created_at: string | null;
+  lifecycle_status: PublicLifecycleStatus;
   sport: {
     id: string;
     code: string;
@@ -34,68 +39,66 @@ interface House {
     full_name: string | null;
     role: string | null;
     avatar_url: string | null;
+    permissions: Record<string, any>;
   }[];
 }
 
-interface HousesApiResponse {
+interface ApiResponse {
   success: boolean;
-  houses?: House[];
+  houses?: PublicHouse[];
   error?: string;
 }
 
-const STATUS_LABELS: Record<PublicHouseStatus, string> = {
+const STATUS_LABEL: Record<PublicLifecycleStatus, string> = {
   ACTIVE: 'Active',
   UNDER_CONSTRUCTION: 'In construction',
   IN_DEVELOPMENT: 'In development',
 };
 
-const STATUS_BADGE_CLASSES: Record<PublicHouseStatus, string> = {
+const STATUS_COLORS: Record<PublicLifecycleStatus, string> = {
   ACTIVE:
     'inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800',
   UNDER_CONSTRUCTION:
-    'inline-flex items-center rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-800',
+    'inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800',
   IN_DEVELOPMENT:
-    'inline-flex items-center rounded-full border border-gray-300 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700',
+    'inline-flex items-center rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-800',
 };
 
-export default function PublicHousePage() {
+export default function HousePublicProfilePage() {
   const params = useParams<{ houseId: string }>();
   const router = useRouter();
-  const { user } = useAuth();
-
   const houseId = params?.houseId;
 
-  const [houses, setHouses] = useState<House[]>([]);
+  const [houses, setHouses] = useState<PublicHouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!houseId) return;
+
     const fetchHouses = async () => {
       setLoading(true);
       setError(null);
-
       try {
         const res = await fetch('/api/sports/houses?locale=pt');
-        const data: HousesApiResponse = await res.json();
+        const data: ApiResponse = await res.json();
 
         if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Error loading Houses of Sports.');
+          setError(data.error || 'Error loading Houses of Sports.');
+          setLoading(false);
+          return;
         }
 
         setHouses(data.houses || []);
-      } catch (err: any) {
-        console.error('Error loading Houses for public page:', err);
-        setError(
-          err?.message || 'Unexpected error while loading House information.'
-        );
+      } catch (err) {
+        console.error('Error fetching house profile:', err);
+        setError('Network error while loading House profile.');
       } finally {
         setLoading(false);
       }
     };
 
-    if (houseId) {
-      fetchHouses();
-    }
+    fetchHouses();
   }, [houseId]);
 
   const house = useMemo(
@@ -103,215 +106,213 @@ export default function PublicHousePage() {
     [houses, houseId]
   );
 
-  const createdAtFormatted = useMemo(() => {
-    if (!house?.created_at) return '';
-    try {
-      return new Date(house.created_at).toLocaleDateString('pt-PT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-    } catch {
-      return house.created_at;
-    }
-  }, [house?.created_at]);
-
-  const handleJoinHouse = () => {
-    // placeholder, no backend ainda
-    alert(
-      'Em breve vais poder juntar-te oficialmente a esta House e ganhar XP com a comunidade. 🚀'
+  const otherHousesSameSport = useMemo(() => {
+    if (!house || !house.sport) return [];
+    return houses.filter(
+      (h) => h.id !== house.id && h.sport?.id === house.sport?.id
     );
-  };
-
-  const handleOpenChat = () => {
-    // placeholder para o chat privado
-    alert(
-      'O chat privado da House ainda está em desenvolvimento. Em breve vais poder falar com a tua comunidade aqui.'
-    );
-  };
+  }, [houses, house]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Header />
 
       <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          <button
-            onClick={() => router.push('/sports')}
-            className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Voltar aos desportos
-          </button>
+        {loading ? (
+          <div className="max-w-4xl mx-auto px-4 py-16 text-sm text-slate-500">
+            Loading House profile…
+          </div>
+        ) : !house ? (
+          <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+            <p className="mb-4 text-sm text-slate-600">
+              {error || 'House not found or not public.'}
+            </p>
+            <button
+              onClick={() => router.push('/sports/houses')}
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
+            >
+              ← Back to Houses
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* HERO */}
+            <section className="border-b border-slate-200 bg-gradient-to-b from-slate-100 to-slate-50">
+              <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
+                <button
+                  onClick={() => router.push('/sports/houses')}
+                  className="mb-4 inline-flex items-center text-xs text-slate-500 hover:text-slate-700"
+                >
+                  ← Back to Houses
+                </button>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-20 text-gray-600 gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>A carregar House of Sports…</span>
-            </div>
-          ) : error ? (
-            <div className="py-10 text-center text-sm text-red-700">
-              {error}
-            </div>
-          ) : !house ? (
-            <div className="py-10 text-center text-sm text-gray-600">
-              Esta House não foi encontrada ou ainda não está disponível
-              publicamente.
-            </div>
-          ) : (
-            <>
-              {/* HERO DA HOUSE */}
-              <section className="mb-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase text-gray-500 mb-1">
-                      House of Sports
-                    </p>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                      {house.name}
-                    </h1>
-                    {house.sport && (
-                      <p className="mt-1 text-xs text-gray-600">
-                        Desporto:{' '}
-                        <span className="font-medium">
-                          {house.sport.name}
-                        </span>{' '}
-                        · {house.sport.code}
-                      </p>
-                    )}
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium text-slate-500">
+                        {house.sport?.name ?? 'Web3 Sport House'}
+                      </span>
                       {house.country_code && (
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 font-mono uppercase">
+                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-[2px] text-[10px] font-mono uppercase text-slate-600">
                           {house.country_code}
                         </span>
                       )}
-                      <span className={STATUS_BADGE_CLASSES[house.status]}>
-                        {STATUS_LABELS[house.status]}
+                    </div>
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
+                      {house.hero_title}
+                    </h1>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {house.hero_subtitle}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                      <span className={STATUS_COLORS[house.lifecycle_status]}>
+                        {STATUS_LABEL[house.lifecycle_status]}
                       </span>
-                      {createdAtFormatted && (
-                        <span>Created on {createdAtFormatted}</span>
+                      {house.head && (
+                        <span>
+                          Head of House:{' '}
+                          <strong>
+                            {house.head.full_name || house.head.username}
+                          </strong>
+                          {house.head.username && ` (@${house.head.username})`}
+                        </span>
+                      )}
+                      <span>
+                        Moderators: <strong>{house.moderators.length}</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {house.cover_image_url && (
+                    <div className="w-full md:w-56 h-32 md:h-36 rounded-xl overflow-hidden border border-slate-200 bg-slate-200">
+                      {/* simples <img> por enquanto */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={house.cover_image_url}
+                        alt={house.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* BODY */}
+            <section className="max-w-4xl mx-auto px-4 py-10 space-y-8">
+              <div className="grid gap-6 md:grid-cols-[2fr,1.2fr] items-start">
+                {/* Descrição / sobre a House */}
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <h2 className="text-sm font-semibold text-slate-900 mb-2">
+                    About this House
+                  </h2>
+                  <p className="text-xs text-slate-600 whitespace-pre-line">
+                    {house.description}
+                  </p>
+
+                  <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-[11px] text-slate-500">
+                    <strong>Em breve:</strong> missões específicas desta House,
+                    leaderboard, drops e integrações on-chain na Apertum
+                    Blockchain.
+                  </div>
+                </div>
+
+                {/* Head + moderadores */}
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-2">
+                      Leadership
+                    </h3>
+                    {house.head ? (
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                        <div className="font-medium">
+                          {house.head.full_name || house.head.username}
+                        </div>
+                        {house.head.username && (
+                          <div className="text-[11px] text-slate-500">
+                            @{house.head.username} ·{' '}
+                            {house.head.role || 'Head of House'}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-500">
+                        Esta House ainda não tem Head definido.
+                      </p>
+                    )}
+
+                    <div className="mt-4">
+                      <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                        Moderators ({house.moderators.length})
+                      </h4>
+                      {house.moderators.length === 0 ? (
+                        <p className="text-[11px] text-slate-500">
+                          Nenhum moderador definido ainda.
+                        </p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {house.moderators.map((mod) => (
+                            <li
+                              key={mod.user_id}
+                              className="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700"
+                            >
+                              <div className="font-medium">
+                                {mod.full_name || mod.username}
+                              </div>
+                              <div className="text-[10px] text-slate-500">
+                                @{mod.username} · {mod.role || 'Moderator'}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-stretch gap-2 md:w-64">
-                    {user ? (
-                      <>
-                        <button
-                          onClick={handleJoinHouse}
-                          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-                        >
-                          Join this House
-                        </button>
-                        <button
-                          onClick={handleOpenChat}
-                          className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          Open House chat
-                        </button>
-                        <p className="text-[11px] text-gray-500">
-                          Como membro autenticado vais poder participar em
-                          missões, ganhar XP e falar com a comunidade desta
-                          House.
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          href="/signup"
-                          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-                        >
-                          Cria conta para seguir esta House
-                        </Link>
-                        <p className="text-[11px] text-gray-500">
-                          Autentica-te para receber missões desta House,
-                          acompanhar o progresso e conversar no chat privado.
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              {/* BLOCO SOBRE A HOUSE */}
-              <section className="grid gap-6 md:grid-cols-[2fr,1.2fr] mb-10">
-                <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm">
-                  <h2 className="text-sm font-semibold mb-2">
-                    Sobre esta House
-                  </h2>
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    Esta é a comunidade Web3 oficial para profissionais e
-                    entusiastas de{' '}
-                    <span className="font-semibold">
-                      {house.sport?.name ?? 'este desporto'}
-                    </span>{' '}
-                    em {house.country_code ?? 'este país'}. Aqui vais encontrar
-                    missões, desafios, conteúdos educativos e eventos focados
-                    nesta disciplina.
-                  </p>
-                  <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                    À medida que a House evoluir, vais ver{' '}
-                    <span className="font-semibold">
-                      rankings, leaderboards, badges
-                    </span>{' '}
-                    e recompensas ligadas à blockchain Apertum.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm">
-                    <h3 className="text-sm font-semibold mb-2">
-                      Leadership &amp; Team
-                    </h3>
-                    {house.head ? (
-                      <div className="mb-3">
-                        <p className="text-xs text-gray-500 mb-1">
-                          Head of House
-                        </p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {house.head.full_name || house.head.username}
-                        </p>
-                        {house.head.username && (
-                          <p className="text-xs text-gray-500">
-                            @{house.head.username} ·{' '}
-                            {house.head.role || 'Member'}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 mb-2">
-                        O Head of House ainda está a ser definido.
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <Users className="h-4 w-4" />
-                      <span>
-                        {house.moderators.length > 0
-                          ? `${house.moderators.length} moderator(es) a apoiar esta House.`
-                          : 'Ainda não existem moderadores definidos.'}
-                      </span>
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-[11px] text-slate-500">
+                    <div className="font-semibold mb-1">
+                      Chat privado da House
                     </div>
+                    <p>
+                      O chat em tempo real desta House ainda não está
+                      disponível. Em breve, membros verificados vão poder
+                      conversar, organizar treinos e coordenar missões por aqui.
+                    </p>
                   </div>
                 </div>
-              </section>
+              </div>
 
-              {/* FUTURO: MISSÕES, EVENTOS, ETC. */}
-              <section className="mb-8">
-                <div className="rounded-xl bg-white border border-dashed border-gray-300 p-4 text-xs text-gray-500">
-                  Em breve vais encontrar aqui:
-                  <ul className="mt-2 list-disc list-inside space-y-1">
-                    <li>Missões específicas desta House</li>
-                    <li>Leaderboard de membros com mais XP</li>
-                    <li>Eventos, treinos e desafios comunitários</li>
-                    <li>Badges e recompensas ligadas à blockchain Apertum</li>
-                  </ul>
+              {/* Outras Houses do mesmo desporto */}
+              {otherHousesSameSport.length > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">
+                    Other Houses for this sport
+                  </h3>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {otherHousesSameSport.map((h) => (
+                      <Link
+                        key={h.id}
+                        href={`/sports/houses/${h.id}`}
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-700 hover:border-blue-400 hover:bg-white transition-colors"
+                      >
+                        <div className="font-medium">{h.hero_title}</div>
+                        <div className="text-[10px] text-slate-500">
+                          {h.country_code && (
+                            <>
+                              {h.country_code} ·{' '}
+                            </>
+                          )}
+                          {STATUS_LABEL[h.lifecycle_status]}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </section>
-            </>
-          )}
-        </div>
+              )}
+            </section>
+          </>
+        )}
       </main>
 
       <Footer />
