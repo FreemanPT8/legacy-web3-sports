@@ -20,6 +20,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Loader2, ArrowLeft, Trophy } from 'lucide-react';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
@@ -43,6 +44,11 @@ interface CreateHouseResponse {
   house?: {
     id: string;
   };
+}
+
+interface HeadApiResponse {
+  success: boolean;
+  error?: string;
 }
 
 const STATUS_OPTIONS: { value: HouseStatus; label: string }[] = [
@@ -71,6 +77,7 @@ export default function CreateHousePage() {
   const [sportId, setSportId] = useState<string>('');
   const [countryCode, setCountryCode] = useState<string>('PT');
   const [status, setStatus] = useState<HouseStatus>('development');
+  const [headUserId, setHeadUserId] = useState<string>('');
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +145,7 @@ export default function CreateHousePage() {
         return;
       }
 
+      // 1) Criar a House
       const res = await fetch('/api/admin/houses', {
         method: 'POST',
         headers: {
@@ -153,13 +161,51 @@ export default function CreateHousePage() {
 
       const data: CreateHouseResponse = await res.json();
 
-      if (!res.ok || !data.success) {
+      if (!res.ok || !data.success || !data.house?.id) {
         setError(data.error || 'Error creating House of Sports.');
         setSubmitting(false);
         return;
       }
 
-      // Voltar para a lista de Houses
+      const createdHouseId = data.house.id;
+
+      // 2) Se o admin indicou um Head of House, promover logo esse utilizador
+      if (headUserId.trim()) {
+        try {
+          const resHead = await fetch(
+            `/api/admin/houses/${createdHouseId}/head`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ userId: headUserId.trim() }),
+            }
+          );
+
+          const headJson: HeadApiResponse = await resHead.json();
+
+          if (!resHead.ok || !headJson.success) {
+            console.error(
+              'Error setting Head of House right after creation:',
+              headJson.error
+            );
+            // Não bloqueia a criação da House; apenas mostra aviso
+            setError(
+              headJson.error ||
+                'House created, but failed to set Head of House automatically.'
+            );
+          }
+        } catch (err) {
+          console.error('Network error setting Head of House:', err);
+          setError(
+            'House created, but there was a network error while setting Head of House.'
+          );
+        }
+      }
+
+      // 3) Voltar para a lista de Houses
       router.push('/admin/houses');
     } catch (err) {
       console.error('Error creating House of Sports:', err);
@@ -178,7 +224,6 @@ export default function CreateHousePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* HEADER GLOBAL */}
       <Header />
 
       <main className="flex-1 bg-blue-50/40">
@@ -325,6 +370,24 @@ export default function CreateHousePage() {
                     </p>
                   </div>
 
+                  {/* Head of House (opcional) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Head of House (optional)
+                    </label>
+                    <Input
+                      value={headUserId}
+                      onChange={(e) => setHeadUserId(e.target.value)}
+                      placeholder="Paste the user_id of an Admin / Super Admin"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      If you provide a valid user_id of an Admin or Super Admin,
+                      this user will be set as Head of House right after
+                      creation. You can also set or change the Head later in
+                      the House detail page.
+                    </p>
+                  </div>
+
                   {/* Submit */}
                   <div className="pt-2 flex justify-end gap-2">
                     <Button
@@ -346,13 +409,9 @@ export default function CreateHousePage() {
               )}
             </CardContent>
           </Card>
-
-          {/* DEBUG */}
-          {/* DEBUG: This is the CREATE HOUSE page. If you see the list here, something is wrong with routing/deploy. */}
         </div>
       </main>
 
-      {/* FOOTER GLOBAL */}
       <Footer />
     </div>
   );
