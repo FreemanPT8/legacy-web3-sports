@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import {
   Card,
   CardContent,
@@ -152,170 +154,181 @@ export default function AdminHousesPage() {
   }, [houses, search, statusFilter]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto py-10">
-        {/* Header + botão criar */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-1">Houses of Sports</h1>
-            <p className="text-gray-600">
-              View and manage Houses, Heads of House and House Moderators.
-            </p>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* HEADER GLOBAL */}
+      <Header />
+
+      <main className="flex-1 py-10">
+        <div className="container mx-auto px-4 max-w-6xl">
+          {/* Header + botão criar */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold mb-1">Houses of Sports</h1>
+              <p className="text-gray-600">
+                View and manage Houses, Heads of House and House Moderators.
+              </p>
+            </div>
+            <Link href="/admin/houses/create">
+              <Button type="button">
+                <Plus className="h-4 w-4 mr-2" />
+                Create new House
+              </Button>
+            </Link>
           </div>
-          <Link href="/admin/houses/create">
-            <Button type="button">
-              <Plus className="h-4 w-4 mr-2" />
-              Create new House
-            </Button>
-          </Link>
-        </div>
 
-        {/* Filtros */}
-        <Card className="mb-6">
-          <CardContent className="pt-6 flex flex-col md:flex-row gap-4 items-center">
-            <div className="flex-1 w-full">
-              <Input
-                placeholder="Search by sport, country or Head of House..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <div className="w-full md:w-60">
-              <Select
-                value={statusFilter}
-                onValueChange={(val) =>
-                  setStatusFilter(val as 'all' | HouseStatus)
-                }
+          {/* Filtros */}
+          <Card className="mb-6">
+            <CardContent className="pt-6 flex flex-col md:flex-row gap-4 items-center">
+              <div className="flex-1 w-full">
+                <Input
+                  placeholder="Search by sport, country or Head of House..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="w-full md:w-60">
+                <Select
+                  value={statusFilter}
+                  onValueChange={(val) =>
+                    setStatusFilter(val as 'all' | HouseStatus)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch('');
+                  setStatusFilter('all');
+                }}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearch('');
-                setStatusFilter('all');
-              }}
-            >
-              Clear filters
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Erro */}
-        {error && (
-          <Card className="mb-4 border-red-200 bg-red-50">
-            <CardContent className="pt-4 pb-4 text-red-800 text-sm">
-              {error}
+                Clear filters
+              </Button>
             </CardContent>
           </Card>
-        )}
 
-        {/* Lista */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
-              Houses list
-            </CardTitle>
-            <CardDescription>
-              Showing {filtered.length} of {houses.length} Houses.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading Houses of Sports...
-              </div>
-            ) : filtered.length === 0 ? (
-              <p className="py-8 text-center text-gray-500 text-sm">
-                {houses.length === 0
-                  ? 'No Houses found. Create the first House using the button above.'
-                  : 'No Houses match the current filters.'}
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="text-left py-2 px-3">Sport</th>
-                      <th className="text-left py-2 px-3">Country</th>
-                      <th className="text-left py-2 px-3">Status</th>
-                      <th className="text-left py-2 px-3">Head of House</th>
-                      <th className="text-left py-2 px-3">Moderators</th>
-                      <th className="text-left py-2 px-3">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((house) => (
-                      <tr
-                        key={house.id}
-                        className="border-b hover:bg-gray-50 cursor-pointer"
-                        onClick={() =>
-                          router.push(`/admin/houses/${house.id}`)
-                        }
-                      >
-                        <td className="py-2 px-3">
-                          <div className="font-medium">
-                            {house.sport_name || 'Unknown sport'}
-                          </div>
-                          <div className="text-xs text-gray-500 uppercase">
-                            {house.sport_code}
-                          </div>
-                        </td>
-                        <td className="py-2 px-3">
-                          <span className="uppercase text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                            {house.country_code}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3">
-                          <StatusBadge status={house.status} />
-                        </td>
-                        <td className="py-2 px-3">
-                          {house.head ? (
-                            <div className="flex flex-col">
-                              <span className="font-medium">
-                                {house.head.full_name || house.head.username}
-                              </span>
-                              {house.head.username && (
-                                <span className="text-xs text-gray-500">
-                                  @{house.head.username}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-400">
-                              No Head defined
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 text-xs text-gray-600">
-                          {house.moderators_count ?? 0}
-                        </td>
-                        <td className="py-2 px-3 text-xs text-gray-500">
-                          {house.created_at
-                            ? format(new Date(house.created_at), 'dd/MM/yyyy')
-                            : '-'}
-                        </td>
+          {/* Erro */}
+          {error && (
+            <Card className="mb-4 border-red-200 bg-red-50">
+              <CardContent className="pt-4 pb-4 text-red-800 text-sm">
+                {error}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lista */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Houses list
+              </CardTitle>
+              <CardDescription>
+                Showing {filtered.length} of {houses.length} Houses.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Loading Houses of Sports...
+                </div>
+              ) : filtered.length === 0 ? (
+                <p className="py-8 text-center text-gray-500 text-sm">
+                  {houses.length === 0
+                    ? 'No Houses found. Create the first House using the button above.'
+                    : 'No Houses match the current filters.'}
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-gray-50">
+                        <th className="text-left py-2 px-3">Sport</th>
+                        <th className="text-left py-2 px-3">Country</th>
+                        <th className="text-left py-2 px-3">Status</th>
+                        <th className="text-left py-2 px-3">Head of House</th>
+                        <th className="text-left py-2 px-3">Moderators</th>
+                        <th className="text-left py-2 px-3">Created</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </thead>
+                    <tbody>
+                      {filtered.map((house) => (
+                        <tr
+                          key={house.id}
+                          className="border-b hover:bg-gray-50 cursor-pointer"
+                          onClick={() =>
+                            router.push(`/admin/houses/${house.id}`)
+                          }
+                        >
+                          <td className="py-2 px-3">
+                            <div className="font-medium">
+                              {house.sport_name || 'Unknown sport'}
+                            </div>
+                            <div className="text-xs text-gray-500 uppercase">
+                              {house.sport_code}
+                            </div>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className="uppercase text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                              {house.country_code}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3">
+                            <StatusBadge status={house.status} />
+                          </td>
+                          <td className="py-2 px-3">
+                            {house.head ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {house.head.full_name || house.head.username}
+                                </span>
+                                {house.head.username && (
+                                  <span className="text-xs text-gray-500">
+                                    @{house.head.username}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">
+                                No Head defined
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 text-xs text-gray-600">
+                            {house.moderators_count ?? 0}
+                          </td>
+                          <td className="py-2 px-3 text-xs text-gray-500">
+                            {house.created_at
+                              ? format(
+                                  new Date(house.created_at),
+                                  'dd/MM/yyyy'
+                                )
+                              : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </main>
+
+      {/* FOOTER GLOBAL */}
+      <Footer />
     </div>
   );
 }
