@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -85,8 +85,8 @@ export async function GET(request: NextRequest) {
     const rawLocale = searchParams.get('locale');
     const locale = normalizeLocale(rawLocale);
 
-    // 1) Houses
-    const { data: housesData, error: housesError } = await supabase
+    // 1) Houses (usar supabaseAdmin para ignorar RLS)
+    const { data: housesData, error: housesError } = await supabaseAdmin
       .from('houses_of_sports')
       .select(
         'id, sport_id, country_code, status, name_i18n, created_at'
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     // 2) Sports
     const sportIds = Array.from(new Set(houses.map((h) => h.sport_id)));
 
-    const { data: sportsData, error: sportsError } = await supabase
+    const { data: sportsData, error: sportsError } = await supabaseAdmin
       .from('sports')
       .select('id, code, name_i18n')
       .in('id', sportIds);
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
     // 3) Head of House
     const houseIds = houses.map((h) => h.id);
 
-    const { data: headsData, error: headsError } = await supabase
+    const { data: headsData, error: headsError } = await supabaseAdmin
       .from('house_heads')
       .select('house_id, admin_id')
       .in('house_id', houseIds);
@@ -163,10 +163,11 @@ export async function GET(request: NextRequest) {
     // 4) Admin assignments
     const adminIds = Array.from(new Set(heads.map((h) => h.admin_id)));
 
-    const { data: adminAssignData, error: adminAssignError } = await supabase
-      .from('admin_assignments')
-      .select('id, user_id')
-      .in('id', adminIds);
+    const { data: adminAssignData, error: adminAssignError } =
+      await supabaseAdmin
+        .from('admin_assignments')
+        .select('id, user_id')
+        .in('id', adminIds);
 
     if (adminAssignError) {
       console.error('Error loading admin_assignments:', adminAssignError);
@@ -182,10 +183,11 @@ export async function GET(request: NextRequest) {
     const adminAssignments = (adminAssignData ?? []) as AdminAssignmentRow[];
 
     // 5) Moderadores
-    const { data: moderatorsData, error: moderatorsError } = await supabase
-      .from('house_moderators')
-      .select('house_id, user_id, permissions')
-      .in('house_id', houseIds);
+    const { data: moderatorsData, error: moderatorsError } =
+      await supabaseAdmin
+        .from('house_moderators')
+        .select('house_id, user_id, permissions')
+        .in('house_id', houseIds);
 
     if (moderatorsError) {
       console.error('Error loading house_moderators:', moderatorsError);
@@ -207,7 +209,7 @@ export async function GET(request: NextRequest) {
 
     let users: UserRow[] = [];
     if (allUserIds.length > 0) {
-      const { data: usersData, error: usersError } = await supabase
+      const { data: usersData, error: usersError } = await supabaseAdmin
         .from('users')
         .select('id, username, full_name, role, avatar_url')
         .in('id', allUserIds);
@@ -263,7 +265,11 @@ export async function GET(request: NextRequest) {
           ? `House of ${sportName} ${house.country_code}`
           : sportName || 'House of Sports';
 
-      const title = resolveLocalizedName(house.name_i18n, locale, fallbackHouseName);
+      const title = resolveLocalizedName(
+        house.name_i18n,
+        locale,
+        fallbackHouseName
+      );
 
       // Head da House
       const headRow = headByHouse.get(house.id) || null;
