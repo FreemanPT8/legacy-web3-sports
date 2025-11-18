@@ -3,12 +3,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Trophy, Loader2 } from 'lucide-react';
+import { Trophy, Loader2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
@@ -43,7 +55,10 @@ const statusOptions: { value: 'all' | HouseStatus; label: string }[] = [
 ];
 
 function StatusBadge({ status }: { status: HouseStatus }) {
-  const map: Record<HouseStatus, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+  const map: Record<
+    HouseStatus,
+    { label: string; variant: 'default' | 'secondary' | 'outline' }
+  > = {
     active: { label: 'Active', variant: 'default' },
     under_construction: { label: 'In construction', variant: 'secondary' },
     development: { label: 'In development', variant: 'outline' },
@@ -138,10 +153,19 @@ export default function AdminHousesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="container mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-2">Houses of Sports</h1>
-        <p className="text-gray-600 mb-6">
-          View and manage Houses, Heads of House and House Moderators.
-        </p>
+        {/* Header + botão criar */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Houses of Sports</h1>
+            <p className="text-gray-600">
+              View and manage Houses, Heads of House and House Moderators.
+            </p>
+          </div>
+          <Button onClick={() => router.push('/admin/houses/create')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create new House
+          </Button>
+        </div>
 
         {/* Filtros */}
         <Card className="mb-6">
@@ -213,7 +237,7 @@ export default function AdminHousesPage() {
             ) : filtered.length === 0 ? (
               <p className="py-8 text-center text-gray-500 text-sm">
                 {houses.length === 0
-                  ? 'No Houses found. Create the first House directly in the database or via future admin tools.'
+                  ? 'No Houses found. Create the first House using the button above.'
                   : 'No Houses match the current filters.'}
               </p>
             ) : (
