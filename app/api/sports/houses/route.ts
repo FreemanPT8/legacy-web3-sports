@@ -291,6 +291,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: house.id,
+        sport_id: house.sport_id,
         title,
         sport_name: sportName,
         country_code: house.country_code ?? '',
