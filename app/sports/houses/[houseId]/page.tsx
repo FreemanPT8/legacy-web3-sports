@@ -1,87 +1,133 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { ArrowLeft, Loader2, Trophy } from 'lucide-react';
+import { Loader2, ArrowLeft, Users, MessageCircle } from 'lucide-react';
 
-type HouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
+type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
 interface House {
   id: string;
-  title: string;
-  sport_name: string | null;
-  country_code: string;
-  status: HouseStatus;
-  head_username: string | null;
-  head_full_name: string | null;
-  moderators_count: number;
+  name: string;
+  country_code: string | null;
+  status: PublicHouseStatus;
   created_at: string | null;
+  sport: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
+  head: {
+    user_id: string;
+    username: string | null;
+    full_name: string | null;
+    role: string | null;
+    avatar_url: string | null;
+  } | null;
+  moderators: {
+    user_id: string;
+    username: string | null;
+    full_name: string | null;
+    role: string | null;
+    avatar_url: string | null;
+  }[];
 }
 
-const STATUS_LABELS: Record<HouseStatus, string> = {
-  IN_DEVELOPMENT: 'In Development',
-  UNDER_CONSTRUCTION: 'Under Construction',
+interface HousesApiResponse {
+  success: boolean;
+  houses?: House[];
+  error?: string;
+}
+
+const STATUS_LABELS: Record<PublicHouseStatus, string> = {
   ACTIVE: 'Active',
+  UNDER_CONSTRUCTION: 'In construction',
+  IN_DEVELOPMENT: 'In development',
 };
 
-const STATUS_COLORS: Record<HouseStatus, string> = {
-  IN_DEVELOPMENT: 'bg-yellow-50 text-yellow-800 border-yellow-200',
-  UNDER_CONSTRUCTION: 'bg-blue-50 text-blue-800 border-blue-200',
-  ACTIVE: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+const STATUS_BADGE_CLASSES: Record<PublicHouseStatus, string> = {
+  ACTIVE:
+    'inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800',
+  UNDER_CONSTRUCTION:
+    'inline-flex items-center rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-800',
+  IN_DEVELOPMENT:
+    'inline-flex items-center rounded-full border border-gray-300 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700',
 };
 
-export default function HouseProfilePage() {
+export default function PublicHousePage() {
   const params = useParams<{ houseId: string }>();
   const router = useRouter();
-  const houseId = params?.houseId as string;
+  const { user } = useAuth();
 
-  const [house, setHouse] = useState<House | null>(null);
+  const houseId = params?.houseId;
+
+  const [houses, setHouses] = useState<House[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchHouse = async () => {
+    const fetchHouses = async () => {
       setLoading(true);
       setError(null);
 
       try {
         const res = await fetch('/api/sports/houses?locale=pt');
-        const data = await res.json();
+        const data: HousesApiResponse = await res.json();
 
         if (!res.ok || !data.success) {
-          setError(data.error || 'Error loading House');
-          setLoading(false);
-          return;
+          throw new Error(data.error || 'Error loading Houses of Sports.');
         }
 
-        const all: House[] = data.houses ?? [];
-        const found = all.find((h) => h.id === houseId) || null;
-
-        if (!found) {
-          setError('House not found');
-        }
-
-        setHouse(found);
-      } catch (err) {
-        console.error('Error loading House profile:', err);
-        setError('Network error while loading House');
+        setHouses(data.houses || []);
+      } catch (err: any) {
+        console.error('Error loading Houses for public page:', err);
+        setError(
+          err?.message || 'Unexpected error while loading House information.'
+        );
       } finally {
         setLoading(false);
       }
     };
 
     if (houseId) {
-      fetchHouse();
-    } else {
-      setLoading(false);
-      setError('Invalid House ID');
+      fetchHouses();
     }
   }, [houseId]);
 
-  const goBack = () => {
-    router.push('/sports/houses');
+  const house = useMemo(
+    () => houses.find((h) => h.id === houseId),
+    [houses, houseId]
+  );
+
+  const createdAtFormatted = useMemo(() => {
+    if (!house?.created_at) return '';
+    try {
+      return new Date(house.created_at).toLocaleDateString('pt-PT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } catch {
+      return house.created_at;
+    }
+  }, [house?.created_at]);
+
+  const handleJoinHouse = () => {
+    // placeholder, no backend ainda
+    alert(
+      'Em breve vais poder juntar-te oficialmente a esta House e ganhar XP com a comunidade. 🚀'
+    );
+  };
+
+  const handleOpenChat = () => {
+    // placeholder para o chat privado
+    alert(
+      'O chat privado da House ainda está em desenvolvimento. Em breve vais poder falar com a tua comunidade aqui.'
+    );
   };
 
   return (
@@ -91,148 +137,178 @@ export default function HouseProfilePage() {
       <main className="flex-1">
         <div className="max-w-5xl mx-auto px-4 py-8">
           <button
-            onClick={goBack}
+            onClick={() => router.push('/sports')}
             className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Houses
+            Voltar aos desportos
           </button>
 
           {loading ? (
-            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+            <div className="flex items-center justify-center py-20 text-gray-600 gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
-              Loading House profile…
+              <span>A carregar House of Sports…</span>
             </div>
-          ) : error || !house ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
-              {error || 'House not found.'}
+          ) : error ? (
+            <div className="py-10 text-center text-sm text-red-700">
+              {error}
+            </div>
+          ) : !house ? (
+            <div className="py-10 text-center text-sm text-gray-600">
+              Esta House não foi encontrada ou ainda não está disponível
+              publicamente.
             </div>
           ) : (
             <>
-              {/* Hero / header da House */}
-              <section className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden mb-6">
-                {/* Cover */}
-                <div className="h-32 bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-500" />
-
-                {/* Conteúdo principal */}
-                <div className="px-6 pb-6 -mt-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="h-20 w-20 rounded-2xl bg-white shadow flex items-center justify-center">
-                      <Trophy className="h-10 w-10 text-yellow-500" />
-                    </div>
-                    <div>
-                      <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                        {house.title}
-                      </h1>
-                      <p className="mt-1 text-sm text-gray-600">
-                        Official LEGACY community for{' '}
-                        <span className="font-semibold">
-                          {house.sport_name || 'this sport'}
+              {/* HERO DA HOUSE */}
+              <section className="mb-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase text-gray-500 mb-1">
+                      House of Sports
+                    </p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                      {house.name}
+                    </h1>
+                    {house.sport && (
+                      <p className="mt-1 text-xs text-gray-600">
+                        Desporto:{' '}
+                        <span className="font-medium">
+                          {house.sport.name}
                         </span>{' '}
-                        in{' '}
-                        <span className="font-semibold">
+                        · {house.sport.code}
+                      </p>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                      {house.country_code && (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 font-mono uppercase">
                           {house.country_code}
                         </span>
-                        .
-                      </p>
-                      {house.created_at && (
-                        <p className="mt-1 text-xs text-gray-400">
-                          Created on{' '}
-                          {new Date(house.created_at).toLocaleDateString(
-                            'pt-PT'
-                          )}
-                        </p>
+                      )}
+                      <span className={STATUS_BADGE_CLASSES[house.status]}>
+                        {STATUS_LABELS[house.status]}
+                      </span>
+                      {createdAtFormatted && (
+                        <span>Created on {createdAtFormatted}</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-start md:items-end gap-2">
-                    <span
-                      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${STATUS_COLORS[house.status]}`}
-                    >
-                      {STATUS_LABELS[house.status]}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      Moderators:{' '}
-                      <span className="font-semibold">
-                        {house.moderators_count}
-                      </span>
-                    </span>
+                  <div className="flex flex-col items-stretch gap-2 md:w-64">
+                    {user ? (
+                      <>
+                        <button
+                          onClick={handleJoinHouse}
+                          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                        >
+                          Join this House
+                        </button>
+                        <button
+                          onClick={handleOpenChat}
+                          className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Open House chat
+                        </button>
+                        <p className="text-[11px] text-gray-500">
+                          Como membro autenticado vais poder participar em
+                          missões, ganhar XP e falar com a comunidade desta
+                          House.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/signup"
+                          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                        >
+                          Cria conta para seguir esta House
+                        </Link>
+                        <p className="text-[11px] text-gray-500">
+                          Autentica-te para receber missões desta House,
+                          acompanhar o progresso e conversar no chat privado.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </section>
 
-              {/* Head, descrição e espaço para features futuras */}
-              <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6">
-                {/* Coluna principal */}
-                <section className="space-y-4">
-                  <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                      About this House
-                    </h2>
-                    <p className="text-sm text-gray-700">
-                      This House will soon have its own missions, rankings and
-                      events connected to the Apertum blockchain. Members will
-                      be able to earn XP and collectibles by completing sport
-                      and Web3 challenges specific to this community.
-                    </p>
-                    <p className="mt-2 text-sm text-gray-600">
-                      For now, this is an experimental preview. More features
-                      will be unlocked as the LEGACY platform evolves.
-                    </p>
-                  </div>
+              {/* BLOCO SOBRE A HOUSE */}
+              <section className="grid gap-6 md:grid-cols-[2fr,1.2fr] mb-10">
+                <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm">
+                  <h2 className="text-sm font-semibold mb-2">
+                    Sobre esta House
+                  </h2>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    Esta é a comunidade Web3 oficial para profissionais e
+                    entusiastas de{' '}
+                    <span className="font-semibold">
+                      {house.sport?.name ?? 'este desporto'}
+                    </span>{' '}
+                    em {house.country_code ?? 'este país'}. Aqui vais encontrar
+                    missões, desafios, conteúdos educativos e eventos focados
+                    nesta disciplina.
+                  </p>
+                  <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                    À medida que a House evoluir, vais ver{' '}
+                    <span className="font-semibold">
+                      rankings, leaderboards, badges
+                    </span>{' '}
+                    e recompensas ligadas à blockchain Apertum.
+                  </p>
+                </div>
 
-                  <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                      Upcoming features
-                    </h2>
-                    <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
-                      <li>XP integrated with House-specific missions</li>
-                      <li>Leaderboards for members of this House</li>
-                      <li>Collectible badges and on-chain achievements</li>
-                      <li>Realtime chat channel for the community</li>
-                      <li>Web3 rewards powered by Apertum blockchain</li>
-                    </ul>
-                  </div>
-                </section>
-
-                {/* Side column – Head of House */}
-                <aside className="space-y-4">
-                  <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                      Head of House
-                    </h2>
-
-                    {house.head_username ? (
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
-                          {house.head_full_name
-                            ? house.head_full_name.charAt(0).toUpperCase()
-                            : house.head_username.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {house.head_full_name || house.head_username}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            @{house.head_username}
-                          </div>
-                          <p className="mt-2 text-xs text-gray-600">
-                            Responsible for guiding the community, approving
-                            moderators and curating missions for this House.
+                <div className="space-y-4">
+                  <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm">
+                    <h3 className="text-sm font-semibold mb-2">
+                      Leadership &amp; Team
+                    </h3>
+                    {house.head ? (
+                      <div className="mb-3">
+                        <p className="text-xs text-gray-500 mb-1">
+                          Head of House
+                        </p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {house.head.full_name || house.head.username}
+                        </p>
+                        {house.head.username && (
+                          <p className="text-xs text-gray-500">
+                            @{house.head.username} ·{' '}
+                            {house.head.role || 'Member'}
                           </p>
-                        </div>
+                        )}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-600">
-                        This House does not have a Head defined yet. While the
-                        House is in development, LEGACY admins are preparing the
-                        leadership and governance model for this community.
+                      <p className="text-xs text-gray-500 mb-2">
+                        O Head of House ainda está a ser definido.
                       </p>
                     )}
+
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <Users className="h-4 w-4" />
+                      <span>
+                        {house.moderators.length > 0
+                          ? `${house.moderators.length} moderator(es) a apoiar esta House.`
+                          : 'Ainda não existem moderadores definidos.'}
+                      </span>
+                    </div>
                   </div>
-                </aside>
-              </div>
+                </div>
+              </section>
+
+              {/* FUTURO: MISSÕES, EVENTOS, ETC. */}
+              <section className="mb-8">
+                <div className="rounded-xl bg-white border border-dashed border-gray-300 p-4 text-xs text-gray-500">
+                  Em breve vais encontrar aqui:
+                  <ul className="mt-2 list-disc list-inside space-y-1">
+                    <li>Missões específicas desta House</li>
+                    <li>Leaderboard de membros com mais XP</li>
+                    <li>Eventos, treinos e desafios comunitários</li>
+                    <li>Badges e recompensas ligadas à blockchain Apertum</li>
+                  </ul>
+                </div>
+              </section>
             </>
           )}
         </div>
