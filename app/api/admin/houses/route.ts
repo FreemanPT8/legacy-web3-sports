@@ -63,6 +63,10 @@ const COUNTRY_LABELS: Record<string, string> = {
   BR: 'Brazil',
 };
 
+function toTitleCase(str: string): string {
+  return str.replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
+}
+
 // =========== GET /api/admin/houses ===========
 // Lista Houses com Head + nº de moderadores
 export async function GET(request: NextRequest) {
@@ -200,20 +204,6 @@ export async function GET(request: NextRequest) {
     const result: AdminHouse[] = houses.map((row) => {
       const name_i18n = row.name_i18n || {};
 
-      const status: HouseStatus =
-        row.status === 'active' || row.status === 'under_construction'
-          ? (row.status as HouseStatus)
-          : 'development';
-
-      const title =
-        (name_i18n.en as string | undefined) ||
-        (name_i18n.pt as string | undefined) ||
-        (name_i18n.es as string | undefined) ||
-        (name_i18n.fr as string | undefined) ||
-        (name_i18n.de as string | undefined) ||
-        (name_i18n.it as string | undefined) ||
-        'Unnamed House';
-
       // Head
       const headRow = headByHouse.get(row.id) || null;
       let headUser: UserRow | null = null;
@@ -224,12 +214,37 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Moderators count
+      // Moderators count (apenas utilizadores válidos)
       const mods = moderatorsByHouse.get(row.id) || [];
       const moderators_count = mods.reduce((acc, mod) => {
         if (userById.has(mod.user_id)) return acc + 1;
         return acc;
       }, 0);
+
+      // Status normalizado:
+      // - se for 'active' mantém
+      // - se for 'under_construction' mantém
+      // - se não tiver status, mas tiver Head → 'under_construction'
+      // - caso contrário → 'development'
+      let status: HouseStatus;
+      if (row.status === 'active') {
+        status = 'active';
+      } else if (row.status === 'under_construction') {
+        status = 'under_construction';
+      } else if (headUser) {
+        status = 'under_construction';
+      } else {
+        status = 'development';
+      }
+
+      const title =
+        (name_i18n.en as string | undefined) ||
+        (name_i18n.pt as string | undefined) ||
+        (name_i18n.es as string | undefined) ||
+        (name_i18n.fr as string | undefined) ||
+        (name_i18n.de as string | undefined) ||
+        (name_i18n.it as string | undefined) ||
+        'Unnamed House';
 
       return {
         id: row.id as string,
@@ -330,12 +345,14 @@ export async function POST(request: NextRequest) {
     }
 
     const sportNameI18n = (sportRow as any).name_i18n || {};
-    const baseSportName =
+    const baseSportNameRaw =
       sportNameI18n.en ||
       sportNameI18n.pt ||
       Object.values(sportNameI18n)[0] ||
       (sportRow as any).code ||
       'Sport';
+
+    const baseSportName = toTitleCase(baseSportNameRaw as string);
 
     const houseNameEn = `House of ${baseSportName} ${countryLabel}`;
     const name_i18n = {
@@ -364,12 +381,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Reaproveitar a lógica de mapeamento do GET
     const houseRow = inserted as HouseRow;
-    const createdHouseList = [houseRow];
-    const fakeRequest = new NextRequest(request.url);
-    // Poderíamos simplesmente devolver houseRow, mas para manter consistente com o GET
-    // vamos chamar o mapeamento "manual"
 
     const name = (houseRow.name_i18n?.en ??
       houseRow.name_i18n?.pt ??
