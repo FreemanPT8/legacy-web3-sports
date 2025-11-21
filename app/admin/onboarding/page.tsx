@@ -1,4 +1,3 @@
-// app/admin/onboarding/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -545,9 +544,12 @@ export default function AdminOnboardingPage() {
         return;
       }
 
-      // full_name não existe no tipo User, por isso usamos any aqui
-      const userFullName =
-        (user as any)?.full_name ?? null;
+      // aqui usamos "any" para poder ler full_name mesmo não estando no tipo User
+      const userAny = user as any;
+      const userFullName: string | null =
+        typeof userAny?.full_name === 'string'
+          ? userAny.full_name
+          : null;
 
       const res = await fetch('/api/admin/onboarding', {
         method: 'PATCH',
