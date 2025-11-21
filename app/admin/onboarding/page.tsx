@@ -29,7 +29,7 @@ interface OnboardingSubmission {
   assigned_to_user_id: string | null;
   assigned_to_username: string | null;
   assigned_to_full_name: string | null;
-  user_id: string | null; // <- NOVO: ligação à conta LEGACY
+  user_id: string | null; // ligação à conta LEGACY
   phone: string | null;
   telegram: string | null;
   organization: string | null;
@@ -163,6 +163,9 @@ export default function AdminOnboardingPage() {
   const [statusFilter, setStatusFilter] = useState<
     OnboardingStatus | 'ALL' | undefined
   >('ALL');
+  const [accountFilter, setAccountFilter] = useState<'ALL' | 'WITH' | 'WITHOUT'>(
+    'ALL'
+  );
   const [sportFilter, setSportFilter] = useState<string | 'ALL' | undefined>(
     'ALL'
   );
@@ -468,22 +471,36 @@ export default function AdminOnboardingPage() {
       list = list.filter((s) => s.assigned_to_user_id === user.id);
     }
 
+    // Filtro por conta criada / sem conta
+    if (accountFilter === 'WITH') {
+      list = list.filter((s) => !!s.user_id);
+    } else if (accountFilter === 'WITHOUT') {
+      list = list.filter((s) => !s.user_id);
+    }
+
     // ordenar por sequence_number asc como padrão
     list.sort((a, b) => {
       const aSeq = a.sequence_number ?? 0;
-      const bSeq = b.sequence_number ?? 0;
+      const bSeq = bSeq ?? 0;
       return aSeq - bSeq;
     });
 
     return list;
-  }, [submissions, search, statusFilter, sportFilter, responsibleFilter, user]);
+  }, [
+    submissions,
+    search,
+    statusFilter,
+    sportFilter,
+    responsibleFilter,
+    accountFilter,
+    user,
+  ]);
 
   const canEditStatus =
     !!selected &&
     !!user &&
     (user.role === 'Super Admin' ||
-      (user.role === 'Admin' &&
-        selected.assigned_to_user_id === user.id));
+      (user.role === 'Admin' && selected.assigned_to_user_id === user.id));
 
   const handleRowClick = (s: OnboardingSubmission) => {
     setSelected(s);
@@ -530,9 +547,7 @@ export default function AdminOnboardingPage() {
           s.id === selected.id ? { ...s, status: newStatus } : s
         )
       );
-      setSelected((prev) =>
-        prev ? { ...prev, status: newStatus } : prev
-      );
+      setSelected((prev) => (prev ? { ...prev, status: newStatus } : prev));
 
       // recarregar histórico para mostrar nova entrada
       void loadHistory(selected.id);
@@ -678,9 +693,9 @@ export default function AdminOnboardingPage() {
                 Onboarding Submissions
               </h1>
               <p className="text-sm text-gray-600 max-w-xl">
-                Caixa de entrada de formulários de onboarding. Aqui
-                consegues ver o estado, desporto, país, conta criada e responsável
-                por cada submissão.
+                Caixa de entrada de formulários de onboarding. Aqui consegues
+                ver o estado, desporto, país, conta criada e responsável por
+                cada submissão.
               </p>
             </div>
 
@@ -703,7 +718,7 @@ export default function AdminOnboardingPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-4 gap-3">
+            <div className="grid md:grid-cols-5 gap-3">
               {/* Pesquisa livre */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-700">
@@ -741,6 +756,24 @@ export default function AdminOnboardingPage() {
                 </select>
               </div>
 
+              {/* Conta criada / sem conta */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">
+                  Conta
+                </label>
+                <select
+                  value={accountFilter}
+                  onChange={(e) =>
+                    setAccountFilter(e.target.value as 'ALL' | 'WITH' | 'WITHOUT')
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="ALL">Todas</option>
+                  <option value="WITH">Só com conta</option>
+                  <option value="WITHOUT">Só sem conta</option>
+                </select>
+              </div>
+
               {/* Desporto */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-700">
@@ -749,8 +782,7 @@ export default function AdminOnboardingPage() {
                 <select
                   value={sportFilter ?? 'ALL'}
                   onChange={(e) =>
-                    setSportFilter((e.target.value as string) || 'ALL'
-                    )
+                    setSportFilter((e.target.value as string) || 'ALL')
                   }
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
@@ -779,8 +811,8 @@ export default function AdminOnboardingPage() {
                   <option value="MINE">Só as minhas</option>
                 </select>
                 <p className="text-[10px] text-gray-400">
-                  &quot;Só as minhas&quot; mostra submissões onde és o responsável
-                  atribuído.
+                  &quot;Só as minhas&quot; mostra submissões onde és o
+                  responsável atribuído.
                 </p>
               </div>
             </div>
@@ -1188,10 +1220,7 @@ export default function AdminOnboardingPage() {
                             </option>
                             {assignees.map((u) => (
                               <option key={u.id} value={u.id}>
-                                {u.full_name ||
-                                  u.username ||
-                                  u.email}{' '}
-                                ({u.role})
+                                {u.full_name || u.username || u.email} ({u.role})
                               </option>
                             ))}
                           </select>
