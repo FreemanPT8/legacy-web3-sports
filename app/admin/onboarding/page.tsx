@@ -29,7 +29,7 @@ interface OnboardingSubmission {
   assigned_to_user_id: string | null;
   assigned_to_username: string | null;
   assigned_to_full_name: string | null;
-  user_id: string | null; // novo: liga submissão a conta LEGACY
+  user_id: string | null; // liga submissão a conta LEGACY
   phone: string | null;
   telegram: string | null;
   organization: string | null;
@@ -575,14 +575,20 @@ export default function AdminOnboardingPage() {
         return;
       }
 
+      // usar type cast para aceder a full_name / username que não estão no tipo User
+      const currentUserFullName =
+        (user as any)?.full_name ?? null;
+      const currentUserUsername =
+        (user as any)?.username ?? null;
+
       setSubmissions((prev) =>
         prev.map((s) =>
           s.id === selected.id
             ? {
                 ...s,
                 assigned_to_user_id: user.id,
-                assigned_to_full_name: user.full_name || null,
-                assigned_to_username: user.username || null,
+                assigned_to_full_name: currentUserFullName,
+                assigned_to_username: currentUserUsername,
               }
             : s
         )
@@ -592,8 +598,8 @@ export default function AdminOnboardingPage() {
           ? {
               ...prev,
               assigned_to_user_id: user.id,
-              assigned_to_full_name: user.full_name || null,
-              assigned_to_username: user.username || null,
+              assigned_to_full_name: currentUserFullName,
+              assigned_to_username: currentUserUsername,
             }
           : prev
       );
@@ -1014,16 +1020,6 @@ export default function AdminOnboardingPage() {
                         ? selected.interests.join(', ')
                         : '—'}
                     </p>
-                  </div>
-                </div>
-
-                {/* Mensagem */}
-                <div className="space-y-1 text-xs">
-                  <div className="text-[11px] font-semibold text-gray-700">
-                    Mensagem
-                  </div>
-                  <div className="rounded-md border border-gray-200 bg-white p-3 text-gray-800 whitespace-pre-wrap">
-                    {selected.message || '—'}
                   </div>
                 </div>
 
