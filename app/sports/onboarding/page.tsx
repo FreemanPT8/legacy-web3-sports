@@ -1,3 +1,4 @@
+// app/sports/onboarding/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -113,16 +114,36 @@ function getSportRolesForLanguage(language: string): SportRoleOption[] {
   const rawRoles: any[] =
     (SPORTS_ROLES as any)[language] || (SPORTS_ROLES as any).en || [];
 
+  const langKey = language || 'en';
+
   return rawRoles
-    .map((role: any): SportRoleOption => {
+    .map((role: any, index: number): SportRoleOption => {
       // Caso simples: já é string
       if (typeof role === 'string') {
         return { value: role, label: role };
       }
 
-      // Caso seja objeto
       if (role && typeof role === 'object') {
-        const langKey = language;
+        // Caso especial: objeto é apenas um mapa de traduções, ex:
+        // { en: "Coach", pt: "Treinador", es: "Entrenador" }
+        const knownKeys = ['value', 'code', 'id', 'label', 'i18n', 'name'];
+        const hasKnownKeys = knownKeys.some((k) => k in role);
+        const values = Object.values(role);
+        const allStringValues = values.every((v) => typeof v === 'string');
+
+        if (!hasKnownKeys && allStringValues) {
+          const translations = role as Record<string, string>;
+          const labelFromMap =
+            translations[langKey] ||
+            translations[normalizeLang(langKey)] ||
+            translations.en ||
+            values[0];
+
+          const label = String(labelFromMap);
+          const value = label.toLowerCase().replace(/\s+/g, '_');
+
+          return { value, label };
+        }
 
         let label: string | undefined;
 
@@ -144,7 +165,7 @@ function getSportRolesForLanguage(language: string): SportRoleOption[] {
         }
 
         const valueRaw =
-          role.value || role.code || role.id || label || 'role';
+          role.value || role.code || role.id || label || `role_${index}`;
 
         const value = String(valueRaw);
         const finalLabel = String(label ?? valueRaw);
@@ -752,10 +773,7 @@ export default function OnboardingPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {sportRoleOptions.map((role) => (
-                          <SelectItem
-                            key={role.value}
-                            value={role.value}
-                          >
+                          <SelectItem key={role.value} value={role.value}>
                             {role.label}
                           </SelectItem>
                         ))}
