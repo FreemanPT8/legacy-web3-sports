@@ -228,6 +228,14 @@ export default function AdminHouseDetailPage() {
     }
   }, [house?.created_at]);
 
+  // --- Permissões derivadas no client ---
+  const isSuperAdmin = user?.role === 'Super Admin';
+  const isHeadOfThisHouse = !!(head && user && head.id === user.id);
+
+  // Quem pode mexer em quê:
+  const canManageHead = isSuperAdmin; // só Super Admin define/remove Head
+  const canManageModerators = isSuperAdmin || isHeadOfThisHouse;
+
   // 3) Atualizar status da House
   const handleSaveStatus = async () => {
     if (!house) return;
@@ -274,6 +282,10 @@ export default function AdminHouseDetailPage() {
     if (!house) return;
     if (!headUserIdInput.trim()) {
       setError('Please provide a userId to promote as Head.');
+      return;
+    }
+    if (!canManageHead) {
+      setError('Only Super Admin can change the Head of House.');
       return;
     }
 
@@ -334,6 +346,10 @@ export default function AdminHouseDetailPage() {
 
   const handleRemoveHead = async () => {
     if (!house || !head) return;
+    if (!canManageHead) {
+      setError('Only Super Admin can remove the Head of House.');
+      return;
+    }
 
     try {
       setRemovingHead(true);
@@ -392,6 +408,10 @@ export default function AdminHouseDetailPage() {
       setError('Please provide a userId for the moderator.');
       return;
     }
+    if (!canManageModerators) {
+      setError('Only the Head of this House or a Super Admin can add moderators.');
+      return;
+    }
 
     try {
       setSavingMod(true);
@@ -443,6 +463,10 @@ export default function AdminHouseDetailPage() {
 
   const handleRemoveModerator = async (userId: string) => {
     if (!house) return;
+    if (!canManageModerators) {
+      setError('Only the Head of this House or a Super Admin can remove moderators.');
+      return;
+    }
 
     try {
       setRemovingModId(userId);
@@ -760,43 +784,51 @@ export default function AdminHouseDetailPage() {
                   </p>
                 )}
 
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Paste user_id of Admin / Super Admin"
-                    value={headUserIdInput}
-                    onChange={(e) => setHeadUserIdInput(e.target.value)}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handlePromoteHead}
-                      disabled={savingHead}
-                    >
-                      {savingHead && (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
-                      {head ? 'Change Head' : 'Set Head'}
-                    </Button>
-                    {head && (
+                {canManageHead ? (
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Paste user_id of Admin / Super Admin"
+                      value={headUserIdInput}
+                      onChange={(e) => setHeadUserIdInput(e.target.value)}
+                    />
+                    <div className="flex gap-2">
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={handleRemoveHead}
-                        disabled={removingHead}
+                        onClick={handlePromoteHead}
+                        disabled={savingHead}
                       >
-                        {removingHead && (
+                        {savingHead && (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         )}
-                        Remove Head
+                        {head ? 'Change Head' : 'Set Head'}
                       </Button>
-                    )}
+                      {head && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleRemoveHead}
+                          disabled={removingHead}
+                        >
+                          {removingHead && (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          )}
+                          Remove Head
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-500">
+                      Usa apenas utilizadores com role <strong>Admin</strong> ou{' '}
+                      <strong>Super Admin</strong> como Head nesta fase. O nome e
+                      o username aparecem no perfil público da House.
+                    </p>
                   </div>
-                  <p className="text-[11px] text-gray-500">
-                    Usa apenas utilizadores com role <strong>Admin</strong> ou{' '}
-                    <strong>Super Admin</strong> como Head nesta fase. O nome e
-                    o username aparecem no perfil público da House.
+                ) : (
+                  <p className="text-[11px] text-gray-400">
+                    Apenas contas <strong>Super Admin</strong> podem definir ou
+                    alterar o Head of House. Admins podem consultar, mas não
+                    alterar este campo.
                   </p>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -886,23 +918,32 @@ export default function AdminHouseDetailPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                <Input
-                  placeholder="Paste user_id to add as moderator"
-                  value={modUserIdInput}
-                  onChange={(e) => setModUserIdInput(e.target.value)}
-                />
-                <Button
-                  size="sm"
-                  onClick={handleAddModerator}
-                  disabled={savingMod}
-                >
-                  {savingMod && (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  )}
-                  Add moderator
-                </Button>
-              </div>
+              {canManageModerators ? (
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <Input
+                    placeholder="Paste user_id to add as moderator"
+                    value={modUserIdInput}
+                    onChange={(e) => setModUserIdInput(e.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleAddModerator}
+                    disabled={savingMod}
+                  >
+                    {savingMod && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Add moderator
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-[11px] text-gray-400">
+                  Apenas o <strong>Head desta House</strong> ou um{' '}
+                  <strong>Super Admin</strong> podem adicionar ou remover
+                  moderadores. Podes ver a lista abaixo, mas não alterar.
+                </p>
+              )}
+
               <p className="text-[11px] text-gray-500">
                 Moderators não substituem o Head of House, mas podem gerir
                 missões, eventos e comunidade. Em breve estes nomes também podem
@@ -929,19 +970,21 @@ export default function AdminHouseDetailPage() {
                           {mod.role || 'Member'}
                         </p>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={removingModId === mod.id}
-                        onClick={() => handleRemoveModerator(mod.id)}
-                      >
-                        {removingModId === mod.id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4 mr-2" />
-                        )}
-                        Remove
-                      </Button>
+                      {canManageModerators && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={removingModId === mod.id}
+                          onClick={() => handleRemoveModerator(mod.id)}
+                        >
+                          {removingModId === mod.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 mr-2" />
+                          )}
+                          Remove
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>

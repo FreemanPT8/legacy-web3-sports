@@ -27,7 +27,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { houseId } = params;
 
   try {
-    // 1) Obter o registo de head para esta house
     const { data: headRow, error: headError } = await supabaseAdmin
       .from('house_heads')
       .select('house_id, admin_id')
@@ -49,7 +48,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // 2) Ir buscar a admin_assignment para descobrir o user
     const { data: adminAssign, error: adminError } = await supabaseAdmin
       .from('admin_assignments')
       .select('id, user_id')
@@ -71,14 +69,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     if (!adminAssign) {
-      // Inconsistência de dados: existe house_head sem admin_assignment
       return NextResponse.json(
         { success: true, head: null },
         { status: 200 }
       );
     }
 
-    // 3) Buscar o user em si
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, username, full_name, email, role, avatar_url')
@@ -136,6 +132,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return authResult.response!;
   }
 
+  const currentUser = authResult.user!;
+  if (currentUser.role !== 'Super Admin') {
+    return NextResponse.json(
+      { success: false, error: 'Only Super Admin can define Head of House.' },
+      { status: 403 }
+    );
+  }
+
   const { houseId } = params;
 
   try {
@@ -149,7 +153,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // 1) Validar se a house existe
+    // 1) Validar house
     const { data: house, error: houseError } = await supabaseAdmin
       .from('houses_of_sports')
       .select('id')
@@ -171,7 +175,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // 2) Validar se o user existe
+    // 2) Validar user e role (só Admin ou Super Admin podem ser Head)
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, username, full_name, email, role, avatar_url')
@@ -190,6 +194,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
+      );
+    }
+
+    if (user.role !== 'Admin' && user.role !== 'Super Admin') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Head of House must be a user with role Admin or Super Admin.',
+        },
+        { status: 400 }
       );
     }
 
@@ -222,7 +236,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         .from('admin_assignments')
         .insert({
           user_id: userId,
-          // por agora deixamos houses / countries nulos ou vazios
           houses: null,
           countries: null,
         })
@@ -301,6 +314,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
     return authResult.response!;
+  }
+
+  const currentUser = authResult.user!;
+  if (currentUser.role !== 'Super Admin') {
+    return NextResponse.json(
+      { success: false, error: 'Only Super Admin can remove Head of House.' },
+      { status: 403 }
+    );
   }
 
   const { houseId } = params;

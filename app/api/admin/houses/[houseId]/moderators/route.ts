@@ -17,6 +17,32 @@ type ModeratorUser = {
   avatar_url: string | null;
 };
 
+// helper: verifica se o utilizador é Head desta House
+async function isHeadOfHouse(houseId: string, userId: string): Promise<boolean> {
+  try {
+    const { data: headRow, error: headError } = await supabaseAdmin
+      .from('house_heads')
+      .select('admin_id')
+      .eq('house_id', houseId)
+      .maybeSingle();
+
+    if (headError || !headRow) return false;
+
+    const { data: adminAssign, error: adminError } = await supabaseAdmin
+      .from('admin_assignments')
+      .select('user_id')
+      .eq('id', (headRow as any).admin_id)
+      .maybeSingle();
+
+    if (adminError || !adminAssign) return false;
+
+    return (adminAssign as any).user_id === userId;
+  } catch (e) {
+    console.error('Error checking isHeadOfHouse:', e);
+    return false;
+  }
+}
+
 // GET /api/admin/houses/[houseId]/moderators
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const authResult = await requireAdmin(request);
@@ -27,7 +53,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { houseId } = params;
 
   try {
-    // 1) Buscar os registos de moderadores desta House
     const { data: modsRows, error: modsError } = await supabaseAdmin
       .from('house_moderators')
       .select('house_id, user_id')
@@ -54,7 +79,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const userIds = Array.from(new Set(moderators.map((m: any) => m.user_id)));
 
-    // 2) Buscar dados dos utilizadores
     const { data: usersData, error: usersError } = await supabaseAdmin
       .from('users')
       .select('id, username, full_name, email, role, avatar_url')
@@ -119,6 +143,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return authResult.response!;
   }
 
+  const currentUser = authResult.user!;
   const { houseId } = params;
 
   try {
@@ -129,6 +154,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { success: false, error: 'userId is required' },
         { status: 400 }
+      );
+    }
+
+    // Apenas Super Admin ou Head desta House podem adicionar moderadores
+    const isSuperAdmin = currentUser.role === 'Super Admin';
+    const isHead = await isHeadOfHouse(houseId, currentUser.userId);
+
+    if (!isSuperAdmin && !isHead) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Only Super Admin or Head of this House can add moderators.',
+        },
+        { status: 403 }
       );
     }
 
@@ -157,7 +197,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // 2) Validar user
+    // 2) Validar user (pode ser Member, Admin ou Super Admin)
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, username, full_name, email, role, avatar_url')
@@ -254,6 +294,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return authResult.response!;
   }
 
+  const currentUser = authResult.user!;
   const { houseId } = params;
 
   try {
@@ -264,6 +305,20 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { success: false, error: 'userId is required' },
         { status: 400 }
+      );
+    }
+
+    const isSuperAdmin = currentUser.role === 'Super Admin';
+    const isHead = await isHeadOfHouse(houseId, currentUser.userId);
+
+    if (!isSuperAdmin && !isHead) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Only Super Admin or Head of this House can remove moderators.',
+        },
+        { status: 403 }
       );
     }
 

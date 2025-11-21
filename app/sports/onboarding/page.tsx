@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { COUNTRIES, HOUSES_OF_SPORTS, SPORTS_ROLES } from '@/lib/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Mail, MessageSquare, User, Trophy, Lightbulb } from 'lucide-react';
 import {
   Dialog,
@@ -253,6 +254,7 @@ function getValidationTexts(lang: string) {
 export default function OnboardingPage() {
   const { toast } = useToast();
   const { language, t } = useLanguage();
+  const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -395,6 +397,11 @@ export default function OnboardingPage() {
 
     try {
       const payload: any = { ...formData };
+
+      // se o utilizador estiver autenticado, ligar submissão ao user_id
+      if (user?.id) {
+        payload.user_id = user.id;
+      }
 
       // Tratar “Outro desporto” + sports_category_code
       if (payload.sports_category === 'other_sport') {
