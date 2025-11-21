@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,13 +9,29 @@ import { COUNTRIES } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trophy } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefillEmail = searchParams.get('email') || '';
+
   const { signup } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -23,10 +39,10 @@ export default function SignupPage() {
   const [formData, setFormData] = useState({
     username: '',
     full_name: '',
-    email: '',
+    email: prefillEmail,
     password: '',
     confirmPassword: '',
-    country: ''
+    country: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +73,7 @@ export default function SignupPage() {
       full_name: formData.full_name,
       email: formData.email,
       password: formData.password,
-      country: formData.country
+      country: formData.country,
     });
 
     if (result.success) {
@@ -89,7 +105,9 @@ export default function SignupPage() {
               </span>
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">{t('nav.signup')}</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            {t('nav.signup')}
+          </CardTitle>
           <CardDescription className="text-center">
             Create your account and start earning XP
           </CardDescription>
@@ -103,7 +121,9 @@ export default function SignupPage() {
                 type="text"
                 placeholder="Choose a unique username"
                 value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, username: e.target.value })
+                }
                 required
               />
             </div>
@@ -114,7 +134,9 @@ export default function SignupPage() {
                 type="text"
                 placeholder="Enter your full name"
                 value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, full_name: e.target.value })
+                }
                 required
               />
             </div>
@@ -125,13 +147,20 @@ export default function SignupPage() {
                 type="email"
                 placeholder="Enter your email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="country">Country *</Label>
-              <Select value={formData.country} onValueChange={(value) => setFormData({ ...formData, country: value })}>
+              <Select
+                value={formData.country}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, country: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select your country" />
                 </SelectTrigger>
@@ -151,7 +180,9 @@ export default function SignupPage() {
                 type="password"
                 placeholder="Create a password (min 6 characters)"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
                 required
               />
             </div>
@@ -162,13 +193,22 @@ export default function SignupPage() {
                 type="password"
                 placeholder="Re-enter your password"
                 value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    confirmPassword: e.target.value,
+                  })
+                }
                 required
               />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              disabled={loading}
+            >
               {loading ? 'Creating account...' : t('nav.signup')}
             </Button>
             <p className="text-sm text-center text-gray-600 dark:text-gray-300">

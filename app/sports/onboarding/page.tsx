@@ -33,7 +33,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 
 type SportOption = {
@@ -117,74 +116,21 @@ function getLoadingSportsLabel(lang: string): string {
   }
 }
 
-// Textos do pop-up pós-submissão
-function getPostSubmitTitle(lang: string): string {
-  const L = normalizeLang(lang);
-  if (L === 'pt') return 'Obrigado pela tua candidatura!';
-  if (L === 'es') return '¡Gracias por tu solicitud!';
-  return 'Thank you for your application!';
-}
-
-function getPostSubmitDescription(lang: string): string {
-  const L = normalizeLang(lang);
-  if (L === 'pt') {
-    return 'Enquanto esperas pelo contacto da equipa LEGACY, regista-te com o mesmo e-mail e começa a explorar conteúdos exclusivos que não estão visíveis para utilizadores não registados.';
-  }
-  if (L === 'es') {
-    return 'Mientras esperas el contacto del equipo LEGACY, regístrate con el mismo correo y empieza a explorar contenido exclusivo que no está visible para usuarios no registrados.';
-  }
-  return 'While you wait for the LEGACY team to contact you, register with the same email and start exploring exclusive content that is not visible to unregistered users.';
-}
-
-function getRegisterButtonLabel(lang: string): string {
-  const L = normalizeLang(lang);
-  if (L === 'pt') return 'Registar';
-  if (L === 'es') return 'Registrarse';
-  return 'Register';
-}
-
-function getExploreButtonLabel(lang: string): string {
-  const L = normalizeLang(lang);
-  if (L === 'pt') return 'Explorar sem registo';
-  if (L === 'es') return 'Explorar sin registro';
-  return 'Explore without account';
-}
-
 // Normalizar SPORTS_ROLES para { value, label } e evitar [object Object] / value=""
 function getSportRolesForLanguage(language: string): SportRoleOption[] {
   const rawRoles: any[] =
     (SPORTS_ROLES as any)[language] || (SPORTS_ROLES as any).en || [];
 
-  const langKey = language || 'en';
-
   return rawRoles
-    .map((role: any, index: number): SportRoleOption => {
+    .map((role: any): SportRoleOption => {
       // Caso simples: já é string
       if (typeof role === 'string') {
         return { value: role, label: role };
       }
 
+      // Caso seja objeto
       if (role && typeof role === 'object') {
-        // Caso especial: objeto é apenas um mapa de traduções, ex:
-        // { en: "Coach", pt: "Treinador", es: "Entrenador" }
-        const knownKeys = ['value', 'code', 'id', 'label', 'i18n', 'name'];
-        const hasKnownKeys = knownKeys.some((k) => k in role);
-        const values = Object.values(role);
-        const allStringValues = values.every((v) => typeof v === 'string');
-
-        if (!hasKnownKeys && allStringValues) {
-          const translations = role as Record<string, string>;
-          const labelFromMap =
-            translations[langKey] ||
-            translations[normalizeLang(langKey)] ||
-            translations.en ||
-            values[0];
-
-          const label = String(labelFromMap);
-          const value = label.toLowerCase().replace(/\s+/g, '_');
-
-          return { value, label };
-        }
+        const langKey = language;
 
         let label: string | undefined;
 
@@ -206,7 +152,7 @@ function getSportRolesForLanguage(language: string): SportRoleOption[] {
         }
 
         const valueRaw =
-          role.value || role.code || role.id || label || `role_${index}`;
+          role.value || role.code || role.id || label || 'role';
 
         const value = String(valueRaw);
         const finalLabel = String(label ?? valueRaw);
@@ -308,7 +254,6 @@ export default function OnboardingPage() {
   const { toast } = useToast();
   const { language, t } = useLanguage();
   const router = useRouter();
-
   const [loading, setLoading] = useState(false);
 
   // lista de desportos vinda da API
@@ -320,9 +265,9 @@ export default function OnboardingPage() {
   const [otherSport, setOtherSport] = useState(false);
   const [otherRole, setOtherRole] = useState(false);
 
-  // controlo do pop-up pós-submissão
+  // diálogo pós-submissão
   const [showPostSubmitDialog, setShowPostSubmitDialog] = useState(false);
-  const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -388,6 +333,16 @@ export default function OnboardingPage() {
         ? prev.interests.filter((i) => i !== interest)
         : [...prev.interests, interest],
     }));
+  };
+
+  const handleGoToSignup = () => {
+    const emailToUse = submittedEmail || formData.email;
+    const params = new URLSearchParams();
+    if (emailToUse) {
+      params.set('email', emailToUse);
+    }
+    const query = params.toString();
+    router.push(query ? `/signup?${query}` : '/signup');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -469,13 +424,13 @@ export default function OnboardingPage() {
       const data = await response.json();
 
       if (data.success) {
-        const submittedEmail = formData.email;
-        setLastSubmittedEmail(submittedEmail);
-
         toast({
           title: v.submitSuccessTitle,
           description: v.submitSuccessDesc,
         });
+
+        // guardar email submetido para usar no popup
+        setSubmittedEmail(formData.email);
 
         setFormData({
           email: '',
@@ -495,7 +450,7 @@ export default function OnboardingPage() {
         setOtherSport(false);
         setOtherRole(false);
 
-        // Abre o pop-up pós-submissão
+        // abrir popup de registo
         setShowPostSubmitDialog(true);
       } else {
         toast({
@@ -517,22 +472,6 @@ export default function OnboardingPage() {
   };
 
   const sportRoleOptions = getSportRolesForLanguage(language);
-
-  const handleRegisterClick = () => {
-    const emailToUse = lastSubmittedEmail || formData.email;
-    if (emailToUse) {
-      router.push(
-        `/auth/register?email=${encodeURIComponent(emailToUse)}`
-      );
-    } else {
-      router.push('/auth/register');
-    }
-    setShowPostSubmitDialog(false);
-  };
-
-  const handleExploreClick = () => {
-    setShowPostSubmitDialog(false);
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -1022,34 +961,39 @@ export default function OnboardingPage() {
         </div>
       </main>
 
-      {/* Pop-up pós-submissão */}
+      <Footer />
+
+      {/* Dialog pós-submissão */}
       <Dialog
         open={showPostSubmitDialog}
         onOpenChange={setShowPostSubmitDialog}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{getPostSubmitTitle(language)}</DialogTitle>
+            <DialogTitle>Thank you for your application!</DialogTitle>
             <DialogDescription>
-              {getPostSubmitDescription(language)}
+              While you wait for the LEGACY team to contact you, register with
+              the same email and start exploring exclusive content that is not
+              visible to unregistered users.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="mt-4">
+          <div className="mt-4 flex flex-col gap-3">
             <Button
-              type="button"
-              onClick={handleExploreClick}
-              variant="outline"
+              className="w-full bg-black text-white hover:bg-gray-900"
+              onClick={handleGoToSignup}
             >
-              {getExploreButtonLabel(language)}
+              Register
             </Button>
-            <Button type="button" onClick={handleRegisterClick}>
-              {getRegisterButtonLabel(language)}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowPostSubmitDialog(false)}
+            >
+              Explore without account
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
-
-      <Footer />
     </div>
   );
 }
