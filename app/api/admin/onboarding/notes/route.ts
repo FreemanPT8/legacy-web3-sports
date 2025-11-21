@@ -125,7 +125,13 @@ export async function POST(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
 
-  const currentUser = authResult.user!;
+  // Extend the type safely
+  const user = authResult.user! as unknown as {
+    userId: string;
+    fullName?: string;
+    username?: string;
+    email?: string;
+  };
 
   try {
     const body = await request.json();
@@ -143,7 +149,7 @@ export async function POST(request: NextRequest) {
       .from('onboarding_notes')
       .insert({
         submission_id: submissionId,
-        author_user_id: currentUser.userId,
+        author_user_id: user.userId,
         note: noteText.trim(),
       })
       .select('id, submission_id, author_user_id, note, created_at')
@@ -171,9 +177,9 @@ export async function POST(request: NextRequest) {
       author_user_id: row.author_user_id,
       note: row.note,
       created_at: row.created_at,
-      author_full_name: currentUser.fullName ?? null,
-      author_username: currentUser.username ?? null,
-      author_email: currentUser.email ?? null,
+      author_full_name: user.fullName ?? null,
+      author_username: user.username ?? null,
+      author_email: user.email ?? null,
     };
 
     return NextResponse.json<NotesPostResponse>({ success: true, note });
