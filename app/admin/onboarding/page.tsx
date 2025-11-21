@@ -481,7 +481,7 @@ export default function AdminOnboardingPage() {
     // ordenar por sequence_number asc como padrão
     list.sort((a, b) => {
       const aSeq = a.sequence_number ?? 0;
-      const bSeq = bSeq ?? 0;
+      const bSeq = b.sequence_number ?? 0;
       return aSeq - bSeq;
     });
 
