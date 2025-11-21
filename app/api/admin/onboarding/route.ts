@@ -23,13 +23,13 @@ interface OnboardingSubmissionRow {
   status: OnboardingStatus | null;
   sequence_number: number | null;
   assigned_to_user_id: string | null;
+  user_id: string | null; // <- NOVO
   phone: string | null;
   telegram: string | null;
   organization: string | null;
   web3_experience: string | null;
   interests: string[] | null;
   message: string | null;
-  user_id: string | null; // 🔹 NOVO
 }
 
 interface AssignedUserRow {
@@ -54,13 +54,13 @@ interface OnboardingSubmissionDTO {
   assigned_to_user_id: string | null;
   assigned_to_username: string | null;
   assigned_to_full_name: string | null;
+  user_id: string | null; // <- NOVO
   phone: string | null;
   telegram: string | null;
   organization: string | null;
   web3_experience: string | null;
   interests: string[] | null;
   message: string | null;
-  user_id: string | null; // 🔹 NOVO
 }
 
 interface GetResponseBody {
@@ -129,13 +129,13 @@ export async function GET(request: NextRequest) {
         status,
         sequence_number,
         assigned_to_user_id,
+        user_id,
         phone,
         telegram,
         organization,
         web3_experience,
         interests,
-        message,
-        user_id
+        message
       `
       )
       .order('created_at', { ascending: false });
@@ -271,13 +271,13 @@ export async function GET(request: NextRequest) {
           assigned_to_user_id: row.assigned_to_user_id,
           assigned_to_username: assigned?.username ?? null,
           assigned_to_full_name: assigned?.full_name ?? null,
+          user_id: row.user_id ?? null,
           phone: row.phone ?? null,
           telegram: row.telegram ?? null,
           organization: row.organization ?? null,
           web3_experience: row.web3_experience ?? null,
           interests: row.interests ?? null,
           message: row.message ?? null,
-          user_id: row.user_id ?? null,
         };
       }
     );

@@ -9,32 +9,32 @@ function mapCountryToCode(country: string | null | undefined): string | null {
 
   const MAP: Record<string, string> = {
     // PT / EN / ES variantes comuns
-    'portugal': 'PT',
+    portugal: 'PT',
     'republica portuguesa': 'PT',
 
-    'spain': 'ES',
-    'españa': 'ES',
-    'espanha': 'ES',
+    spain: 'ES',
+    españa: 'ES',
+    espanha: 'ES',
 
-    'brazil': 'BR',
-    'brasil': 'BR',
+    brazil: 'BR',
+    brasil: 'BR',
 
-    'france': 'FR',
-    'frança': 'FR',
+    france: 'FR',
+    frança: 'FR',
 
-    'germany': 'DE',
-    'alemania': 'DE',
-    'alemanha': 'DE',
+    germany: 'DE',
+    alemania: 'DE',
+    alemanha: 'DE',
 
-    'italy': 'IT',
-    'italia': 'IT',
+    italy: 'IT',
+    italia: 'IT',
 
     'united kingdom': 'GB',
-    'uk': 'GB',
+    uk: 'GB',
     'reino unido': 'GB',
 
     'united states': 'US',
-    'usa': 'US',
+    usa: 'US',
     'estados unidos': 'US',
   };
 
@@ -179,6 +179,26 @@ export async function POST(request: NextRequest) {
     // ---- country_code ISO a partir do nome ----
     const countryCode = mapCountryToCode(country);
 
+    // ---- tentar ligar a uma conta existente pelo email ----
+    let linkedUserId: string | null = null;
+
+    try {
+      const { data: existingUser, error: userError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .ilike('email', email) // case-insensitive
+        .maybeSingle();
+
+      if (!userError && existingUser) {
+        linkedUserId = (existingUser as { id: string }).id;
+      }
+    } catch (linkErr) {
+      console.error(
+        'Error trying to link onboarding submission to existing user by email:',
+        linkErr
+      );
+    }
+
     // 1) inserir submissão
     const { data, error } = await supabaseAdmin
       .from('onboarding_submissions')
@@ -196,11 +216,10 @@ export async function POST(request: NextRequest) {
         web3_experience: web3_experience || null,
         interests: interestsArray,
         message,
+        user_id: linkedUserId, // <-- ligação direta à conta LEGACY (se existir)
         // status usa o default 'PENDING_RESPONSE'
       })
-      .select(
-        'id, sports_category_code, country, country_code'
-      )
+      .select('id, sports_category_code, country, country_code, user_id')
       .single();
 
     if (error) {
@@ -216,6 +235,7 @@ export async function POST(request: NextRequest) {
       sports_category_code: string | null;
       country: string | null;
       country_code: string | null;
+      user_id: string | null;
     };
 
     // 2) tentar auto-atribuir ao Head of House (não falha a request se não conseguir)
