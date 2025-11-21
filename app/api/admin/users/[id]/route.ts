@@ -1,3 +1,4 @@
+// app/api/admin/users/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
@@ -61,6 +62,68 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         },
         { status: 400 }
       );
+    }
+
+    // SE vamos alterar o role para algo diferente de Super Admin,
+    // e o utilizador alvo é Super Admin, garantir que não é o último.
+    if (role && role !== 'Super Admin') {
+      const { data: targetUser, error: targetError } = await supabaseAdmin
+        .from('users')
+        .select('id, role')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (targetError) {
+        console.error(
+          'Supabase error loading target user in PUT /api/admin/users/[id]:',
+          targetError
+        );
+        return NextResponse.json(
+          { success: false, error: 'Error loading target user.' },
+          { status: 500 }
+        );
+      }
+
+      if (!targetUser) {
+        return NextResponse.json(
+          { success: false, error: 'User not found' },
+          { status: 404 }
+        );
+      }
+
+      const targetRole = targetUser.role as UserRole | null;
+
+      if (targetRole === 'Super Admin') {
+        const { data: superAdmins, error: superAdminsError } =
+          await supabaseAdmin.from('users').select('id').eq('role', 'Super Admin');
+
+        if (superAdminsError) {
+          console.error(
+            'Supabase error counting Super Admins in PUT /api/admin/users/[id]:',
+            superAdminsError
+          );
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Error checking number of Super Admins.',
+            },
+            { status: 500 }
+          );
+        }
+
+        const count = (superAdmins || []).length;
+
+        if (count <= 1) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                'Cannot change role: this is the last Super Admin in the system.',
+            },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const updateFields: Record<string, any> = {};
@@ -147,6 +210,64 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Ver se o utilizador alvo é Super Admin e se é o último
+    const { data: targetUser, error: targetError } = await supabaseAdmin
+      .from('users')
+      .select('id, role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (targetError) {
+      console.error(
+        'Supabase error loading target user in DELETE /api/admin/users/[id]:',
+        targetError
+      );
+      return NextResponse.json(
+        { success: false, error: 'Error loading user.' },
+        { status: 500 }
+      );
+    }
+
+    if (!targetUser) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const targetRole = targetUser.role as UserRole | null;
+
+    if (targetRole === 'Super Admin') {
+      const { data: superAdmins, error: superAdminsError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('role', 'Super Admin');
+
+      if (superAdminsError) {
+        console.error(
+          'Supabase error counting Super Admins in DELETE /api/admin/users/[id]:',
+          superAdminsError
+        );
+        return NextResponse.json(
+          { success: false, error: 'Error checking Super Admins.' },
+          { status: 500 }
+        );
+      }
+
+      const count = (superAdmins || []).length;
+
+      if (count <= 1) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'Cannot delete this user: they are the last Super Admin in the system.',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const { error } = await supabaseAdmin.from('users').delete().eq('id', userId);
 
     if (error) {
