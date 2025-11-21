@@ -1,3 +1,4 @@
+// app/admin/houses/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -50,6 +51,26 @@ interface ApiResponse {
   houses?: AdminHouse[];
 }
 
+// --- novos tipos para gestão de Heads ---
+interface AssigneeUser {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  email: string;
+  role: 'Super Admin' | 'Admin' | 'Member';
+}
+
+interface AssigneesResponse {
+  success: boolean;
+  error?: string;
+  users?: AssigneeUser[];
+}
+
+interface HeadPostResponse {
+  success: boolean;
+  error?: string;
+}
+
 const statusOptions: { value: 'all' | HouseStatus; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'active', label: 'Active' },
@@ -84,6 +105,16 @@ export default function AdminHousesPage() {
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | HouseStatus>('all');
+
+  // --- novos states para gestão de Head ---
+  const [assignees, setAssignees] = useState<AssigneeUser[]>([]);
+  const [assigneesLoading, setAssigneesLoading] = useState(false);
+  const [assigneesError, setAssigneesError] = useState<string | null>(null);
+  const [savingHeadForHouseId, setSavingHeadForHouseId] = useState<
+    string | null
+  >(null);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
 
   useEffect(() => {
     if (authLoading) return;
@@ -132,6 +163,121 @@ export default function AdminHousesPage() {
 
     fetchHouses();
   }, [authLoading, user, getToken, router]);
+
+  // carregar lista de possíveis Heads (Admins / Super Admins)
+  const loadAssignees = async () => {
+    if (!isSuperAdmin) return;
+    if (assigneesLoading || assignees.length > 0) return;
+
+    setAssigneesLoading(true);
+    setAssigneesError(null);
+
+    try {
+      const token = getToken();
+      if (!token) {
+        setAssigneesError('No authentication token provided');
+        setAssigneesLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/admin/onboarding/assignees', {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data: AssigneesResponse = await res.json();
+      if (!data.success) {
+        setAssigneesError(data.error || 'Failed to load admins');
+        setAssignees([]);
+        return;
+      }
+
+      // apenas Admin / Super Admin podem ser Heads
+      const filtered = (data.users || []).filter(
+        (u) => u.role === 'Admin' || u.role === 'Super Admin'
+      );
+      setAssignees(filtered);
+    } catch (err: any) {
+      console.error('Error loading assignees:', err);
+      setAssigneesError(
+        err?.message || 'Unexpected error while loading admins'
+      );
+      setAssignees([]);
+    } finally {
+      setAssigneesLoading(false);
+    }
+  };
+
+  const reloadHouses = async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        setError('No authentication token provided');
+        return;
+      }
+
+      const res = await fetch('/api/admin/houses', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data: ApiResponse = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Failed to load Houses of Sports');
+        setHouses([]);
+        return;
+      }
+
+      setHouses(data.houses || []);
+    } catch (err) {
+      console.error('Error reloading houses in /admin/houses:', err);
+      setError('Unexpected error while reloading Houses of Sports');
+    }
+  };
+
+  // mudar Head de uma House
+  const handleChangeHead = async (houseId: string, headUserId: string | '') => {
+    if (!isSuperAdmin) return;
+
+    try {
+      setSavingHeadForHouseId(houseId);
+      const token = getToken();
+      if (!token) {
+        alert('No authentication token provided');
+        return;
+      }
+
+      const res = await fetch('/api/admin/houses/head', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          houseId,
+          headUserId: headUserId || null,
+        }),
+      });
+
+      const data: HeadPostResponse = await res.json();
+      if (!data.success) {
+        alert(data.error || 'Failed to update Head of House');
+        return;
+      }
+
+      await reloadHouses();
+    } catch (err) {
+      console.error('Error updating Head of House:', err);
+      alert('Unexpected error while updating Head of House');
+    } finally {
+      setSavingHeadForHouseId(null);
+    }
+  };
 
   const filtered = useMemo(() => {
     return houses.filter((house) => {
@@ -265,7 +411,9 @@ export default function AdminHousesPage() {
                         <tr
                           key={house.id}
                           className="border-b hover:bg-gray-50 cursor-pointer"
-                          onClick={() => router.push(`/admin/houses/${house.id}`)}
+                          onClick={() =>
+                            router.push(`/admin/houses/${house.id}`)
+                          }
                         >
                           <td className="py-2 px-3">
                             <Link
@@ -293,22 +441,69 @@ export default function AdminHousesPage() {
                             <StatusBadge status={house.status} />
                           </td>
                           <td className="py-2 px-3">
-                            {house.head ? (
-                              <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {house.head.full_name || house.head.username}
-                                </span>
-                                {house.head.username && (
-                                  <span className="text-xs text-gray-500">
-                                    @{house.head.username}
+                            <div className="flex flex-col gap-1">
+                              {house.head ? (
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {house.head.full_name ||
+                                      house.head.username}
                                   </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-gray-400">
-                                No Head defined
-                              </span>
-                            )}
+                                  {house.head.username && (
+                                    <span className="text-xs text-gray-500">
+                                      @{house.head.username}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400">
+                                  No Head defined
+                                </span>
+                              )}
+
+                              {isSuperAdmin && (
+                                <div
+                                  className="mt-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <select
+                                    className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    value={house.head?.user_id || ''}
+                                    onChange={(e) =>
+                                      handleChangeHead(
+                                        house.id,
+                                        e.target.value
+                                      )
+                                    }
+                                    onFocus={() => {
+                                      if (assignees.length === 0) {
+                                        void loadAssignees();
+                                      }
+                                    }}
+                                    disabled={
+                                      assigneesLoading ||
+                                      savingHeadForHouseId === house.id
+                                    }
+                                  >
+                                    <option value="">
+                                      {house.head
+                                        ? 'Remove Head'
+                                        : 'Define Head'}
+                                    </option>
+                                    {assignees.map((u) => (
+                                      <option key={u.id} value={u.id}>
+                                        {u.full_name || u.username || u.email}{' '}
+                                        ({u.role})
+                                      </option>
+                                    ))}
+                                  </select>
+                                  {assigneesError && (
+                                    <div className="mt-1 text-[10px] text-red-500">
+                                      {assigneesError}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="py-2 px-3 text-xs text-gray-600">
                             {house.moderators_count ?? 0}
