@@ -29,6 +29,7 @@ interface OnboardingSubmission {
   assigned_to_user_id: string | null;
   assigned_to_username: string | null;
   assigned_to_full_name: string | null;
+  user_id: string | null; // novo: liga submissão a conta LEGACY
   phone: string | null;
   telegram: string | null;
   organization: string | null;
@@ -141,6 +142,18 @@ function statusBadgeClass(status: OnboardingStatus | null): string {
     return 'inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-0.5 border border-emerald-200';
   }
   return 'inline-flex items-center rounded-full bg-blue-50 text-blue-700 text-[11px] px-2.5 py-0.5 border border-blue-200';
+}
+
+// Badge "Conta criada / Sem conta"
+function accountBadgeClass(hasAccount: boolean): string {
+  if (hasAccount) {
+    return 'inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-0.5 border border-emerald-200';
+  }
+  return 'inline-flex items-center rounded-full bg-gray-50 text-gray-500 text-[11px] px-2.5 py-0.5 border border-gray-200';
+}
+
+function accountBadgeLabel(hasAccount: boolean): string {
+  return hasAccount ? 'Conta criada' : 'Sem conta';
 }
 
 export default function AdminOnboardingPage() {
@@ -544,13 +557,6 @@ export default function AdminOnboardingPage() {
         return;
       }
 
-      // aqui usamos "any" para poder ler full_name mesmo não estando no tipo User
-      const userAny = user as any;
-      const userFullName: string | null =
-        typeof userAny?.full_name === 'string'
-          ? userAny.full_name
-          : null;
-
       const res = await fetch('/api/admin/onboarding', {
         method: 'PATCH',
         headers: {
@@ -575,7 +581,7 @@ export default function AdminOnboardingPage() {
             ? {
                 ...s,
                 assigned_to_user_id: user.id,
-                assigned_to_full_name: userFullName,
+                assigned_to_full_name: user.full_name || null,
                 assigned_to_username: user.username || null,
               }
             : s
@@ -586,7 +592,7 @@ export default function AdminOnboardingPage() {
           ? {
               ...prev,
               assigned_to_user_id: user.id,
-              assigned_to_full_name: userFullName,
+              assigned_to_full_name: user.full_name || null,
               assigned_to_username: user.username || null,
             }
           : prev
@@ -679,7 +685,7 @@ export default function AdminOnboardingPage() {
               <p className="text-sm text-gray-600 max-w-xl">
                 Caixa de entrada de formulários de onboarding. Aqui
                 consegues ver o estado, desporto, país e responsável por
-                cada submissão.
+                cada submissão — e se já existe conta LEGACY associada.
               </p>
             </div>
 
@@ -825,6 +831,7 @@ export default function AdminOnboardingPage() {
                       <th className="py-2 pr-3">País</th>
                       <th className="py-2 pr-3">Desporto</th>
                       <th className="py-2 pr-3">Estado</th>
+                      <th className="py-2 pr-3">Conta</th>
                       <th className="py-2 pr-3">Responsável</th>
                       <th className="py-2 pr-3">Data</th>
                     </tr>
@@ -865,6 +872,11 @@ export default function AdminOnboardingPage() {
                         <td className="py-2 pr-3">
                           <span className={statusBadgeClass(s.status)}>
                             {formatStatus(s.status)}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-3">
+                          <span className={accountBadgeClass(!!s.user_id)}>
+                            {accountBadgeLabel(!!s.user_id)}
                           </span>
                         </td>
                         <td className="py-2 pr-3 text-xs text-gray-700">
@@ -921,6 +933,16 @@ export default function AdminOnboardingPage() {
                           '—'}
                       </span>
                     </div>
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Conta LEGACY:{' '}
+                      </span>
+                      <span
+                        className={accountBadgeClass(!!selected.user_id)}
+                      >
+                        {accountBadgeLabel(!!selected.user_id)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -941,6 +963,12 @@ export default function AdminOnboardingPage() {
                     <p>
                       <span className="font-medium">Telegram:</span>{' '}
                       {selected.telegram || '—'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Conta LEGACY:</span>{' '}
+                      <span className={accountBadgeClass(!!selected.user_id)}>
+                        {accountBadgeLabel(!!selected.user_id)}
+                      </span>
                     </p>
                   </div>
 

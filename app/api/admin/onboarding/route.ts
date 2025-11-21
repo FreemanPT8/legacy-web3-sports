@@ -29,6 +29,7 @@ interface OnboardingSubmissionRow {
   web3_experience: string | null;
   interests: string[] | null;
   message: string | null;
+  user_id: string | null; // 🔹 NOVO
 }
 
 interface AssignedUserRow {
@@ -59,6 +60,7 @@ interface OnboardingSubmissionDTO {
   web3_experience: string | null;
   interests: string[] | null;
   message: string | null;
+  user_id: string | null; // 🔹 NOVO
 }
 
 interface GetResponseBody {
@@ -132,7 +134,8 @@ export async function GET(request: NextRequest) {
         organization,
         web3_experience,
         interests,
-        message
+        message,
+        user_id
       `
       )
       .order('created_at', { ascending: false });
@@ -274,6 +277,7 @@ export async function GET(request: NextRequest) {
           web3_experience: row.web3_experience ?? null,
           interests: row.interests ?? null,
           message: row.message ?? null,
+          user_id: row.user_id ?? null,
         };
       }
     );
