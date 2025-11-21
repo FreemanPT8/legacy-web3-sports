@@ -3,24 +3,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 
+type HouseStatus = 'development' | 'under_construction' | 'active';
+
 interface HouseRow {
   id: string;
   sport_id: string | null;
   country_code: string | null;
+  status: string | null;
   created_at: string | null;
 }
 
 interface SportRow {
   id: string;
   code: string | null;
-  name: string | null;
+  name_i18n: Record<string, string> | null;
 }
 
 interface HouseHeadRow {
-  id: string;
   house_id: string;
   admin_id: string;
-  created_at: string | null;
 }
 
 interface AdminAssignmentRow {
@@ -32,57 +33,95 @@ interface UserRow {
   id: string;
   username: string | null;
   full_name: string | null;
-  email: string | null;
-  role: 'Super Admin' | 'Admin' | 'Member';
+  avatar_url: string | null;
 }
 
-interface HouseDTO {
+interface HouseModeratorRow {
+  house_id: string;
+  user_id: string;
+}
+
+interface AdminHouseDTO {
   id: string;
-  sport_id: string | null;
-  sport_code: string | null;
   sport_name: string | null;
-  country_code: string | null;
-  created_at: string | null;
-  head_user_id: string | null;
-  head_full_name: string | null;
-  head_username: string | null;
-  head_email: string | null;
+  sport_code: string | null;
+  country_code: string;
+  status: HouseStatus;
+  created_at: string;
+  head: {
+    user_id: string;
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+  moderators_count: number;
 }
 
 interface HousesGetResponse {
   success: boolean;
-  houses?: HouseDTO[];
+  houses?: AdminHouseDTO[];
   error?: string;
 }
 
+// Aceita tanto o formato novo (sport_id/country_code) como o formato do teu form (sportId/countryCode)
 interface HousesPostBody {
-  houseId: string;
-  headUserId: string | null; // null => remover Head
+  sport_id?: string;
+  country_code?: string;
+  sportId?: string;
+  countryCode?: string;
+  status?: HouseStatus;
+  avatar_url?: string | null;
+  description?: string | null;
 }
 
 interface HousesPostResponse {
   success: boolean;
+  houseId?: string;
+  house?: { id: string };
   error?: string;
 }
 
-// GET /api/admin/houses
+function normalizeStatus(raw: string | null): HouseStatus {
+  if (raw === 'active' || raw === 'under_construction') {
+    return raw as HouseStatus;
+  }
+  return 'development';
+}
+
+function resolveLocaleName(
+  name_i18n: Record<string, string> | null,
+  fallback?: string | null
+): string | null {
+  if (!name_i18n) return fallback ?? null;
+  return (
+    name_i18n.en ||
+    name_i18n.pt ||
+    name_i18n.es ||
+    name_i18n.fr ||
+    name_i18n.de ||
+    name_i18n.it ||
+    fallback ||
+    null
+  );
+}
+
+// GET /api/admin/houses -> lista para painel admin
 export async function GET(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
-  const currentUser = authResult.user!;
-
   // Admin e Super Admin podem ver
+
   try {
-    // 1) Houses
+    // 1) Houses base
     const { data: housesData, error: housesError } = await supabaseAdmin
       .from('houses_of_sports')
-      .select('id, sport_id, country_code, created_at')
+      .select('id, sport_id, country_code, status, created_at')
       .order('created_at', { ascending: true });
 
     if (housesError) {
       console.error('Error loading houses_of_sports:', housesError);
       return NextResponse.json<HousesGetResponse>(
-        { success: false, error: 'Failed to load houses_of_sports' },
+        { success: false, error: 'Failed to load Houses of Sports.' },
         { status: 500 }
       );
     }
@@ -94,6 +133,8 @@ export async function GET(request: NextRequest) {
         houses: [],
       });
     }
+
+    const houseIds = houses.map((h) => h.id);
 
     // 2) Sports para estes houses
     const sportIds = Array.from(
@@ -108,23 +149,26 @@ export async function GET(request: NextRequest) {
     if (sportIds.length > 0) {
       const { data: sportsData, error: sportsError } = await supabaseAdmin
         .from('sports')
-        .select('id, code, name')
+        .select('id, code, name_i18n')
         .in('id', sportIds);
 
       if (sportsError) {
         console.error('Error loading sports for houses:', sportsError);
       } else {
-        for (const s of (sportsData || []) as SportRow[]) {
-          sportsById[s.id] = s;
+        for (const s of (sportsData || []) as any[]) {
+          sportsById[s.id as string] = {
+            id: s.id as string,
+            code: (s.code as string) ?? null,
+            name_i18n: (s.name_i18n as Record<string, string> | null) ?? null,
+          };
         }
       }
     }
 
     // 3) house_heads para estes houses
-    const houseIds = houses.map((h) => h.id);
     const { data: headsData, error: headsError } = await supabaseAdmin
       .from('house_heads')
-      .select('id, house_id, admin_id, created_at')
+      .select('house_id, admin_id')
       .in('house_id', houseIds);
 
     if (headsError) {
@@ -132,26 +176,15 @@ export async function GET(request: NextRequest) {
     }
 
     const heads = (headsData || []) as HouseHeadRow[];
-    const headByHouseId: Record<string, HouseHeadRow> = {};
+    const headByHouseId = new Map<string, HouseHeadRow>();
     for (const h of heads) {
-      const existing = headByHouseId[h.house_id];
-      if (!existing) {
-        headByHouseId[h.house_id] = h;
-      } else {
-        const existingDate = existing.created_at
-          ? new Date(existing.created_at).getTime()
-          : 0;
-        const newDate = h.created_at ? new Date(h.created_at).getTime() : 0;
-        if (newDate > existingDate) {
-          headByHouseId[h.house_id] = h;
-        }
-      }
+      headByHouseId.set(h.house_id, h);
     }
 
     // 4) admin_assignments -> users
     const adminIds = Array.from(
       new Set(
-        Object.values(headByHouseId)
+        heads
           .map((h) => h.admin_id)
           .filter((id): id is string => !!id)
       )
@@ -171,8 +204,11 @@ export async function GET(request: NextRequest) {
           adminAssignError
         );
       } else {
-        for (const a of (adminAssignData || []) as AdminAssignmentRow[]) {
-          adminAssignById[a.id] = a;
+        for (const a of (adminAssignData || []) as any[]) {
+          adminAssignById[a.id as string] = {
+            id: a.id as string,
+            user_id: a.user_id as string,
+          };
         }
       }
     }
@@ -189,35 +225,71 @@ export async function GET(request: NextRequest) {
     if (userIds.length > 0) {
       const { data: usersData, error: usersError } = await supabaseAdmin
         .from('users')
-        .select('id, username, full_name, email, role')
+        .select('id, username, full_name, avatar_url')
         .in('id', userIds);
 
       if (usersError) {
         console.error('Error loading users for house_heads:', usersError);
       } else {
-        for (const u of (usersData || []) as UserRow[]) {
-          usersById[u.id] = u;
+        for (const u of (usersData || []) as any[]) {
+          usersById[u.id as string] = {
+            id: u.id as string,
+            username: (u.username as string) ?? null,
+            full_name: (u.full_name as string) ?? null,
+            avatar_url: (u.avatar_url as string) ?? null,
+          };
         }
       }
     }
 
-    const result: HouseDTO[] = houses.map((h) => {
+    // 5) Moderators count por house
+    const { data: modsData, error: modsError } = await supabaseAdmin
+      .from('house_moderators')
+      .select('house_id, user_id')
+      .in('house_id', houseIds);
+
+    if (modsError) {
+      console.error('Error loading house_moderators:', modsError);
+    }
+
+    const moderators = (modsData || []) as HouseModeratorRow[];
+    const moderatorsCountByHouseId = new Map<string, number>();
+    for (const m of moderators) {
+      moderatorsCountByHouseId.set(
+        m.house_id,
+        (moderatorsCountByHouseId.get(m.house_id) || 0) + 1
+      );
+    }
+
+    // 6) Montar DTO final
+    const result: AdminHouseDTO[] = houses.map((h) => {
       const sport = h.sport_id ? sportsById[h.sport_id] : undefined;
-      const headRow = headByHouseId[h.id];
+      const sportName = sport
+        ? resolveLocaleName(sport.name_i18n, sport.code)
+        : null;
+
+      const normalizedStatus = normalizeStatus(h.status);
+
+      const headRow = headByHouseId.get(h.id) || null;
       const adminAssign = headRow ? adminAssignById[headRow.admin_id] : null;
       const headUser = adminAssign ? usersById[adminAssign.user_id] : null;
 
       return {
         id: h.id,
-        sport_id: h.sport_id,
+        sport_name: sportName,
         sport_code: sport?.code ?? null,
-        sport_name: sport?.name ?? null,
-        country_code: h.country_code ?? null,
-        created_at: h.created_at ?? null,
-        head_user_id: headUser?.id ?? null,
-        head_full_name: headUser?.full_name ?? null,
-        head_username: headUser?.username ?? null,
-        head_email: headUser?.email ?? null,
+        country_code: (h.country_code || '').toUpperCase(),
+        status: normalizedStatus,
+        created_at: h.created_at || new Date().toISOString(),
+        head: headUser
+          ? {
+              user_id: headUser.id,
+              username: headUser.username,
+              full_name: headUser.full_name,
+              avatar_url: headUser.avatar_url,
+            }
+          : null,
+        moderators_count: moderatorsCountByHouseId.get(h.id) || 0,
       };
     });
 
@@ -234,16 +306,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/admin/houses
+// POST /api/admin/houses -> criar nova House
 export async function POST(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
-  const currentUser = authResult.user!;
 
-  // Só Super Admin pode alterar Heads
-  if (currentUser.role !== 'Super Admin') {
+  const currentUser = authResult.user!;
+  // Admin + Super Admin podem criar Houses
+  if (currentUser.role !== 'Super Admin' && currentUser.role !== 'Admin') {
     return NextResponse.json<HousesPostResponse>(
-      { success: false, error: 'Only Super Admin can manage Heads of Houses' },
+      { success: false, error: 'Only Admin or Super Admin can create Houses.' },
       { status: 403 }
     );
   }
@@ -251,100 +323,75 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as HousesPostBody;
 
-    if (!body || !body.houseId) {
+    // aceitar sport_id ou sportId
+    const rawSportId = (body.sport_id ?? body.sportId ?? '').trim();
+    const rawCountryCode = (body.country_code ?? body.countryCode ?? '')
+      .trim()
+      .toUpperCase();
+
+    const status: HouseStatus = body.status ?? 'development';
+
+    const avatar_url =
+      typeof body.avatar_url === 'string' && body.avatar_url.trim()
+        ? body.avatar_url.trim()
+        : null;
+    const description =
+      typeof body.description === 'string' && body.description.trim()
+        ? body.description.trim()
+        : null;
+
+    if (!rawSportId) {
       return NextResponse.json<HousesPostResponse>(
-        { success: false, error: 'Missing houseId' },
+        { success: false, error: 'sport_id / sportId is required.' },
         { status: 400 }
       );
     }
 
-    const houseId = body.houseId;
-    const headUserId = body.headUserId;
-
-    // 1) Se headUserId === null -> remover Head
-    if (!headUserId) {
-      const { error: deleteError } = await supabaseAdmin
-        .from('house_heads')
-        .delete()
-        .eq('house_id', houseId);
-
-      if (deleteError) {
-        console.error('Error removing house_head:', deleteError);
-        return NextResponse.json<HousesPostResponse>(
-          { success: false, error: 'Failed to remove Head of House' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json<HousesPostResponse>({ success: true });
-    }
-
-    // 2) Validar que esse user é Admin/Super Admin (tem admin_assignment)
-    const { data: adminAssignRow, error: adminAssignError } =
-      await supabaseAdmin
-        .from('admin_assignments')
-        .select('id, user_id')
-        .eq('user_id', headUserId)
-        .maybeSingle();
-
-    if (adminAssignError) {
-      console.error(
-        'Error loading admin_assignments for user:',
-        adminAssignError
-      );
+    if (!rawCountryCode) {
       return NextResponse.json<HousesPostResponse>(
-        {
-          success: false,
-          error: 'Failed to verify admin assignment for selected user',
-        },
-        { status: 500 }
-      );
-    }
-
-    if (!adminAssignRow) {
-      return NextResponse.json<HousesPostResponse>(
-        {
-          success: false,
-          error:
-            'Selected user does not have an admin assignment. Only Admins / Super Admins can be Heads of House.',
-        },
+        { success: false, error: 'country_code / countryCode is required.' },
         { status: 400 }
       );
     }
 
-    const adminId = (adminAssignRow as AdminAssignmentRow).id;
-
-    // 3) Limpar Head anterior
-    const { error: deleteOldError } = await supabaseAdmin
-      .from('house_heads')
-      .delete()
-      .eq('house_id', houseId);
-
-    if (deleteOldError) {
-      console.error('Error clearing previous house_heads:', deleteOldError);
+    if (!['development', 'under_construction', 'active'].includes(status)) {
       return NextResponse.json<HousesPostResponse>(
-        { success: false, error: 'Failed to clear existing Head of House' },
-        { status: 500 }
+        { success: false, error: 'Invalid status value.' },
+        { status: 400 }
       );
     }
 
-    // 4) Criar novo Head
-    const { error: insertError } = await supabaseAdmin
-      .from('house_heads')
+    const { data, error } = await supabaseAdmin
+      .from('houses_of_sports')
       .insert({
-        house_id: houseId,
-        admin_id: adminId,
-      });
+        sport_id: rawSportId,
+        country_code: rawCountryCode,
+        status,
+        avatar_url,
+        description,
+      })
+      .select('id')
+      .single();
 
-    if (insertError) {
-      console.error('Error inserting new house_head:', insertError);
+    if (error || !data) {
+      console.error('Supabase error inserting new House of Sports:', error);
       return NextResponse.json<HousesPostResponse>(
-        { success: false, error: 'Failed to set new Head of House' },
+        { success: false, error: 'Failed to create House of Sports.' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json<HousesPostResponse>({ success: true });
+    const id = data.id as string;
+
+    // Responder de forma compatível com o teu CreateHousePage
+    return NextResponse.json<HousesPostResponse>(
+      {
+        success: true,
+        houseId: id,
+        house: { id },
+      },
+      { status: 201 }
+    );
   } catch (err: any) {
     console.error('Unexpected error in POST /api/admin/houses:', err);
     return NextResponse.json<HousesPostResponse>(
