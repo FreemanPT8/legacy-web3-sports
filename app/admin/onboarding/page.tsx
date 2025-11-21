@@ -29,7 +29,7 @@ interface OnboardingSubmission {
   assigned_to_user_id: string | null;
   assigned_to_username: string | null;
   assigned_to_full_name: string | null;
-  user_id: string | null; // liga submissão a conta LEGACY
+  user_id: string | null; // <- NOVO: ligação à conta LEGACY
   phone: string | null;
   telegram: string | null;
   organization: string | null;
@@ -144,16 +144,11 @@ function statusBadgeClass(status: OnboardingStatus | null): string {
   return 'inline-flex items-center rounded-full bg-blue-50 text-blue-700 text-[11px] px-2.5 py-0.5 border border-blue-200';
 }
 
-// Badge "Conta criada / Sem conta"
 function accountBadgeClass(hasAccount: boolean): string {
   if (hasAccount) {
     return 'inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-0.5 border border-emerald-200';
   }
-  return 'inline-flex items-center rounded-full bg-gray-50 text-gray-500 text-[11px] px-2.5 py-0.5 border border-gray-200';
-}
-
-function accountBadgeLabel(hasAccount: boolean): string {
-  return hasAccount ? 'Conta criada' : 'Sem conta';
+  return 'inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-[11px] px-2.5 py-0.5 border border-gray-200';
 }
 
 export default function AdminOnboardingPage() {
@@ -575,20 +570,14 @@ export default function AdminOnboardingPage() {
         return;
       }
 
-      // usar type cast para aceder a full_name / username que não estão no tipo User
-      const currentUserFullName =
-        (user as any)?.full_name ?? null;
-      const currentUserUsername =
-        (user as any)?.username ?? null;
-
       setSubmissions((prev) =>
         prev.map((s) =>
           s.id === selected.id
             ? {
                 ...s,
                 assigned_to_user_id: user.id,
-                assigned_to_full_name: currentUserFullName,
-                assigned_to_username: currentUserUsername,
+                assigned_to_full_name: (user as any).full_name || null,
+                assigned_to_username: (user as any).username || null,
               }
             : s
         )
@@ -598,8 +587,8 @@ export default function AdminOnboardingPage() {
           ? {
               ...prev,
               assigned_to_user_id: user.id,
-              assigned_to_full_name: currentUserFullName,
-              assigned_to_username: currentUserUsername,
+              assigned_to_full_name: (user as any).full_name || null,
+              assigned_to_username: (user as any).username || null,
             }
           : prev
       );
@@ -690,8 +679,8 @@ export default function AdminOnboardingPage() {
               </h1>
               <p className="text-sm text-gray-600 max-w-xl">
                 Caixa de entrada de formulários de onboarding. Aqui
-                consegues ver o estado, desporto, país e responsável por
-                cada submissão — e se já existe conta LEGACY associada.
+                consegues ver o estado, desporto, país, conta criada e responsável
+                por cada submissão.
               </p>
             </div>
 
@@ -760,7 +749,8 @@ export default function AdminOnboardingPage() {
                 <select
                   value={sportFilter ?? 'ALL'}
                   onChange={(e) =>
-                    setSportFilter((e.target.value as string) || 'ALL')
+                    setSportFilter((e.target.value as string) || 'ALL'
+                    )
                   }
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
@@ -843,60 +833,63 @@ export default function AdminOnboardingPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSubmissions.map((s) => (
-                      <tr
-                        key={s.id}
-                        className={`border-t border-gray-100 hover:bg-gray-50/60 cursor-pointer ${
-                          selected?.id === s.id ? 'bg-gray-50' : ''
-                        }`}
-                        onClick={() => handleRowClick(s)}
-                      >
-                        <td className="py-2 pr-3 text-[11px] text-gray-500">
-                          {s.sequence_number ?? '—'}
-                        </td>
-                        <td className="py-2 pr-3">
-                          <div className="text-xs font-medium text-gray-900">
-                            {s.full_name || '—'}
-                          </div>
-                          {s.sports_role && (
-                            <div className="text-[11px] text-gray-400">
-                              {s.sports_role}
+                    {filteredSubmissions.map((s) => {
+                      const hasAccount = !!s.user_id;
+                      return (
+                        <tr
+                          key={s.id}
+                          className={`border-t border-gray-100 hover:bg-gray-50/60 cursor-pointer ${
+                            selected?.id === s.id ? 'bg-gray-50' : ''
+                          }`}
+                          onClick={() => handleRowClick(s)}
+                        >
+                          <td className="py-2 pr-3 text-[11px] text-gray-500">
+                            {s.sequence_number ?? '—'}
+                          </td>
+                          <td className="py-2 pr-3">
+                            <div className="text-xs font-medium text-gray-900">
+                              {s.full_name || '—'}
                             </div>
-                          )}
-                        </td>
-                        <td className="py-2 pr-3 text-xs text-gray-700">
-                          {s.email || '—'}
-                        </td>
-                        <td className="py-2 pr-3 text-xs text-gray-700">
-                          {s.country || '—'}
-                        </td>
-                        <td className="py-2 pr-3 text-xs text-gray-700">
-                          {s.sports_category_code ||
-                            s.sports_category ||
-                            '—'}
-                        </td>
-                        <td className="py-2 pr-3">
-                          <span className={statusBadgeClass(s.status)}>
-                            {formatStatus(s.status)}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-3">
-                          <span className={accountBadgeClass(!!s.user_id)}>
-                            {accountBadgeLabel(!!s.user_id)}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-3 text-xs text-gray-700">
-                          {s.assigned_to_full_name ||
-                            s.assigned_to_username ||
-                            '—'}
-                        </td>
-                        <td className="py-2 pr-3 text-[11px] text-gray-500">
-                          {s.created_at
-                            ? new Date(s.created_at).toLocaleString('pt-PT')
-                            : '—'}
-                        </td>
-                      </tr>
-                    ))}
+                            {s.sports_role && (
+                              <div className="text-[11px] text-gray-400">
+                                {s.sports_role}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2 pr-3 text-xs text-gray-700">
+                            {s.email || '—'}
+                          </td>
+                          <td className="py-2 pr-3 text-xs text-gray-700">
+                            {s.country || '—'}
+                          </td>
+                          <td className="py-2 pr-3 text-xs text-gray-700">
+                            {s.sports_category_code ||
+                              s.sports_category ||
+                              '—'}
+                          </td>
+                          <td className="py-2 pr-3">
+                            <span className={statusBadgeClass(s.status)}>
+                              {formatStatus(s.status)}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-3">
+                            <span className={accountBadgeClass(hasAccount)}>
+                              {hasAccount ? 'Conta criada' : 'Sem conta'}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-3 text-xs text-gray-700">
+                            {s.assigned_to_full_name ||
+                              s.assigned_to_username ||
+                              '—'}
+                          </td>
+                          <td className="py-2 pr-3 text-[11px] text-gray-500">
+                            {s.created_at
+                              ? new Date(s.created_at).toLocaleString('pt-PT')
+                              : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -931,22 +924,22 @@ export default function AdminOnboardingPage() {
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">
+                        Conta:{' '}
+                      </span>
+                      <span
+                        className={accountBadgeClass(!!selected.user_id)}
+                      >
+                        {selected.user_id ? 'Conta criada' : 'Sem conta'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">
                         Responsável:{' '}
                       </span>
                       <span className="text-gray-800">
                         {selected.assigned_to_full_name ||
                           selected.assigned_to_username ||
                           '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">
-                        Conta LEGACY:{' '}
-                      </span>
-                      <span
-                        className={accountBadgeClass(!!selected.user_id)}
-                      >
-                        {accountBadgeLabel(!!selected.user_id)}
                       </span>
                     </div>
                   </div>
@@ -969,12 +962,6 @@ export default function AdminOnboardingPage() {
                     <p>
                       <span className="font-medium">Telegram:</span>{' '}
                       {selected.telegram || '—'}
-                    </p>
-                    <p>
-                      <span className="font-medium">Conta LEGACY:</span>{' '}
-                      <span className={accountBadgeClass(!!selected.user_id)}>
-                        {accountBadgeLabel(!!selected.user_id)}
-                      </span>
                     </p>
                   </div>
 
@@ -1020,6 +1007,16 @@ export default function AdminOnboardingPage() {
                         ? selected.interests.join(', ')
                         : '—'}
                     </p>
+                  </div>
+                </div>
+
+                {/* Mensagem */}
+                <div className="space-y-1 text-xs">
+                  <div className="text-[11px] font-semibold text-gray-700">
+                    Mensagem
+                  </div>
+                  <div className="rounded-md border border-gray-200 bg-white p-3 text-gray-800 whitespace-pre-wrap">
+                    {selected.message || '—'}
                   </div>
                 </div>
 
