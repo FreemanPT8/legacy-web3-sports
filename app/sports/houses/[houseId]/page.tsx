@@ -1,26 +1,28 @@
-// app/sports/houses/[houseId]/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Loader2,
+  ArrowLeft,
+  Users,
+  User,
+  Trophy,
+  Pencil,
+} from 'lucide-react';
 
-type PublicLifecycleStatus =
-  | 'IN_DEVELOPMENT'
-  | 'UNDER_CONSTRUCTION'
-  | 'ACTIVE';
+type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
-interface PublicHouse {
+interface House {
   id: string;
   name: string;
-  hero_title: string;
-  hero_subtitle: string;
-  description: string;
-  cover_image_url: string | null;
   country_code: string | null;
-  lifecycle_status: PublicLifecycleStatus;
+  status: PublicHouseStatus;
+  created_at: string | null;
   sport: {
     id: string;
     code: string;
@@ -39,66 +41,119 @@ interface PublicHouse {
     full_name: string | null;
     role: string | null;
     avatar_url: string | null;
-    permissions: Record<string, any>;
   }[];
 }
 
-interface ApiResponse {
+interface HousesApiResponse {
   success: boolean;
-  houses?: PublicHouse[];
+  houses?: House[];
   error?: string;
 }
 
-const STATUS_LABEL: Record<PublicLifecycleStatus, string> = {
-  ACTIVE: 'Active',
-  UNDER_CONSTRUCTION: 'In construction',
-  IN_DEVELOPMENT: 'In development',
-};
+interface HouseProfile {
+  house_id: string;
+  image_url: string | null;
+  tagline?: string;
+  description?: string;
+  updated_at?: string | null;
+}
 
-const STATUS_COLORS: Record<PublicLifecycleStatus, string> = {
-  ACTIVE:
-    'inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800',
-  UNDER_CONSTRUCTION:
-    'inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800',
-  IN_DEVELOPMENT:
-    'inline-flex items-center rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-800',
-};
+interface HouseProfileApiResponse {
+  success: boolean;
+  error?: string;
+  locale?: string;
+  profile?: HouseProfile | null;
+}
 
-export default function HousePublicProfilePage() {
+function formatStatusLabel(status: PublicHouseStatus): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'Ativa';
+    case 'UNDER_CONSTRUCTION':
+      return 'Em construção';
+    case 'IN_DEVELOPMENT':
+      return 'Em desenvolvimento';
+    default:
+      return status;
+  }
+}
+
+function statusBadgeClass(status: PublicHouseStatus): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-0.5 border border-emerald-200';
+    case 'UNDER_CONSTRUCTION':
+      return 'inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-[11px] px-2.5 py-0.5 border border-amber-200';
+    case 'IN_DEVELOPMENT':
+    default:
+      return 'inline-flex items-center rounded-full bg-gray-50 text-gray-600 text-[11px] px-2.5 py-0.5 border border-gray-200';
+  }
+}
+
+export default function PublicHouseProfilePage() {
   const params = useParams<{ houseId: string }>();
   const router = useRouter();
+  const { user } = useAuth();
+
   const houseId = params?.houseId;
 
-  const [houses, setHouses] = useState<PublicHouse[]>([]);
+  const [houses, setHouses] = useState<House[]>([]);
+  const [profile, setProfile] = useState<HouseProfile | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isAdmin =
+    user && (user.role === 'Super Admin' || user.role === 'Admin');
 
   useEffect(() => {
     if (!houseId) return;
 
-    const fetchHouses = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
-      try {
-        const res = await fetch('/api/sports/houses?locale=pt');
-        const data: ApiResponse = await res.json();
 
-        if (!res.ok || !data.success) {
-          setError(data.error || 'Error loading Houses of Sports.');
-          setLoading(false);
-          return;
+      try {
+        // 1) Lista de Houses (já usada antes)
+        const res = await fetch('/api/sports/houses?locale=pt');
+        const json: HousesApiResponse = await res.json();
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Erro ao carregar House.');
         }
 
-        setHouses(data.houses || []);
-      } catch (err) {
-        console.error('Error fetching house profile:', err);
-        setError('Network error while loading House profile.');
+        setHouses(json.houses || []);
+
+        // 2) Perfil público da House (imagem, tagline, descrição)
+        try {
+          const profileRes = await fetch(
+            `/api/house-profiles/${houseId}?locale=pt`
+          );
+          const profileJson: HouseProfileApiResponse =
+            await profileRes.json();
+
+          if (!profileRes.ok || !profileJson.success) {
+            console.warn(
+              'Falha ao carregar perfil da House:',
+              profileJson.error
+            );
+          } else {
+            setProfile(profileJson.profile ?? null);
+          }
+        } catch (profileErr) {
+          console.warn('Erro ao carregar perfil da House:', profileErr);
+        }
+      } catch (err: any) {
+        console.error('Error loading Houses list for profile:', err);
+        setError(
+          err?.message || 'Erro inesperado ao carregar dados da House.'
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    fetchHouses();
+    fetchData();
   }, [houseId]);
 
   const house = useMemo(
@@ -106,213 +161,353 @@ export default function HousePublicProfilePage() {
     [houses, houseId]
   );
 
-  const otherHousesSameSport = useMemo(() => {
-    if (!house || !house.sport) return [];
-    return houses.filter(
-      (h) => h.id !== house.id && h.sport?.id === house.sport?.id
-    );
-  }, [houses, house]);
+  const createdAtFormatted = useMemo(() => {
+    if (!house?.created_at) return '';
+    try {
+      return new Date(house.created_at).toLocaleString('pt-PT');
+    } catch {
+      return house.created_at;
+    }
+  }, [house?.created_at]);
 
-  return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Header />
+  const profileUpdatedAtFormatted = useMemo(() => {
+    if (!profile?.updated_at) return '';
+    try {
+      return new Date(profile.updated_at).toLocaleString('pt-PT');
+    } catch {
+      return profile.updated_at || '';
+    }
+  }, [profile?.updated_at]);
 
-      <main className="flex-1">
-        {loading ? (
-          <div className="max-w-4xl mx-auto px-4 py-16 text-sm text-slate-500">
-            Loading House profile…
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="flex items-center gap-2 text-gray-600">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>A carregar House of Sports…</span>
           </div>
-        ) : !house ? (
-          <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-            <p className="mb-4 text-sm text-slate-600">
-              {error || 'House not found or not public.'}
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!house) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-700 mb-4">
+              {error || 'House não encontrada ou ainda não está disponível.'}
             </p>
             <button
               onClick={() => router.push('/sports/houses')}
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              ← Back to Houses
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar às Houses
             </button>
           </div>
-        ) : (
-          <>
-            {/* HERO */}
-            <section className="border-b border-slate-200 bg-gradient-to-b from-slate-100 to-slate-50">
-              <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
-                <button
-                  onClick={() => router.push('/sports/houses')}
-                  className="mb-4 inline-flex items-center text-xs text-slate-500 hover:text-slate-700"
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // House em desenvolvimento só visível para Admin/Super Admin
+  if (house.status === 'IN_DEVELOPMENT' && !isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md px-4">
+            <p className="text-gray-700 mb-4">
+              Esta House ainda está em desenvolvimento e não tem perfil público
+              disponível.
+            </p>
+            <button
+              onClick={() => router.push('/sports/houses')}
+              className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar às Houses
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header />
+
+      <main className="flex-1">
+        {/* HERO / HEADER DA HOUSE */}
+        <section className="bg-gradient-to-b from-blue-50 to-transparent border-b border-blue-100">
+          <div className="max-w-5xl mx-auto px-4 py-8 md:py-10">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => router.push('/sports/houses')}
+                className="inline-flex items-center text-xs text-gray-500 hover:text-gray-700"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Voltar às Houses
+              </button>
+
+              {isAdmin && (
+                <Link
+                  href={`/sports/houses/${house.id}/edit`}
+                  className="inline-flex items-center rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
                 >
-                  ← Back to Houses
-                </button>
+                  <Pencil className="h-3 w-3 mr-1.5" />
+                  Editar perfil público
+                </Link>
+              )}
+            </div>
 
-                <div className="flex flex-col md:flex-row gap-6 items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-slate-500">
-                        {house.sport?.name ?? 'Web3 Sport House'}
-                      </span>
-                      {house.country_code && (
-                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-[2px] text-[10px] font-mono uppercase text-slate-600">
-                          {house.country_code}
-                        </span>
-                      )}
-                    </div>
-                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
-                      {house.hero_title}
-                    </h1>
-                    <p className="mt-2 text-sm text-slate-600">
-                      {house.hero_subtitle}
-                    </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-start gap-4">
+                {/* Avatar da House (imagem se existir) */}
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white border border-blue-100 flex items-center justify-center shadow-sm overflow-hidden">
+                  {profile?.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profile.image_url}
+                      alt={`Imagem da House ${house.name}`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Trophy className="h-8 w-8 text-blue-500" />
+                  )}
+                </div>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                      <span className={STATUS_COLORS[house.lifecycle_status]}>
-                        {STATUS_LABEL[house.lifecycle_status]}
-                      </span>
-                      {house.head && (
-                        <span>
-                          Head of House:{' '}
-                          <strong>
-                            {house.head.full_name || house.head.username}
-                          </strong>
-                          {house.head.username && ` (@${house.head.username})`}
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                    {house.name}
+                  </h1>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                    {house.sport && (
+                      <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-2.5 py-0.5">
+                        {house.sport.name}{' '}
+                        <span className="ml-1 text-[10px] uppercase text-gray-400">
+                          {house.sport.code}
                         </span>
-                      )}
-                      <span>
-                        Moderators: <strong>{house.moderators.length}</strong>
                       </span>
-                    </div>
+                    )}
+                    {house.country_code && (
+                      <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-2.5 py-0.5 text-[11px] uppercase font-mono">
+                        {house.country_code}
+                      </span>
+                    )}
+                    <span className={statusBadgeClass(house.status)}>
+                      {formatStatusLabel(house.status)}
+                    </span>
                   </div>
-
-                  {house.cover_image_url && (
-                    <div className="w-full md:w-56 h-32 md:h-36 rounded-xl overflow-hidden border border-slate-200 bg-slate-200">
-                      {/* simples <img> por enquanto */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={house.cover_image_url}
-                        alt={house.name}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
+                  {profile?.tagline && (
+                    <p className="mt-2 text-sm text-gray-700">
+                      {profile.tagline}
+                    </p>
+                  )}
+                  {createdAtFormatted && (
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      Criada em {createdAtFormatted}
+                    </p>
+                  )}
+                  {profileUpdatedAtFormatted && (
+                    <p className="text-[10px] text-gray-400">
+                      Perfil atualizado em {profileUpdatedAtFormatted}
+                    </p>
                   )}
                 </div>
               </div>
-            </section>
 
-            {/* BODY */}
-            <section className="max-w-4xl mx-auto px-4 py-10 space-y-8">
-              <div className="grid gap-6 md:grid-cols-[2fr,1.2fr] items-start">
-                {/* Descrição / sobre a House */}
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h2 className="text-sm font-semibold text-slate-900 mb-2">
-                    About this House
-                  </h2>
-                  <p className="text-xs text-slate-600 whitespace-pre-line">
-                    {house.description}
-                  </p>
-
-                  <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-[11px] text-slate-500">
-                    <strong>Em breve:</strong> missões específicas desta House,
-                    leaderboard, drops e integrações on-chain na Apertum
-                    Blockchain.
-                  </div>
-                </div>
-
-                {/* Head + moderadores */}
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h3 className="text-sm font-semibold text-slate-900 mb-2">
-                      Leadership
-                    </h3>
-                    {house.head ? (
-                      <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                        <div className="font-medium">
-                          {house.head.full_name || house.head.username}
-                        </div>
-                        {house.head.username && (
-                          <div className="text-[11px] text-slate-500">
-                            @{house.head.username} ·{' '}
-                            {house.head.role || 'Head of House'}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-500">
-                        Esta House ainda não tem Head definido.
-                      </p>
-                    )}
-
-                    <div className="mt-4">
-                      <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
-                        Moderators ({house.moderators.length})
-                      </h4>
-                      {house.moderators.length === 0 ? (
-                        <p className="text-[11px] text-slate-500">
-                          Nenhum moderador definido ainda.
-                        </p>
-                      ) : (
-                        <ul className="space-y-1">
-                          {house.moderators.map((mod) => (
-                            <li
-                              key={mod.user_id}
-                              className="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700"
-                            >
-                              <div className="font-medium">
-                                {mod.full_name || mod.username}
-                              </div>
-                              <div className="text-[10px] text-slate-500">
-                                @{mod.username} · {mod.role || 'Moderator'}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-[11px] text-slate-500">
-                    <div className="font-semibold mb-1">
-                      Chat privado da House
-                    </div>
-                    <p>
-                      O chat em tempo real desta House ainda não está
-                      disponível. Em breve, membros verificados vão poder
-                      conversar, organizar treinos e coordenar missões por aqui.
-                    </p>
-                  </div>
+              {/* CTA principal */}
+              <div className="flex flex-col items-start md:items-end gap-2 text-xs">
+                <p className="text-gray-500 max-w-xs text-left md:text-right">
+                  Esta House representa a comunidade de{' '}
+                  {house.sport?.name || 'um desporto'} em{' '}
+                  {house.country_code || 'um país'} dentro do ecossistema
+                  Web3/Apertum.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href="/sports/onboarding"
+                    className="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                  >
+                    Fazer onboarding de desporto
+                  </Link>
+                  {user && (
+                    <Link
+                      href="/dashboard"
+                      className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Ir para a minha dashboard
+                    </Link>
+                  )}
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
 
-              {/* Outras Houses do mesmo desporto */}
-              {otherHousesSameSport.length > 0 && (
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">
-                    Other Houses for this sport
-                  </h3>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {otherHousesSameSport.map((h) => (
-                      <Link
-                        key={h.id}
-                        href={`/sports/houses/${h.id}`}
-                        className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-700 hover:border-blue-400 hover:bg-white transition-colors"
-                      >
-                        <div className="font-medium">{h.hero_title}</div>
-                        <div className="text-[10px] text-slate-500">
-                          {h.country_code && (
-                            <>
-                              {h.country_code} ·{' '}
-                            </>
-                          )}
-                          {STATUS_LABEL[h.lifecycle_status]}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
+        {/* CONTEÚDO PRINCIPAL DA HOUSE */}
+        <section className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+          {/* Descrição / visão da House */}
+          <div className="grid gap-6 md:grid-cols-[1.7fr,1.3fr]">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-gray-900 mb-2">
+                Sobre esta House
+              </h2>
+
+              {profile?.description ? (
+                <p className="text-xs text-gray-600 whitespace-pre-line">
+                  {profile.description}
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs text-gray-600 mb-2">
+                    As Houses of Sports são comunidades focadas num desporto
+                    específico, ligadas ao universo Web3 e à Apertum
+                    Blockchain. O objetivo desta House é juntar atletas,
+                    treinadores, clubes e entusiastas que queiram explorar
+                    novas formas de{' '}
+                    <strong>
+                      comunidade, incentivos e recompensas on-chain
+                    </strong>
+                    .
+                  </p>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Nesta fase inicial, a House está a definir a sua visão, a
+                    estrutura de comunidade, as missões e o tipo de conteúdo
+                    educativo que vai disponibilizar: desde noções base de
+                    blockchain e Web3 até modelos de participação em comunidade
+                    no desporto.
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    Em versões futuras, o Head of House e a equipa vão poder
+                    editar esta secção diretamente no painel de administração,
+                    definindo a identidade visual e a descrição oficial da
+                    House.
+                  </p>
+                </>
               )}
-            </section>
-          </>
-        )}
+            </div>
+
+            {/* Head + Moderadores */}
+            <div className="space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Head of House
+                </h3>
+                {house.head ? (
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {house.head.full_name || house.head.username}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      @{house.head.username} · {house.head.role || 'Membro'}
+                    </p>
+                    <p className="mt-2 text-[11px] text-gray-500">
+                      O Head of House é responsável por orientar a comunidade,
+                      definir prioridades de conteúdo, missões e eventos, sempre
+                      ligado à visão da SPORTS OFFICES e ao ecossistema da
+                      Apertum.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">
+                    Esta House ainda não tem Head definido publicamente. Quando
+                    o Head estiver atribuído, vais poder ver aqui quem lidera a
+                    comunidade deste desporto.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Moderadores da House
+                </h3>
+                {house.moderators.length === 0 ? (
+                  <p className="text-xs text-gray-500">
+                    Ainda não existem moderadores públicos para esta House.
+                    Moderadores vão apoiar o Head na gestão de missões,
+                    conteúdo e comunidade.
+                  </p>
+                ) : (
+                  <ul className="space-y-2 text-xs text-gray-700">
+                    {house.moderators.map((mod) => (
+                      <li key={mod.user_id} className="flex flex-col">
+                        <span className="font-medium">
+                          {mod.full_name || mod.username}
+                        </span>
+                        <span className="text-gray-500">
+                          {mod.username && <>@{mod.username} · </>}
+                          {mod.role || 'Membro'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Secção futura para membros / XP / chat */}
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white/60 p-5 text-xs text-gray-600">
+            <h2 className="text-sm font-semibold text-gray-900 mb-2">
+              O que vem a seguir para esta House?
+            </h2>
+            <p className="mb-2">
+              Em próximos desenvolvimentos, esta página vai mostrar:
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>
+                Número de membros ativos da House e XP coletivo (soma de XP de
+                todos os membros).
+              </li>
+              <li>
+                Um botão para entrar no <strong>chat privado da House</strong>{' '}
+                (apenas para membros).
+              </li>
+              <li>
+                Missões e trilhos de aprendizagem específicos deste desporto,
+                com recompensas em XP e, mais tarde, integração on-chain.
+              </li>
+            </ul>
+            <p className="mt-3 text-[11px] text-gray-500">
+              Para já, o passo mais importante é garantires que o teu perfil
+              está alinhado com o desporto certo através do onboarding
+              personalizado.
+            </p>
+          </div>
+
+          {/* CTA final */}
+          <div className="border-t pt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">
+                Queres fazer parte desta visão para o desporto em Web3?
+              </h3>
+              <p className="text-xs text-gray-500 max-w-xl">
+                A LEGACY existe para ajudar profissionais e entusiastas a
+                navegarem o mundo da blockchain e da comunidade, sem jargão
+                técnico e passo a passo, desporto a desporto.
+              </p>
+            </div>
+            <Link
+              href="/sports/onboarding"
+              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Começar onboarding personalizado
+            </Link>
+          </div>
+        </section>
       </main>
 
       <Footer />

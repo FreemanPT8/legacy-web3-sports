@@ -52,7 +52,7 @@ type AdminHouse = {
   moderators_count: number;
 };
 
-// Mapa simples de código → nome de país (podes ir adicionando)
+// Mapa simples de código → nome de país
 const COUNTRY_LABELS: Record<string, string> = {
   PT: 'Portugal',
   ES: 'Spain',
@@ -63,8 +63,22 @@ const COUNTRY_LABELS: Record<string, string> = {
   BR: 'Brazil',
 };
 
-function toTitleCase(str: string): string {
-  return str.replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
+// Regra de status para o painel Admin (mesma lógica conceptual da API pública)
+function resolveAdminStatus(
+  dbStatus: string | null,
+  hasHead: boolean
+): HouseStatus {
+  const raw = (dbStatus || '').toLowerCase();
+
+  if (raw === 'active') {
+    return 'active';
+  }
+
+  if (hasHead || raw === 'under_construction') {
+    return 'under_construction';
+  }
+
+  return 'development';
 }
 
 // =========== GET /api/admin/houses ===========
@@ -203,6 +217,15 @@ export async function GET(request: NextRequest) {
     const result: AdminHouse[] = houses.map((row) => {
       const name_i18n = row.name_i18n || {};
 
+      const title =
+        (name_i18n.en as string | undefined) ||
+        (name_i18n.pt as string | undefined) ||
+        (name_i18n.es as string | undefined) ||
+        (name_i18n.fr as string | undefined) ||
+        (name_i18n.de as string | undefined) ||
+        (name_i18n.it as string | undefined) ||
+        'Unnamed House';
+
       // Head
       const headRow = headByHouse.get(row.id) || null;
       let headUser: UserRow | null = null;
@@ -213,6 +236,8 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      const hasHead = !!headUser;
+
       // Moderators count
       const mods = moderatorsByHouse.get(row.id) || [];
       const moderators_count = mods.reduce((acc, mod) => {
@@ -220,26 +245,7 @@ export async function GET(request: NextRequest) {
         return acc;
       }, 0);
 
-      // Status normalizado
-      let status: HouseStatus;
-      if (row.status === 'active') {
-        status = 'active';
-      } else if (row.status === 'under_construction') {
-        status = 'under_construction';
-      } else if (headUser) {
-        status = 'under_construction';
-      } else {
-        status = 'development';
-      }
-
-      const title =
-        (name_i18n.en as string | undefined) ||
-        (name_i18n.pt as string | undefined) ||
-        (name_i18n.es as string | undefined) ||
-        (name_i18n.fr as string | undefined) ||
-        (name_i18n.de as string | undefined) ||
-        (name_i18n.it as string | undefined) ||
-        'Unnamed House';
+      const status = resolveAdminStatus(row.status, hasHead);
 
       return {
         id: row.id as string,
@@ -339,22 +345,16 @@ export async function POST(request: NextRequest) {
     }
 
     const sportNameI18n = (sportRow as any).name_i18n || {};
-    const baseSportNameRaw =
+    const baseSportName =
       sportNameI18n.en ||
       sportNameI18n.pt ||
       Object.values(sportNameI18n)[0] ||
       (sportRow as any).code ||
       'Sport';
 
-    const baseSportName = toTitleCase(baseSportNameRaw as string);
-
+    const houseNameEn = `House of ${baseSportName} ${countryLabel}`;
     const name_i18n = {
-      en: `House of ${baseSportName} ${countryLabel}`,
-      pt: `Casa de ${baseSportName} ${countryLabel}`,
-      es: `Casa de ${baseSportName} ${countryLabel}`,
-      fr: `Maison de ${baseSportName} ${countryLabel}`,
-      de: `Haus für ${baseSportName} ${countryLabel}`,
-      it: `Casa di ${baseSportName} ${countryLabel}`,
+      en: houseNameEn,
     };
 
     const { data: inserted, error: insertError } = await supabaseAdmin
@@ -381,9 +381,10 @@ export async function POST(request: NextRequest) {
 
     const houseRow = inserted as HouseRow;
 
-    const name = (houseRow.name_i18n?.en ??
-      houseRow.name_i18n?.pt ??
-      'Unnamed House') as string;
+    const name =
+      (houseRow.name_i18n?.en ??
+        houseRow.name_i18n?.pt ??
+        'Unnamed House') as string;
 
     const resultHouse: AdminHouse = {
       id: houseRow.id,

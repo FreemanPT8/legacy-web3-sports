@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
+import type { UserRole } from '@/lib/auth';
 
 interface RouteParams {
   params: { id: string };
 }
 
-// Atualizar ROLE de um user
+const ALLOWED_ROLES: UserRole[] = ['Super Admin', 'Admin', 'Member'];
+
+// PUT = atualizar dados administrativos do user (role, is_banned, etc.)
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const authResult = await requireAdmin(request);
 
@@ -19,17 +22,38 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
   try {
     const body = await request.json();
-    const { role } = body as { role?: string };
+    const { role, is_banned } = body as {
+      role?: UserRole;
+      is_banned?: boolean;
+    };
 
-    if (!role || !['Super Admin', 'Admin', 'Member'].includes(role)) {
+    if (typeof role === 'undefined' && typeof is_banned === 'undefined') {
+      return NextResponse.json(
+        { success: false, error: 'Nothing to update.' },
+        { status: 400 }
+      );
+    }
+
+    if (role && !ALLOWED_ROLES.includes(role)) {
       return NextResponse.json(
         { success: false, error: 'Invalid role' },
         { status: 400 }
       );
     }
 
+    // Só Super Admin pode alterar ROLE ou banir alguém
+    if (currentUser.role !== 'Super Admin') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Only Super Admins can change roles or ban users.',
+        },
+        { status: 403 }
+      );
+    }
+
     // impedir que alguém remova o próprio Super Admin
-    if (currentUser.userId === userId && role !== 'Super Admin') {
+    if (currentUser.userId === userId && role && role !== 'Super Admin') {
       return NextResponse.json(
         {
           success: false,
@@ -39,19 +63,36 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    const updateFields: Record<string, any> = {};
+
+    if (role) {
+      updateFields.role = role;
+    }
+
+    if (typeof is_banned === 'boolean') {
+      updateFields.is_banned = is_banned;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Nothing to update.' },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from('users')
-      .update({ role })
+      .update(updateFields)
       .eq('id', userId)
-      .select('id, role')
+      .select('id, role, is_banned')
       .maybeSingle();
 
     if (error) {
-      console.error('Supabase error updating role:', error);
+      console.error('Supabase error updating user (role/ban):', error);
       return NextResponse.json(
         {
           success: false,
-          error: error.message || 'Failed to update role',
+          error: error.message || 'Failed to update user',
         },
         { status: 500 }
       );

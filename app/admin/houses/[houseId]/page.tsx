@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -29,6 +30,7 @@ import {
   User,
   UserPlus,
   Trash2,
+  ExternalLink,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -42,6 +44,8 @@ interface HouseDetail {
   country_code: string;
   status: HouseStatus;
   created_at: string | null;
+  avatar_url: string | null;
+  description: string | null;
 }
 
 interface HeadUser {
@@ -71,6 +75,8 @@ interface HouseDetailApiResponse {
     country_code?: string;
     status?: HouseStatus;
     created_at?: string | null;
+    avatar_url?: string | null;
+    description?: string | null;
   };
   head?: HeadUser | null;
   moderators?: ModeratorUser[];
@@ -136,6 +142,11 @@ export default function AdminHouseDetailPage() {
   const [headUserIdInput, setHeadUserIdInput] = useState('');
   const [modUserIdInput, setModUserIdInput] = useState('');
 
+  // novos drafts para perfil público
+  const [avatarDraft, setAvatarDraft] = useState('');
+  const [descriptionDraft, setDescriptionDraft] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
   // 1) Proteção da rota
   useEffect(() => {
     if (authLoading) return;
@@ -185,12 +196,16 @@ export default function AdminHouseDetailPage() {
           country_code: h.country_code ?? '',
           status: h.status ?? 'development',
           created_at: h.created_at ?? null,
+          avatar_url: h.avatar_url ?? null,
+          description: h.description ?? null,
         };
 
         setHouse(detail);
         setStatusDraft(detail.status);
         setHead(json.head ?? null);
         setModerators(json.moderators ?? []);
+        setAvatarDraft(detail.avatar_url ?? '');
+        setDescriptionDraft(detail.description ?? '');
       } catch (err) {
         console.error('Error loading House detail:', err);
         setError('Unexpected error while loading House detail.');
@@ -244,9 +259,7 @@ export default function AdminHouseDetailPage() {
         return;
       }
 
-      setHouse((prev) =>
-        prev ? { ...prev, status: statusDraft } : prev
-      );
+      setHouse((prev) => (prev ? { ...prev, status: statusDraft } : prev));
     } catch (err) {
       console.error('Error updating House status:', err);
       setError('Unexpected error while updating House status');
@@ -293,7 +306,7 @@ export default function AdminHouseDetailPage() {
 
       if (json.head) {
         setHead(json.head);
-        // Se estava em "development", passamos localmente para "under_construction"
+        // se estava em development e ganhou Head → under_construction
         setHouse((prev) =>
           prev
             ? {
@@ -348,7 +361,7 @@ export default function AdminHouseDetailPage() {
       }
 
       setHead(null);
-      // Se estava em under_construction e sem Head, voltamos para development
+      // se estava under_construction e perdeu Head → development
       setHouse((prev) =>
         prev
           ? {
@@ -467,11 +480,60 @@ export default function AdminHouseDetailPage() {
     }
   };
 
-  // 6) Estados intermédios
+  // 6) Guardar perfil público (imagem + descrição)
+  const handleSaveProfile = async () => {
+    if (!house) return;
 
-  if (authLoading) {
-    return null;
-  }
+    try {
+      setSavingProfile(true);
+      setError(null);
+
+      const token = getToken();
+      if (!token) {
+        setError('No authentication token provided');
+        setSavingProfile(false);
+        return;
+      }
+
+      const res = await fetch(`/api/admin/houses/${house.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          avatar_url: avatarDraft.trim() || null,
+          description: descriptionDraft.trim() || null,
+        }),
+      });
+
+      const json: ApiGenericResponse = await res.json();
+
+      if (!res.ok || !json.success) {
+        setError(json.error || 'Failed to update public profile');
+        return;
+      }
+
+      setHouse((prev) =>
+        prev
+          ? {
+              ...prev,
+              avatar_url: avatarDraft.trim() || null,
+              description: descriptionDraft.trim() || null,
+            }
+          : prev
+      );
+    } catch (err) {
+      console.error('Error updating public profile:', err);
+      setError('Unexpected error while updating public profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  // 7) Estados intermédios
+
+  if (authLoading) return null;
 
   if (loading) {
     return (
@@ -497,7 +559,10 @@ export default function AdminHouseDetailPage() {
             <p className="text-gray-700 mb-4">
               {error || 'House not found or could not be loaded.'}
             </p>
-            <Button variant="outline" onClick={() => router.push('/admin/houses')}>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin/houses')}
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Houses
             </Button>
@@ -507,6 +572,8 @@ export default function AdminHouseDetailPage() {
       </div>
     );
   }
+
+  const publicProfileUrl = `/sports/houses/${house.id}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -529,15 +596,17 @@ export default function AdminHouseDetailPage() {
                 {house.name}
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Admin panel for this House of Sports. Manage Head of House,
-                moderators and status.
+                Admin panel for this House of Sports. Manage status, leadership
+                and moderators. Ligada ao perfil público em{' '}
+                <span className="font-mono text-xs text-gray-700">
+                  /sports/houses/{house.id}
+                </span>
+                .
               </p>
             </div>
             <div className="text-xs text-gray-500 text-right">
               <div>ID: {house.id}</div>
-              {createdAtFormatted && (
-                <div>Created at: {createdAtFormatted}</div>
-              )}
+              {createdAtFormatted && <div>Created at: {createdAtFormatted}</div>}
             </div>
           </div>
 
@@ -547,16 +616,17 @@ export default function AdminHouseDetailPage() {
             </div>
           )}
 
+          {/* GRID PRINCIPAL */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Info geral da House */}
+            {/* Info + status */}
             <Card className="md:col-span-2">
               <CardHeader>
                 <CardTitle>House information</CardTitle>
                 <CardDescription>
-                  Sport, country, status and basic metadata.
+                  Sport, country, status and connection to the public profile.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs uppercase text-gray-500 mb-1">
@@ -589,6 +659,12 @@ export default function AdminHouseDetailPage() {
                     <div className="flex items-center gap-2">
                       <StatusBadge status={house.status} />
                     </div>
+                    <p className="mt-1 text-[11px] text-gray-500 max-w-sm">
+                      <strong>Regra sugerida:</strong> sem Head =&gt; development;
+                      Head mas House ainda a ser montada =&gt; under construction;
+                      House a receber membros =&gt; active (por agora controlado
+                      manualmente aqui).
+                    </p>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
@@ -598,7 +674,7 @@ export default function AdminHouseDetailPage() {
                         setStatusDraft(value as HouseStatus)
                       }
                     >
-                      <SelectTrigger className="w-full sm:w-48">
+                      <SelectTrigger className="w-full sm:w-52">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -623,6 +699,33 @@ export default function AdminHouseDetailPage() {
                     </Button>
                   </div>
                 </div>
+
+                <div className="border-t pt-4 mt-1 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="text-xs text-gray-600">
+                    Este painel afeta o que os utilizadores veem em{' '}
+                    <span className="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded">
+                      {publicProfileUrl}
+                    </span>
+                    .
+                  </div>
+                  <div className="flex gap-2">
+                    <Link
+                      href={publicProfileUrl}
+                      target="_blank"
+                      className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-100 transition"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      View public profile
+                    </Link>
+                    <Link
+                      href="/sports/houses"
+                      target="_blank"
+                      className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 transition"
+                    >
+                      All Houses
+                    </Link>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -634,7 +737,7 @@ export default function AdminHouseDetailPage() {
                   Head of House
                 </CardTitle>
                 <CardDescription>
-                  The main leader of this House.
+                  Main leader of this House. Changing this impacts public view.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -651,7 +754,9 @@ export default function AdminHouseDetailPage() {
                   </div>
                 ) : (
                   <p className="text-xs text-gray-500">
-                    No Head of House defined yet.
+                    No Head of House defined yet. Quando definires um, a House
+                    tende a passar de &quot;development&quot; para
+                    &quot;under construction&quot;.
                   </p>
                 )}
 
@@ -687,13 +792,87 @@ export default function AdminHouseDetailPage() {
                     )}
                   </div>
                   <p className="text-[11px] text-gray-500">
-                    Use this to promote an existing Admin / Super Admin as Head
-                    of House. You can change the Head at any time.
+                    Usa apenas utilizadores com role <strong>Admin</strong> ou{' '}
+                    <strong>Super Admin</strong> como Head nesta fase. O nome e
+                    o username aparecem no perfil público da House.
                   </p>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Perfil público: imagem + descrição */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Public profile (image & description)</CardTitle>
+              <CardDescription>
+                Define como esta House aparece na página pública e no perfil da
+                própria House.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  {avatarDraft ? (
+                    <img
+                      src={avatarDraft}
+                      alt={house.name}
+                      className="h-20 w-20 rounded-xl object-cover border border-gray-200 bg-gray-100"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[10px] text-gray-400 text-center px-2">
+                      No image yet
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <label className="block text-xs font-medium text-gray-700">
+                    Avatar URL (temporário)
+                  </label>
+                  <Input
+                    placeholder="https://... (LEGACY House image)"
+                    value={avatarDraft}
+                    onChange={(e) => setAvatarDraft(e.target.value)}
+                  />
+                  <p className="text-[11px] text-gray-500">
+                    Mais tarde podes ter um sistema de upload com o layout
+                    visual LEGACY. Por agora usamos um URL direto para a imagem
+                    da House.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Short description
+                </label>
+                <textarea
+                  rows={4}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="Descrição curta da House (apresentação para a página pública)."
+                  value={descriptionDraft}
+                  onChange={(e) => setDescriptionDraft(e.target.value)}
+                />
+                <p className="mt-1 text-[11px] text-gray-500">
+                  Podes escrever em português por agora. No futuro vamos
+                  internacionalizar esta descrição para as 6 línguas.
+                </p>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                >
+                  {savingProfile && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
+                  Save public profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Moderadores */}
           <Card>
@@ -703,7 +882,7 @@ export default function AdminHouseDetailPage() {
                 House moderators
               </CardTitle>
               <CardDescription>
-                Users who help manage this House (missions, content, community).
+                Users who help manage missions, content and community tools.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -725,8 +904,9 @@ export default function AdminHouseDetailPage() {
                 </Button>
               </div>
               <p className="text-[11px] text-gray-500">
-                Moderators do not replace the Head of House, but can manage
-                missions, events and community tools for this sport.
+                Moderators não substituem o Head of House, mas podem gerir
+                missões, eventos e comunidade. Em breve estes nomes também podem
+                aparecer no perfil público da House.
               </p>
 
               {moderators.length === 0 ? (

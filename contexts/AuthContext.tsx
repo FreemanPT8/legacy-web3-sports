@@ -1,12 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@/lib/auth';
+import type { User } from '@/lib/auth';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    username: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
   signup: (data: {
     username: string;
     full_name: string;
@@ -37,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
+      console.error('AuthProvider hydration error:', error);
       localStorage.removeItem('user');
       localStorage.removeItem('token');
     }
@@ -56,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
+      console.error('refreshUser error:', error);
       setUser(null);
     }
   };
@@ -65,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
@@ -81,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { success: false, error: data.error || 'Login failed' };
     } catch (error) {
+      console.error('login error:', error);
       return { success: false, error: 'Network error' };
     }
   };
@@ -96,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signupData)
+        body: JSON.stringify(signupData),
       });
 
       const data = await response.json();
@@ -112,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { success: false, error: data.error || 'Signup failed' };
     } catch (error) {
+      console.error('signup error:', error);
       return { success: false, error: 'Network error' };
     }
   };
@@ -129,7 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, getToken, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, signup, logout, getToken, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
