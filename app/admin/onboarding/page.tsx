@@ -1,3 +1,4 @@
+// app/admin/onboarding/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -544,6 +545,10 @@ export default function AdminOnboardingPage() {
         return;
       }
 
+      // full_name não existe no tipo User, por isso usamos any aqui
+      const userFullName =
+        (user as any)?.full_name ?? null;
+
       const res = await fetch('/api/admin/onboarding', {
         method: 'PATCH',
         headers: {
@@ -568,7 +573,7 @@ export default function AdminOnboardingPage() {
             ? {
                 ...s,
                 assigned_to_user_id: user.id,
-                assigned_to_full_name: user.full_name || null,
+                assigned_to_full_name: userFullName,
                 assigned_to_username: user.username || null,
               }
             : s
@@ -579,7 +584,7 @@ export default function AdminOnboardingPage() {
           ? {
               ...prev,
               assigned_to_user_id: user.id,
-              assigned_to_full_name: user.full_name || null,
+              assigned_to_full_name: userFullName,
               assigned_to_username: user.username || null,
             }
           : prev
