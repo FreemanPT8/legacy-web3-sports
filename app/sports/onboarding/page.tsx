@@ -1,7 +1,7 @@
-// app/sports/onboarding/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import {
@@ -27,6 +27,14 @@ import { useToast } from '@/hooks/use-toast';
 import { COUNTRIES, HOUSES_OF_SPORTS, SPORTS_ROLES } from '@/lib/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Mail, MessageSquare, User, Trophy, Lightbulb } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 type SportOption = {
   id: string;
@@ -107,6 +115,39 @@ function getLoadingSportsLabel(lang: string): string {
     default:
       return 'Loading sports...';
   }
+}
+
+// Textos do pop-up pós-submissão
+function getPostSubmitTitle(lang: string): string {
+  const L = normalizeLang(lang);
+  if (L === 'pt') return 'Obrigado pela tua candidatura!';
+  if (L === 'es') return '¡Gracias por tu solicitud!';
+  return 'Thank you for your application!';
+}
+
+function getPostSubmitDescription(lang: string): string {
+  const L = normalizeLang(lang);
+  if (L === 'pt') {
+    return 'Enquanto esperas pelo contacto da equipa LEGACY, regista-te com o mesmo e-mail e começa a explorar conteúdos exclusivos que não estão visíveis para utilizadores não registados.';
+  }
+  if (L === 'es') {
+    return 'Mientras esperas el contacto del equipo LEGACY, regístrate con el mismo correo y empieza a explorar contenido exclusivo que no está visible para usuarios no registrados.';
+  }
+  return 'While you wait for the LEGACY team to contact you, register with the same email and start exploring exclusive content that is not visible to unregistered users.';
+}
+
+function getRegisterButtonLabel(lang: string): string {
+  const L = normalizeLang(lang);
+  if (L === 'pt') return 'Registar';
+  if (L === 'es') return 'Registrarse';
+  return 'Register';
+}
+
+function getExploreButtonLabel(lang: string): string {
+  const L = normalizeLang(lang);
+  if (L === 'pt') return 'Explorar sem registo';
+  if (L === 'es') return 'Explorar sin registro';
+  return 'Explore without account';
 }
 
 // Normalizar SPORTS_ROLES para { value, label } e evitar [object Object] / value=""
@@ -266,6 +307,8 @@ function getValidationTexts(lang: string) {
 export default function OnboardingPage() {
   const { toast } = useToast();
   const { language, t } = useLanguage();
+  const router = useRouter();
+
   const [loading, setLoading] = useState(false);
 
   // lista de desportos vinda da API
@@ -276,6 +319,10 @@ export default function OnboardingPage() {
   // controlo de "Outro desporto" e "Outro papel"
   const [otherSport, setOtherSport] = useState(false);
   const [otherRole, setOtherRole] = useState(false);
+
+  // controlo do pop-up pós-submissão
+  const [showPostSubmitDialog, setShowPostSubmitDialog] = useState(false);
+  const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -422,10 +469,14 @@ export default function OnboardingPage() {
       const data = await response.json();
 
       if (data.success) {
+        const submittedEmail = formData.email;
+        setLastSubmittedEmail(submittedEmail);
+
         toast({
           title: v.submitSuccessTitle,
           description: v.submitSuccessDesc,
         });
+
         setFormData({
           email: '',
           phone: '',
@@ -443,6 +494,9 @@ export default function OnboardingPage() {
         });
         setOtherSport(false);
         setOtherRole(false);
+
+        // Abre o pop-up pós-submissão
+        setShowPostSubmitDialog(true);
       } else {
         toast({
           title: v.submitFailedTitle,
@@ -463,6 +517,22 @@ export default function OnboardingPage() {
   };
 
   const sportRoleOptions = getSportRolesForLanguage(language);
+
+  const handleRegisterClick = () => {
+    const emailToUse = lastSubmittedEmail || formData.email;
+    if (emailToUse) {
+      router.push(
+        `/auth/register?email=${encodeURIComponent(emailToUse)}`
+      );
+    } else {
+      router.push('/auth/register');
+    }
+    setShowPostSubmitDialog(false);
+  };
+
+  const handleExploreClick = () => {
+    setShowPostSubmitDialog(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -951,6 +1021,33 @@ export default function OnboardingPage() {
           </div>
         </div>
       </main>
+
+      {/* Pop-up pós-submissão */}
+      <Dialog
+        open={showPostSubmitDialog}
+        onOpenChange={setShowPostSubmitDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{getPostSubmitTitle(language)}</DialogTitle>
+            <DialogDescription>
+              {getPostSubmitDescription(language)}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              onClick={handleExploreClick}
+              variant="outline"
+            >
+              {getExploreButtonLabel(language)}
+            </Button>
+            <Button type="button" onClick={handleRegisterClick}>
+              {getRegisterButtonLabel(language)}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
