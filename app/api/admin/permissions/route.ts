@@ -1,77 +1,93 @@
 // app/api/admin/permissions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
-import type { Permission } from '@/lib/permissions';
+import { supabaseAdmin } from '@/lib/supabase';
 import {
+  type UserRole,
+  type Permission,
+  type PermissionKey,
+  PERMISSION_KEYS,
   ADMIN_TOGGLABLE_PERMISSIONS,
   getRolePermissions,
+  updateUserPermissions,
 } from '@/lib/permissions';
-
-interface AdminPermissionsRow {
-  id: string;
-  user_id: string;
-  permissions: Permission[];
-}
 
 interface AdminUserRow {
   id: string;
   username: string | null;
   full_name: string | null;
-  email: string;
-  role: 'Super Admin' | 'Admin' | string;
+  email: string | null;
+  role: string | null;
+}
+
+interface AdminPermissionsRow {
+  user_id: string;
+  can_manage_users: boolean | null;
+  can_manage_houses: boolean | null;
+  can_manage_heads: boolean | null;
+  can_manage_onboarding: boolean | null;
+  can_manage_courses: boolean | null;
+  can_manage_blog: boolean | null;
+  can_manage_forum: boolean | null;
+  can_manage_xp: boolean | null;
+  can_manage_analytics: boolean | null;
+  can_manage_settings: boolean | null;
 }
 
 interface AdminPermissionsDTO {
   id: string;
   username: string | null;
   full_name: string | null;
-  email: string;
-  role: 'Super Admin' | 'Admin';
-  basePermissions: Permission[];
-  extraPermissions: Permission[];
+  email: string | null;
+  role: UserRole; // 'Super Admin' | 'Admin'
+  basePermissions: PermissionKey[];   // ⬅ arrays, não objeto
+  extraPermissions: PermissionKey[];  // ⬅ arrays
 }
 
-interface PermissionsGetResponse {
+interface PermissionsListResponse {
   success: boolean;
   admins?: AdminPermissionsDTO[];
   error?: string;
 }
 
-interface PermissionsPostBody {
-  userId: string;
-  permissions: Permission[];
-}
-
-interface PermissionsPostResponse {
+interface PermissionsUpdateResponse {
   success: boolean;
   error?: string;
 }
 
-// GET -> lista de Admins + permissões
+// GET /api/admin/permissions
+// Lista todos os Admin / Super Admin + as permissões (base + extra)
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin(request);
-  if (!auth.success) return auth.response!;
+  const authResult = await requireAdmin(request);
+  if (!authResult.success) return authResult.response!;
 
-  if (auth.user!.role !== 'Super Admin') {
-    return NextResponse.json<PermissionsGetResponse>(
-      { success: false, error: 'Only Super Admin can manage permissions.' },
+  const currentUser = authResult.user!;
+  // Só Super Admin pode gerir permissões
+  if (currentUser.role !== 'Super Admin') {
+    return NextResponse.json<PermissionsListResponse>(
+      { success: false, error: 'Only Super Admin can view permissions.' },
       { status: 403 },
     );
   }
 
+  if (!supabaseAdmin) {
+    return NextResponse.json<PermissionsListResponse>(
+      { success: false, error: 'Supabase admin client not configured.' },
+      { status: 500 },
+    );
+  }
+
   try {
-    // 1) Buscar todos os Admins e Super Admins
+    // 1) Buscar todos os utilizadores com role Admin / Super Admin
     const { data: usersData, error: usersError } = await supabaseAdmin
       .from('users')
       .select('id, username, full_name, email, role')
       .in('role', ['Admin', 'Super Admin'])
-      .order('role', { ascending: false }) // Super Admins primeiro
-      .order('username', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (usersError) {
-      console.error('Error loading admin users:', usersError);
-      return NextResponse.json<PermissionsGetResponse>(
+      console.error('Error loading admin users in /api/admin/permissions:', usersError);
+      return NextResponse.json<PermissionsListResponse>(
         { success: false, error: 'Failed to load admin users.' },
         { status: 500 },
       );
@@ -79,157 +95,197 @@ export async function GET(request: NextRequest) {
 
     const admins = (usersData || []) as AdminUserRow[];
     if (admins.length === 0) {
-      return NextResponse.json<PermissionsGetResponse>({
+      return NextResponse.json<PermissionsListResponse>({
         success: true,
         admins: [],
       });
     }
 
-    const adminIds = admins.map((a) => a.id);
+    const adminIds = admins.map((u) => u.id);
 
-    // 2) Buscar linhas de admin_permissions
+    // 2) Buscar linhas de admin_permissions para estes user_ids
     const { data: permsData, error: permsError } = await supabaseAdmin
       .from('admin_permissions')
-      .select('id, user_id, permissions')
+      .select(
+        'user_id, can_manage_users, can_manage_houses, can_manage_heads, can_manage_onboarding, can_manage_courses, can_manage_blog, can_manage_forum, can_manage_xp, can_manage_analytics, can_manage_settings',
+      )
       .in('user_id', adminIds);
 
     if (permsError) {
-      console.error('Error loading admin_permissions:', permsError);
-    }
-
-    const permsByUserId = new Map<string, AdminPermissionsRow>();
-    for (const row of (permsData || []) as any[]) {
-      permsByUserId.set(row.user_id as string, {
-        id: row.id as string,
-        user_id: row.user_id as string,
-        permissions: (row.permissions as Permission[]) ?? [],
-      });
-    }
-
-    // 3) Montar DTO
-    const result: AdminPermissionsDTO[] = admins.map((u) => {
-      const basePermissions = getRolePermissions(u.role);
-      const extraRow = permsByUserId.get(u.id);
-      let extraPermissions = (extraRow?.permissions || []) as Permission[];
-
-      // Só permitimos togglar as permissões da lista ADMIN_TOGGLABLE_PERMISSIONS
-      extraPermissions = extraPermissions.filter((p) =>
-        ADMIN_TOGGLABLE_PERMISSIONS.includes(p),
+      console.error(
+        'Error loading admin_permissions in /api/admin/permissions:',
+        permsError,
       );
+      return NextResponse.json<PermissionsListResponse>(
+        { success: false, error: 'Failed to load admin permissions.' },
+        { status: 500 },
+      );
+    }
+
+    const permsRows = (permsData || []) as AdminPermissionsRow[];
+    const permsByUserId = new Map<string, AdminPermissionsRow>();
+    for (const row of permsRows) {
+      permsByUserId.set(row.user_id, row);
+    }
+
+    // Helper para transformar a linha de admin_permissions -> array de PermissionKey
+    const rowToExtraPermissions = (row: AdminPermissionsRow | undefined): PermissionKey[] => {
+      if (!row) return [];
+
+      const extra: PermissionKey[] = [];
+
+      const pushIfTrue = (col: boolean | null | undefined, key: PermissionKey) => {
+        if (col) extra.push(key);
+      };
+
+      pushIfTrue(row.can_manage_users, 'canManageUsers');
+      pushIfTrue(row.can_manage_houses, 'canManageHouses');
+      pushIfTrue(row.can_manage_heads, 'canManageHeads');
+      pushIfTrue(row.can_manage_onboarding, 'canManageOnboarding');
+      pushIfTrue(row.can_manage_courses, 'canManageCourses');
+      pushIfTrue(row.can_manage_blog, 'canManageBlog');
+      pushIfTrue(row.can_manage_forum, 'canManageForum');
+      pushIfTrue(row.can_manage_xp, 'canManageXP');
+      pushIfTrue(row.can_manage_analytics, 'canManageAnalytics');
+      pushIfTrue(row.can_manage_settings, 'canManageSettings');
+
+      return extra;
+    };
+
+    // 3) Montar DTO — agora basePermissions é um array de keys ativas
+    const result: AdminPermissionsDTO[] = admins.map((u) => {
+      const role =
+        u.role === 'Super Admin' || u.role === 'Admin' ? (u.role as UserRole) : 'Member';
+
+      const basePermsObj = getRolePermissions(role);
+      const basePermissions: PermissionKey[] = PERMISSION_KEYS.filter(
+        (key) => basePermsObj[key],
+      );
+
+      const extraRow = permsByUserId.get(u.id);
+      const extraPermissions = rowToExtraPermissions(extraRow);
 
       return {
         id: u.id,
         username: u.username,
         full_name: u.full_name,
-        email: u.email,
-        role: u.role as 'Admin' | 'Super Admin',
+        email: u.email ?? '',
+        role,
         basePermissions,
         extraPermissions,
       };
     });
 
-    return NextResponse.json<PermissionsGetResponse>({
-      success: true,
-      admins: result,
-    });
+    return NextResponse.json<PermissionsListResponse>(
+      { success: true, admins: result },
+      { status: 200 },
+    );
   } catch (err: any) {
     console.error('Unexpected error in GET /api/admin/permissions:', err);
-    return NextResponse.json<PermissionsGetResponse>(
-      { success: false, error: err?.message || 'Internal server error' },
+    return NextResponse.json<PermissionsListResponse>(
+      { success: false, error: err?.message || 'Unexpected error.' },
       { status: 500 },
     );
   }
 }
 
-// POST -> definir permissões extra de um Admin
-export async function POST(request: NextRequest) {
-  const auth = await requireAdmin(request);
-  if (!auth.success) return auth.response!;
+// PATCH /api/admin/permissions
+// Body: { userId: string; permissions: Permission[] }
+export async function PATCH(request: NextRequest) {
+  const authResult = await requireAdmin(request);
+  if (!authResult.success) return authResult.response!;
 
-  if (auth.user!.role !== 'Super Admin') {
-    return NextResponse.json<PermissionsPostResponse>(
-      { success: false, error: 'Only Super Admin can change permissions.' },
+  const currentUser = authResult.user!;
+  if (currentUser.role !== 'Super Admin') {
+    return NextResponse.json<PermissionsUpdateResponse>(
+      { success: false, error: 'Only Super Admin can update permissions.' },
       { status: 403 },
     );
   }
 
-  try {
-    const body = (await request.json()) as PermissionsPostBody;
-    const userId = body.userId?.trim();
-    let permissions = (body.permissions || []) as Permission[];
+  if (!supabaseAdmin) {
+    return NextResponse.json<PermissionsUpdateResponse>(
+      { success: false, error: 'Supabase admin client not configured.' },
+      { status: 500 },
+    );
+  }
 
-    if (!userId) {
-      return NextResponse.json<PermissionsPostResponse>(
-        { success: false, error: 'userId is required.' },
+  try {
+    const body = await request.json().catch(() => ({} as any));
+    const { userId, permissions } = body as {
+      userId?: string;
+      permissions?: Permission[];
+    };
+
+    if (!userId || !Array.isArray(permissions)) {
+      return NextResponse.json<PermissionsUpdateResponse>(
+        { success: false, error: 'userId and permissions are required.' },
         { status: 400 },
       );
     }
 
-    // Normalizar lista de permissões: remover duplicados e invalidas
-    const allowed = new Set(ADMIN_TOGGLABLE_PERMISSIONS);
-    permissions = Array.from(
-      new Set(permissions.filter((p) => allowed.has(p))),
-    ) as Permission[];
-
-    // Validar se o target é Admin (não alteramos Super Admins)
-    const { data: userData, error: userError } = await supabaseAdmin
+    // Verificar se o alvo é Admin (não mexemos em Super Admin aqui)
+    const { data: targetUser, error: targetError } = await supabaseAdmin
       .from('users')
       .select('id, role')
       .eq('id', userId)
       .maybeSingle();
 
-    if (userError) {
-      console.error('Error loading target user in permissions POST:', userError);
-      return NextResponse.json<PermissionsPostResponse>(
-        { success: false, error: 'Failed to validate target user.' },
+    if (targetError) {
+      console.error('Error loading target user in PATCH /api/admin/permissions:', targetError);
+      return NextResponse.json<PermissionsUpdateResponse>(
+        { success: false, error: 'Error loading target user.' },
         { status: 500 },
       );
     }
 
-    if (!userData) {
-      return NextResponse.json<PermissionsPostResponse>(
+    if (!targetUser) {
+      return NextResponse.json<PermissionsUpdateResponse>(
         { success: false, error: 'Target user not found.' },
         { status: 404 },
       );
     }
 
-    if (userData.role !== 'Admin') {
-      return NextResponse.json<PermissionsPostResponse>(
+    if (targetUser.role === 'Super Admin') {
+      return NextResponse.json<PermissionsUpdateResponse>(
         {
           success: false,
-          error: 'Only Admin users can have permissions customized.',
+          error: 'Cannot change permissions of a Super Admin via this endpoint.',
         },
         { status: 400 },
       );
     }
 
-    // Upsert em admin_permissions
-    const { error: upsertError } = await supabaseAdmin
-      .from('admin_permissions')
-      .upsert(
-        {
-          user_id: userId,
-          permissions,
-        },
-        { onConflict: 'user_id' },
-      );
+    // Construir partial: para cada permissão togglable, true se estiver no array recebido
+    const requested = new Set<PermissionKey>(
+      (permissions as PermissionKey[]).filter((p) =>
+        ADMIN_TOGGLABLE_PERMISSIONS.includes(p),
+      ),
+    );
 
-    if (upsertError) {
-      console.error(
-        'Error upserting admin_permissions in POST /api/admin/permissions:',
-        upsertError,
-      );
-      return NextResponse.json<PermissionsPostResponse>(
-        { success: false, error: 'Failed to update permissions.' },
+    const partial: Partial<import('@/lib/permissions').AdminPermissions> = {};
+    for (const key of ADMIN_TOGGLABLE_PERMISSIONS) {
+      // true / false conforme foi selecionado
+      (partial as any)[key] = requested.has(key);
+    }
+
+    const updateResult = await updateUserPermissions(userId, partial);
+
+    if (!updateResult.success) {
+      return NextResponse.json<PermissionsUpdateResponse>(
+        { success: false, error: updateResult.error || 'Failed to update permissions.' },
         { status: 500 },
       );
     }
 
-    return NextResponse.json<PermissionsPostResponse>({ success: true });
+    return NextResponse.json<PermissionsUpdateResponse>(
+      { success: true },
+      { status: 200 },
+    );
   } catch (err: any) {
-    console.error('Unexpected error in POST /api/admin/permissions:', err);
-    return NextResponse.json<PermissionsPostResponse>(
-      { success: false, error: err?.message || 'Internal server error' },
+    console.error('Unexpected error in PATCH /api/admin/permissions:', err);
+    return NextResponse.json<PermissionsUpdateResponse>(
+      { success: false, error: err?.message || 'Unexpected error.' },
       { status: 500 },
     );
   }
