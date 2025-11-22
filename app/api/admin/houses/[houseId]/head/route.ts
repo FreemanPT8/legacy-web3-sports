@@ -232,15 +232,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (existingAdminAssign) {
       adminAssignmentId = existingAdminAssign.id as string;
     } else {
-      const { data: newAdminAssign, error: newAdminError } = await supabaseAdmin
-        .from('admin_assignments')
-        .insert({
-          user_id: userId,
-          houses: null,
-          countries: null,
-        })
-        .select('id, user_id')
-        .single();
+      // ⚠️ Importante: não passar houses/countries como null,
+      // deixamos o Postgres usar os defaults da tabela.
+      const { data: newAdminAssign, error: newAdminError } =
+        await supabaseAdmin
+          .from('admin_assignments')
+          .insert({
+            user_id: userId,
+          })
+          .select('id, user_id')
+          .single();
 
       if (newAdminError || !newAdminAssign) {
         console.error(
