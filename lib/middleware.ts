@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractTokenFromHeader, JWTPayload } from './jwt';
 import { supabase } from './supabase';
+import type { Permission } from './permissions';
+import { hasGlobalPermission } from './permissions';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: JWTPayload;
@@ -164,4 +166,47 @@ export function getUserIdFromRequest(request: NextRequest): string | null {
   } catch {
     return null;
   }
+}
+export async function requirePermission(
+  request: NextRequest,
+  permission: Permission,
+): Promise<{
+  success: boolean;
+  user?: JWTPayload;
+  response?: NextResponse;
+}> {
+  // Primeiro garante que o user está autenticado
+  const auth = await requireAuth(request);
+
+  if (!auth.success || !auth.user) {
+    return {
+      success: false,
+      response:
+        auth.response ??
+        NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 },
+        ),
+    };
+  }
+
+  const user = auth.user;
+
+  // Depois verifica se o role tem essa permissão global
+  const allowed = hasGlobalPermission(user.role, permission);
+
+  if (!allowed) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { success: false, error: 'Permission denied' },
+        { status: 403 },
+      ),
+    };
+  }
+
+  return {
+    success: true,
+    user,
+  };
 }
