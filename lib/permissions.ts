@@ -1,200 +1,279 @@
 // lib/permissions.ts
+import { supabaseAdmin } from './supabase';
 
-/**
- * Permissões globais (nível plataforma).
- * Algumas serão "own" (só conteúdo do próprio) e outras "any".
- */
-export type Permission =
-  // Acesso ao painel
-  | 'admin.access'
+export type UserRole = 'Super Admin' | 'Admin' | 'Member';
 
-  // Houses of Sports
-  | 'houses.create'
-  | 'houses.set_head'
+// 🔑 Todas as permissões que vamos gerir (podes acrescentar mais no futuro)
+export type PermissionKey =
+  | 'canManageUsers'
+  | 'canManageHouses'
+  | 'canManageHeads'
+  | 'canManageOnboarding'
+  | 'canManageCourses'
+  | 'canManageBlog'
+  | 'canManageForum'
+  | 'canManageXP'
+  | 'canManageAnalytics'
+  | 'canManageSettings';
 
-  // Utilizadores
-  | 'users.manage_any'
-  | 'users.manage_basic'
-  | 'users.ban_any'
-
-  // Onboarding
-  | 'onboarding.manage_any'
-  | 'onboarding.manage_house'
-
-  // Cursos
-  | 'courses.manage_any'
-  | 'courses.manage_own'
-
-  // Blog
-  | 'blog.manage_any'
-  | 'blog.manage_own'
-
-  // Fórum
-  | 'forum.manage_any' // fórum global
-  | 'forum.manage_house' // apenas fórum da própria House
-
-  // Houses (escopado por House)
-  | 'house.moderators.manage'
-  | 'house.permissions.manage'
-
-  // XP
-  | 'xp.manage'
-
-  // Analytics
-  | 'analytics.view';
-
-/**
- * Permissões base por role.
- *
- * Super Admin tem tudo.
- * Admin começa com o mínimo e ganha o resto via admin_permissions.
- */
-export const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
-  'Super Admin': [
-    'admin.access',
-
-    'houses.create',
-    'houses.set_head',
-
-    'users.manage_any',
-    'users.manage_basic',
-    'users.ban_any',
-
-    'onboarding.manage_any',
-
-    'courses.manage_any',
-    'blog.manage_any',
-
-    'forum.manage_any',
-
-    'house.moderators.manage',
-    'house.permissions.manage',
-
-    'xp.manage',
-    'analytics.view',
-  ],
-
-  'Admin': [
-    'admin.access',
-    // Admin pode criar Houses por defeito (como já tinhas na API)
-    'houses.create',
-  ],
-
-  // Members não têm permissões especiais
-};
-
-/**
- * Permissões escopadas à House de um Head of House.
- * Este “papel” é derivado (Admin + row em house_heads).
- */
-export const HEAD_OF_HOUSE_PERMISSIONS: Permission[] = [
-  'house.moderators.manage',
-  'house.permissions.manage',
-  'onboarding.manage_house',
-  'forum.manage_house',
+export const PERMISSION_KEYS: PermissionKey[] = [
+  'canManageUsers',
+  'canManageHouses',
+  'canManageHeads',
+  'canManageOnboarding',
+  'canManageCourses',
+  'canManageBlog',
+  'canManageForum',
+  'canManageXP',
+  'canManageAnalytics',
+  'canManageSettings',
 ];
 
-/**
- * Lista das permissões que podem ser geridas no Painel Admin.
- * (as outras são derivadas — ex: Head of House).
- */
-export const ADMIN_TOGGLABLE_PERMISSIONS: Permission[] = [
-  'houses.set_head',
+export interface AdminPermissions {
+  canManageUsers: boolean;
+  canManageHouses: boolean;
+  canManageHeads: boolean;
+  canManageOnboarding: boolean;
+  canManageCourses: boolean;
+  canManageBlog: boolean;
+  canManageForum: boolean;
+  canManageXP: boolean;
+  canManageAnalytics: boolean;
+  canManageSettings: boolean;
+}
 
-  'users.manage_any',
-  'users.manage_basic',
-  'users.ban_any',
-
-  'onboarding.manage_any',
-
-  'courses.manage_any',
-  'courses.manage_own',
-
-  'blog.manage_any',
-  'blog.manage_own',
-
-  'forum.manage_any',
-
-  'xp.manage',
-  'analytics.view',
-];
-
-/**
- * Labels para mostrar na UI.
- */
-export const PERMISSION_LABELS: Record<Permission, string> = {
-  'admin.access': 'Access Admin Panel',
-
-  'houses.create': 'Create Houses',
-  'houses.set_head': 'Set Head of House',
-
-  'users.manage_any': 'Manage all users',
-  'users.manage_basic': 'Basic user management',
-  'users.ban_any': 'Ban users',
-
-  'onboarding.manage_any': 'Manage all onboarding',
-  'onboarding.manage_house': 'Manage onboarding for own House',
-
-  'courses.manage_any': 'Manage all courses',
-  'courses.manage_own': 'Manage own courses only',
-
-  'blog.manage_any': 'Manage all blog posts',
-  'blog.manage_own': 'Manage own blog posts only',
-
-  'forum.manage_any': 'Moderate global forum',
-  'forum.manage_house': 'Moderate forum for own House',
-
-  'house.moderators.manage': 'Manage House moderators',
-  'house.permissions.manage': 'Manage House permissions',
-
-  'xp.manage': 'Manage XP',
-  'analytics.view': 'View analytics',
+// Defaults por role
+const SUPER_ADMIN_PERMISSIONS: AdminPermissions = {
+  canManageUsers: true,
+  canManageHouses: true,
+  canManageHeads: true,
+  canManageOnboarding: true,
+  canManageCourses: true,
+  canManageBlog: true,
+  canManageForum: true,
+  canManageXP: true,
+  canManageAnalytics: true,
+  canManageSettings: true,
 };
 
-/**
- * Permissões base por role.
- */
-export function getRolePermissions(role: string): Permission[] {
-  return ROLE_DEFAULT_PERMISSIONS[role] ?? [];
+const ADMIN_DEFAULT_PERMISSIONS: AdminPermissions = {
+  canManageUsers: false,
+  canManageHouses: false,
+  canManageHeads: false,
+  canManageOnboarding: false,
+  canManageCourses: false,
+  canManageBlog: false,
+  canManageForum: false,
+  canManageXP: false,
+  canManageAnalytics: false,
+  canManageSettings: false,
+};
+
+const MEMBER_PERMISSIONS: AdminPermissions = {
+  canManageUsers: false,
+  canManageHouses: false,
+  canManageHeads: false,
+  canManageOnboarding: false,
+  canManageCourses: false,
+  canManageBlog: false,
+  canManageForum: false,
+  canManageXP: false,
+  canManageAnalytics: false,
+  canManageSettings: false,
+};
+
+export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, AdminPermissions> = {
+  'Super Admin': SUPER_ADMIN_PERMISSIONS,
+  Admin: ADMIN_DEFAULT_PERMISSIONS,
+  Member: MEMBER_PERMISSIONS,
+};
+
+export function getDefaultPermissionsForRole(
+  role: UserRole,
+): AdminPermissions {
+  return DEFAULT_PERMISSIONS_BY_ROLE[role] || MEMBER_PERMISSIONS;
 }
 
-/**
- * Verifica se um role + lista extra têm uma permissão global.
- */
-export function hasGlobalPermission(
-  role: string,
-  permission: Permission,
-  extra?: Permission[],
-): boolean {
-  // Super Admin manda em tudo
-  if (role === 'Super Admin') return true;
-
-  const base = getRolePermissions(role);
-  if (base.includes(permission)) return true;
-
-  if (extra && extra.includes(permission)) return true;
-
-  return false;
+// Estrutura esperada em admin_permissions
+interface AdminPermissionsRow {
+  id: string;
+  user_id: string;
+  can_manage_users: boolean | null;
+  can_manage_houses: boolean | null;
+  can_manage_heads: boolean | null;
+  can_manage_onboarding: boolean | null;
+  can_manage_courses: boolean | null;
+  can_manage_blog: boolean | null;
+  can_manage_forum: boolean | null;
+  can_manage_xp: boolean | null;
+  can_manage_analytics: boolean | null;
+  can_manage_settings: boolean | null;
 }
 
-/**
- * Verifica permissões ao nível de uma House específica.
- */
-export function hasHouseScopedPermission(options: {
-  role: string;
-  isHeadOfThisHouse: boolean;
-  permission: Permission;
-}): boolean {
-  const { role, isHeadOfThisHouse, permission } = options;
+// Converte row da BD + defaults do role em objeto AdminPermissions
+function mapRowToPermissions(
+  row: AdminPermissionsRow | null,
+  role: UserRole,
+): AdminPermissions {
+  const base = getDefaultPermissionsForRole(role);
 
-  if (role === 'Super Admin') return true;
+  if (!row) return { ...base };
 
-  if (role === 'Admin' && isHeadOfThisHouse) {
-    if (HEAD_OF_HOUSE_PERMISSIONS.includes(permission)) {
-      return true;
-    }
+  return {
+    canManageUsers:
+      row.can_manage_users ?? base.canManageUsers,
+    canManageHouses:
+      row.can_manage_houses ?? base.canManageHouses,
+    canManageHeads:
+      row.can_manage_heads ?? base.canManageHeads,
+    canManageOnboarding:
+      row.can_manage_onboarding ?? base.canManageOnboarding,
+    canManageCourses:
+      row.can_manage_courses ?? base.canManageCourses,
+    canManageBlog:
+      row.can_manage_blog ?? base.canManageBlog,
+    canManageForum:
+      row.can_manage_forum ?? base.canManageForum,
+    canManageXP:
+      row.can_manage_xp ?? base.canManageXP,
+    canManageAnalytics:
+      row.can_manage_analytics ?? base.canManageAnalytics,
+    canManageSettings:
+      row.can_manage_settings ?? base.canManageSettings,
+  };
+}
+
+// Helpers internos: camelCase → snake_case para guardar na BD
+function camelToSnake(key: PermissionKey): string {
+  switch (key) {
+    case 'canManageUsers':
+      return 'can_manage_users';
+    case 'canManageHouses':
+      return 'can_manage_houses';
+    case 'canManageHeads':
+      return 'can_manage_heads';
+    case 'canManageOnboarding':
+      return 'can_manage_onboarding';
+    case 'canManageCourses':
+      return 'can_manage_courses';
+    case 'canManageBlog':
+      return 'can_manage_blog';
+    case 'canManageForum':
+      return 'can_manage_forum';
+    case 'canManageXP':
+      return 'can_manage_xp';
+    case 'canManageAnalytics':
+      return 'can_manage_analytics';
+    case 'canManageSettings':
+      return 'can_manage_settings';
+    default:
+      return key;
+  }
+}
+
+// 🔹 Lê permissões efetivas de um utilizador (role + overrides da BD)
+export async function getUserPermissions(
+  userId: string,
+  role: UserRole,
+): Promise<AdminPermissions> {
+  // Se não houver supabaseAdmin (ex: falta env em dev), devolve defaults
+  if (!supabaseAdmin) {
+    return getDefaultPermissionsForRole(role);
   }
 
-  // Se não for Head ou Super Admin, cai nas permissões globais
-  return hasGlobalPermission(role, permission);
+  if (role === 'Super Admin') {
+    return SUPER_ADMIN_PERMISSIONS;
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_permissions')
+      .select(
+        'id, user_id, can_manage_users, can_manage_houses, can_manage_heads, can_manage_onboarding, can_manage_courses, can_manage_blog, can_manage_forum, can_manage_xp, can_manage_analytics, can_manage_settings',
+      )
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error loading admin_permissions for user:', error);
+      return getDefaultPermissionsForRole(role);
+    }
+
+    return mapRowToPermissions(
+      (data as AdminPermissionsRow | null) ?? null,
+      role,
+    );
+  } catch (err) {
+    console.error('Unexpected error in getUserPermissions:', err);
+    return getDefaultPermissionsForRole(role);
+  }
+}
+
+// 🔹 Atualiza / sobrescreve permissões de um Admin na tabela admin_permissions
+export async function updateUserPermissions(
+  userId: string,
+  partial: Partial<AdminPermissions>,
+): Promise<{ success: boolean; error?: string }> {
+  if (!supabaseAdmin) {
+    return {
+      success: false,
+      error: 'supabaseAdmin not configured on server.',
+    };
+  }
+
+  try {
+    // Transformar partial { canManageUsers: true } em campos snake_case
+    const updatePayload: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(partial)) {
+      if (value === undefined) continue;
+      const camelKey = key as PermissionKey;
+      if (!PERMISSION_KEYS.includes(camelKey)) continue;
+      const col = camelToSnake(camelKey);
+      updatePayload[col] = !!value;
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return { success: true };
+    }
+
+    // upsert por user_id
+    const { error } = await supabaseAdmin
+      .from('admin_permissions')
+      .upsert(
+        {
+          user_id: userId,
+          ...updatePayload,
+        },
+        { onConflict: 'user_id' },
+      );
+
+    if (error) {
+      console.error('Error updating admin_permissions:', error);
+      return { success: false, error: 'Failed to update permissions.' };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Unexpected error in updateUserPermissions:', err);
+    return {
+      success: false,
+      error: err?.message || 'Unexpected error updating permissions.',
+    };
+  }
+}
+
+// 🔹 Helper usado pelas rotas de API: verifica se um user tem uma permissão
+export async function userHasPermission(
+  userId: string,
+  role: UserRole,
+  permission: PermissionKey,
+): Promise<boolean> {
+  // Super Admin tem sempre tudo
+  if (role === 'Super Admin') return true;
+
+  // Member não tem nenhuma permissão de admin
+  if (role === 'Member') return false;
+
+  const perms = await getUserPermissions(userId, role);
+  return !!perms[permission];
 }
