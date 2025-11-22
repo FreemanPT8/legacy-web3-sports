@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import {
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -66,15 +71,106 @@ function statusBadgeClass(status: PublicHouseStatus): string {
   }
 }
 
+type StatusFilter = PublicHouseStatus | 'ALL';
+
 export default function HousesOfSportsPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const [houses, setHouses] = useState<House[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [sportFilter, setSportFilter] = useState<string>('ALL');
+  const [countryFilter, setCountryFilter] = useState<string>('ALL');
 
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
+
+  // Ler filtros da query string
+  useEffect(() => {
+    const q = searchParams.get('q') ?? '';
+    const statusParam = searchParams.get('status');
+    const sportParam = searchParams.get('sport');
+    const countryParam = searchParams.get('country');
+
+    setSearch(q);
+
+    if (statusParam) {
+      const upper = statusParam.toUpperCase();
+      if (
+        upper === 'ACTIVE' ||
+        upper === 'UNDER_CONSTRUCTION' ||
+        upper === 'IN_DEVELOPMENT'
+      ) {
+        setStatusFilter(upper as PublicHouseStatus);
+      } else {
+        setStatusFilter('ALL');
+      }
+    } else {
+      setStatusFilter('ALL');
+    }
+
+    if (sportParam) {
+      setSportFilter(sportParam);
+    } else {
+      setSportFilter('ALL');
+    }
+
+    if (countryParam) {
+      setCountryFilter(countryParam.toUpperCase());
+    } else {
+      setCountryFilter('ALL');
+    }
+  }, [searchParams]);
+
+  // Helper para atualizar a query string (sem partir o layout)
+  const updateQueryString = (updates: {
+    q?: string;
+    status?: StatusFilter;
+    sport?: string;
+    country?: string;
+  }) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (updates.q !== undefined) {
+      if (updates.q.trim()) params.set('q', updates.q.trim());
+      else params.delete('q');
+    }
+
+    if (updates.status !== undefined) {
+      if (updates.status === 'ALL') {
+        params.delete('status');
+      } else {
+        params.set('status', updates.status.toLowerCase());
+      }
+    }
+
+    if (updates.sport !== undefined) {
+      if (updates.sport === 'ALL') {
+        params.delete('sport');
+      } else {
+        params.set('sport', updates.sport);
+      }
+    }
+
+    if (updates.country !== undefined) {
+      if (updates.country === 'ALL') {
+        params.delete('country');
+      } else {
+        params.set('country', updates.country.toUpperCase());
+      }
+    }
+
+    const searchString = params.toString();
+    const url = searchString ? `${pathname}?${searchString}` : pathname;
+
+    router.replace(url);
+  };
 
   useEffect(() => {
     const fetchHouses = async () => {
@@ -103,8 +199,46 @@ export default function HousesOfSportsPage() {
     fetchHouses();
   }, []);
 
+  // Opções de filtros derivadas dos dados
+  const sportOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const h of houses) {
+      if (h.sport) {
+        if (!map.has(h.sport.id)) {
+          map.set(h.sport.id, h.sport.name);
+        }
+      }
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [houses]);
+
+  const countryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const h of houses) {
+      if (h.country_code) {
+        set.add(h.country_code.toUpperCase());
+      }
+    }
+    return Array.from(set).sort();
+  }, [houses]);
+
+  // Aplicar filtros + pesquisa
   const filtered = useMemo(() => {
     let list = [...houses];
+
+    if (statusFilter !== 'ALL') {
+      list = list.filter((h) => h.status === statusFilter);
+    }
+
+    if (sportFilter !== 'ALL') {
+      list = list.filter((h) => h.sport && h.sport.id === sportFilter);
+    }
+
+    if (countryFilter !== 'ALL') {
+      list = list.filter(
+        (h) => (h.country_code || '').toUpperCase() === countryFilter
+      );
+    }
 
     if (search.trim()) {
       const term = search.trim().toLowerCase();
@@ -122,7 +256,7 @@ export default function HousesOfSportsPage() {
     }
 
     return list;
-  }, [houses, search]);
+  }, [houses, search, statusFilter, sportFilter, countryFilter]);
 
   const grouped = useMemo(() => {
     const active: House[] = [];
@@ -141,6 +275,19 @@ export default function HousesOfSportsPage() {
   const totalActive = grouped.active.length;
   const totalUnderConstruction = grouped.underConstruction.length;
   const totalInDevelopment = grouped.inDevelopment.length;
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('ALL');
+    setSportFilter('ALL');
+    setCountryFilter('ALL');
+    updateQueryString({
+      q: '',
+      status: 'ALL',
+      sport: 'ALL',
+      country: 'ALL',
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -167,8 +314,8 @@ export default function HousesOfSportsPage() {
                 </p>
 
                 <p className="mt-4 text-xs text-gray-500 max-w-lg">
-                  As Houses ativas vão ter missões, XP, conteúdo exclusivo e
-                  um chat privado para membros. As Houses em construção estão a
+                  As Houses ativas vão ter missões, XP, conteúdo exclusivo e um
+                  chat privado para membros. As Houses em construção estão a
                   montar as bases da comunidade. As em desenvolvimento ainda
                   estão a ganhar forma nos bastidores.
                 </p>
@@ -252,10 +399,85 @@ export default function HousesOfSportsPage() {
                 type="text"
                 placeholder="Pesquisar por desporto, país, Head…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearch(value);
+                  updateQueryString({ q: value });
+                }}
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
+          </div>
+
+          {/* Filtros avançados */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <span className="text-gray-500">Filtrar por:</span>
+
+              {/* Status */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  const value = e.target.value as StatusFilter;
+                  setStatusFilter(value);
+                  updateQueryString({ status: value });
+                }}
+                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="ALL">Todos os estados</option>
+                <option value="ACTIVE">Ativas</option>
+                <option value="UNDER_CONSTRUCTION">Em construção</option>
+                <option value="IN_DEVELOPMENT">Em desenvolvimento</option>
+              </select>
+
+              {/* Sport */}
+              <select
+                value={sportFilter}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSportFilter(value);
+                  updateQueryString({ sport: value });
+                }}
+                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="ALL">Todos os desportos</option>
+                {sportOptions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Country */}
+              <select
+                value={countryFilter}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCountryFilter(value);
+                  updateQueryString({ country: value });
+                }}
+                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="ALL">Todos os países</option>
+                {countryOptions.map((code) => (
+                  <option key={code} value={code}>
+                    {code}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
+              >
+                Limpar filtros
+              </button>
+            </div>
+
+            <p className="text-[11px] text-gray-400">
+              A mostrar {filtered.length} de {houses.length} Houses.
+            </p>
           </div>
 
           {error && (
