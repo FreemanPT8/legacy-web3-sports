@@ -63,13 +63,15 @@ interface HousesGetResponse {
   error?: string;
 }
 
-// Aceita tanto o formato novo (sport_id/country_code) como o formato do teu form (sportId/countryCode)
+// Aceita tanto o formato novo (sport_id/country_code) como o formato do form (sportId/countryCode)
 interface HousesPostBody {
   sport_id?: string;
   country_code?: string;
   sportId?: string;
   countryCode?: string;
   status?: HouseStatus;
+  // avatar_url e description ficam aqui só para compatibilidade futura,
+  // mas NÃO são usados no insert para não rebentar se as colunas não existirem ainda.
   avatar_url?: string | null;
   description?: string | null;
 }
@@ -121,7 +123,12 @@ export async function GET(request: NextRequest) {
     if (housesError) {
       console.error('Error loading houses_of_sports:', housesError);
       return NextResponse.json<HousesGetResponse>(
-        { success: false, error: 'Failed to load Houses of Sports.' },
+        {
+          success: false,
+          error:
+            housesError.message ||
+            'Failed to load Houses of Sports.',
+        },
         { status: 500 }
       );
     }
@@ -331,15 +338,6 @@ export async function POST(request: NextRequest) {
 
     const status: HouseStatus = body.status ?? 'development';
 
-    const avatar_url =
-      typeof body.avatar_url === 'string' && body.avatar_url.trim()
-        ? body.avatar_url.trim()
-        : null;
-    const description =
-      typeof body.description === 'string' && body.description.trim()
-        ? body.description.trim()
-        : null;
-
     if (!rawSportId) {
       return NextResponse.json<HousesPostResponse>(
         { success: false, error: 'sport_id / sportId is required.' },
@@ -361,29 +359,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Inserimos apenas colunas garantidamente existentes
+    const insertData = {
+      sport_id: rawSportId,
+      country_code: rawCountryCode,
+      status,
+    };
+
     const { data, error } = await supabaseAdmin
       .from('houses_of_sports')
-      .insert({
-        sport_id: rawSportId,
-        country_code: rawCountryCode,
-        status,
-        avatar_url,
-        description,
-      })
+      .insert(insertData)
       .select('id')
       .single();
 
     if (error || !data) {
       console.error('Supabase error inserting new House of Sports:', error);
       return NextResponse.json<HousesPostResponse>(
-        { success: false, error: 'Failed to create House of Sports.' },
+        {
+          success: false,
+          error:
+            error?.message || 'Failed to create House of Sports.',
+        },
         { status: 500 }
       );
     }
 
     const id = data.id as string;
 
-    // Responder de forma compatível com o teu CreateHousePage
+    // Responder de forma compatível com o CreateHousePage
     return NextResponse.json<HousesPostResponse>(
       {
         success: true,
