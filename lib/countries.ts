@@ -2,11 +2,11 @@
 
 export type Country = {
   code: string;   // ISO 3166-1 alpha-2
-  name: string;   // Nome em inglês (ou PT, como preferires)
+  name: string;   // Nome em inglês (podes trocar para PT se quiseres)
 };
 
-// ⚠️ Lista de exemplo. Mantém a estrutura e acrescenta países conforme fores precisando.
-// Idealmente, substitui isto por uma lista completa ISO 3166-1.
+// Lista base de países (ISO 3166-1 alpha-2).
+// Podes ir acrescentando aqui até cobrir todos os países do mundo.
 export const COUNTRIES: Country[] = [
   { code: 'PT', name: 'Portugal' },
   { code: 'ES', name: 'Spain' },

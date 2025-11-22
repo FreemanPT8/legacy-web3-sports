@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
+import { getCountryName } from '@/lib/countries'; // 👈 NOVO
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -387,8 +388,9 @@ export async function POST(request: NextRequest) {
     const sportName =
       resolveLocaleName(sportRow.name_i18n, sportRow.code) || 'Sport';
 
-    // 🔹 2) Gerar nome base da House (em inglês) e replicar nas 6 línguas
-    const baseName = `House of ${sportName} ${rawCountryCode}`;
+    // 🔹 2) Obter nome do país e gerar nome base da House
+    const countryName = getCountryName(rawCountryCode); // 👈 AQUI
+    const baseName = `House of ${sportName} ${countryName}`;
 
     const name_i18n = {
       en: baseName,
