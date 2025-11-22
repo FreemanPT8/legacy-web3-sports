@@ -201,7 +201,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Head of House must be a user with role Admin or Super Admin.',
+          error:
+            'Head of House must be a user with role Admin or Super Admin.',
         },
         { status: 400 }
       );
@@ -232,16 +233,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (existingAdminAssign) {
       adminAssignmentId = existingAdminAssign.id as string;
     } else {
-      // ⚠️ Importante: não passar houses/countries como null,
-      // deixamos o Postgres usar os defaults da tabela.
-      const { data: newAdminAssign, error: newAdminError } =
-        await supabaseAdmin
-          .from('admin_assignments')
-          .insert({
-            user_id: userId,
-          })
-          .select('id, user_id')
-          .single();
+      const { data: newAdminAssign, error: newAdminError } = await supabaseAdmin
+        .from('admin_assignments')
+        .insert({
+          user_id: userId,
+          houses: null,
+          countries: null,
+        })
+        .select('id, user_id')
+        .single();
 
       if (newAdminError || !newAdminAssign) {
         console.error(
@@ -260,21 +260,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       adminAssignmentId = newAdminAssign.id as string;
     }
 
-    // 4) Upsert em house_heads (apenas 1 head por house)
-    const { error: upsertError } = await supabaseAdmin
+    // 4) Garantir apenas 1 Head por House:
+    //    apagar qualquer registo anterior e inserir o novo
+    const { error: deleteOldError } = await supabaseAdmin
       .from('house_heads')
-      .upsert(
-        {
-          house_id: houseId,
-          admin_id: adminAssignmentId,
-        },
-        { onConflict: 'house_id' }
-      );
+      .delete()
+      .eq('house_id', houseId);
 
-    if (upsertError) {
+    if (deleteOldError) {
       console.error(
-        'Supabase error upserting house_head in Head POST:',
-        upsertError
+        'Supabase error deleting old house_head in Head POST:',
+        deleteOldError
+      );
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Erro ao limpar Head antigo da House.',
+        },
+        { status: 500 }
+      );
+    }
+
+    const { error: insertError } = await supabaseAdmin
+      .from('house_heads')
+      .insert({
+        house_id: houseId,
+        admin_id: adminAssignmentId,
+      });
+
+    if (insertError) {
+      console.error(
+        'Supabase error inserting house_head in Head POST:',
+        insertError
       );
       return NextResponse.json(
         { success: false, error: 'Erro ao definir Head da House.' },
