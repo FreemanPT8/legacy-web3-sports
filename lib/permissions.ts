@@ -2,8 +2,7 @@
 
 /**
  * Permissões globais (nível plataforma).
- * Algumas são "all" (qualquer conteúdo),
- * outras são "own" (só conteúdo criado pelo próprio).
+ * Algumas serão "own" (só conteúdo do próprio) e outras "any".
  */
 export type Permission =
   // Acesso ao painel
@@ -32,9 +31,9 @@ export type Permission =
 
   // Fórum
   | 'forum.manage_any' // fórum global
-  | 'forum.manage_house' // fórum só da própria House
+  | 'forum.manage_house' // apenas fórum da própria House
 
-  // Houses (escopado por House, mas controlado via painel)
+  // Houses (escopado por House)
   | 'house.moderators.manage'
   | 'house.permissions.manage'
 
@@ -45,12 +44,10 @@ export type Permission =
   | 'analytics.view';
 
 /**
- * Permissões por "role" base (sem overrides).
+ * Permissões base por role.
  *
- * - Super Admin tem TUDO.
- * - Admin tem apenas o mínimo por omissão; o resto será dado via overrides.
- * - Head of House NÃO é um role separado na tabela users:
- *   é um Admin que é Head numa House (house_heads), e ganha poderes *por House*.
+ * Super Admin tem tudo.
+ * Admin começa com o mínimo e ganha o resto via admin_permissions.
  */
 export const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
   'Super Admin': [
@@ -70,7 +67,6 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
 
     'forum.manage_any',
 
-    // house-level, mas Super Admin pode tudo
     'house.moderators.manage',
     'house.permissions.manage',
 
@@ -80,22 +76,16 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
 
   'Admin': [
     'admin.access',
-
-    // Admin pode criar Houses (como já tinhas na API)
+    // Admin pode criar Houses por defeito (como já tinhas na API)
     'houses.create',
-
-    // O resto vem *apenas* se o Super Admin der permissão explícita:
-    // users.manage_basic, onboarding.manage_any, etc.
-    // Mantemos aqui só o que é garantido por omissão.
   ],
 
-  // Se em algum momento quiseres ter um role "Head" separado:
-  // 'Head': ['admin.access', 'house.moderators.manage', 'house.permissions.manage', 'forum.manage_house']
+  // Members não têm permissões especiais
 };
 
 /**
- * Permissões "base" de um Head of House.
- * Isto é escopado por House: só vale para a House onde é Head.
+ * Permissões escopadas à House de um Head of House.
+ * Este “papel” é derivado (Admin + row em house_heads).
  */
 export const HEAD_OF_HOUSE_PERMISSIONS: Permission[] = [
   'house.moderators.manage',
@@ -105,32 +95,90 @@ export const HEAD_OF_HOUSE_PERMISSIONS: Permission[] = [
 ];
 
 /**
- * Devolve as permissões base de um role.
+ * Lista das permissões que podem ser geridas no Painel Admin.
+ * (as outras são derivadas — ex: Head of House).
+ */
+export const ADMIN_TOGGLABLE_PERMISSIONS: Permission[] = [
+  'houses.set_head',
+
+  'users.manage_any',
+  'users.manage_basic',
+  'users.ban_any',
+
+  'onboarding.manage_any',
+
+  'courses.manage_any',
+  'courses.manage_own',
+
+  'blog.manage_any',
+  'blog.manage_own',
+
+  'forum.manage_any',
+
+  'xp.manage',
+  'analytics.view',
+];
+
+/**
+ * Labels para mostrar na UI.
+ */
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  'admin.access': 'Access Admin Panel',
+
+  'houses.create': 'Create Houses',
+  'houses.set_head': 'Set Head of House',
+
+  'users.manage_any': 'Manage all users',
+  'users.manage_basic': 'Basic user management',
+  'users.ban_any': 'Ban users',
+
+  'onboarding.manage_any': 'Manage all onboarding',
+  'onboarding.manage_house': 'Manage onboarding for own House',
+
+  'courses.manage_any': 'Manage all courses',
+  'courses.manage_own': 'Manage own courses only',
+
+  'blog.manage_any': 'Manage all blog posts',
+  'blog.manage_own': 'Manage own blog posts only',
+
+  'forum.manage_any': 'Moderate global forum',
+  'forum.manage_house': 'Moderate forum for own House',
+
+  'house.moderators.manage': 'Manage House moderators',
+  'house.permissions.manage': 'Manage House permissions',
+
+  'xp.manage': 'Manage XP',
+  'analytics.view': 'View analytics',
+};
+
+/**
+ * Permissões base por role.
  */
 export function getRolePermissions(role: string): Permission[] {
   return ROLE_DEFAULT_PERMISSIONS[role] ?? [];
 }
 
 /**
- * Verifica se um role tem uma permissão global
- * (sem ter em conta overrides por utilizador).
+ * Verifica se um role + lista extra têm uma permissão global.
  */
 export function hasGlobalPermission(
   role: string,
   permission: Permission,
+  extra?: Permission[],
 ): boolean {
+  // Super Admin manda em tudo
   if (role === 'Super Admin') return true;
+
   const base = getRolePermissions(role);
-  return base.includes(permission);
+  if (base.includes(permission)) return true;
+
+  if (extra && extra.includes(permission)) return true;
+
+  return false;
 }
 
 /**
  * Verifica permissões ao nível de uma House específica.
- *
- * - Super Admin: pode sempre.
- * - Admin que é Head dessa House: tem HEAD_OF_HOUSE_PERMISSIONS.
- * - Depois podemos acrescentar aqui permissões vindas de uma tabela
- *   house_permissions se quiseres granularidade por utilizador.
  */
 export function hasHouseScopedPermission(options: {
   role: string;
@@ -139,16 +187,14 @@ export function hasHouseScopedPermission(options: {
 }): boolean {
   const { role, isHeadOfThisHouse, permission } = options;
 
-  // Super Admin manda em tudo
   if (role === 'Super Admin') return true;
 
-  // Head of House (tem de ser Admin) tem powers específicos nessa House
   if (role === 'Admin' && isHeadOfThisHouse) {
     if (HEAD_OF_HOUSE_PERMISSIONS.includes(permission)) {
       return true;
     }
   }
 
-  // Caso contrário, recai só nos poderes globais do role
+  // Se não for Head ou Super Admin, cai nas permissões globais
   return hasGlobalPermission(role, permission);
 }

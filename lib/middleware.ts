@@ -1,3 +1,4 @@
+// lib/middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractTokenFromHeader, JWTPayload } from './jwt';
 import { supabase } from './supabase';
@@ -14,7 +15,7 @@ export interface AuthenticatedRequest extends NextRequest {
  * 2) dos cookies: auth_token, token, access_token
  */
 export async function authenticateRequest(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<{
   authenticated: boolean;
   user: JWTPayload | null;
@@ -82,7 +83,7 @@ export async function authenticateRequest(
 }
 
 export async function requireAuth(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<{
   success: boolean;
   user?: JWTPayload;
@@ -95,7 +96,7 @@ export async function requireAuth(
       success: false,
       response: NextResponse.json(
         { success: false, error: auth.error || 'Authentication required' },
-        { status: 401 }
+        { status: 401 },
       ),
     };
   }
@@ -107,7 +108,7 @@ export async function requireAuth(
 }
 
 export async function requireAdmin(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<{
   success: boolean;
   user?: JWTPayload;
@@ -127,7 +128,7 @@ export async function requireAdmin(
       success: false,
       response: NextResponse.json(
         { success: false, error: 'Admin access required' },
-        { status: 403 }
+        { status: 403 },
       ),
     };
   }
@@ -139,8 +140,7 @@ export async function requireAdmin(
 }
 
 /**
- * Helper opcional para extrair só o userId de um request,
- * usado em algumas rotas.
+ * Helper opcional para extrair só o userId de um request.
  */
 export function getUserIdFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');
@@ -167,6 +167,11 @@ export function getUserIdFromRequest(request: NextRequest): string | null {
     return null;
   }
 }
+
+/**
+ * requirePermission – verifica uma Permission concreta,
+ * combinando o role + permissões extras guardadas em admin_permissions.
+ */
 export async function requirePermission(
   request: NextRequest,
   permission: Permission,
@@ -175,7 +180,6 @@ export async function requirePermission(
   user?: JWTPayload;
   response?: NextResponse;
 }> {
-  // Primeiro garante que o user está autenticado
   const auth = await requireAuth(request);
 
   if (!auth.success || !auth.user) {
@@ -192,8 +196,20 @@ export async function requirePermission(
 
   const user = auth.user;
 
-  // Depois verifica se o role tem essa permissão global
-  const allowed = hasGlobalPermission(user.role, permission);
+  // Carregar permissões extra deste utilizador (se existirem)
+  let extraPermissions: Permission[] = [];
+
+  const { data: permRow, error } = await supabase
+    .from('admin_permissions')
+    .select('permissions')
+    .eq('user_id', user.userId)
+    .maybeSingle();
+
+  if (!error && permRow?.permissions) {
+    extraPermissions = permRow.permissions as Permission[];
+  }
+
+  const allowed = hasGlobalPermission(user.role, permission, extraPermissions);
 
   if (!allowed) {
     return {
