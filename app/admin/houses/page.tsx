@@ -51,7 +51,7 @@ interface ApiResponse {
   houses?: AdminHouse[];
 }
 
-// --- novos tipos para gestão de Heads ---
+// --- tipos para gestão de Heads ---
 interface AssigneeUser {
   id: string;
   username: string | null;
@@ -106,7 +106,7 @@ export default function AdminHousesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | HouseStatus>('all');
 
-  // --- novos states para gestão de Head ---
+  // --- estados para gestão de Head ---
   const [assignees, setAssignees] = useState<AssigneeUser[]>([]);
   const [assigneesLoading, setAssigneesLoading] = useState(false);
   const [assigneesError, setAssigneesError] = useState<string | null>(null);
@@ -240,7 +240,7 @@ export default function AdminHousesPage() {
     }
   };
 
-  // mudar Head de uma House
+  // mudar Head de uma House (usa agora /api/admin/houses/[houseId]/head)
   const handleChangeHead = async (houseId: string, headUserId: string | '') => {
     if (!isSuperAdmin) return;
 
@@ -252,22 +252,39 @@ export default function AdminHousesPage() {
         return;
       }
 
-      const res = await fetch('/api/admin/houses/head', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          houseId,
-          headUserId: headUserId || null,
-        }),
-      });
+      let res: Response;
+      let data: HeadPostResponse;
 
-      const data: HeadPostResponse = await res.json();
-      if (!data.success) {
-        alert(data.error || 'Failed to update Head of House');
-        return;
+      if (!headUserId) {
+        // remover Head
+        res = await fetch(`/api/admin/houses/${houseId}/head`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        data = await res.json();
+        if (!res.ok || !data.success) {
+          alert(data.error || 'Failed to remove Head of House');
+          return;
+        }
+      } else {
+        // definir / alterar Head
+        res = await fetch(`/api/admin/houses/${houseId}/head`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId: headUserId,
+          }),
+        });
+        data = await res.json();
+        if (!res.ok || !data.success) {
+          alert(data.error || 'Failed to update Head of House');
+          return;
+        }
       }
 
       await reloadHouses();
