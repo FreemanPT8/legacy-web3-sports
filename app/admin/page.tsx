@@ -47,7 +47,10 @@ export default function AdminDashboardPage() {
   const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || (user.role !== 'Admin' && user.role !== 'Super Admin'))) {
+    if (
+      !loading &&
+      (!user || (user.role !== 'Admin' && user.role !== 'Super Admin'))
+    ) {
       router.push('/login');
     }
   }, [user, loading, router]);
@@ -85,7 +88,9 @@ export default function AdminDashboardPage() {
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
           <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Admin Dashboard</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              Admin Dashboard
+            </h1>
             <p className="text-gray-600 dark:text-gray-300">
               Manage LEGACY platform content, users and sports Houses.
             </p>
@@ -106,7 +111,9 @@ export default function AdminDashboardPage() {
                   {loadingStats || !stats ? '—' : stats.totalUsers}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Admins: {loadingStats || !stats ? '—' : stats.totalAdmins} | Super Admins:{' '}
+                  Admins:{' '}
+                  {loadingStats || !stats ? '—' : stats.totalAdmins} | Super
+                  Admins:{' '}
                   {loadingStats || !stats ? '—' : stats.totalSuperAdmins}
                 </p>
               </CardContent>
@@ -125,7 +132,8 @@ export default function AdminDashboardPage() {
                   {loadingStats || !stats ? '—' : stats.totalCourses}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {loadingStats || !stats ? '—' : stats.totalLessons} total lessons
+                  {loadingStats || !stats ? '—' : stats.totalLessons} total
+                  lessons
                 </p>
               </CardContent>
             </Card>
@@ -142,7 +150,9 @@ export default function AdminDashboardPage() {
                 <div className="text-3xl font-bold">
                   {loadingStats || !stats ? '—' : stats.totalBlogPosts}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Multilingual content</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Multilingual content
+                </p>
               </CardContent>
             </Card>
 
@@ -152,7 +162,9 @@ export default function AdminDashboardPage() {
                   <Mail className="h-4 w-4 text-orange-500" />
                   Pending Onboarding
                 </CardTitle>
-                <CardDescription>New House / platform requests</CardDescription>
+                <CardDescription>
+                  New House / platform requests
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">
@@ -184,8 +196,12 @@ export default function AdminDashboardPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Active Houses</CardTitle>
-                <CardDescription>Head of House + min. core team</CardDescription>
+                <CardTitle className="text-sm font-medium">
+                  Active Houses
+                </CardTitle>
+                <CardDescription>
+                  Head of House + min. core team
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">
@@ -196,8 +212,12 @@ export default function AdminDashboardPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">In Construction / Development</CardTitle>
-                <CardDescription>Reserved or early-stage Houses</CardDescription>
+                <CardTitle className="text-sm font-medium">
+                  In Construction / Development
+                </CardTitle>
+                <CardDescription>
+                  Reserved or early-stage Houses
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-lg font-semibold">
@@ -265,7 +285,7 @@ export default function AdminDashboardPage() {
               </CardContent>
             </Card>
 
-            {/* NEW: HOUSES OF SPORTS CARD */}
+            {/* HOUSES OF SPORTS CARD */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -351,19 +371,20 @@ export default function AdminDashboardPage() {
               </CardContent>
             </Card>
 
+            {/* 👉 Atualizado: agora vai para /admin/settings/permissions */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5 text-gray-600" />
-                  Platform Settings
+                  Platform Settings & Permissions
                 </CardTitle>
                 <CardDescription>
-                  Configure platform settings, features, and integrations.
+                  Configure platform settings and manage admin permissions.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button asChild className="w-full">
-                  <Link href="/admin/settings">Settings</Link>
+                  <Link href="/admin/settings/permissions">Permissions</Link>
                 </Button>
               </CardContent>
             </Card>
