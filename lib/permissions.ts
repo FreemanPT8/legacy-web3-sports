@@ -3,7 +3,7 @@ import { supabaseAdmin } from './supabase';
 
 export type UserRole = 'Super Admin' | 'Admin' | 'Member';
 
-// 🔑 Todas as permissões que vamos gerir (podes acrescentar mais no futuro)
+// 🔑 Todas as permissões globais que vamos gerir
 export type PermissionKey =
   | 'canManageUsers'
   | 'canManageHouses'
@@ -15,6 +15,9 @@ export type PermissionKey =
   | 'canManageXP'
   | 'canManageAnalytics'
   | 'canManageSettings';
+
+// Alias para o frontend (page.tsx usa `type Permission`)
+export type Permission = PermissionKey;
 
 export const PERMISSION_KEYS: PermissionKey[] = [
   'canManageUsers',
@@ -41,6 +44,35 @@ export interface AdminPermissions {
   canManageAnalytics: boolean;
   canManageSettings: boolean;
 }
+
+// 🔹 Labels amigáveis para o UI (Permissions page)
+export const PERMISSION_LABELS: Record<PermissionKey, string> = {
+  canManageUsers: 'Manage Users',
+  canManageHouses: 'Manage Houses of Sports',
+  canManageHeads: 'Set / Manage Heads of House',
+  canManageOnboarding: 'Manage Onboarding',
+  canManageCourses: 'Manage Courses, Modules & Lessons',
+  canManageBlog: 'Manage Blog Articles',
+  canManageForum: 'Manage Forum (global moderation)',
+  canManageXP: 'Manage XP (manual adjustments)',
+  canManageAnalytics: 'View Analytics & Reports',
+  canManageSettings: 'Manage Platform Settings',
+};
+
+// 🔹 Que permissões é que um Super Admin pode atribuir a Admins via UI
+// (Podes ajustar este array se quiseres limitar algumas)
+export const ADMIN_TOGGLABLE_PERMISSIONS: PermissionKey[] = [
+  'canManageUsers',
+  'canManageHouses',
+  'canManageHeads',
+  'canManageOnboarding',
+  'canManageCourses',
+  'canManageBlog',
+  'canManageForum',
+  'canManageXP',
+  'canManageAnalytics',
+  'canManageSettings',
+];
 
 // Defaults por role
 const SUPER_ADMIN_PERMISSIONS: AdminPermissions = {
@@ -82,16 +114,25 @@ const MEMBER_PERMISSIONS: AdminPermissions = {
   canManageSettings: false,
 };
 
-export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, AdminPermissions> = {
+export const DEFAULT_PERMISSIONS_BY_ROLE: Record<
+  UserRole,
+  AdminPermissions
+> = {
   'Super Admin': SUPER_ADMIN_PERMISSIONS,
   Admin: ADMIN_DEFAULT_PERMISSIONS,
   Member: MEMBER_PERMISSIONS,
 };
 
+// 🔹 API simples para obter defaults de um role (usada por /api/admin/permissions)
+export function getRolePermissions(role: UserRole): AdminPermissions {
+  return DEFAULT_PERMISSIONS_BY_ROLE[role] ?? MEMBER_PERMISSIONS;
+}
+
+// Mantemos este helper para compatibilidade
 export function getDefaultPermissionsForRole(
   role: UserRole,
 ): AdminPermissions {
-  return DEFAULT_PERMISSIONS_BY_ROLE[role] || MEMBER_PERMISSIONS;
+  return getRolePermissions(role);
 }
 
 // Estrutura esperada em admin_permissions
@@ -115,27 +156,20 @@ function mapRowToPermissions(
   row: AdminPermissionsRow | null,
   role: UserRole,
 ): AdminPermissions {
-  const base = getDefaultPermissionsForRole(role);
+  const base = getRolePermissions(role);
 
   if (!row) return { ...base };
 
   return {
-    canManageUsers:
-      row.can_manage_users ?? base.canManageUsers,
-    canManageHouses:
-      row.can_manage_houses ?? base.canManageHouses,
-    canManageHeads:
-      row.can_manage_heads ?? base.canManageHeads,
+    canManageUsers: row.can_manage_users ?? base.canManageUsers,
+    canManageHouses: row.can_manage_houses ?? base.canManageHouses,
+    canManageHeads: row.can_manage_heads ?? base.canManageHeads,
     canManageOnboarding:
       row.can_manage_onboarding ?? base.canManageOnboarding,
-    canManageCourses:
-      row.can_manage_courses ?? base.canManageCourses,
-    canManageBlog:
-      row.can_manage_blog ?? base.canManageBlog,
-    canManageForum:
-      row.can_manage_forum ?? base.canManageForum,
-    canManageXP:
-      row.can_manage_xp ?? base.canManageXP,
+    canManageCourses: row.can_manage_courses ?? base.canManageCourses,
+    canManageBlog: row.can_manage_blog ?? base.canManageBlog,
+    canManageForum: row.can_manage_forum ?? base.canManageForum,
+    canManageXP: row.can_manage_xp ?? base.canManageXP,
     canManageAnalytics:
       row.can_manage_analytics ?? base.canManageAnalytics,
     canManageSettings:
@@ -178,9 +212,10 @@ export async function getUserPermissions(
 ): Promise<AdminPermissions> {
   // Se não houver supabaseAdmin (ex: falta env em dev), devolve defaults
   if (!supabaseAdmin) {
-    return getDefaultPermissionsForRole(role);
+    return getRolePermissions(role);
   }
 
+  // Super Admin tem sempre tudo sem precisar de ir à BD
   if (role === 'Super Admin') {
     return SUPER_ADMIN_PERMISSIONS;
   }
@@ -196,7 +231,7 @@ export async function getUserPermissions(
 
     if (error) {
       console.error('Error loading admin_permissions for user:', error);
-      return getDefaultPermissionsForRole(role);
+      return getRolePermissions(role);
     }
 
     return mapRowToPermissions(
@@ -205,7 +240,7 @@ export async function getUserPermissions(
     );
   } catch (err) {
     console.error('Unexpected error in getUserPermissions:', err);
-    return getDefaultPermissionsForRole(role);
+    return getRolePermissions(role);
   }
 }
 
@@ -262,7 +297,7 @@ export async function updateUserPermissions(
   }
 }
 
-// 🔹 Helper usado pelas rotas de API: verifica se um user tem uma permissão
+// 🔹 Helper geral para rotas de API (sem o user object completo)
 export async function userHasPermission(
   userId: string,
   role: UserRole,
@@ -276,4 +311,16 @@ export async function userHasPermission(
 
   const perms = await getUserPermissions(userId, role);
   return !!perms[permission];
+}
+
+// 🔹 Helper usado no middleware: recebe o payload do JWT e verifica permissão
+export async function hasGlobalPermission(
+  user: { userId: string; role: UserRole | string },
+  permission: PermissionKey,
+): Promise<boolean> {
+  const role =
+    user.role === 'Super Admin' || user.role === 'Admin'
+      ? user.role
+      : 'Member';
+  return userHasPermission(user.userId, role, permission as PermissionKey);
 }
