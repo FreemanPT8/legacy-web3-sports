@@ -1,3 +1,4 @@
+// app/admin/users/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -23,7 +24,7 @@ type AdminUser = {
   username: string;
   full_name: string | null;
   email: string;
-  role: string;
+  role: 'Super Admin' | 'Admin' | 'Member' | string;
   country: string | null;
   xp_total: number;
   created_at: string;
@@ -39,6 +40,15 @@ type SortKey =
   | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
+type PermissionsResponse = {
+  success: boolean;
+  error?: string;
+  permissions?: {
+    canManageUsers?: boolean;
+    [key: string]: any;
+  };
+};
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
@@ -53,6 +63,11 @@ export default function AdminUsersPage() {
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
+  const [canManageUsers, setCanManageUsers] = useState(false);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
+
   // Proteção básica da rota no client
   useEffect(() => {
     if (loading) return;
@@ -64,6 +79,48 @@ export default function AdminUsersPage() {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
+
+  // Buscar permissões do utilizador atual
+  useEffect(() => {
+    if (loading || !user) return;
+
+    // Super Admin tem sempre todas as permissões
+    if (user.role === 'Super Admin') {
+      setCanManageUsers(true);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const fetchPermissions = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/admin/permissions', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data: PermissionsResponse = await res.json();
+
+        if (!res.ok || !data.success || !data.permissions) {
+          console.error('Error loading permissions for current user:', data);
+          setCanManageUsers(false);
+          setPermissionsLoaded(true);
+          return;
+        }
+
+        setCanManageUsers(!!data.permissions.canManageUsers);
+        setPermissionsLoaded(true);
+      } catch (err) {
+        console.error('Unexpected error fetching permissions:', err);
+        setCanManageUsers(false);
+        setPermissionsLoaded(true);
+      }
+    };
+
+    fetchPermissions();
+  }, [user, loading, getToken]);
 
   // Buscar lista de utilizadores
   useEffect(() => {
@@ -185,17 +242,28 @@ export default function AdminUsersPage() {
     return { total, superAdmins, admins, members };
   }, [users]);
 
-  const isSuperAdmin = user?.role === 'Super Admin';
+  const canEditUsers = canManageUsers; // permissão fina
 
   // Atualizar role
   const handleChangeRole = async (
     userId: string,
-    newRole: 'Super Admin' | 'Admin' | 'Member'
+    newRole: 'Super Admin' | 'Admin' | 'Member',
+    currentRole: 'Super Admin' | 'Admin' | 'Member' | string,
   ) => {
-    if (!isSuperAdmin) {
+    if (!canEditUsers) {
       toast({
         title: 'Not allowed',
-        description: 'Only Super Admins can change roles.',
+        description: 'You do not have permission to manage users.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Só Super Admin pode mexer em papéis de Super Admin
+    if (!isSuperAdmin && (currentRole === 'Super Admin' || newRole === 'Super Admin')) {
+      toast({
+        title: 'Not allowed',
+        description: 'Only Super Admin can change Super Admin roles.',
         variant: 'destructive',
       });
       return;
@@ -214,13 +282,13 @@ export default function AdminUsersPage() {
       setUpdatingUserId(userId);
       const token = getToken();
 
-      const res = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PUT',
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ userId, role: newRole }),
       });
 
       const data = await res.json();
@@ -235,7 +303,7 @@ export default function AdminUsersPage() {
       }
 
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
       );
 
       toast({
@@ -256,10 +324,19 @@ export default function AdminUsersPage() {
 
   // Apagar utilizador
   const handleDeleteUser = async (userId: string, username: string) => {
+    if (!canEditUsers) {
+      toast({
+        title: 'Not allowed',
+        description: 'You do not have permission to manage users.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!isSuperAdmin) {
       toast({
         title: 'Not allowed',
-        description: 'Only Super Admins can delete users.',
+        description: 'Only Super Admin can delete users.',
         variant: 'destructive',
       });
       return;
@@ -275,7 +352,7 @@ export default function AdminUsersPage() {
     }
 
     const confirmation = window.prompt(
-      `Type "delete" to permanently remove user "${username}". This action cannot be undone.`
+      `Type "delete" to permanently remove user "${username}". This action cannot be undone.`,
     );
 
     if (confirmation !== 'delete') {
@@ -290,12 +367,13 @@ export default function AdminUsersPage() {
       setDeletingUserId(userId);
       const token = getToken();
 
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await fetch('/api/admin/users', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        body: JSON.stringify({ userId }),
       });
 
       const data = await res.json();
@@ -365,7 +443,7 @@ export default function AdminUsersPage() {
     );
   };
 
-  if (loading) {
+  if (loading || !permissionsLoaded) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -384,7 +462,7 @@ export default function AdminUsersPage() {
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-bold mb-6">
-            Admin Dashboard
+            Admin · User Management
           </h1>
 
           {/* STAT CARDS */}
@@ -441,8 +519,10 @@ export default function AdminUsersPage() {
             <CardHeader>
               <CardTitle>User Management</CardTitle>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Promote / demote Admins and Super Admins. Only Super Admins can
-                change roles or delete users.
+                View all platform users. Only admins with the{' '}
+                <strong>Manage Users</strong> permission can change roles or
+                delete users. Super Admin is required to manage{' '}
+                <strong>Super Admin</strong> roles.
               </p>
             </CardHeader>
             <CardContent>
@@ -567,6 +647,11 @@ export default function AdminUsersPage() {
                         <tr key={u.id} className="hover:bg-gray-50">
                           <td className="px-4 py-2 font-medium">
                             {u.username}
+                            {user?.id === u.id && (
+                              <span className="ml-1 text-[10px] text-blue-500">
+                                (you)
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-2">
                             {u.full_name || (
@@ -589,12 +674,12 @@ export default function AdminUsersPage() {
                             {u.created_at ? formatDate(u.created_at) : '-'}
                           </td>
                           <td className="px-4 py-2">
-                            {isSuperAdmin ? (
+                            {canEditUsers ? (
                               <Select
                                 disabled={updatingUserId === u.id}
                                 value={
                                   (['Super Admin', 'Admin', 'Member'].includes(
-                                    u.role
+                                    u.role,
                                   )
                                     ? u.role
                                     : 'Member') as 'Super Admin' | 'Admin' | 'Member'
@@ -602,7 +687,12 @@ export default function AdminUsersPage() {
                                 onValueChange={(value) =>
                                   handleChangeRole(
                                     u.id,
-                                    value as 'Super Admin' | 'Admin' | 'Member'
+                                    value as 'Super Admin' | 'Admin' | 'Member',
+                                    u.role as
+                                      | 'Super Admin'
+                                      | 'Admin'
+                                      | 'Member'
+                                      | string,
                                   )
                                 }
                               >
@@ -624,7 +714,7 @@ export default function AdminUsersPage() {
                             )}
                           </td>
                           <td className="px-4 py-2">
-                            {isSuperAdmin ? (
+                            {canEditUsers && isSuperAdmin ? (
                               <Button
                                 variant="destructive"
                                 size="sm"
@@ -633,12 +723,12 @@ export default function AdminUsersPage() {
                                   handleDeleteUser(u.id, u.username)
                                 }
                               >
-                                {deletingUserId === u.id ? 'Deleting...' : 'Delete'}
+                                {deletingUserId === u.id
+                                  ? 'Deleting...'
+                                  : 'Delete'}
                               </Button>
                             ) : (
-                              <span className="text-xs text-gray-400">
-                                -
-                              </span>
+                              <span className="text-xs text-gray-400">-</span>
                             )}
                           </td>
                         </tr>
