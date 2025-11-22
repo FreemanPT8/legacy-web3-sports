@@ -56,12 +56,19 @@ interface HeadUser {
   role: string | null;
 }
 
+interface ModeratorPermissions {
+  canManageMissions?: boolean;
+  canManageContent?: boolean;
+  canManageMembers?: boolean;
+}
+
 interface ModeratorUser {
   id: string;
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
   role: string | null;
+  permissions?: ModeratorPermissions | null;
 }
 
 interface HouseDetailApiResponse {
@@ -137,6 +144,7 @@ export default function AdminHouseDetailPage() {
   const [removingHead, setRemovingHead] = useState(false);
   const [savingMod, setSavingMod] = useState(false);
   const [removingModId, setRemovingModId] = useState<string | null>(null);
+  const [savingPermModId, setSavingPermModId] = useState<string | null>(null);
 
   const [statusDraft, setStatusDraft] = useState<HouseStatus>('development');
   const [headUserIdInput, setHeadUserIdInput] = useState('');
@@ -235,6 +243,16 @@ export default function AdminHouseDetailPage() {
   // Quem pode mexer em quê:
   const canManageHead = isSuperAdmin; // só Super Admin define/remove Head
   const canManageModerators = isSuperAdmin || isHeadOfThisHouse;
+
+  const ensurePermissions = (
+    raw: ModeratorPermissions | null | undefined
+  ): Required<ModeratorPermissions> => {
+    return {
+      canManageMissions: !!raw?.canManageMissions,
+      canManageContent: !!raw?.canManageContent,
+      canManageMembers: !!raw?.canManageMembers,
+    };
+  };
 
   // 3) Atualizar status da House
   const handleSaveStatus = async () => {
@@ -409,7 +427,9 @@ export default function AdminHouseDetailPage() {
       return;
     }
     if (!canManageModerators) {
-      setError('Only the Head of this House or a Super Admin can add moderators.');
+      setError(
+        'Only the Head of this House or a Super Admin can add moderators.'
+      );
       return;
     }
 
@@ -464,7 +484,9 @@ export default function AdminHouseDetailPage() {
   const handleRemoveModerator = async (userId: string) => {
     if (!house) return;
     if (!canManageModerators) {
-      setError('Only the Head of this House or a Super Admin can remove moderators.');
+      setError(
+        'Only the Head of this House or a Super Admin can remove moderators.'
+      );
       return;
     }
 
@@ -501,6 +523,87 @@ export default function AdminHouseDetailPage() {
       setError('Unexpected error while removing moderator');
     } finally {
       setRemovingModId(null);
+    }
+  };
+
+  const updateModeratorPermission = (
+    modId: string,
+    key: keyof ModeratorPermissions,
+    value: boolean
+  ) => {
+    setModerators((prev) =>
+      prev.map((m) => {
+        if (m.id !== modId) return m;
+        const current = ensurePermissions(m.permissions ?? undefined);
+        return {
+          ...m,
+          permissions: {
+            ...current,
+            [key]: value,
+          },
+        };
+      })
+    );
+  };
+
+  const handleSaveModeratorPermissions = async (userId: string) => {
+    if (!house) return;
+    if (!canManageModerators) {
+      setError(
+        'Only the Head of this House or a Super Admin can change moderator permissions.'
+      );
+      return;
+    }
+
+    const moderator = moderators.find((m) => m.id === userId);
+    if (!moderator) return;
+
+    try {
+      setSavingPermModId(userId);
+      setError(null);
+
+      const token = getToken();
+      if (!token) {
+        setError('No authentication token provided');
+        setSavingPermModId(null);
+        return;
+      }
+
+      const res = await fetch(`/api/admin/houses/${house.id}/moderators`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          permissions: moderator.permissions ?? {},
+        }),
+      });
+
+      const json = (await res.json()) as {
+        success: boolean;
+        error?: string;
+        permissions?: ModeratorPermissions | null;
+      };
+
+      if (!res.ok || !json.success) {
+        setError(json.error || 'Failed to update moderator permissions');
+        return;
+      }
+
+      if (typeof json.permissions !== 'undefined') {
+        setModerators((prev) =>
+          prev.map((m) =>
+            m.id === userId ? { ...m, permissions: json.permissions ?? null } : m
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Error updating moderator permissions:', err);
+      setError('Unexpected error while updating moderator permissions');
+    } finally {
+      setSavingPermModId(null);
     }
   };
 
@@ -630,7 +733,9 @@ export default function AdminHouseDetailPage() {
             </div>
             <div className="text-xs text-gray-500 text-right">
               <div>ID: {house.id}</div>
-              {createdAtFormatted && <div>Created at: {createdAtFormatted}</div>}
+              {createdAtFormatted && (
+                <div>Created at: {createdAtFormatted}</div>
+              )}
             </div>
           </div>
 
@@ -946,8 +1051,9 @@ export default function AdminHouseDetailPage() {
 
               <p className="text-[11px] text-gray-500">
                 Moderators não substituem o Head of House, mas podem gerir
-                missões, eventos e comunidade. Em breve estes nomes também podem
-                aparecer no perfil público da House.
+                missões, eventos e comunidade. Cada moderador pode ter
+                permissões específicas (missões, conteúdo, membros) definidas
+                aqui.
               </p>
 
               {moderators.length === 0 ? (
@@ -956,37 +1062,116 @@ export default function AdminHouseDetailPage() {
                 </p>
               ) : (
                 <div className="border rounded-md divide-y bg-white">
-                  {moderators.map((mod) => (
-                    <div
-                      key={mod.id}
-                      className="flex items-center justify-between px-3 py-2 text-sm"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {mod.full_name || mod.username || 'Unknown user'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {mod.username && <>@{mod.username} · </>}
-                          {mod.role || 'Member'}
-                        </p>
-                      </div>
-                      {canManageModerators && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={removingModId === mod.id}
-                          onClick={() => handleRemoveModerator(mod.id)}
-                        >
-                          {removingModId === mod.id ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4 mr-2" />
+                  {moderators.map((mod) => {
+                    const perms = ensurePermissions(mod.permissions ?? undefined);
+
+                    return (
+                      <div
+                        key={mod.id}
+                        className="px-3 py-2 text-sm space-y-2"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {mod.full_name || mod.username || 'Unknown user'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {mod.username && <>@{mod.username} · </>}
+                              {mod.role || 'Member'}
+                            </p>
+                          </div>
+                          {canManageModerators && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={removingModId === mod.id}
+                              onClick={() => handleRemoveModerator(mod.id)}
+                            >
+                              {removingModId === mod.id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-2" />
+                              )}
+                              Remove
+                            </Button>
                           )}
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                        </div>
+
+                        {/* Permissões do moderador */}
+                        <div className="mt-1">
+                          <p className="text-[11px] text-gray-500 mb-1">
+                            Permissions for this moderator:
+                          </p>
+                          <div className="flex flex-wrap gap-3 text-[11px] text-gray-700">
+                            <label className="inline-flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                className="h-3.5 w-3.5 rounded border-gray-300"
+                                checked={perms.canManageMissions}
+                                disabled={!canManageModerators}
+                                onChange={(e) =>
+                                  updateModeratorPermission(
+                                    mod.id,
+                                    'canManageMissions',
+                                    e.target.checked
+                                  )
+                                }
+                              />
+                              <span>Gerir missões</span>
+                            </label>
+                            <label className="inline-flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                className="h-3.5 w-3.5 rounded border-gray-300"
+                                checked={perms.canManageContent}
+                                disabled={!canManageModerators}
+                                onChange={(e) =>
+                                  updateModeratorPermission(
+                                    mod.id,
+                                    'canManageContent',
+                                    e.target.checked
+                                  )
+                                }
+                              />
+                              <span>Gerir conteúdo</span>
+                            </label>
+                            <label className="inline-flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                className="h-3.5 w-3.5 rounded border-gray-300"
+                                checked={perms.canManageMembers}
+                                disabled={!canManageModerators}
+                                onChange={(e) =>
+                                  updateModeratorPermission(
+                                    mod.id,
+                                    'canManageMembers',
+                                    e.target.checked
+                                  )
+                                }
+                              />
+                              <span>Gerir membros</span>
+                            </label>
+                            {canManageModerators && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="ml-auto"
+                                disabled={savingPermModId === mod.id}
+                                onClick={() =>
+                                  handleSaveModeratorPermissions(mod.id)
+                                }
+                              >
+                                {savingPermModId === mod.id && (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                )}
+                                Save permissions
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

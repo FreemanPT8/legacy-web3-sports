@@ -17,16 +17,21 @@ function normalizeLocale(raw?: string | null): SupportedLocale {
   return 'en';
 }
 
-type HouseProfileRow = {
-  house_id: string;
-  tagline_i18n: Record<string, string> | null;
-  description_i18n: Record<string, string> | null;
-  image_url: string | null;
+// ---- tipos dos rows Supabase ----
+
+type HouseRow = {
+  id: string;
+  sport_id: string;
+  country_code: string | null;
+  name_i18n: Record<string, string> | null;
+  status: string | null;
+  created_at: string | null;
 };
 
-type UserRow = {
+type SportRow = {
   id: string;
-  role: string | null;
+  code: string;
+  name_i18n: Record<string, string> | null;
 };
 
 type HouseHeadRow = {
@@ -39,329 +44,318 @@ type AdminAssignmentRow = {
   user_id: string;
 };
 
+type UserRow = {
+  id: string;
+  username: string | null;
+  full_name?: string | null;
+  role: string | null;
+  avatar_url?: string | null;
+};
+
 type HouseModeratorRow = {
   house_id: string;
   user_id: string;
+  permissions: Record<string, any> | null;
 };
 
-function resolveLocalizedText(
-  i18n: Record<string, string> | null,
-  locale: SupportedLocale
-): string | null {
-  if (!i18n) return null;
-  if (i18n[locale]) return i18n[locale];
-  if (i18n.en) return i18n.en;
-  const anyValue = Object.values(i18n)[0];
-  return anyValue ?? null;
-}
-
-// se a tabela não existir em Supabase, tratamos como “feature ainda não ligada”
-function isTableMissingError(error: any): boolean {
-  return !!error && (error.code === '42P01' || error.message?.includes('42P01'));
-}
+type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
 /**
- * GET /api/sports/houses/[houseId]/profile?locale=pt
- * Devolve o perfil público da House (tagline, descrição e imagem) para a língua pedida.
+ * Regra de negócio:
+ * - ACTIVE: se o status na DB estiver explicitamente como 'active'
+ * - UNDER_CONSTRUCTION:
+ *    - se tiver Head definido, mesmo que a DB diga 'development'
+ *    - ou se a DB estiver como 'under_construction'
+ * - IN_DEVELOPMENT:
+ *    - se não tiver Head e a DB não estiver 'active'
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { houseId: string } }
-) {
-  const houseId = params.houseId;
-  const { searchParams } = new URL(request.url);
-  const locale = normalizeLocale(searchParams.get('locale'));
+function normalizeStatusFromData(
+  dbStatus: string | null,
+  hasHead: boolean
+): PublicHouseStatus {
+  const raw = (dbStatus || '').toLowerCase();
 
+  if (raw === 'active') {
+    return 'ACTIVE';
+  }
+
+  if (hasHead || raw === 'under_construction') {
+    return 'UNDER_CONSTRUCTION';
+  }
+
+  return 'IN_DEVELOPMENT';
+}
+
+export async function GET(request: NextRequest) {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('house_profiles')
-      .select('house_id, tagline_i18n, description_i18n, image_url')
-      .eq('house_id', houseId)
-      .maybeSingle();
+    const { searchParams } = new URL(request.url);
+    const rawLocale = searchParams.get('locale');
+    const locale = normalizeLocale(rawLocale);
 
-    if (error) {
-      if (isTableMissingError(error)) {
-        // tabela ainda não existe -> apenas devolvemos perfil vazio,
-        // sem rebentar com o resto da app
-        return NextResponse.json({
-          success: true,
-          locale,
-          profile: null,
-          profilesEnabled: false,
-        });
-      }
+    // 1) Buscar todas as houses
+    const { data: housesData, error: housesError } = await supabaseAdmin
+      .from('houses_of_sports')
+      .select('id, sport_id, country_code, name_i18n, status, created_at');
 
-      console.error('Error loading house_profiles:', error);
+    if (housesError) {
+      console.error('Error loading houses_of_sports:', housesError);
       return NextResponse.json(
-        { success: false, error: 'Erro ao carregar perfil da House.' },
+        {
+          success: false,
+          error: 'Erro ao carregar Houses of Sports.',
+        },
         { status: 500 }
       );
     }
 
-    if (!data) {
+    const houses = (housesData ?? []) as HouseRow[];
+
+    if (houses.length === 0) {
       return NextResponse.json({
         success: true,
         locale,
-        profile: null,
-        profilesEnabled: true,
+        count: 0,
+        houses: [],
       });
     }
 
-    const row = data as HouseProfileRow;
+    // 2) Buscar sports correspondentes
+    const sportIds = Array.from(new Set(houses.map((h) => h.sport_id)));
+
+    const { data: sportsData, error: sportsError } = await supabaseAdmin
+      .from('sports')
+      .select('id, code, name_i18n')
+      .in('id', sportIds);
+
+    if (sportsError) {
+      console.error('Error loading sports for houses:', sportsError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Erro ao carregar desportos das Houses.',
+        },
+        { status: 500 }
+      );
+    }
+
+    const sports = (sportsData ?? []) as SportRow[];
+    const sportById = new Map<string, SportRow>();
+    for (const s of sports) {
+      sportById.set(s.id, s);
+    }
+
+    // 3) House heads
+    const houseIds = houses.map((h) => h.id);
+
+    const { data: headsData, error: headsError } = await supabaseAdmin
+      .from('house_heads')
+      .select('house_id, admin_id')
+      .in('house_id', houseIds);
+
+    if (headsError) {
+      console.error('Error loading house_heads:', headsError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Erro ao carregar Heads das Houses.',
+        },
+        { status: 500 }
+      );
+    }
+
+    const heads = (headsData ?? []) as HouseHeadRow[];
+
+    // 4) Admin assignments dos heads
+    const adminIds = Array.from(new Set(heads.map((h) => h.admin_id)));
+
+    const { data: adminAssignData, error: adminAssignError } =
+      adminIds.length > 0
+        ? await supabaseAdmin
+            .from('admin_assignments')
+            .select('id, user_id')
+            .in('id', adminIds)
+        : { data: [] as any[], error: null };
+
+    if (adminAssignError) {
+      console.error('Error loading admin_assignments:', adminAssignError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Erro ao carregar Admin Assignments.',
+        },
+        { status: 500 }
+      );
+    }
+
+    const adminAssignments = (adminAssignData ?? []) as AdminAssignmentRow[];
+
+    // 5) Moderadores
+    const { data: moderatorsData, error: moderatorsError } =
+      houseIds.length > 0
+        ? await supabaseAdmin
+            .from('house_moderators')
+            .select('house_id, user_id, permissions')
+            .in('house_id', houseIds)
+        : { data: [] as any[], error: null };
+
+    if (moderatorsError) {
+      console.error('Error loading house_moderators:', moderatorsError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Erro ao carregar moderadores das Houses.',
+        },
+        { status: 500 }
+      );
+    }
+
+    const moderatorsRows = (moderatorsData ?? []) as HouseModeratorRow[];
+
+    // 6) users envolvidos (heads + moderadores)
+    const headUserIds = adminAssignments.map((a) => a.user_id);
+    const modUserIds = moderatorsRows.map((m) => m.user_id);
+    const allUserIds = Array.from(new Set([...headUserIds, ...modUserIds]));
+
+    let users: UserRow[] = [];
+    if (allUserIds.length > 0) {
+      const { data: usersData, error: usersError } = await supabaseAdmin
+        .from('users')
+        .select('id, username, full_name, role, avatar_url')
+        .in('id', allUserIds);
+
+      if (usersError) {
+        console.error('Error loading users for houses:', usersError);
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Erro ao carregar utilizadores das Houses.',
+          },
+          { status: 500 }
+        );
+      }
+
+      users = (usersData ?? []) as UserRow[];
+    }
+
+    const userById = new Map<string, UserRow>();
+    for (const u of users) {
+      userById.set(u.id, u);
+    }
+
+    const headByHouse = new Map<string, HouseHeadRow>();
+    for (const h of heads) {
+      headByHouse.set(h.house_id, h);
+    }
+
+    const adminAssignById = new Map<string, AdminAssignmentRow>();
+    for (const a of adminAssignments) {
+      adminAssignById.set(a.id, a);
+    }
+
+    const moderatorsByHouse = new Map<string, HouseModeratorRow[]>();
+    for (const m of moderatorsRows) {
+      const arr = moderatorsByHouse.get(m.house_id) ?? [];
+      arr.push(m);
+      moderatorsByHouse.set(m.house_id, arr);
+    }
+
+    const resolveLocalizedName = (
+      name_i18n: Record<string, string> | null,
+      fallback?: string | null
+    ): string => {
+      if (name_i18n && name_i18n[locale]) return name_i18n[locale];
+      if (name_i18n && name_i18n.en) return name_i18n.en;
+      return fallback ?? '';
+    };
+
+    // 7) montar resposta final
+    const result = houses.map((house) => {
+      const sport = sportById.get(house.sport_id) || null;
+
+      // Head da House
+      const headRow = headByHouse.get(house.id) || null;
+      let headUser: UserRow | null = null;
+
+      if (headRow) {
+        const admin = adminAssignById.get(headRow.admin_id) || null;
+        if (admin) {
+          headUser = userById.get(admin.user_id) || null;
+        }
+      }
+
+      // Moderadores
+      const mods = moderatorsByHouse.get(house.id) || [];
+      const moderators = mods
+        .map((mod) => {
+          const u = userById.get(mod.user_id) || null;
+          if (!u) return null;
+          return {
+            user_id: u.id,
+            username: u.username,
+            full_name: u.full_name ?? null,
+            role: u.role,
+            avatar_url: u.avatar_url ?? null,
+            permissions: mod.permissions ?? {},
+          };
+        })
+        .filter(Boolean) as Array<{
+          user_id: string;
+          username: string | null;
+          full_name: string | null;
+          role: string | null;
+          avatar_url: string | null;
+          permissions: Record<string, any>;
+        }>;
+
+      const hasHead = !!headUser;
+      const publicStatus = normalizeStatusFromData(house.status, hasHead);
+
+      return {
+        id: house.id,
+        country_code: house.country_code,
+        status: publicStatus,
+        created_at: house.created_at,
+
+        sport: sport
+          ? {
+              id: sport.id,
+              code: sport.code,
+              name: resolveLocalizedName(sport.name_i18n, sport.code),
+            }
+          : null,
+
+        name: resolveLocalizedName(
+          house.name_i18n,
+          sport ? resolveLocalizedName(sport.name_i18n, sport.code) : null
+        ),
+
+        head: headUser
+          ? {
+              user_id: headUser.id,
+              username: headUser.username,
+              full_name: headUser.full_name ?? null,
+              role: headUser.role,
+              avatar_url: headUser.avatar_url ?? null,
+            }
+          : null,
+
+        moderators,
+      };
+    });
 
     return NextResponse.json({
       success: true,
       locale,
-      profilesEnabled: true,
-      profile: {
-        house_id: row.house_id,
-        image_url: row.image_url,
-        tagline: resolveLocalizedText(row.tagline_i18n, locale),
-        description: resolveLocalizedText(row.description_i18n, locale),
-      },
+      count: result.length,
+      houses: result,
     });
   } catch (err) {
-    console.error('Unexpected error in GET /api/sports/houses/[houseId]/profile:', err);
+    console.error('Unexpected error in GET /api/sports/houses:', err);
     return NextResponse.json(
       {
         success: false,
-        error: 'Erro interno ao carregar o perfil da House.',
+        error: 'Erro interno no servidor ao carregar Houses of Sports.',
       },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * PATCH /api/sports/houses/[houseId]/profile?locale=pt
- * Atualiza o perfil público da House para a língua atual.
- * Autorização:
- *  - Super Admin / Admin
- *  - Head of House
- *  - Moderador da House
- */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { houseId: string } }
-) {
-  const houseId = params.houseId;
-  const { searchParams } = new URL(request.url);
-  const locale = normalizeLocale(searchParams.get('locale'));
-
-  try {
-    const authHeader = request.headers.get('authorization') || '';
-    const token = authHeader.startsWith('Bearer ')
-      ? authHeader.substring('Bearer '.length)
-      : null;
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Token de autenticação em falta.' },
-        { status: 401 }
-      );
-    }
-
-    // obter utilizador a partir do token (via serviço Supabase)
-    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(
-      token
-    );
-
-    if (authError || !userData?.user) {
-      console.error('Auth error in PATCH house profile:', authError);
-      return NextResponse.json(
-        { success: false, error: 'Não foi possível validar o utilizador.' },
-        { status: 401 }
-      );
-    }
-
-    const userId = userData.user.id;
-
-    // verificar role global
-    const { data: userRowData, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('id, role')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (userError) {
-      console.error('Error loading users in PATCH profile:', userError);
-      return NextResponse.json(
-        { success: false, error: 'Erro ao validar permissões.' },
-        { status: 500 }
-      );
-    }
-
-    const userRow = userRowData as UserRow | null;
-    const isGlobalAdmin =
-      !!userRow &&
-      (userRow.role === 'Super Admin' || userRow.role === 'Admin');
-
-    let isHead = false;
-    let isModerator = false;
-
-    if (!isGlobalAdmin) {
-      // é Head desta House?
-      const { data: headsData, error: headsError } = await supabaseAdmin
-        .from('house_heads')
-        .select('house_id, admin_id')
-        .eq('house_id', houseId);
-
-      if (headsError && !isTableMissingError(headsError)) {
-        console.error('Error loading house_heads:', headsError);
-        return NextResponse.json(
-          { success: false, error: 'Erro ao validar Head of House.' },
-          { status: 500 }
-        );
-      }
-
-      const heads = (headsData ?? []) as HouseHeadRow[];
-
-      if (heads.length > 0) {
-        const adminIds = heads.map((h) => h.admin_id);
-        const { data: adminAssignData, error: adminAssignError } =
-          await supabaseAdmin
-            .from('admin_assignments')
-            .select('id, user_id')
-            .in('id', adminIds);
-
-        if (adminAssignError && !isTableMissingError(adminAssignError)) {
-          console.error('Error loading admin_assignments:', adminAssignError);
-          return NextResponse.json(
-            { success: false, error: 'Erro ao validar Head of House.' },
-            { status: 500 }
-          );
-        }
-
-        const adminAssignments = (adminAssignData ?? []) as AdminAssignmentRow[];
-        isHead = adminAssignments.some((a) => a.user_id === userId);
-      }
-
-      // é moderador desta House?
-      const { data: modsData, error: modsError } = await supabaseAdmin
-        .from('house_moderators')
-        .select('house_id, user_id')
-        .eq('house_id', houseId)
-        .eq('user_id', userId);
-
-      if (modsError && !isTableMissingError(modsError)) {
-        console.error('Error loading house_moderators:', modsError);
-        return NextResponse.json(
-          { success: false, error: 'Erro ao validar moderadores.' },
-          { status: 500 }
-        );
-      }
-
-      const mods = (modsData ?? []) as HouseModeratorRow[];
-      isModerator = mods.length > 0;
-    }
-
-    if (!isGlobalAdmin && !isHead && !isModerator) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            'Não tens permissões para editar o perfil desta House (apenas Head, moderadores ou admins).',
-        },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-    const tagline: string | undefined = body.tagline?.toString().trim();
-    const description: string | undefined = body.description?.toString().trim();
-    const image_url: string | null =
-      body.image_url !== undefined ? String(body.image_url || '').trim() || null : null;
-
-    // buscar perfil atual para fazer merge i18n
-    const { data: profileData, error: profileError } = await supabaseAdmin
-      .from('house_profiles')
-      .select('house_id, tagline_i18n, description_i18n, image_url')
-      .eq('house_id', houseId)
-      .maybeSingle();
-
-    if (profileError) {
-      if (isTableMissingError(profileError)) {
-        // tabela ainda não existe -> avisa explicitamente
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              'A tabela "house_profiles" ainda não está criada em Supabase. Cria-a para poderes guardar o perfil público das Houses.',
-          },
-          { status: 501 }
-        );
-      }
-
-      console.error('Error loading house_profiles in PATCH:', profileError);
-      return NextResponse.json(
-        { success: false, error: 'Erro ao carregar perfil atual da House.' },
-        { status: 500 }
-      );
-    }
-
-    const existing = profileData as HouseProfileRow | null;
-
-    const newTaglineI18n: Record<string, string> = {
-      ...(existing?.tagline_i18n ?? {}),
-    };
-    const newDescriptionI18n: Record<string, string> = {
-      ...(existing?.description_i18n ?? {}),
-    };
-
-    if (tagline !== undefined) {
-      if (tagline === '') {
-        delete newTaglineI18n[locale];
-      } else {
-        newTaglineI18n[locale] = tagline;
-      }
-    }
-
-    if (description !== undefined) {
-      if (description === '') {
-        delete newDescriptionI18n[locale];
-      } else {
-        newDescriptionI18n[locale] = description;
-      }
-    }
-
-    const payload = {
-      house_id: houseId,
-      tagline_i18n: newTaglineI18n,
-      description_i18n: newDescriptionI18n,
-      image_url: image_url !== null ? image_url : existing?.image_url ?? null,
-    };
-
-    const { error: upsertError } = await supabaseAdmin
-      .from('house_profiles')
-      .upsert(payload, { onConflict: 'house_id' });
-
-    if (upsertError) {
-      if (isTableMissingError(upsertError)) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              'A tabela "house_profiles" ainda não está criada em Supabase. Cria-a para poderes guardar o perfil público das Houses.',
-          },
-          { status: 501 }
-        );
-      }
-
-      console.error('Error upserting house_profiles:', upsertError);
-      return NextResponse.json(
-        { success: false, error: 'Erro ao gravar o perfil da House.' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error(
-      'Unexpected error in PATCH /api/sports/houses/[houseId]/profile:',
-      err
-    );
-    return NextResponse.json(
-      { success: false, error: 'Erro interno ao atualizar o perfil da House.' },
       { status: 500 }
     );
   }

@@ -12,79 +12,58 @@ import {
   Users,
   User,
   Trophy,
-  Pencil,
 } from 'lucide-react';
 
-type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
+type HouseStatus = 'development' | 'under_construction' | 'active';
 
-interface House {
+interface HousePublic {
   id: string;
   name: string;
-  country_code: string | null;
-  status: PublicHouseStatus;
+  sport_name: string | null;
+  sport_code: string | null;
+  country_code: string;
+  status: HouseStatus;
+  avatar_url: string | null;
+  description: string | null;
   created_at: string | null;
-  sport: {
-    id: string;
-    code: string;
-    name: string;
-  } | null;
-  head: {
-    user_id: string;
-    username: string | null;
-    full_name: string | null;
-    role: string | null;
-    avatar_url: string | null;
-  } | null;
-  moderators: {
-    user_id: string;
-    username: string | null;
-    full_name: string | null;
-    role: string | null;
-    avatar_url: string | null;
-  }[];
 }
 
-interface HousesApiResponse {
-  success: boolean;
-  houses?: House[];
-  error?: string;
+interface PublicUser {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  role: string | null;
+  avatar_url: string | null;
 }
 
-interface HouseProfile {
-  house_id: string;
-  image_url: string | null;
-  tagline?: string;
-  description?: string;
-  updated_at?: string | null;
-}
-
-interface HouseProfileApiResponse {
+interface HousePublicApiResponse {
   success: boolean;
   error?: string;
-  locale?: string;
-  profile?: HouseProfile | null;
+  house?: HousePublic;
+  head?: PublicUser | null;
+  moderators?: PublicUser[];
 }
 
-function formatStatusLabel(status: PublicHouseStatus): string {
+function formatStatusLabel(status: HouseStatus): string {
   switch (status) {
-    case 'ACTIVE':
+    case 'active':
       return 'Ativa';
-    case 'UNDER_CONSTRUCTION':
+    case 'under_construction':
       return 'Em construção';
-    case 'IN_DEVELOPMENT':
+    case 'development':
       return 'Em desenvolvimento';
     default:
       return status;
   }
 }
 
-function statusBadgeClass(status: PublicHouseStatus): string {
+function statusBadgeClass(status: HouseStatus): string {
   switch (status) {
-    case 'ACTIVE':
+    case 'active':
       return 'inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-0.5 border border-emerald-200';
-    case 'UNDER_CONSTRUCTION':
+    case 'under_construction':
       return 'inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-[11px] px-2.5 py-0.5 border border-amber-200';
-    case 'IN_DEVELOPMENT':
+    case 'development':
     default:
       return 'inline-flex items-center rounded-full bg-gray-50 text-gray-600 text-[11px] px-2.5 py-0.5 border border-gray-200';
   }
@@ -97,8 +76,9 @@ export default function PublicHouseProfilePage() {
 
   const houseId = params?.houseId;
 
-  const [houses, setHouses] = useState<House[]>([]);
-  const [profile, setProfile] = useState<HouseProfile | null>(null);
+  const [house, setHouse] = useState<HousePublic | null>(null);
+  const [head, setHead] = useState<PublicUser | null>(null);
+  const [moderators, setModerators] = useState<PublicUser[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,37 +94,18 @@ export default function PublicHouseProfilePage() {
       setError(null);
 
       try {
-        // 1) Lista de Houses (já usada antes)
-        const res = await fetch('/api/sports/houses?locale=pt');
-        const json: HousesApiResponse = await res.json();
+        const res = await fetch(`/api/sports/houses/${houseId}`);
+        const json: HousePublicApiResponse = await res.json();
 
-        if (!res.ok || !json.success) {
+        if (!res.ok || !json.success || !json.house) {
           throw new Error(json.error || 'Erro ao carregar House.');
         }
 
-        setHouses(json.houses || []);
-
-        // 2) Perfil público da House (imagem, tagline, descrição)
-        try {
-          const profileRes = await fetch(
-            `/api/house-profiles/${houseId}?locale=pt`
-          );
-          const profileJson: HouseProfileApiResponse =
-            await profileRes.json();
-
-          if (!profileRes.ok || !profileJson.success) {
-            console.warn(
-              'Falha ao carregar perfil da House:',
-              profileJson.error
-            );
-          } else {
-            setProfile(profileJson.profile ?? null);
-          }
-        } catch (profileErr) {
-          console.warn('Erro ao carregar perfil da House:', profileErr);
-        }
+        setHouse(json.house);
+        setHead(json.head ?? null);
+        setModerators(json.moderators ?? []);
       } catch (err: any) {
-        console.error('Error loading Houses list for profile:', err);
+        console.error('Error loading public House:', err);
         setError(
           err?.message || 'Erro inesperado ao carregar dados da House.'
         );
@@ -156,11 +117,6 @@ export default function PublicHouseProfilePage() {
     fetchData();
   }, [houseId]);
 
-  const house = useMemo(
-    () => houses.find((h) => h.id === houseId),
-    [houses, houseId]
-  );
-
   const createdAtFormatted = useMemo(() => {
     if (!house?.created_at) return '';
     try {
@@ -169,15 +125,6 @@ export default function PublicHouseProfilePage() {
       return house.created_at;
     }
   }, [house?.created_at]);
-
-  const profileUpdatedAtFormatted = useMemo(() => {
-    if (!profile?.updated_at) return '';
-    try {
-      return new Date(profile.updated_at).toLocaleString('pt-PT');
-    } catch {
-      return profile.updated_at || '';
-    }
-  }, [profile?.updated_at]);
 
   if (loading) {
     return (
@@ -217,8 +164,8 @@ export default function PublicHouseProfilePage() {
     );
   }
 
-  // House em desenvolvimento só visível para Admin/Super Admin
-  if (house.status === 'IN_DEVELOPMENT' && !isAdmin) {
+  // House em development só visível para Admin/Super Admin
+  if (house.status === 'development' && !isAdmin) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
@@ -258,26 +205,16 @@ export default function PublicHouseProfilePage() {
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Voltar às Houses
               </button>
-
-              {isAdmin && (
-                <Link
-                  href={`/sports/houses/${house.id}/edit`}
-                  className="inline-flex items-center rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
-                >
-                  <Pencil className="h-3 w-3 mr-1.5" />
-                  Editar perfil público
-                </Link>
-              )}
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-start gap-4">
                 {/* Avatar da House (imagem se existir) */}
                 <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white border border-blue-100 flex items-center justify-center shadow-sm overflow-hidden">
-                  {profile?.image_url ? (
+                  {house.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={profile.image_url}
+                      src={house.avatar_url}
                       alt={`Imagem da House ${house.name}`}
                       className="h-full w-full object-cover"
                     />
@@ -291,12 +228,14 @@ export default function PublicHouseProfilePage() {
                     {house.name}
                   </h1>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                    {house.sport && (
+                    {house.sport_name && (
                       <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-2.5 py-0.5">
-                        {house.sport.name}{' '}
-                        <span className="ml-1 text-[10px] uppercase text-gray-400">
-                          {house.sport.code}
-                        </span>
+                        {house.sport_name}{' '}
+                        {house.sport_code && (
+                          <span className="ml-1 text-[10px] uppercase text-gray-400">
+                            {house.sport_code}
+                          </span>
+                        )}
                       </span>
                     )}
                     {house.country_code && (
@@ -308,19 +247,9 @@ export default function PublicHouseProfilePage() {
                       {formatStatusLabel(house.status)}
                     </span>
                   </div>
-                  {profile?.tagline && (
-                    <p className="mt-2 text-sm text-gray-700">
-                      {profile.tagline}
-                    </p>
-                  )}
                   {createdAtFormatted && (
                     <p className="mt-1 text-[11px] text-gray-400">
                       Criada em {createdAtFormatted}
-                    </p>
-                  )}
-                  {profileUpdatedAtFormatted && (
-                    <p className="text-[10px] text-gray-400">
-                      Perfil atualizado em {profileUpdatedAtFormatted}
                     </p>
                   )}
                 </div>
@@ -330,7 +259,7 @@ export default function PublicHouseProfilePage() {
               <div className="flex flex-col items-start md:items-end gap-2 text-xs">
                 <p className="text-gray-500 max-w-xs text-left md:text-right">
                   Esta House representa a comunidade de{' '}
-                  {house.sport?.name || 'um desporto'} em{' '}
+                  {house.sport_name || 'um desporto'} em{' '}
                   {house.country_code || 'um país'} dentro do ecossistema
                   Web3/Apertum.
                 </p>
@@ -364,9 +293,9 @@ export default function PublicHouseProfilePage() {
                 Sobre esta House
               </h2>
 
-              {profile?.description ? (
+              {house.description ? (
                 <p className="text-xs text-gray-600 whitespace-pre-line">
-                  {profile.description}
+                  {house.description}
                 </p>
               ) : (
                 <>
@@ -405,13 +334,14 @@ export default function PublicHouseProfilePage() {
                   <User className="h-4 w-4" />
                   Head of House
                 </h3>
-                {house.head ? (
+                {head ? (
                   <div>
                     <p className="text-sm font-medium text-gray-900">
-                      {house.head.full_name || house.head.username}
+                      {head.full_name || head.username}
                     </p>
                     <p className="text-xs text-gray-500">
-                      @{house.head.username} · {house.head.role || 'Membro'}
+                      {head.username && <>@{head.username} · </>}
+                      {head.role || 'Membro'}
                     </p>
                     <p className="mt-2 text-[11px] text-gray-500">
                       O Head of House é responsável por orientar a comunidade,
@@ -434,7 +364,7 @@ export default function PublicHouseProfilePage() {
                   <Users className="h-4 w-4" />
                   Moderadores da House
                 </h3>
-                {house.moderators.length === 0 ? (
+                {moderators.length === 0 ? (
                   <p className="text-xs text-gray-500">
                     Ainda não existem moderadores públicos para esta House.
                     Moderadores vão apoiar o Head na gestão de missões,
@@ -442,8 +372,8 @@ export default function PublicHouseProfilePage() {
                   </p>
                 ) : (
                   <ul className="space-y-2 text-xs text-gray-700">
-                    {house.moderators.map((mod) => (
-                      <li key={mod.user_id} className="flex flex-col">
+                    {moderators.map((mod) => (
+                      <li key={mod.id} className="flex flex-col">
                         <span className="font-medium">
                           {mod.full_name || mod.username}
                         </span>
@@ -460,7 +390,7 @@ export default function PublicHouseProfilePage() {
           </div>
 
           {/* Secção futura para membros / XP / chat */}
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white/60 p-5 text-xs text-gray-600">
+          <div className="rounded-xl border border-dashed border-gray-300 bg_white/60 bg-white p-5 text-xs text-gray-600">
             <h2 className="text-sm font-semibold text-gray-900 mb-2">
               O que vem a seguir para esta House?
             </h2>

@@ -43,6 +43,7 @@ type UserRow = {
 type HouseModeratorRow = {
   house_id: string;
   user_id: string;
+  permissions: Record<string, any> | null;
 };
 
 function normalizeStatus(raw: string | null): HouseStatus {
@@ -164,7 +165,7 @@ export async function GET(
     // 4) Moderadores
     const { data: modsRows, error: modsError } = await supabaseAdmin
       .from('house_moderators')
-      .select('house_id, user_id')
+      .select('house_id, user_id, permissions')
       .eq('house_id', house.id);
 
     if (modsError) {
@@ -195,15 +196,19 @@ export async function GET(
     }
 
     const moderators = moderatorsRows
-      .map((m) => userById.get(m.user_id))
-      .filter(Boolean)
-      .map((u) => ({
-        id: u!.id,
-        username: u!.username,
-        full_name: u!.full_name ?? null,
-        role: u!.role,
-        avatar_url: u!.avatar_url ?? null,
-      }));
+      .map((m) => {
+        const u = userById.get(m.user_id);
+        if (!u) return null;
+        return {
+          id: u.id,
+          username: u.username,
+          full_name: u.full_name ?? null,
+          role: u.role,
+          avatar_url: u.avatar_url ?? null,
+          permissions: m.permissions ?? null,
+        };
+      })
+      .filter(Boolean);
 
     const status: HouseStatus = normalizeStatus(house.status);
 
