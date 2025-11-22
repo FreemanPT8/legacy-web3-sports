@@ -63,15 +63,13 @@ interface HousesGetResponse {
   error?: string;
 }
 
-// Aceita tanto o formato novo (sport_id/country_code) como o formato do form (sportId/countryCode)
+// Aceita tanto o formato novo (sport_id/country_code) como o formato do teu form (sportId/countryCode)
 interface HousesPostBody {
   sport_id?: string;
   country_code?: string;
   sportId?: string;
   countryCode?: string;
   status?: HouseStatus;
-  // avatar_url e description ficam aqui só para compatibilidade futura,
-  // mas NÃO são usados no insert para não rebentar se as colunas não existirem ainda.
   avatar_url?: string | null;
   description?: string | null;
 }
@@ -123,12 +121,7 @@ export async function GET(request: NextRequest) {
     if (housesError) {
       console.error('Error loading houses_of_sports:', housesError);
       return NextResponse.json<HousesGetResponse>(
-        {
-          success: false,
-          error:
-            housesError.message ||
-            'Failed to load Houses of Sports.',
-        },
+        { success: false, error: 'Failed to load Houses of Sports.' },
         { status: 500 }
       );
     }
@@ -338,6 +331,15 @@ export async function POST(request: NextRequest) {
 
     const status: HouseStatus = body.status ?? 'development';
 
+    const avatar_url =
+      typeof body.avatar_url === 'string' && body.avatar_url.trim()
+        ? body.avatar_url.trim()
+        : null;
+    const description =
+      typeof body.description === 'string' && body.description.trim()
+        ? body.description.trim()
+        : null;
+
     if (!rawSportId) {
       return NextResponse.json<HousesPostResponse>(
         { success: false, error: 'sport_id / sportId is required.' },
@@ -359,34 +361,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Inserimos apenas colunas garantidamente existentes
-    const insertData = {
-      sport_id: rawSportId,
-      country_code: rawCountryCode,
-      status,
+    // 🔹 1) Garantir que o sport existe e obter nome
+    const { data: sportData, error: sportError } = await supabaseAdmin
+      .from('sports')
+      .select('id, code, name_i18n')
+      .eq('id', rawSportId)
+      .maybeSingle();
+
+    if (sportError) {
+      console.error('Supabase error loading sport in Houses POST:', sportError);
+      return NextResponse.json<HousesPostResponse>(
+        { success: false, error: 'Failed to validate sport_id.' },
+        { status: 500 }
+      );
+    }
+
+    if (!sportData) {
+      return NextResponse.json<HousesPostResponse>(
+        { success: false, error: 'Sport not found.' },
+        { status: 404 }
+      );
+    }
+
+    const sportRow = sportData as SportRow;
+    const sportName =
+      resolveLocaleName(sportRow.name_i18n, sportRow.code) || 'Sport';
+
+    // 🔹 2) Gerar nome base da House (em inglês) e replicar nas 6 línguas
+    const baseName = `House of ${sportName} ${rawCountryCode}`;
+
+    const name_i18n = {
+      en: baseName,
+      pt: baseName,
+      es: baseName,
+      fr: baseName,
+      de: baseName,
+      it: baseName,
     };
 
+    // 🔹 3) Criar House com name_i18n preenchido
     const { data, error } = await supabaseAdmin
       .from('houses_of_sports')
-      .insert(insertData)
+      .insert({
+        sport_id: rawSportId,
+        country_code: rawCountryCode,
+        status,
+        avatar_url,
+        description,
+        name_i18n,
+      })
       .select('id')
       .single();
 
     if (error || !data) {
       console.error('Supabase error inserting new House of Sports:', error);
       return NextResponse.json<HousesPostResponse>(
-        {
-          success: false,
-          error:
-            error?.message || 'Failed to create House of Sports.',
-        },
+        { success: false, error: 'Failed to create House of Sports.' },
         { status: 500 }
       );
     }
 
     const id = data.id as string;
 
-    // Responder de forma compatível com o CreateHousePage
+    // Responder de forma compatível com o teu CreateHousePage
     return NextResponse.json<HousesPostResponse>(
       {
         success: true,

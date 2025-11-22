@@ -1,6 +1,7 @@
+// app/admin/houses/create/page.tsx
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Loader2, ArrowLeft, Trophy } from 'lucide-react';
+import { getSortedCountries } from '@/lib/countries';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -57,16 +59,6 @@ const STATUS_OPTIONS: { value: HouseStatus; label: string }[] = [
   { value: 'development', label: 'In development' },
 ];
 
-const COUNTRY_OPTIONS: { code: string; label: string }[] = [
-  { code: 'PT', label: 'Portugal' },
-  { code: 'ES', label: 'Spain' },
-  { code: 'FR', label: 'France' },
-  { code: 'DE', label: 'Germany' },
-  { code: 'IT', label: 'Italy' },
-  { code: 'US', label: 'United States' },
-  { code: 'BR', label: 'Brazil' },
-];
-
 export default function CreateHousePage() {
   const router = useRouter();
   const { user, getToken, loading: authLoading } = useAuth();
@@ -81,6 +73,8 @@ export default function CreateHousePage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const countries = useMemo(() => getSortedCountries(), []);
 
   // Proteger rota: apenas Admin / Super Admin
   useEffect(() => {
@@ -329,9 +323,9 @@ export default function CreateHousePage() {
                         <SelectValue placeholder="Select a country" />
                       </SelectTrigger>
                       <SelectContent>
-                        {COUNTRY_OPTIONS.map((c) => (
+                        {countries.map((c) => (
                           <SelectItem key={c.code} value={c.code}>
-                            {c.label} ({c.code})
+                            {c.name} ({c.code})
                           </SelectItem>
                         ))}
                       </SelectContent>
