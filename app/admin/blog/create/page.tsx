@@ -22,6 +22,10 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  RichContentBuilder,
+  type ContentBlock,
+} from '@/components/admin/content/RichContentBuilder';
 
 type PermissionsResponse = {
   success: boolean;
@@ -32,6 +36,57 @@ type PermissionsResponse = {
   };
 };
 
+const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'pt', name: 'Português' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'it', name: 'Italiano' },
+  { code: 'de', name: 'Deutsch' },
+];
+
+const CATEGORIES = [
+  'Blockchain',
+  'Web3',
+  'NFTs',
+  'DeFi',
+  'Sports',
+  'Education',
+  'Technology',
+  'Community',
+];
+
+function blocksToHtml(blocks: ContentBlock[]): string {
+  return blocks
+    .map((block) => {
+      const d = block.data;
+      switch (block.type) {
+        case 'heading':
+          return d.text ? `<h2>${d.text}</h2>` : '';
+        case 'subheading':
+          return d.text ? `<h3>${d.text}</h3>` : '';
+        case 'paragraph':
+          return d.text ? `<p>${d.text}</p>` : '';
+        case 'image':
+          if (!d.url) return '';
+          return `<p><img src="${d.url}" alt="${d.alt || ''}" /></p>`;
+        case 'video':
+          if (!d.url) return '';
+          // Mantemos simples: link para o vídeo
+          return `<p><a href="${d.url}" target="_blank" rel="noopener noreferrer">Watch video</a></p>`;
+        case 'button':
+          if (!d.url) return '';
+          return `<p><a href="${d.url}" class="btn-primary">${d.buttonLabel || 'Click'}</a></p>`;
+        case 'divider':
+          return '<hr />';
+        default:
+          return '';
+      }
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 export default function CreateBlogPostPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
@@ -41,7 +96,6 @@ export default function CreateBlogPostPage() {
   const [post, setPost] = useState({
     title: { en: '', pt: '', es: '', fr: '', it: '', de: '' },
     excerpt: { en: '', pt: '', es: '', fr: '', it: '', de: '' },
-    content: { en: '', pt: '', es: '', fr: '', it: '', de: '' },
     category: 'Blockchain',
     reading_time: 5,
     xp_reward: 15,
@@ -50,6 +104,16 @@ export default function CreateBlogPostPage() {
     registered_only: false,
   });
   const [currentLanguage, setCurrentLanguage] = useState('en');
+
+  const [contentBlocksByLang, setContentBlocksByLang] = useState<
+    Record<string, ContentBlock[]>
+  >(() => {
+    const initial: Record<string, ContentBlock[]> = {};
+    for (const lang of LANGUAGES) {
+      initial[lang.code] = [];
+    }
+    return initial;
+  });
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageBlog, setCanManageBlog] = useState(false);
@@ -66,7 +130,7 @@ export default function CreateBlogPostPage() {
     }
   }, [user, loading, router]);
 
-  // Verificar permissões
+  // Verificar permissões finas (canManageBlog)
   useEffect(() => {
     if (loading || !user) return;
 
@@ -107,6 +171,13 @@ export default function CreateBlogPostPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
+  const handleBlocksChange = (lang: string, blocks: ContentBlock[]) => {
+    setContentBlocksByLang((prev) => ({
+      ...prev,
+      [lang]: blocks,
+    }));
+  };
+
   const handleSave = async (publish: boolean = false) => {
     if (!user || !canManageBlog) {
       toast({
@@ -119,6 +190,14 @@ export default function CreateBlogPostPage() {
 
     setSaving(true);
     try {
+      // Construir HTML por língua a partir dos blocos
+      const content: Record<string, string> = {};
+      for (const lang of LANGUAGES) {
+        const code = lang.code;
+        const blocks = contentBlocksByLang[code] || [];
+        content[code] = blocksToHtml(blocks);
+      }
+
       const token = getToken();
       const response = await fetch('/api/admin/blog/create', {
         method: 'POST',
@@ -127,8 +206,15 @@ export default function CreateBlogPostPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          ...post,
+          title: post.title,
+          excerpt: post.excerpt,
+          content,
+          category: post.category,
+          reading_time: post.reading_time,
+          xp_reward: post.xp_reward,
+          xp_threshold: post.xp_threshold,
           published: publish,
+          registered_only: post.registered_only,
           author_id: user.id,
         }),
       });
@@ -156,26 +242,6 @@ export default function CreateBlogPostPage() {
     }
     setSaving(false);
   };
-
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'pt', name: 'Português' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'it', name: 'Italiano' },
-    { code: 'de', name: 'Deutsch' },
-  ];
-
-  const categories = [
-    'Blockchain',
-    'Web3',
-    'NFTs',
-    'DeFi',
-    'Sports',
-    'Education',
-    'Technology',
-    'Community',
-  ];
 
   if (loading || !user || (user.role !== 'Super Admin' && user.role !== 'Admin') || !permissionsLoaded) {
     return (
@@ -209,6 +275,10 @@ export default function CreateBlogPostPage() {
       </div>
     );
   }
+
+  const currentLangLabel = LANGUAGES.find(
+    (l) => l.code === currentLanguage,
+  )?.name;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -256,7 +326,7 @@ export default function CreateBlogPostPage() {
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="flex gap-2 flex-wrap">
-                      {languages.map((lang) => (
+                      {LANGUAGES.map((lang) => (
                         <Badge
                           key={lang.code}
                           variant={currentLanguage === lang.code ? 'default' : 'outline'}
@@ -269,15 +339,16 @@ export default function CreateBlogPostPage() {
                     </div>
 
                     <div>
-                      <Label>
-                        Title ({languages.find((l) => l.code === currentLanguage)?.name})
-                      </Label>
+                      <Label>Title ({currentLangLabel})</Label>
                       <Input
                         value={post.title[currentLanguage as keyof typeof post.title]}
                         onChange={(e) =>
                           setPost({
                             ...post,
-                            title: { ...post.title, [currentLanguage]: e.target.value },
+                            title: {
+                              ...post.title,
+                              [currentLanguage]: e.target.value,
+                            },
                           })
                         }
                         placeholder="Enter post title"
@@ -286,15 +357,16 @@ export default function CreateBlogPostPage() {
                     </div>
 
                     <div>
-                      <Label>
-                        Excerpt ({languages.find((l) => l.code === currentLanguage)?.name})
-                      </Label>
+                      <Label>Excerpt ({currentLangLabel})</Label>
                       <Textarea
                         value={post.excerpt[currentLanguage as keyof typeof post.excerpt]}
                         onChange={(e) =>
                           setPost({
                             ...post,
-                            excerpt: { ...post.excerpt, [currentLanguage]: e.target.value },
+                            excerpt: {
+                              ...post.excerpt,
+                              [currentLanguage]: e.target.value,
+                            },
                           })
                         }
                         placeholder="Brief summary of the post"
@@ -303,24 +375,13 @@ export default function CreateBlogPostPage() {
                     </div>
 
                     <div>
-                      <Label>
-                        Content ({languages.find((l) => l.code === currentLanguage)?.name})
-                      </Label>
-                      <Textarea
-                        value={post.content[currentLanguage as keyof typeof post.content]}
-                        onChange={(e) =>
-                          setPost({
-                            ...post,
-                            content: { ...post.content, [currentLanguage]: e.target.value },
-                          })
+                      <Label>Body ({currentLangLabel})</Label>
+                      <RichContentBuilder
+                        blocks={contentBlocksByLang[currentLanguage] || []}
+                        onChange={(blocks) =>
+                          handleBlocksChange(currentLanguage, blocks)
                         }
-                        placeholder="Write your post content here (HTML supported)"
-                        rows={20}
-                        className="font-mono text-sm"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        You can use HTML tags for formatting
-                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -336,13 +397,15 @@ export default function CreateBlogPostPage() {
                       <Label>Category</Label>
                       <Select
                         value={post.category}
-                        onValueChange={(value) => setPost({ ...post, category: value })}
+                        onValueChange={(value) =>
+                          setPost({ ...post, category: value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((cat) => (
+                          {CATEGORIES.map((cat) => (
                             <SelectItem key={cat} value={cat}>
                               {cat}
                             </SelectItem>
@@ -427,8 +490,8 @@ export default function CreateBlogPostPage() {
                   <CardContent className="space-y-2 text-sm text-gray-700">
                     <p>• Write engaging titles that capture attention</p>
                     <p>• Use clear and concise language</p>
-                    <p>• Include examples and visuals when relevant</p>
-                    <p>• Proofread before publishing</p>
+                    <p>• Break long content into headings and sections</p>
+                    <p>• Add images and video links to make it dynamic</p>
                     <p>• Add appropriate XP rewards based on content length</p>
                   </CardContent>
                 </Card>
