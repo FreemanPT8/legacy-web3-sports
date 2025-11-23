@@ -73,7 +73,7 @@ export const ADMIN_TOGGLABLE_PERMISSIONS: PermissionKey[] = [
   'canManageSettings',
 ];
 
-// Defaults por role
+// Defaults por role (objeto de flags)
 const SUPER_ADMIN_PERMISSIONS: AdminPermissions = {
   canManageUsers: true,
   canManageHouses: true,
@@ -121,16 +121,15 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, AdminPermissions> = {
 
 /**
  * ⚙️ Permissões base de um role em formato de flags booleanas.
- * (interno, para lógica; não é o que o DTO da API espera)
+ * (para lógica interna, userHasPermission, etc.)
  */
 export function getRoleBasePermissions(role: UserRole): AdminPermissions {
   return DEFAULT_PERMISSIONS_BY_ROLE[role] ?? MEMBER_PERMISSIONS;
 }
 
 /**
- * ⚙️ Versão "legível" para a API de /admin/permissions:
- * devolve apenas as chaves ativas (PermissionKey[]).
- * (é isto que o DTO da API espera como basePermissions)
+ * ⚙️ Versão "chaves ativas" — devolve só os PermissionKey em que o role tem true.
+ * (isto é o que a API /admin/permissions vai usar como basePermissions)
  */
 export function getRolePermissions(role: UserRole): PermissionKey[] {
   const base = getRoleBasePermissions(role);
@@ -144,7 +143,7 @@ export function getDefaultPermissionsForRole(
   return getRoleBasePermissions(role);
 }
 
-// Estrutura esperada em admin_permissions
+// Estrutura esperada em admin_permissions (se usarmos colunas por-permissão no futuro)
 interface AdminPermissionsRow {
   id: string;
   user_id: string;
@@ -186,35 +185,8 @@ function mapRowToPermissions(
   };
 }
 
-// Helpers internos: camelCase → snake_case para guardar na BD
-function camelToSnake(key: PermissionKey): string {
-  switch (key) {
-    case 'canManageUsers':
-      return 'can_manage_users';
-    case 'canManageHouses':
-      return 'can_manage_houses';
-    case 'canManageHeads':
-      return 'can_manage_heads';
-    case 'canManageOnboarding':
-      return 'can_manage_onboarding';
-    case 'canManageCourses':
-      return 'can_manage_courses';
-    case 'canManageBlog':
-      return 'can_manage_blog';
-    case 'canManageForum':
-      return 'can_manage_forum';
-    case 'canManageXP':
-      return 'can_manage_xp';
-    case 'canManageAnalytics':
-      return 'can_manage_analytics';
-    case 'canManageSettings':
-      return 'can_manage_settings';
-    default:
-      return key;
-  }
-}
-
-// 🔹 Lê permissões efetivas de um utilizador (role + overrides da BD)
+// 🔹 Lê permissões efetivas de um utilizador (role + overrides da BD, se existirem)
+// Neste momento, se a tabela/admin columns não existirem, cai nos defaults e funciona.
 export async function getUserPermissions(
   userId: string,
   role: UserRole,
@@ -272,7 +244,43 @@ export async function updateUserPermissions(
       if (value === undefined) continue;
       const camelKey = key as PermissionKey;
       if (!PERMISSION_KEYS.includes(camelKey)) continue;
-      const col = camelToSnake(camelKey);
+
+      let col: string;
+      switch (camelKey) {
+        case 'canManageUsers':
+          col = 'can_manage_users';
+          break;
+        case 'canManageHouses':
+          col = 'can_manage_houses';
+          break;
+        case 'canManageHeads':
+          col = 'can_manage_heads';
+          break;
+        case 'canManageOnboarding':
+          col = 'can_manage_onboarding';
+          break;
+        case 'canManageCourses':
+          col = 'can_manage_courses';
+          break;
+        case 'canManageBlog':
+          col = 'can_manage_blog';
+          break;
+        case 'canManageForum':
+          col = 'can_manage_forum';
+          break;
+        case 'canManageXP':
+          col = 'can_manage_xp';
+          break;
+        case 'canManageAnalytics':
+          col = 'can_manage_analytics';
+          break;
+        case 'canManageSettings':
+          col = 'can_manage_settings';
+          break;
+        default:
+          col = camelKey;
+      }
+
       updatePayload[col] = !!value;
     }
 
