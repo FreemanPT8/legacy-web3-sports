@@ -19,15 +19,17 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+type UserRole = 'Super Admin' | 'Admin' | 'Member';
+
 type AdminUser = {
   id: string;
-  username: string;
+  username: string | null;
   full_name: string | null;
-  email: string;
-  role: 'Super Admin' | 'Admin' | 'Member' | string;
+  email: string | null;
+  role: UserRole | string;
   country: string | null;
   xp_total: number;
-  created_at: string;
+  created_at: string | null;
 };
 
 type SortKey =
@@ -202,8 +204,8 @@ export default function AdminUsersPage() {
           valB = b.email?.toLowerCase() ?? '';
           break;
         case 'role':
-          valA = a.role?.toLowerCase() ?? '';
-          valB = b.role?.toLowerCase() ?? '';
+          valA = (a.role || '').toString().toLowerCase();
+          valB = (b.role || '').toString().toLowerCase();
           break;
         case 'country':
           valA = a.country?.toLowerCase() ?? '';
@@ -242,13 +244,13 @@ export default function AdminUsersPage() {
     return { total, superAdmins, admins, members };
   }, [users]);
 
-  const canEditUsers = canManageUsers; // permissão fina
+  const canEditUsers = canManageUsers;
 
   // Atualizar role
   const handleChangeRole = async (
     userId: string,
-    newRole: 'Super Admin' | 'Admin' | 'Member',
-    currentRole: 'Super Admin' | 'Admin' | 'Member' | string,
+    newRole: UserRole,
+    currentRole: UserRole | string,
   ) => {
     if (!canEditUsers) {
       toast({
@@ -282,13 +284,13 @@ export default function AdminUsersPage() {
       setUpdatingUserId(userId);
       const token = getToken();
 
-      const res = await fetch('/api/admin/users', {
-        method: 'PATCH',
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ userId, role: newRole }),
+        body: JSON.stringify({ role: newRole }),
       });
 
       const data = await res.json();
@@ -323,7 +325,7 @@ export default function AdminUsersPage() {
   };
 
   // Apagar utilizador
-  const handleDeleteUser = async (userId: string, username: string) => {
+  const handleDeleteUser = async (userId: string, username: string | null) => {
     if (!canEditUsers) {
       toast({
         title: 'Not allowed',
@@ -352,7 +354,7 @@ export default function AdminUsersPage() {
     }
 
     const confirmation = window.prompt(
-      `Type "delete" to permanently remove user "${username}". This action cannot be undone.`,
+      `Type "delete" to permanently remove user "${username || userId}". This action cannot be undone.`,
     );
 
     if (confirmation !== 'delete') {
@@ -367,13 +369,12 @@ export default function AdminUsersPage() {
       setDeletingUserId(userId);
       const token = getToken();
 
-      const res = await fetch('/api/admin/users', {
+      const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ userId }),
       });
 
       const data = await res.json();
@@ -391,7 +392,7 @@ export default function AdminUsersPage() {
 
       toast({
         title: 'User deleted',
-        description: `User "${username}" has been removed.`,
+        description: `User "${username || userId}" has been removed.`,
       });
     } catch (err) {
       console.error('Error deleting user:', err);
@@ -416,7 +417,8 @@ export default function AdminUsersPage() {
     }
   };
 
-  const formatDate = (iso: string) => {
+  const formatDate = (iso: string | null) => {
+    if (!iso) return '-';
     try {
       return new Date(iso).toLocaleDateString();
     } catch {
@@ -646,7 +648,9 @@ export default function AdminUsersPage() {
                       filteredAndSortedUsers.map((u) => (
                         <tr key={u.id} className="hover:bg-gray-50">
                           <td className="px-4 py-2 font-medium">
-                            {u.username}
+                            {u.username || (
+                              <span className="text-gray-400">-</span>
+                            )}
                             {user?.id === u.id && (
                               <span className="ml-1 text-[10px] text-blue-500">
                                 (you)
@@ -658,7 +662,11 @@ export default function AdminUsersPage() {
                               <span className="text-gray-400">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-2">{u.email}</td>
+                          <td className="px-4 py-2">
+                            {u.email || (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
                           <td className="px-4 py-2">
                             <Badge variant={getRoleBadgeVariant(u.role)}>
                               {u.role}
@@ -679,20 +687,16 @@ export default function AdminUsersPage() {
                                 disabled={updatingUserId === u.id}
                                 value={
                                   (['Super Admin', 'Admin', 'Member'].includes(
-                                    u.role,
+                                    u.role as UserRole,
                                   )
                                     ? u.role
-                                    : 'Member') as 'Super Admin' | 'Admin' | 'Member'
+                                    : 'Member') as UserRole
                                 }
                                 onValueChange={(value) =>
                                   handleChangeRole(
                                     u.id,
-                                    value as 'Super Admin' | 'Admin' | 'Member',
-                                    u.role as
-                                      | 'Super Admin'
-                                      | 'Admin'
-                                      | 'Member'
-                                      | string,
+                                    value as UserRole,
+                                    u.role,
                                   )
                                 }
                               >
