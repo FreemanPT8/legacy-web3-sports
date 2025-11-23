@@ -60,7 +60,6 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
 };
 
 // 🔹 Que permissões é que um Super Admin pode atribuir a Admins via UI
-// (Podes ajustar este array se quiseres limitar algumas)
 export const ADMIN_TOGGLABLE_PERMISSIONS: PermissionKey[] = [
   'canManageUsers',
   'canManageHouses',
@@ -114,25 +113,35 @@ const MEMBER_PERMISSIONS: AdminPermissions = {
   canManageSettings: false,
 };
 
-export const DEFAULT_PERMISSIONS_BY_ROLE: Record<
-  UserRole,
-  AdminPermissions
-> = {
+export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, AdminPermissions> = {
   'Super Admin': SUPER_ADMIN_PERMISSIONS,
   Admin: ADMIN_DEFAULT_PERMISSIONS,
   Member: MEMBER_PERMISSIONS,
 };
 
-// 🔹 API simples para obter defaults de um role (usada por /api/admin/permissions)
-export function getRolePermissions(role: UserRole): AdminPermissions {
+/**
+ * ⚙️ Permissões base de um role em formato de flags booleanas.
+ * (interno, para lógica; não é o que o DTO da API espera)
+ */
+export function getRoleBasePermissions(role: UserRole): AdminPermissions {
   return DEFAULT_PERMISSIONS_BY_ROLE[role] ?? MEMBER_PERMISSIONS;
+}
+
+/**
+ * ⚙️ Versão "legível" para a API de /admin/permissions:
+ * devolve apenas as chaves ativas (PermissionKey[]).
+ * (é isto que o DTO da API espera como basePermissions)
+ */
+export function getRolePermissions(role: UserRole): PermissionKey[] {
+  const base = getRoleBasePermissions(role);
+  return PERMISSION_KEYS.filter((key) => base[key]);
 }
 
 // Mantemos este helper para compatibilidade
 export function getDefaultPermissionsForRole(
   role: UserRole,
 ): AdminPermissions {
-  return getRolePermissions(role);
+  return getRoleBasePermissions(role);
 }
 
 // Estrutura esperada em admin_permissions
@@ -151,12 +160,12 @@ interface AdminPermissionsRow {
   can_manage_settings: boolean | null;
 }
 
-// Converte row da BD + defaults do role em objeto AdminPermissions
+// Converte row da BD + defaults do role em objeto AdminPermissions (flags)
 function mapRowToPermissions(
   row: AdminPermissionsRow | null,
   role: UserRole,
 ): AdminPermissions {
-  const base = getRolePermissions(role);
+  const base = getRoleBasePermissions(role);
 
   if (!row) return { ...base };
 
@@ -212,7 +221,7 @@ export async function getUserPermissions(
 ): Promise<AdminPermissions> {
   // Se não houver supabaseAdmin (ex: falta env em dev), devolve defaults
   if (!supabaseAdmin) {
-    return getRolePermissions(role);
+    return getRoleBasePermissions(role);
   }
 
   // Super Admin tem sempre tudo sem precisar de ir à BD
@@ -231,7 +240,7 @@ export async function getUserPermissions(
 
     if (error) {
       console.error('Error loading admin_permissions for user:', error);
-      return getRolePermissions(role);
+      return getRoleBasePermissions(role);
     }
 
     return mapRowToPermissions(
@@ -240,7 +249,7 @@ export async function getUserPermissions(
     );
   } catch (err) {
     console.error('Unexpected error in getUserPermissions:', err);
-    return getRolePermissions(role);
+    return getRoleBasePermissions(role);
   }
 }
 
@@ -313,7 +322,7 @@ export async function userHasPermission(
   return !!perms[permission];
 }
 
-// 🔹 Helper usado no middleware: recebe o payload do JWT e verifica permissão
+// 🔹 Helper opcional (se quiseres passar o payload todo do JWT)
 export async function hasGlobalPermission(
   user: { userId: string; role: UserRole | string },
   permission: PermissionKey,
@@ -322,5 +331,5 @@ export async function hasGlobalPermission(
     user.role === 'Super Admin' || user.role === 'Admin'
       ? user.role
       : 'Member';
-  return userHasPermission(user.userId, role, permission as PermissionKey);
+  return userHasPermission(user.userId, role as UserRole, permission);
 }

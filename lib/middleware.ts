@@ -2,8 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractTokenFromHeader, JWTPayload } from './jwt';
 import { supabase } from './supabase';
-import type { Permission } from './permissions';
-import { hasGlobalPermission } from './permissions';
+import {
+  userHasPermission,
+  type PermissionKey,
+  type UserRole,
+} from './permissions';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: JWTPayload;
@@ -140,7 +143,8 @@ export async function requireAdmin(
 }
 
 /**
- * Helper opcional para extrair só o userId de um request.
+ * Helper opcional para extrair só o userId de um request,
+ * usado em algumas rotas.
  */
 export function getUserIdFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');
@@ -169,47 +173,31 @@ export function getUserIdFromRequest(request: NextRequest): string | null {
 }
 
 /**
- * requirePermission – verifica uma Permission concreta,
- * combinando o role + permissões extras guardadas em admin_permissions.
+ * Novo helper: exige uma permissão global específica.
+ * Exemplo de uso numa rota:
+ *
+ *  const permResult = await requirePermission(request, 'canManageUsers');
+ *  if (!permResult.success) return permResult.response!;
+ *  const user = permResult.user!;
  */
 export async function requirePermission(
   request: NextRequest,
-  permission: Permission,
+  permission: PermissionKey,
 ): Promise<{
   success: boolean;
   user?: JWTPayload;
   response?: NextResponse;
 }> {
-  const auth = await requireAuth(request);
+  const authResult = await requireAuth(request);
+  if (!authResult.success) return authResult;
 
-  if (!auth.success || !auth.user) {
-    return {
-      success: false,
-      response:
-        auth.response ??
-        NextResponse.json(
-          { success: false, error: 'Authentication required' },
-          { status: 401 },
-        ),
-    };
-  }
+  const user = authResult.user!;
+  const role =
+    user.role === 'Super Admin' || user.role === 'Admin'
+      ? (user.role as UserRole)
+      : ('Member' as UserRole);
 
-  const user = auth.user;
-
-  // Carregar permissões extra deste utilizador (se existirem)
-  let extraPermissions: Permission[] = [];
-
-  const { data: permRow, error } = await supabase
-    .from('admin_permissions')
-    .select('permissions')
-    .eq('user_id', user.userId)
-    .maybeSingle();
-
-  if (!error && permRow?.permissions) {
-    extraPermissions = permRow.permissions as Permission[];
-  }
-
-  const allowed = hasGlobalPermission(user.role, permission, extraPermissions);
+  const allowed = await userHasPermission(user.userId, role, permission);
 
   if (!allowed) {
     return {
