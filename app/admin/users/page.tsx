@@ -16,8 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import {
+  type PermissionKey,
+  ADMIN_TOGGLABLE_PERMISSIONS,
+  PERMISSION_LABELS,
+} from '@/lib/permissions';
 
 type UserRole = 'Super Admin' | 'Admin' | 'Member';
 
@@ -42,7 +48,26 @@ type SortKey =
   | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
+type RoleFilter = 'all' | 'Super Admin' | 'Admin' | 'Member';
+
 type PermissionsResponse = {
+  success: boolean;
+  error?: string;
+  userId?: string;
+  role?: UserRole;
+  permissions?: {
+    [K in PermissionKey]?: boolean;
+  };
+  editable?: boolean;
+};
+
+type PermissionsListResponse = {
+  success: boolean;
+  users?: AdminUser[];
+  error?: string;
+};
+
+type PermissionsSummaryResponse = {
   success: boolean;
   error?: string;
   permissions?: {
@@ -58,6 +83,7 @@ export default function AdminUsersPage() {
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -67,6 +93,17 @@ export default function AdminUsersPage() {
 
   const [canManageUsers, setCanManageUsers] = useState(false);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [selectedUserRole, setSelectedUserRole] = useState<UserRole | null>(
+    null,
+  );
+  const [selectedUserPermissions, setSelectedUserPermissions] = useState<
+    Partial<Record<PermissionKey, boolean>>
+  >({});
+  const [permissionsEditable, setPermissionsEditable] = useState(false);
+  const [loadingUserPermissions, setLoadingUserPermissions] = useState(false);
+  const [savingUserPermissions, setSavingUserPermissions] = useState(false);
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
@@ -86,7 +123,6 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (loading || !user) return;
 
-    // Super Admin tem sempre todas as permissões
     if (user.role === 'Super Admin') {
       setCanManageUsers(true);
       setPermissionsLoaded(true);
@@ -103,7 +139,7 @@ export default function AdminUsersPage() {
           },
         });
 
-        const data: PermissionsResponse = await res.json();
+        const data: PermissionsSummaryResponse = await res.json();
 
         if (!res.ok || !data.success || !data.permissions) {
           console.error('Error loading permissions for current user:', data);
@@ -137,7 +173,7 @@ export default function AdminUsersPage() {
           },
         });
 
-        const data = await res.json();
+        const data: PermissionsListResponse = await res.json();
 
         if (!res.ok || !data.success) {
           console.error('Error fetching admin users:', data);
@@ -184,6 +220,10 @@ export default function AdminUsersPage() {
           email.includes(term)
         );
       });
+    }
+
+    if (roleFilter !== 'all') {
+      list = list.filter((u) => u.role === roleFilter);
     }
 
     list.sort((a, b) => {
@@ -233,7 +273,7 @@ export default function AdminUsersPage() {
     });
 
     return list;
-  }, [users, search, sortKey, sortDirection]);
+  }, [users, search, roleFilter, sortKey, sortDirection]);
 
   const stats = useMemo(() => {
     const total = users.length;
@@ -245,6 +285,136 @@ export default function AdminUsersPage() {
   }, [users]);
 
   const canEditUsers = canManageUsers;
+
+  // Carregar permissões de um utilizador quando clicas no botão da linha
+  const handleOpenUserPermissions = async (userRow: AdminUser) => {
+    setSelectedUser(userRow);
+    setSelectedUserRole(
+      userRow.role === 'Super Admin' || userRow.role === 'Admin'
+        ? (userRow.role as UserRole)
+        : 'Member',
+    );
+    setSelectedUserPermissions({});
+    setPermissionsEditable(false);
+    setLoadingUserPermissions(true);
+
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/admin/users/${userRow.id}/permissions`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      const data: PermissionsResponse = await res.json();
+
+      if (!res.ok || !data.success || !data.permissions) {
+        console.error('Error loading user permissions:', data);
+        toast({
+          title: 'Error loading permissions',
+          description:
+            data.error || 'Could not load permissions for this user.',
+          variant: 'destructive',
+        });
+        setLoadingUserPermissions(false);
+        return;
+      }
+
+      setSelectedUserRole(data.role || null);
+
+      const perms: Partial<Record<PermissionKey, boolean>> = {};
+      for (const key of ADMIN_TOGGLABLE_PERMISSIONS) {
+        perms[key] = !!data.permissions[key];
+      }
+
+      setSelectedUserPermissions(perms);
+      setPermissionsEditable(!!data.editable);
+    } catch (err) {
+      console.error('Unexpected error fetching user permissions:', err);
+      toast({
+        title: 'Network error',
+        description: 'Could not load user permissions. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingUserPermissions(false);
+    }
+  };
+
+  const handleTogglePermission = (key: PermissionKey, value: boolean) => {
+    setSelectedUserPermissions((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleSaveUserPermissions = async () => {
+    if (!selectedUser || !selectedUserRole) return;
+
+    if (!canEditUsers || !isSuperAdmin) {
+      toast({
+        title: 'Not allowed',
+        description:
+          'Only Super Admins with user management permission can update extra permissions.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (selectedUserRole !== 'Admin') {
+      toast({
+        title: 'Not allowed',
+        description: 'Extra admin permissions can only be set for Admin users.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setSavingUserPermissions(true);
+      const token = getToken();
+
+      const res = await fetch(
+        `/api/admin/users/${selectedUser.id}/permissions`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            permissions: selectedUserPermissions,
+          }),
+        },
+      );
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast({
+          title: 'Error saving permissions',
+          description: data.error || 'Could not update user permissions.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Permissions updated',
+        description: 'User admin permissions have been updated successfully.',
+      });
+    } catch (err) {
+      console.error('Error updating user permissions:', err);
+      toast({
+        title: 'Network error',
+        description: 'Could not update permissions. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingUserPermissions(false);
+    }
+  };
 
   // Atualizar role
   const handleChangeRole = async (
@@ -308,6 +478,12 @@ export default function AdminUsersPage() {
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
       );
 
+      // Se estivermos a editar permissões deste user e mudamos role:
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser({ ...selectedUser, role: newRole });
+        setSelectedUserRole(newRole);
+      }
+
       toast({
         title: 'Role updated',
         description: 'User role has been updated successfully.',
@@ -354,7 +530,9 @@ export default function AdminUsersPage() {
     }
 
     const confirmation = window.prompt(
-      `Type "delete" to permanently remove user "${username || userId}". This action cannot be undone.`,
+      `Type "delete" to permanently remove user "${
+        username || userId
+      }". This action cannot be undone.`,
     );
 
     if (confirmation !== 'delete') {
@@ -389,6 +567,12 @@ export default function AdminUsersPage() {
       }
 
       setUsers((prev) => prev.filter((u) => u.id !== userId));
+
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser(null);
+        setSelectedUserRole(null);
+        setSelectedUserPermissions({});
+      }
 
       toast({
         title: 'User deleted',
@@ -524,25 +708,48 @@ export default function AdminUsersPage() {
                 View all platform users. Only admins with the{' '}
                 <strong>Manage Users</strong> permission can change roles or
                 delete users. Super Admin is required to manage{' '}
-                <strong>Super Admin</strong> roles.
+                <strong>Super Admin</strong> roles and extra admin permissions.
               </p>
             </CardHeader>
             <CardContent>
-              {/* SEARCH */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-                <Input
-                  placeholder="Search by username, name or email..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="max-w-md"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => setSearch('')}
-                  disabled={!search}
-                >
-                  Clear
-                </Button>
+              {/* SEARCH + ROLE FILTER */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder="Search by username, name or email..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="max-w-md"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => setSearch('')}
+                    disabled={!search}
+                  >
+                    Clear
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    Filter by role:
+                  </span>
+                  <Select
+                    value={roleFilter}
+                    onValueChange={(value) =>
+                      setRoleFilter(value as RoleFilter)
+                    }
+                  >
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="Super Admin">Super Admins</SelectItem>
+                      <SelectItem value="Admin">Admins</SelectItem>
+                      <SelectItem value="Member">Members</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* TABLE */}
@@ -617,6 +824,9 @@ export default function AdminUsersPage() {
                         Change Role
                       </th>
                       <th className="px-4 py-2 text-left font-semibold">
+                        Permissions
+                      </th>
+                      <th className="px-4 py-2 text-left font-semibold">
                         Actions
                       </th>
                     </tr>
@@ -625,7 +835,7 @@ export default function AdminUsersPage() {
                     {isLoadingUsers && (
                       <tr>
                         <td
-                          colSpan={9}
+                          colSpan={11}
                           className="px-4 py-6 text-center text-gray-500"
                         >
                           Loading users...
@@ -636,7 +846,7 @@ export default function AdminUsersPage() {
                     {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
                       <tr>
                         <td
-                          colSpan={9}
+                          colSpan={11}
                           className="px-4 py-6 text-center text-gray-500"
                         >
                           No users found.
@@ -718,6 +928,15 @@ export default function AdminUsersPage() {
                             )}
                           </td>
                           <td className="px-4 py-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenUserPermissions(u)}
+                            >
+                              View / Edit
+                            </Button>
+                          </td>
+                          <td className="px-4 py-2">
                             {canEditUsers && isSuperAdmin ? (
                               <Button
                                 variant="destructive"
@@ -740,6 +959,95 @@ export default function AdminUsersPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* PAINEL DE PERMISSÕES DO UTILIZADOR SELECIONADO */}
+              {selectedUser && (
+                <div className="mt-6 border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h2 className="text-lg font-semibold">
+                        Permissions for{' '}
+                        {selectedUser.username || selectedUser.email || 'user'}
+                      </h2>
+                      <p className="text-xs text-gray-500">
+                        Role:{' '}
+                        <span className="font-medium">
+                          {selectedUserRole || selectedUser.role}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUser(null);
+                          setSelectedUserRole(null);
+                          setSelectedUserPermissions({});
+                        }}
+                      >
+                        Close
+                      </Button>
+                      {permissionsEditable && canEditUsers && isSuperAdmin && (
+                        <Button
+                          size="sm"
+                          onClick={handleSaveUserPermissions}
+                          disabled={savingUserPermissions || loadingUserPermissions}
+                        >
+                          {savingUserPermissions ? 'Saving...' : 'Save'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {loadingUserPermissions ? (
+                    <p className="text-sm text-gray-500">Loading permissions...</p>
+                  ) : (
+                    <>
+                      {selectedUserRole === 'Super Admin' && (
+                        <p className="text-sm text-gray-500 mb-2">
+                          Super Admin already has all permissions. Extra overrides
+                          are not needed.
+                        </p>
+                      )}
+                      {selectedUserRole === 'Member' && (
+                        <p className="text-sm text-gray-500 mb-2">
+                          Members cannot have admin permissions. Change the role to{' '}
+                          <strong>Admin</strong> if you want to grant admin-level
+                          permissions.
+                        </p>
+                      )}
+                      {selectedUserRole === 'Admin' && (
+                        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                          {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
+                            <label
+                              key={key}
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              <Checkbox
+                                checked={!!selectedUserPermissions[key]}
+                                disabled={
+                                  !permissionsEditable ||
+                                  !canEditUsers ||
+                                  !isSuperAdmin ||
+                                  savingUserPermissions
+                                }
+                                onCheckedChange={(checked) =>
+                                  handleTogglePermission(
+                                    key,
+                                    Boolean(checked),
+                                  )
+                                }
+                              />
+                              <span>{PERMISSION_LABELS[key]}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
-import type { UserRole } from '@/lib/auth';
+import { userHasPermission, type UserRole } from '@/lib/permissions';
 
 interface RouteParams {
   params: { id: string };
@@ -21,6 +21,29 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   const currentUser = authResult.user!;
   const userId = params.id;
 
+  const currentRole: UserRole =
+    currentUser.role === 'Super Admin' || currentUser.role === 'Admin'
+      ? (currentUser.role as UserRole)
+      : 'Member';
+
+  // Só quem tem permissão de gestão + Super Admin pode mudar roles / banir
+  const canManage = await userHasPermission(
+    currentUser.userId,
+    currentRole,
+    'canManageUsers',
+  );
+
+  if (!canManage || currentRole !== 'Super Admin') {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          'Only Super Admins with user management permission can change roles or ban users.',
+      },
+      { status: 403 },
+    );
+  }
+
   try {
     const body = await request.json();
     const { role, is_banned } = body as {
@@ -31,25 +54,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (typeof role === 'undefined' && typeof is_banned === 'undefined') {
       return NextResponse.json(
         { success: false, error: 'Nothing to update.' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (role && !ALLOWED_ROLES.includes(role)) {
       return NextResponse.json(
         { success: false, error: 'Invalid role' },
-        { status: 400 }
-      );
-    }
-
-    // Só Super Admin pode alterar ROLE ou banir alguém
-    if (currentUser.role !== 'Super Admin') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Only Super Admins can change roles or ban users.',
-        },
-        { status: 403 }
+        { status: 400 },
       );
     }
 
@@ -60,7 +72,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           success: false,
           error: "You can't remove your own Super Admin role.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -76,18 +88,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (targetError) {
         console.error(
           'Supabase error loading target user in PUT /api/admin/users/[id]:',
-          targetError
+          targetError,
         );
         return NextResponse.json(
           { success: false, error: 'Error loading target user.' },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
       if (!targetUser) {
         return NextResponse.json(
           { success: false, error: 'User not found' },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -100,14 +112,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (superAdminsError) {
           console.error(
             'Supabase error counting Super Admins in PUT /api/admin/users/[id]:',
-            superAdminsError
+            superAdminsError,
           );
           return NextResponse.json(
             {
               success: false,
               error: 'Error checking number of Super Admins.',
             },
-            { status: 500 }
+            { status: 500 },
           );
         }
 
@@ -120,7 +132,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               error:
                 'Cannot change role: this is the last Super Admin in the system.',
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -139,7 +151,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (Object.keys(updateFields).length === 0) {
       return NextResponse.json(
         { success: false, error: 'Nothing to update.' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -157,14 +169,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           success: false,
           error: error.message || 'Failed to update user',
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (!data) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -176,12 +188,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         success: false,
         error: err?.message || 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-// DELETE user (apenas Super Admin)
+// DELETE user (apenas Super Admin com canManageUsers)
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const authResult = await requireAdmin(request);
 
@@ -192,10 +204,25 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const currentUser = authResult.user!;
   const userId = params.id;
 
-  if (currentUser.role !== 'Super Admin') {
+  const currentRole: UserRole =
+    currentUser.role === 'Super Admin' || currentUser.role === 'Admin'
+      ? (currentUser.role as UserRole)
+      : 'Member';
+
+  const canManage = await userHasPermission(
+    currentUser.userId,
+    currentRole,
+    'canManageUsers',
+  );
+
+  if (!canManage || currentRole !== 'Super Admin') {
     return NextResponse.json(
-      { success: false, error: 'Only Super Admins can delete users.' },
-      { status: 403 }
+      {
+        success: false,
+        error:
+          'Only Super Admins with user management permission can delete users.',
+      },
+      { status: 403 },
     );
   }
 
@@ -205,7 +232,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         success: false,
         error: "You can't delete your own account from the admin panel.",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -220,18 +247,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (targetError) {
       console.error(
         'Supabase error loading target user in DELETE /api/admin/users/[id]:',
-        targetError
+        targetError,
       );
       return NextResponse.json(
         { success: false, error: 'Error loading user.' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (!targetUser) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -246,11 +273,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       if (superAdminsError) {
         console.error(
           'Supabase error counting Super Admins in DELETE /api/admin/users/[id]:',
-          superAdminsError
+          superAdminsError,
         );
         return NextResponse.json(
           { success: false, error: 'Error checking Super Admins.' },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -263,7 +290,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             error:
               'Cannot delete this user: they are the last Super Admin in the system.',
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -277,7 +304,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           success: false,
           error: error.message || 'Failed to delete user',
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -289,7 +316,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         success: false,
         error: err?.message || 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
