@@ -1,3 +1,4 @@
+// app/admin/courses/create/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -9,18 +10,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
-
-interface Module {
-  id: string;
-  title: string;
-  description: string;
-  order: number;
-  lessons: Lesson[];
-}
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface Lesson {
   id: string;
@@ -32,8 +33,19 @@ interface Lesson {
   order: number;
 }
 
+interface Module {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  lessons: Lesson[];
+}
+
 export default function CreateCoursePage() {
   const router = useRouter();
+  const { getToken } = useAuth();
+  const { toast } = useToast();
+
   const [saving, setSaving] = useState(false);
   const [course, setCourse] = useState({
     title: { en: '', pt: '', es: '', fr: '', it: '', de: '' },
@@ -44,6 +56,15 @@ export default function CreateCoursePage() {
   });
   const [modules, setModules] = useState<Module[]>([]);
   const [currentLanguage, setCurrentLanguage] = useState('en');
+
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'pt', name: 'Português' },
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' },
+    { code: 'it', name: 'Italiano' },
+    { code: 'de', name: 'Deutsch' },
+  ];
 
   const addModule = () => {
     const newModule: Module = {
@@ -57,85 +78,114 @@ export default function CreateCoursePage() {
   };
 
   const removeModule = (moduleId: string) => {
-    setModules(modules.filter(m => m.id !== moduleId));
+    setModules(modules.filter((m) => m.id !== moduleId));
   };
 
-  const updateModule = (moduleId: string, field: string, value: string) => {
-    setModules(modules.map(m =>
-      m.id === moduleId ? { ...m, [field]: value } : m
-    ));
+  const updateModule = (moduleId: string, field: keyof Module, value: any) => {
+    setModules(
+      modules.map((m) =>
+        m.id === moduleId ? { ...m, [field]: value } : m,
+      ),
+    );
   };
 
   const addLesson = (moduleId: string) => {
-    setModules(modules.map(m => {
-      if (m.id === moduleId) {
-        const newLesson: Lesson = {
-          id: `temp-${Date.now()}`,
-          title: '',
-          description: '',
-          content: '',
-          duration_minutes: 10,
-          xp_reward: 20,
-          order: m.lessons.length + 1,
-        };
-        return { ...m, lessons: [...m.lessons, newLesson] };
-      }
-      return m;
-    }));
+    setModules(
+      modules.map((m) => {
+        if (m.id === moduleId) {
+          const newLesson: Lesson = {
+            id: `temp-${Date.now()}`,
+            title: '',
+            description: '',
+            content: '',
+            duration_minutes: 10,
+            xp_reward: 20,
+            order: m.lessons.length + 1,
+          };
+          return { ...m, lessons: [...m.lessons, newLesson] };
+        }
+        return m;
+      }),
+    );
   };
 
   const removeLesson = (moduleId: string, lessonId: string) => {
-    setModules(modules.map(m => {
-      if (m.id === moduleId) {
-        return { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) };
-      }
-      return m;
-    }));
+    setModules(
+      modules.map((m) => {
+        if (m.id === moduleId) {
+          return {
+            ...m,
+            lessons: m.lessons.filter((l) => l.id !== lessonId),
+          };
+        }
+        return m;
+      }),
+    );
   };
 
-  const updateLesson = (moduleId: string, lessonId: string, field: string, value: any) => {
-    setModules(modules.map(m => {
-      if (m.id === moduleId) {
-        return {
-          ...m,
-          lessons: m.lessons.map(l =>
-            l.id === lessonId ? { ...l, [field]: value } : l
-          ),
-        };
-      }
-      return m;
-    }));
+  const updateLesson = (
+    moduleId: string,
+    lessonId: string,
+    field: keyof Lesson,
+    value: any,
+  ) => {
+    setModules(
+      modules.map((m) => {
+        if (m.id === moduleId) {
+          return {
+            ...m,
+            lessons: m.lessons.map((l) =>
+              l.id === lessonId ? { ...l, [field]: value } : l,
+            ),
+          };
+        }
+        return m;
+      }),
+    );
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch('/api/admin/courses/create', {
+      const token = getToken();
+
+      const response = await fetch('/api/admin/courses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ course, modules }),
       });
 
-      if (response.ok) {
-        router.push('/admin/courses');
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error('Failed to save course:', data);
+        toast({
+          title: 'Error saving course',
+          description: data.error || 'Failed to create course.',
+          variant: 'destructive',
+        });
+        setSaving(false);
+        return;
       }
+
+      toast({
+        title: 'Course created',
+        description: 'The course has been created successfully.',
+      });
+      router.push('/admin/courses');
     } catch (error) {
       console.error('Failed to save course:', error);
+      toast({
+        title: 'Network error',
+        description: 'Could not save course. Please try again.',
+        variant: 'destructive',
+      });
+      setSaving(false);
     }
-    setSaving(false);
   };
-
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'pt', name: 'Português' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'it', name: 'Italiano' },
-    { code: 'de', name: 'Deutsch' },
-  ];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -164,16 +214,20 @@ export default function CreateCoursePage() {
               </Button>
             </div>
 
+            {/* COURSE INFO */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Course Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex gap-2">
-                  {languages.map(lang => (
+                {/* Language tabs */}
+                <div className="flex gap-2 flex-wrap">
+                  {languages.map((lang) => (
                     <Badge
                       key={lang.code}
-                      variant={currentLanguage === lang.code ? 'default' : 'outline'}
+                      variant={
+                        currentLanguage === lang.code ? 'default' : 'outline'
+                      }
                       className="cursor-pointer"
                       onClick={() => setCurrentLanguage(lang.code)}
                     >
@@ -182,27 +236,62 @@ export default function CreateCoursePage() {
                   ))}
                 </div>
 
+                {/* Title & description */}
                 <div className="space-y-4">
                   <div>
-                    <Label>Title ({languages.find(l => l.code === currentLanguage)?.name})</Label>
+                    <Label>
+                      Title (
+                      {
+                        languages.find(
+                          (l) => l.code === currentLanguage,
+                        )?.name
+                      }
+                      )
+                    </Label>
                     <Input
-                      value={course.title[currentLanguage as keyof typeof course.title]}
-                      onChange={(e) => setCourse({
-                        ...course,
-                        title: { ...course.title, [currentLanguage]: e.target.value }
-                      })}
+                      value={
+                        course.title[
+                          currentLanguage as keyof typeof course.title
+                        ]
+                      }
+                      onChange={(e) =>
+                        setCourse({
+                          ...course,
+                          title: {
+                            ...course.title,
+                            [currentLanguage]: e.target.value,
+                          },
+                        })
+                      }
                       placeholder="Enter course title"
                     />
                   </div>
 
                   <div>
-                    <Label>Description ({languages.find(l => l.code === currentLanguage)?.name})</Label>
+                    <Label>
+                      Description (
+                      {
+                        languages.find(
+                          (l) => l.code === currentLanguage,
+                        )?.name
+                      }
+                      )
+                    </Label>
                     <Textarea
-                      value={course.description[currentLanguage as keyof typeof course.description]}
-                      onChange={(e) => setCourse({
-                        ...course,
-                        description: { ...course.description, [currentLanguage]: e.target.value }
-                      })}
+                      value={
+                        course.description[
+                          currentLanguage as keyof typeof course.description
+                        ]
+                      }
+                      onChange={(e) =>
+                        setCourse({
+                          ...course,
+                          description: {
+                            ...course.description,
+                            [currentLanguage]: e.target.value,
+                          },
+                        })
+                      }
                       placeholder="Enter course description"
                       rows={4}
                     />
@@ -212,13 +301,20 @@ export default function CreateCoursePage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>Level</Label>
-                    <Select value={course.level} onValueChange={(value) => setCourse({ ...course, level: value })}>
+                    <Select
+                      value={course.level}
+                      onValueChange={(value) =>
+                        setCourse({ ...course, level: value })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
+                        <SelectItem value="intermediate">
+                          Intermediate
+                        </SelectItem>
                         <SelectItem value="advanced">Advanced</SelectItem>
                       </SelectContent>
                     </Select>
@@ -229,7 +325,12 @@ export default function CreateCoursePage() {
                     <Input
                       type="number"
                       value={course.xp_required}
-                      onChange={(e) => setCourse({ ...course, xp_required: parseInt(e.target.value) || 0 })}
+                      onChange={(e) =>
+                        setCourse({
+                          ...course,
+                          xp_required: parseInt(e.target.value) || 0,
+                        })
+                      }
                       placeholder="0"
                     />
                   </div>
@@ -237,6 +338,7 @@ export default function CreateCoursePage() {
               </CardContent>
             </Card>
 
+            {/* MODULES & LESSONS */}
             <Card className="mb-6">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -250,14 +352,17 @@ export default function CreateCoursePage() {
               <CardContent className="space-y-6">
                 {modules.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No modules yet. Click "Add Module" to get started.
+                    No modules yet. Click &quot;Add Module&quot; to get
+                    started.
                   </div>
                 ) : (
                   modules.map((module, moduleIndex) => (
                     <Card key={module.id} className="border-2">
                       <CardHeader className="bg-gray-50">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">Module {moduleIndex + 1}</CardTitle>
+                          <CardTitle className="text-lg">
+                            Module {moduleIndex + 1}
+                          </CardTitle>
                           <div className="flex gap-2">
                             <Button
                               onClick={() => addLesson(module.id)}
@@ -282,7 +387,13 @@ export default function CreateCoursePage() {
                           <Label>Module Title</Label>
                           <Input
                             value={module.title}
-                            onChange={(e) => updateModule(module.id, 'title', e.target.value)}
+                            onChange={(e) =>
+                              updateModule(
+                                module.id,
+                                'title',
+                                e.target.value,
+                              )
+                            }
                             placeholder="Enter module title"
                           />
                         </div>
@@ -291,7 +402,13 @@ export default function CreateCoursePage() {
                           <Label>Module Description</Label>
                           <Textarea
                             value={module.description}
-                            onChange={(e) => updateModule(module.id, 'description', e.target.value)}
+                            onChange={(e) =>
+                              updateModule(
+                                module.id,
+                                'description',
+                                e.target.value,
+                              )
+                            }
                             placeholder="Enter module description"
                             rows={2}
                           />
@@ -300,61 +417,116 @@ export default function CreateCoursePage() {
                         {module.lessons.length > 0 && (
                           <div className="space-y-3 pt-4 border-t">
                             <h4 className="font-semibold">Lessons</h4>
-                            {module.lessons.map((lesson, lessonIndex) => (
-                              <Card key={lesson.id} className="bg-blue-50">
-                                <CardContent className="p-4 space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <h5 className="font-medium">Lesson {lessonIndex + 1}</h5>
-                                    <Button
-                                      onClick={() => removeLesson(module.id, lesson.id)}
-                                      size="sm"
-                                      variant="ghost"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-
-                                  <Input
-                                    value={lesson.title}
-                                    onChange={(e) => updateLesson(module.id, lesson.id, 'title', e.target.value)}
-                                    placeholder="Lesson title"
-                                  />
-
-                                  <Textarea
-                                    value={lesson.description}
-                                    onChange={(e) => updateLesson(module.id, lesson.id, 'description', e.target.value)}
-                                    placeholder="Lesson description"
-                                    rows={2}
-                                  />
-
-                                  <Textarea
-                                    value={lesson.content}
-                                    onChange={(e) => updateLesson(module.id, lesson.id, 'content', e.target.value)}
-                                    placeholder="Lesson content (HTML supported)"
-                                    rows={4}
-                                  />
-
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                      <Label className="text-xs">Duration (minutes)</Label>
-                                      <Input
-                                        type="number"
-                                        value={lesson.duration_minutes}
-                                        onChange={(e) => updateLesson(module.id, lesson.id, 'duration_minutes', parseInt(e.target.value) || 0)}
-                                      />
+                            {module.lessons.map(
+                              (lesson, lessonIndex) => (
+                                <Card
+                                  key={lesson.id}
+                                  className="bg-blue-50"
+                                >
+                                  <CardContent className="p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="font-medium">
+                                        Lesson {lessonIndex + 1}
+                                      </h5>
+                                      <Button
+                                        onClick={() =>
+                                          removeLesson(
+                                            module.id,
+                                            lesson.id,
+                                          )
+                                        }
+                                        size="sm"
+                                        variant="ghost"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     </div>
-                                    <div>
-                                      <Label className="text-xs">XP Reward</Label>
-                                      <Input
-                                        type="number"
-                                        value={lesson.xp_reward}
-                                        onChange={(e) => updateLesson(module.id, lesson.id, 'xp_reward', parseInt(e.target.value) || 0)}
-                                      />
+
+                                    <Input
+                                      value={lesson.title}
+                                      onChange={(e) =>
+                                        updateLesson(
+                                          module.id,
+                                          lesson.id,
+                                          'title',
+                                          e.target.value,
+                                        )
+                                      }
+                                      placeholder="Lesson title"
+                                    />
+
+                                    <Textarea
+                                      value={lesson.description}
+                                      onChange={(e) =>
+                                        updateLesson(
+                                          module.id,
+                                          lesson.id,
+                                          'description',
+                                          e.target.value,
+                                        )
+                                      }
+                                      placeholder="Lesson description"
+                                      rows={2}
+                                    />
+
+                                    <Textarea
+                                      value={lesson.content}
+                                      onChange={(e) =>
+                                        updateLesson(
+                                          module.id,
+                                          lesson.id,
+                                          'content',
+                                          e.target.value,
+                                        )
+                                      }
+                                      placeholder="Lesson content (HTML supported)"
+                                      rows={4}
+                                    />
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div>
+                                        <Label className="text-xs">
+                                          Duration (minutes)
+                                        </Label>
+                                        <Input
+                                          type="number"
+                                          value={lesson.duration_minutes}
+                                          onChange={(e) =>
+                                            updateLesson(
+                                              module.id,
+                                              lesson.id,
+                                              'duration_minutes',
+                                              parseInt(
+                                                e.target.value,
+                                              ) || 0,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs">
+                                          XP Reward
+                                        </Label>
+                                        <Input
+                                          type="number"
+                                          value={lesson.xp_reward}
+                                          onChange={(e) =>
+                                            updateLesson(
+                                              module.id,
+                                              lesson.id,
+                                              'xp_reward',
+                                              parseInt(
+                                                e.target.value,
+                                              ) || 0,
+                                            )
+                                          }
+                                        />
+                                      </div>
                                     </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
+                                  </CardContent>
+                                </Card>
+                              ),
+                            )}
                           </div>
                         )}
                       </CardContent>
