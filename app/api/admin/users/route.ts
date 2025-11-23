@@ -2,9 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
-import { userHasPermission } from '@/lib/permissions';
-
-type UserRole = 'Super Admin' | 'Admin' | 'Member';
+import { userHasPermission, type UserRole } from '@/lib/permissions';
 
 interface UserRow {
   id: string;
@@ -37,19 +35,30 @@ interface PatchResponse {
   error?: string;
 }
 
-interface DeleteResponse {
-  success: boolean;
-  error?: string;
-}
-
 // Apenas roles válidos
 const VALID_ROLES: UserRole[] = ['Super Admin', 'Admin', 'Member'];
 
 // GET /api/admin/users
-// Lista todos os utilizadores (Admin / Super Admin)
+// Lista todos os utilizadores (apenas para quem tem permissão canManageUsers)
 export async function GET(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
+
+  const currentUser = authResult.user!;
+  const role = (currentUser.role || 'Member') as UserRole;
+
+  const canManage = await userHasPermission(
+    currentUser.userId,
+    role,
+    'canManageUsers'
+  );
+
+  if (!canManage) {
+    return NextResponse.json<ListResponse>(
+      { success: false, error: 'You do not have permission to view users.' },
+      { status: 403 }
+    );
+  }
 
   try {
     const { searchParams } = new URL(request.url);
@@ -58,7 +67,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('users')
       .select(
-        'id, username, full_name, email, role, country, xp_total, created_at',
+        'id, username, full_name, email, role, country, xp_total, created_at'
       )
       .order('created_at', { ascending: false });
 
@@ -66,7 +75,7 @@ export async function GET(request: NextRequest) {
       console.error('Supabase error in GET /api/admin/users:', error);
       return NextResponse.json<ListResponse>(
         { success: false, error: 'Error loading users.' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -101,13 +110,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json<ListResponse>(
       { success: true, users },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (err) {
     console.error('Unexpected error in GET /api/admin/users:', err);
     return NextResponse.json<ListResponse>(
       { success: false, error: 'Unexpected error loading users.' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -119,18 +128,23 @@ export async function PATCH(request: NextRequest) {
   if (!authResult.success) return authResult.response!;
 
   const currentUser = authResult.user!;
+  const role = (currentUser.role || 'Member') as UserRole;
 
-  // Tem de ter permissão de gestão de utilizadores
+  // Só Super Admin (com permissão) pode mudar roles
   const canManage = await userHasPermission(
     currentUser.userId,
-    currentUser.role,
-    'canManageUsers',
+    role,
+    'canManageUsers'
   );
 
-  if (!canManage) {
+  if (!canManage || role !== 'Super Admin') {
     return NextResponse.json<PatchResponse>(
-      { success: false, error: 'Permission denied: cannot manage users.' },
-      { status: 403 },
+      {
+        success: false,
+        error:
+          'Only Super Admins with user management permission can update roles.',
+      },
+      { status: 403 }
     );
   }
 
@@ -139,95 +153,69 @@ export async function PATCH(request: NextRequest) {
       userId?: string;
       role?: UserRole;
     };
-    const { userId, role } = body;
+    const { userId, role: newRole } = body;
 
-    if (!userId || !role) {
+    if (!userId || !newRole) {
       return NextResponse.json<PatchResponse>(
         { success: false, error: 'userId and role are required.' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    if (!VALID_ROLES.includes(role)) {
+    if (!VALID_ROLES.includes(newRole)) {
       return NextResponse.json<PatchResponse>(
         { success: false, error: 'Invalid role value.' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    // Não pode alterar o próprio papel
-    if (userId === currentUser.userId) {
-      return NextResponse.json<PatchResponse>(
-        {
-          success: false,
-          error: "You can't change your own role.",
-        },
-        { status: 400 },
-      );
-    }
-
-    // Obter utilizador alvo
-    const { data: targetUser, error: targetError } = await supabaseAdmin
+    // Garantir que não ficamos sem nenhum Super Admin
+    // 1) Obter o utilizador atual
+    const { data: currentUserRow, error: currentUserError } = await supabaseAdmin
       .from('users')
       .select('id, role')
       .eq('id', userId)
       .maybeSingle();
 
-    if (targetError) {
+    if (currentUserError) {
       console.error(
         'Supabase error loading current user in PATCH /api/admin/users:',
-        targetError,
+        currentUserError
       );
       return NextResponse.json<PatchResponse>(
-        { success: false, error: 'Error loading user.' },
-        { status: 500 },
+        { success: false, error: 'Error loading current user.' },
+        { status: 500 }
       );
     }
 
-    if (!targetUser) {
+    if (!currentUserRow) {
       return NextResponse.json<PatchResponse>(
         { success: false, error: 'User not found.' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    const currentRole = targetUser.role as UserRole | null;
-    const isCurrentSuperAdmin = currentUser.role === 'Super Admin';
+    const currentRole = currentUserRow.role as UserRole | null;
 
-    // Apenas Super Admin pode mexer em papéis de Super Admin
-    if (
-      (!isCurrentSuperAdmin && currentRole === 'Super Admin') ||
-      (!isCurrentSuperAdmin && role === 'Super Admin')
-    ) {
-      return NextResponse.json<PatchResponse>(
-        {
-          success: false,
-          error: 'Only Super Admin can change Super Admin roles.',
-        },
-        { status: 403 },
-      );
-    }
-
-    // Se estamos a tirar o papel de Super Admin, garantir que não é o último
-    if (currentRole === 'Super Admin' && role !== 'Super Admin') {
+    // Se estamos a tirar o papel de Super Admin
+    if (currentRole === 'Super Admin' && newRole !== 'Super Admin') {
+      // Ver quantos Super Admin existem
       const { data: superAdmins, error: superAdminsError } =
-        await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('role', 'Super Admin');
+        await supabaseAdmin.from('users').select('id').eq('role', 'Super Admin');
 
       if (superAdminsError) {
         console.error(
           'Supabase error counting Super Admins in PATCH /api/admin/users:',
-          superAdminsError,
+          superAdminsError
         );
         return NextResponse.json<PatchResponse>(
           { success: false, error: 'Error checking Super Admins.' },
-          { status: 500 },
+          { status: 500 }
         );
       }
 
       const count = (superAdmins || []).length;
+
       if (count <= 1) {
         return NextResponse.json<PatchResponse>(
           {
@@ -235,7 +223,7 @@ export async function PATCH(request: NextRequest) {
             error:
               'Cannot change role: this is the last Super Admin in the system.',
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -243,170 +231,26 @@ export async function PATCH(request: NextRequest) {
     // Atualizar role
     const { error: updateError } = await supabaseAdmin
       .from('users')
-      .update({ role })
+      .update({ role: newRole })
       .eq('id', userId);
 
     if (updateError) {
       console.error(
         'Supabase error updating role in PATCH /api/admin/users:',
-        updateError,
+        updateError
       );
       return NextResponse.json<PatchResponse>(
         { success: false, error: 'Error updating user role.' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
-    return NextResponse.json<PatchResponse>(
-      { success: true },
-      { status: 200 },
-    );
+    return NextResponse.json<PatchResponse>({ success: true }, { status: 200 });
   } catch (err) {
     console.error('Unexpected error in PATCH /api/admin/users:', err);
     return NextResponse.json<PatchResponse>(
       { success: false, error: 'Unexpected error updating user role.' },
-      { status: 500 },
-    );
-  }
-}
-
-// DELETE /api/admin/users
-// body: { userId: string }
-export async function DELETE(request: NextRequest) {
-  const authResult = await requireAdmin(request);
-  if (!authResult.success) return authResult.response!;
-
-  const currentUser = authResult.user!;
-
-  // Tem de ter permissão de gestão de utilizadores
-  const canManage = await userHasPermission(
-    currentUser.userId,
-    currentUser.role,
-    'canManageUsers',
-  );
-
-  if (!canManage) {
-    return NextResponse.json<DeleteResponse>(
-      { success: false, error: 'Permission denied: cannot manage users.' },
-      { status: 403 },
-    );
-  }
-
-  // Apenas Super Admin pode apagar utilizadores
-  if (currentUser.role !== 'Super Admin') {
-    return NextResponse.json<DeleteResponse>(
-      {
-        success: false,
-        error: 'Only Super Admin can delete users.',
-      },
-      { status: 403 },
-    );
-  }
-
-  try {
-    const body = (await request.json().catch(() => ({} as any))) as {
-      userId?: string;
-    };
-    const { userId } = body;
-
-    if (!userId) {
-      return NextResponse.json<DeleteResponse>(
-        { success: false, error: 'userId is required.' },
-        { status: 400 },
-      );
-    }
-
-    if (userId === currentUser.userId) {
-      return NextResponse.json<DeleteResponse>(
-        {
-          success: false,
-          error: "You can't delete your own account from here.",
-        },
-        { status: 400 },
-      );
-    }
-
-    // Ver se o alvo é Super Admin
-    const { data: targetUser, error: targetError } = await supabaseAdmin
-      .from('users')
-      .select('id, role')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (targetError) {
-      console.error(
-        'Supabase error loading user in DELETE /api/admin/users:',
-        targetError,
-      );
-      return NextResponse.json<DeleteResponse>(
-        { success: false, error: 'Error loading user.' },
-        { status: 500 },
-      );
-    }
-
-    if (!targetUser) {
-      return NextResponse.json<DeleteResponse>(
-        { success: false, error: 'User not found.' },
-        { status: 404 },
-      );
-    }
-
-    const targetRole = targetUser.role as UserRole | null;
-
-    if (targetRole === 'Super Admin') {
-      // Garantir que não apagamos o último Super Admin
-      const { data: superAdmins, error: superAdminsError } =
-        await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('role', 'Super Admin');
-
-      if (superAdminsError) {
-        console.error(
-          'Supabase error counting Super Admins in DELETE /api/admin/users:',
-          superAdminsError,
-        );
-        return NextResponse.json<DeleteResponse>(
-          { success: false, error: 'Error checking Super Admins.' },
-          { status: 500 },
-        );
-      }
-
-      const count = (superAdmins || []).length;
-      if (count <= 1) {
-        return NextResponse.json<DeleteResponse>(
-          {
-            success: false,
-            error:
-              'Cannot delete this user: this is the last Super Admin in the system.',
-          },
-          { status: 400 },
-        );
-      }
-    }
-
-    const { error: deleteError } = await supabaseAdmin
-      .from('users')
-      .delete()
-      .eq('id', userId);
-
-    if (deleteError) {
-      console.error(
-        'Supabase error deleting user in DELETE /api/admin/users:',
-        deleteError,
-      );
-      return NextResponse.json<DeleteResponse>(
-        { success: false, error: 'Error deleting user.' },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json<DeleteResponse>({ success: true }, { status: 200 });
-  } catch (err) {
-    console.error('Unexpected error in DELETE /api/admin/users:', err);
-    return NextResponse.json<DeleteResponse>(
-      { success: false, error: 'Unexpected error deleting user.' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
