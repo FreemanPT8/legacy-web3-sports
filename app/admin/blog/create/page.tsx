@@ -1,12 +1,11 @@
-// app/admin/blog/create/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,12 +20,21 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Save, Eye } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+type PermissionsResponse = {
+  success: boolean;
+  error?: string;
+  permissions?: {
+    canManageBlog?: boolean;
+    [key: string]: any;
+  };
+};
 
 export default function CreateBlogPostPage() {
   const router = useRouter();
-  const { user, getToken } = useAuth();
+  const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
   const [saving, setSaving] = useState(false);
@@ -37,11 +45,117 @@ export default function CreateBlogPostPage() {
     category: 'Blockchain',
     reading_time: 5,
     xp_reward: 15,
-    xp_required: 0,
+    xp_threshold: 0,
     published: false,
     registered_only: false,
   });
   const [currentLanguage, setCurrentLanguage] = useState('en');
+
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [canManageBlog, setCanManageBlog] = useState(false);
+
+  // Proteção básica
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (user.role !== 'Super Admin' && user.role !== 'Admin') {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+  // Verificar permissões
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (user.role === 'Super Admin') {
+      setCanManageBlog(true);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const fetchPermissions = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/admin/permissions', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data: PermissionsResponse = await res.json();
+
+        if (!res.ok || !data.success || !data.permissions) {
+          console.error('Error loading permissions for current user:', data);
+          setCanManageBlog(false);
+          setPermissionsLoaded(true);
+          return;
+        }
+
+        setCanManageBlog(!!data.permissions.canManageBlog);
+        setPermissionsLoaded(true);
+      } catch (err) {
+        console.error('Unexpected error fetching permissions:', err);
+        setCanManageBlog(false);
+        setPermissionsLoaded(true);
+      }
+    };
+
+    fetchPermissions();
+  }, [user, loading, getToken]);
+
+  const handleSave = async (publish: boolean = false) => {
+    if (!user || !canManageBlog) {
+      toast({
+        title: 'Not allowed',
+        description: 'You do not have permission to manage blog posts.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = getToken();
+      const response = await fetch('/api/admin/blog/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          ...post,
+          published: publish,
+          author_id: user.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast({
+          title: 'Error saving blog post',
+          description: data.error || 'Failed to save blog post.',
+          variant: 'destructive',
+        });
+        setSaving(false);
+        return;
+      }
+
+      router.push('/admin/blog');
+    } catch (error) {
+      console.error('Failed to save blog post:', error);
+      toast({
+        title: 'Network error',
+        description: 'Could not save blog post. Please try again.',
+        variant: 'destructive',
+      });
+    }
+    setSaving(false);
+  };
 
   const languages = [
     { code: 'en', name: 'English' },
@@ -63,54 +177,38 @@ export default function CreateBlogPostPage() {
     'Community',
   ];
 
-  const handleSave = async (publish: boolean = false) => {
-    if (!user) return;
+  if (loading || !user || (user.role !== 'Super Admin' && user.role !== 'Admin') || !permissionsLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-    setSaving(true);
-    try {
-      const token = getToken();
-
-      const response = await fetch('/api/admin/blog/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          ...post,
-          published: publish,
-          author_id: user.id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        console.error('Failed to save blog post:', data);
-        toast({
-          title: 'Error saving post',
-          description: data.error || 'Failed to create blog post.',
-          variant: 'destructive',
-        });
-        setSaving(false);
-        return;
-      }
-
-      toast({
-        title: publish ? 'Post published' : 'Draft saved',
-        description: 'The blog post has been saved successfully.',
-      });
-      router.push('/admin/blog');
-    } catch (error) {
-      console.error('Failed to save blog post:', error);
-      toast({
-        title: 'Network error',
-        description: 'Could not save blog post. Please try again.',
-        variant: 'destructive',
-      });
-      setSaving(false);
-    }
-  };
+  if (!canManageBlog) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">No permission</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              You don&apos;t have permission to create or edit blog posts. Please contact a Super Admin if you think
+              this is a mistake.
+            </p>
+            <Link href="/admin/blog">
+              <Button variant="outline">Back to blog</Button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -134,6 +232,7 @@ export default function CreateBlogPostPage() {
                   onClick={() => handleSave(false)}
                   disabled={saving}
                   variant="outline"
+                  className="disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Save Draft
@@ -141,7 +240,7 @@ export default function CreateBlogPostPage() {
                 <Button
                   onClick={() => handleSave(true)}
                   disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   {saving ? 'Publishing...' : 'Publish'}
@@ -150,7 +249,6 @@ export default function CreateBlogPostPage() {
             </div>
 
             <div className="grid lg:grid-cols-3 gap-6">
-              {/* LEFT: CONTENT */}
               <div className="lg:col-span-2 space-y-6">
                 <Card>
                   <CardHeader>
@@ -161,11 +259,7 @@ export default function CreateBlogPostPage() {
                       {languages.map((lang) => (
                         <Badge
                           key={lang.code}
-                          variant={
-                            currentLanguage === lang.code
-                              ? 'default'
-                              : 'outline'
-                          }
+                          variant={currentLanguage === lang.code ? 'default' : 'outline'}
                           className="cursor-pointer"
                           onClick={() => setCurrentLanguage(lang.code)}
                         >
@@ -176,27 +270,14 @@ export default function CreateBlogPostPage() {
 
                     <div>
                       <Label>
-                        Title (
-                        {
-                          languages.find(
-                            (l) => l.code === currentLanguage,
-                          )?.name
-                        }
-                        )
+                        Title ({languages.find((l) => l.code === currentLanguage)?.name})
                       </Label>
                       <Input
-                        value={
-                          post.title[
-                            currentLanguage as keyof typeof post.title
-                          ]
-                        }
+                        value={post.title[currentLanguage as keyof typeof post.title]}
                         onChange={(e) =>
                           setPost({
                             ...post,
-                            title: {
-                              ...post.title,
-                              [currentLanguage]: e.target.value,
-                            },
+                            title: { ...post.title, [currentLanguage]: e.target.value },
                           })
                         }
                         placeholder="Enter post title"
@@ -206,27 +287,14 @@ export default function CreateBlogPostPage() {
 
                     <div>
                       <Label>
-                        Excerpt (
-                        {
-                          languages.find(
-                            (l) => l.code === currentLanguage,
-                          )?.name
-                        }
-                        )
+                        Excerpt ({languages.find((l) => l.code === currentLanguage)?.name})
                       </Label>
                       <Textarea
-                        value={
-                          post.excerpt[
-                            currentLanguage as keyof typeof post.excerpt
-                          ]
-                        }
+                        value={post.excerpt[currentLanguage as keyof typeof post.excerpt]}
                         onChange={(e) =>
                           setPost({
                             ...post,
-                            excerpt: {
-                              ...post.excerpt,
-                              [currentLanguage]: e.target.value,
-                            },
+                            excerpt: { ...post.excerpt, [currentLanguage]: e.target.value },
                           })
                         }
                         placeholder="Brief summary of the post"
@@ -236,27 +304,14 @@ export default function CreateBlogPostPage() {
 
                     <div>
                       <Label>
-                        Content (
-                        {
-                          languages.find(
-                            (l) => l.code === currentLanguage,
-                          )?.name
-                        }
-                        )
+                        Content ({languages.find((l) => l.code === currentLanguage)?.name})
                       </Label>
                       <Textarea
-                        value={
-                          post.content[
-                            currentLanguage as keyof typeof post.content
-                          ]
-                        }
+                        value={post.content[currentLanguage as keyof typeof post.content]}
                         onChange={(e) =>
                           setPost({
                             ...post,
-                            content: {
-                              ...post.content,
-                              [currentLanguage]: e.target.value,
-                            },
+                            content: { ...post.content, [currentLanguage]: e.target.value },
                           })
                         }
                         placeholder="Write your post content here (HTML supported)"
@@ -264,14 +319,13 @@ export default function CreateBlogPostPage() {
                         className="font-mono text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        You can use HTML tags for formatting.
+                        You can use HTML tags for formatting
                       </p>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* RIGHT: SETTINGS */}
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -282,9 +336,7 @@ export default function CreateBlogPostPage() {
                       <Label>Category</Label>
                       <Select
                         value={post.category}
-                        onValueChange={(value) =>
-                          setPost({ ...post, category: value })
-                        }
+                        onValueChange={(value) => setPost({ ...post, category: value })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -307,8 +359,7 @@ export default function CreateBlogPostPage() {
                         onChange={(e) =>
                           setPost({
                             ...post,
-                            reading_time:
-                              parseInt(e.target.value) || 0,
+                            reading_time: parseInt(e.target.value) || 0,
                           })
                         }
                         min={1}
@@ -324,8 +375,7 @@ export default function CreateBlogPostPage() {
                         onChange={(e) =>
                           setPost({
                             ...post,
-                            xp_reward:
-                              parseInt(e.target.value) || 0,
+                            xp_reward: parseInt(e.target.value) || 0,
                           })
                         }
                         min={5}
@@ -334,37 +384,21 @@ export default function CreateBlogPostPage() {
                     </div>
 
                     <div>
-                      <Label>Minimum XP Required to Read</Label>
+                      <Label>XP Required to Unlock</Label>
                       <Input
                         type="number"
-                        value={post.xp_required}
+                        value={post.xp_threshold}
                         onChange={(e) =>
                           setPost({
                             ...post,
-                            xp_required:
-                              parseInt(e.target.value) || 0,
+                            xp_threshold: parseInt(e.target.value) || 0,
                           })
                         }
                         min={0}
-                        max={100000}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Users need at least this amount of XP to access
-                        the article (when logged in).
-                      </p>
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t">
-                      <Label>Only for registered users</Label>
-                      <Switch
-                        checked={post.registered_only}
-                        onCheckedChange={(checked) =>
-                          setPost({ ...post, registered_only: checked })
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
                       <Label>Published</Label>
                       <Switch
                         checked={post.published}
@@ -373,24 +407,29 @@ export default function CreateBlogPostPage() {
                         }
                       />
                     </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label>Registered users only</Label>
+                      <Switch
+                        checked={post.registered_only}
+                        onCheckedChange={(checked) =>
+                          setPost({ ...post, registered_only: checked })
+                        }
+                      />
+                    </div>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-blue-50">
                   <CardHeader>
-                    <CardTitle className="text-sm">
-                      Publishing Tips
-                    </CardTitle>
+                    <CardTitle className="text-sm">Publishing Tips</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm text-gray-700">
                     <p>• Write engaging titles that capture attention</p>
                     <p>• Use clear and concise language</p>
-                    <p>• Include examples when relevant</p>
+                    <p>• Include examples and visuals when relevant</p>
                     <p>• Proofread before publishing</p>
-                    <p>
-                      • Set XP rewards and XP requirement according to
-                      content depth
-                    </p>
+                    <p>• Add appropriate XP rewards based on content length</p>
                   </CardContent>
                 </Card>
               </div>

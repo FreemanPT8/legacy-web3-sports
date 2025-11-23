@@ -1,10 +1,11 @@
-// app/admin/courses/create/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,10 +19,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
-import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import { ArrowLeft, Plus, Trash2, Save, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+interface Module {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  lessons: Lesson[];
+}
 
 interface Lesson {
   id: string;
@@ -33,17 +40,18 @@ interface Lesson {
   order: number;
 }
 
-interface Module {
-  id: string;
-  title: string;
-  description: string;
-  order: number;
-  lessons: Lesson[];
-}
+type PermissionsResponse = {
+  success: boolean;
+  error?: string;
+  permissions?: {
+    canManageCourses?: boolean;
+    [key: string]: any;
+  };
+};
 
 export default function CreateCoursePage() {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
   const [saving, setSaving] = useState(false);
@@ -57,14 +65,61 @@ export default function CreateCoursePage() {
   const [modules, setModules] = useState<Module[]>([]);
   const [currentLanguage, setCurrentLanguage] = useState('en');
 
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'pt', name: 'Português' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'it', name: 'Italiano' },
-    { code: 'de', name: 'Deutsch' },
-  ];
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [canManageCourses, setCanManageCourses] = useState(false);
+
+  // Proteção básica
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (user.role !== 'Super Admin' && user.role !== 'Admin') {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+  // Verificar permissões
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (user.role === 'Super Admin') {
+      setCanManageCourses(true);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const fetchPermissions = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/admin/permissions', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data: PermissionsResponse = await res.json();
+
+        if (!res.ok || !data.success || !data.permissions) {
+          console.error('Error loading permissions for current user:', data);
+          setCanManageCourses(false);
+          setPermissionsLoaded(true);
+          return;
+        }
+
+        setCanManageCourses(!!data.permissions.canManageCourses);
+        setPermissionsLoaded(true);
+      } catch (err) {
+        console.error('Unexpected error fetching permissions:', err);
+        setCanManageCourses(false);
+        setPermissionsLoaded(true);
+      }
+    };
+
+    fetchPermissions();
+  }, [user, loading, getToken]);
 
   const addModule = () => {
     const newModule: Module = {
@@ -81,11 +136,9 @@ export default function CreateCoursePage() {
     setModules(modules.filter((m) => m.id !== moduleId));
   };
 
-  const updateModule = (moduleId: string, field: keyof Module, value: any) => {
+  const updateModule = (moduleId: string, field: keyof Module, value: string | number) => {
     setModules(
-      modules.map((m) =>
-        m.id === moduleId ? { ...m, [field]: value } : m,
-      ),
+      modules.map((m) => (m.id === moduleId ? { ...m, [field]: value } : m)),
     );
   };
 
@@ -113,10 +166,7 @@ export default function CreateCoursePage() {
     setModules(
       modules.map((m) => {
         if (m.id === moduleId) {
-          return {
-            ...m,
-            lessons: m.lessons.filter((l) => l.id !== lessonId),
-          };
+          return { ...m, lessons: m.lessons.filter((l) => l.id !== lessonId) };
         }
         return m;
       }),
@@ -145,11 +195,19 @@ export default function CreateCoursePage() {
   };
 
   const handleSave = async () => {
+    if (!canManageCourses) {
+      toast({
+        title: 'Not allowed',
+        description: 'You do not have permission to create courses.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const token = getToken();
-
-      const response = await fetch('/api/admin/courses', {
+      const response = await fetch('/api/admin/courses/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,20 +219,15 @@ export default function CreateCoursePage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        console.error('Failed to save course:', data);
         toast({
           title: 'Error saving course',
-          description: data.error || 'Failed to create course.',
+          description: data.error || 'Failed to save course.',
           variant: 'destructive',
         });
         setSaving(false);
         return;
       }
 
-      toast({
-        title: 'Course created',
-        description: 'The course has been created successfully.',
-      });
       router.push('/admin/courses');
     } catch (error) {
       console.error('Failed to save course:', error);
@@ -183,9 +236,51 @@ export default function CreateCoursePage() {
         description: 'Could not save course. Please try again.',
         variant: 'destructive',
       });
-      setSaving(false);
     }
+    setSaving(false);
   };
+
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'pt', name: 'Português' },
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' },
+    { code: 'it', name: 'Italiano' },
+    { code: 'de', name: 'Deutsch' },
+  ];
+
+  if (loading || !user || (user.role !== 'Super Admin' && user.role !== 'Admin') || !permissionsLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canManageCourses) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">No permission</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              You don&apos;t have permission to create or edit courses. Please contact a Super Admin if you think this
+              is a mistake.
+            </p>
+            <Link href="/admin/courses">
+              <Button variant="outline">Back to courses</Button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -207,27 +302,23 @@ export default function CreateCoursePage() {
               <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {saving ? 'Saving...' : 'Save Course'}
               </Button>
             </div>
 
-            {/* COURSE INFO */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Course Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Language tabs */}
                 <div className="flex gap-2 flex-wrap">
                   {languages.map((lang) => (
                     <Badge
                       key={lang.code}
-                      variant={
-                        currentLanguage === lang.code ? 'default' : 'outline'
-                      }
+                      variant={currentLanguage === lang.code ? 'default' : 'outline'}
                       className="cursor-pointer"
                       onClick={() => setCurrentLanguage(lang.code)}
                     >
@@ -236,31 +327,17 @@ export default function CreateCoursePage() {
                   ))}
                 </div>
 
-                {/* Title & description */}
                 <div className="space-y-4">
                   <div>
                     <Label>
-                      Title (
-                      {
-                        languages.find(
-                          (l) => l.code === currentLanguage,
-                        )?.name
-                      }
-                      )
+                      Title ({languages.find((l) => l.code === currentLanguage)?.name})
                     </Label>
                     <Input
-                      value={
-                        course.title[
-                          currentLanguage as keyof typeof course.title
-                        ]
-                      }
+                      value={course.title[currentLanguage as keyof typeof course.title]}
                       onChange={(e) =>
                         setCourse({
                           ...course,
-                          title: {
-                            ...course.title,
-                            [currentLanguage]: e.target.value,
-                          },
+                          title: { ...course.title, [currentLanguage]: e.target.value },
                         })
                       }
                       placeholder="Enter course title"
@@ -269,27 +346,14 @@ export default function CreateCoursePage() {
 
                   <div>
                     <Label>
-                      Description (
-                      {
-                        languages.find(
-                          (l) => l.code === currentLanguage,
-                        )?.name
-                      }
-                      )
+                      Description ({languages.find((l) => l.code === currentLanguage)?.name})
                     </Label>
                     <Textarea
-                      value={
-                        course.description[
-                          currentLanguage as keyof typeof course.description
-                        ]
-                      }
+                      value={course.description[currentLanguage as keyof typeof course.description]}
                       onChange={(e) =>
                         setCourse({
                           ...course,
-                          description: {
-                            ...course.description,
-                            [currentLanguage]: e.target.value,
-                          },
+                          description: { ...course.description, [currentLanguage]: e.target.value },
                         })
                       }
                       placeholder="Enter course description"
@@ -303,18 +367,14 @@ export default function CreateCoursePage() {
                     <Label>Level</Label>
                     <Select
                       value={course.level}
-                      onValueChange={(value) =>
-                        setCourse({ ...course, level: value })
-                      }
+                      onValueChange={(value) => setCourse({ ...course, level: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">
-                          Intermediate
-                        </SelectItem>
+                        <SelectItem value="intermediate">Intermediate</SelectItem>
                         <SelectItem value="advanced">Advanced</SelectItem>
                       </SelectContent>
                     </Select>
@@ -338,7 +398,6 @@ export default function CreateCoursePage() {
               </CardContent>
             </Card>
 
-            {/* MODULES & LESSONS */}
             <Card className="mb-6">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -352,23 +411,16 @@ export default function CreateCoursePage() {
               <CardContent className="space-y-6">
                 {modules.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No modules yet. Click &quot;Add Module&quot; to get
-                    started.
+                    No modules yet. Click &quot;Add Module&quot; to get started.
                   </div>
                 ) : (
                   modules.map((module, moduleIndex) => (
                     <Card key={module.id} className="border-2">
                       <CardHeader className="bg-gray-50">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">
-                            Module {moduleIndex + 1}
-                          </CardTitle>
+                          <CardTitle className="text-lg">Module {moduleIndex + 1}</CardTitle>
                           <div className="flex gap-2">
-                            <Button
-                              onClick={() => addLesson(module.id)}
-                              size="sm"
-                              variant="outline"
-                            >
+                            <Button onClick={() => addLesson(module.id)} size="sm" variant="outline">
                               <Plus className="h-4 w-4 mr-2" />
                               Add Lesson
                             </Button>
@@ -388,11 +440,7 @@ export default function CreateCoursePage() {
                           <Input
                             value={module.title}
                             onChange={(e) =>
-                              updateModule(
-                                module.id,
-                                'title',
-                                e.target.value,
-                              )
+                              updateModule(module.id, 'title', e.target.value)
                             }
                             placeholder="Enter module title"
                           />
@@ -403,11 +451,7 @@ export default function CreateCoursePage() {
                           <Textarea
                             value={module.description}
                             onChange={(e) =>
-                              updateModule(
-                                module.id,
-                                'description',
-                                e.target.value,
-                              )
+                              updateModule(module.id, 'description', e.target.value)
                             }
                             placeholder="Enter module description"
                             rows={2}
@@ -417,116 +461,91 @@ export default function CreateCoursePage() {
                         {module.lessons.length > 0 && (
                           <div className="space-y-3 pt-4 border-t">
                             <h4 className="font-semibold">Lessons</h4>
-                            {module.lessons.map(
-                              (lesson, lessonIndex) => (
-                                <Card
-                                  key={lesson.id}
-                                  className="bg-blue-50"
-                                >
-                                  <CardContent className="p-4 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                      <h5 className="font-medium">
-                                        Lesson {lessonIndex + 1}
-                                      </h5>
-                                      <Button
-                                        onClick={() =>
-                                          removeLesson(
+                            {module.lessons.map((lesson, lessonIndex) => (
+                              <Card key={lesson.id} className="bg-blue-50">
+                                <CardContent className="p-4 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <h5 className="font-medium">Lesson {lessonIndex + 1}</h5>
+                                    <Button
+                                      onClick={() => removeLesson(module.id, lesson.id)}
+                                      size="sm"
+                                      variant="ghost"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+
+                                  <Input
+                                    value={lesson.title}
+                                    onChange={(e) =>
+                                      updateLesson(module.id, lesson.id, 'title', e.target.value)
+                                    }
+                                    placeholder="Lesson title"
+                                  />
+
+                                  <Textarea
+                                    value={lesson.description}
+                                    onChange={(e) =>
+                                      updateLesson(
+                                        module.id,
+                                        lesson.id,
+                                        'description',
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="Lesson description"
+                                    rows={2}
+                                  />
+
+                                  <Textarea
+                                    value={lesson.content}
+                                    onChange={(e) =>
+                                      updateLesson(
+                                        module.id,
+                                        lesson.id,
+                                        'content',
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="Lesson content (HTML supported)"
+                                    rows={4}
+                                  />
+
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <Label className="text-xs">Duration (minutes)</Label>
+                                      <Input
+                                        type="number"
+                                        value={lesson.duration_minutes}
+                                        onChange={(e) =>
+                                          updateLesson(
                                             module.id,
                                             lesson.id,
+                                            'duration_minutes',
+                                            parseInt(e.target.value) || 0,
                                           )
                                         }
-                                        size="sm"
-                                        variant="ghost"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
+                                      />
                                     </div>
-
-                                    <Input
-                                      value={lesson.title}
-                                      onChange={(e) =>
-                                        updateLesson(
-                                          module.id,
-                                          lesson.id,
-                                          'title',
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Lesson title"
-                                    />
-
-                                    <Textarea
-                                      value={lesson.description}
-                                      onChange={(e) =>
-                                        updateLesson(
-                                          module.id,
-                                          lesson.id,
-                                          'description',
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Lesson description"
-                                      rows={2}
-                                    />
-
-                                    <Textarea
-                                      value={lesson.content}
-                                      onChange={(e) =>
-                                        updateLesson(
-                                          module.id,
-                                          lesson.id,
-                                          'content',
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Lesson content (HTML supported)"
-                                      rows={4}
-                                    />
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                      <div>
-                                        <Label className="text-xs">
-                                          Duration (minutes)
-                                        </Label>
-                                        <Input
-                                          type="number"
-                                          value={lesson.duration_minutes}
-                                          onChange={(e) =>
-                                            updateLesson(
-                                              module.id,
-                                              lesson.id,
-                                              'duration_minutes',
-                                              parseInt(
-                                                e.target.value,
-                                              ) || 0,
-                                            )
-                                          }
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label className="text-xs">
-                                          XP Reward
-                                        </Label>
-                                        <Input
-                                          type="number"
-                                          value={lesson.xp_reward}
-                                          onChange={(e) =>
-                                            updateLesson(
-                                              module.id,
-                                              lesson.id,
-                                              'xp_reward',
-                                              parseInt(
-                                                e.target.value,
-                                              ) || 0,
-                                            )
-                                          }
-                                        />
-                                      </div>
+                                    <div>
+                                      <Label className="text-xs">XP Reward</Label>
+                                      <Input
+                                        type="number"
+                                        value={lesson.xp_reward}
+                                        onChange={(e) =>
+                                          updateLesson(
+                                            module.id,
+                                            lesson.id,
+                                            'xp_reward',
+                                            parseInt(e.target.value) || 0,
+                                          )
+                                        }
+                                      />
                                     </div>
-                                  </CardContent>
-                                </Card>
-                              ),
-                            )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
                         )}
                       </CardContent>

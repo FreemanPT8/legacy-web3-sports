@@ -1,6 +1,5 @@
-// app/api/admin/blog/create/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
@@ -14,7 +13,6 @@ export async function POST(request: NextRequest) {
   const currentUser = authResult.user!;
   const role = (currentUser.role || 'Member') as UserRole;
 
-  // Só quem tem canManageBlog pode criar posts
   const canManageBlog = await userHasPermission(
     currentUser.userId,
     role,
@@ -39,64 +37,47 @@ export async function POST(request: NextRequest) {
       content,
       category,
       xp_reward,
-      xp_required,
+      xp_threshold,
       published,
       image_url,
       registered_only,
-      reading_time,
-    } = body as {
-      title?: Record<string, string>;
-      excerpt?: Record<string, string>;
-      content?: Record<string, string>;
-      category?: string;
-      xp_reward?: number;
-      xp_required?: number;
-      published?: boolean;
-      image_url?: string | null;
-      registered_only?: boolean;
-      reading_time?: number;
-    };
+      author_id,
+    } = body;
 
     if (!title || !content || !category) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Title, content, and category are required.',
+          error: 'Title, content, and category are required',
         },
         { status: 400 },
       );
     }
 
-    const isPublished = !!published;
-    const xpReward = xp_reward ?? 15;
-    const xpThreshold = xp_required ?? 0;
-    const registeredOnly = !!registered_only;
-
-    const { data: newPost, error } = await supabaseAdmin
+    const { data: newPost, error } = await supabase
       .from('blog_posts')
       .insert({
         title,
         excerpt: excerpt || {},
         content,
         category,
-        reading_time: reading_time ?? 5,
-        xp_reward: xpReward,
-        xp_threshold: xpThreshold, // <— coluna na tabela (precisas disto na DB)
-        published: isPublished,
-        author_id: currentUser.userId,
+        xp_reward: xp_reward ?? 15,
+        xp_threshold: xp_threshold ?? 0,
+        registered_only: registered_only ?? false,
+        published: published ?? false,
+        author_id: author_id || currentUser.userId,
         image_url: image_url || null,
         views: 0,
         likes: 0,
-        registered_only: registeredOnly,
-        published_at: isPublished ? new Date().toISOString() : null,
+        published_at: published ? new Date().toISOString() : null,
       })
       .select()
       .single();
 
-    if (error || !newPost) {
+    if (error) {
       console.error('Error creating blog post:', error);
       return NextResponse.json(
-        { success: false, error: 'Failed to create blog post.' },
+        { success: false, error: 'Failed to create blog post' },
         { status: 500 },
       );
     }
@@ -104,12 +85,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       post: newPost,
-      message: 'Blog post created successfully.',
+      message: 'Blog post created successfully',
     });
   } catch (error) {
-    console.error('Error in POST /api/admin/blog/create:', error);
+    console.error('Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error.' },
+      { success: false, error: 'Internal server error' },
       { status: 500 },
     );
   }

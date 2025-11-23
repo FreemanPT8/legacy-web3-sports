@@ -1,6 +1,5 @@
-// app/api/admin/courses/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
@@ -14,7 +13,6 @@ export async function POST(request: NextRequest) {
   const currentUser = authResult.user!;
   const role = (currentUser.role || 'Member') as UserRole;
 
-  // Só quem tem canManageCourses pode criar cursos
   const canManageCourses = await userHasPermission(
     currentUser.userId,
     role,
@@ -33,96 +31,64 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { course, modules } = body as {
-      course?: {
-        title?: Record<string, string>;
-        description?: Record<string, string>;
-        level?: string;
-        xp_required?: number;
-        published?: boolean;
-      };
-      modules?: Array<{
-        id: string;
-        title: string;
-        description: string;
-        order: number;
-        lessons: Array<{
-          id: string;
-          title: string;
-          description: string;
-          content: string;
-          duration_minutes: number;
-          xp_reward: number;
-          order: number;
-        }>;
-      }>;
-    };
+    const { course, modules } = body;
 
     if (!course || !course.title || !course.description) {
       return NextResponse.json(
-        { success: false, error: 'Course title and description are required.' },
+        {
+          success: false,
+          error: 'Course title and description are required',
+        },
         { status: 400 },
       );
     }
 
-    const xpRequired = course.xp_required ?? 0;
-    const isPublished = !!course.published;
-
-    // 1) Criar curso
-    const { data: newCourse, error: courseError } = await supabaseAdmin
+    const { data: newCourse, error: courseError } = await supabase
       .from('courses')
       .insert({
-        title: course.title, // JSON multilíngue
-        description: course.description, // JSON multilíngue
-        level: course.level || 'beginner',
-        xp_threshold: xpRequired,
+        title: course.title,
+        description: course.description,
+        xp_threshold: course.xp_required || 0,
         order: 0,
-        published: isPublished,
-        created_by: currentUser.userId,
+        published: course.published || false,
       })
       .select()
       .single();
 
-    if (courseError || !newCourse) {
+    if (courseError) {
       console.error('Error creating course:', courseError);
       return NextResponse.json(
-        { success: false, error: 'Failed to create course.' },
+        { success: false, error: 'Failed to create course' },
         { status: 500 },
       );
     }
 
-    // 2) Criar módulos + lições (se existirem)
     if (modules && Array.isArray(modules) && modules.length > 0) {
       for (let moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
         const module = modules[moduleIndex];
 
-        const { data: newModule, error: moduleError } = await supabaseAdmin
+        const { data: newModule, error: moduleError } = await supabase
           .from('modules')
           .insert({
             course_id: newCourse.id,
             title: { en: module.title || `Module ${moduleIndex + 1}` },
             description: { en: module.description || '' },
             order: module.order || moduleIndex + 1,
+            xp_threshold: 0,
           })
           .select()
           .single();
 
-        if (moduleError || !newModule) {
+        if (moduleError) {
           console.error('Error creating module:', moduleError);
-          // continua para os restantes módulos, mas não falha o curso
           continue;
         }
 
-        if (
-          module.lessons &&
-          Array.isArray(module.lessons) &&
-          module.lessons.length > 0
-        ) {
+        if (module.lessons && Array.isArray(module.lessons) && module.lessons.length > 0) {
           const lessonsToInsert = module.lessons.map(
             (lesson: any, lessonIndex: number) => ({
               module_id: newModule.id,
               title: { en: lesson.title || `Lesson ${lessonIndex + 1}` },
-              description: { en: lesson.description || '' },
               content: { en: lesson.content || '' },
               xp_reward: lesson.xp_reward || 20,
               xp_threshold: 0,
@@ -131,7 +97,7 @@ export async function POST(request: NextRequest) {
             }),
           );
 
-          const { error: lessonsError } = await supabaseAdmin
+          const { error: lessonsError } = await supabase
             .from('lessons')
             .insert(lessonsToInsert);
 
@@ -145,12 +111,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       course: newCourse,
-      message: 'Course created successfully.',
+      message: 'Course created successfully',
     });
   } catch (error) {
-    console.error('Error in POST /api/admin/courses:', error);
+    console.error('Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error.' },
+      { success: false, error: 'Internal server error' },
       { status: 500 },
     );
   }

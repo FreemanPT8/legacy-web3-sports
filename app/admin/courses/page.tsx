@@ -1,51 +1,135 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, BookOpen, Plus, Eye, Edit, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowLeft, BookOpen, Plus, Eye, Edit, Trash2, Lock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+type Course = {
+  id: string;
+  title: any;
+  description: any;
+  image_url?: string | null;
+  is_published?: boolean;
+  published?: boolean;
+  level?: string | null;
+};
+
+type PermissionsResponse = {
+  success: boolean;
+  error?: string;
+  permissions?: {
+    canManageCourses?: boolean;
+    [key: string]: any;
+  };
+};
 
 export default function CoursesManagementPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const { user, loading, getToken } = useAuth();
+  const { toast } = useToast();
 
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [canManageCourses, setCanManageCourses] = useState(false);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
+
+  // Proteção básica
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return;
+    if (!user) {
       router.push('/login');
+      return;
     }
-    if (!loading && user && user.role !== 'Super Admin' && user.role !== 'Admin') {
+    if (user.role !== 'Super Admin' && user.role !== 'Admin') {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
+  // Buscar permissões finas
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (user.role === 'Super Admin') {
+      setCanManageCourses(true);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const fetchPermissions = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/admin/permissions', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data: PermissionsResponse = await res.json();
+
+        if (!res.ok || !data.success || !data.permissions) {
+          console.error('Error loading permissions for current user:', data);
+          setCanManageCourses(false);
+          setPermissionsLoaded(true);
+          return;
+        }
+
+        setCanManageCourses(!!data.permissions.canManageCourses);
+        setPermissionsLoaded(true);
+      } catch (err) {
+        console.error('Unexpected error fetching permissions:', err);
+        setCanManageCourses(false);
+        setPermissionsLoaded(true);
+      }
+    };
+
+    fetchPermissions();
+  }, [user, loading, getToken]);
+
+  // Buscar cursos (usa rota pública /api/courses)
   useEffect(() => {
     const fetchCourses = async () => {
+      setLoadingData(true);
       try {
         const response = await fetch('/api/courses');
         const data = await response.json();
         if (data.success) {
           setCourses(data.courses || []);
+        } else {
+          toast({
+            title: 'Error loading courses',
+            description: data.error || 'Failed to load courses.',
+            variant: 'destructive',
+          });
         }
       } catch (error) {
         console.error('Failed to fetch courses:', error);
+        toast({
+          title: 'Network error',
+          description: 'Could not load courses. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoadingData(false);
       }
-      setLoadingData(false);
     };
 
     if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
       fetchCourses();
     }
-  }, [user]);
+  }, [user, toast]);
 
-  if (loading || !user || (user.role !== 'Super Admin' && user.role !== 'Admin')) {
+  if (loading || !user || (user.role !== 'Super Admin' && user.role !== 'Admin') || !permissionsLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -56,8 +140,10 @@ export default function CoursesManagementPage() {
     );
   }
 
-  const publishedCourses = courses.filter(c => c.is_published);
-  const draftCourses = courses.filter(c => !c.is_published);
+  const publishedCourses = courses.filter((c: any) => c.is_published ?? c.published);
+  const draftCourses = courses.filter((c: any) => !(c.is_published ?? c.published));
+
+  const levelLabel = (course: Course) => course.level || 'Beginner';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -73,13 +159,24 @@ export default function CoursesManagementPage() {
                   Back to Admin
                 </Button>
               </Link>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-4">
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold mb-2">Course Management</h1>
-                  <p className="text-gray-600 dark:text-gray-300">Create, edit, and manage courses, modules, and lessons</p>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Create, edit, and manage courses, modules, and lessons.
+                  </p>
+                  {!canManageCourses && (
+                    <p className="mt-2 text-sm text-amber-700 flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      You can view courses, but you don&apos;t have permission to create or edit them.
+                    </p>
+                  )}
                 </div>
-                <Link href="/admin/courses/create">
-                  <Button className="bg-blue-600 hover:bg-blue-700">
+                <Link href={canManageCourses ? '/admin/courses/create' : '#'} aria-disabled={!canManageCourses}>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={!canManageCourses}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     New Course
                   </Button>
@@ -90,7 +187,9 @@ export default function CoursesManagementPage() {
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Courses</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Total Courses
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{courses.length}</div>
@@ -99,7 +198,9 @@ export default function CoursesManagementPage() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">Published</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Published
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">{publishedCourses.length}</div>
@@ -129,50 +230,67 @@ export default function CoursesManagementPage() {
                   <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">No courses yet</h3>
                   <p className="text-gray-600 mb-6">Create your first course to get started</p>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Course
-                  </Button>
+                  <Link href={canManageCourses ? '/admin/courses/create' : '#'} aria-disabled={!canManageCourses}>
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={!canManageCourses}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Course
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {courses.map((course) => (
+                {courses.map((course: any) => (
                   <Card key={course.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       {course.image_url && (
                         <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 overflow-hidden">
                           <img
                             src={course.image_url}
-                            alt={course.title}
+                            alt={course.title?.en || course.title || 'Course image'}
                             className="w-full h-full object-cover"
                           />
                         </div>
                       )}
                       <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-lg">{course.title}</CardTitle>
-                        <Badge className={course.is_published ? 'bg-green-600' : 'bg-yellow-600'}>
-                          {course.is_published ? 'Published' : 'Draft'}
+                        <CardTitle className="text-lg">
+                          {course.title?.en || course.title || 'Untitled course'}
+                        </CardTitle>
+                        <Badge className={(course.is_published ?? course.published) ? 'bg-green-600' : 'bg-yellow-600'}>
+                          {(course.is_published ?? course.published) ? 'Published' : 'Draft'}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {course.description || 'No description'}
+                        {course.description?.en || course.description || 'No description'}
                       </p>
                       <div className="text-sm text-gray-500 mb-4">
-                        Level: {course.level || 'Beginner'}
+                        Level: {levelLabel(course)}
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" className="flex-1">
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
-                        <Button size="sm" variant="outline" className="flex-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={!canManageCourses}
+                        >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={!canManageCourses}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
