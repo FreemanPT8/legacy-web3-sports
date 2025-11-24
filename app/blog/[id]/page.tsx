@@ -11,7 +11,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getMultilingualContent } from '@/lib/i18n';
-import { Eye, Heart, Calendar, User, Share2, ArrowLeft } from 'lucide-react';
+import {
+  Eye,
+  Heart,
+  Calendar,
+  User,
+  Share2,
+  ArrowLeft,
+  Lock,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function BlogArticlePage() {
@@ -45,7 +53,9 @@ export default function BlogArticlePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading article...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">
+            Loading article...
+          </p>
         </div>
       </div>
     );
@@ -55,11 +65,13 @@ export default function BlogArticlePage() {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 flex items-center justify-center bg-gray-50">
+        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
           <Card className="max-w-md">
             <CardContent className="text-center py-12">
               <h2 className="text-2xl font-bold mb-4">Article Not Found</h2>
-              <p className="text-gray-600 mb-6">The article you're looking for doesn't exist.</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                The article you&apos;re looking for doesn&apos;t exist.
+              </p>
               <Link href="/blog">
                 <Button className="bg-blue-600 hover:bg-blue-700">
                   Back to Blog
@@ -75,7 +87,18 @@ export default function BlogArticlePage() {
 
   const title = getMultilingualContent(post.title, language);
   const content = getMultilingualContent(post.content, language);
-  const xpReward = Math.floor(Math.random() * 29) + 5;
+
+  // XP reward definido no próprio post (fallback 15)
+  const xpReward: number =
+    typeof post.xp_reward === 'number' ? post.xp_reward : 15;
+
+  // Gating: login + XP
+  const userXP: number = user?.xp_total ?? 0;
+  const xpThreshold: number = typeof post.xp_threshold === 'number' ? post.xp_threshold : 0;
+  const requiresLogin: boolean = !!post.registered_only;
+
+  const isLockedByLogin = requiresLogin && !user;
+  const isLockedByXP = !isLockedByLogin && xpThreshold > userXP;
 
   const articleContent = (
     <div className="max-w-4xl mx-auto">
@@ -86,9 +109,9 @@ export default function BlogArticlePage() {
         </Button>
       </Link>
 
-      <article className="bg-white rounded-lg shadow-sm p-8 mb-8">
+      <article className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-8 mb-8">
         <div className="mb-6">
-          <Badge className="mb-4">{post.category}</Badge>
+          {post.category && <Badge className="mb-4">{post.category}</Badge>}
           <h1 className="text-3xl md:text-4xl font-bold mb-4">{title}</h1>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
@@ -120,8 +143,12 @@ export default function BlogArticlePage() {
                     {xpReward}
                   </div>
                   <div>
-                    <p className="font-semibold text-blue-900">Earn XP by reading</p>
-                    <p className="text-sm text-blue-700">Read the full article to earn {xpReward} XP</p>
+                    <p className="font-semibold text-blue-900">
+                      Earn XP by reading
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      Read the full article to earn {xpReward} XP
+                    </p>
                   </div>
                 </div>
                 {xpEarned > 0 && (
@@ -132,11 +159,11 @@ export default function BlogArticlePage() {
           </Card>
         )}
 
-        <div className="prose prose-lg max-w-none">
+        <div className="prose prose-lg max-w-none dark:prose-invert">
           <div dangerouslySetInnerHTML={{ __html: content }} />
         </div>
 
-        <div className="mt-8 pt-8 border-t">
+        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button variant="outline" size="sm">
@@ -150,7 +177,8 @@ export default function BlogArticlePage() {
             </div>
             {user && (
               <div className="text-sm text-gray-600 dark:text-gray-300">
-                Logged in as <span className="font-semibold">{user.username}</span>
+                Logged in as{' '}
+                <span className="font-semibold">{user.username}</span>
               </div>
             )}
           </div>
@@ -162,11 +190,20 @@ export default function BlogArticlePage() {
           <h2 className="text-2xl font-bold mb-4">Related Articles</h2>
           <div className="grid md:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="h-32 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg mb-3"></div>
-                <Badge variant="outline" className="mb-2">{post.category}</Badge>
+              <div
+                key={i}
+                className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-900"
+              >
+                <div className="h-32 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg mb-3" />
+                {post.category && (
+                  <Badge variant="outline" className="mb-2">
+                    {post.category}
+                  </Badge>
+                )}
                 <h3 className="font-semibold mb-2">Related Article {i}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Learn more about Web3 and blockchain technology...</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Learn more about Web3 and blockchain technology...
+                </p>
               </div>
             ))}
           </div>
@@ -175,24 +212,115 @@ export default function BlogArticlePage() {
     </div>
   );
 
+  // 🔒 Se estiver bloqueado por login
+  const lockedByLoginView = (
+    <div className="max-w-2xl mx-auto">
+      <Link href="/blog">
+        <Button variant="ghost" className="mb-6">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Blog
+        </Button>
+      </Link>
+
+      <Card className="border-amber-300 bg-amber-50 dark:bg-amber-900/20">
+        <CardContent className="py-8 text-center space-y-4">
+          <div className="flex justify-center mb-2">
+            <Lock className="h-10 w-10 text-amber-600" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">
+            This article is for registered users only
+          </h2>
+          <p className="text-gray-700 dark:text-gray-300">
+            Create a free LEGACY account or log in to unlock this premium
+            content and start earning XP.
+          </p>
+          <div className="flex justify-center gap-3 mt-4">
+            <Link href="/login">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                Log in
+              </Button>
+            </Link>
+            <Link href="/register">
+              <Button variant="outline">Create account</Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  // 🔒 Se estiver bloqueado por XP
+  const lockedByXPView = (
+    <div className="max-w-2xl mx-auto">
+      <Link href="/blog">
+        <Button variant="ghost" className="mb-6">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Blog
+        </Button>
+      </Link>
+
+      <Card className="border-blue-300 bg-blue-50 dark:bg-blue-900/20">
+        <CardContent className="py-8 text-center space-y-4">
+          <div className="flex justify-center mb-2">
+            <Lock className="h-10 w-10 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">
+            You need more XP to unlock this article
+          </h2>
+          <p className="text-gray-700 dark:text-gray-300">
+            This content unlocks at{' '}
+            <span className="font-semibold">{xpThreshold} XP</span>.{' '}
+            {user && (
+              <>
+                You currently have{' '}
+                <span className="font-semibold">{userXP} XP</span>.
+              </>
+            )}
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Keep learning through courses, modules and lessons to gain XP and
+            unlock advanced content.
+          </p>
+          <div className="flex justify-center gap-3 mt-4">
+            <Link href="/education/courses">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                Explore Courses
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  // Decisão final de render:
+  const isLockedByLoginFinal = isLockedByLogin;
+  const isLockedByXPFinal = isLockedByXP;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
-          {user ? (
-            <ContentTracker
-              contentId={post.id}
-              contentType="blog"
-              xpReward={xpReward}
-              onComplete={(xp) => setXpEarned(xp)}
-            >
-              {articleContent}
-            </ContentTracker>
-          ) : (
-            articleContent
-          )}
+          {isLockedByLoginFinal
+            ? lockedByLoginView
+            : isLockedByXPFinal
+            ? lockedByXPView
+            : user
+            ? (
+              <ContentTracker
+                contentId={post.id}
+                contentType="blog"
+                xpReward={xpReward}
+                onComplete={(xp) => setXpEarned(xp)}
+              >
+                {articleContent}
+              </ContentTracker>
+            )
+            : (
+              articleContent
+            )}
         </div>
       </main>
 
