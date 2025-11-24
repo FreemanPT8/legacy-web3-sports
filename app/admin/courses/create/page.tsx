@@ -399,14 +399,20 @@ export default function CreateCoursePage() {
       return;
     }
 
-    if (!course.title.en.trim()) {
-      toast({
-        title: 'Missing title',
-        description: 'Please add at least an English title for the course.',
-        variant: 'destructive',
-      });
-      return;
-    }
+   const hasAnyTitle = Object.values(course.title).some(
+  (v) => typeof v === 'string' && v.trim().length > 0,
+);
+
+if (!hasAnyTitle) {
+  toast({
+    title: 'Missing title',
+    description:
+      'Please add a title in at least one language. You can translate to the other languages later.',
+    variant: 'destructive',
+  });
+  return;
+}
+
 
     setSaving(true);
     try {
