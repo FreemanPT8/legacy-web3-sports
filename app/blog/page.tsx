@@ -1,197 +1,370 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { getMultilingualContent } from '@/lib/i18n';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Eye, Heart, Calendar, BookOpen } from 'lucide-react';
-import Link from 'next/link';
+import {
+  ArrowLeft,
+  FileText,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Calendar,
+  User,
+  Lock,
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-export default function BlogPage() {
-  const { language, t } = useLanguage();
-  const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+type BlogPost = {
+  id: string;
+  title: any;
+  excerpt: any;
+  status?: string;
+  category?: string | null;
+  author?: string | null;
+  author_id?: string | null;
+  created_at: string;
+  views_count?: number;
+};
 
+type PermissionsResponse = {
+  success: boolean;
+  error?: string;
+  permissions?: {
+    canManageBlog?: boolean;
+    [key: string]: any;
+  };
+};
+
+export default function BlogManagementPage() {
+  const router = useRouter();
+  const { user, loading, getToken } = useAuth();
+  const { toast } = useToast();
+
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [canManageBlog, setCanManageBlog] = useState(false);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
+
+  // Proteção básica
   useEffect(() => {
-    const fetchPosts = async () => {
+    if (loading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (user.role !== 'Super Admin' && user.role !== 'Admin') {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+  // Buscar permissões finas
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (user.role === 'Super Admin') {
+      setCanManageBlog(true);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const fetchPermissions = async () => {
       try {
-        const response = await fetch('/api/blog');
-        const data = await response.json();
-        if (data.success) {
-          setPosts(data.posts);
+        const token = getToken();
+        const res = await fetch('/api/admin/permissions', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data: PermissionsResponse = await res.json();
+
+        if (!res.ok || !data.success || !data.permissions) {
+          console.error('Error loading permissions for current user:', data);
+          setCanManageBlog(false);
+          setPermissionsLoaded(true);
+          return;
         }
-      } catch (error) {
-        console.error('Failed to fetch blog posts:', error);
+
+        setCanManageBlog(!!data.permissions.canManageBlog);
+        setPermissionsLoaded(true);
+      } catch (err) {
+        console.error('Unexpected error fetching permissions:', err);
+        setCanManageBlog(false);
+        setPermissionsLoaded(true);
       }
-      setLoading(false);
     };
 
-    fetchPosts();
-  }, []);
+    fetchPermissions();
+  }, [user, loading, getToken]);
 
-  const filteredPosts = posts.filter(post => {
-    const title = getMultilingualContent(post.title, language).toLowerCase();
-    const matchesSearch = title.includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Buscar posts (agora usa rota ADMIN /api/admin/blog)
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoadingData(true);
+      try {
+        const token = getToken();
+        const response = await fetch('/api/admin/blog', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
 
-  const featuredPost = posts.find(p => p.published) || posts[0];
+        const data = await response.json();
+        if (data.success) {
+          setPosts(data.posts || []);
+        } else {
+          toast({
+            title: 'Error loading posts',
+            description: data.error || 'Failed to load posts.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch posts:', error);
+        toast({
+          title: 'Network error',
+          description: 'Could not load posts. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
+      fetchPosts();
+    }
+  }, [user, toast, getToken]);
+
+  if (
+    loading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin') ||
+    !permissionsLoaded
+  ) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const publishedPosts = posts.filter(
+    (p: any) => p.status === 'published' || p.published,
+  );
+  const draftPosts = posts.filter(
+    (p: any) => p.status === 'draft' || !p.published,
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-blue-950/20 dark:to-gray-900 py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">{t('blog.title')}</h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
-                {t('blog.subtitle')}
-              </p>
-            </div>
-
-            {featuredPost && (
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <Link href={`/blog/${featuredPost.id}`} className="md:col-span-2">
-                  <Card className="h-full bg-gradient-to-br from-blue-600 to-cyan-600 text-white hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <Badge className="bg-white text-blue-600 w-fit mb-2">{t('blog.featured')}</Badge>
-                      <CardTitle className="text-2xl">{getMultilingualContent(featuredPost.title, language)}</CardTitle>
-                      <CardDescription className="text-blue-100">
-                        {getMultilingualContent(featuredPost.content, language).substring(0, 150).replace(/<[^>]*>/g, '')}...
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-4 text-sm text-blue-100">
-                        <div className="flex items-center gap-1">
-                          <Eye className="h-4 w-4" />
-                          <span>{featuredPost.views || 0} {t('blog.views')}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Heart className="h-4 w-4" />
-                          <span>{featuredPost.likes || 0} {t('blog.likes')}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          <span>{new Date(featuredPost.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('blog.totalArticles')}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold text-blue-600">{posts.length}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{t('blog.publishedArticles')}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('blog.categories')}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{t('blog.categoriesDesc')}</p>
-                    </CardContent>
-                  </Card>
+              <Link href="/admin">
+                <Button variant="ghost" className="mb-4">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Admin
+                </Button>
+              </Link>
+              <div className="flex justify-between items-center gap-4">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                    Blog Management
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Create and manage blog posts in multiple languages.
+                  </p>
+                  {!canManageBlog && (
+                    <p className="mt-2 text-sm text-amber-700 flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      You can view posts, but you don&apos;t have permission to
+                      create or edit them.
+                    </p>
+                  )}
                 </div>
+                <Link
+                  href={canManageBlog ? '/admin/blog/create' : '#'}
+                  aria-disabled={!canManageBlog}
+                >
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={!canManageBlog}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Post
+                  </Button>
+                </Link>
               </div>
-            )}
-
-            <div className="flex flex-col md:flex-row gap-4 mb-8">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder={t('blog.search')}
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="md:w-[200px]">
-                  <SelectValue placeholder={t('blog.category')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('blog.allCategories')}</SelectItem>
-                  <SelectItem value="blockchain">Blockchain</SelectItem>
-                  <SelectItem value="web3">Web3</SelectItem>
-                  <SelectItem value="apertum">Apertum Network</SelectItem>
-                  <SelectItem value="sports">Sports Technology</SelectItem>
-                  <SelectItem value="nft">NFTs</SelectItem>
-                  <SelectItem value="defi">DeFi</SelectItem>
-                  <SelectItem value="dao">DAO</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600 dark:text-gray-300">{t('blog.loadingArticles')}</p>
-              </div>
-            ) : filteredPosts.length === 0 ? (
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Total Posts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{posts.length}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Published
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">
+                    {publishedPosts.length}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Draft
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-yellow-600">
+                    {draftPosts.length}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {loadingData ? (
               <Card>
                 <CardContent className="text-center py-12">
-                  <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">{t('blog.noArticles')}</h3>
-                  <p className="text-gray-600 dark:text-gray-300">{t('blog.noArticlesDesc')}</p>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600 dark:text-gray-300">
+                    Loading posts...
+                  </p>
+                </CardContent>
+              </Card>
+            ) : posts.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">
+                    No blog posts yet
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Create your first blog post to get started
+                  </p>
+                  <Link
+                    href={canManageBlog ? '/admin/blog/create' : '#'}
+                    aria-disabled={!canManageBlog}
+                  >
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={!canManageBlog}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Post
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid md:grid-cols-3 gap-6">
-                {filteredPosts.map((post) => {
-                  const title = getMultilingualContent(post.title, language);
-                  const content = getMultilingualContent(post.content, language);
-                  const excerpt = content.substring(0, 120).replace(/<[^>]*>/g, '');
-
-                  return (
-                    <Link key={post.id} href={`/blog/${post.id}`}>
-                      <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-                        <CardHeader>
-                          <div className="h-40 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg mb-4 flex items-center justify-center">
-                            <BookOpen className="h-16 w-16 text-blue-400" />
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Posts ({posts.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {posts.map((post: any) => (
+                      <div
+                        key={post.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">
+                              {post.title?.en || post.title || 'Untitled post'}
+                            </h3>
+                            <Badge
+                              className={
+                                post.published ? 'bg-green-600' : 'bg-yellow-600'
+                              }
+                            >
+                              {post.published ? 'published' : 'draft'}
+                            </Badge>
+                            {post.category && (
+                              <Badge variant="outline">{post.category}</Badge>
+                            )}
                           </div>
-                          <Badge variant="outline" className="w-fit mb-2">{post.category}</Badge>
-                          <CardTitle className="text-lg line-clamp-2">{title}</CardTitle>
-                          <CardDescription className="line-clamp-2">
-                            {excerpt}...
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                            <div className="flex items-center gap-1">
-                              <Eye className="h-4 w-4" />
-                              <span>{post.views || 0}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Heart className="h-4 w-4" />
-                              <span>{post.likes || 0}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                            </div>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+                            {post.excerpt?.en ||
+                              post.excerpt ||
+                              'No excerpt'}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {post.author || 'Admin'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {post.created_at
+                                ? new Date(
+                                    post.created_at,
+                                  ).toLocaleDateString()
+                                : '-'}
+                            </span>
+                            {post.views > 0 && <span>{post.views} views</span>}
                           </div>
-                          <p className="text-blue-600 hover:underline text-sm font-medium">Read article →</p>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  );
-                })}
-              </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={!canManageBlog}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={!canManageBlog || !isSuperAdmin}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
