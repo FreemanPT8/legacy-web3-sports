@@ -1,210 +1,174 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { BookOpen, Lock, CheckCircle } from 'lucide-react';
-import Link from 'next/link';
+  BookOpen,
+  Award,
+  Lock,
+  ArrowRight,
+  CheckCircle,
+} from 'lucide-react';
+
+type Lesson = {
+  id: string;
+  xp_reward: number;
+};
+
+type Module = {
+  id: string;
+  lessons?: Lesson[];
+};
+
+type Course = {
+  id: string;
+  title: any;
+  description: any;
+  level?: string | null;
+  xp_threshold: number;
+  image_url?: string | null;
+  modules?: Module[];
+};
 
 export default function CoursesPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { language, t } = useLanguage();
-  const [courses, setCourses] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
+
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const userXP = user?.xp_total || 0;
+
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCourses = async () => {
       try {
-        const [coursesRes, statsRes] = await Promise.all([
-          fetch('/api/courses'),
-          fetch('/api/education/stats'),
-        ]);
+        const res = await fetch('/api/courses?includeModules=true');
+        const data = await res.json();
 
-        const coursesData = await coursesRes.json();
-        const statsData = await statsRes.json();
-
-        if (coursesData.success) {
-          setCourses(coursesData.courses);
-        }
-        if (statsData.success) {
-          setStats(statsData.stats);
+        if (!res.ok || !data.success) {
+          console.error('Failed to load courses:', data.error);
+          setCourses([]);
+        } else {
+          setCourses(data.courses || []);
         }
       } catch (error) {
-        console.error('Failed to fetch data:', error);
+        console.error('Error fetching courses:', error);
+        setCourses([]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    fetchData();
+    fetchCourses();
   }, []);
 
-  const totalLessons = courses.reduce((acc, course) => {
-    const modulesArray = Array.isArray(course.modules) ? course.modules : [];
-    return (
-      acc +
-      modulesArray.reduce((modAcc: number, mod: any) => {
-        const lessonsArray = Array.isArray(mod.lessons) ? mod.lessons : [];
-        return modAcc + lessonsArray.length;
-      }, 0)
-    );
-  }, 0);
-
-  const getLevelBadge = (level: string) => {
+  const getLevelBadge = (level?: string | null) => {
     switch (level) {
       case 'beginner':
         return (
           <Badge className="bg-green-600">
-            {t('education.level.beginner')}
+            {t('education.level.beginner') || 'Beginner'}
           </Badge>
         );
       case 'intermediate':
         return (
           <Badge className="bg-yellow-600">
-            {t('education.level.intermediate')}
+            {t('education.level.intermediate') || 'Intermediate'}
           </Badge>
         );
       case 'advanced':
         return (
           <Badge className="bg-red-600">
-            {t('education.level.advanced')}
+            {t('education.level.advanced') || 'Advanced'}
           </Badge>
         );
       default:
-        return <Badge>{t('education.level.unknown')}</Badge>;
+        return <Badge>{t('education.level.unknown') || 'All levels'}</Badge>;
     }
   };
 
-  const userXP = user?.xp_total || 0;
-
-  // Número de cursos disponíveis de acordo com o XP do utilizador
-  const availableCoursesCount = courses.filter((c) => {
-    const xpThreshold = c.xp_threshold ?? 0;
-    return xpThreshold <= userXP;
-  }).length;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-300">
+              {t('courses.loading') || 'Loading courses...'}
+            </p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-10">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                {t('courses.mainTitle')}
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
-                {t('courses.mainSubtitle')}
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {courses.length}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('courses.totalCourses')}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {totalLessons}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('courses.lessons')}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {stats?.totalUsers || 0}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('courses.activeLearners')}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">
-                      2,000+
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('courses.xpAvailable')}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {t('courses.yourProgress')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 dark:text-gray-300">
-                        {t('courses.yourXP')}
-                      </span>
-                      <span className="font-bold text-blue-600">
-                        {userXP} XP
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 dark:text-gray-300">
-                        {t('courses.availableCourses')}
-                      </span>
-                      <span className="font-bold">
-                        {availableCoursesCount}/{courses.length}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 dark:text-gray-300">
-                        {t('courses.totalLessons')}
-                      </span>
-                      <span className="font-bold">{totalLessons}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600 dark:text-gray-300">
-                  {t('courses.loading')}
+            {/* Hero */}
+            <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                  {t('courses.mainTitle') || t('courses.title') || 'Courses'}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
+                  {t('courses.mainSubtitle') ||
+                    t('courses.subtitle') ||
+                    'Unlock structured learning paths about Web3, blockchain and the Apertum ecosystem. Earn XP as you progress.'}
                 </p>
               </div>
-            ) : courses.length === 0 ? (
+              <div className="flex items-center gap-3 text-sm">
+                {user ? (
+                  <>
+                    <span className="text-gray-600 dark:text-gray-300">
+                      {t('courses.yourXP') || 'Your XP'}:{' '}
+                      <strong>{userXP}</strong>
+                    </span>
+                    <Badge variant="outline">
+                      {t('courses.loggedIn') || 'Signed in'}
+                    </Badge>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => router.push('/login')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {t('auth.login') || 'Login to earn XP'}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {courses.length === 0 ? (
               <Card>
-                <CardContent className="text-center py-12">
-                  <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">
-                    {t('courses.noCourses')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    {t('courses.noCoursesDesc')}
-                  </p>
+                <CardContent className="py-10 text-center text-gray-500">
+                  {t('courses.noCourses') ||
+                    'No courses available yet. Check back soon!'}
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {courses.map((course) => {
                   const title = getMultilingualContent(
                     course.title,
@@ -215,79 +179,124 @@ export default function CoursesPage() {
                     language,
                   );
 
-                  const xpThreshold = course.xp_threshold ?? 0;
-                  const isLocked = xpThreshold > userXP;
-
-                  const modulesArray = Array.isArray(course.modules)
-                    ? course.modules
+                  const modulesArray: Module[] = Array.isArray(course.modules)
+                    ? (course.modules as Module[])
                     : [];
-                  const lessonsCount = modulesArray.reduce(
-                    (acc: number, mod: any) => {
-                      const lessonsArray = Array.isArray(mod.lessons)
-                        ? mod.lessons
-                        : [];
-                      return acc + lessonsArray.length;
-                    },
+
+                  const totalModules = modulesArray.length;
+                  const totalLessons = modulesArray.reduce(
+                    (acc, m) =>
+                      acc +
+                      (Array.isArray(m.lessons) ? m.lessons.length : 0),
                     0,
                   );
+                  const totalXP = modulesArray.reduce((acc, m) => {
+                    if (!Array.isArray(m.lessons)) return acc;
+                    return (
+                      acc +
+                      m.lessons.reduce(
+                        (accL, l) => accL + (l.xp_reward || 0),
+                        0,
+                      )
+                    );
+                  }, 0);
+
+                  const xpRequired = course.xp_threshold ?? 0;
+                  const isLocked = userXP < xpRequired;
 
                   return (
                     <Card
                       key={course.id}
-                      className="hover:shadow-lg transition-shadow"
+                      className="flex flex-col overflow-hidden hover:shadow-md transition-shadow"
                     >
-                      <CardHeader>
-                        <div className="flex justify-between items-start mb-2">
-                          {getLevelBadge(course.level)}
-                          <Badge variant="outline">
-                            {xpThreshold} XP {t('courses.required')}
-                          </Badge>
+                      {course.image_url && (
+                        <div className="w-full h-40 bg-gray-200 overflow-hidden">
+                          <img
+                            src={course.image_url}
+                            alt={title}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        <CardTitle>{title}</CardTitle>
-                        <CardDescription>{description}</CardDescription>
+                      )}
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start gap-3">
+                          <div>
+                            <CardTitle className="text-lg line-clamp-2">
+                              {title}
+                            </CardTitle>
+                            {description && (
+                              <CardDescription className="mt-1 line-clamp-3">
+                                {description}
+                              </CardDescription>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {getLevelBadge(course.level)}
+                            {xpRequired > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                {xpRequired} XP min
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                            <BookOpen className="h-4 w-4" />
+                      <CardContent className="flex-1 flex flex-col justify-between pt-0 space-y-4">
+                        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-blue-600" />
                             <span>
-                              {modulesArray.length} modules • {lessonsCount}{' '}
-                              lessons
+                              {totalModules}{' '}
+                              {t('courses.modules') || 'modules'}
                             </span>
                           </div>
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-blue-600" />
+                            <span>
+                              {totalLessons}{' '}
+                              {t('courses.lessons') || 'lessons'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Award className="h-4 w-4 text-blue-600" />
+                            <span>
+                              {totalXP}{' '}
+                              {t('courses.totalXP') || 'XP total'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2">
                           {isLocked ? (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <Lock className="h-5 w-5 text-gray-400" />
-                                <span className="text-sm text-gray-600 dark:text-gray-300">
-                                  {t('courses.unlockAt')} {xpThreshold} XP
-                                </span>
-                              </div>
-                              <Button
-                                variant="outline"
-                                className="w-full"
-                                disabled
-                              >
-                                {t('courses.locked')}
-                              </Button>
-                            </>
+                            <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                              <Lock className="h-3 w-3" />
+                              <span>
+                                {t('courses.unlockAt') || 'Unlock at'}{' '}
+                                <strong>{xpRequired} XP</strong>
+                              </span>
+                            </div>
                           ) : (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-5 w-5 text-blue-600" />
-                                <span className="text-sm">
-                                  {t('courses.availableNow')}
-                                </span>
-                              </div>
-                              <Link
-                                href={`/education/courses/${course.id}`}
-                              >
-                                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                                  {t('courses.startCourse')}
-                                </Button>
-                              </Link>
-                            </>
+                            <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
+                              <CheckCircle className="h-3 w-3" />
+                              <span>
+                                {t('courses.unlocked') ||
+                                  'You can access this course'}
+                              </span>
+                            </div>
                           )}
+
+                          <Link href={`/education/courses/${course.id}`}>
+                            <Button
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
+                              disabled={isLocked && !user}
+                            >
+                              <span className="text-xs">
+                                {t('courses.viewDetails') ||
+                                  'View course'}
+                              </span>
+                              <ArrowRight className="h-3 w-3 ml-1" />
+                            </Button>
+                          </Link>
                         </div>
                       </CardContent>
                     </Card>
@@ -298,7 +307,6 @@ export default function CoursesPage() {
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );
