@@ -21,7 +21,16 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Plus, Trash2, Save, Lock } from 'lucide-react';
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Save,
+  Lock,
+  BookOpen,
+  Award,
+  Eye,
+} from 'lucide-react';
 import {
   RichContentBuilder,
   type ContentBlock,
@@ -115,10 +124,14 @@ export default function CreateCoursePage() {
   const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
 
   const [course, setCourse] = useState({
-    title: { en: '', pt: '', es: '', fr: '', it: '', de: '' } as Record<
-      LangCode,
-      string
-    >,
+    title: {
+      en: '',
+      pt: '',
+      es: '',
+      fr: '',
+      it: '',
+      de: '',
+    } as Record<LangCode, string>,
     description: {
       en: '',
       pt: '',
@@ -162,7 +175,8 @@ export default function CreateCoursePage() {
         const res = await fetch('/api/admin/permissions', {
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {},
+            ),
           },
         });
 
@@ -187,8 +201,9 @@ export default function CreateCoursePage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
+  // Helpers para módulos e lições
   const addModule = () => {
-    const baseTitles: Record<LangCode, string> = {
+    const baseTexts: Record<LangCode, string> = {
       en: '',
       pt: '',
       es: '',
@@ -199,8 +214,8 @@ export default function CreateCoursePage() {
     const newModule: Module = {
       id: createId(),
       order: modules.length + 1,
-      titles: { ...baseTitles },
-      descriptions: { ...baseTitles },
+      titles: { ...baseTexts },
+      descriptions: { ...baseTexts },
       lessons: [],
     };
     setModules((prev) => [...prev, newModule]);
@@ -293,7 +308,12 @@ export default function CreateCoursePage() {
   const updateLessonField = (
     moduleId: string,
     lessonId: string,
-    field: 'titles' | 'descriptions' | 'duration_minutes' | 'xp_reward' | 'xp_threshold',
+    field:
+      | 'titles'
+      | 'descriptions'
+      | 'duration_minutes'
+      | 'xp_reward'
+      | 'xp_threshold',
     value: any,
   ) => {
     setModules((prev) =>
@@ -356,6 +376,19 @@ export default function CreateCoursePage() {
       }),
     );
   };
+
+  // Estatísticas rápidas para o painel lateral
+  const totalModules = modules.length;
+  const totalLessons = modules.reduce(
+    (acc, m) => acc + m.lessons.length,
+    0,
+  );
+  const totalXP = modules.reduce(
+    (acc, m) =>
+      acc +
+      m.lessons.reduce((accL, l) => accL + (l.xp_reward || 0), 0),
+    0,
+  );
 
   const handleSave = async () => {
     if (!user || !canManageCourses) {
@@ -471,8 +504,8 @@ export default function CreateCoursePage() {
             <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">No permission</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              You don&apos;t have permission to create or edit courses. Please contact a
-              Super Admin if you think this is a mistake.
+              You don&apos;t have permission to create or edit courses. Please
+              contact a Super Admin if you think this is a mistake.
             </p>
             <Link href="/admin/courses">
               <Button variant="outline">Back to courses</Button>
@@ -485,7 +518,17 @@ export default function CreateCoursePage() {
   }
 
   const currentLangLabel =
-    LANGUAGES.find((l) => l.code === currentLanguage)?.name || currentLanguage;
+    LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
+    currentLanguage;
+
+  const previewTitle =
+    course.title[currentLanguage] ||
+    course.title.en ||
+    'Untitled course';
+  const previewDescription =
+    course.description[currentLanguage] ||
+    course.description.en ||
+    '';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -493,7 +536,8 @@ export default function CreateCoursePage() {
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
+            {/* Top bar */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <Link href="/admin/courses">
@@ -503,6 +547,10 @@ export default function CreateCoursePage() {
                   </Button>
                 </Link>
                 <h1 className="text-3xl font-bold">Create New Course</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                  Design a complete learning journey with modules, lessons and
+                  XP-based progression.
+                </p>
               </div>
               <Button
                 onClick={handleSave}
@@ -514,316 +562,499 @@ export default function CreateCoursePage() {
               </Button>
             </div>
 
-            {/* COURSE INFO */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Course Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex gap-2 flex-wrap">
-                  {LANGUAGES.map((lang) => (
-                    <Badge
-                      key={lang.code}
-                      variant={currentLanguage === lang.code ? 'default' : 'outline'}
-                      className="cursor-pointer"
-                      onClick={() => setCurrentLanguage(lang.code as LangCode)}
-                    >
-                      {lang.name}
+            {/* Layout em 2 colunas: Builder + Painel Lateral */}
+            <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
+              {/* Coluna esquerda: Builder */}
+              <div className="space-y-6">
+                {/* COURSE INFO */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Course Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Selector de língua */}
+                    <div className="flex gap-2 flex-wrap">
+                      {LANGUAGES.map((lang) => (
+                        <Badge
+                          key={lang.code}
+                          variant={
+                            currentLanguage === lang.code
+                              ? 'default'
+                              : 'outline'
+                          }
+                          className="cursor-pointer"
+                          onClick={() =>
+                            setCurrentLanguage(lang.code as LangCode)
+                          }
+                        >
+                          {lang.name}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {/* Título + descrição */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Title ({currentLangLabel})</Label>
+                        <Input
+                          value={course.title[currentLanguage]}
+                          onChange={(e) =>
+                            setCourse((prev) => ({
+                              ...prev,
+                              title: {
+                                ...prev.title,
+                                [currentLanguage]: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Enter course title"
+                          className="text-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Description ({currentLangLabel})</Label>
+                        <Textarea
+                          value={course.description[currentLanguage]}
+                          onChange={(e) =>
+                            setCourse((prev) => ({
+                              ...prev,
+                              description: {
+                                ...prev.description,
+                                [currentLanguage]: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Enter course description"
+                          rows={4}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Level + XP threshold */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Level</Label>
+                        <Select
+                          value={course.level}
+                          onValueChange={(value) =>
+                            setCourse((prev) => ({ ...prev, level: value }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="beginner">Beginner</SelectItem>
+                            <SelectItem value="intermediate">
+                              Intermediate
+                            </SelectItem>
+                            <SelectItem value="advanced">Advanced</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>XP Required to Unlock (course)</Label>
+                        <Input
+                          type="number"
+                          value={course.xp_threshold}
+                          onChange={(e) =>
+                            setCourse((prev) => ({
+                              ...prev,
+                              xp_threshold: parseInt(e.target.value) || 0,
+                            }))
+                          }
+                          min={0}
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <Label>Published</Label>
+                      <Switch
+                        checked={course.published}
+                        onCheckedChange={(checked) =>
+                          setCourse((prev) => ({
+                            ...prev,
+                            published: checked,
+                          }))
+                        }
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* MODULES & LESSONS */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Course Structure</CardTitle>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Build modules and lessons. Each lesson can have rich
+                          content, XP rewards and XP thresholds.
+                        </p>
+                      </div>
+                      <Button onClick={addModule} size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Module
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {modules.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 text-sm">
+                        No modules yet. Click &quot;Add Module&quot; to start
+                        designing the journey.
+                      </div>
+                    ) : (
+                      modules.map((module, moduleIndex) => (
+                        <Card
+                          key={module.id}
+                          className="border-2 border-blue-100 bg-white"
+                        >
+                          <CardHeader className="bg-blue-50/60">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs uppercase tracking-wide text-blue-700 mb-1">
+                                  Module {moduleIndex + 1}
+                                </p>
+                                <Input
+                                  value={module.titles[currentLanguage]}
+                                  onChange={(e) =>
+                                    updateModuleTitle(
+                                      module.id,
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder={`Module title (${currentLangLabel})`}
+                                  className="text-sm font-semibold"
+                                />
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                <Button
+                                  onClick={() => addLesson(module.id)}
+                                  size="sm"
+                                  variant="outline"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Lesson
+                                </Button>
+                                <Button
+                                  onClick={() => removeModule(module.id)}
+                                  size="sm"
+                                  variant="destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="mt-3">
+                              <Textarea
+                                value={module.descriptions[currentLanguage]}
+                                onChange={(e) =>
+                                  updateModuleDescription(
+                                    module.id,
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder={`Module description (${currentLangLabel})`}
+                                rows={2}
+                                className="text-xs"
+                              />
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-4 space-y-3">
+                            {module.lessons.length === 0 ? (
+                              <div className="text-xs text-gray-500 border border-dashed rounded-lg p-3 text-center">
+                                No lessons in this module yet. Add your first
+                                lesson.
+                              </div>
+                            ) : (
+                              module.lessons.map((lesson, lessonIndex) => (
+                                <Card
+                                  key={lesson.id}
+                                  className="bg-blue-50/60 border-blue-100"
+                                >
+                                  <CardContent className="p-4 space-y-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <p className="text-xs text-blue-700 mb-1">
+                                          Lesson {lessonIndex + 1}
+                                        </p>
+                                        <Input
+                                          value={lesson.titles[currentLanguage]}
+                                          onChange={(e) =>
+                                            updateLessonField(
+                                              module.id,
+                                              lesson.id,
+                                              'titles',
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder={`Lesson title (${currentLangLabel})`}
+                                          className="text-sm font-medium"
+                                        />
+                                      </div>
+                                      <Button
+                                        onClick={() =>
+                                          removeLesson(module.id, lesson.id)
+                                        }
+                                        size="sm"
+                                        variant="ghost"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+
+                                    <div>
+                                      <Label className="text-xs">
+                                        Lesson Short Description (
+                                        {currentLangLabel})
+                                      </Label>
+                                      <Textarea
+                                        value={
+                                          lesson.descriptions[currentLanguage]
+                                        }
+                                        onChange={(e) =>
+                                          updateLessonField(
+                                            module.id,
+                                            lesson.id,
+                                            'descriptions',
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="Short description"
+                                        rows={2}
+                                        className="text-xs"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <Label className="text-xs">
+                                        Lesson Content ({currentLangLabel})
+                                      </Label>
+                                      <RichContentBuilder
+                                        blocks={
+                                          lesson.contentBlocksByLang[
+                                            currentLanguage
+                                          ] || []
+                                        }
+                                        onChange={(blocks) =>
+                                          updateLessonBlocks(
+                                            module.id,
+                                            lesson.id,
+                                            currentLanguage,
+                                            blocks,
+                                          )
+                                        }
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-3">
+                                      <div>
+                                        <Label className="text-xs">
+                                          Duration (minutes)
+                                        </Label>
+                                        <Input
+                                          type="number"
+                                          value={lesson.duration_minutes}
+                                          onChange={(e) =>
+                                            updateLessonField(
+                                              module.id,
+                                              lesson.id,
+                                              'duration_minutes',
+                                              parseInt(e.target.value) || 0,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs">
+                                          XP Reward
+                                        </Label>
+                                        <Input
+                                          type="number"
+                                          value={lesson.xp_reward}
+                                          onChange={(e) =>
+                                            updateLessonField(
+                                              module.id,
+                                              lesson.id,
+                                              'xp_reward',
+                                              parseInt(e.target.value) || 0,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs">
+                                          XP Required to Unlock (lesson)
+                                        </Label>
+                                        <Input
+                                          type="number"
+                                          value={lesson.xp_threshold}
+                                          onChange={(e) =>
+                                            updateLessonField(
+                                              module.id,
+                                              lesson.id,
+                                              'xp_threshold',
+                                              parseInt(e.target.value) || 0,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Coluna direita: Summary + Preview */}
+              <div className="space-y-4">
+                {/* Course Summary */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Course Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 text-blue-600" />
+                          Modules
+                        </span>
+                        <span className="font-semibold">
+                          {totalModules}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 text-blue-600" />
+                          Lessons
+                        </span>
+                        <span className="font-semibold">
+                          {totalLessons}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Award className="h-4 w-4 text-blue-600" />
+                          Total XP Available
+                        </span>
+                        <span className="font-semibold">{totalXP}</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span>Level</span>
+                        <Badge variant="outline" className="capitalize">
+                          {course.level}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Course XP Threshold</span>
+                        <Badge variant="outline">
+                          {course.xp_threshold} XP
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Status</span>
+                        <Badge
+                          className={
+                            course.published ? 'bg-green-600' : 'bg-yellow-600'
+                          }
+                        >
+                          {course.published ? 'Published' : 'Draft'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Live Preview simples */}
+                <Card className="border-blue-200">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-blue-600" />
+                      Course Preview
+                    </CardTitle>
+                    <Badge variant="outline" className="text-[10px] uppercase">
+                      {currentLangLabel}
                     </Badge>
-                  ))}
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label>Title ({currentLangLabel})</Label>
-                    <Input
-                      value={course.title[currentLanguage]}
-                      onChange={(e) =>
-                        setCourse((prev) => ({
-                          ...prev,
-                          title: {
-                            ...prev.title,
-                            [currentLanguage]: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder="Enter course title"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Description ({currentLangLabel})</Label>
-                    <Textarea
-                      value={course.description[currentLanguage]}
-                      onChange={(e) =>
-                        setCourse((prev) => ({
-                          ...prev,
-                          description: {
-                            ...prev.description,
-                            [currentLanguage]: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder="Enter course description"
-                      rows={4}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Level</Label>
-                    <Select
-                      value={course.level}
-                      onValueChange={(value) =>
-                        setCourse((prev) => ({ ...prev, level: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>XP Required to Unlock (course)</Label>
-                    <Input
-                      type="number"
-                      value={course.xp_threshold}
-                      onChange={(e) =>
-                        setCourse((prev) => ({
-                          ...prev,
-                          xp_threshold: parseInt(e.target.value) || 0,
-                        }))
-                      }
-                      min={0}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <Label>Published</Label>
-                  <Switch
-                    checked={course.published}
-                    onCheckedChange={(checked) =>
-                      setCourse((prev) => ({ ...prev, published: checked }))
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* MODULES & LESSONS */}
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Modules & Lessons</CardTitle>
-                  <Button onClick={addModule} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Module
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {modules.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No modules yet. Click &quot;Add Module&quot; to get started.
-                  </div>
-                ) : (
-                  modules.map((module, moduleIndex) => (
-                    <Card key={module.id} className="border-2">
-                      <CardHeader className="bg-gray-50">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">
-                            Module {moduleIndex + 1}
-                          </CardTitle>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => addLesson(module.id)}
-                              size="sm"
-                              variant="outline"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Lesson
-                            </Button>
-                            <Button
-                              onClick={() => removeModule(module.id)}
-                              size="sm"
-                              variant="destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">
+                        Title
+                      </div>
+                      <div className="font-semibold">
+                        {previewTitle || 'Untitled course'}
+                      </div>
+                    </div>
+                    {previewDescription && (
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">
+                          Description
                         </div>
-                      </CardHeader>
-                      <CardContent className="pt-4 space-y-4">
-                        <div>
-                          <Label>Module Title ({currentLangLabel})</Label>
-                          <Input
-                            value={module.titles[currentLanguage]}
-                            onChange={(e) =>
-                              updateModuleTitle(module.id, e.target.value)
-                            }
-                            placeholder="Enter module title"
-                          />
-                        </div>
+                        <p className="text-gray-700 dark:text-gray-200 line-clamp-4">
+                          {previewDescription}
+                        </p>
+                      </div>
+                    )}
 
-                        <div>
-                          <Label>Module Description ({currentLangLabel})</Label>
-                          <Textarea
-                            value={module.descriptions[currentLanguage]}
-                            onChange={(e) =>
-                              updateModuleDescription(module.id, e.target.value)
-                            }
-                            placeholder="Enter module description"
-                            rows={2}
-                          />
-                        </div>
-
-                        {module.lessons.length > 0 && (
-                          <div className="space-y-3 pt-4 border-t">
-                            <h4 className="font-semibold">
-                              Lessons (language: {currentLangLabel})
-                            </h4>
-                            {module.lessons.map((lesson, lessonIndex) => (
-                              <Card key={lesson.id} className="bg-blue-50">
-                                <CardContent className="p-4 space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <h5 className="font-medium">
-                                      Lesson {lessonIndex + 1}
-                                    </h5>
-                                    <Button
-                                      onClick={() =>
-                                        removeLesson(module.id, lesson.id)
-                                      }
-                                      size="sm"
-                                      variant="ghost"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-
-                                  <div>
-                                    <Label>Lesson Title ({currentLangLabel})</Label>
-                                    <Input
-                                      value={lesson.titles[currentLanguage]}
-                                      onChange={(e) =>
-                                        updateLessonField(
-                                          module.id,
-                                          lesson.id,
-                                          'titles',
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Lesson title"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>
-                                      Lesson Short Description ({currentLangLabel})
-                                    </Label>
-                                    <Textarea
-                                      value={lesson.descriptions[currentLanguage]}
-                                      onChange={(e) =>
-                                        updateLessonField(
-                                          module.id,
-                                          lesson.id,
-                                          'descriptions',
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Short description"
-                                      rows={2}
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>Lesson Content ({currentLangLabel})</Label>
-                                    <RichContentBuilder
-                                      blocks={
-                                        lesson.contentBlocksByLang[currentLanguage] ||
-                                        []
-                                      }
-                                      onChange={(blocks) =>
-                                        updateLessonBlocks(
-                                          module.id,
-                                          lesson.id,
-                                          currentLanguage,
-                                          blocks,
-                                        )
-                                      }
-                                    />
-                                  </div>
-
-                                  <div className="grid grid-cols-3 gap-3">
-                                    <div>
-                                      <Label className="text-xs">
-                                        Duration (minutes)
-                                      </Label>
-                                      <Input
-                                        type="number"
-                                        value={lesson.duration_minutes}
-                                        onChange={(e) =>
-                                          updateLessonField(
-                                            module.id,
-                                            lesson.id,
-                                            'duration_minutes',
-                                            parseInt(e.target.value) || 0,
-                                          )
-                                        }
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs">XP Reward</Label>
-                                      <Input
-                                        type="number"
-                                        value={lesson.xp_reward}
-                                        onChange={(e) =>
-                                          updateLessonField(
-                                            module.id,
-                                            lesson.id,
-                                            'xp_reward',
-                                            parseInt(e.target.value) || 0,
-                                          )
-                                        }
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs">
-                                        XP Required to Unlock (lesson)
-                                      </Label>
-                                      <Input
-                                        type="number"
-                                        value={lesson.xp_threshold}
-                                        onChange={(e) =>
-                                          updateLessonField(
-                                            module.id,
-                                            lesson.id,
-                                            'xp_threshold',
-                                            parseInt(e.target.value) || 0,
-                                          )
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+                    <div className="border-t pt-3 space-y-2">
+                      <div className="text-xs text-gray-500 mb-1">
+                        Structure preview
+                      </div>
+                      {modules.length === 0 ? (
+                        <p className="text-xs text-gray-400">
+                          No modules yet.
+                        </p>
+                      ) : (
+                        <ul className="space-y-1 max-h-48 overflow-y-auto text-xs">
+                          {modules.map((m, i) => (
+                            <li key={m.id}>
+                              <span className="font-semibold">
+                                {i + 1}.{' '}
+                                {m.titles[currentLanguage] ||
+                                  m.titles.en ||
+                                  'Untitled module'}
+                              </span>
+                              {m.lessons.length > 0 && (
+                                <ul className="ml-4 list-disc">
+                                  {m.lessons.map((l) => (
+                                    <li key={l.id}>
+                                      {l.titles[currentLanguage] ||
+                                        l.titles.en ||
+                                        'Untitled lesson'}{' '}
+                                      <span className="text-[10px] text-gray-500">
+                                        • {l.xp_reward} XP
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         </div>
       </main>
