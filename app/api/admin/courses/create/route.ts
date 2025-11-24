@@ -8,10 +8,10 @@ type LangCode = 'en' | 'pt' | 'es' | 'fr' | 'it' | 'de';
 interface CoursePayload {
   title: Record<LangCode, string>;
   description: Record<LangCode, string>;
+  // level está aqui para futuro, mas NÃO é enviado para a BD por enquanto
   level?: string;
   xp_threshold?: number;
   published?: boolean;
-  image_url?: string | null;
 }
 
 interface LessonPayload {
@@ -75,18 +75,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1) Criar curso
+    // Pelo menos um título em qualquer língua
+    const hasAnyTitle = Object.values(course.title).some(
+      (v) => typeof v === 'string' && v.trim().length > 0,
+    );
+
+    if (!hasAnyTitle) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Please provide a course title in at least one language.',
+        },
+        { status: 400 },
+      );
+    }
+
+    // 1) Criar curso (SEM enviar "level" por agora, para evitar conflito com o schema)
     const { data: newCourse, error: courseError } = await supabase
       .from('courses')
       .insert({
         title: course.title,
         description: course.description,
-        level: course.level || 'beginner',
         xp_threshold: course.xp_threshold ?? 0,
         published: course.published ?? false,
         order: 0,
-        image_url: course.image_url ?? null,
-        author_id: currentUser.userId,
       })
       .select()
       .single();
@@ -96,13 +109,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to create course.',
+          error:
+            courseError?.message || 'Failed to create course (database error).',
         },
         { status: 500 },
       );
     }
 
-    // 2) Criar módulos + lições
+    // 2) Criar módulos + lições (erros aqui já NÃO bloqueiam o curso em si)
     if (modules && Array.isArray(modules) && modules.length > 0) {
       for (let moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
         const module = modules[moduleIndex];
@@ -120,7 +134,7 @@ export async function POST(request: NextRequest) {
 
         if (moduleError || !newModule) {
           console.error('Error creating module:', moduleError);
-          // Não fazemos rollback, mas continuamos com os restantes
+          // não fazemos rollback, só seguimos para o próximo
           continue;
         }
 
@@ -129,17 +143,18 @@ export async function POST(request: NextRequest) {
           Array.isArray(module.lessons) &&
           module.lessons.length > 0
         ) {
-          const lessonsToInsert = module.lessons.map((lesson, lessonIndex) => ({
-            module_id: newModule.id,
-            title: lesson.titles,
-            // Se quiseres manter descriptions, teríamos de criar a coluna na BD
-            // description: lesson.descriptions,
-            content: lesson.content,
-            xp_reward: lesson.xp_reward ?? 20,
-            xp_threshold: lesson.xp_threshold ?? 0,
-            order: lesson.order ?? lessonIndex + 1,
-            estimated_time: lesson.estimated_time ?? 10,
-          }));
+          const lessonsToInsert = module.lessons.map(
+            (lesson, lessonIndex) => ({
+              module_id: newModule.id,
+              title: lesson.titles,
+              description: lesson.descriptions, // tens a coluna description jsonb na tabela lessons
+              content: lesson.content,
+              xp_reward: lesson.xp_reward ?? 20,
+              xp_threshold: lesson.xp_threshold ?? 0,
+              order: lesson.order ?? lessonIndex + 1,
+              estimated_time: lesson.estimated_time ?? 10,
+            }),
+          );
 
           const { error: lessonsError } = await supabase
             .from('lessons')
