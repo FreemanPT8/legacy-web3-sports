@@ -175,8 +175,7 @@ export default function CreateCoursePage() {
         const res = await fetch('/api/admin/permissions', {
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {},
-            ),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
