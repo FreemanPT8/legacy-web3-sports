@@ -31,6 +31,47 @@ type PermissionsResponse = {
   };
 };
 
+// Helper: extrair título sempre como string
+function getCourseTitle(course: Course): string {
+  const raw = course.title;
+
+  if (!raw) return 'Untitled course';
+
+  // Se já for string
+  if (typeof raw === 'string') {
+    return raw || 'Untitled course';
+  }
+
+  // Se for JSON com línguas
+  if (typeof raw === 'object') {
+    const obj = raw as Record<string, string | undefined>;
+    const candidates = [obj.en, obj.pt, obj.es, obj.fr, obj.it, obj.de];
+    const found = candidates.find((v) => typeof v === 'string' && v.trim().length > 0);
+    return found || 'Untitled course';
+  }
+
+  return 'Untitled course';
+}
+
+// Helper: extrair descrição sempre como string
+function getCourseDescription(course: Course): string {
+  const raw = course.description;
+  if (!raw) return 'No description';
+
+  if (typeof raw === 'string') {
+    return raw || 'No description';
+  }
+
+  if (typeof raw === 'object') {
+    const obj = raw as Record<string, string | undefined>;
+    const candidates = [obj.en, obj.pt, obj.es, obj.fr, obj.it, obj.de];
+    const found = candidates.find((v) => typeof v === 'string' && v.trim().length > 0);
+    return found || 'No description';
+  }
+
+  return 'No description';
+}
+
 export default function CoursesManagementPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
@@ -96,7 +137,7 @@ export default function CoursesManagementPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  // Buscar cursos (AGORA usa rota de admin /api/admin/courses)
+  // Buscar cursos (rota de admin)
   useEffect(() => {
     const fetchCourses = async () => {
       setLoadingData(true);
@@ -251,60 +292,66 @@ export default function CoursesManagementPage() {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {courses.map((course: any) => (
-                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      {course.image_url && (
-                        <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 overflow-hidden">
-                          <img
-                            src={course.image_url}
-                            alt={course.title?.en || course.title || 'Course image'}
-                            className="w-full h-full object-cover"
-                          />
+                {courses.map((course: any) => {
+                  const title = getCourseTitle(course);
+                  const description = getCourseDescription(course);
+                  const isPublished = course.is_published ?? course.published;
+
+                  return (
+                    <Card key={course.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        {course.image_url && (
+                          <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 overflow-hidden">
+                            <img
+                              src={course.image_url}
+                              alt={title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-lg">
+                            {title}
+                          </CardTitle>
+                          <Badge className={isPublished ? 'bg-green-600' : 'bg-yellow-600'}>
+                            {isPublished ? 'Published' : 'Draft'}
+                          </Badge>
                         </div>
-                      )}
-                      <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-lg">
-                          {course.title?.en || course.title || 'Untitled course'}
-                        </CardTitle>
-                        <Badge className={(course.is_published ?? course.published) ? 'bg-green-600' : 'bg-yellow-600'}>
-                          {(course.is_published ?? course.published) ? 'Published' : 'Draft'}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {course.description?.en || course.description || 'No description'}
-                      </p>
-                      <div className="text-sm text-gray-500 mb-4">
-                        Level: {levelLabel(course)}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
-                          disabled={!canManageCourses}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="disabled:opacity-60 disabled:cursor-not-allowed"
-                          disabled={!canManageCourses || !isSuperAdmin}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                          {description}
+                        </p>
+                        <div className="text-sm text-gray-500 mb-4">
+                          Level: {levelLabel(course)}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1">
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={!canManageCourses}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={!canManageCourses || !isSuperAdmin}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
