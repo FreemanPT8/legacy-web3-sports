@@ -11,8 +11,14 @@ import { getMultilingualContent } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, CheckCircle, Clock, Award, BookOpen } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  Award,
+  BookOpen,
+} from 'lucide-react';
 import Link from 'next/link';
 
 interface Lesson {
@@ -21,9 +27,10 @@ interface Lesson {
   description: any;
   content: any;
   xp_reward: number;
-  duration_minutes: number;
+  estimated_time?: number; // vem de lessons.estimated_time
   order: number;
   module_id: string;
+  // opcionalmente no futuro: xp_threshold?: number;
 }
 
 interface Module {
@@ -31,6 +38,7 @@ interface Module {
   title: any;
   course_id: string;
   lessons: Lesson[];
+  // opcionalmente no futuro: xp_threshold?: number;
 }
 
 export default function LessonPage() {
@@ -38,6 +46,7 @@ export default function LessonPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { language } = useLanguage();
+
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [module, setModule] = useState<Module | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,16 +63,23 @@ export default function LessonPage() {
         if (data.success) {
           setLesson(data.lesson);
           setModule(data.module);
-          setIsCompleted(data.isCompleted);
+          setIsCompleted(data.isCompleted || false);
 
-          const lessons = data.module.lessons.sort((a: Lesson, b: Lesson) => a.order - b.order);
-          const currentIndex = lessons.findIndex((l: Lesson) => l.id === params.id);
+          if (data.module?.lessons && Array.isArray(data.module.lessons)) {
+            const lessons: Lesson[] = data.module.lessons
+              .slice()
+              .sort((a: Lesson, b: Lesson) => (a.order || 0) - (b.order || 0));
 
-          if (currentIndex > 0) {
-            setPrevLesson(lessons[currentIndex - 1]);
-          }
-          if (currentIndex < lessons.length - 1) {
-            setNextLesson(lessons[currentIndex + 1]);
+            const currentIndex = lessons.findIndex(
+              (l: Lesson) => l.id === params.id,
+            );
+
+            if (currentIndex > 0) {
+              setPrevLesson(lessons[currentIndex - 1]);
+            }
+            if (currentIndex < lessons.length - 1) {
+              setNextLesson(lessons[currentIndex + 1]);
+            }
           }
         }
       } catch (error) {
@@ -75,26 +91,6 @@ export default function LessonPage() {
     fetchLesson();
   }, [params.id, user]);
 
-  const handleComplete = async () => {
-    if (!user || isCompleted) return;
-
-    try {
-      const response = await fetch(`/api/lessons/${params.id}/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (response.ok) {
-        setIsCompleted(true);
-      }
-    } catch (error) {
-      console.error('Failed to complete lesson:', error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -102,7 +98,9 @@ export default function LessonPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Loading lesson...</p>
+            <p className="text-gray-600 dark:text-gray-300">
+              Loading lesson...
+            </p>
           </div>
         </main>
         <Footer />
@@ -119,7 +117,9 @@ export default function LessonPage() {
             <CardContent className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Lesson Not Found</h3>
-              <p className="text-gray-600 mb-4">This lesson doesn't exist or has been removed.</p>
+              <p className="text-gray-600 mb-4">
+                This lesson doesn&apos;t exist or has been removed.
+              </p>
               <Link href="/education/courses">
                 <Button>Back to Courses</Button>
               </Link>
@@ -135,6 +135,8 @@ export default function LessonPage() {
   const description = getMultilingualContent(lesson.description, language);
   const content = getMultilingualContent(lesson.content, language);
   const moduleTitle = getMultilingualContent(module.title, language);
+
+  const durationMinutes = lesson.estimated_time ?? 10; // default amigável
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -152,6 +154,7 @@ export default function LessonPage() {
               </Link>
             </div>
 
+            {/* Header da lição */}
             <Card className="mb-6">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
@@ -172,7 +175,7 @@ export default function LessonPage() {
                 <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    <span>{lesson.duration_minutes} minutes</span>
+                    <span>{durationMinutes} minutes</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4" />
@@ -182,72 +185,68 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
+            {/* Conteúdo + ContentTracker (XP 1ª vez) */}
             <Card className="mb-6">
               <CardContent className="prose prose-lg max-w-none py-8">
                 <ContentTracker
                   contentId={lesson.id}
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
+                  onComplete={() => setIsCompleted(true)}
                 >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
                 </ContentTracker>
               </CardContent>
             </Card>
 
-            {!isCompleted && user && (
-              <Card className="mb-6 bg-blue-50 border-blue-200">
-                <CardContent className="py-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1">Complete this lesson</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        Read through the entire lesson and click complete to earn {lesson.xp_reward} XP
-                      </p>
-                    </div>
-                    <Button
-                      onClick={handleComplete}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      Mark as Complete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
+            {/* Mensagem de conclusão (apenas visual) */}
             {isCompleted && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
-                  <h3 className="font-semibold text-lg mb-1">Lesson Completed!</h3>
+                  <h3 className="font-semibold text-lg mb-1">
+                    Lesson Completed!
+                  </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     You earned {lesson.xp_reward} XP for completing this lesson
+                    (only the first time you read it).
                   </p>
                 </CardContent>
               </Card>
             )}
 
+            {/* Navegação Prev / Next */}
             <div className="flex justify-between gap-4">
               {prevLesson ? (
-                <Link href={`/education/lessons/${prevLesson.id}`} className="flex-1">
+                <Link
+                  href={`/education/lessons/${prevLesson.id}`}
+                  className="flex-1"
+                >
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Previous: {getMultilingualContent(prevLesson.title, language)}
+                    Previous:{' '}
+                    {getMultilingualContent(prevLesson.title, language)}
                   </Button>
                 </Link>
               ) : (
-                <div className="flex-1"></div>
+                <div className="flex-1" />
               )}
 
               {nextLesson ? (
-                <Link href={`/education/lessons/${nextLesson.id}`} className="flex-1">
+                <Link
+                  href={`/education/lessons/${nextLesson.id}`}
+                  className="flex-1"
+                >
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
                     Next: {getMultilingualContent(nextLesson.title, language)}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
               ) : (
-                <Link href={`/education/courses/${module.course_id}`} className="flex-1">
+                <Link
+                  href={`/education/courses/${module.course_id}`}
+                  className="flex-1"
+                >
                   <Button className="w-full bg-green-600 hover:bg-green-700">
                     Back to Course
                     <CheckCircle className="h-4 w-4 ml-2" />
