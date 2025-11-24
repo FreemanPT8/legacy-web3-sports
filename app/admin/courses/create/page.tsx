@@ -21,20 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import {
-  ArrowLeft,
-  Plus,
-  Trash2,
-  Save,
-  Lock,
-  BookOpen,
-  Award,
-  Eye,
-} from 'lucide-react';
-import {
-  RichContentBuilder,
-  type ContentBlock,
-} from '@/components/admin/content/RichContentBuilder';
+import { ArrowLeft, Save, Lock, Award, BookOpen, Eye } from 'lucide-react';
 
 type PermissionsResponse = {
   success: boolean;
@@ -52,65 +39,9 @@ const LANGUAGES = [
   { code: 'fr', name: 'Français' },
   { code: 'it', name: 'Italiano' },
   { code: 'de', name: 'Deutsch' },
-];
+] as const;
 
 type LangCode = (typeof LANGUAGES)[number]['code'];
-
-interface Lesson {
-  id: string;
-  order: number;
-  titles: Record<LangCode, string>;
-  descriptions: Record<LangCode, string>;
-  contentBlocksByLang: Record<LangCode, ContentBlock[]>;
-  duration_minutes: number;
-  xp_reward: number;
-  xp_threshold: number;
-}
-
-interface Module {
-  id: string;
-  order: number;
-  titles: Record<LangCode, string>;
-  descriptions: Record<LangCode, string>;
-  lessons: Lesson[];
-}
-
-function createId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `tmp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function blocksToHtml(blocks: ContentBlock[]): string {
-  return blocks
-    .map((block) => {
-      const d = block.data;
-      switch (block.type) {
-        case 'heading':
-          return d.text ? `<h2>${d.text}</h2>` : '';
-        case 'subheading':
-          return d.text ? `<h3>${d.text}</h3>` : '';
-        case 'paragraph':
-          return d.text ? `<p>${d.text}</p>` : '';
-        case 'image':
-          if (!d.url) return '';
-          return `<p><img src="${d.url}" alt="${d.alt || ''}" /></p>`;
-        case 'video':
-          if (!d.url) return '';
-          return `<p><a href="${d.url}" target="_blank" rel="noopener noreferrer">Watch video</a></p>`;
-        case 'button':
-          if (!d.url) return '';
-          return `<p><a href="${d.url}" class="btn-primary">${d.buttonLabel || 'Click'}</a></p>`;
-        case 'divider':
-          return '<hr />';
-        default:
-          return '';
-      }
-    })
-    .filter(Boolean)
-    .join('\n\n');
-}
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -145,9 +76,7 @@ export default function CreateCoursePage() {
     published: false,
   });
 
-  const [modules, setModules] = useState<Module[]>([]);
-
-  // Proteção básica
+  // Proteção básica: só Admin / Super Admin
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -200,195 +129,6 @@ export default function CreateCoursePage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  // Helpers para módulos e lições
-  const addModule = () => {
-    const baseTexts: Record<LangCode, string> = {
-      en: '',
-      pt: '',
-      es: '',
-      fr: '',
-      it: '',
-      de: '',
-    };
-    const newModule: Module = {
-      id: createId(),
-      order: modules.length + 1,
-      titles: { ...baseTexts },
-      descriptions: { ...baseTexts },
-      lessons: [],
-    };
-    setModules((prev) => [...prev, newModule]);
-  };
-
-  const removeModule = (moduleId: string) => {
-    setModules((prev) => prev.filter((m) => m.id !== moduleId));
-  };
-
-  const updateModuleTitle = (moduleId: string, value: string) => {
-    setModules((prev) =>
-      prev.map((m) =>
-        m.id === moduleId
-          ? {
-              ...m,
-              titles: { ...m.titles, [currentLanguage]: value },
-            }
-          : m,
-      ),
-    );
-  };
-
-  const updateModuleDescription = (moduleId: string, value: string) => {
-    setModules((prev) =>
-      prev.map((m) =>
-        m.id === moduleId
-          ? {
-              ...m,
-              descriptions: { ...m.descriptions, [currentLanguage]: value },
-            }
-          : m,
-      ),
-    );
-  };
-
-  const addLesson = (moduleId: string) => {
-    setModules((prev) =>
-      prev.map((m) => {
-        if (m.id !== moduleId) return m;
-
-        const baseText: Record<LangCode, string> = {
-          en: '',
-          pt: '',
-          es: '',
-          fr: '',
-          it: '',
-          de: '',
-        };
-
-        const baseBlocks: Record<LangCode, ContentBlock[]> = {
-          en: [],
-          pt: [],
-          es: [],
-          fr: [],
-          it: [],
-          de: [],
-        };
-
-        const newLesson: Lesson = {
-          id: createId(),
-          order: m.lessons.length + 1,
-          titles: { ...baseText },
-          descriptions: { ...baseText },
-          contentBlocksByLang: { ...baseBlocks },
-          duration_minutes: 10,
-          xp_reward: 20,
-          xp_threshold: 0,
-        };
-
-        return {
-          ...m,
-          lessons: [...m.lessons, newLesson],
-        };
-      }),
-    );
-  };
-
-  const removeLesson = (moduleId: string, lessonId: string) => {
-    setModules((prev) =>
-      prev.map((m) => {
-        if (m.id !== moduleId) return m;
-        return {
-          ...m,
-          lessons: m.lessons.filter((l) => l.id !== lessonId),
-        };
-      }),
-    );
-  };
-
-  const updateLessonField = (
-    moduleId: string,
-    lessonId: string,
-    field:
-      | 'titles'
-      | 'descriptions'
-      | 'duration_minutes'
-      | 'xp_reward'
-      | 'xp_threshold',
-    value: any,
-  ) => {
-    setModules((prev) =>
-      prev.map((m) => {
-        if (m.id !== moduleId) return m;
-        return {
-          ...m,
-          lessons: m.lessons.map((l) => {
-            if (l.id !== lessonId) return l;
-
-            if (field === 'titles') {
-              return {
-                ...l,
-                titles: { ...l.titles, [currentLanguage]: value as string },
-              };
-            }
-
-            if (field === 'descriptions') {
-              return {
-                ...l,
-                descriptions: {
-                  ...l.descriptions,
-                  [currentLanguage]: value as string,
-                },
-              };
-            }
-
-            return {
-              ...l,
-              [field]: value,
-            } as Lesson;
-          }),
-        };
-      }),
-    );
-  };
-
-  const updateLessonBlocks = (
-    moduleId: string,
-    lessonId: string,
-    lang: LangCode,
-    blocks: ContentBlock[],
-  ) => {
-    setModules((prev) =>
-      prev.map((m) => {
-        if (m.id !== moduleId) return m;
-        return {
-          ...m,
-          lessons: m.lessons.map((l) => {
-            if (l.id !== lessonId) return l;
-            return {
-              ...l,
-              contentBlocksByLang: {
-                ...l.contentBlocksByLang,
-                [lang]: blocks,
-              },
-            };
-          }),
-        };
-      }),
-    );
-  };
-
-  // Estatísticas rápidas para o painel lateral
-  const totalModules = modules.length;
-  const totalLessons = modules.reduce(
-    (acc, m) => acc + m.lessons.length,
-    0,
-  );
-  const totalXP = modules.reduce(
-    (acc, m) =>
-      acc +
-      m.lessons.reduce((accL, l) => accL + (l.xp_reward || 0), 0),
-    0,
-  );
-
   const handleSave = async () => {
     if (!user || !canManageCourses) {
       toast({
@@ -399,48 +139,24 @@ export default function CreateCoursePage() {
       return;
     }
 
-   const hasAnyTitle = Object.values(course.title).some(
-  (v) => typeof v === 'string' && v.trim().length > 0,
-);
+    // Pelo menos um título em QUALQUER língua
+    const hasAnyTitle = Object.values(course.title).some(
+      (v) => typeof v === 'string' && v.trim().length > 0,
+    );
 
-if (!hasAnyTitle) {
-  toast({
-    title: 'Missing title',
-    description:
-      'Please add a title in at least one language. You can translate to the other languages later.',
-    variant: 'destructive',
-  });
-  return;
-}
-
+    if (!hasAnyTitle) {
+      toast({
+        title: 'Missing title',
+        description:
+          'Please add a title in at least one language. You can translate to the other languages later.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setSaving(true);
     try {
       const token = getToken();
-
-      // Converter blocos de cada lição em HTML por língua
-      const modulesForApi = modules.map((m, moduleIndex) => ({
-        order: m.order || moduleIndex + 1,
-        titles: m.titles,
-        descriptions: m.descriptions,
-        lessons: m.lessons.map((l, lessonIndex) => {
-          const content: Record<string, string> = {};
-          for (const lang of LANGUAGES) {
-            const code = lang.code as LangCode;
-            const blocks = l.contentBlocksByLang[code] || [];
-            content[code] = blocksToHtml(blocks);
-          }
-          return {
-            order: l.order || lessonIndex + 1,
-            titles: l.titles,
-            descriptions: l.descriptions,
-            content,
-            xp_reward: l.xp_reward,
-            xp_threshold: l.xp_threshold,
-            estimated_time: l.duration_minutes,
-          };
-        }),
-      }));
 
       const res = await fetch('/api/admin/courses/create', {
         method: 'POST',
@@ -456,7 +172,8 @@ if (!hasAnyTitle) {
             xp_threshold: course.xp_threshold,
             published: course.published,
           },
-          modules: modulesForApi,
+          // Neste modo CLEAN ainda não criamos módulos nem lições aqui
+          modules: [],
         }),
       });
 
@@ -471,6 +188,11 @@ if (!hasAnyTitle) {
         setSaving(false);
         return;
       }
+
+      toast({
+        title: 'Course created',
+        description: 'You can now add modules and lessons to this course.',
+      });
 
       router.push('/admin/courses');
     } catch (err) {
@@ -541,7 +263,7 @@ if (!hasAnyTitle) {
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             {/* Top bar */}
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -553,8 +275,8 @@ if (!hasAnyTitle) {
                 </Link>
                 <h1 className="text-3xl font-bold">Create New Course</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  Design a complete learning journey with modules, lessons and
-                  XP-based progression.
+                  Start by defining the core information of the course.
+                  You&apos;ll add modules and lessons afterwards.
                 </p>
               </div>
               <Button
@@ -567,11 +289,10 @@ if (!hasAnyTitle) {
               </Button>
             </div>
 
-            {/* Layout em 2 colunas: Builder + Painel Lateral */}
+            {/* Layout em 2 colunas: meta + preview */}
             <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
-              {/* Coluna esquerda: Builder */}
+              {/* Coluna esquerda: meta do curso */}
               <div className="space-y-6">
-                {/* COURSE INFO */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Course Information</CardTitle>
@@ -647,7 +368,7 @@ if (!hasAnyTitle) {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Select level" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="beginner">Beginner</SelectItem>
@@ -660,7 +381,7 @@ if (!hasAnyTitle) {
                       </div>
 
                       <div>
-                        <Label>XP Required to Unlock (course)</Label>
+                        <Label>XP Required to Unlock</Label>
                         <Input
                           type="number"
                           value={course.xp_threshold}
@@ -690,237 +411,6 @@ if (!hasAnyTitle) {
                     </div>
                   </CardContent>
                 </Card>
-
-                {/* MODULES & LESSONS */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>Course Structure</CardTitle>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Build modules and lessons. Each lesson can have rich
-                          content, XP rewards and XP thresholds.
-                        </p>
-                      </div>
-                      <Button onClick={addModule} size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Module
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {modules.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500 text-sm">
-                        No modules yet. Click &quot;Add Module&quot; to start
-                        designing the journey.
-                      </div>
-                    ) : (
-                      modules.map((module, moduleIndex) => (
-                        <Card
-                          key={module.id}
-                          className="border-2 border-blue-100 bg-white"
-                        >
-                          <CardHeader className="bg-blue-50/60">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-xs uppercase tracking-wide text-blue-700 mb-1">
-                                  Module {moduleIndex + 1}
-                                </p>
-                                <Input
-                                  value={module.titles[currentLanguage]}
-                                  onChange={(e) =>
-                                    updateModuleTitle(
-                                      module.id,
-                                      e.target.value,
-                                    )
-                                  }
-                                  placeholder={`Module title (${currentLangLabel})`}
-                                  className="text-sm font-semibold"
-                                />
-                              </div>
-                              <div className="flex gap-2 items-center">
-                                <Button
-                                  onClick={() => addLesson(module.id)}
-                                  size="sm"
-                                  variant="outline"
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add Lesson
-                                </Button>
-                                <Button
-                                  onClick={() => removeModule(module.id)}
-                                  size="sm"
-                                  variant="destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                            <div className="mt-3">
-                              <Textarea
-                                value={module.descriptions[currentLanguage]}
-                                onChange={(e) =>
-                                  updateModuleDescription(
-                                    module.id,
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder={`Module description (${currentLangLabel})`}
-                                rows={2}
-                                className="text-xs"
-                              />
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pt-4 space-y-3">
-                            {module.lessons.length === 0 ? (
-                              <div className="text-xs text-gray-500 border border-dashed rounded-lg p-3 text-center">
-                                No lessons in this module yet. Add your first
-                                lesson.
-                              </div>
-                            ) : (
-                              module.lessons.map((lesson, lessonIndex) => (
-                                <Card
-                                  key={lesson.id}
-                                  className="bg-blue-50/60 border-blue-100"
-                                >
-                                  <CardContent className="p-4 space-y-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div>
-                                        <p className="text-xs text-blue-700 mb-1">
-                                          Lesson {lessonIndex + 1}
-                                        </p>
-                                        <Input
-                                          value={lesson.titles[currentLanguage]}
-                                          onChange={(e) =>
-                                            updateLessonField(
-                                              module.id,
-                                              lesson.id,
-                                              'titles',
-                                              e.target.value,
-                                            )
-                                          }
-                                          placeholder={`Lesson title (${currentLangLabel})`}
-                                          className="text-sm font-medium"
-                                        />
-                                      </div>
-                                      <Button
-                                        onClick={() =>
-                                          removeLesson(module.id, lesson.id)
-                                        }
-                                        size="sm"
-                                        variant="ghost"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-
-                                    <div>
-                                      <Label className="text-xs">
-                                        Lesson Short Description (
-                                        {currentLangLabel})
-                                      </Label>
-                                      <Textarea
-                                        value={
-                                          lesson.descriptions[currentLanguage]
-                                        }
-                                        onChange={(e) =>
-                                          updateLessonField(
-                                            module.id,
-                                            lesson.id,
-                                            'descriptions',
-                                            e.target.value,
-                                          )
-                                        }
-                                        placeholder="Short description"
-                                        rows={2}
-                                        className="text-xs"
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <Label className="text-xs">
-                                        Lesson Content ({currentLangLabel})
-                                      </Label>
-                                      <RichContentBuilder
-                                        blocks={
-                                          lesson.contentBlocksByLang[
-                                            currentLanguage
-                                          ] || []
-                                        }
-                                        onChange={(blocks) =>
-                                          updateLessonBlocks(
-                                            module.id,
-                                            lesson.id,
-                                            currentLanguage,
-                                            blocks,
-                                          )
-                                        }
-                                      />
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-3">
-                                      <div>
-                                        <Label className="text-xs">
-                                          Duration (minutes)
-                                        </Label>
-                                        <Input
-                                          type="number"
-                                          value={lesson.duration_minutes}
-                                          onChange={(e) =>
-                                            updateLessonField(
-                                              module.id,
-                                              lesson.id,
-                                              'duration_minutes',
-                                              parseInt(e.target.value) || 0,
-                                            )
-                                          }
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label className="text-xs">
-                                          XP Reward
-                                        </Label>
-                                        <Input
-                                          type="number"
-                                          value={lesson.xp_reward}
-                                          onChange={(e) =>
-                                            updateLessonField(
-                                              module.id,
-                                              lesson.id,
-                                              'xp_reward',
-                                              parseInt(e.target.value) || 0,
-                                            )
-                                          }
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label className="text-xs">
-                                          XP Required to Unlock (lesson)
-                                        </Label>
-                                        <Input
-                                          type="number"
-                                          value={lesson.xp_threshold}
-                                          onChange={(e) =>
-                                            updateLessonField(
-                                              module.id,
-                                              lesson.id,
-                                              'xp_threshold',
-                                              parseInt(e.target.value) || 0,
-                                            )
-                                          }
-                                        />
-                                      </div>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              ))
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
               </div>
 
               {/* Coluna direita: Summary + Preview */}
@@ -939,25 +429,21 @@ if (!hasAnyTitle) {
                           <BookOpen className="h-4 w-4 text-blue-600" />
                           Modules
                         </span>
-                        <span className="font-semibold">
-                          {totalModules}
-                        </span>
+                        <span className="font-semibold">0</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <BookOpen className="h-4 w-4 text-blue-600" />
                           Lessons
                         </span>
-                        <span className="font-semibold">
-                          {totalLessons}
-                        </span>
+                        <span className="font-semibold">0</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <Award className="h-4 w-4 text-blue-600" />
                           Total XP Available
                         </span>
-                        <span className="font-semibold">{totalXP}</span>
+                        <span className="font-semibold">0</span>
                       </div>
                     </div>
 
@@ -1001,9 +487,7 @@ if (!hasAnyTitle) {
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
                     <div>
-                      <div className="text-xs text-gray-500 mb-1">
-                        Title
-                      </div>
+                      <div className="text-xs text-gray-500 mb-1">Title</div>
                       <div className="font-semibold">
                         {previewTitle || 'Untitled course'}
                       </div>
@@ -1018,43 +502,14 @@ if (!hasAnyTitle) {
                         </p>
                       </div>
                     )}
-
                     <div className="border-t pt-3 space-y-2">
                       <div className="text-xs text-gray-500 mb-1">
                         Structure preview
                       </div>
-                      {modules.length === 0 ? (
-                        <p className="text-xs text-gray-400">
-                          No modules yet.
-                        </p>
-                      ) : (
-                        <ul className="space-y-1 max-h-48 overflow-y-auto text-xs">
-                          {modules.map((m, i) => (
-                            <li key={m.id}>
-                              <span className="font-semibold">
-                                {i + 1}.{' '}
-                                {m.titles[currentLanguage] ||
-                                  m.titles.en ||
-                                  'Untitled module'}
-                              </span>
-                              {m.lessons.length > 0 && (
-                                <ul className="ml-4 list-disc">
-                                  {m.lessons.map((l) => (
-                                    <li key={l.id}>
-                                      {l.titles[currentLanguage] ||
-                                        l.titles.en ||
-                                        'Untitled lesson'}{' '}
-                                      <span className="text-[10px] text-gray-500">
-                                        • {l.xp_reward} XP
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <p className="text-xs text-gray-400">
+                        You will add modules and lessons after creating the
+                        course.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
