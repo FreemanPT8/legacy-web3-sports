@@ -3,26 +3,28 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    // 1) Cursos + módulos + lições publicados
     const { data: courses, error: coursesError } = await supabase
       .from('courses')
-      .select(`
+      .select(
+        `
         id,
         title,
         description,
-        level,
-        xp_required,
+        xp_threshold,
         published,
         modules:modules(
           id,
           lessons:lessons(id)
         )
-      `)
+      `,
+      )
       .eq('published', true);
 
     if (coursesError) {
       return NextResponse.json(
         { success: false, error: coursesError.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -32,11 +34,14 @@ export async function GET(request: NextRequest) {
     courses?.forEach((course) => {
       const modules = Array.isArray(course.modules) ? course.modules : [];
       modules.forEach((module: any) => {
-        const lessons = Array.isArray(module.lessons) ? module.lessons : [];
+        const lessons = Array.isArray(module.lessons)
+          ? module.lessons
+          : [];
         totalLessons += lessons.length;
       });
     });
 
+    // 2) Utilizadores ativos / totais
     const { count: activeUsers } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
@@ -46,20 +51,35 @@ export async function GET(request: NextRequest) {
       .from('users')
       .select('*', { count: 'exact', head: true });
 
+    // 3) XP total distribuído
     const { data: xpData, error: xpError } = await supabase
       .from('xp_transactions')
-      .select('amount');
+      .select('xp_earned');
 
-    const totalXPDistributed = (xpData || []).reduce((sum, tx) => sum + tx.amount, 0);
+    if (xpError) {
+      return NextResponse.json(
+        { success: false, error: xpError.message },
+        { status: 500 },
+      );
+    }
 
-    const topCourses = courses
-      ?.sort((a, b) => {
-        const aModules = Array.isArray(a.modules) ? a.modules : [];
-        const bModules = Array.isArray(b.modules) ? b.modules : [];
-        return bModules.length - aModules.length;
-      })
-      .slice(0, 3) || [];
+    const totalXPDistributed = (xpData || []).reduce(
+      (sum, tx: any) => sum + (tx.xp_earned || 0),
+      0,
+    );
 
+    // 4) Top cursos (por nº de módulos)
+    const topCourses =
+      courses
+        ?.slice()
+        .sort((a, b) => {
+          const aModules = Array.isArray(a.modules) ? a.modules : [];
+          const bModules = Array.isArray(b.modules) ? b.modules : [];
+          return bModules.length - aModules.length;
+        })
+        .slice(0, 3) || [];
+
+    // 5) Top leaderboard
     const { data: topLeaderboard } = await supabase
       .from('users')
       .select('id, username, xp_total, avatar_url, country')
@@ -82,7 +102,7 @@ export async function GET(request: NextRequest) {
     console.error('Education stats error:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

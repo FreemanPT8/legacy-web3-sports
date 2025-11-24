@@ -10,6 +10,7 @@ export async function GET(
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
+    // 1) Buscar lição
     const { data: lesson, error: lessonError } = await supabase
       .from('lessons')
       .select('*')
@@ -19,48 +20,56 @@ export async function GET(
     if (lessonError || !lesson) {
       return NextResponse.json(
         { success: false, error: 'Lesson not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
+    // 2) Buscar módulo + todas as lições do módulo (para prev/next)
     const { data: module, error: moduleError } = await supabase
       .from('modules')
-      .select(`
+      .select(
+        `
         *,
         lessons:lessons(*)
-      `)
+      `,
+      )
       .eq('id', lesson.module_id)
       .single();
 
     if (moduleError || !module) {
       return NextResponse.json(
         { success: false, error: 'Module not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
+    // 3) Ver se a lição já foi concluída pelo utilizador
     let isCompleted = false;
+
     if (user) {
-      const { data: completion } = await supabase
-        .from('content_consumption')
-        .select('completed')
+      const { data: completion, error: completionError } = await supabase
+        .from('lesson_completions')
+        .select('id')
         .eq('user_id', user.id)
         .eq('lesson_id', params.id)
-        .single();
+        .maybeSingle();
 
-      isCompleted = completion?.completed || false;
+      if (!completionError && completion) {
+        isCompleted = true;
+      }
     }
 
     return NextResponse.json({
       success: true,
       lesson,
       module,
-      isCompleted
+      isCompleted,
     });
   } catch (error) {
+    console.error('Error in GET /api/lessons/[id]:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
