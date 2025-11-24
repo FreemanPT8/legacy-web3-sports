@@ -11,6 +11,7 @@ interface CoursePayload {
   level?: string;
   xp_threshold?: number;
   published?: boolean;
+  image_url?: string | null;
 }
 
 interface LessonPayload {
@@ -84,6 +85,8 @@ export async function POST(request: NextRequest) {
         xp_threshold: course.xp_threshold ?? 0,
         published: course.published ?? false,
         order: 0,
+        image_url: course.image_url ?? null,
+        author_id: currentUser.userId,
       })
       .select()
       .single();
@@ -117,15 +120,20 @@ export async function POST(request: NextRequest) {
 
         if (moduleError || !newModule) {
           console.error('Error creating module:', moduleError);
-          // Continua com os restantes módulos/ lições, não faz rollback simples aqui
+          // Não fazemos rollback, mas continuamos com os restantes
           continue;
         }
 
-        if (module.lessons && Array.isArray(module.lessons) && module.lessons.length > 0) {
+        if (
+          module.lessons &&
+          Array.isArray(module.lessons) &&
+          module.lessons.length > 0
+        ) {
           const lessonsToInsert = module.lessons.map((lesson, lessonIndex) => ({
             module_id: newModule.id,
             title: lesson.titles,
-            description: lesson.descriptions,
+            // Se quiseres manter descriptions, teríamos de criar a coluna na BD
+            // description: lesson.descriptions,
             content: lesson.content,
             xp_reward: lesson.xp_reward ?? 20,
             xp_threshold: lesson.xp_threshold ?? 0,
