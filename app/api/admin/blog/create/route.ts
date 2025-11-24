@@ -3,12 +3,12 @@ import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
-type LangCode = 'en' | 'pt' | 'es' | 'fr' | 'it' | 'de';
+type MultiLang = Record<string, string>;
 
 interface BlogPayload {
-  title: Record<LangCode, string>;
-  excerpt: Record<LangCode, string>;
-  content: Record<LangCode, string>;
+  title: MultiLang;
+  excerpt: MultiLang;
+  content: MultiLang;
   category?: string;
   reading_time?: number;
   xp_reward?: number;
@@ -19,7 +19,7 @@ interface BlogPayload {
 }
 
 export async function POST(request: NextRequest) {
-  // 1) Verificar se é Admin / Super Admin
+  // 1) Verificar se é admin (Super Admin ou Admin elegível)
   const authResult = await requireAdmin(request);
 
   if (!authResult.success) {
@@ -62,26 +62,37 @@ export async function POST(request: NextRequest) {
       author_id,
     } = body;
 
-    // 3) Validações básicas
-    if (!title || !content) {
+    // 3) Validações
+    if (!title || typeof title !== 'object') {
       return NextResponse.json(
         {
           success: false,
-          error: 'Title and content are required.',
+          error: 'Invalid or missing title data.',
         },
         { status: 400 },
       );
     }
 
-    // Pelo menos título em inglês ou uma língua qualquer
+    // Pelo menos um idioma com título
     const hasAnyTitle = Object.values(title).some(
       (v) => typeof v === 'string' && v.trim().length > 0,
     );
+
     if (!hasAnyTitle) {
       return NextResponse.json(
         {
           success: false,
-          error: 'At least one language title is required.',
+          error: 'At least one localized title is required.',
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!content || typeof content !== 'object') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Content per language is required.',
         },
         { status: 400 },
       );
@@ -89,12 +100,12 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // 4) Inserir no Supabase
+    // 4) Inserir post
     const { data: newPost, error: insertError } = await supabase
       .from('blog_posts')
       .insert({
         title,
-        excerpt,
+        excerpt: excerpt || {},
         content,
         category: category || 'General',
         reading_time: reading_time ?? 5,
@@ -104,6 +115,7 @@ export async function POST(request: NextRequest) {
         published: published ?? false,
         published_at: published ? now : null,
         author_id: author_id || currentUser.userId,
+        updated_at: now,
       })
       .select()
       .single();
@@ -113,7 +125,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to create blog post.',
+          error: 'Database error while creating blog post.',
         },
         { status: 500 },
       );
@@ -125,9 +137,15 @@ export async function POST(request: NextRequest) {
       message: 'Blog post created successfully',
     });
   } catch (error) {
-    console.error('Unexpected error in POST /api/admin/blog/create:', error);
+    console.error(
+      'Unexpected error in POST /api/admin/blog/create:',
+      error,
+    );
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      {
+        success: false,
+        error: 'Internal server error',
+      },
       { status: 500 },
     );
   }
