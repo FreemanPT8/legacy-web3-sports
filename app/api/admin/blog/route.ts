@@ -3,18 +3,26 @@ import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
-export async function GET(request: NextRequest) {
-  // 1) Verificar admin básico
+type AuthOk =
+  | {
+      ok: true;
+      user: { userId: string; role?: string | null };
+      role: UserRole;
+    }
+  | { ok: false; response: NextResponse };
+
+async function ensureCanManageBlog(
+  request: NextRequest,
+): Promise<AuthOk> {
   const authResult = await requireAdmin(request);
 
   if (!authResult.success) {
-    return authResult.response!;
+    return { ok: false, response: authResult.response! };
   }
 
   const currentUser = authResult.user!;
   const role = (currentUser.role || 'Member') as UserRole;
 
-  // 2) Verificar permissão fina canManageBlog
   const canManageBlog = await userHasPermission(
     currentUser.userId,
     role,
@@ -22,14 +30,25 @@ export async function GET(request: NextRequest) {
   );
 
   if (!canManageBlog) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'You do not have permission to manage blog posts.',
-      },
-      { status: 403 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: 'You do not have permission to manage blog posts.',
+        },
+        { status: 403 },
+      ),
+    };
   }
+
+  return { ok: true, user: currentUser, role };
+}
+
+// GET → listar posts para o admin, com filtros
+export async function GET(request: NextRequest) {
+  const auth = await ensureCanManageBlog(request);
+  if (!auth.ok) return auth.response;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -77,6 +96,97 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Unexpected error in GET /api/admin/blog:', error);
+    return NextResponse.json(
+      { success: false, error: 'Server error' },
+      { status: 500 },
+    );
+  }
+}
+
+// POST → criar novo post
+export async function POST(request: NextRequest) {
+  const auth = await ensureCanManageBlog(request);
+  if (!auth.ok) return auth.response;
+
+  const { user } = auth;
+
+  try {
+    const body = await request.json();
+
+    const {
+      title,
+      excerpt,
+      content,
+      category,
+      published,
+      author,
+    } = body || {};
+
+    if (!title || typeof title !== 'object') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing or invalid "title".',
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!content || typeof content !== 'object') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing or invalid "content".',
+        },
+        { status: 400 },
+      );
+    }
+
+    const insertPayload: Record<string, any> = {
+      title,
+      content,
+    };
+
+    if (excerpt && typeof excerpt === 'object') {
+      insertPayload.excerpt = excerpt;
+    }
+
+    if (typeof category === 'string') {
+      insertPayload.category = category;
+    }
+
+    insertPayload.published = !!published;
+
+    if (typeof author === 'string') {
+      insertPayload.author = author;
+    }
+
+    insertPayload.author_id = user.userId;
+
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .insert(insertPayload)
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      console.error('Error creating blog post:', error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to create blog post.',
+        },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      post: data,
+      message: 'Blog post created successfully.',
+    });
+  } catch (error) {
+    console.error('Unexpected error in POST /api/admin/blog:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
       { status: 500 },

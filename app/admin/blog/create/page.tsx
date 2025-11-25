@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,10 +23,13 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
 import {
-  RichContentBuilder,
-  type ContentBlock,
-} from '@/components/admin/content/RichContentBuilder';
+  BlockEditor,
+  type BlocksByLanguage,
+  type LangCode,
+  serializeBlocksByLanguage,
+} from '@/components/admin/content/BlockEditor';
 
 type PermissionsResponse = {
   success: boolean;
@@ -36,7 +40,20 @@ type PermissionsResponse = {
   };
 };
 
-const LANGUAGES = [
+type MultiLang = Record<string, string>;
+
+type PostFormState = {
+  title: MultiLang;
+  excerpt: MultiLang;
+  category: string;
+  reading_time: number;
+  xp_reward: number;
+  xp_threshold: number;
+  published: boolean;
+  registered_only: boolean;
+};
+
+const LANGUAGES: { code: LangCode; name: string }[] = [
   { code: 'en', name: 'English' },
   { code: 'pt', name: 'Português' },
   { code: 'es', name: 'Español' },
@@ -56,44 +73,13 @@ const CATEGORIES = [
   'Community',
 ];
 
-function blocksToHtml(blocks: ContentBlock[]): string {
-  return blocks
-    .map((block) => {
-      const d = block.data;
-      switch (block.type) {
-        case 'heading':
-          return d.text ? `<h2>${d.text}</h2>` : '';
-        case 'subheading':
-          return d.text ? `<h3>${d.text}</h3>` : '';
-        case 'paragraph':
-          return d.text ? `<p>${d.text}</p>` : '';
-        case 'image':
-          if (!d.url) return '';
-          return `<p><img src="${d.url}" alt="${d.alt || ''}" /></p>`;
-        case 'video':
-          if (!d.url) return '';
-          // Mantemos simples: link para o vídeo
-          return `<p><a href="${d.url}" target="_blank" rel="noopener noreferrer">Watch video</a></p>`;
-        case 'button':
-          if (!d.url) return '';
-          return `<p><a href="${d.url}" class="btn-primary">${d.buttonLabel || 'Click'}</a></p>`;
-        case 'divider':
-          return '<hr />';
-        default:
-          return '';
-      }
-    })
-    .filter(Boolean)
-    .join('\n\n');
-}
-
 export default function CreateBlogPostPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
   const [saving, setSaving] = useState(false);
-  const [post, setPost] = useState({
+  const [post, setPost] = useState<PostFormState>({
     title: { en: '', pt: '', es: '', fr: '', it: '', de: '' },
     excerpt: { en: '', pt: '', es: '', fr: '', it: '', de: '' },
     category: 'Blockchain',
@@ -103,17 +89,13 @@ export default function CreateBlogPostPage() {
     published: false,
     registered_only: false,
   });
-  const [currentLanguage, setCurrentLanguage] = useState('en');
 
-  const [contentBlocksByLang, setContentBlocksByLang] = useState<
-    Record<string, ContentBlock[]>
-  >(() => {
-    const initial: Record<string, ContentBlock[]> = {};
-    for (const lang of LANGUAGES) {
-      initial[lang.code] = [];
-    }
-    return initial;
-  });
+  // Língua para título & excerpt (o BlockEditor gere as línguas dos blocos internamente)
+  const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
+
+  // Blocos de conteúdo por língua (para o BlockEditor)
+  const [blocksByLanguage, setBlocksByLanguage] =
+    useState<BlocksByLanguage>({});
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageBlog, setCanManageBlog] = useState(false);
@@ -171,13 +153,6 @@ export default function CreateBlogPostPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  const handleBlocksChange = (lang: string, blocks: ContentBlock[]) => {
-    setContentBlocksByLang((prev) => ({
-      ...prev,
-      [lang]: blocks,
-    }));
-  };
-
   const handleSave = async (publish: boolean = false) => {
     if (!user || !canManageBlog) {
       toast({
@@ -188,15 +163,25 @@ export default function CreateBlogPostPage() {
       return;
     }
 
+    // Validar título em pelo menos uma língua
+    const hasAnyTitle = Object.values(post.title).some(
+      (v) => typeof v === 'string' && v.trim().length > 0,
+    );
+
+    if (!hasAnyTitle) {
+      toast({
+        title: 'Missing title',
+        description:
+          'Please add a post title in at least one language before saving.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       // Construir HTML por língua a partir dos blocos
-      const content: Record<string, string> = {};
-      for (const lang of LANGUAGES) {
-        const code = lang.code;
-        const blocks = contentBlocksByLang[code] || [];
-        content[code] = blocksToHtml(blocks);
-      }
+      const content = serializeBlocksByLanguage(blocksByLanguage);
 
       const token = getToken();
       const response = await fetch('/api/admin/blog/create', {
@@ -213,7 +198,7 @@ export default function CreateBlogPostPage() {
           reading_time: post.reading_time,
           xp_reward: post.xp_reward,
           xp_threshold: post.xp_threshold,
-          published: publish,
+          published: publish || post.published,
           registered_only: post.registered_only,
           author_id: user.id,
         }),
@@ -243,12 +228,19 @@ export default function CreateBlogPostPage() {
     setSaving(false);
   };
 
-  if (loading || !user || (user.role !== 'Super Admin' && user.role !== 'Admin') || !permissionsLoaded) {
+  if (
+    loading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin') ||
+    !permissionsLoaded
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">
+            Loading...
+          </p>
         </div>
       </div>
     );
@@ -263,8 +255,8 @@ export default function CreateBlogPostPage() {
             <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">No permission</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              You don&apos;t have permission to create or edit blog posts. Please contact a Super Admin if you think
-              this is a mistake.
+              You don&apos;t have permission to create or edit blog posts.
+              Please contact a Super Admin if you think this is a mistake.
             </p>
             <Link href="/admin/blog">
               <Button variant="outline">Back to blog</Button>
@@ -276,9 +268,9 @@ export default function CreateBlogPostPage() {
     );
   }
 
-  const currentLangLabel = LANGUAGES.find(
-    (l) => l.code === currentLanguage,
-  )?.name;
+  const currentLangLabel =
+    LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
+    currentLanguage;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -325,11 +317,16 @@ export default function CreateBlogPostPage() {
                     <CardTitle>Content</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    {/* Tabs para título & excerpt */}
                     <div className="flex gap-2 flex-wrap">
                       {LANGUAGES.map((lang) => (
                         <Badge
                           key={lang.code}
-                          variant={currentLanguage === lang.code ? 'default' : 'outline'}
+                          variant={
+                            currentLanguage === lang.code
+                              ? 'default'
+                              : 'outline'
+                          }
                           className="cursor-pointer"
                           onClick={() => setCurrentLanguage(lang.code)}
                         >
@@ -341,7 +338,9 @@ export default function CreateBlogPostPage() {
                     <div>
                       <Label>Title ({currentLangLabel})</Label>
                       <Input
-                        value={post.title[currentLanguage as keyof typeof post.title]}
+                        value={
+                          post.title[currentLanguage as keyof typeof post.title]
+                        }
                         onChange={(e) =>
                           setPost({
                             ...post,
@@ -359,7 +358,11 @@ export default function CreateBlogPostPage() {
                     <div>
                       <Label>Excerpt ({currentLangLabel})</Label>
                       <Textarea
-                        value={post.excerpt[currentLanguage as keyof typeof post.excerpt]}
+                        value={
+                          post.excerpt[
+                            currentLanguage as keyof typeof post.excerpt
+                          ]
+                        }
                         onChange={(e) =>
                           setPost({
                             ...post,
@@ -375,12 +378,16 @@ export default function CreateBlogPostPage() {
                     </div>
 
                     <div>
-                      <Label>Body ({currentLangLabel})</Label>
-                      <RichContentBuilder
-                        blocks={contentBlocksByLang[currentLanguage] || []}
-                        onChange={(blocks) =>
-                          handleBlocksChange(currentLanguage, blocks)
-                        }
+                      <Label>Body (blocks, all languages)</Label>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Use the block editor below to build the article body.
+                        Inside the editor you can switch between languages for
+                        the content blocks.
+                      </p>
+                      <BlockEditor
+                        value={blocksByLanguage}
+                        onChange={setBlocksByLanguage}
+                        initialLanguage={currentLanguage}
                       />
                     </div>
                   </CardContent>
