@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
@@ -14,6 +14,24 @@ type AuthOk =
 async function ensureCanManageBlog(
   request: NextRequest,
 ): Promise<AuthOk> {
+  // Garante que temos supabaseAdmin configurado
+  if (!supabaseAdmin) {
+    console.error(
+      'SUPABASE_SERVICE_ROLE_KEY is not configured. supabaseAdmin is null.',
+    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error:
+            'Supabase admin client not configured on server (missing service role key).',
+        },
+        { status: 500 },
+      ),
+    };
+  }
+
   const authResult = await requireAdmin(request);
 
   if (!authResult.success) {
@@ -54,7 +72,7 @@ export async function GET(
   if (!auth.ok) return auth.response;
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('blog_posts')
       .select('*')
       .eq('id', params.postId)
@@ -100,7 +118,6 @@ export async function PUT(
       content,
       category,
       published,
-      author,
       reading_time,
       xp_reward,
       xp_threshold,
@@ -108,9 +125,7 @@ export async function PUT(
     } = body || {};
 
     const updatePayload: Record<string, any> = {};
-    const now = new Date().toISOString();
 
-    // Campos multi-língua
     if (title && typeof title === 'object') {
       updatePayload.title = title;
     }
@@ -120,16 +135,13 @@ export async function PUT(
     if (content && typeof content === 'object') {
       updatePayload.content = content;
     }
-
-    // Campos básicos
     if (typeof category === 'string') {
       updatePayload.category = category;
     }
-    if (typeof author === 'string') {
-      updatePayload.author = author;
+    if (typeof published === 'boolean') {
+      updatePayload.published = published;
+      updatePayload.published_at = published ? new Date().toISOString() : null;
     }
-
-    // Campos “gamification” / meta
     if (typeof reading_time === 'number') {
       updatePayload.reading_time = reading_time;
     }
@@ -143,27 +155,20 @@ export async function PUT(
       updatePayload.registered_only = registered_only;
     }
 
-    // Published + timestamps
-    if (typeof published === 'boolean') {
-      updatePayload.published = published;
-      updatePayload.published_at = published ? now : null;
-    }
-
-    // Sempre que há update, marcamos updated_at
-    updatePayload.updated_at = now;
+    updatePayload.updated_at = new Date().toISOString();
 
     if (Object.keys(updatePayload).length === 0) {
       return NextResponse.json(
         {
           success: false,
           error:
-            'No updatable fields provided. (title, excerpt, content, category, published, author, reading_time, xp_reward, xp_threshold, registered_only)',
+            'No updatable fields provided. (title, excerpt, content, category, published, reading_time, xp_reward, xp_threshold, registered_only)',
         },
         { status: 400 },
       );
     }
 
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabaseAdmin
       .from('blog_posts')
       .update(updatePayload)
       .eq('id', params.postId)
@@ -204,7 +209,7 @@ export async function DELETE(
   if (!auth.ok) return auth.response;
 
   try {
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('blog_posts')
       .delete()
       .eq('id', params.postId);

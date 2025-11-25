@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
@@ -19,6 +19,21 @@ interface BlogPayload {
 }
 
 export async function POST(request: NextRequest) {
+  // Garante que temos supabaseAdmin configurado
+  if (!supabaseAdmin) {
+    console.error(
+      'SUPABASE_SERVICE_ROLE_KEY is not configured. supabaseAdmin is null.',
+    );
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          'Supabase admin client not configured on server (missing service role key).',
+      },
+      { status: 500 },
+    );
+  }
+
   // 1) Verificar se é admin (Super Admin ou Admin elegível)
   const authResult = await requireAdmin(request);
 
@@ -99,31 +114,23 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // 4) Inserir post
-    //  - NÃO forçamos author_id se houver problemas de FK
-    const insertPayload: Record<string, any> = {
-      title,
-      excerpt: excerpt || {},
-      content,
-      category: category || 'General',
-      reading_time: reading_time ?? 5,
-      xp_reward: xp_reward ?? 15,
-      xp_threshold: xp_threshold ?? 0,
-      registered_only: registered_only ?? false,
-      published: published ?? false,
-      published_at: published ? now : null,
-      updated_at: now,
-    };
-
-    // se vier um author_id explícito do front, usamos;
-    // caso contrário, deixamos NULL (FK permite null)
-    if (author_id) {
-      insertPayload.author_id = author_id;
-    }
-
-    const { data: newPost, error: insertError } = await supabase
+    // 4) Inserir post (USAR supabaseAdmin AQUI)
+    const { data: newPost, error: insertError } = await supabaseAdmin
       .from('blog_posts')
-      .insert(insertPayload)
+      .insert({
+        title,
+        excerpt: excerpt || {},
+        content,
+        category: category || 'General',
+        reading_time: reading_time ?? 5,
+        xp_reward: xp_reward ?? 15,
+        xp_threshold: xp_threshold ?? 0,
+        registered_only: registered_only ?? false,
+        published: published ?? false,
+        published_at: published ? now : null,
+        author_id: author_id || currentUser.userId,
+        updated_at: now,
+      })
       .select()
       .single();
 
@@ -132,10 +139,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          // devolvemos a mensagem real do Supabase para tu veres no toast
-          error:
-            insertError?.message ||
-            'Database error while creating blog post.',
+          error: insertError?.message
+            ? insertError.message
+            : 'Database error while creating blog post.',
         },
         { status: 500 },
       );
@@ -147,10 +153,7 @@ export async function POST(request: NextRequest) {
       message: 'Blog post created successfully',
     });
   } catch (error) {
-    console.error(
-      'Unexpected error in POST /api/admin/blog/create:',
-      error,
-    );
+    console.error('Unexpected error in POST /api/admin/blog/create:', error);
     return NextResponse.json(
       {
         success: false,
