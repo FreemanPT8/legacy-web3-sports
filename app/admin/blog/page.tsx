@@ -180,6 +180,54 @@ export default function BlogManagementPage() {
     }
   }, [user, toast, getToken]);
 
+  // Handler para apagar post
+  const handleDelete = async (postId: string) => {
+    if (!user || !canManageBlog || !isSuperAdmin) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete this blog post?',
+    );
+    if (!confirmed) return;
+
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/admin/blog/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        console.error('Error deleting blog post:', data);
+        toast({
+          title: 'Error deleting post',
+          description: data.error || 'Failed to delete blog post.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Remover do estado local
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+
+      toast({
+        title: 'Post deleted',
+        description: 'The blog post was deleted successfully.',
+      });
+    } catch (err) {
+      console.error('Network error deleting blog post:', err);
+      toast({
+        title: 'Network error',
+        description: 'Could not delete blog post. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (
     loading ||
     !user ||
@@ -375,7 +423,11 @@ export default function BlogManagementPage() {
                             </div>
                           </div>
                           <div className="flex gap-2 ml-4">
-                            <Button size="sm" variant="outline">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => router.push(`/blog/${post.id}`)}
+                            >
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </Button>
@@ -396,6 +448,7 @@ export default function BlogManagementPage() {
                               variant="outline"
                               className="disabled:opacity-60 disabled:cursor-not-allowed"
                               disabled={!canManageBlog || !isSuperAdmin}
+                              onClick={() => handleDelete(post.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
