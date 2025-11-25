@@ -3,9 +3,14 @@ import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
-async function ensureCanManageCourses(request: NextRequest) {
+type EnsureResult =
+  | { ok: true; user: any }
+  | { ok: false; response: NextResponse };
+
+async function ensureCanManageCourses(request: NextRequest): Promise<EnsureResult> {
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
+    // Aqui devolvemos SEMPRE um NextResponse
     return { ok: false, response: authResult.response! };
   }
 
@@ -37,7 +42,7 @@ async function ensureCanManageCourses(request: NextRequest) {
 async function handleUpdate(
   request: NextRequest,
   params: { id: string; moduleId: string },
-) {
+): Promise<NextResponse> {
   const auth = await ensureCanManageCourses(request);
   if (!auth.ok) return auth.response;
 
@@ -62,7 +67,8 @@ async function handleUpdate(
       updatePayload.xp_threshold = xp_threshold;
     }
     if (typeof xp_reward === 'number') {
-      updatePayload.x_reward = xp_reward; // corrigido para xp_reward se a coluna tiver esse nome
+      // 👈 aqui estava "x_reward", corrigi para "xp_reward"
+      updatePayload.xp_reward = xp_reward;
     }
     if (typeof order === 'number') {
       updatePayload.order = order;
@@ -129,21 +135,21 @@ async function handleUpdate(
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string; moduleId: string } },
-) {
+): Promise<Response> {
   return handleUpdate(request, params);
 }
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string; moduleId: string } },
-) {
+): Promise<Response> {
   return handleUpdate(request, params);
 }
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string; moduleId: string } },
-) {
+): Promise<Response> {
   const auth = await ensureCanManageCourses(request);
   if (!auth.ok) return auth.response;
 
