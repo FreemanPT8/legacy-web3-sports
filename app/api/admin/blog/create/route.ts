@@ -73,7 +73,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pelo menos um idioma com título
     const hasAnyTitle = Object.values(title).some(
       (v) => typeof v === 'string' && v.trim().length > 0,
     );
@@ -101,22 +100,30 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
 
     // 4) Inserir post
+    //  - NÃO forçamos author_id se houver problemas de FK
+    const insertPayload: Record<string, any> = {
+      title,
+      excerpt: excerpt || {},
+      content,
+      category: category || 'General',
+      reading_time: reading_time ?? 5,
+      xp_reward: xp_reward ?? 15,
+      xp_threshold: xp_threshold ?? 0,
+      registered_only: registered_only ?? false,
+      published: published ?? false,
+      published_at: published ? now : null,
+      updated_at: now,
+    };
+
+    // se vier um author_id explícito do front, usamos;
+    // caso contrário, deixamos NULL (FK permite null)
+    if (author_id) {
+      insertPayload.author_id = author_id;
+    }
+
     const { data: newPost, error: insertError } = await supabase
       .from('blog_posts')
-      .insert({
-        title,
-        excerpt: excerpt || {},
-        content,
-        category: category || 'General',
-        reading_time: reading_time ?? 5,
-        xp_reward: xp_reward ?? 15,
-        xp_threshold: xp_threshold ?? 0,
-        registered_only: registered_only ?? false,
-        published: published ?? false,
-        published_at: published ? now : null,
-        author_id: author_id || currentUser.userId,
-        updated_at: now,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
@@ -125,7 +132,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Database error while creating blog post.',
+          // devolvemos a mensagem real do Supabase para tu veres no toast
+          error:
+            insertError?.message ||
+            'Database error while creating blog post.',
         },
         { status: 500 },
       );
