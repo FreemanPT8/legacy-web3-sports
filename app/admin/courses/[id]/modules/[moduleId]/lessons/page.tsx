@@ -26,6 +26,7 @@ import {
   Plus,
   Save,
   Trash2,
+  LayoutTemplate,
 } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
@@ -755,7 +756,28 @@ export default function ModuleLessonsPage() {
                             Lesson ID:{' '}
                             {lesson.id ? lesson.id : 'Not saved yet'}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                if (!lesson.id) {
+                                  toast({
+                                    title: 'Save lesson first',
+                                    description:
+                                      'You need to save the lesson before opening the advanced editor.',
+                                    variant: 'destructive',
+                                  });
+                                  return;
+                                }
+                                router.push(
+                                  `/admin/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}`,
+                                );
+                              }}
+                            >
+                              <LayoutTemplate className="h-4 w-4 mr-1" />
+                              Open editor
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
