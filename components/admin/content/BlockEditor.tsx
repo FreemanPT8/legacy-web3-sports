@@ -81,9 +81,11 @@ export interface BlockEditorProps {
  * Gera um ID estável para blocos. Usa crypto.randomUUID quando possível.
  */
 function createId(prefix: string = 'blk') {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    // @ts-expect-error - TS nem sempre sabe que crypto.randomUUID existe
-    return crypto.randomUUID() as string;
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof (crypto as { randomUUID?: () => string }).randomUUID === 'function'
+  ) {
+    return (crypto as { randomUUID: () => string }).randomUUID();
   }
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
