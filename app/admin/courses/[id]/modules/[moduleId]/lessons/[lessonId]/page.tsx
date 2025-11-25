@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -21,23 +20,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
-import {
-  ArrowLeft,
-  Save,
-  Plus,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
-  Copy,
-  Heading as HeadingIcon,
-  Type as ParagraphIcon,
-  Image as ImageIcon,
-  Video,
-  List as ListIcon,
-  Quote,
-} from 'lucide-react';
+import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react';
 
-const LANGUAGES = [
+import {
+  BlockEditor,
+  type BlocksByLanguage,
+  serializeBlocksByLanguage,
+  type LangCode,
+} from '@/components/admin/content/BlockEditor';
+
+const LANGUAGES: { code: LangCode; name: string }[] = [
   { code: 'en', name: 'English' },
   { code: 'pt', name: 'Português' },
   { code: 'es', name: 'Español' },
@@ -45,8 +37,6 @@ const LANGUAGES = [
   { code: 'it', name: 'Italiano' },
   { code: 'de', name: 'Deutsch' },
 ] as const;
-
-type LangCode = (typeof LANGUAGES)[number]['code'];
 
 type LessonRecord = {
   id: string;
@@ -62,107 +52,8 @@ type LessonRecord = {
   order?: number | null;
 };
 
-type BlockType =
-  | 'heading'
-  | 'paragraph'
-  | 'image'
-  | 'video'
-  | 'list'
-  | 'quote'
-  | 'html';
-
-type Block = {
-  id: string;
-  type: BlockType;
-  data: any;
-};
-
-function generateId(prefix: string = 'blk') {
+function generateBlockId(prefix: string = 'blk') {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function serializeBlocksToHtml(blocks: Block[]): string {
-  const parts: string[] = [];
-
-  for (const block of blocks) {
-    switch (block.type) {
-      case 'heading': {
-        const text = (block.data?.text || '').toString();
-        if (text.trim()) {
-          parts.push(`<h2>${text}</h2>`);
-        }
-        break;
-      }
-      case 'paragraph': {
-        const text = (block.data?.text || '').toString();
-        if (text.trim()) {
-          parts.push(`<p>${text}</p>`);
-        }
-        break;
-      }
-      case 'image': {
-        const url = (block.data?.url || '').toString();
-        const alt = (block.data?.alt || '').toString();
-        if (url.trim()) {
-          const safeAlt = alt || '';
-          parts.push(
-            `<figure><img src="${url}" alt="${safeAlt}"/>${
-              safeAlt ? `<figcaption>${safeAlt}</figcaption>` : ''
-            }</figure>`,
-          );
-        }
-        break;
-      }
-      case 'video': {
-        const url = (block.data?.url || '').toString();
-        if (url.trim()) {
-          // Embed simples por iframe
-          parts.push(
-            `<div class="video-container"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`,
-          );
-        }
-        break;
-      }
-      case 'list': {
-        const rawItems = block.data?.items;
-        const items: string[] = Array.isArray(rawItems)
-          ? rawItems.map((x) => String(x || ''))
-          : [];
-        const cleaned = items.filter((x) => x.trim().length > 0);
-        if (cleaned.length) {
-          parts.push(
-            `<ul>${cleaned
-              .map((item) => `<li>${item}</li>`)
-              .join('')}</ul>`,
-          );
-        }
-        break;
-      }
-      case 'quote': {
-        const text = (block.data?.text || '').toString();
-        const author = (block.data?.author || '').toString();
-        if (text.trim()) {
-          parts.push(
-            `<blockquote><p>${text}</p>${
-              author ? `<footer>${author}</footer>` : ''
-            }</blockquote>`,
-          );
-        }
-        break;
-      }
-      case 'html': {
-        const html = (block.data?.html || '').toString();
-        if (html.trim()) {
-          parts.push(html);
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  return parts.join('\n\n');
 }
 
 export default function LessonEditorPage() {
@@ -180,9 +71,7 @@ export default function LessonEditorPage() {
   const [saving, setSaving] = useState(false);
 
   const [lesson, setLesson] = useState<LessonRecord | null>(null);
-  const [blocksByLang, setBlocksByLang] = useState<
-    Partial<Record<LangCode, Block[]>>
-  >({});
+  const [blocksByLang, setBlocksByLang] = useState<BlocksByLanguage>({});
 
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
@@ -240,9 +129,9 @@ export default function LessonEditorPage() {
         });
 
         // Construir blocos por língua a partir de content[lang] (HTML existente)
-        const initialBlocks: Partial<Record<LangCode, Block[]>> = {};
+        const initialBlocks: BlocksByLanguage = {};
         LANGUAGES.forEach((lang) => {
-          const code = lang.code as LangCode;
+          const code = lang.code;
           const rawContent =
             l.content && typeof l.content === 'object'
               ? l.content[code]
@@ -251,7 +140,7 @@ export default function LessonEditorPage() {
           if (rawContent && typeof rawContent === 'string') {
             initialBlocks[code] = [
               {
-                id: generateId('html'),
+                id: generateBlockId('html'),
                 type: 'html',
                 data: { html: rawContent },
               },
@@ -282,18 +171,6 @@ export default function LessonEditorPage() {
   const currentLangLabel =
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
     currentLanguage;
-
-  const blocksForCurrentLang: Block[] = useMemo(
-    () => blocksByLang[currentLanguage] || [],
-    [blocksByLang, currentLanguage],
-  );
-
-  function setBlocksForCurrentLang(newBlocks: Block[]) {
-    setBlocksByLang((prev) => ({
-      ...prev,
-      [currentLanguage]: newBlocks,
-    }));
-  }
 
   // Helpers para meta multi-língua
   function updateLessonMLField(
@@ -338,98 +215,13 @@ export default function LessonEditorPage() {
     });
   }
 
-  // Blocos: adicionar / editar / mover / duplicar / remover
-  function addBlock(type: BlockType) {
-    const newBlock: Block =
-      type === 'list'
-        ? {
-            id: generateId(type),
-            type,
-            data: { items: [''] },
-          }
-        : type === 'image'
-        ? {
-            id: generateId(type),
-            type,
-            data: { url: '', alt: '' },
-          }
-        : type === 'video'
-        ? {
-            id: generateId(type),
-            type,
-            data: { url: '' },
-          }
-        : type === 'quote'
-        ? {
-            id: generateId(type),
-            type,
-            data: { text: '', author: '' },
-          }
-        : type === 'html'
-        ? {
-            id: generateId(type),
-            type,
-            data: { html: '' },
-          }
-        : {
-            id: generateId(type),
-            type,
-            data: { text: '' },
-          };
-
-    setBlocksForCurrentLang([...blocksForCurrentLang, newBlock]);
-  }
-
-  function updateBlock(blockId: string, data: any) {
-    setBlocksForCurrentLang(
-      blocksForCurrentLang.map((b) =>
-        b.id === blockId ? { ...b, data: { ...b.data, ...data } } : b,
-      ),
-    );
-  }
-
-  function moveBlock(blockId: string, direction: 'up' | 'down') {
-    const idx = blocksForCurrentLang.findIndex((b) => b.id === blockId);
-    if (idx === -1) return;
-
-    const newBlocks = [...blocksForCurrentLang];
-    const targetIndex = direction === 'up' ? idx - 1 : idx + 1;
-
-    if (targetIndex < 0 || targetIndex >= newBlocks.length) return;
-
-    const [removed] = newBlocks.splice(idx, 1);
-    newBlocks.splice(targetIndex, 0, removed);
-    setBlocksForCurrentLang(newBlocks);
-  }
-
-  function duplicateBlock(blockId: string) {
-    const idx = blocksForCurrentLang.findIndex((b) => b.id === blockId);
-    if (idx === -1) return;
-    const original = blocksForCurrentLang[idx];
-    const clone: Block = {
-      ...original,
-      id: generateId(original.type),
-      data: { ...original.data },
-    };
-
-    const newBlocks = [...blocksForCurrentLang];
-    newBlocks.splice(idx + 1, 0, clone);
-    setBlocksForCurrentLang(newBlocks);
-  }
-
-  function removeBlock(blockId: string) {
-    setBlocksForCurrentLang(
-      blocksForCurrentLang.filter((b) => b.id !== blockId),
-    );
-  }
-
   async function handleSave() {
     if (!lesson) return;
 
     // Validar título em pelo menos uma língua
     const hasAnyTitle = LANGUAGES.some((lang) => {
       const rawTitle = lesson.title || {};
-      const v = rawTitle[lang.code as LangCode];
+      const v = rawTitle[lang.code];
       return typeof v === 'string' && v.trim().length > 0;
     });
 
@@ -445,15 +237,8 @@ export default function LessonEditorPage() {
 
     setSaving(true);
     try {
-      // 1) Serializar blocos → HTML por língua
-      const contentByLang: Record<string, string> = {};
-
-      LANGUAGES.forEach((lang) => {
-        const code = lang.code as LangCode;
-        const blocks = blocksByLang[code] || [];
-        const html = serializeBlocksToHtml(blocks);
-        contentByLang[code] = html;
-      });
+      // 1) Serializar blocos → HTML por língua (mantém compatibilidade com o front público)
+      const contentByLang = serializeBlocksByLanguage(blocksByLang);
 
       const token = getToken();
 
@@ -586,7 +371,7 @@ export default function LessonEditorPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">
-                  Language for title, description & blocks
+                  Language for title & description
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -747,376 +532,13 @@ export default function LessonEditorPage() {
                 </Card>
               </div>
 
-              {/* Coluna direita: editor de blocos */}
+              {/* Coluna direita: novo BlockEditor */}
               <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      Blocks ({currentLangLabel})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Toolbar de blocos */}
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addBlock('heading')}
-                      >
-                        <HeadingIcon className="h-4 w-4 mr-1" />
-                        Heading
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addBlock('paragraph')}
-                      >
-                        <ParagraphIcon className="h-4 w-4 mr-1" />
-                        Paragraph
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addBlock('image')}
-                      >
-                        <ImageIcon className="h-4 w-4 mr-1" />
-                        Image
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addBlock('video')}
-                      >
-                        <Video className="h-4 w-4 mr-1" />
-                        Video
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addBlock('list')}
-                      >
-                        <ListIcon className="h-4 w-4 mr-1" />
-                        List
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addBlock('quote')}
-                      >
-                        <Quote className="h-4 w-4 mr-1" />
-                        Quote
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addBlock('html')}
-                      >
-                        {'</>'} HTML
-                      </Button>
-                    </div>
-
-                    {blocksForCurrentLang.length === 0 ? (
-                      <div className="text-sm text-gray-500 border border-dashed rounded-md p-4 text-center">
-                        No blocks yet. Use the toolbar above to add your
-                        first block.
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {blocksForCurrentLang.map((block, index) => {
-                          const isFirst = index === 0;
-                          const isLast =
-                            index === blocksForCurrentLang.length - 1;
-
-                          return (
-                            <Card
-                              key={block.id}
-                              className="border border-blue-100"
-                            >
-                              <CardHeader className="flex flex-row items-center justify-between gap-2 py-2 px-4">
-                                <div className="flex items-center gap-2 text-xs">
-                                  <Badge variant="outline">
-                                    {block.type.toUpperCase()}
-                                  </Badge>
-                                  <span className="text-gray-500">
-                                    Block {index + 1}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={isFirst}
-                                    onClick={() =>
-                                      moveBlock(block.id, 'up')
-                                    }
-                                  >
-                                    <ArrowUp className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={isLast}
-                                    onClick={() =>
-                                      moveBlock(block.id, 'down')
-                                    }
-                                  >
-                                    <ArrowDown className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => duplicateBlock(block.id)}
-                                  >
-                                    <Copy className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removeBlock(block.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </CardHeader>
-                              <CardContent className="space-y-2 pt-0 pb-3 px-4">
-                                {block.type === 'heading' && (
-                                  <div>
-                                    <Label className="text-xs">
-                                      Heading text
-                                    </Label>
-                                    <Input
-                                      className="mt-1"
-                                      value={block.data?.text || ''}
-                                      onChange={(e) =>
-                                        updateBlock(block.id, {
-                                          text: e.target.value,
-                                        })
-                                      }
-                                      placeholder="Section title"
-                                    />
-                                  </div>
-                                )}
-
-                                {block.type === 'paragraph' && (
-                                  <div>
-                                    <Label className="text-xs">
-                                      Paragraph text
-                                    </Label>
-                                    <Textarea
-                                      className="mt-1"
-                                      rows={4}
-                                      value={block.data?.text || ''}
-                                      onChange={(e) =>
-                                        updateBlock(block.id, {
-                                          text: e.target.value,
-                                        })
-                                      }
-                                      placeholder="Main text content..."
-                                    />
-                                  </div>
-                                )}
-
-                                {block.type === 'image' && (
-                                  <div className="space-y-2">
-                                    <div>
-                                      <Label className="text-xs">
-                                        Image URL
-                                      </Label>
-                                      <Input
-                                        className="mt-1"
-                                        value={block.data?.url || ''}
-                                        onChange={(e) =>
-                                          updateBlock(block.id, {
-                                            url: e.target.value,
-                                          })
-                                        }
-                                        placeholder="https://..."
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs">
-                                        Alt text / caption
-                                      </Label>
-                                      <Input
-                                        className="mt-1"
-                                        value={block.data?.alt || ''}
-                                        onChange={(e) =>
-                                          updateBlock(block.id, {
-                                            alt: e.target.value,
-                                          })
-                                        }
-                                        placeholder="Short description for the image"
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-
-                                {block.type === 'video' && (
-                                  <div>
-                                    <Label className="text-xs">
-                                      Video URL (YouTube, Vimeo, etc.)
-                                    </Label>
-                                    <Input
-                                      className="mt-1"
-                                      value={block.data?.url || ''}
-                                      onChange={(e) =>
-                                        updateBlock(block.id, {
-                                          url: e.target.value,
-                                        })
-                                      }
-                                      placeholder="https://youtube.com/..."
-                                    />
-                                    <p className="text-[11px] text-gray-500 mt-1">
-                                      Use the full embed or watch URL. The
-                                      player will be rendered on the public
-                                      page.
-                                    </p>
-                                  </div>
-                                )}
-
-                                {block.type === 'list' && (
-                                  <div className="space-y-2">
-                                    <Label className="text-xs">
-                                      List items
-                                    </Label>
-                                    {(Array.isArray(block.data?.items)
-                                      ? block.data.items
-                                      : ['']
-                                    ).map((item: string, idx: number) => (
-                                      <div
-                                        key={idx}
-                                        className="flex items-center gap-2 mt-1"
-                                      >
-                                        <Input
-                                          className="flex-1"
-                                          value={item}
-                                          onChange={(e) => {
-                                            const items = Array.isArray(
-                                              block.data?.items,
-                                            )
-                                              ? [...block.data.items]
-                                              : [''];
-                                            items[idx] = e.target.value;
-                                            updateBlock(block.id, { items });
-                                          }}
-                                          placeholder={`Item ${idx + 1}`}
-                                        />
-                                        <Button
-                                          type="button"
-                                          variant="outline"
-                                          size="icon"
-                                          onClick={() => {
-                                            const items = Array.isArray(
-                                              block.data?.items,
-                                            )
-                                              ? [...block.data.items]
-                                              : [''];
-                                            items.splice(idx, 1);
-                                            updateBlock(block.id, {
-                                              items: items.length
-                                                ? items
-                                                : [''],
-                                            });
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                    ))}
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="mt-1"
-                                      onClick={() => {
-                                        const items = Array.isArray(
-                                          block.data?.items,
-                                        )
-                                          ? [...block.data.items]
-                                          : [''];
-                                        items.push('');
-                                        updateBlock(block.id, { items });
-                                      }}
-                                    >
-                                      <Plus className="h-4 w-4 mr-1" />
-                                      Add item
-                                    </Button>
-                                  </div>
-                                )}
-
-                                {block.type === 'quote' && (
-                                  <div className="space-y-2">
-                                    <div>
-                                      <Label className="text-xs">
-                                        Quote text
-                                      </Label>
-                                      <Textarea
-                                        className="mt-1"
-                                        rows={3}
-                                        value={block.data?.text || ''}
-                                        onChange={(e) =>
-                                          updateBlock(block.id, {
-                                            text: e.target.value,
-                                          })
-                                        }
-                                        placeholder="Inspirational or important quote"
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs">
-                                        Author (optional)
-                                      </Label>
-                                      <Input
-                                        className="mt-1"
-                                        value={block.data?.author || ''}
-                                        onChange={(e) =>
-                                          updateBlock(block.id, {
-                                            author: e.target.value,
-                                          })
-                                        }
-                                        placeholder="Name of the person, if relevant"
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-
-                                {block.type === 'html' && (
-                                  <div>
-                                    <Label className="text-xs">
-                                      Raw HTML block
-                                    </Label>
-                                    <Textarea
-                                      className="mt-1 font-mono text-xs"
-                                      rows={8}
-                                      value={block.data?.html || ''}
-                                      onChange={(e) =>
-                                        updateBlock(block.id, {
-                                          html: e.target.value,
-                                        })
-                                      }
-                                      placeholder="<p>Custom HTML here...</p>"
-                                    />
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <BlockEditor
+                  value={blocksByLang}
+                  onChange={setBlocksByLang}
+                  initialLanguage={currentLanguage}
+                />
               </div>
             </div>
           </div>
