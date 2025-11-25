@@ -3,10 +3,10 @@ import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
-async function checkPermission(request: NextRequest) {
+async function ensureCanManageCourses(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
-    return { ok: false as const, response: authResult.response! };
+    return { ok: false, response: authResult.response! };
   }
 
   const currentUser = authResult.user!;
@@ -20,7 +20,7 @@ async function checkPermission(request: NextRequest) {
 
   if (!canManageCourses) {
     return {
-      ok: false as const,
+      ok: false,
       response: NextResponse.json(
         {
           success: false,
@@ -31,15 +31,15 @@ async function checkPermission(request: NextRequest) {
     };
   }
 
-  return { ok: true as const };
+  return { ok: true, user: currentUser };
 }
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const perm = await checkPermission(request);
-  if (!perm.ok) return perm.response;
+  const auth = await ensureCanManageCourses(request);
+  if (!auth.ok) return auth.response;
 
   try {
     const { data: modules, error } = await supabase
@@ -84,12 +84,11 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const perm = await checkPermission(request);
-  if (!perm.ok) return perm.response;
+  const auth = await ensureCanManageCourses(request);
+  if (!auth.ok) return auth.response;
 
   try {
     const body = await request.json();
-
     const {
       title,
       description,
@@ -97,20 +96,18 @@ export async function POST(
       xp_reward,
       image_url,
       order,
+      published,
     } = body || {};
 
-    // Preciso de pelo menos um título em alguma língua
     if (!title || typeof title !== 'object') {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Module title (multilingual object) is required.',
-        },
+        { success: false, error: 'Module title (multilingual JSON) is required.' },
         { status: 400 },
       );
     }
 
-    const hasAnyTitle = Object.values(title as Record<string, any>).some(
+    // Pelo menos um título em alguma língua
+    const hasAnyTitle = Object.values(title as Record<string, string>).some(
       (v) => typeof v === 'string' && v.trim().length > 0,
     );
 
@@ -118,34 +115,39 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error:
-            'Please provide a module title in at least one language.',
+          error: 'Please provide a module title in at least one language.',
         },
         { status: 400 },
       );
     }
 
-    const insertPayload: Record<string, any> = {
+    const insertPayload = {
       course_id: params.id,
       title,
       description: description || {},
-      xp_threshold:
-        typeof xp_threshold === 'number' ? xp_threshold : 0,
-      // se a coluna xp_reward existir na tabela modules, isto funciona;
-      // se não existir, remove esta linha ou cria a coluna.
+      xp_threshold: typeof xp_threshold === 'number' ? xp_threshold : 0,
       xp_reward: typeof xp_reward === 'number' ? xp_reward : 0,
       image_url: image_url ?? null,
       order: typeof order === 'number' ? order : 0,
+      published: !!published,
     };
 
-    const { data: newModule, error: insertError } = await supabase
+    const { data: module, error: insertError } = await supabase
       .from('modules')
       .insert(insertPayload)
-      .select()
+      .select(
+        `
+        *,
+        lessons:lessons(*)
+      `,
+      )
       .single();
 
-    if (insertError || !newModule) {
-      console.error('Error creating module:', insertError);
+    if (insertError || !module) {
+      console.error(
+        'Error creating module in admin modules route:',
+        insertError,
+      );
       return NextResponse.json(
         { success: false, error: 'Failed to create module.' },
         { status: 500 },
@@ -154,7 +156,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      module: newModule,
+      module,
       message: 'Module created successfully.',
     });
   } catch (error) {

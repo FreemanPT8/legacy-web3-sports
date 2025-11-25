@@ -3,10 +3,10 @@ import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
-async function checkPermission(request: NextRequest) {
+async function ensureCanManageCourses(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
-    return { ok: false as const, response: authResult.response! };
+    return { ok: false, response: authResult.response! };
   }
 
   const currentUser = authResult.user!;
@@ -20,7 +20,7 @@ async function checkPermission(request: NextRequest) {
 
   if (!canManageCourses) {
     return {
-      ok: false as const,
+      ok: false,
       response: NextResponse.json(
         {
           success: false,
@@ -31,15 +31,15 @@ async function checkPermission(request: NextRequest) {
     };
   }
 
-  return { ok: true as const };
+  return { ok: true, user: currentUser };
 }
 
 async function handleUpdate(
   request: NextRequest,
   params: { id: string; moduleId: string },
 ) {
-  const perm = await checkPermission(request);
-  if (!perm.ok) return perm.response;
+  const auth = await ensureCanManageCourses(request);
+  if (!auth.ok) return auth.response;
 
   try {
     const body = await request.json();
@@ -51,31 +51,27 @@ async function handleUpdate(
       xp_reward,
       image_url,
       order,
+      published,
     } = body || {};
 
     const updatePayload: Record<string, any> = {};
 
-    if (title && typeof title === 'object') {
-      updatePayload.title = title;
-    }
-    if (description && typeof description === 'object') {
-      updatePayload.description = description;
-    }
+    if (title) updatePayload.title = title;
+    if (description) updatePayload.description = description;
     if (typeof xp_threshold === 'number') {
       updatePayload.xp_threshold = xp_threshold;
     }
-    // idem nota: garantir que coluna existe em "modules"
     if (typeof xp_reward === 'number') {
-      updatePayload.xp_reward = xp_reward;
-    }
-    if (
-      typeof image_url === 'string' ||
-      image_url === null
-    ) {
-      updatePayload.image_url = image_url;
+      updatePayload.x_reward = xp_reward; // corrigido para xp_reward se a coluna tiver esse nome
     }
     if (typeof order === 'number') {
       updatePayload.order = order;
+    }
+    if (typeof image_url === 'string' || image_url === null) {
+      updatePayload.image_url = image_url;
+    }
+    if (typeof published === 'boolean') {
+      updatePayload.published = published;
     }
 
     if (Object.keys(updatePayload).length === 0) {
@@ -83,7 +79,7 @@ async function handleUpdate(
         {
           success: false,
           error:
-            'No updatable fields provided (title, description, xp_threshold, xp_reward, image_url, order).',
+            'No updatable fields provided. (title, description, xp_threshold, xp_reward, order, image_url, published)',
         },
         { status: 400 },
       );
@@ -94,7 +90,12 @@ async function handleUpdate(
       .update(updatePayload)
       .eq('id', params.moduleId)
       .eq('course_id', params.id)
-      .select()
+      .select(
+        `
+        *,
+        lessons:lessons(*)
+      `,
+      )
       .single();
 
     if (updateError || !updated) {
@@ -125,7 +126,6 @@ async function handleUpdate(
   }
 }
 
-// PATCH e PUT para update
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string; moduleId: string } },
@@ -140,39 +140,24 @@ export async function PUT(
   return handleUpdate(request, params);
 }
 
-// DELETE módulo (e respetivas lições)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string; moduleId: string } },
 ) {
-  const perm = await checkPermission(request);
-  if (!perm.ok) return perm.response;
+  const auth = await ensureCanManageCourses(request);
+  if (!auth.ok) return auth.response;
 
   try {
-    // apagar lições primeiro (caso não haja ON DELETE CASCADE)
-    const { error: lessonsError } = await supabase
-      .from('lessons')
-      .delete()
-      .eq('module_id', params.moduleId);
-
-    if (lessonsError) {
-      console.error(
-        'Error deleting lessons before module delete:',
-        lessonsError,
-      );
-      // mesmo que falhe, ainda tentamos apagar o módulo para não ficar pendurado
-    }
-
-    const { error: moduleError } = await supabase
+    const { error: deleteError } = await supabase
       .from('modules')
       .delete()
       .eq('id', params.moduleId)
       .eq('course_id', params.id);
 
-    if (moduleError) {
+    if (deleteError) {
       console.error(
-        'Error deleting module:',
-        moduleError,
+        'Error deleting module in admin modules route:',
+        deleteError,
       );
       return NextResponse.json(
         { success: false, error: 'Failed to delete module.' },

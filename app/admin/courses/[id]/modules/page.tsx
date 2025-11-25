@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 import {
   ArrowLeft,
@@ -54,6 +55,7 @@ type Module = {
   xp_threshold: number;
   xp_reward: number;
   image_url?: string | null;
+  published?: boolean;
   lessons?: Lesson[];
   _isNew?: boolean; // flag local para módulos ainda não persistidos
 };
@@ -132,6 +134,7 @@ export default function CourseModulesPage() {
                   xp_threshold: m.xp_threshold ?? 0,
                   xp_reward: m.xp_reward ?? 0,
                   image_url: m.image_url ?? null,
+                  published: m.published ?? false,
                   lessons: m.lessons || [],
                 }))
             : [];
@@ -196,7 +199,7 @@ export default function CourseModulesPage() {
 
   function updateModuleField(
     index: number,
-    field: 'xp_threshold' | 'xp_reward' | 'order' | 'image_url',
+    field: 'xp_threshold' | 'xp_reward' | 'order' | 'image_url' | 'published',
     value: any,
   ) {
     setModules((prev) =>
@@ -231,6 +234,7 @@ export default function CourseModulesPage() {
         xp_threshold: 0,
         xp_reward: 0,
         image_url: null,
+        published: false,
         lessons: [],
       };
 
@@ -315,6 +319,7 @@ export default function CourseModulesPage() {
         xp_reward: module.xp_reward ?? 0,
         image_url: module.image_url ?? null,
         order: module.order || index + 1,
+        published: !!module.published,
       };
 
       let res;
@@ -515,6 +520,15 @@ export default function CourseModulesPage() {
                             <Badge variant="outline">
                               Module {module.order || index + 1}
                             </Badge>
+                            <Badge
+                              className={
+                                module.published
+                                  ? 'bg-green-600'
+                                  : 'bg-yellow-600'
+                              }
+                            >
+                              {module.published ? 'Published' : 'Draft'}
+                            </Badge>
                             {module._isNew && (
                               <Badge className="bg-yellow-600">
                                 New
@@ -586,7 +600,7 @@ export default function CourseModulesPage() {
                           />
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-4">
+                        <div className="grid md:grid-cols-4 gap-4">
                           <div>
                             <Label className="text-xs">
                               XP threshold (min XP to unlock module)
@@ -638,6 +652,24 @@ export default function CourseModulesPage() {
                               placeholder="https://..."
                               className="mt-1"
                             />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Published</Label>
+                            <div className="mt-1 flex items-center gap-2">
+                              <Switch
+                                checked={!!module.published}
+                                onCheckedChange={(checked) =>
+                                  updateModuleField(
+                                    index,
+                                    'published',
+                                    checked,
+                                  )
+                                }
+                              />
+                              <span className="text-xs text-gray-600">
+                                {module.published ? 'Published' : 'Draft'}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
