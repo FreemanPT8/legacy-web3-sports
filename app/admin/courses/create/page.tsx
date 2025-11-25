@@ -21,7 +21,15 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Save, Lock, Award, BookOpen, Eye, Image as ImageIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Lock,
+  Award,
+  BookOpen,
+  Eye,
+  Image as ImageIcon,
+} from 'lucide-react';
 
 type PermissionsResponse = {
   success: boolean;
@@ -73,8 +81,7 @@ export default function CreateCoursePage() {
     } as Record<LangCode, string>,
     level: 'beginner',
     xp_threshold: 0,
-    // preparado para futuro: XP extra por curso (coluna na BD a criar)
-    xp_reward: 0,
+    xp_reward_on_complete: 0,
     image_url: '',
     published: false,
   });
@@ -173,12 +180,10 @@ export default function CreateCoursePage() {
             description: course.description,
             level: course.level,
             xp_threshold: course.xp_threshold,
-            // preparado para futura coluna na BD
-            xp_reward: course.xp_reward,
+            xp_reward_on_complete: course.xp_reward_on_complete,
             image_url: course.image_url || null,
             published: course.published,
           },
-          // Neste modo CLEAN ainda não criamos módulos nem lições aqui
           modules: [],
         }),
       });
@@ -202,7 +207,7 @@ export default function CreateCoursePage() {
         description: 'You can now add modules and lessons to this course.',
       });
 
-      // 👉 NOVO FLOW: ir diretamente para gestão de módulos
+      // Ir diretamente para gestão de módulos
       router.push(`/admin/courses/${createdCourse.id}/modules`);
     } catch (err) {
       console.error('Failed to save course:', err);
@@ -406,7 +411,7 @@ export default function CreateCoursePage() {
                       </div>
                     </div>
 
-                    {/* Imagem + XP extra (preparado) */}
+                    {/* Imagem + XP extra */}
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <Label>Course image URL</Label>
@@ -440,19 +445,20 @@ export default function CreateCoursePage() {
                         <Label>XP reward (on course completion)</Label>
                         <Input
                           type="number"
-                          value={course.xp_reward}
+                          value={course.xp_reward_on_complete}
                           onChange={(e) =>
                             setCourse((prev) => ({
                               ...prev,
-                              xp_reward: parseInt(e.target.value) || 0,
+                              xp_reward_on_complete:
+                                parseInt(e.target.value) || 0,
                             }))
                           }
                           min={0}
                           placeholder="0"
                         />
                         <p className="text-[11px] text-gray-500 mt-1">
-                          This will be used once the backend / database column
-                          for course XP reward is configured.
+                          Users will earn this XP once they complete all
+                          required content for this course.
                         </p>
                       </div>
                     </div>

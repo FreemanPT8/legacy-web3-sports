@@ -12,8 +12,7 @@ interface CoursePayload {
   xp_threshold?: number;
   published?: boolean;
   image_url?: string | null;
-  // preparado para futura coluna na BD
-  xp_reward?: number;
+  xp_reward_on_complete?: number;
 }
 
 interface LessonPayload {
@@ -100,11 +99,9 @@ export async function POST(request: NextRequest) {
         xp_threshold: course.xp_threshold ?? 0,
         published: course.published ?? false,
         order: 0,
-        // estes campos existem no schema que me mostraste
         image_url: course.image_url ?? null,
         level: course.level || 'beginner',
-        // NOTA: xp_reward só deve ser aqui adicionado quando a coluna existir na BD
-        // xp_reward: course.xp_reward ?? 0,
+        xp_reward_on_complete: course.xp_reward_on_complete ?? 0,
       })
       .select()
       .single();
@@ -115,7 +112,8 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error:
-            courseError?.message || 'Failed to create course (database error).',
+            courseError?.message ||
+            'Failed to create course (database error).',
         },
         { status: 500 },
       );
