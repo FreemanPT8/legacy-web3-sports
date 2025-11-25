@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+
 import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,19 +40,6 @@ type PermissionsResponse = {
     canManageBlog?: boolean;
     [key: string]: any;
   };
-};
-
-type MultiLang = Record<string, string>;
-
-type PostFormState = {
-  title: MultiLang;
-  excerpt: MultiLang;
-  category: string;
-  reading_time: number;
-  xp_reward: number;
-  xp_threshold: number;
-  published: boolean;
-  registered_only: boolean;
 };
 
 const LANGUAGES: { code: LangCode; name: string }[] = [
@@ -73,15 +62,32 @@ const CATEGORIES = [
   'Community',
 ];
 
+type MultiLang = Record<string, string>;
+
 export default function CreateBlogPostPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
   const [saving, setSaving] = useState(false);
-  const [post, setPost] = useState<PostFormState>({
-    title: { en: '', pt: '', es: '', fr: '', it: '', de: '' },
-    excerpt: { en: '', pt: '', es: '', fr: '', it: '', de: '' },
+
+  const [post, setPost] = useState({
+    title: {
+      en: '',
+      pt: '',
+      es: '',
+      fr: '',
+      it: '',
+      de: '',
+    } as MultiLang,
+    excerpt: {
+      en: '',
+      pt: '',
+      es: '',
+      fr: '',
+      it: '',
+      de: '',
+    } as MultiLang,
     category: 'Blockchain',
     reading_time: 5,
     xp_reward: 15,
@@ -90,10 +96,7 @@ export default function CreateBlogPostPage() {
     registered_only: false,
   });
 
-  // Língua para título & excerpt (o BlockEditor gere as línguas dos blocos internamente)
   const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
-
-  // Blocos de conteúdo por língua (para o BlockEditor)
   const [blocksByLanguage, setBlocksByLanguage] =
     useState<BlocksByLanguage>({});
 
@@ -153,7 +156,7 @@ export default function CreateBlogPostPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  const handleSave = async (publish: boolean = false) => {
+  const handleSave = async (publish: boolean) => {
     if (!user || !canManageBlog) {
       toast({
         title: 'Not allowed',
@@ -171,8 +174,7 @@ export default function CreateBlogPostPage() {
     if (!hasAnyTitle) {
       toast({
         title: 'Missing title',
-        description:
-          'Please add a post title in at least one language before saving.',
+        description: 'Please add a title in at least one language.',
         variant: 'destructive',
       });
       return;
@@ -180,11 +182,11 @@ export default function CreateBlogPostPage() {
 
     setSaving(true);
     try {
-      // Construir HTML por língua a partir dos blocos
-      const content = serializeBlocksByLanguage(blocksByLanguage);
+      // 1) Serializar blocos → HTML por língua
+      const contentByLang = serializeBlocksByLanguage(blocksByLanguage);
 
       const token = getToken();
-      const response = await fetch('/api/admin/blog/create', {
+      const res = await fetch('/api/admin/blog/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,20 +195,21 @@ export default function CreateBlogPostPage() {
         body: JSON.stringify({
           title: post.title,
           excerpt: post.excerpt,
-          content,
+          content: contentByLang,
           category: post.category,
           reading_time: post.reading_time,
           xp_reward: post.xp_reward,
           xp_threshold: post.xp_threshold,
-          published: publish || post.published,
           registered_only: post.registered_only,
+          published: publish,
           author_id: user.id,
         }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!response.ok || !data.success) {
+      if (!res.ok || !data.success) {
+        console.error('Error saving blog post:', data);
         toast({
           title: 'Error saving blog post',
           description: data.error || 'Failed to save blog post.',
@@ -216,6 +219,13 @@ export default function CreateBlogPostPage() {
         return;
       }
 
+      toast({
+        title: publish ? 'Post published' : 'Draft saved',
+        description: publish
+          ? 'Your blog post is now live.'
+          : 'Your draft has been saved.',
+      });
+
       router.push('/admin/blog');
     } catch (error) {
       console.error('Failed to save blog post:', error);
@@ -224,8 +234,9 @@ export default function CreateBlogPostPage() {
         description: 'Could not save blog post. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   if (
@@ -237,10 +248,8 @@ export default function CreateBlogPostPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
-            Loading...
-          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -311,13 +320,14 @@ export default function CreateBlogPostPage() {
             </div>
 
             <div className="grid lg:grid-cols-3 gap-6">
+              {/* COLUNA ESQUERDA: CONTEÚDO */}
               <div className="lg:col-span-2 space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Content</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {/* Tabs para título & excerpt */}
+                    {/* Tabs de línguas para Título / Excerpt */}
                     <div className="flex gap-2 flex-wrap">
                       {LANGUAGES.map((lang) => (
                         <Badge
@@ -338,17 +348,15 @@ export default function CreateBlogPostPage() {
                     <div>
                       <Label>Title ({currentLangLabel})</Label>
                       <Input
-                        value={
-                          post.title[currentLanguage as keyof typeof post.title]
-                        }
+                        value={post.title[currentLanguage] || ''}
                         onChange={(e) =>
-                          setPost({
-                            ...post,
+                          setPost((prev) => ({
+                            ...prev,
                             title: {
-                              ...post.title,
+                              ...prev.title,
                               [currentLanguage]: e.target.value,
                             },
-                          })
+                          }))
                         }
                         placeholder="Enter post title"
                         className="text-lg"
@@ -358,19 +366,15 @@ export default function CreateBlogPostPage() {
                     <div>
                       <Label>Excerpt ({currentLangLabel})</Label>
                       <Textarea
-                        value={
-                          post.excerpt[
-                            currentLanguage as keyof typeof post.excerpt
-                          ]
-                        }
+                        value={post.excerpt[currentLanguage] || ''}
                         onChange={(e) =>
-                          setPost({
-                            ...post,
+                          setPost((prev) => ({
+                            ...prev,
                             excerpt: {
-                              ...post.excerpt,
+                              ...prev.excerpt,
                               [currentLanguage]: e.target.value,
                             },
-                          })
+                          }))
                         }
                         placeholder="Brief summary of the post"
                         rows={3}
@@ -378,11 +382,11 @@ export default function CreateBlogPostPage() {
                     </div>
 
                     <div>
-                      <Label>Body (blocks, all languages)</Label>
+                      <Label>Body (all languages)</Label>
                       <p className="text-xs text-gray-500 mb-2">
                         Use the block editor below to build the article body.
-                        Inside the editor you can switch between languages for
-                        the content blocks.
+                        Inside the editor you can switch languages for the
+                        content blocks.
                       </p>
                       <BlockEditor
                         value={blocksByLanguage}
@@ -394,6 +398,7 @@ export default function CreateBlogPostPage() {
                 </Card>
               </div>
 
+              {/* COLUNA DIREITA: SETTINGS */}
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -405,7 +410,7 @@ export default function CreateBlogPostPage() {
                       <Select
                         value={post.category}
                         onValueChange={(value) =>
-                          setPost({ ...post, category: value })
+                          setPost((prev) => ({ ...prev, category: value }))
                         }
                       >
                         <SelectTrigger>
@@ -427,10 +432,10 @@ export default function CreateBlogPostPage() {
                         type="number"
                         value={post.reading_time}
                         onChange={(e) =>
-                          setPost({
-                            ...post,
+                          setPost((prev) => ({
+                            ...prev,
                             reading_time: parseInt(e.target.value) || 0,
-                          })
+                          }))
                         }
                         min={1}
                         max={60}
@@ -443,10 +448,10 @@ export default function CreateBlogPostPage() {
                         type="number"
                         value={post.xp_reward}
                         onChange={(e) =>
-                          setPost({
-                            ...post,
+                          setPost((prev) => ({
+                            ...prev,
                             xp_reward: parseInt(e.target.value) || 0,
-                          })
+                          }))
                         }
                         min={5}
                         max={50}
@@ -459,10 +464,10 @@ export default function CreateBlogPostPage() {
                         type="number"
                         value={post.xp_threshold}
                         onChange={(e) =>
-                          setPost({
-                            ...post,
+                          setPost((prev) => ({
+                            ...prev,
                             xp_threshold: parseInt(e.target.value) || 0,
-                          })
+                          }))
                         }
                         min={0}
                       />
@@ -473,7 +478,7 @@ export default function CreateBlogPostPage() {
                       <Switch
                         checked={post.published}
                         onCheckedChange={(checked) =>
-                          setPost({ ...post, published: checked })
+                          setPost((prev) => ({ ...prev, published: checked }))
                         }
                       />
                     </div>
@@ -483,7 +488,10 @@ export default function CreateBlogPostPage() {
                       <Switch
                         checked={post.registered_only}
                         onCheckedChange={(checked) =>
-                          setPost({ ...post, registered_only: checked })
+                          setPost((prev) => ({
+                            ...prev,
+                            registered_only: checked,
+                          }))
                         }
                       />
                     </div>
