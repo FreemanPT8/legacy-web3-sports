@@ -8,10 +8,12 @@ type LangCode = 'en' | 'pt' | 'es' | 'fr' | 'it' | 'de';
 interface CoursePayload {
   title: Record<LangCode, string>;
   description: Record<LangCode, string>;
-  // level está aqui para futuro, mas NÃO é enviado para a BD por enquanto
   level?: string;
   xp_threshold?: number;
   published?: boolean;
+  image_url?: string | null;
+  // preparado para futura coluna na BD
+  xp_reward?: number;
 }
 
 interface LessonPayload {
@@ -75,7 +77,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pelo menos um título em qualquer língua
     const hasAnyTitle = Object.values(course.title).some(
       (v) => typeof v === 'string' && v.trim().length > 0,
     );
@@ -91,7 +92,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1) Criar curso (SEM enviar "level" por agora, para evitar conflito com o schema)
     const { data: newCourse, error: courseError } = await supabase
       .from('courses')
       .insert({
@@ -100,6 +100,11 @@ export async function POST(request: NextRequest) {
         xp_threshold: course.xp_threshold ?? 0,
         published: course.published ?? false,
         order: 0,
+        // estes campos existem no schema que me mostraste
+        image_url: course.image_url ?? null,
+        level: course.level || 'beginner',
+        // NOTA: xp_reward só deve ser aqui adicionado quando a coluna existir na BD
+        // xp_reward: course.xp_reward ?? 0,
       })
       .select()
       .single();
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2) Criar módulos + lições (erros aqui já NÃO bloqueiam o curso em si)
+    // 2) Criar módulos + lições (opcional, hoje estamos a passar modules: [])
     if (modules && Array.isArray(modules) && modules.length > 0) {
       for (let moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
         const module = modules[moduleIndex];
@@ -134,7 +139,6 @@ export async function POST(request: NextRequest) {
 
         if (moduleError || !newModule) {
           console.error('Error creating module:', moduleError);
-          // não fazemos rollback, só seguimos para o próximo
           continue;
         }
 
@@ -147,7 +151,7 @@ export async function POST(request: NextRequest) {
             (lesson, lessonIndex) => ({
               module_id: newModule.id,
               title: lesson.titles,
-              description: lesson.descriptions, // tens a coluna description jsonb na tabela lessons
+              description: lesson.descriptions,
               content: lesson.content,
               xp_reward: lesson.xp_reward ?? 20,
               xp_threshold: lesson.xp_threshold ?? 0,

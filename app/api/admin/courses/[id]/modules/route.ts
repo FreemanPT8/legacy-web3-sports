@@ -3,20 +3,15 @@ import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  // 1) Autorização básica
+async function checkPermission(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
-    return authResult.response!;
+    return { ok: false as const, response: authResult.response! };
   }
 
   const currentUser = authResult.user!;
   const role = (currentUser.role || 'Member') as UserRole;
 
-  // 2) Permissão fina
   const canManageCourses = await userHasPermission(
     currentUser.userId,
     role,
@@ -24,17 +19,29 @@ export async function GET(
   );
 
   if (!canManageCourses) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'You do not have permission to manage courses.',
-      },
-      { status: 403 },
-    );
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: 'You do not have permission to manage courses.',
+        },
+        { status: 403 },
+      ),
+    };
   }
 
+  return { ok: true as const };
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const perm = await checkPermission(request);
+  if (!perm.ok) return perm.response;
+
   try {
-    // 3) Carregar módulos do curso, com lições
     const { data: modules, error } = await supabase
       .from('modules')
       .select(
@@ -64,6 +71,95 @@ export async function GET(
   } catch (error) {
     console.error(
       'Unexpected error in GET /api/admin/courses/[id]/modules:',
+      error,
+    );
+    return NextResponse.json(
+      { success: false, error: 'Server error' },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const perm = await checkPermission(request);
+  if (!perm.ok) return perm.response;
+
+  try {
+    const body = await request.json();
+
+    const {
+      title,
+      description,
+      xp_threshold,
+      xp_reward,
+      image_url,
+      order,
+    } = body || {};
+
+    // Preciso de pelo menos um título em alguma língua
+    if (!title || typeof title !== 'object') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Module title (multilingual object) is required.',
+        },
+        { status: 400 },
+      );
+    }
+
+    const hasAnyTitle = Object.values(title as Record<string, any>).some(
+      (v) => typeof v === 'string' && v.trim().length > 0,
+    );
+
+    if (!hasAnyTitle) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Please provide a module title in at least one language.',
+        },
+        { status: 400 },
+      );
+    }
+
+    const insertPayload: Record<string, any> = {
+      course_id: params.id,
+      title,
+      description: description || {},
+      xp_threshold:
+        typeof xp_threshold === 'number' ? xp_threshold : 0,
+      // se a coluna xp_reward existir na tabela modules, isto funciona;
+      // se não existir, remove esta linha ou cria a coluna.
+      xp_reward: typeof xp_reward === 'number' ? xp_reward : 0,
+      image_url: image_url ?? null,
+      order: typeof order === 'number' ? order : 0,
+    };
+
+    const { data: newModule, error: insertError } = await supabase
+      .from('modules')
+      .insert(insertPayload)
+      .select()
+      .single();
+
+    if (insertError || !newModule) {
+      console.error('Error creating module:', insertError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to create module.' },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      module: newModule,
+      message: 'Module created successfully.',
+    });
+  } catch (error) {
+    console.error(
+      'Unexpected error in POST /api/admin/courses/[id]/modules:',
       error,
     );
     return NextResponse.json(
