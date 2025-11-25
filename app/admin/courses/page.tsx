@@ -379,19 +379,19 @@ export default function CoursesManagementPage() {
                           Level: {levelLabel(course)}
                         </div>
                         <div className="flex gap-2">
-                          {/* View público */}
+                          {/* View = gerir módulos do curso */}
                           <Button
                             size="sm"
                             variant="outline"
                             className="flex-1"
                             onClick={() =>
                               router.push(
-                                `/education/courses/${course.id}`,
+                                `/admin/courses/${course.id}/modules`,
                               )
                             }
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            View
+                            Modules
                           </Button>
 
                           {/* Editar meta do curso */}

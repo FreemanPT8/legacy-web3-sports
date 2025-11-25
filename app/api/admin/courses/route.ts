@@ -1,40 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { requireAdmin } from '@/lib/middleware';
 
 export async function GET(request: NextRequest) {
-  // 1) Verificar se é Admin / Super Admin
-  const authResult = await requireAdmin(request);
-
-  if (!authResult.success) {
-    return authResult.response!;
-  }
-
   try {
     const { searchParams } = new URL(request.url);
-    const includeOnlyPublished = searchParams.get('published') === 'true';
+    // Se quiseres no futuro, podes passar ?includeModules=true
+    const includeModules = searchParams.get('includeModules') === 'true';
 
-    let query = supabase
-      .from('courses')
-      .select(
-        `
+    const selectString = includeModules
+      ? `
         *,
         modules:modules(
           *,
           lessons:lessons(*)
         )
-      `,
-      )
+      `
+      : `*`;
+
+    let query = supabase
+      .from('courses')
+      .select(selectString)
+      .eq('published', true) // só cursos publicados
       .order('order', { ascending: true });
 
-    if (includeOnlyPublished) {
-      query = query.eq('published', true);
-    }
-
-    const { data: courses, error } = await query;
+    const { data, error } = await query;
 
     if (error) {
-      console.error('Error loading admin courses:', error);
+      console.error('Error loading public courses:', error);
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 },
@@ -43,10 +35,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      courses: courses || [],
+      courses: data || [],
     });
   } catch (error) {
-    console.error('Unexpected error in GET /api/admin/courses:', error);
+    console.error('Unexpected error in GET /api/courses:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
       { status: 500 },
