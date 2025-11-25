@@ -1,3 +1,4 @@
+// app/api/admin/courses/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
@@ -7,7 +8,6 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  // Autorização básica
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
     return authResult.response!;
@@ -16,7 +16,6 @@ export async function GET(
   const currentUser = authResult.user!;
   const role = (currentUser.role || 'Member') as UserRole;
 
-  // Verificar permissão fina
   const canManageCourses = await userHasPermission(
     currentUser.userId,
     role,
@@ -73,7 +72,6 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  // Autorização básica
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
     return authResult.response!;
@@ -82,7 +80,6 @@ export async function PUT(
   const currentUser = authResult.user!;
   const role = (currentUser.role || 'Member') as UserRole;
 
-  // Verificar permissão fina
   const canManageCourses = await userHasPermission(
     currentUser.userId,
     role,
@@ -158,6 +155,73 @@ export async function PUT(
     });
   } catch (error) {
     console.error('Unexpected error in PUT /api/admin/courses/[id]:', error);
+    return NextResponse.json(
+      { success: false, error: 'Server error' },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const authResult = await requireAdmin(request);
+  if (!authResult.success) {
+    return authResult.response!;
+  }
+
+  const currentUser = authResult.user!;
+  const role = (currentUser.role || 'Member') as UserRole;
+
+  // Apenas Super Admin pode apagar cursos
+  if (role !== 'Super Admin') {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Only Super Admin can delete courses.',
+      },
+      { status: 403 },
+    );
+  }
+
+  const canManageCourses = await userHasPermission(
+    currentUser.userId,
+    role,
+    'canManageCourses',
+  );
+
+  if (!canManageCourses) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'You do not have permission to manage courses.',
+      },
+      { status: 403 },
+    );
+  }
+
+  try {
+    const { error: deleteError } = await supabase
+      .from('courses')
+      .delete()
+      .eq('id', params.id);
+
+    if (deleteError) {
+      console.error('Error deleting course:', deleteError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to delete course.' },
+        { status: 500 },
+      );
+    }
+
+    // FK com ON DELETE CASCADE trata de módulos e lições
+    return NextResponse.json({
+      success: true,
+      message: 'Course deleted successfully.',
+    });
+  } catch (error) {
+    console.error('Unexpected error in DELETE /api/admin/courses/[id]:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
       { status: 500 },

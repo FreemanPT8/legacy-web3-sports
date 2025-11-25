@@ -28,7 +28,6 @@ import {
   Save,
   Trash2,
   Image as ImageIcon,
-  BookOpen, // 👈 novo
 } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
@@ -49,7 +48,7 @@ type Lesson = {
 };
 
 type Module = {
-  id?: string; // sem id enquanto ainda não foi criado
+  id?: string;
   order: number;
   title: any;
   description: any;
@@ -58,7 +57,7 @@ type Module = {
   image_url?: string | null;
   published?: boolean;
   lessons?: Lesson[];
-  _isNew?: boolean; // flag local para módulos ainda não persistidos
+  _isNew?: boolean;
 };
 
 type Course = {
@@ -84,7 +83,7 @@ export default function CourseModulesPage() {
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
 
-  // 1) Proteção básica
+  // Proteção básica
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -96,7 +95,7 @@ export default function CourseModulesPage() {
     }
   }, [user, loading, isAdmin, router]);
 
-  // 2) Carregar curso + módulos (rota admin)
+  // Carregar curso + módulos
   useEffect(() => {
     const fetchCourse = async () => {
       setLoadingData(true);
@@ -163,7 +162,7 @@ export default function CourseModulesPage() {
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
     currentLanguage;
 
-  // Helpers para mexer em JSON multi-língua (title / description)
+  // Helpers multi-língua
   function updateModuleTitle(
     index: number,
     lang: LangCode,
@@ -250,7 +249,26 @@ export default function CourseModulesPage() {
       return;
     }
 
-    if (!confirm('Are you sure you want to delete this module?')) return;
+    const moduleTitle =
+      getMultilingualContent(module.title, currentLanguage) ||
+      `Module ${module.order || index + 1}`;
+
+    const typed = window.prompt(
+      `To confirm, type the module name exactly:\n\n${moduleTitle}`,
+      '',
+    );
+
+    if (typed === null) return;
+
+    if (typed.trim() !== moduleTitle.trim()) {
+      toast({
+        title: 'Name does not match',
+        description:
+          'The module was not deleted because the name you typed does not match.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       const token = getToken();
@@ -295,7 +313,6 @@ export default function CourseModulesPage() {
     const token = getToken();
 
     const title = module.title || {};
-    // garantir pelo menos um título em alguma língua
     const hasAnyTitle = LANGUAGES.some((lang) => {
       const v = (title as any)[lang.code];
       return typeof v === 'string' && v.trim().length > 0;
@@ -323,7 +340,7 @@ export default function CourseModulesPage() {
         published: !!module.published,
       };
 
-      let res;
+      let res: Response;
       if (!module.id) {
         // Criar novo módulo
         res = await fetch(`/api/admin/courses/${courseId}/modules`, {
@@ -386,22 +403,6 @@ export default function CourseModulesPage() {
       });
     }
     setSaving(false);
-  };
-
-  const handleGoToLessons = (module: Module) => {
-    if (!module.id) {
-      toast({
-        title: 'Save module first',
-        description:
-          'You need to save this module before managing its lessons.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    router.push(
-      `/admin/courses/${courseId}/modules/${module.id}/lessons`,
-    );
   };
 
   if (loading || !user || !isAdmin || loadingData) {
@@ -478,9 +479,7 @@ export default function CourseModulesPage() {
                     <Badge
                       key={lang.code}
                       variant={
-                        currentLanguage === lang.code
-                          ? 'default'
-                          : 'outline'
+                        currentLanguage === lang.code ? 'default' : 'outline'
                       }
                       className="cursor-pointer"
                       onClick={() =>
@@ -498,8 +497,8 @@ export default function CourseModulesPage() {
             {modules.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center text-gray-500">
-                  No modules yet. Click "Add Module" to create the first
-                  one.
+                  No modules yet. Click &quot;Add Module&quot; to create
+                  the first one.
                 </CardContent>
               </Card>
             ) : (
@@ -539,9 +538,7 @@ export default function CourseModulesPage() {
                               {module.published ? 'Published' : 'Draft'}
                             </Badge>
                             {module._isNew && (
-                              <Badge className="bg-yellow-600">
-                                New
-                              </Badge>
+                              <Badge className="bg-yellow-600">New</Badge>
                             )}
                           </div>
                           <Input
@@ -691,16 +688,26 @@ export default function CourseModulesPage() {
                                 } in this module.`}
                           </div>
                           <div className="flex gap-2">
-                            {/* 👉 NOVO: gerir lições deste módulo */}
+                            {/* Manage lessons – só depois de o módulo existir */}
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleGoToLessons(module)}
+                              onClick={() => {
+                                if (!module.id) {
+                                  toast({
+                                    title: 'Save module first',
+                                    description:
+                                      'You need to save the module before managing lessons.',
+                                  });
+                                  return;
+                                }
+                                router.push(
+                                  `/admin/courses/${courseId}/modules/${module.id}/lessons`,
+                                );
+                              }}
                             >
-                              <BookOpen className="h-4 w-4 mr-1" />
                               Manage lessons
                             </Button>
-
                             <Button
                               size="sm"
                               variant="outline"

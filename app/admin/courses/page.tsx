@@ -45,12 +45,10 @@ function getCourseTitle(course: Course): string {
 
   if (!raw) return 'Untitled course';
 
-  // Se já for string
   if (typeof raw === 'string') {
     return raw || 'Untitled course';
   }
 
-  // Se for JSON com línguas
   if (typeof raw === 'object') {
     const obj = raw as Record<string, string | undefined>;
     const candidates = [obj.en, obj.pt, obj.es, obj.fr, obj.it, obj.de];
@@ -149,7 +147,7 @@ export default function CoursesManagementPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  // Buscar cursos (rota de admin)
+  // Buscar cursos
   useEffect(() => {
     const fetchCourses = async () => {
       setLoadingData(true);
@@ -189,6 +187,72 @@ export default function CoursesManagementPage() {
       fetchCourses();
     }
   }, [user, getToken, toast]);
+
+  // 🔥 apagar curso com confirmação por nome
+  const handleDeleteCourse = async (course: Course) => {
+    if (!canManageCourses || !isSuperAdmin) {
+      toast({
+        title: 'Not allowed',
+        description: 'Only Super Admin can delete courses.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const title = getCourseTitle(course);
+
+    const typed = window.prompt(
+      `To confirm deletion, type the course name exactly:\n\n${title}\n\nThis will permanently delete the course and all its modules and lessons.`,
+      '',
+    );
+
+    if (typed === null) return;
+
+    if (typed.trim() !== title.trim()) {
+      toast({
+        title: 'Name does not match',
+        description:
+          'The course was not deleted because the name you typed does not match.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/admin/courses/${course.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast({
+          title: 'Error deleting course',
+          description: data.error || 'Failed to delete course.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Course deleted',
+        description: 'The course and related content were deleted.',
+      });
+
+      setCourses((prev) => prev.filter((c) => c.id !== course.id));
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      toast({
+        title: 'Network error',
+        description: 'Could not delete course. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (
     loading ||
@@ -246,9 +310,7 @@ export default function CoursesManagementPage() {
                   )}
                 </div>
                 <Link
-                  href={
-                    canManageCourses ? '/admin/courses/create' : '#'
-                  }
+                  href={canManageCourses ? '/admin/courses/create' : '#'}
                   aria-disabled={!canManageCourses}
                 >
                   <Button
@@ -321,9 +383,7 @@ export default function CoursesManagementPage() {
                     Create your first course to get started
                   </p>
                   <Link
-                    href={
-                      canManageCourses ? '/admin/courses/create' : '#'
-                    }
+                    href={canManageCourses ? '/admin/courses/create' : '#'}
                     aria-disabled={!canManageCourses}
                   >
                     <Button
@@ -379,19 +439,19 @@ export default function CoursesManagementPage() {
                           Level: {levelLabel(course)}
                         </div>
                         <div className="flex gap-2">
-                          {/* View = gerir módulos do curso */}
+                          {/* View público */}
                           <Button
                             size="sm"
                             variant="outline"
                             className="flex-1"
                             onClick={() =>
                               router.push(
-                                `/admin/courses/${course.id}/modules`,
+                                `/education/courses/${course.id}`,
                               )
                             }
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            Modules
+                            View
                           </Button>
 
                           {/* Editar meta do curso */}
@@ -411,12 +471,13 @@ export default function CoursesManagementPage() {
                             Edit
                           </Button>
 
-                          {/* Delete (reservado para Super Admin, ainda sem lógica) */}
+                          {/* Delete – apenas Super Admin */}
                           <Button
                             size="sm"
                             variant="outline"
                             className="disabled:opacity-60 disabled:cursor-not-allowed"
                             disabled={!canManageCourses || !isSuperAdmin}
+                            onClick={() => handleDeleteCourse(course)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
