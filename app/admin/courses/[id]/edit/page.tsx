@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Save, Lock } from 'lucide-react';
+import { ArrowLeft, Save, Lock, ListChecks } from 'lucide-react';
 
 type PermissionsResponse = {
   success: boolean;
@@ -339,7 +339,7 @@ export default function EditCoursePage() {
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
               <div>
                 <Button
                   variant="ghost"
@@ -354,17 +354,34 @@ export default function EditCoursePage() {
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   Update title, description, level, XP requirement and
-                  publish status.
+                  publish status. Manage modules and lessons in the
+                  modules area.
                 </p>
               </div>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
+
+              <div className="flex flex-col md:flex-row gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    router.push(
+                      `/admin/courses/${params.id}/modules`,
+                    )
+                  }
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  Manage Modules
+                </Button>
+
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
             </div>
 
             <Card>
