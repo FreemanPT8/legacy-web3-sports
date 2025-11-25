@@ -28,6 +28,7 @@ import {
   Save,
   Trash2,
   Image as ImageIcon,
+  BookOpen, // 👈 novo
 } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
@@ -325,17 +326,14 @@ export default function CourseModulesPage() {
       let res;
       if (!module.id) {
         // Criar novo módulo
-        res = await fetch(
-          `/api/admin/courses/${courseId}/modules`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify(payload),
+        res = await fetch(`/api/admin/courses/${courseId}/modules`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-        );
+          body: JSON.stringify(payload),
+        });
       } else {
         // Atualizar módulo existente
         res = await fetch(
@@ -390,12 +388,23 @@ export default function CourseModulesPage() {
     setSaving(false);
   };
 
-  if (
-    loading ||
-    !user ||
-    !isAdmin ||
-    loadingData
-  ) {
+  const handleGoToLessons = (module: Module) => {
+    if (!module.id) {
+      toast({
+        title: 'Save module first',
+        description:
+          'You need to save this module before managing its lessons.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    router.push(
+      `/admin/courses/${courseId}/modules/${module.id}/lessons`,
+    );
+  };
+
+  if (loading || !user || !isAdmin || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -682,6 +691,16 @@ export default function CourseModulesPage() {
                                 } in this module.`}
                           </div>
                           <div className="flex gap-2">
+                            {/* 👉 NOVO: gerir lições deste módulo */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleGoToLessons(module)}
+                            >
+                              <BookOpen className="h-4 w-4 mr-1" />
+                              Manage lessons
+                            </Button>
+
                             <Button
                               size="sm"
                               variant="outline"
