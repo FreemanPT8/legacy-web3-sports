@@ -29,13 +29,13 @@ import {
   type LangCode,
 } from '@/components/admin/content/BlockEditor';
 
-const LANGUAGES: { code: LangCode; name: string }[] = [
-  { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
+const LANGUAGES = [
+  { code: 'en' as LangCode, name: 'English' },
+  { code: 'pt' as LangCode, name: 'Português' },
+  { code: 'es' as LangCode, name: 'Español' },
+  { code: 'fr' as LangCode, name: 'Français' },
+  { code: 'it' as LangCode, name: 'Italiano' },
+  { code: 'de' as LangCode, name: 'Deutsch' },
 ] as const;
 
 type LessonRecord = {
