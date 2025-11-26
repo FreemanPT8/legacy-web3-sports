@@ -27,7 +27,10 @@ import {
   Save,
   Trash2,
   LayoutTemplate,
+  Eye,
 } from 'lucide-react';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 import { getMultilingualContent } from '@/lib/i18n';
 
@@ -86,6 +89,12 @@ export default function ModuleLessonsPage() {
     null,
   );
 
+  // 👉 estado para o modal de preview
+  const [previewLesson, setPreviewLesson] = useState<{
+    lesson: Lesson;
+    lang: LangCode;
+  } | null>(null);
+
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
 
@@ -108,7 +117,7 @@ export default function ModuleLessonsPage() {
       try {
         const token = getToken();
 
-        // 1) Carregar curso + módulos
+        // 1) Carregar curso + módulos (como antes)
         const resCourse = await fetch(`/api/admin/courses/${courseId}`, {
           headers: {
             'Content-Type': 'application/json',
@@ -211,10 +220,10 @@ export default function ModuleLessonsPage() {
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
     currentLanguage;
 
-  // Helpers multi-língua (sem mexer em content)
+  // Helpers multi-língua
   function updateLessonMLField(
     index: number,
-    field: 'title' | 'description',
+    field: 'title' | 'description' | 'content',
     lang: LangCode,
     value: string,
   ) {
@@ -271,7 +280,7 @@ export default function ModuleLessonsPage() {
         order: nextOrder,
         title: { ...emptyLangs },
         description: { ...emptyLangs },
-        content: { ...emptyLangs }, // conteúdo será editado no BlockEditor
+        content: { ...emptyLangs },
         xp_reward: 20,
         xp_threshold: 0,
         estimated_time: 10,
@@ -371,7 +380,7 @@ export default function ModuleLessonsPage() {
       const payload = {
         title: lesson.title,
         description: lesson.description,
-        // content NÃO é mexido aqui – fica a cargo do BlockEditor
+        content: lesson.content,
         xp_reward: lesson.xp_reward ?? 20,
         xp_threshold: lesson.xp_threshold ?? 0,
         order: lesson.order || index + 1,
@@ -395,7 +404,7 @@ export default function ModuleLessonsPage() {
           },
         );
       } else {
-        // Atualizar lição existente (sem tocar no content)
+        // Atualizar lição existente
         res = await fetch(`/api/admin/lessons/${lesson.id}`, {
           method: 'PUT',
           headers: {
@@ -475,6 +484,18 @@ export default function ModuleLessonsPage() {
   const courseTitle = getMultilingualContent(course.title, currentLanguage);
   const moduleTitle = getMultilingualContent(module.title, currentLanguage);
 
+  const previewHtml =
+    previewLesson &&
+    getMultilingualContent(
+      previewLesson.lesson.content,
+      previewLesson.lang,
+    );
+
+  const previewLangLabel =
+    previewLesson &&
+    (LANGUAGES.find((l) => l.code === previewLesson.lang)?.name ||
+      previewLesson.lang);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -520,7 +541,7 @@ export default function ModuleLessonsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">
-                  Language for titles & descriptions
+                  Language for titles, descriptions & content
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -560,6 +581,10 @@ export default function ModuleLessonsPage() {
                   );
                   const description = getMultilingualContent(
                     lesson.description,
+                    currentLanguage,
+                  );
+                  const content = getMultilingualContent(
+                    lesson.content,
                     currentLanguage,
                   );
 
@@ -637,9 +662,24 @@ export default function ModuleLessonsPage() {
                               className="text-xs mt-1"
                             />
                           </div>
-                          <div className="flex items-center text-xs text-gray-500">
-                            The full lesson content is edited in the
-                            advanced editor.
+                          <div>
+                            <Label className="text-xs">
+                              Content HTML ({currentLangLabel})
+                            </Label>
+                            <Textarea
+                              value={content}
+                              onChange={(e) =>
+                                updateLessonMLField(
+                                  index,
+                                  'content',
+                                  currentLanguage,
+                                  e.target.value,
+                                )
+                              }
+                              rows={6}
+                              className="text-xs mt-1 font-mono"
+                              placeholder="<p>HTML for this lesson...</p>"
+                            />
                           </div>
                         </div>
 
@@ -759,6 +799,22 @@ export default function ModuleLessonsPage() {
                               <LayoutTemplate className="h-4 w-4 mr-1" />
                               Open editor
                             </Button>
+
+                            {/* NEW: Preview button */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                setPreviewLesson({
+                                  lesson,
+                                  lang: currentLanguage,
+                                })
+                              }
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Preview
+                            </Button>
+
                             <Button
                               size="sm"
                               variant="outline"
@@ -793,6 +849,49 @@ export default function ModuleLessonsPage() {
       </main>
 
       <Footer />
+
+      {/* Modal de preview da lesson */}
+      <Dialog
+        open={!!previewLesson}
+        onOpenChange={(open) => {
+          if (!open) setPreviewLesson(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {previewLesson
+                ? `Preview – ${
+                    getMultilingualContent(
+                      previewLesson.lesson.title,
+                      previewLesson.lang,
+                    ) || 'Untitled lesson'
+                  }`
+                : 'Preview'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4">
+            {previewLesson && (
+              <p className="text-xs text-gray-500">
+                Language:{' '}
+                <span className="font-medium">{previewLangLabel}</span>
+              </p>
+            )}
+
+            <div className="prose prose-sm max-w-none dark:prose-invert border rounded-md p-4 bg-white">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html:
+                    previewHtml && previewHtml.trim().length > 0
+                      ? previewHtml
+                      : '<p><em>No content yet for this language.</em></p>',
+                }}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
