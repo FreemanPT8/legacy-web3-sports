@@ -26,6 +26,7 @@ import {
   Lock,
   Award,
   CheckCircle,
+  Clock,
 } from 'lucide-react';
 
 type MultiLang = Record<string, string>;
@@ -41,6 +42,7 @@ type BlogPost = {
   views?: number;
   registered_only?: boolean | null;
   xp_reward?: number | null;
+  reading_time?: number | null;
 };
 
 export default function BlogPostPage() {
@@ -59,7 +61,6 @@ export default function BlogPostPage() {
     const fetchPost = async () => {
       setLoading(true);
       try {
-        // endpoint já incrementa views
         const res = await fetch(`/api/blog/${id}`);
         const data = await res.json();
 
@@ -157,6 +158,10 @@ export default function BlogPostPage() {
   const isMembersOnly = !!post.registered_only;
   const xpReward =
     typeof post.xp_reward === 'number' ? post.xp_reward : 15;
+  const readingMinutes =
+    typeof post.reading_time === 'number' && post.reading_time > 0
+      ? post.reading_time
+      : 5;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -215,6 +220,10 @@ export default function BlogPostPage() {
                       ? new Date(post.created_at).toLocaleDateString()
                       : '-'}
                   </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {readingMinutes} min
+                  </span>
                   {typeof post.views === 'number' && post.views >= 0 && (
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
@@ -225,7 +234,7 @@ export default function BlogPostPage() {
               </CardHeader>
             </Card>
 
-            {/* Mensagem de XP ganho (visual apenas) */}
+            {/* Mensagem de XP ganho (apenas visual) */}
             {earnedXp !== null && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-4 flex items-center gap-3">
@@ -243,8 +252,9 @@ export default function BlogPostPage() {
               <Card className="mb-6">
                 <CardContent className="py-8 text-center space-y-4">
                   <p className="text-sm text-gray-700 dark:text-gray-200">
-                    This article is exclusive to registered members. Create a
-                    free account or login to read the full content and earn XP.
+                    This article is exclusive to registered members. Create
+                    a free account or login to read the full content and
+                    earn XP.
                   </p>
                   <div className="flex justify-center gap-3">
                     <Link href="/signup">
@@ -265,14 +275,12 @@ export default function BlogPostPage() {
                     contentId={post.id}
                     contentType="blog"
                     xpReward={xpReward}
-                    onComplete={(xp) => {
-                      // alguns ContentTracker chamam onComplete() sem arg;
-                      if (typeof xp === 'number') {
-                        setEarnedXp(xp);
-                      } else {
-                        setEarnedXp(xpReward);
-                      }
-                    }}
+                    estimatedMinutes={readingMinutes}
+                    onComplete={(xp) =>
+                      setEarnedXp(
+                        typeof xp === 'number' ? xp : xpReward,
+                      )
+                    }
                   >
                     <div
                       className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md"

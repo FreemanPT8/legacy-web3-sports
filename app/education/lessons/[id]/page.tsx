@@ -8,7 +8,12 @@ import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -68,7 +73,9 @@ export default function LessonPage() {
           if (data.module?.lessons && Array.isArray(data.module.lessons)) {
             const lessons: Lesson[] = data.module.lessons
               .slice()
-              .sort((a: Lesson, b: Lesson) => (a.order || 0) - (b.order || 0));
+              .sort(
+                (a: Lesson, b: Lesson) => (a.order || 0) - (b.order || 0),
+              );
 
             const currentIndex = lessons.findIndex(
               (l: Lesson) => l.id === params.id,
@@ -116,7 +123,9 @@ export default function LessonPage() {
           <Card className="max-w-md">
             <CardContent className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Lesson Not Found</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Lesson Not Found
+              </h3>
               <p className="text-gray-600 mb-4">
                 This lesson doesn&apos;t exist or has been removed.
               </p>
@@ -168,7 +177,9 @@ export default function LessonPage() {
                 </div>
                 <CardTitle className="text-3xl">{title}</CardTitle>
                 {description && (
-                  <p className="text-gray-600 text-lg mt-2">{description}</p>
+                  <p className="text-gray-600 text-lg mt-2">
+                    {description}
+                  </p>
                 )}
               </CardHeader>
               <CardContent>
@@ -192,6 +203,7 @@ export default function LessonPage() {
                   contentId={lesson.id}
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
+                  estimatedMinutes={durationMinutes}
                   onComplete={() => setIsCompleted(true)}
                 >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
@@ -208,8 +220,8 @@ export default function LessonPage() {
                     Lesson Completed!
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    You earned {lesson.xp_reward} XP for completing this lesson
-                    (only the first time you read it).
+                    You earned {lesson.xp_reward} XP for completing this
+                    lesson (only the first time you read it).
                   </p>
                 </CardContent>
               </Card>
@@ -225,7 +237,10 @@ export default function LessonPage() {
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Previous:{' '}
-                    {getMultilingualContent(prevLesson.title, language)}
+                    {getMultilingualContent(
+                      prevLesson.title,
+                      language,
+                    )}
                   </Button>
                 </Link>
               ) : (
@@ -238,7 +253,8 @@ export default function LessonPage() {
                   className="flex-1"
                 >
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Next: {getMultilingualContent(nextLesson.title, language)}
+                    Next:{' '}
+                    {getMultilingualContent(nextLesson.title, language)}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
