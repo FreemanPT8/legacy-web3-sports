@@ -4,11 +4,25 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, User, Eye, Lock, CheckCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import {
+  ArrowLeft,
+  Calendar,
+  User,
+  Eye,
+  Lock,
+  CheckCircle,
+  Clock,
+} from 'lucide-react';
 import { ContentTracker } from '@/components/ContentTracker';
+import { useAuth } from '@/contexts/AuthContext';
 
 type MultiLang = Record<string, string>;
 
@@ -20,10 +34,10 @@ type BlogPost = {
   category?: string | null;
   author?: string | null;
   created_at?: string;
-  views?: number;
+  views?: number | null;
   registered_only?: boolean | null;
   xp_reward?: number | null;
-  reading_time?: number | null; // minutos
+  reading_time?: number | null;
 };
 
 export default function BlogPostPage() {
@@ -57,8 +71,9 @@ export default function BlogPostPage() {
           setPost(null);
         } else {
           setPost(data.post);
-          setIsCompleted(!!data.isCompleted);
           setNotFound(false);
+          // backend pode (ou não) devolver isCompleted
+          setIsCompleted(!!data.isCompleted);
         }
       } catch (error) {
         console.error('Error loading public blog post:', error);
@@ -109,7 +124,8 @@ export default function BlogPostPage() {
           <div className="text-center px-4">
             <h1 className="text-2xl font-bold mb-2">Post not found</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              The blog post you are looking for does not exist or is not published.
+              The blog post you are looking for does not exist or is not
+              published.
             </p>
             <button
               onClick={() => router.push('/blog')}
@@ -126,22 +142,10 @@ export default function BlogPostPage() {
   }
 
   const htmlContent = getContent(post.content);
-  const xpReward = post.xp_reward ?? 0;
-  const readingMinutes = post.reading_time ?? 5;
-  const requiredSeconds = Math.max(
-    15,
-    Math.round(readingMinutes * 60 * 0.33),
-  ); // 33% do tempo estimado
-
-  const canEarnXP = !!user;
-  const isMembersOnly = !!post.registered_only;
-
-  const contentNode = (
-    <div
-      className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md"
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
-    />
-  );
+  const xpReward =
+    typeof post.xp_reward === 'number' ? post.xp_reward : 0;
+  const estimatedMinutes =
+    typeof post.reading_time === 'number' ? post.reading_time : 5;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -160,27 +164,22 @@ export default function BlogPostPage() {
 
             <Card className="mb-6">
               <CardHeader>
-                <div className="flex items-center justify-between mb-2 gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
                     <Badge variant="outline">
                       {post.category || 'General'}
                     </Badge>
-                    {isMembersOnly && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Lock className="h-3 w-3" />
-                        Members only
-                      </Badge>
-                    )}
-                    {canEarnXP && isCompleted && (
-                      <Badge className="bg-green-600 flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
+                    {isCompleted && (
+                      <Badge className="bg-green-600 text-white">
+                        <CheckCircle className="h-3 w-3 mr-1" />
                         Completed
                       </Badge>
                     )}
                   </div>
-                  {xpReward > 0 && (
-                    <span className="text-xs text-gray-500">
-                      {xpReward} XP
+                  {post.registered_only && (
+                    <span className="flex items-center gap-1 text-xs text-amber-600">
+                      <Lock className="h-3 w-3" />
+                      Members only
                     </span>
                   )}
                 </div>
@@ -195,10 +194,16 @@ export default function BlogPostPage() {
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {post.created_at
-                      ? new Date(post.created_at).toLocaleDateString()
+                      ? new Date(
+                          post.created_at,
+                        ).toLocaleDateString()
                       : '-'}
                   </span>
-                  {typeof post.views === 'number' && post.views >= 0 && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {estimatedMinutes} min read
+                  </span>
+                  {post.views && post.views > 0 && (
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
                       {post.views}
@@ -207,28 +212,22 @@ export default function BlogPostPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {canEarnXP ? (
+                <div className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md">
                   <ContentTracker
                     contentId={post.id}
                     contentType="blog"
                     xpReward={xpReward}
-                    requiredSeconds={requiredSeconds}
+                    estimatedMinutes={estimatedMinutes}
                     initialCompleted={isCompleted}
                     onComplete={() => setIsCompleted(true)}
                   >
-                    {contentNode}
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: htmlContent,
+                      }}
+                    />
                   </ContentTracker>
-                ) : (
-                  <>
-                    {isMembersOnly && (
-                      <p className="mb-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                        This article is for registered members. Login to earn XP and
-                        track your progress.
-                      </p>
-                    )}
-                    {contentNode}
-                  </>
-                )}
+                </div>
               </CardContent>
             </Card>
           </div>
