@@ -6,21 +6,27 @@ import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ContentTracker } from '@/components/ContentTracker';
+import { useAuth } from '@/contexts/AuthContext';
+
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
 import {
   ArrowLeft,
   Calendar,
   User,
   Eye,
   Lock,
-  CheckCircle,
   Award,
+  CheckCircle,
 } from 'lucide-react';
-
-import { useAuth } from '@/contexts/AuthContext';
-import { ContentTracker } from '@/components/ContentTracker';
 
 type MultiLang = Record<string, string>;
 
@@ -40,12 +46,12 @@ type BlogPost = {
 export default function BlogPostPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, getToken } = useAuth();
+  const { user } = useAuth();
 
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [earnedXp, setEarnedXp] = useState<number | null>(null);
 
   const id = params.id as string;
 
@@ -53,14 +59,8 @@ export default function BlogPostPage() {
     const fetchPost = async () => {
       setLoading(true);
       try {
-        const token = getToken();
-        const res = await fetch(`/api/blog/${id}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-
+        // endpoint já incrementa views
+        const res = await fetch(`/api/blog/${id}`);
         const data = await res.json();
 
         if (!res.ok || !data.success || !data.post) {
@@ -69,7 +69,6 @@ export default function BlogPostPage() {
         } else {
           setPost(data.post);
           setNotFound(false);
-          setIsCompleted(!!data.isCompleted);
         }
       } catch (error) {
         console.error('Error loading public blog post:', error);
@@ -83,21 +82,32 @@ export default function BlogPostPage() {
     if (id) {
       fetchPost();
     }
-  }, [id, getToken]);
+  }, [id]);
 
   const getTitle = (title: MultiLang | string) => {
     if (typeof title === 'string') return title;
-    return title.en || title.pt || title.es || 'Untitled post';
-  };
-
-  const getExcerpt = (excerpt: MultiLang | string) => {
-    if (typeof excerpt === 'string') return excerpt;
-    return excerpt.en || excerpt.pt || excerpt.es || '';
+    return (
+      title.en ||
+      title.pt ||
+      title.es ||
+      title.fr ||
+      title.it ||
+      title.de ||
+      'Untitled post'
+    );
   };
 
   const getContent = (content: MultiLang | string) => {
     if (typeof content === 'string') return content;
-    return content.en || content.pt || content.es || '';
+    return (
+      content.en ||
+      content.pt ||
+      content.es ||
+      content.fr ||
+      content.it ||
+      content.de ||
+      ''
+    );
   };
 
   if (loading) {
@@ -143,10 +153,10 @@ export default function BlogPostPage() {
   }
 
   const htmlContent = getContent(post.content);
-  const excerpt = getExcerpt(post.excerpt);
+  const title = getTitle(post.title);
   const isMembersOnly = !!post.registered_only;
-  const isLocked = isMembersOnly && !user;
-  const xpReward = typeof post.xp_reward === 'number' ? post.xp_reward : 15;
+  const xpReward =
+    typeof post.xp_reward === 'number' ? post.xp_reward : 15;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -163,38 +173,37 @@ export default function BlogPostPage() {
               Back to blog
             </button>
 
+            {/* Cabeçalho do artigo */}
             <Card className="mb-6">
               <CardHeader>
-                <div className="flex items-center justify-between mb-2 gap-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">
                       {post.category || 'General'}
                     </Badge>
                     {isMembersOnly && (
-                      <Badge variant="outline" className="flex items-center gap-1">
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
                         <Lock className="h-3 w-3" />
                         Members only
                       </Badge>
                     )}
-                    {isCompleted && (
-                      <Badge className="bg-green-600 flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Completed
+                    {user && (
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Award className="h-3 w-3" />
+                        {xpReward} XP
                       </Badge>
                     )}
                   </div>
-                  {user && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <Award className="h-3 w-3" />
-                      <span>{xpReward} XP</span>
-                    </div>
-                  )}
                 </div>
-
                 <CardTitle className="text-2xl md:text-3xl">
-                  {getTitle(post.title)}
+                  {title}
                 </CardTitle>
-
                 <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" />
@@ -214,60 +223,65 @@ export default function BlogPostPage() {
                   )}
                 </div>
               </CardHeader>
+            </Card>
 
-              <CardContent className="space-y-4">
-                {excerpt && (
-                  <p className="text-gray-700 dark:text-gray-200 text-sm md:text-base">
-                    {excerpt}
+            {/* Mensagem de XP ganho (visual apenas) */}
+            {earnedXp !== null && (
+              <Card className="mb-6 bg-green-50 border-green-200">
+                <CardContent className="py-4 flex items-center gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                  <div className="text-sm text-green-900">
+                    You earned <strong>{earnedXp} XP</strong> for reading
+                    this article (only counted the first time).
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Conteúdo / gating */}
+            {isMembersOnly && !user ? (
+              <Card className="mb-6">
+                <CardContent className="py-8 text-center space-y-4">
+                  <p className="text-sm text-gray-700 dark:text-gray-200">
+                    This article is exclusive to registered members. Create a
+                    free account or login to read the full content and earn XP.
                   </p>
-                )}
-
-                {isLocked ? (
-                  <div className="mt-4 p-4 rounded-lg border border-amber-200 bg-amber-50 text-sm">
-                    <p className="mb-3 text-amber-900">
-                      This article is exclusive to registered members.
-                      Create a free account or sign in to unlock the full
-                      content and earn XP.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700"
-                        onClick={() => router.push('/login')}
-                      >
-                        Login
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push('/signup')}
-                      >
+                  <div className="flex justify-center gap-3">
+                    <Link href="/signup">
+                      <Button className="bg-blue-600 hover:bg-blue-700">
                         Create account
                       </Button>
-                    </div>
+                    </Link>
+                    <Link href="/login">
+                      <Button variant="outline">Login</Button>
+                    </Link>
                   </div>
-                ) : (
-                  <div className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md">
-                    {user ? (
-                      <ContentTracker
-                        contentId={post.id}
-                        contentType="blog"
-                        xpReward={xpReward}
-                        onComplete={() => setIsCompleted(true)}
-                      >
-                        <div
-                          dangerouslySetInnerHTML={{ __html: htmlContent }}
-                        />
-                      </ContentTracker>
-                    ) : (
-                      <div
-                        dangerouslySetInnerHTML={{ __html: htmlContent }}
-                      />
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="mb-6">
+                <CardContent>
+                  <ContentTracker
+                    contentId={post.id}
+                    contentType="blog"
+                    xpReward={xpReward}
+                    onComplete={(xp) => {
+                      // alguns ContentTracker chamam onComplete() sem arg;
+                      if (typeof xp === 'number') {
+                        setEarnedXp(xp);
+                      } else {
+                        setEarnedXp(xpReward);
+                      }
+                    }}
+                  >
+                    <div
+                      className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md"
+                      dangerouslySetInnerHTML={{ __html: htmlContent }}
+                    />
+                  </ContentTracker>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>
