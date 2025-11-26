@@ -30,8 +30,6 @@ import {
   Eye,
 } from 'lucide-react';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
 import { getMultilingualContent } from '@/lib/i18n';
 
 const LANGUAGES = [
@@ -89,12 +87,6 @@ export default function ModuleLessonsPage() {
     null,
   );
 
-  // 👉 estado para o modal de preview
-  const [previewLesson, setPreviewLesson] = useState<{
-    lesson: Lesson;
-    lang: LangCode;
-  } | null>(null);
-
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
 
@@ -117,7 +109,7 @@ export default function ModuleLessonsPage() {
       try {
         const token = getToken();
 
-        // 1) Carregar curso + módulos (como antes)
+        // 1) Carregar curso + módulos
         const resCourse = await fetch(`/api/admin/courses/${courseId}`, {
           headers: {
             'Content-Type': 'application/json',
@@ -484,18 +476,6 @@ export default function ModuleLessonsPage() {
   const courseTitle = getMultilingualContent(course.title, currentLanguage);
   const moduleTitle = getMultilingualContent(module.title, currentLanguage);
 
-  const previewHtml =
-    previewLesson &&
-    getMultilingualContent(
-      previewLesson.lesson.content,
-      previewLesson.lang,
-    );
-
-  const previewLangLabel =
-    previewLesson &&
-    (LANGUAGES.find((l) => l.code === previewLesson.lang)?.name ||
-      previewLesson.lang);
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -800,16 +780,25 @@ export default function ModuleLessonsPage() {
                               Open editor
                             </Button>
 
-                            {/* NEW: Preview button */}
+                            {/* Preview as student – abre página pública */}
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() =>
-                                setPreviewLesson({
-                                  lesson,
-                                  lang: currentLanguage,
-                                })
-                              }
+                              onClick={() => {
+                                if (!lesson.id) {
+                                  toast({
+                                    title: 'Save lesson first',
+                                    description:
+                                      'You need to save the lesson before previewing it as a student.',
+                                    variant: 'destructive',
+                                  });
+                                  return;
+                                }
+                                window.open(
+                                  `/education/lessons/${lesson.id}`,
+                                  '_blank',
+                                );
+                              }}
                             >
                               <Eye className="h-4 w-4 mr-1" />
                               Preview
@@ -849,49 +838,6 @@ export default function ModuleLessonsPage() {
       </main>
 
       <Footer />
-
-      {/* Modal de preview da lesson */}
-      <Dialog
-        open={!!previewLesson}
-        onOpenChange={(open) => {
-          if (!open) setPreviewLesson(null);
-        }}
-      >
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {previewLesson
-                ? `Preview – ${
-                    getMultilingualContent(
-                      previewLesson.lesson.title,
-                      previewLesson.lang,
-                    ) || 'Untitled lesson'
-                  }`
-                : 'Preview'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="mt-4 space-y-4">
-            {previewLesson && (
-              <p className="text-xs text-gray-500">
-                Language:{' '}
-                <span className="font-medium">{previewLangLabel}</span>
-              </p>
-            )}
-
-            <div className="prose prose-sm max-w-none dark:prose-invert border rounded-md p-4 bg-white">
-              <div
-                dangerouslySetInnerHTML={{
-                  __html:
-                    previewHtml && previewHtml.trim().length > 0
-                      ? previewHtml
-                      : '<p><em>No content yet for this language.</em></p>',
-                }}
-              />
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
