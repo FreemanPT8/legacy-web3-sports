@@ -1,4 +1,9 @@
-import { supabase } from './supabase';
+// lib/xp.ts
+import { supabase, supabaseAdmin } from './supabase';
+
+// Usamos sempre o client admin quando existir (bypass RLS)
+// e caímos para o client normal em dev/local se faltar a service role.
+const db = supabaseAdmin ?? supabase;
 
 export const XP_REWARDS = {
   LESSON_MIN: 7,
@@ -19,7 +24,7 @@ export const XP_REWARDS = {
   FORUM_TOPIC: 12,
   LIKE_CREATOR: 0.5,
   DAILY_MISSION: 12,
-  STREAK_7_DAY: 222
+  STREAK_7_DAY: 222,
 };
 
 export const XP_THRESHOLDS = {
@@ -28,13 +33,13 @@ export const XP_THRESHOLDS = {
   FORUM_INTERACT: 444,
   FORUM_POST: 555,
   HALL_OF_FAME: 3333,
-  NATIONAL_COMPETITION_USERS: 50
+  NATIONAL_COMPETITION_USERS: 50,
 };
 
 export const DAILY_LIMITS = {
   COMMENT: { max: 25, xpCap: 25 },
   FORUM_POST: { max: 30, xpCap: 30 },
-  FORUM_TOPIC: { max: 36, xpCap: 36 }
+  FORUM_TOPIC: { max: 36, xpCap: 36 },
 };
 
 export async function awardXP(
@@ -42,10 +47,10 @@ export async function awardXP(
   action: string,
   xpAmount: number,
   referenceId?: string,
-  referenceType?: string
+  referenceType?: string,
 ): Promise<{ success: boolean; newTotal?: number; error?: string }> {
   try {
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await db
       .from('users')
       .select('xp_total')
       .eq('id', userId)
@@ -55,15 +60,13 @@ export async function awardXP(
       return { success: false, error: 'User not found' };
     }
 
-    const { error: txError } = await supabase
-      .from('xp_transactions')
-      .insert({
-        user_id: userId,
-        action,
-        xp_earned: xpAmount,
-        reference_id: referenceId,
-        reference_type: referenceType
-      });
+    const { error: txError } = await db.from('xp_transactions').insert({
+      user_id: userId,
+      action,
+      xp_earned: xpAmount,
+      reference_id: referenceId,
+      reference_type: referenceType,
+    });
 
     if (txError) {
       return { success: false, error: 'Failed to record transaction' };
@@ -71,11 +74,11 @@ export async function awardXP(
 
     const newTotal = user.xp_total + xpAmount;
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from('users')
       .update({
         xp_total: newTotal,
-        profile_unlocked: newTotal >= XP_THRESHOLDS.PROFILE_UNLOCK
+        profile_unlocked: newTotal >= XP_THRESHOLDS.PROFILE_UNLOCK,
       })
       .eq('id', userId);
 
@@ -91,12 +94,12 @@ export async function awardXP(
 
 export async function checkDailyLimit(
   userId: string,
-  actionType: string
+  actionType: string,
 ): Promise<{ canAward: boolean; remaining: number }> {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    const { data: limit, error } = await supabase
+    const { data: limit, error } = await db
       .from('xp_daily_limits')
       .select('count, xp_earned')
       .eq('user_id', userId)
@@ -104,7 +107,8 @@ export async function checkDailyLimit(
       .eq('date', today)
       .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    // Se houver erro inesperado, bloqueamos
+    if (error && (error as any).code !== 'PGRST116') {
       return { canAward: false, remaining: 0 };
     }
 
@@ -122,7 +126,7 @@ export async function checkDailyLimit(
 
     return {
       canAward: true,
-      remaining: dailyLimit.xpCap - currentXP
+      remaining: dailyLimit.xpCap - currentXP,
     };
   } catch (error) {
     return { canAward: false, remaining: 0 };
@@ -132,11 +136,11 @@ export async function checkDailyLimit(
 export async function updateDailyLimit(
   userId: string,
   actionType: string,
-  xpEarned: number
+  xpEarned: number,
 ): Promise<void> {
   const today = new Date().toISOString().split('T')[0];
 
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from('xp_daily_limits')
     .select('count, xp_earned')
     .eq('user_id', userId)
@@ -145,46 +149,52 @@ export async function updateDailyLimit(
     .maybeSingle();
 
   if (existing) {
-    await supabase
+    await db
       .from('xp_daily_limits')
       .update({
         count: existing.count + 1,
-        xp_earned: existing.xp_earned + xpEarned
+        xp_earned: existing.xp_earned + xpEarned,
       })
       .eq('user_id', userId)
       .eq('action_type', actionType)
       .eq('date', today);
   } else {
-    await supabase
-      .from('xp_daily_limits')
-      .insert({
-        user_id: userId,
-        action_type: actionType,
-        count: 1,
-        xp_earned: xpEarned,
-        date: today
-      });
+    await db.from('xp_daily_limits').insert({
+      user_id: userId,
+      action_type: actionType,
+      count: 1,
+      xp_earned: xpEarned,
+      date: today,
+    });
   }
 }
 
 export async function hasCompletedContent(
   userId: string,
   contentId: string,
-  contentType: 'lesson' | 'blog'
+  contentType: 'lesson' | 'blog',
 ): Promise<boolean> {
   try {
-    const table = contentType === 'lesson' ? 'lesson_completions' : 'blog_reads';
-    const idField = contentType === 'lesson' ? 'lesson_id' : 'blog_post_id';
+    const table =
+      contentType === 'lesson' ? 'lesson_completions' : 'blog_reads';
+    const idField =
+      contentType === 'lesson' ? 'lesson_id' : 'blog_post_id';
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from(table)
       .select('id')
       .eq('user_id', userId)
       .eq(idField, contentId)
       .maybeSingle();
 
+    if (error) {
+      // Em caso de erro inesperado, assumimos "não completado", mas logaríamos em server
+      console.error('hasCompletedContent error:', error);
+    }
+
     return !!data;
   } catch (error) {
+    console.error('hasCompletedContent fatal error:', error);
     return false;
   }
 }
@@ -193,22 +203,22 @@ export async function markContentComplete(
   userId: string,
   contentId: string,
   contentType: 'lesson' | 'blog',
-  xpEarned: number
+  xpEarned: number,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const table = contentType === 'lesson' ? 'lesson_completions' : 'blog_reads';
-    const idField = contentType === 'lesson' ? 'lesson_id' : 'blog_post_id';
+    const table =
+      contentType === 'lesson' ? 'lesson_completions' : 'blog_reads';
+    const idField =
+      contentType === 'lesson' ? 'lesson_id' : 'blog_post_id';
 
-    const { error } = await supabase
-      .from(table)
-      .insert({
-        user_id: userId,
-        [idField]: contentId,
-        xp_earned: xpEarned
-      });
+    const { error } = await db.from(table).insert({
+      user_id: userId,
+      [idField]: contentId,
+      xp_earned: xpEarned,
+    });
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: (error as any).message };
     }
 
     return { success: true };
@@ -221,9 +231,11 @@ export function getRandomXP(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export async function updateStreak(userId: string): Promise<{ newStreak: number; bonus: number }> {
+export async function updateStreak(
+  userId: string,
+): Promise<{ newStreak: number; bonus: number }> {
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await db
       .from('users')
       .select('streak_count, streak_updated_at')
       .eq('id', userId)
@@ -234,7 +246,7 @@ export async function updateStreak(userId: string): Promise<{ newStreak: number;
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const lastUpdate = user.streak_updated_at;
+    const lastUpdate = user.streak_updated_at as string | null;
 
     if (lastUpdate === today) {
       return { newStreak: user.streak_count, bonus: 0 };
@@ -256,11 +268,11 @@ export async function updateStreak(userId: string): Promise<{ newStreak: number;
       }
     }
 
-    await supabase
+    await db
       .from('users')
       .update({
         streak_count: newStreak,
-        streak_updated_at: today
+        streak_updated_at: today,
       })
       .eq('id', userId);
 
