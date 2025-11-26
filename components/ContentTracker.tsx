@@ -1,19 +1,16 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { CheckCircle, Clock, ArrowDown } from 'lucide-react';
 
 type ContentTrackerProps = {
   contentId: string;
   contentType: 'lesson' | 'blog';
   xpReward: number;
-  /** segundos necessários para contar como "leu o suficiente" */
-  requiredSeconds?: number;
-  /** se o backend já sabe que este conteúdo foi completado uma vez */
+  estimatedMinutes: number;
   initialCompleted?: boolean;
-  onComplete?: () => void;
   children: React.ReactNode;
 };
 
@@ -21,205 +18,238 @@ export function ContentTracker({
   contentId,
   contentType,
   xpReward,
-  requiredSeconds = 60,
+  estimatedMinutes,
   initialCompleted = false,
-  onComplete,
   children,
 }: ContentTrackerProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { t } = useLanguage();
 
-  const [seconds, setSeconds] = useState(() =>
-    initialCompleted ? requiredSeconds : 0,
+  const [isCompleted, setIsCompleted] = useState<boolean>(!!initialCompleted);
+  const [scrollCompleted, setScrollCompleted] = useState<boolean>(!!initialCompleted);
+  const [timeCompleted, setTimeCompleted] = useState<boolean>(!!initialCompleted);
+  const [secondsRead, setSecondsRead] = useState<number>(0);
+  const [awardingXP, setAwardingXP] = useState<boolean>(false);
+  const [awardError, setAwardError] = useState<string | null>(null);
+
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  // 33% do tempo estimado (em segundos)
+  const requiredSeconds = Math.max(
+    30,
+    Math.round((estimatedMinutes || 10) * 60 * 0.33),
   );
-  const [scrollDone, setScrollDone] = useState(initialCompleted);
-  const [timeDone, setTimeDone] = useState(initialCompleted);
-  const [completed, setCompleted] = useState(initialCompleted);
-  const [sending, setSending] = useState(false);
 
-  const targetSeconds = Math.max(15, Math.round(requiredSeconds));
-
-  // 🔁 Detectar scroll até ao fundo + tempo de leitura
+  // Se o initialCompleted mudar (ex: refetch), sincronizamos
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // Se já está completo ou não há user → não vale a pena trackear XP
-    if (completed || !user) return;
-
-    function handleScroll() {
-      const scrollPos =
-        window.innerHeight + window.scrollY;
-      const bottom =
-        document.documentElement.scrollHeight - 80;
-
-      if (scrollPos >= bottom) {
-        setScrollDone(true);
-      }
+    if (initialCompleted) {
+      setIsCompleted(true);
+      setScrollCompleted(true);
+      setTimeCompleted(true);
     }
+  }, [initialCompleted]);
+
+  // 📌 TRACK SCROLL
+  useEffect(() => {
+    if (!contentRef.current || isCompleted) return;
+
+    const el = contentRef.current;
+
+    const handleScroll = () => {
+      const rect = el.getBoundingClientRect();
+      const windowHeight =
+        window.innerHeight || document.documentElement.clientHeight;
+
+      // Parte inferior do conteúdo dentro do viewport → consideramos "scrollCompleted"
+      if (rect.bottom <= windowHeight + 50) {
+        setScrollCompleted(true);
+      }
+    };
 
     window.addEventListener('scroll', handleScroll);
+    // Verifica logo ao montar (caso o conteúdo já caiba todo no ecrã)
+    handleScroll();
 
-    const interval = window.setInterval(() => {
-      setSeconds((prev) => {
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isCompleted]);
+
+  // ⏱ TRACK TEMPO
+  useEffect(() => {
+    if (isCompleted || timeCompleted) return;
+
+    let interval: number | null = null;
+
+    interval = window.setInterval(() => {
+      setSecondsRead((prev) => {
         const next = prev + 1;
-        if (next >= targetSeconds) {
-          setTimeDone(true);
+        if (next >= requiredSeconds) {
+          if (interval) {
+            clearInterval(interval);
+          }
+          setTimeCompleted(true);
         }
         return next;
       });
     }, 1000);
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
     };
-  }, [completed, user, targetSeconds]);
+  }, [requiredSeconds, isCompleted, timeCompleted]);
 
-  // 🧠 Quando ambos os critérios estão ok → marcar complete + dar XP (só uma vez)
+  // 🧠 QUANDO SCROLL + TEMPO ESTÃO OK → TENTAR DAR XP (APENAS 1ª VEZ + SÓ COM USER)
   useEffect(() => {
-    if (!user) return; // anónimos não ganham XP
-    if (completed) return;
-    if (!scrollDone || !timeDone) return;
+    // se já está completo (do backend ou de uma corrida anterior), não faz nada
+    if (initialCompleted || isCompleted) return;
+    if (!scrollCompleted || !timeCompleted) return;
 
-    let cancelled = false;
+    // Sem utilizador logado -> não há XP
+    if (!user) {
+      setIsCompleted(true);
+      return;
+    }
 
-    async function sendCompletion() {
+    const userId = user.id; // TS agora sabe que user não é null, por causa do if acima
+
+    const award = async () => {
       try {
-        setSending(true);
+        setAwardingXP(true);
+        setAwardError(null);
 
-        const url =
+        const endpoint =
           contentType === 'lesson'
             ? `/api/lessons/${contentId}/complete`
             : `/api/blog/${contentId}/read`;
 
-        const res = await fetch(url, {
+        const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({
-            userId: user.id,
+            userId,
             xpEarned: xpReward,
           }),
         });
 
         const data = await res.json();
 
-        if (cancelled) return;
-
-        if (res.ok && data.success) {
-          toast({
-            title: 'XP earned',
-            description: `You received ${xpReward} XP for this content.`,
-          });
-        } else if (
-          data?.error === 'Article already read' ||
-          data?.error === 'Lesson already completed'
-        ) {
-          // Já tinha XP, tudo bem – garantimos só que o UI marca como completo
-        } else {
-          console.error('Error completing content:', data);
-          toast({
-            title: 'Could not add XP',
-            description: data?.error || 'Please try again later.',
-            variant: 'destructive',
-          });
+        if (!res.ok || !data.success) {
+          console.error('Error awarding XP:', data);
+          setAwardError(data.error || 'Failed to award XP.');
+          // Mesmo que a API falhe, consideramos o conteúdo completo do ponto de vista de tracking
+          setIsCompleted(true);
+          return;
         }
 
-        setCompleted(true);
-        onComplete?.();
+        setIsCompleted(true);
       } catch (err) {
-        if (cancelled) return;
-        console.error('Completion error:', err);
-        toast({
-          title: 'Network error',
-          description: 'Could not record completion.',
-          variant: 'destructive',
-        });
+        console.error('Network error awarding XP:', err);
+        setAwardError('Network error while awarding XP.');
+        setIsCompleted(true);
       } finally {
-        if (!cancelled) {
-          setSending(false);
-        }
+        setAwardingXP(false);
       }
-    }
-
-    sendCompletion();
-
-    return () => {
-      cancelled = true;
     };
+
+    award();
   }, [
-    scrollDone,
-    timeDone,
-    completed,
-    user,
-    contentType,
     contentId,
+    contentType,
     xpReward,
-    onComplete,
-    toast,
+    scrollCompleted,
+    timeCompleted,
+    isCompleted,
+    initialCompleted,
+    user,
   ]);
 
-  const showTracker = true; // podemos sempre mostrar; para anónimo vira call-to-action
+  const scrollLabel = scrollCompleted
+    ? t('tracker.scrolledToEnd') || 'Scrolled to the end'
+    : t('tracker.scrollToEnd') || 'Scroll to the end';
+
+  const timeLabel = timeCompleted
+    ? t('tracker.timeCompleted') || 'Time requirement met'
+    : t('tracker.timeReading', {
+        secondsRead,
+        requiredSeconds,
+      }) ||
+      `Read for ${secondsRead}s / ${requiredSeconds}s`;
+
+  const statusLabel = !user
+    ? t('tracker.loginForXP') || 'Login to earn XP from this content.'
+    : isCompleted
+    ? t('tracker.completedOnce') ||
+      'XP was granted the first time you completed this content.'
+    : awardingXP
+    ? t('tracker.awardingXP') || 'XP will be added shortly...'
+    : t('tracker.inProgress') || 'Complete the conditions below to earn XP.';
 
   return (
-    <>
-      {children}
+    <div className="space-y-6">
+      {/* BARRA DE STATUS */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm flex flex-col gap-1">
+        <div className="font-semibold text-blue-900 flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          {statusLabel}
+        </div>
 
-      {showTracker && (
-        <div className="fixed bottom-4 right-4 z-30">
-          <div className="w-64 rounded-xl border bg-white shadow-lg p-3 text-xs space-y-2">
-            <div className="font-semibold flex items-center justify-between">
-              <span>Reading Progress</span>
-              {completed && (
-                <span className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="h-3 w-3" />
-                  Done
-                </span>
+        {awardError && (
+          <div className="text-xs text-red-600 mt-1">
+            {awardError}
+          </div>
+        )}
+
+        <div className="mt-2 grid gap-2 md:grid-cols-2 text-xs text-blue-900">
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex h-4 w-4 items-center justify-center rounded-full border ${
+                scrollCompleted
+                  ? 'bg-green-500 border-green-600'
+                  : 'bg-white border-blue-400'
+              }`}
+            >
+              {scrollCompleted && (
+                <CheckCircle className="h-3 w-3 text-white" />
               )}
-            </div>
+            </span>
+            <span>{scrollLabel}</span>
+          </div>
 
-            {!user && (
-              <p className="text-[11px] text-gray-500">
-                Login to earn XP for this content.
-              </p>
-            )}
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <ArrowDown className="h-3 w-3" />
-                  Scroll to bottom
-                </span>
-                <CheckCircle
-                  className={`h-3 w-3 ${
-                    scrollDone ? 'text-green-600' : 'text-gray-300'
-                  }`}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Read for {targetSeconds}s ({Math.min(seconds, targetSeconds)}s)
-                </span>
-                <CheckCircle
-                  className={`h-3 w-3 ${
-                    timeDone ? 'text-green-600' : 'text-gray-300'
-                  }`}
-                />
-              </div>
-            </div>
-
-            {user && (
-              <p className="text-[11px] text-gray-500">
-                {completed
-                  ? 'XP already added for this content.'
-                  : sending
-                  ? 'Adding XP...'
-                  : 'XP will be added when both tasks are complete.'}
-              </p>
-            )}
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex h-4 w-4 items-center justify-center rounded-full border ${
+                timeCompleted
+                  ? 'bg-green-500 border-green-600'
+                  : 'bg-white border-blue-400'
+              }`}
+            >
+              {timeCompleted && (
+                <CheckCircle className="h-3 w-3 text-white" />
+              )}
+            </span>
+            <span>
+              <Clock className="h-3 w-3 inline mr-1" />
+              {timeLabel}
+            </span>
           </div>
         </div>
+      </div>
+
+      {/* CONTEÚDO TRACKED */}
+      <div ref={contentRef}>{children}</div>
+
+      {/* DICA PARA FAZER SCROLL */}
+      {!scrollCompleted && (
+        <div className="mt-4 flex items-center justify-center text-xs text-gray-500">
+          <ArrowDown className="h-4 w-4 mr-1" />
+          {t('tracker.keepScrolling') || 'Keep scrolling to mark as read.'}
+        </div>
       )}
-    </>
+    </div>
   );
 }
