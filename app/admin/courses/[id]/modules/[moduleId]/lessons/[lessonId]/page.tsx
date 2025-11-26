@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -20,27 +20,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 
-import {
-  ArrowLeft,
-  Save,
-  Eye,
-} from 'lucide-react';
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ArrowLeft, Save, Eye } from 'lucide-react';
 
 import {
   BlockEditor,
   type BlocksByLanguage,
   type LangCode,
   serializeBlocksByLanguage,
-  serializeBlocksToHtml,
 } from '@/components/admin/content/BlockEditor';
 
 import { getMultilingualContent } from '@/lib/i18n';
@@ -99,10 +86,6 @@ export default function LessonAdvancedEditorPage() {
 
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  // preview modal
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewLang, setPreviewLang] = useState<LangCode>('en');
 
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
@@ -244,7 +227,6 @@ export default function LessonAdvancedEditorPage() {
           }
         });
         setBlocksByLanguage(initialBlocks);
-        setPreviewLang('en');
       } catch (err) {
         console.error('Error loading advanced lesson editor:', err);
         toast({
@@ -368,7 +350,6 @@ export default function LessonAdvancedEditorPage() {
         description: 'Lesson updated successfully.',
       });
 
-      // Atualizar state local
       setLesson((prev) =>
         prev
           ? {
@@ -388,17 +369,21 @@ export default function LessonAdvancedEditorPage() {
     setSaving(false);
   };
 
-  const previewHtml = useMemo(() => {
-    if (!previewLang) return '';
-    const blocks = blocksByLanguage[previewLang] || [];
-    const html = serializeBlocksToHtml(blocks);
-    return html && html.trim().length > 0
-      ? html
-      : '<p><em>No content yet for this language.</em></p>';
-  }, [blocksByLanguage, previewLang]);
+  const handlePreview = () => {
+    if (!lesson?.id) {
+      toast({
+        title: 'Save lesson first',
+        description:
+          'You need to save the lesson before opening the public preview.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-  const previewLangLabel =
-    LANGUAGES.find((l) => l.code === previewLang)?.name || previewLang;
+    // Preview = mesma página que o aluno veria
+    const url = `/education/lessons/${lesson.id}?preview=1`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   if (loading || !user || !isAdmin || loadingData) {
     return (
@@ -427,9 +412,7 @@ export default function LessonAdvancedEditorPage() {
     );
   }
 
-  const currentTitle =
-    lesson.title?.[currentLanguage] || '';
-
+  const currentTitle = lesson.title?.[currentLanguage] || '';
   const currentDescription =
     lesson.description?.[currentLanguage] || '';
 
@@ -475,10 +458,7 @@ export default function LessonAdvancedEditorPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setPreviewLang(currentLanguage);
-                    setPreviewOpen(true);
-                  }}
+                  onClick={handlePreview}
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   Preview
@@ -705,39 +685,6 @@ export default function LessonAdvancedEditorPage() {
       </main>
 
       <Footer />
-
-      {/* Modal de preview da lesson */}
-      <Dialog
-        open={previewOpen}
-        onOpenChange={(open) => setPreviewOpen(open)}
-      >
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Preview –{' '}
-              {getMultilingualContent(
-                lesson.title,
-                previewLang,
-              ) || 'Untitled lesson'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="mt-4 space-y-4">
-            <p className="text-xs text-gray-500">
-              Language:{' '}
-              <span className="font-medium">{previewLangLabel}</span>
-            </p>
-
-            <div className="prose prose-sm max-w-none dark:prose-invert border rounded-md p-4 bg-white">
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: previewHtml,
-                }}
-              />
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
