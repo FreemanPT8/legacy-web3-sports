@@ -2,14 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar, User, Eye, Lock } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  User,
+  Eye,
+  Lock,
+} from 'lucide-react';
+
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getMultilingualContent } from '@/lib/i18n';
 
 type MultiLang = Record<string, string>;
 
@@ -28,17 +38,18 @@ type BlogPost = {
 export default function BlogPostPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
+  const { language } = useLanguage();
 
   const [post, setPost] = useState<BlogPost | null>(null);
-  const [postLoading, setPostLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   const id = params.id as string;
 
   useEffect(() => {
     const fetchPost = async () => {
-      setPostLoading(true);
+      setLoading(true);
       try {
         const res = await fetch(`/api/blog/${id}`);
         const data = await res.json();
@@ -55,7 +66,7 @@ export default function BlogPostPage() {
         setNotFound(true);
         setPost(null);
       } finally {
-        setPostLoading(false);
+        setLoading(false);
       }
     };
 
@@ -64,22 +75,11 @@ export default function BlogPostPage() {
     }
   }, [id]);
 
-  const getTitle = (title: MultiLang | string) => {
-    if (typeof title === 'string') return title;
-    return title.en || title.pt || title.es || 'Untitled post';
+  const getLocalized = (value: MultiLang | string | undefined | null) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    return getMultilingualContent(value, language);
   };
-
-  const getContent = (content: MultiLang | string) => {
-    if (typeof content === 'string') return content;
-    return content.en || content.pt || content.es || '';
-  };
-
-  const getExcerpt = (excerpt: MultiLang | string) => {
-    if (typeof excerpt === 'string') return excerpt;
-    return excerpt.en || excerpt.pt || excerpt.es || '';
-  };
-
-  const loading = authLoading || postLoading;
 
   if (loading) {
     return (
@@ -123,9 +123,12 @@ export default function BlogPostPage() {
     );
   }
 
-  const htmlContent = getContent(post.content);
-  const excerptText = getExcerpt(post.excerpt);
-  const isLocked = !!post.registered_only && !user;
+  const title = getLocalized(post.title);
+  const excerpt = getLocalized(post.excerpt);
+  const htmlContent = getLocalized(post.content);
+
+  const isMembersOnly = !!post.registered_only;
+  const isLoggedIn = !!user;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -148,7 +151,7 @@ export default function BlogPostPage() {
                   <Badge variant="outline">
                     {post.category || 'General'}
                   </Badge>
-                  {post.registered_only && (
+                  {isMembersOnly && (
                     <span className="flex items-center gap-1 text-xs text-amber-600">
                       <Lock className="h-3 w-3" />
                       Members only
@@ -156,7 +159,7 @@ export default function BlogPostPage() {
                   )}
                 </div>
                 <CardTitle className="text-2xl md:text-3xl">
-                  {getTitle(post.title)}
+                  {title || 'Untitled post'}
                 </CardTitle>
                 <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
@@ -178,49 +181,41 @@ export default function BlogPostPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-6">
-                {/* Se o post está bloqueado e o user NÃO está logado → teaser + call-to-action */}
-                {isLocked ? (
-                  <>
-                    {excerptText && (
-                      <p className="text-sm text-gray-700 dark:text-gray-200">
-                        {excerptText}
+              <CardContent>
+                {/* Se for Members Only e não estiver logado → teaser + CTA */}
+                {isMembersOnly && !isLoggedIn ? (
+                  <div className="space-y-4">
+                    {excerpt && (
+                      <p className="text-gray-700 dark:text-gray-300">
+                        {excerpt}
                       </p>
                     )}
 
-                    <div className="border border-dashed border-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 flex flex-col gap-3">
-                      <div className="flex items-start gap-2">
-                        <Lock className="h-4 w-4 mt-1 text-amber-600" />
+                    <div className="mt-4 rounded-lg border border-dashed border-amber-300 bg-amber-50 dark:bg-amber-950/40 p-4">
+                      <div className="flex items-start gap-3">
+                        <Lock className="h-5 w-5 mt-0.5 text-amber-600" />
                         <div>
-                          <p className="font-semibold text-amber-800 dark:text-amber-200">
+                          <p className="font-semibold text-sm mb-1">
                             This article is exclusive to registered members.
                           </p>
-                          <p className="text-xs text-amber-800/80 dark:text-amber-100/80 mt-1">
-                            Create a free account or log in to unlock the full
-                            content and start earning XP from this lesson.
+                          <p className="text-xs text-gray-700 dark:text-gray-300 mb-3">
+                            Create a free account or log in to read the full
+                            content and earn XP from learning.
                           </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+                              <Link href="/login">Log in</Link>
+                            </Button>
+                            <Button asChild size="sm" variant="outline">
+                              <Link href="/signup">Create account</Link>
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
-                          onClick={() => router.push('/signup')}
-                        >
-                          Create account
-                        </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => router.push('/login')}
-                          >
-                            Log in
-                          </Button>
-                      </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  // Conteúdo completo (público ou user autenticado)
+                  // Utilizador logado OU artigo não é members-only → conteúdo completo
                   <div
                     className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md"
                     dangerouslySetInnerHTML={{ __html: htmlContent }}
