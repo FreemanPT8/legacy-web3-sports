@@ -2,31 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { ContentTracker } from '@/components/ContentTracker';
-import { useAuth } from '@/contexts/AuthContext';
-
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
-import {
-  ArrowLeft,
-  Calendar,
-  User,
-  Eye,
-  Lock,
-  Award,
-  CheckCircle,
-  Clock,
-} from 'lucide-react';
+import { ArrowLeft, Calendar, User, Eye, Lock, CheckCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { ContentTracker } from '@/components/ContentTracker';
 
 type MultiLang = Record<string, string>;
 
@@ -41,7 +23,7 @@ type BlogPost = {
   views?: number;
   registered_only?: boolean | null;
   xp_reward?: number | null;
-  reading_time?: number | null;
+  reading_time?: number | null; // minutos
 };
 
 export default function BlogPostPage() {
@@ -52,7 +34,6 @@ export default function BlogPostPage() {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [earnedXp, setEarnedXp] = useState<number | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
 
   const id = params.id as string;
@@ -68,6 +49,7 @@ export default function BlogPostPage() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
+
         const data = await res.json();
 
         if (!res.ok || !data.success || !data.post) {
@@ -75,11 +57,8 @@ export default function BlogPostPage() {
           setPost(null);
         } else {
           setPost(data.post);
+          setIsCompleted(!!data.isCompleted);
           setNotFound(false);
-
-          if (data.isCompleted) {
-            setIsCompleted(true);
-          }
         }
       } catch (error) {
         console.error('Error loading public blog post:', error);
@@ -97,28 +76,12 @@ export default function BlogPostPage() {
 
   const getTitle = (title: MultiLang | string) => {
     if (typeof title === 'string') return title;
-    return (
-      title.en ||
-      title.pt ||
-      title.es ||
-      title.fr ||
-      title.it ||
-      title.de ||
-      'Untitled post'
-    );
+    return title.en || title.pt || title.es || 'Untitled post';
   };
 
   const getContent = (content: MultiLang | string) => {
     if (typeof content === 'string') return content;
-    return (
-      content.en ||
-      content.pt ||
-      content.es ||
-      content.fr ||
-      content.it ||
-      content.de ||
-      ''
-    );
+    return content.en || content.pt || content.es || '';
   };
 
   if (loading) {
@@ -146,8 +109,7 @@ export default function BlogPostPage() {
           <div className="text-center px-4">
             <h1 className="text-2xl font-bold mb-2">Post not found</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              The blog post you are looking for does not exist or is not
-              published.
+              The blog post you are looking for does not exist or is not published.
             </p>
             <button
               onClick={() => router.push('/blog')}
@@ -164,19 +126,22 @@ export default function BlogPostPage() {
   }
 
   const htmlContent = getContent(post.content);
-  const title = getTitle(post.title);
-  const isMembersOnly = !!post.registered_only;
-  const xpReward =
-    typeof post.xp_reward === 'number' ? post.xp_reward : 15;
-  const readingMinutes =
-    typeof post.reading_time === 'number' && post.reading_time > 0
-      ? post.reading_time
-      : 5;
+  const xpReward = post.xp_reward ?? 0;
+  const readingMinutes = post.reading_time ?? 5;
+  const requiredSeconds = Math.max(
+    15,
+    Math.round(readingMinutes * 60 * 0.33),
+  ); // 33% do tempo estimado
 
-  // Se já estava concluído e ainda não mostramos o card, mostra-o com o XP teórico
-  const showCompletedCard = isCompleted || earnedXp !== null;
-  const xpShown =
-    earnedXp !== null ? earnedXp : xpReward;
+  const canEarnXP = !!user;
+  const isMembersOnly = !!post.registered_only;
+
+  const contentNode = (
+    <div
+      className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md"
+      dangerouslySetInnerHTML={{ __html: htmlContent }}
+    />
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -193,36 +158,34 @@ export default function BlogPostPage() {
               Back to blog
             </button>
 
-            {/* Cabeçalho do artigo */}
             <Card className="mb-6">
               <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline">
                       {post.category || 'General'}
                     </Badge>
                     {isMembersOnly && (
-                      <Badge
-                        variant="outline"
-                        className="flex items-center gap-1"
-                      >
+                      <Badge variant="outline" className="flex items-center gap-1">
                         <Lock className="h-3 w-3" />
                         Members only
                       </Badge>
                     )}
-                    {user && (
-                      <Badge
-                        variant="outline"
-                        className="flex items-center gap-1"
-                      >
-                        <Award className="h-3 w-3" />
-                        {xpReward} XP
+                    {canEarnXP && isCompleted && (
+                      <Badge className="bg-green-600 flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Completed
                       </Badge>
                     )}
                   </div>
+                  {xpReward > 0 && (
+                    <span className="text-xs text-gray-500">
+                      {xpReward} XP
+                    </span>
+                  )}
                 </div>
                 <CardTitle className="text-2xl md:text-3xl">
-                  {title}
+                  {getTitle(post.title)}
                 </CardTitle>
                 <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
@@ -235,10 +198,6 @@ export default function BlogPostPage() {
                       ? new Date(post.created_at).toLocaleDateString()
                       : '-'}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {readingMinutes} min
-                  </span>
                   {typeof post.views === 'number' && post.views >= 0 && (
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
@@ -247,66 +206,31 @@ export default function BlogPostPage() {
                   )}
                 </div>
               </CardHeader>
-            </Card>
-
-            {/* Mensagem de conclusão (XP) */}
-            {showCompletedCard && user && (
-              <Card className="mb-6 bg-green-50 border-green-200">
-                <CardContent className="py-4 flex items-center gap-3">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                  <div className="text-sm text-green-900">
-                    You earned <strong>{xpShown} XP</strong> for reading
-                    this article (only counted the first time).
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Gating para members only */}
-            {isMembersOnly && !user ? (
-              <Card className="mb-6">
-                <CardContent className="py-8 text-center space-y-4">
-                  <p className="text-sm text-gray-700 dark:text-gray-200">
-                    This article is exclusive to registered members. Create
-                    a free account or login to read the full content and
-                    earn XP.
-                  </p>
-                  <div className="flex justify-center gap-3">
-                    <Link href="/signup">
-                      <button className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm">
-                        Create account
-                      </button>
-                    </Link>
-                    <Link href="/login">
-                      <button className="px-4 py-2 rounded-md border border-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
-                        Login
-                      </button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="mb-6">
-                <CardContent>
+              <CardContent>
+                {canEarnXP ? (
                   <ContentTracker
                     contentId={post.id}
                     contentType="blog"
                     xpReward={xpReward}
-                    estimatedMinutes={readingMinutes}
+                    requiredSeconds={requiredSeconds}
                     initialCompleted={isCompleted}
-                    onComplete={(xp) => {
-                      setIsCompleted(true);
-                      setEarnedXp(typeof xp === 'number' ? xp : xpReward);
-                    }}
+                    onComplete={() => setIsCompleted(true)}
                   >
-                    <div
-                      className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md"
-                      dangerouslySetInnerHTML={{ __html: htmlContent }}
-                    />
+                    {contentNode}
                   </ContentTracker>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <>
+                    {isMembersOnly && (
+                      <p className="mb-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                        This article is for registered members. Login to earn XP and
+                        track your progress.
+                      </p>
+                    )}
+                    {contentNode}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

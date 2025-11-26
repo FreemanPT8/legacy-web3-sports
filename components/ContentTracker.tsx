@@ -1,107 +1,98 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Award, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { CheckCircle, Clock, ArrowDown } from 'lucide-react';
 
 type ContentTrackerProps = {
   contentId: string;
   contentType: 'lesson' | 'blog';
   xpReward: number;
-  estimatedMinutes?: number; // tempo estimado de leitura
+  /** segundos necessários para contar como "leu o suficiente" */
+  requiredSeconds?: number;
+  /** se o backend já sabe que este conteúdo foi completado uma vez */
+  initialCompleted?: boolean;
+  onComplete?: () => void;
   children: React.ReactNode;
-  onComplete?: (xpEarned?: number) => void;
-  initialCompleted?: boolean; // 👈 NOVO
 };
 
 export function ContentTracker({
   contentId,
   contentType,
   xpReward,
-  estimatedMinutes = 5,
-  children,
-  onComplete,
+  requiredSeconds = 60,
   initialCompleted = false,
+  onComplete,
+  children,
 }: ContentTrackerProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
 
-  const [scrolledBottom, setScrolledBottom] = useState(false);
-  const [readSeconds, setReadSeconds] = useState(0);
-  const [timeOk, setTimeOk] = useState(false);
-  const [awarding, setAwarding] = useState(false);
-  const [awarded, setAwarded] = useState(false);
-
-  // 33% do tempo estimado, mínimo 10 segundos
-  const requiredSeconds = Math.max(
-    10,
-    Math.round(estimatedMinutes * 60 * 0.33),
+  const [seconds, setSeconds] = useState(() =>
+    initialCompleted ? requiredSeconds : 0,
   );
+  const [scrollDone, setScrollDone] = useState(initialCompleted);
+  const [timeDone, setTimeDone] = useState(initialCompleted);
+  const [completed, setCompleted] = useState(initialCompleted);
+  const [sending, setSending] = useState(false);
 
-  // Se já vem como concluído do backend, marcamos logo tudo green
+  const targetSeconds = Math.max(15, Math.round(requiredSeconds));
+
+  // 🔁 Detectar scroll até ao fundo + tempo de leitura
   useEffect(() => {
-    if (initialCompleted) {
-      setScrolledBottom(true);
-      setTimeOk(true);
-      setAwarded(true);
+    if (typeof window === 'undefined') return;
+
+    // Se já está completo ou não há user → não vale a pena trackear XP
+    if (completed || !user) return;
+
+    function handleScroll() {
+      const scrollPos =
+        window.innerHeight + window.scrollY;
+      const bottom =
+        document.documentElement.scrollHeight - 80;
+
+      if (scrollPos >= bottom) {
+        setScrollDone(true);
+      }
     }
-  }, [initialCompleted]);
 
-  // Contador de tempo (não corre se já estava completo)
-  useEffect(() => {
-    if (initialCompleted) return;
+    window.addEventListener('scroll', handleScroll);
 
     const interval = window.setInterval(() => {
-      setReadSeconds((prev) => prev + 1);
+      setSeconds((prev) => {
+        const next = prev + 1;
+        if (next >= targetSeconds) {
+          setTimeDone(true);
+        }
+        return next;
+      });
     }, 1000);
 
     return () => {
+      window.removeEventListener('scroll', handleScroll);
       window.clearInterval(interval);
     };
-  }, [initialCompleted]);
+  }, [completed, user, targetSeconds]);
 
-  // Marca quando chega ao tempo mínimo
+  // 🧠 Quando ambos os critérios estão ok → marcar complete + dar XP (só uma vez)
   useEffect(() => {
-    if (readSeconds >= requiredSeconds) {
-      setTimeOk(true);
-    }
-  }, [readSeconds, requiredSeconds]);
+    if (!user) return; // anónimos não ganham XP
+    if (completed) return;
+    if (!scrollDone || !timeDone) return;
 
-  // Detectar scroll até ao fundo (mesmo para já completos, só para UI ficar bonita)
-  useEffect(() => {
-    if (initialCompleted) return;
+    let cancelled = false;
 
-    const handleScroll = () => {
-      const scrollY = window.scrollY || window.pageYOffset;
-      const viewportHeight = window.innerHeight;
-      const fullHeight = document.documentElement.scrollHeight;
-
-      if (scrollY + viewportHeight >= fullHeight - 32) {
-        setScrolledBottom(true);
-      }
-    };
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [initialCompleted]);
-
-  // Quando cumpre as duas condições → award XP (se tiver user e ainda não tiver sido award antes)
-  useEffect(() => {
-    if (!user) return; // sem login não há XP
-    if (initialCompleted) return; // já registado noutra sessão
-    if (awarded || awarding) return;
-    if (!timeOk || !scrolledBottom) return;
-
-    const sendCompletion = async () => {
+    async function sendCompletion() {
       try {
-        setAwarding(true);
+        setSending(true);
 
-        const endpoint =
+        const url =
           contentType === 'lesson'
             ? `/api/lessons/${contentId}/complete`
             : `/api/blog/${contentId}/read`;
 
-        const res = await fetch(endpoint, {
+        const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -112,121 +103,123 @@ export function ContentTracker({
 
         const data = await res.json();
 
-        if (!res.ok || !data.success) {
-          console.error('Error awarding XP:', data);
-          setAwarding(false);
-          return;
+        if (cancelled) return;
+
+        if (res.ok && data.success) {
+          toast({
+            title: 'XP earned',
+            description: `You received ${xpReward} XP for this content.`,
+          });
+        } else if (
+          data?.error === 'Article already read' ||
+          data?.error === 'Lesson already completed'
+        ) {
+          // Já tinha XP, tudo bem – garantimos só que o UI marca como completo
+        } else {
+          console.error('Error completing content:', data);
+          toast({
+            title: 'Could not add XP',
+            description: data?.error || 'Please try again later.',
+            variant: 'destructive',
+          });
         }
 
-        setAwarded(true);
-        setAwarding(false);
-
-        if (onComplete) {
-          onComplete(
-            typeof data.xpEarned === 'number'
-              ? data.xpEarned
-              : xpReward,
-          );
+        setCompleted(true);
+        onComplete?.();
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Completion error:', err);
+        toast({
+          title: 'Network error',
+          description: 'Could not record completion.',
+          variant: 'destructive',
+        });
+      } finally {
+        if (!cancelled) {
+          setSending(false);
         }
-      } catch (error) {
-        console.error('Network error awarding XP:', error);
-        setAwarding(false);
       }
-    };
+    }
 
     sendCompletion();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
+    scrollDone,
+    timeDone,
+    completed,
     user,
-    initialCompleted,
-    awarded,
-    awarding,
-    timeOk,
-    scrolledBottom,
-    contentId,
     contentType,
+    contentId,
     xpReward,
     onComplete,
+    toast,
   ]);
 
-  const showAlready =
-    user && (initialCompleted || awarded);
-
-  const showWillBeAdded =
-    user && !initialCompleted && timeOk && scrolledBottom && !awarded;
+  const showTracker = true; // podemos sempre mostrar; para anónimo vira call-to-action
 
   return (
     <>
       {children}
 
-      <div className="fixed bottom-6 right-6 z-40">
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl px-4 py-3 w-72 text-xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold">Reading Progress</span>
-            {user ? (
-              <span className="flex items-center gap-1 text-[11px] text-gray-500">
-                <Award className="h-3 w-3" />
-                {xpReward} XP
-              </span>
-            ) : (
-              <span className="text-[11px] text-gray-500">
-                Login to earn XP
-              </span>
+      {showTracker && (
+        <div className="fixed bottom-4 right-4 z-30">
+          <div className="w-64 rounded-xl border bg-white shadow-lg p-3 text-xs space-y-2">
+            <div className="font-semibold flex items-center justify-between">
+              <span>Reading Progress</span>
+              {completed && (
+                <span className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="h-3 w-3" />
+                  Done
+                </span>
+              )}
+            </div>
+
+            {!user && (
+              <p className="text-[11px] text-gray-500">
+                Login to earn XP for this content.
+              </p>
+            )}
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <ArrowDown className="h-3 w-3" />
+                  Scroll to bottom
+                </span>
+                <CheckCircle
+                  className={`h-3 w-3 ${
+                    scrollDone ? 'text-green-600' : 'text-gray-300'
+                  }`}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Read for {targetSeconds}s ({Math.min(seconds, targetSeconds)}s)
+                </span>
+                <CheckCircle
+                  className={`h-3 w-3 ${
+                    timeDone ? 'text-green-600' : 'text-gray-300'
+                  }`}
+                />
+              </div>
+            </div>
+
+            {user && (
+              <p className="text-[11px] text-gray-500">
+                {completed
+                  ? 'XP already added for this content.'
+                  : sending
+                  ? 'Adding XP...'
+                  : 'XP will be added when both tasks are complete.'}
+              </p>
             )}
           </div>
-
-          <div className="space-y-1.5">
-            {/* Scroll condition */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex h-3 w-3 rounded-full border ${
-                    scrolledBottom || initialCompleted
-                      ? 'bg-green-500 border-green-500'
-                      : 'bg-gray-200 border-gray-300'
-                  }`}
-                />
-                <span>Scroll to bottom</span>
-              </div>
-              {(scrolledBottom || initialCompleted) && (
-                <CheckCircle className="h-3 w-3 text-green-500" />
-              )}
-            </div>
-
-            {/* Time condition */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex h-3 w-3 rounded-full border ${
-                    timeOk || initialCompleted
-                      ? 'bg-green-500 border-green-500'
-                      : 'bg-gray-200 border-gray-300'
-                  }`}
-                />
-                <span>
-                  Read for {readSeconds}s / {requiredSeconds}s
-                </span>
-              </div>
-              {(timeOk || initialCompleted) && (
-                <CheckCircle className="h-3 w-3 text-green-500" />
-              )}
-            </div>
-          </div>
-
-          {showWillBeAdded && (
-            <div className="mt-2 text-[11px] text-green-700 flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" />
-              XP will be added shortly
-            </div>
-          )}
-
-          {showAlready && !showWillBeAdded && (
-            <div className="mt-2 text-[11px] text-green-700 flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" />
-              XP already awarded for this content
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </>
   );
 }
