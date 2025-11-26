@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -20,46 +20,66 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 import {
   ArrowLeft,
   Save,
-  Image as ImageIcon,
+  Eye,
 } from 'lucide-react';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 import {
   BlockEditor,
   type BlocksByLanguage,
   type LangCode,
   serializeBlocksByLanguage,
+  serializeBlocksToHtml,
 } from '@/components/admin/content/BlockEditor';
 
-type MultiLang = Record<string, string>;
+import { getMultilingualContent } from '@/lib/i18n';
 
-type LessonRecord = {
-  id: string;
-  module_id: string | null;
-  title: MultiLang;
-  description: MultiLang;
-  content: MultiLang;
-  xp_reward?: number | null;
-  xp_threshold?: number | null;
-  estimated_time?: number | null;
-  image_url?: string | null;
-  file_url?: string | null;
-  order?: number | null;
-};
-
-const LANGUAGES: { code: LangCode; name: string }[] = [
+const LANGUAGES = [
   { code: 'en', name: 'English' },
   { code: 'pt', name: 'Português' },
   { code: 'es', name: 'Español' },
   { code: 'fr', name: 'Français' },
   { code: 'it', name: 'Italiano' },
   { code: 'de', name: 'Deutsch' },
-];
+] as const;
 
-export default function LessonEditorPage() {
+type Lesson = {
+  id: string;
+  module_id?: string;
+  order: number;
+  title: Record<string, string>;
+  description: Record<string, string>;
+  content: Record<string, string>;
+  xp_reward: number;
+  xp_threshold: number;
+  estimated_time: number;
+  image_url?: string | null;
+  file_url?: string | null;
+  published?: boolean | null;
+};
+
+type Module = {
+  id: string;
+  title: any;
+};
+
+type Course = {
+  id: string;
+  title: any;
+};
+
+export default function LessonAdvancedEditorPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.id as string;
@@ -69,13 +89,20 @@ export default function LessonEditorPage() {
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
-  const [currentLanguage, setCurrentLanguage] =
-    useState<LangCode>('en');
-  const [lesson, setLesson] = useState<LessonRecord | null>(null);
-  const [blocksByLang, setBlocksByLang] =
+  const [course, setCourse] = useState<Course | null>(null);
+  const [module, setModule] = useState<Module | null>(null);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+
+  const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
+  const [blocksByLanguage, setBlocksByLanguage] =
     useState<BlocksByLanguage>({});
+
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // preview modal
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLang, setPreviewLang] = useState<LangCode>('en');
 
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
@@ -92,56 +119,103 @@ export default function LessonEditorPage() {
     }
   }, [user, loading, isAdmin, router]);
 
-  // Helper: garantir objeto multilíngua completo
-  function ensureMultiLang(raw: any): MultiLang {
-    const base: MultiLang = {
-      en: '',
-      pt: '',
-      es: '',
-      fr: '',
-      it: '',
-      de: '',
-    };
-    if (raw && typeof raw === 'object') {
-      return { ...base, ...raw };
-    }
-    return base;
-  }
-
-  // Carregar lição
+  // Carregar curso, módulo e lesson
   useEffect(() => {
-    const fetchLesson = async () => {
-      if (!isAdmin) return;
+    const fetchData = async () => {
       setLoadingData(true);
       try {
         const token = getToken();
-        const res = await fetch(`/api/lessons/${lessonId}`, {
+
+        // 1) Curso + módulos (para mostrar títulos)
+        const resCourse = await fetch(`/api/admin/courses/${courseId}`, {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
-        const data = await res.json();
-        if (!res.ok || !data.success || !data.lesson) {
+        const dataCourse = await resCourse.json();
+        if (!resCourse.ok || !dataCourse.success) {
+          toast({
+            title: 'Error loading course',
+            description: dataCourse.error || 'Failed to load course.',
+            variant: 'destructive',
+          });
+          setCourse(null);
+          setModule(null);
+        } else {
+          const c = dataCourse.course as Course & { modules?: any[] };
+          setCourse(c);
+
+          const foundModule =
+            Array.isArray(c.modules) &&
+            c.modules.find((m: any) => m.id === moduleId);
+
+          if (!foundModule) {
+            toast({
+              title: 'Module not found',
+              description: 'The module does not exist for this course.',
+              variant: 'destructive',
+            });
+            setModule(null);
+          } else {
+            setModule({
+              id: foundModule.id,
+              title: foundModule.title,
+            });
+          }
+        }
+
+        // 2) Carregar lesson
+        const resLesson = await fetch(`/api/admin/lessons/${lessonId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const dataLesson = await resLesson.json();
+        if (!resLesson.ok || !dataLesson.success || !dataLesson.lesson) {
           toast({
             title: 'Error loading lesson',
-            description: data.error || 'Failed to load lesson data.',
+            description: dataLesson.error || 'Failed to load lesson.',
             variant: 'destructive',
           });
           setLesson(null);
-          setLoadingData(false);
           return;
         }
 
-        const l = data.lesson as LessonRecord;
+        const l = dataLesson.lesson as Lesson & {
+          title?: any;
+          description?: any;
+          content?: any;
+        };
 
-        const safeTitle = ensureMultiLang(l.title);
-        const safeDescription = ensureMultiLang(l.description);
-        const safeContent = ensureMultiLang(l.content);
+        // Normalizar objetos multi-língua
+        const baseLangs: Record<string, string> = {};
+        LANGUAGES.forEach((lng) => {
+          baseLangs[lng.code] = '';
+        });
+
+        const safeTitle = {
+          ...baseLangs,
+          ...(l.title || {}),
+        };
+
+        const safeDescription = {
+          ...baseLangs,
+          ...(l.description || {}),
+        };
+
+        const safeContent = {
+          ...baseLangs,
+          ...(l.content || {}),
+        };
 
         setLesson({
-          ...l,
+          id: l.id,
+          module_id: l.module_id,
+          order: l.order ?? 1,
           title: safeTitle,
           description: safeDescription,
           content: safeContent,
@@ -150,33 +224,32 @@ export default function LessonEditorPage() {
           estimated_time: l.estimated_time ?? 10,
           image_url: l.image_url ?? null,
           file_url: l.file_url ?? null,
-          order: l.order ?? 0,
+          published: l.published ?? false,
         });
 
-        // Inicializar blocos: um bloco HTML por língua com o conteúdo atual
+        // Inicializar blocksByLanguage a partir do HTML existente:
         const initialBlocks: BlocksByLanguage = {};
         LANGUAGES.forEach(({ code }) => {
           const html = safeContent[code] || '';
           if (html && html.trim()) {
-            initialBlocks[code] = [
+            initialBlocks[code as LangCode] = [
               {
-                id: `html_${code}_${Math.random()
-                  .toString(36)
-                  .slice(2, 9)}`,
+                id: `html_${code}`,
                 type: 'html',
                 data: { html },
               },
             ];
           } else {
-            initialBlocks[code] = [];
+            initialBlocks[code as LangCode] = [];
           }
         });
-        setBlocksByLang(initialBlocks);
+        setBlocksByLanguage(initialBlocks);
+        setPreviewLang('en');
       } catch (err) {
-        console.error('Error fetching lesson for editor:', err);
+        console.error('Error loading advanced lesson editor:', err);
         toast({
           title: 'Network error',
-          description: 'Could not load lesson for editing.',
+          description: 'Could not load lesson. Please try again.',
           variant: 'destructive',
         });
       } finally {
@@ -184,64 +257,58 @@ export default function LessonEditorPage() {
       }
     };
 
-    fetchLesson();
-  }, [lessonId, getToken, isAdmin, toast]);
+    if (isAdmin) {
+      fetchData();
+    }
+  }, [courseId, moduleId, lessonId, getToken, isAdmin, toast]);
 
-  // Helpers multilíngua
-  function updateLessonMLField(
+  const currentLangLabel =
+    LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
+    currentLanguage;
+
+  const courseTitle = course
+    ? getMultilingualContent(course.title, currentLanguage)
+    : '';
+  const moduleTitle = module
+    ? getMultilingualContent(module.title, currentLanguage)
+    : '';
+
+  function updateLessonText(
     field: 'title' | 'description',
     lang: LangCode,
     value: string,
   ) {
     setLesson((prev) => {
       if (!prev) return prev;
-      const nextField: MultiLang = {
-        ...prev[field],
-        [lang]: value,
-      };
-      return {
-        ...prev,
-        [field]: nextField,
-      };
+      const raw = prev[field] || {};
+      const obj =
+        typeof raw === 'object' && raw !== null ? { ...raw } : {};
+      obj[lang] = value;
+      return { ...prev, [field]: obj };
     });
   }
 
-  function getLessonMLField(
-    field: 'title' | 'description',
-    lang: LangCode,
-  ) {
-    if (!lesson) return '';
-    const raw = lesson[field];
-    return raw?.[lang] || '';
-  }
-
-  // Helpers simples
   function updateLessonField(
     field:
+      | 'order'
       | 'xp_reward'
       | 'xp_threshold'
       | 'estimated_time'
       | 'image_url'
-      | 'file_url',
+      | 'file_url'
+      | 'published',
     value: any,
   ) {
-    setLesson((prev) =>
-      prev
-        ? {
-            ...prev,
-            [field]: value,
-          }
-        : prev,
-    );
+    setLesson((prev) => (prev ? { ...prev, [field]: value } : prev));
   }
 
-  async function handleSave() {
+  const handleSave = async () => {
     if (!lesson) return;
 
-    // Título em pelo menos uma língua
-    const hasAnyTitle = Object.values(lesson.title || {}).some(
-      (v) => typeof v === 'string' && v.trim().length > 0,
-    );
+    const hasAnyTitle = LANGUAGES.some((lng) => {
+      const v = lesson.title?.[lng.code];
+      return typeof v === 'string' && v.trim().length > 0;
+    });
 
     if (!hasAnyTitle) {
       toast({
@@ -255,31 +322,35 @@ export default function LessonEditorPage() {
 
     setSaving(true);
     try {
-      // Serializar blocos → HTML por língua
-      const contentByLang = serializeBlocksByLanguage(blocksByLang);
-
       const token = getToken();
+
+      // Serializar blocos → HTML por língua
+      const serializedContent = serializeBlocksByLanguage(
+        blocksByLanguage,
+      );
+
+      const payload = {
+        title: lesson.title,
+        description: lesson.description,
+        content: serializedContent,
+        xp_reward: lesson.xp_reward ?? 20,
+        xp_threshold: lesson.xp_threshold ?? 0,
+        order: lesson.order ?? 1,
+        estimated_time: lesson.estimated_time ?? 10,
+        image_url: lesson.image_url ?? null,
+        file_url: lesson.file_url ?? null,
+      };
+
       const res = await fetch(`/api/admin/lessons/${lesson.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          title: lesson.title,
-          description: lesson.description,
-          content: contentByLang,
-          xp_reward: lesson.xp_reward ?? 20,
-          xp_threshold: lesson.xp_threshold ?? 0,
-          order: lesson.order ?? 0,
-          estimated_time: lesson.estimated_time ?? 10,
-          image_url: lesson.image_url ?? null,
-          file_url: lesson.file_url ?? null,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
-
       if (!res.ok || !data.success) {
         toast({
           title: 'Error saving lesson',
@@ -290,40 +361,46 @@ export default function LessonEditorPage() {
         return;
       }
 
+      const updated = data.lesson as Lesson;
+
       toast({
         title: 'Lesson saved',
-        description: 'Lesson content was saved successfully.',
+        description: 'Lesson updated successfully.',
       });
 
-      if (data.lesson) {
-        setLesson((prev) =>
-          prev
-            ? {
-                ...prev,
-                ...data.lesson,
-              }
-            : prev,
-        );
-      }
+      // Atualizar state local
+      setLesson((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...updated,
+            }
+          : updated,
+      );
     } catch (err) {
-      console.error('Error saving lesson from editor:', err);
+      console.error('Error saving lesson (advanced editor):', err);
       toast({
         title: 'Network error',
         description: 'Could not save lesson. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setSaving(false);
     }
-  }
+    setSaving(false);
+  };
 
-  if (
-    loading ||
-    !user ||
-    !isAdmin ||
-    loadingData ||
-    !lesson
-  ) {
+  const previewHtml = useMemo(() => {
+    if (!previewLang) return '';
+    const blocks = blocksByLanguage[previewLang] || [];
+    const html = serializeBlocksToHtml(blocks);
+    return html && html.trim().length > 0
+      ? html
+      : '<p><em>No content yet for this language.</em></p>';
+  }, [blocksByLanguage, previewLang]);
+
+  const previewLangLabel =
+    LANGUAGES.find((l) => l.code === previewLang)?.name || previewLang;
+
+  if (loading || !user || !isAdmin || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -336,18 +413,25 @@ export default function LessonEditorPage() {
     );
   }
 
-  const currentLangLabel =
-    LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
-    currentLanguage;
+  if (!lesson || !course || !module) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-gray-600 dark:text-gray-300">
+            Lesson, course or module not found.
+          </p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
-  const titleForCurrentLang = getLessonMLField(
-    'title',
-    currentLanguage,
-  );
-  const descForCurrentLang = getLessonMLField(
-    'description',
-    currentLanguage,
-  );
+  const currentTitle =
+    lesson.title?.[currentLanguage] || '';
+
+  const currentDescription =
+    lesson.description?.[currentLanguage] || '';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -355,9 +439,9 @@ export default function LessonEditorPage() {
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto space-y-6">
+          <div className="max-w-6xl mx-auto space-y-6">
             {/* Top bar */}
-            <div className="flex justify-between items-center gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <Button
                   variant="ghost"
@@ -372,24 +456,46 @@ export default function LessonEditorPage() {
                   Back to Lessons
                 </Button>
                 <h1 className="text-2xl md:text-3xl font-bold mb-1">
-                  Lesson Editor
+                  Edit Lesson (Advanced)
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Advanced block editor for this lesson. Changes are
-                  saved to the same HTML content used on the public site.
+                  Course:{' '}
+                  <span className="font-semibold">
+                    {courseTitle || 'Untitled course'}
+                  </span>
+                  {' · '}
+                  Module:{' '}
+                  <span className="font-semibold">
+                    {moduleTitle || 'Untitled module'}
+                  </span>
                 </p>
               </div>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save lesson'}
-              </Button>
+
+              <div className="flex gap-2 flex-wrap justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPreviewLang(currentLanguage);
+                    setPreviewOpen(true);
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  Preview
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  {saving ? 'Saving...' : 'Save changes'}
+                </Button>
+              </div>
             </div>
 
-            {/* Linguagem */}
+            {/* Selector de língua */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">
@@ -418,24 +524,22 @@ export default function LessonEditorPage() {
               </CardContent>
             </Card>
 
-            {/* Layout principal: meta + editor */}
-            <div className="grid lg:grid-cols-[2fr,3fr] gap-6">
-              {/* Coluna esquerda: meta */}
-              <div className="space-y-4">
+            {/* Meta + Block editor */}
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Left: title, description + blocks */}
+              <div className="lg:col-span-2 space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">
-                      Lesson Information
-                    </CardTitle>
+                    <CardTitle>Lesson content ({currentLangLabel})</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <Label>Title ({currentLangLabel})</Label>
                       <Input
                         className="mt-1"
-                        value={titleForCurrentLang}
+                        value={currentTitle}
                         onChange={(e) =>
-                          updateLessonMLField(
+                          updateLessonText(
                             'title',
                             currentLanguage,
                             e.target.value,
@@ -444,135 +548,154 @@ export default function LessonEditorPage() {
                         placeholder="Lesson title"
                       />
                     </div>
+
                     <div>
                       <Label>Description ({currentLangLabel})</Label>
                       <Textarea
                         className="mt-1"
                         rows={3}
-                        value={descForCurrentLang}
+                        value={currentDescription}
                         onChange={(e) =>
-                          updateLessonMLField(
+                          updateLessonText(
                             'description',
                             currentLanguage,
                             e.target.value,
                           )
                         }
-                        placeholder="Short description of this lesson"
+                        placeholder="Short summary of the lesson"
                       />
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>XP reward (on completion)</Label>
-                        <Input
-                          className="mt-1"
-                          type="number"
-                          value={lesson.xp_reward ?? 0}
-                          onChange={(e) =>
-                            updateLessonField(
-                              'xp_reward',
-                              parseInt(e.target.value) || 0,
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>XP threshold (min XP to unlock)</Label>
-                        <Input
-                          className="mt-1"
-                          type="number"
-                          value={lesson.xp_threshold ?? 0}
-                          onChange={(e) =>
-                            updateLessonField(
-                              'xp_threshold',
-                              parseInt(e.target.value) || 0,
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Estimated time (minutes)</Label>
-                        <Input
-                          className="mt-1"
-                          type="number"
-                          value={lesson.estimated_time ?? 0}
-                          onChange={(e) =>
-                            updateLessonField(
-                              'estimated_time',
-                              parseInt(e.target.value) || 0,
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>File URL (optional)</Label>
-                        <Input
-                          className="mt-1"
-                          type="text"
-                          value={lesson.file_url || ''}
-                          onChange={(e) =>
-                            updateLessonField(
-                              'file_url',
-                              e.target.value || null,
-                            )
-                          }
-                          placeholder="https://..."
-                        />
-                      </div>
-                    </div>
-
                     <div>
-                      <Label>Lesson image URL</Label>
-                      <div className="flex gap-2 mt-1 items-center">
-                        <Input
-                          type="text"
-                          value={lesson.image_url || ''}
-                          onChange={(e) =>
-                            updateLessonField(
-                              'image_url',
-                              e.target.value || null,
-                            )
-                          }
-                          placeholder="https://..."
-                        />
-                        {lesson.image_url && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() =>
-                              window.open(
-                                lesson.image_url || '',
-                                '_blank',
-                              )
-                            }
-                          >
-                            <ImageIcon className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                      <Label>Blocks ({currentLangLabel})</Label>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Build the lesson body using blocks (headings,
+                        paragraphs, lists, images, buttons...). This
+                        will be converted into HTML for the student view.
+                      </p>
+                      <BlockEditor
+                        value={blocksByLanguage}
+                        onChange={setBlocksByLanguage}
+                        initialLanguage={currentLanguage}
+                      />
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Coluna direita: BlockEditor */}
-              <div className="space-y-4">
+              {/* Right: meta settings */}
+              <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">
-                      Content blocks (all languages)
+                    <CardTitle>Lesson settings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Order in module</Label>
+                      <Input
+                        type="number"
+                        className="mt-1"
+                        value={lesson.order}
+                        onChange={(e) =>
+                          updateLessonField(
+                            'order',
+                            parseInt(e.target.value) || 1,
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label>XP reward (earned on completion)</Label>
+                      <Input
+                        type="number"
+                        className="mt-1"
+                        value={lesson.xp_reward}
+                        onChange={(e) =>
+                          updateLessonField(
+                            'xp_reward',
+                            parseInt(e.target.value) || 0,
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label>XP threshold (minimum XP to unlock)</Label>
+                      <Input
+                        type="number"
+                        className="mt-1"
+                        value={lesson.xp_threshold}
+                        onChange={(e) =>
+                          updateLessonField(
+                            'xp_threshold',
+                            parseInt(e.target.value) || 0,
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Estimated time (minutes)</Label>
+                      <Input
+                        type="number"
+                        className="mt-1"
+                        value={lesson.estimated_time}
+                        onChange={(e) =>
+                          updateLessonField(
+                            'estimated_time',
+                            parseInt(e.target.value) || 0,
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Lesson image URL</Label>
+                      <Input
+                        type="text"
+                        className="mt-1"
+                        value={lesson.image_url || ''}
+                        onChange={(e) =>
+                          updateLessonField(
+                            'image_url',
+                            e.target.value || null,
+                          )
+                        }
+                        placeholder="https://..."
+                      />
+                    </div>
+
+                    <div>
+                      <Label>File URL (PDF, slides, etc.)</Label>
+                      <Input
+                        type="text"
+                        className="mt-1"
+                        value={lesson.file_url || ''}
+                        onChange={(e) =>
+                          updateLessonField(
+                            'file_url',
+                            e.target.value || null,
+                          )
+                        }
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-blue-50">
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      Tips for great lessons
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <BlockEditor
-                      value={blocksByLang}
-                      onChange={setBlocksByLang}
-                      initialLanguage={currentLanguage}
-                    />
+                  <CardContent className="text-xs space-y-1 text-gray-700">
+                    <p>• Start with a clear heading and short intro.</p>
+                    <p>• Use subheadings to break long content.</p>
+                    <p>• Use lists for steps, tips or key ideas.</p>
+                    <p>• Add images or videos to make it visual.</p>
+                    <p>• End with a short recap or call-to-action.</p>
                   </CardContent>
                 </Card>
               </div>
@@ -582,6 +705,39 @@ export default function LessonEditorPage() {
       </main>
 
       <Footer />
+
+      {/* Modal de preview da lesson */}
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(open) => setPreviewOpen(open)}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Preview –{' '}
+              {getMultilingualContent(
+                lesson.title,
+                previewLang,
+              ) || 'Untitled lesson'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4">
+            <p className="text-xs text-gray-500">
+              Language:{' '}
+              <span className="font-medium">{previewLangLabel}</span>
+            </p>
+
+            <div className="prose prose-sm max-w-none dark:prose-invert border rounded-md p-4 bg-white">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: previewHtml,
+                }}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
