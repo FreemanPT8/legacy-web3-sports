@@ -108,7 +108,7 @@ export default function ModuleLessonsPage() {
       try {
         const token = getToken();
 
-        // 1) Carregar curso + módulos (como antes)
+        // 1) Carregar curso + módulos
         const resCourse = await fetch(`/api/admin/courses/${courseId}`, {
           headers: {
             'Content-Type': 'application/json',
@@ -211,10 +211,10 @@ export default function ModuleLessonsPage() {
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
     currentLanguage;
 
-  // Helpers multi-língua
+  // Helpers multi-língua (sem mexer em content)
   function updateLessonMLField(
     index: number,
-    field: 'title' | 'description' | 'content',
+    field: 'title' | 'description',
     lang: LangCode,
     value: string,
   ) {
@@ -271,7 +271,7 @@ export default function ModuleLessonsPage() {
         order: nextOrder,
         title: { ...emptyLangs },
         description: { ...emptyLangs },
-        content: { ...emptyLangs },
+        content: { ...emptyLangs }, // conteúdo será editado no BlockEditor
         xp_reward: 20,
         xp_threshold: 0,
         estimated_time: 10,
@@ -371,7 +371,7 @@ export default function ModuleLessonsPage() {
       const payload = {
         title: lesson.title,
         description: lesson.description,
-        content: lesson.content,
+        // content NÃO é mexido aqui – fica a cargo do BlockEditor
         xp_reward: lesson.xp_reward ?? 20,
         xp_threshold: lesson.xp_threshold ?? 0,
         order: lesson.order || index + 1,
@@ -395,7 +395,7 @@ export default function ModuleLessonsPage() {
           },
         );
       } else {
-        // Atualizar lição existente
+        // Atualizar lição existente (sem tocar no content)
         res = await fetch(`/api/admin/lessons/${lesson.id}`, {
           method: 'PUT',
           headers: {
@@ -520,7 +520,7 @@ export default function ModuleLessonsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">
-                  Language for titles, descriptions & content
+                  Language for titles & descriptions
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -560,10 +560,6 @@ export default function ModuleLessonsPage() {
                   );
                   const description = getMultilingualContent(
                     lesson.description,
-                    currentLanguage,
-                  );
-                  const content = getMultilingualContent(
-                    lesson.content,
                     currentLanguage,
                   );
 
@@ -641,24 +637,9 @@ export default function ModuleLessonsPage() {
                               className="text-xs mt-1"
                             />
                           </div>
-                          <div>
-                            <Label className="text-xs">
-                              Content HTML ({currentLangLabel})
-                            </Label>
-                            <Textarea
-                              value={content}
-                              onChange={(e) =>
-                                updateLessonMLField(
-                                  index,
-                                  'content',
-                                  currentLanguage,
-                                  e.target.value,
-                                )
-                              }
-                              rows={6}
-                              className="text-xs mt-1 font-mono"
-                              placeholder="<p>HTML for this lesson...</p>"
-                            />
+                          <div className="flex items-center text-xs text-gray-500">
+                            The full lesson content is edited in the
+                            advanced editor.
                           </div>
                         </div>
 

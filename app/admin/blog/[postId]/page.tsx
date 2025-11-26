@@ -1,35 +1,39 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Save, Lock } from 'lucide-react';
+  ArrowLeft,
+  FileText,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Calendar,
+  User,
+  Lock,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-import {
-  BlockEditor,
-  type BlocksByLanguage,
-  type LangCode,
-  serializeBlocksByLanguage,
-} from '@/components/admin/content/BlockEditor';
+type BlogPost = {
+  id: string;
+  title: any;
+  excerpt: any;
+  status?: string;
+  category?: string | null;
+  author?: string | null;
+  author_id?: string | null;
+  created_at: string;
+  views?: number;
+  published?: boolean;
+};
 
 type PermissionsResponse = {
   success: boolean;
@@ -40,68 +44,19 @@ type PermissionsResponse = {
   };
 };
 
-type MultiLang = Record<string, string>;
-
-type BlogPost = {
-  id: string;
-  title: MultiLang;
-  excerpt: MultiLang;
-  content: MultiLang;
-  category?: string | null;
-  reading_time?: number | null;
-  xp_reward?: number | null;
-  xp_threshold?: number | null;
-  published?: boolean | null;
-  registered_only?: boolean | null;
-  author_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
-};
-
-const LANGUAGES: { code: LangCode; name: string }[] = [
-  { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
-];
-
-const CATEGORIES = [
-  'Blockchain',
-  'Web3',
-  'NFTs',
-  'DeFi',
-  'Sports',
-  'Education',
-  'Technology',
-  'Community',
-];
-
-function generateBlockId(prefix: string = 'blk') {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-export default function EditBlogPostPage() {
-  const params = useParams();
+export default function BlogManagementPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
-  const postId = params.postId as string;
-
-  const [loadingPost, setLoadingPost] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
-  const [blocksByLanguage, setBlocksByLanguage] =
-    useState<BlocksByLanguage>({});
-
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageBlog, setCanManageBlog] = useState(false);
 
-  // Proteção básica de role geral
+  const isSuperAdmin = user?.role === 'Super Admin';
+
+  // Proteção básica
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -113,7 +68,7 @@ export default function EditBlogPostPage() {
     }
   }, [user, loading, router]);
 
-  // Verificar permissões finas (canManageBlog)
+  // Buscar permissões finas
   useEffect(() => {
     if (loading || !user) return;
 
@@ -154,201 +109,98 @@ export default function EditBlogPostPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  // Carregar post
-  useEffect(() => {
-    const fetchPost = async () => {
-      if (!user) return;
-      setLoadingPost(true);
-      try {
-        const token = getToken();
-        const res = await fetch(`/api/admin/blog/${postId}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || !data.success || !data.post) {
-          toast({
-            title: 'Error loading post',
-            description: data.error || 'Failed to load blog post.',
-            variant: 'destructive',
-          });
-          setPost(null);
-          setLoadingPost(false);
-          return;
-        }
-
-        const p: BlogPost = data.post;
-
-        // Garantir objetos multi-língua mínimos
-        const safeTitle: MultiLang = {
-          en: '',
-          pt: '',
-          es: '',
-          fr: '',
-          it: '',
-          de: '',
-          ...(p.title || {}),
-        };
-
-        const safeExcerpt: MultiLang = {
-          en: '',
-          pt: '',
-          es: '',
-          fr: '',
-          it: '',
-          de: '',
-          ...(p.excerpt || {}),
-        };
-
-        const safeContent: MultiLang = {
-          en: '',
-          pt: '',
-          es: '',
-          fr: '',
-          it: '',
-          de: '',
-          ...(p.content || {}),
-        };
-
-        setPost({
-          ...p,
-          title: safeTitle,
-          excerpt: safeExcerpt,
-          content: safeContent,
-        });
-
-        // Inicializar blocos a partir do HTML existente (um bloco HTML por língua)
-        const initialBlocks: BlocksByLanguage = {};
-        LANGUAGES.forEach(({ code }) => {
-          const html = safeContent[code] || '';
-          if (html && html.trim()) {
-            initialBlocks[code] = [
-              {
-                id: generateBlockId('html'),
-                type: 'html',
-                data: { html },
-              },
-            ];
-          } else {
-            initialBlocks[code] = [];
-          }
-        });
-        setBlocksByLanguage(initialBlocks);
-      } catch (err) {
-        console.error('Error loading blog post for editing:', err);
-        toast({
-          title: 'Network error',
-          description: 'Could not load blog post. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoadingPost(false);
-      }
-    };
-
-    if (user && canManageBlog) {
-      fetchPost();
-    }
-  }, [user, canManageBlog, getToken, postId, toast]);
-
-  const handleBlocksChange = (value: BlocksByLanguage) => {
-    setBlocksByLanguage(value);
-  };
-
-  const handleSave = async () => {
-    if (!user || !canManageBlog || !post) {
-      toast({
-        title: 'Not allowed',
-        description: 'You do not have permission to update this blog post.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Pelo menos um título em qualquer língua
-    const hasAnyTitle = Object.values(post.title || {}).some(
-      (v) => typeof v === 'string' && v.trim().length > 0,
-    );
-
-    if (!hasAnyTitle) {
-      toast({
-        title: 'Missing title',
-        description: 'Please add a title in at least one language.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSaving(true);
+  const fetchPosts = async () => {
+    setLoadingData(true);
     try {
-      // Serializar blocos → HTML por língua
-      const content = serializeBlocksByLanguage(blocksByLanguage);
-
       const token = getToken();
-      const res = await fetch(`/api/admin/blog/${postId}`, {
-        method: 'PUT',
+      const response = await fetch('/api/admin/blog', {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          title: post.title,
-          excerpt: post.excerpt,
-          content,
-          category: post.category || 'General',
-          reading_time: post.reading_time ?? 5,
-          xp_reward: post.xp_reward ?? 15,
-          xp_threshold: post.xp_threshold ?? 0,
-          published: post.published ?? false,
-          registered_only: post.registered_only ?? false,
-          author_id: post.author_id || user.id,
-        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setPosts(data.posts || []);
+      } else {
+        toast({
+          title: 'Error loading posts',
+          description: data.error || 'Failed to load posts.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch posts:', error);
+      toast({
+        title: 'Network error',
+        description: 'Could not load posts. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  // Buscar posts (rota ADMIN /api/admin/blog)
+  useEffect(() => {
+    if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
+      fetchPosts();
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDelete = async (id: string) => {
+    if (!isSuperAdmin || !canManageBlog) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this post? This action cannot be undone.',
+    );
+    if (!confirmed) return;
+
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/admin/blog/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
         toast({
-          title: 'Error saving post',
-          description: data.error || 'Failed to update blog post.',
+          title: 'Error deleting post',
+          description: data.error || 'Failed to delete blog post.',
           variant: 'destructive',
         });
-        setSaving(false);
         return;
       }
 
       toast({
-        title: 'Post updated',
-        description: 'The blog post was updated successfully.',
+        title: 'Post deleted',
+        description: 'The blog post was deleted successfully.',
       });
 
-      // Atualizar estado local com o que vier da API
-      if (data.post) {
-        setPost((prev) =>
-          prev
-            ? {
-                ...prev,
-                ...data.post,
-              }
-            : data.post,
-        );
-      }
-    } catch (err) {
-      console.error('Error saving blog post:', err);
+      // remover localmente
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+    } catch (error) {
+      console.error('Error deleting blog post:', error);
       toast({
         title: 'Network error',
-        description: 'Could not save blog post. Please try again.',
+        description: 'Could not delete post. Please try again.',
         variant: 'destructive',
       });
     }
-    setSaving(false);
   };
 
-  if (loading || !user || !permissionsLoaded) {
+  if (
+    loading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin') ||
+    !permissionsLoaded
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -359,283 +211,217 @@ export default function EditBlogPostPage() {
     );
   }
 
-  if (!canManageBlog) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto px-4">
-            <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">No permission</h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              You don&apos;t have permission to edit blog posts. Please contact
-              a Super Admin if you think this is a mistake.
-            </p>
-            <Link href="/admin/blog">
-              <Button variant="outline">Back to blog</Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (loadingPost || !post) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-            <p className="mt-4 text-gray-600 dark:text-gray-300">
-              Loading blog post...
-            </p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  const currentLangLabel =
-    LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
-    currentLanguage;
+  const publishedPosts = posts.filter(
+    (p: any) => p.status === 'published' || p.published,
+  );
+  const draftPosts = posts.filter(
+    (p: any) => p.status === 'draft' || !p.published,
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-blue-950/20 dark:to-gray-900 py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <Link href="/admin/blog">
-                  <Button variant="ghost" className="mb-4">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Blog
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <Link href="/admin">
+                <Button variant="ghost" className="mb-4">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Admin
+                </Button>
+              </Link>
+              <div className="flex justify-between items-center gap-4">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                    Blog Management
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Create and manage blog posts in multiple languages.
+                  </p>
+                  {!canManageBlog && (
+                    <p className="mt-2 text-sm text-amber-700 flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      You can view posts, but you don&apos;t have permission to
+                      create or edit them.
+                    </p>
+                  )}
+                </div>
+                <Link
+                  href={canManageBlog ? '/admin/blog/create' : '#'}
+                  aria-disabled={!canManageBlog}
+                >
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={!canManageBlog}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Post
                   </Button>
                 </Link>
-                <h1 className="text-3xl font-bold mb-1">
-                  Edit Blog Post
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Post ID: <span className="font-mono text-xs">{post.id}</span>
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save changes'}
-                </Button>
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* LEFT: Content */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Content</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Selector de língua para título/excerpt */}
-                    <div className="flex gap-2 flex-wrap">
-                      {LANGUAGES.map((lang) => (
-                        <Badge
-                          key={lang.code}
-                          variant={
-                            currentLanguage === lang.code
-                              ? 'default'
-                              : 'outline'
-                          }
-                          className="cursor-pointer"
-                          onClick={() => setCurrentLanguage(lang.code)}
-                        >
-                          {lang.name}
-                        </Badge>
-                      ))}
-                    </div>
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Total Posts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{posts.length}</div>
+                </CardContent>
+              </Card>
 
-                    <div>
-                      <Label>Title ({currentLangLabel})</Label>
-                      <Input
-                        value={post.title[currentLanguage] || ''}
-                        onChange={(e) =>
-                          setPost({
-                            ...post,
-                            title: {
-                              ...post.title,
-                              [currentLanguage]: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder="Enter post title"
-                        className="text-lg"
-                      />
-                    </div>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Published
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">
+                    {publishedPosts.length}
+                  </div>
+                </CardContent>
+              </Card>
 
-                    <div>
-                      <Label>Excerpt ({currentLangLabel})</Label>
-                      <Textarea
-                        value={post.excerpt[currentLanguage] || ''}
-                        onChange={(e) =>
-                          setPost({
-                            ...post,
-                            excerpt: {
-                              ...post.excerpt,
-                              [currentLanguage]: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder="Brief summary of the post"
-                        rows={3}
-                      />
-                    </div>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Draft
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-yellow-600">
+                    {draftPosts.length}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-                    <div>
-                      <Label>Body (all languages via blocks)</Label>
-                      <BlockEditor
-                        value={blocksByLanguage}
-                        onChange={handleBlocksChange}
-                        initialLanguage={currentLanguage}
-                        className="mt-2"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* RIGHT: Settings */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Settings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Category</Label>
-                      <Select
-                        value={post.category || 'Blockchain'}
-                        onValueChange={(value) =>
-                          setPost({ ...post, category: value })
-                        }
+            {loadingData ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+                  <p className="mt-4 text-gray-600 dark:text-gray-300">
+                    Loading posts...
+                  </p>
+                </CardContent>
+              </Card>
+            ) : posts.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">
+                    No blog posts yet
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Create your first blog post to get started
+                  </p>
+                  <Link
+                    href={canManageBlog ? '/admin/blog/create' : '#'}
+                    aria-disabled={!canManageBlog}
+                  >
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={!canManageBlog}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Post
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Posts ({posts.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {posts.map((post: any) => (
+                      <div
+                        key={post.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                       >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
-                              {cat}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>Reading Time (minutes)</Label>
-                      <Input
-                        type="number"
-                        value={post.reading_time ?? 5}
-                        onChange={(e) =>
-                          setPost({
-                            ...post,
-                            reading_time: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        min={1}
-                        max={60}
-                      />
-                    </div>
-
-                    <div>
-                      <Label>XP Reward</Label>
-                      <Input
-                        type="number"
-                        value={post.xp_reward ?? 15}
-                        onChange={(e) =>
-                          setPost({
-                            ...post,
-                            xp_reward: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        min={5}
-                        max={100}
-                      />
-                    </div>
-
-                    <div>
-                      <Label>XP Required to Unlock</Label>
-                      <Input
-                        type="number"
-                        value={post.xp_threshold ?? 0}
-                        onChange={(e) =>
-                          setPost({
-                            ...post,
-                            xp_threshold: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <Label>Published</Label>
-                      <Switch
-                        checked={!!post.published}
-                        onCheckedChange={(checked) =>
-                          setPost({ ...post, published: checked })
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label>Registered users only</Label>
-                      <Switch
-                        checked={!!post.registered_only}
-                        onCheckedChange={(checked) =>
-                          setPost({ ...post, registered_only: checked })
-                        }
-                      />
-                    </div>
-
-                    <div className="text-xs text-gray-500 pt-2 border-t mt-2 space-y-1">
-                      <p>
-                        Created:{' '}
-                        {post.created_at
-                          ? new Date(post.created_at).toLocaleString()
-                          : '-'}
-                      </p>
-                      <p>
-                        Last updated:{' '}
-                        {post.updated_at
-                          ? new Date(post.updated_at).toLocaleString()
-                          : '-'}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-blue-50">
-                  <CardHeader>
-                    <CardTitle className="text-sm">Editing Tips</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-gray-700">
-                    <p>• Keep titles clear and engaging</p>
-                    <p>• Use headings and dividers to structure content</p>
-                    <p>• Add images and videos to make it dynamic</p>
-                    <p>• Use XP to reward longer or more complex posts</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">
+                              {post.title?.en || post.title || 'Untitled post'}
+                            </h3>
+                            <Badge
+                              className={
+                                post.published ? 'bg-green-600' : 'bg-yellow-600'
+                              }
+                            >
+                              {post.published ? 'published' : 'draft'}
+                            </Badge>
+                            {post.category && (
+                              <Badge variant="outline">{post.category}</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+                            {post.excerpt?.en ||
+                              post.excerpt ||
+                              'No excerpt'}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {post.author || 'Admin'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {post.created_at
+                                ? new Date(
+                                    post.created_at,
+                                  ).toLocaleDateString()
+                                : '-'}
+                            </span>
+                            {post.views > 0 && <span>{post.views} views</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Link href={`/blog/${post.id}`}>
+                            <Button size="sm" variant="outline">
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </Link>
+                          <Link
+                            href={
+                              canManageBlog ? `/admin/blog/${post.id}` : '#'
+                            }
+                          >
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="disabled:opacity-60 disabled:cursor-not-allowed"
+                              disabled={!canManageBlog}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                          </Link>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={!canManageBlog || !isSuperAdmin}
+                            onClick={() => handleDelete(post.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>
