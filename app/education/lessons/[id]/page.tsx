@@ -151,11 +151,6 @@ export default function LessonPage() {
   const moduleTitle = getMultilingualContent(module.title, language);
 
   const durationMinutes = lesson.estimated_time ?? 10;
-  // 33% do tempo estimado, mínimo de 15s
-  const requiredSeconds = Math.max(
-    15,
-    Math.round(durationMinutes * 60 * 0.33),
-  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -213,7 +208,7 @@ export default function LessonPage() {
                   contentId={lesson.id}
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
-                  requiredSeconds={requiredSeconds}
+                  estimatedMinutes={durationMinutes}
                   initialCompleted={isCompleted}
                   onComplete={() => setIsCompleted(true)}
                 >
