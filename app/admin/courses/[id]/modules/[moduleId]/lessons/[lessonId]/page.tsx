@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -20,30 +21,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
-import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Image as ImageIcon,
+} from 'lucide-react';
 
 import {
   BlockEditor,
   type BlocksByLanguage,
-  serializeBlocksByLanguage,
   type LangCode,
+  serializeBlocksByLanguage,
 } from '@/components/admin/content/BlockEditor';
 
-const LANGUAGES = [
-  { code: 'en' as LangCode, name: 'English' },
-  { code: 'pt' as LangCode, name: 'Português' },
-  { code: 'es' as LangCode, name: 'Español' },
-  { code: 'fr' as LangCode, name: 'Français' },
-  { code: 'it' as LangCode, name: 'Italiano' },
-  { code: 'de' as LangCode, name: 'Deutsch' },
-] as const;
+type MultiLang = Record<string, string>;
 
 type LessonRecord = {
   id: string;
   module_id: string | null;
-  title: any;
-  description: any;
-  content: any;
+  title: MultiLang;
+  description: MultiLang;
+  content: MultiLang;
   xp_reward?: number | null;
   xp_threshold?: number | null;
   estimated_time?: number | null;
@@ -52,9 +50,14 @@ type LessonRecord = {
   order?: number | null;
 };
 
-function generateBlockId(prefix: string = 'blk') {
-  return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
-}
+const LANGUAGES: { code: LangCode; name: string }[] = [
+  { code: 'en', name: 'English' },
+  { code: 'pt', name: 'Português' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'it', name: 'Italiano' },
+  { code: 'de', name: 'Deutsch' },
+];
 
 export default function LessonEditorPage() {
   const params = useParams();
@@ -66,12 +69,13 @@ export default function LessonEditorPage() {
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
-  const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
+  const [currentLanguage, setCurrentLanguage] =
+    useState<LangCode>('en');
+  const [lesson, setLesson] = useState<LessonRecord | null>(null);
+  const [blocksByLang, setBlocksByLang] =
+    useState<BlocksByLanguage>({});
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const [lesson, setLesson] = useState<LessonRecord | null>(null);
-  const [blocksByLang, setBlocksByLang] = useState<BlocksByLanguage>({});
 
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
@@ -88,9 +92,26 @@ export default function LessonEditorPage() {
     }
   }, [user, loading, isAdmin, router]);
 
-  // Carregar lição (usando rota pública /api/lessons/[id])
+  // Helper: garantir objeto multilíngua completo
+  function ensureMultiLang(raw: any): MultiLang {
+    const base: MultiLang = {
+      en: '',
+      pt: '',
+      es: '',
+      fr: '',
+      it: '',
+      de: '',
+    };
+    if (raw && typeof raw === 'object') {
+      return { ...base, ...raw };
+    }
+    return base;
+  }
+
+  // Carregar lição
   useEffect(() => {
     const fetchLesson = async () => {
+      if (!isAdmin) return;
       setLoadingData(true);
       try {
         const token = getToken();
@@ -109,17 +130,21 @@ export default function LessonEditorPage() {
             variant: 'destructive',
           });
           setLesson(null);
+          setLoadingData(false);
           return;
         }
 
-        const l: LessonRecord = data.lesson;
+        const l = data.lesson as LessonRecord;
+
+        const safeTitle = ensureMultiLang(l.title);
+        const safeDescription = ensureMultiLang(l.description);
+        const safeContent = ensureMultiLang(l.content);
 
         setLesson({
-          id: l.id,
-          module_id: l.module_id,
-          title: l.title || {},
-          description: l.description || {},
-          content: l.content || {},
+          ...l,
+          title: safeTitle,
+          description: safeDescription,
+          content: safeContent,
           xp_reward: l.xp_reward ?? 20,
           xp_threshold: l.xp_threshold ?? 0,
           estimated_time: l.estimated_time ?? 10,
@@ -128,28 +153,24 @@ export default function LessonEditorPage() {
           order: l.order ?? 0,
         });
 
-        // Construir blocos por língua a partir de content[lang] (HTML existente)
+        // Inicializar blocos: um bloco HTML por língua com o conteúdo atual
         const initialBlocks: BlocksByLanguage = {};
-        LANGUAGES.forEach((lang) => {
-          const code = lang.code;
-          const rawContent =
-            l.content && typeof l.content === 'object'
-              ? l.content[code]
-              : '';
-
-          if (rawContent && typeof rawContent === 'string') {
+        LANGUAGES.forEach(({ code }) => {
+          const html = safeContent[code] || '';
+          if (html && html.trim()) {
             initialBlocks[code] = [
               {
-                id: generateBlockId('html'),
+                id: `html_${code}_${Math.random()
+                  .toString(36)
+                  .slice(2, 9)}`,
                 type: 'html',
-                data: { html: rawContent },
+                data: { html },
               },
             ];
           } else {
             initialBlocks[code] = [];
           }
         });
-
         setBlocksByLang(initialBlocks);
       } catch (err) {
         console.error('Error fetching lesson for editor:', err);
@@ -163,16 +184,10 @@ export default function LessonEditorPage() {
       }
     };
 
-    if (isAdmin) {
-      fetchLesson();
-    }
+    fetchLesson();
   }, [lessonId, getToken, isAdmin, toast]);
 
-  const currentLangLabel =
-    LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
-    currentLanguage;
-
-  // Helpers para meta multi-língua
+  // Helpers multilíngua
   function updateLessonMLField(
     field: 'title' | 'description',
     lang: LangCode,
@@ -180,23 +195,27 @@ export default function LessonEditorPage() {
   ) {
     setLesson((prev) => {
       if (!prev) return prev;
-      const raw = (prev as any)[field] || {};
-      const obj =
-        typeof raw === 'object' && raw !== null ? { ...raw } : {};
-      (obj as any)[lang] = value;
-      return { ...prev, [field]: obj };
+      const nextField: MultiLang = {
+        ...prev[field],
+        [lang]: value,
+      };
+      return {
+        ...prev,
+        [field]: nextField,
+      };
     });
   }
 
-  function getLessonMLField(field: 'title' | 'description', lang: LangCode) {
+  function getLessonMLField(
+    field: 'title' | 'description',
+    lang: LangCode,
+  ) {
     if (!lesson) return '';
-    const raw = (lesson as any)[field];
-    if (!raw || typeof raw !== 'object') return '';
-    const value = raw[lang];
-    return typeof value === 'string' ? value : '';
+    const raw = lesson[field];
+    return raw?.[lang] || '';
   }
 
-  // Helpers para campos simples
+  // Helpers simples
   function updateLessonField(
     field:
       | 'xp_reward'
@@ -206,24 +225,23 @@ export default function LessonEditorPage() {
       | 'file_url',
     value: any,
   ) {
-    setLesson((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        [field]: value,
-      };
-    });
+    setLesson((prev) =>
+      prev
+        ? {
+            ...prev,
+            [field]: value,
+          }
+        : prev,
+    );
   }
 
   async function handleSave() {
     if (!lesson) return;
 
-    // Validar título em pelo menos uma língua
-    const hasAnyTitle = LANGUAGES.some((lang) => {
-      const rawTitle = lesson.title || {};
-      const v = rawTitle[lang.code];
-      return typeof v === 'string' && v.trim().length > 0;
-    });
+    // Título em pelo menos uma língua
+    const hasAnyTitle = Object.values(lesson.title || {}).some(
+      (v) => typeof v === 'string' && v.trim().length > 0,
+    );
 
     if (!hasAnyTitle) {
       toast({
@@ -237,30 +255,27 @@ export default function LessonEditorPage() {
 
     setSaving(true);
     try {
-      // 1) Serializar blocos → HTML por língua (mantém compatibilidade com o front público)
+      // Serializar blocos → HTML por língua
       const contentByLang = serializeBlocksByLanguage(blocksByLang);
 
       const token = getToken();
-
-      const payload = {
-        title: lesson.title,
-        description: lesson.description,
-        content: contentByLang,
-        xp_reward: lesson.xp_reward ?? 20,
-        xp_threshold: lesson.xp_threshold ?? 0,
-        order: lesson.order ?? 0,
-        estimated_time: lesson.estimated_time ?? 10,
-        image_url: lesson.image_url ?? null,
-        file_url: lesson.file_url ?? null,
-      };
-
       const res = await fetch(`/api/admin/lessons/${lesson.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          title: lesson.title,
+          description: lesson.description,
+          content: contentByLang,
+          xp_reward: lesson.xp_reward ?? 20,
+          xp_threshold: lesson.xp_threshold ?? 0,
+          order: lesson.order ?? 0,
+          estimated_time: lesson.estimated_time ?? 10,
+          image_url: lesson.image_url ?? null,
+          file_url: lesson.file_url ?? null,
+        }),
       });
 
       const data = await res.json();
@@ -280,7 +295,6 @@ export default function LessonEditorPage() {
         description: 'Lesson content was saved successfully.',
       });
 
-      // Atualizar localmente a lesson (caso API devolva algo novo)
       if (data.lesson) {
         setLesson((prev) =>
           prev
@@ -298,8 +312,9 @@ export default function LessonEditorPage() {
         description: 'Could not save lesson. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   if (
@@ -321,7 +336,14 @@ export default function LessonEditorPage() {
     );
   }
 
-  const titleForCurrentLang = getLessonMLField('title', currentLanguage);
+  const currentLangLabel =
+    LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
+    currentLanguage;
+
+  const titleForCurrentLang = getLessonMLField(
+    'title',
+    currentLanguage,
+  );
   const descForCurrentLang = getLessonMLField(
     'description',
     currentLanguage,
@@ -353,8 +375,8 @@ export default function LessonEditorPage() {
                   Lesson Editor
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Advanced block editor for this lesson. Changes are saved
-                  to the same HTML content used on the public site.
+                  Advanced block editor for this lesson. Changes are
+                  saved to the same HTML content used on the public site.
                 </p>
               </div>
               <Button
@@ -371,7 +393,7 @@ export default function LessonEditorPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">
-                  Language for title & description
+                  Language for title, description & content blocks
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -380,7 +402,9 @@ export default function LessonEditorPage() {
                     <Badge
                       key={lang.code}
                       variant={
-                        currentLanguage === lang.code ? 'default' : 'outline'
+                        currentLanguage === lang.code
+                          ? 'default'
+                          : 'outline'
                       }
                       className="cursor-pointer"
                       onClick={() =>
@@ -520,7 +544,10 @@ export default function LessonEditorPage() {
                             variant="outline"
                             size="icon"
                             onClick={() =>
-                              window.open(lesson.image_url || '', '_blank')
+                              window.open(
+                                lesson.image_url || '',
+                                '_blank',
+                              )
                             }
                           >
                             <ImageIcon className="h-4 w-4" />
@@ -532,13 +559,22 @@ export default function LessonEditorPage() {
                 </Card>
               </div>
 
-              {/* Coluna direita: novo BlockEditor */}
+              {/* Coluna direita: BlockEditor */}
               <div className="space-y-4">
-                <BlockEditor
-                  value={blocksByLang}
-                  onChange={setBlocksByLang}
-                  initialLanguage={currentLanguage}
-                />
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Content blocks (all languages)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <BlockEditor
+                      value={blocksByLang}
+                      onChange={setBlocksByLang}
+                      initialLanguage={currentLanguage}
+                    />
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
