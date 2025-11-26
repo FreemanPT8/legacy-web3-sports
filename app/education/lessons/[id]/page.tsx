@@ -32,10 +32,9 @@ interface Lesson {
   description: any;
   content: any;
   xp_reward: number;
-  estimated_time?: number; // vem de lessons.estimated_time
+  estimated_time?: number;
   order: number;
   module_id: string;
-  // opcionalmente no futuro: xp_threshold?: number;
 }
 
 interface Module {
@@ -43,13 +42,12 @@ interface Module {
   title: any;
   course_id: string;
   lessons: Lesson[];
-  // opcionalmente no futuro: xp_threshold?: number;
 }
 
 export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const { language } = useLanguage();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -62,7 +60,14 @@ export default function LessonPage() {
   useEffect(() => {
     const fetchLesson = async () => {
       try {
-        const response = await fetch(`/api/lessons/${params.id}`);
+        const token = getToken();
+        const response = await fetch(`/api/lessons/${params.id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
         const data = await response.json();
 
         if (data.success) {
@@ -96,7 +101,7 @@ export default function LessonPage() {
     };
 
     fetchLesson();
-  }, [params.id, user]);
+  }, [params.id, user, getToken]);
 
   if (loading) {
     return (
@@ -145,7 +150,7 @@ export default function LessonPage() {
   const content = getMultilingualContent(lesson.content, language);
   const moduleTitle = getMultilingualContent(module.title, language);
 
-  const durationMinutes = lesson.estimated_time ?? 10; // default amigável
+  const durationMinutes = lesson.estimated_time ?? 10;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -196,7 +201,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Conteúdo + ContentTracker (XP 1ª vez) */}
+            {/* Conteúdo + ContentTracker */}
             <Card className="mb-6">
               <CardContent className="prose prose-lg max-w-none py-8">
                 <ContentTracker
@@ -204,6 +209,7 @@ export default function LessonPage() {
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
+                  initialCompleted={isCompleted}
                   onComplete={() => setIsCompleted(true)}
                 >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
@@ -211,7 +217,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão (apenas visual) */}
+            {/* Mensagem de conclusão */}
             {isCompleted && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">

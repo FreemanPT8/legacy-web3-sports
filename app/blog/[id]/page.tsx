@@ -16,7 +16,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 import {
   ArrowLeft,
@@ -48,12 +47,13 @@ type BlogPost = {
 export default function BlogPostPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
 
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [earnedXp, setEarnedXp] = useState<number | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const id = params.id as string;
 
@@ -61,7 +61,13 @@ export default function BlogPostPage() {
     const fetchPost = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/blog/${id}`);
+        const token = getToken();
+        const res = await fetch(`/api/blog/${id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
         const data = await res.json();
 
         if (!res.ok || !data.success || !data.post) {
@@ -70,6 +76,10 @@ export default function BlogPostPage() {
         } else {
           setPost(data.post);
           setNotFound(false);
+
+          if (data.isCompleted) {
+            setIsCompleted(true);
+          }
         }
       } catch (error) {
         console.error('Error loading public blog post:', error);
@@ -83,7 +93,7 @@ export default function BlogPostPage() {
     if (id) {
       fetchPost();
     }
-  }, [id]);
+  }, [id, getToken]);
 
   const getTitle = (title: MultiLang | string) => {
     if (typeof title === 'string') return title;
@@ -163,6 +173,11 @@ export default function BlogPostPage() {
       ? post.reading_time
       : 5;
 
+  // Se já estava concluído e ainda não mostramos o card, mostra-o com o XP teórico
+  const showCompletedCard = isCompleted || earnedXp !== null;
+  const xpShown =
+    earnedXp !== null ? earnedXp : xpReward;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -234,20 +249,20 @@ export default function BlogPostPage() {
               </CardHeader>
             </Card>
 
-            {/* Mensagem de XP ganho (apenas visual) */}
-            {earnedXp !== null && (
+            {/* Mensagem de conclusão (XP) */}
+            {showCompletedCard && user && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-4 flex items-center gap-3">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                   <div className="text-sm text-green-900">
-                    You earned <strong>{earnedXp} XP</strong> for reading
+                    You earned <strong>{xpShown} XP</strong> for reading
                     this article (only counted the first time).
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Conteúdo / gating */}
+            {/* Gating para members only */}
             {isMembersOnly && !user ? (
               <Card className="mb-6">
                 <CardContent className="py-8 text-center space-y-4">
@@ -258,12 +273,14 @@ export default function BlogPostPage() {
                   </p>
                   <div className="flex justify-center gap-3">
                     <Link href="/signup">
-                      <Button className="bg-blue-600 hover:bg-blue-700">
+                      <button className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm">
                         Create account
-                      </Button>
+                      </button>
                     </Link>
                     <Link href="/login">
-                      <Button variant="outline">Login</Button>
+                      <button className="px-4 py-2 rounded-md border border-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                        Login
+                      </button>
                     </Link>
                   </div>
                 </CardContent>
@@ -276,11 +293,11 @@ export default function BlogPostPage() {
                     contentType="blog"
                     xpReward={xpReward}
                     estimatedMinutes={readingMinutes}
-                    onComplete={(xp) =>
-                      setEarnedXp(
-                        typeof xp === 'number' ? xp : xpReward,
-                      )
-                    }
+                    initialCompleted={isCompleted}
+                    onComplete={(xp) => {
+                      setIsCompleted(true);
+                      setEarnedXp(typeof xp === 'number' ? xp : xpReward);
+                    }}
                   >
                     <div
                       className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md"

@@ -10,32 +10,27 @@ export async function GET(
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
-    // 1) Buscar post publicado
-    const { data: post, error } = await supabase
+    const { data, error } = await supabase
       .from('blog_posts')
       .select('*')
       .eq('id', params.id)
       .eq('published', true)
       .single();
 
-    if (error || !post) {
+    if (error || !data) {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
         { status: 404 },
       );
     }
 
-    // 2) Incrementar views (best-effort, não bloqueia resposta)
-    try {
-      await supabase
-        .from('blog_posts')
-        .update({ views: (post.views || 0) + 1 })
-        .eq('id', params.id);
-    } catch (viewsError) {
-      console.error('Error updating blog views:', viewsError);
-    }
+    // Incrementar views (simples)
+    await supabase
+      .from('blog_posts')
+      .update({ views: (data.views || 0) + 1 })
+      .eq('id', params.id);
 
-    // 3) Ver se o utilizador JÁ completou/ganhou XP neste artigo
+    // Verificar se o utilizador já completou este artigo
     let isCompleted = false;
 
     if (user) {
@@ -53,7 +48,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      post,
+      post: data,
       isCompleted,
     });
   } catch (error) {

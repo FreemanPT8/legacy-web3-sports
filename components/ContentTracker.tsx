@@ -11,6 +11,7 @@ type ContentTrackerProps = {
   estimatedMinutes?: number; // tempo estimado de leitura
   children: React.ReactNode;
   onComplete?: (xpEarned?: number) => void;
+  initialCompleted?: boolean; // 👈 NOVO
 };
 
 export function ContentTracker({
@@ -20,6 +21,7 @@ export function ContentTracker({
   estimatedMinutes = 5,
   children,
   onComplete,
+  initialCompleted = false,
 }: ContentTrackerProps) {
   const { user } = useAuth();
 
@@ -35,8 +37,19 @@ export function ContentTracker({
     Math.round(estimatedMinutes * 60 * 0.33),
   );
 
-  // Contador de tempo
+  // Se já vem como concluído do backend, marcamos logo tudo green
   useEffect(() => {
+    if (initialCompleted) {
+      setScrolledBottom(true);
+      setTimeOk(true);
+      setAwarded(true);
+    }
+  }, [initialCompleted]);
+
+  // Contador de tempo (não corre se já estava completo)
+  useEffect(() => {
+    if (initialCompleted) return;
+
     const interval = window.setInterval(() => {
       setReadSeconds((prev) => prev + 1);
     }, 1000);
@@ -44,7 +57,7 @@ export function ContentTracker({
     return () => {
       window.clearInterval(interval);
     };
-  }, []);
+  }, [initialCompleted]);
 
   // Marca quando chega ao tempo mínimo
   useEffect(() => {
@@ -53,8 +66,10 @@ export function ContentTracker({
     }
   }, [readSeconds, requiredSeconds]);
 
-  // Detectar scroll até ao fundo
+  // Detectar scroll até ao fundo (mesmo para já completos, só para UI ficar bonita)
   useEffect(() => {
+    if (initialCompleted) return;
+
     const handleScroll = () => {
       const scrollY = window.scrollY || window.pageYOffset;
       const viewportHeight = window.innerHeight;
@@ -68,11 +83,12 @@ export function ContentTracker({
     handleScroll();
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [initialCompleted]);
 
-  // Quando cumpre as duas condições → award XP (se tiver user)
+  // Quando cumpre as duas condições → award XP (se tiver user e ainda não tiver sido award antes)
   useEffect(() => {
     if (!user) return; // sem login não há XP
+    if (initialCompleted) return; // já registado noutra sessão
     if (awarded || awarding) return;
     if (!timeOk || !scrolledBottom) return;
 
@@ -121,6 +137,7 @@ export function ContentTracker({
     sendCompletion();
   }, [
     user,
+    initialCompleted,
     awarded,
     awarding,
     timeOk,
@@ -130,6 +147,12 @@ export function ContentTracker({
     xpReward,
     onComplete,
   ]);
+
+  const showAlready =
+    user && (initialCompleted || awarded);
+
+  const showWillBeAdded =
+    user && !initialCompleted && timeOk && scrolledBottom && !awarded;
 
   return (
     <>
@@ -157,14 +180,14 @@ export function ContentTracker({
               <div className="flex items-center gap-2">
                 <span
                   className={`inline-flex h-3 w-3 rounded-full border ${
-                    scrolledBottom
+                    scrolledBottom || initialCompleted
                       ? 'bg-green-500 border-green-500'
                       : 'bg-gray-200 border-gray-300'
                   }`}
                 />
                 <span>Scroll to bottom</span>
               </div>
-              {scrolledBottom && (
+              {(scrolledBottom || initialCompleted) && (
                 <CheckCircle className="h-3 w-3 text-green-500" />
               )}
             </div>
@@ -174,7 +197,7 @@ export function ContentTracker({
               <div className="flex items-center gap-2">
                 <span
                   className={`inline-flex h-3 w-3 rounded-full border ${
-                    timeOk
+                    timeOk || initialCompleted
                       ? 'bg-green-500 border-green-500'
                       : 'bg-gray-200 border-gray-300'
                   }`}
@@ -183,16 +206,23 @@ export function ContentTracker({
                   Read for {readSeconds}s / {requiredSeconds}s
                 </span>
               </div>
-              {timeOk && (
+              {(timeOk || initialCompleted) && (
                 <CheckCircle className="h-3 w-3 text-green-500" />
               )}
             </div>
           </div>
 
-          {user && timeOk && scrolledBottom && (
+          {showWillBeAdded && (
             <div className="mt-2 text-[11px] text-green-700 flex items-center gap-1">
               <CheckCircle className="h-3 w-3" />
               XP will be added shortly
+            </div>
+          )}
+
+          {showAlready && !showWillBeAdded && (
+            <div className="mt-2 text-[11px] text-green-700 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              XP already awarded for this content
             </div>
           )}
         </div>
