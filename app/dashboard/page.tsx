@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const { t } = useLanguage();
+
   const [xpHistory, setXpHistory] = useState<any[]>([]);
   const [missions, setMissions] = useState<any[]>([]);
   const [loadingMissions, setLoadingMissions] = useState(true);
@@ -100,6 +101,7 @@ export default function DashboardPage() {
     () => (user?.xp_total ? user.xp_total % 100 : 0),
     [user?.xp_total],
   );
+
   const level = useMemo(
     () => (user?.xp_total ? Math.floor(user.xp_total / 100) : 0),
     [user?.xp_total],
@@ -109,7 +111,7 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-blue-950/20 dark:to-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">
             A carregar...
           </p>
@@ -124,6 +126,7 @@ export default function DashboardPage() {
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
+          {/* Título e intro */}
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
               {t('dashboard.welcomeBack').replace(
@@ -136,6 +139,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
+          {/* Cards XP total, streak, rank */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="pb-3">
@@ -226,6 +230,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
+          {/* Missões + funcionalidades desbloqueadas */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -237,7 +242,7 @@ export default function DashboardPage() {
               <CardContent>
                 {loadingMissions ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                       {t('dashboard.loadingMissions')}
                     </p>
@@ -263,6 +268,7 @@ export default function DashboardPage() {
                       const progress = missionData?.progress || 0;
                       const completed =
                         missionData?.completed || false;
+
                       return (
                         <div
                           key={mission.id}
@@ -327,6 +333,7 @@ export default function DashboardPage() {
                       {t('dashboard.basicCourses')}
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {user.xp_total >= 99 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -343,6 +350,7 @@ export default function DashboardPage() {
                       {t('dashboard.profileEditing')} (99 XP)
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {user.xp_total >= 369 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -359,6 +367,7 @@ export default function DashboardPage() {
                       {t('dashboard.forumReadAccess')} (369 XP)
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {user.xp_total >= 444 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -375,6 +384,7 @@ export default function DashboardPage() {
                       {t('dashboard.forumInteract')} (444 XP)
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {user.xp_total >= 555 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -391,6 +401,7 @@ export default function DashboardPage() {
                       {t('dashboard.forumPostCreate')} (555 XP)
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {user.xp_total >= 3333 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -412,6 +423,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
+          {/* Atividade XP Recente */}
           <Card>
             <CardHeader>
               <CardTitle>
@@ -434,7 +446,9 @@ export default function DashboardPage() {
                       className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
                     >
                       <div>
-                        <p className="font-medium">{tx.action}</p>
+                        <p className="font-medium">
+                          {tx.action}
+                        </p>
                         <p className="text-sm text-gray-600 dark:text-gray-300">
                           {new Date(
                             tx.created_at,
