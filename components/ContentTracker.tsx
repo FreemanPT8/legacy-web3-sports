@@ -1,292 +1,283 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { CheckCircle, Clock, ScrollText } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState, useCallback } from 'react';
+import { getRandomXP, XP_REWARDS } from '@/lib/xp';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { CheckCircle2, Clock, Trophy } from 'lucide-react';
 
-type ContentType = 'lesson' | 'blog';
+type ContentType = 'blog' | 'lesson';
 
-export interface ContentTrackerProps {
-  children: React.ReactNode;
+interface ContentTrackerProps {
   contentId: string;
   contentType: ContentType;
-  xpReward: number;
-  /**
-   * Estimativa de leitura em minutos (para calcular o tempo mínimo).
-   * Se não vier, usa 5 minutos por defeito.
-   */
-  estimatedMinutes?: number;
-  /**
-   * Se o backend já sabe que este conteúdo está concluído
-   * (ex: já existe registo em lesson_completions / blog_reads)
-   */
+  userId?: string | null;
+  // aceito ambos os nomes para não rebentar com props antigos
+  xpMin?: number;
+  xpMax?: number;
+  minXp?: number;
+  maxXp?: number;
   initialCompleted?: boolean;
-  /**
-   * Callback opcional para os ecrãs que querem sincronizar estado local
-   * (ex: marcar badge "Completed" na página da lição / blog).
-   */
-  onComplete?: () => void;
 }
 
-export function ContentTracker({
-  children,
-  contentId,
-  contentType,
-  xpReward,
-  estimatedMinutes = 5,
-  initialCompleted = false,
-  onComplete,
-}: ContentTrackerProps) {
-  const { user, refreshUser } = useAuth();
+const MIN_SECONDS = 40; // tempo mínimo de leitura
+const REQUIRED_SCROLL = 85; // percentagem mínima de scroll
 
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
-  const [secondsRead, setSecondsRead] = useState(0);
-  const [isCompleted, setIsCompleted] = useState(initialCompleted);
-  const [isAwarding, setIsAwarding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+export function ContentTracker(props: ContentTrackerProps) {
+  const {
+    contentId,
+    contentType,
+    userId,
+    xpMin,
+    xpMax,
+    minXp,
+    maxXp,
+    initialCompleted = false,
+  } = props;
 
-  const completionTriggeredRef = useRef(false);
+  // escolher range de XP (fallback para defaults globais)
+  const effectiveMin =
+    xpMin ??
+    minXp ??
+    (contentType === 'blog'
+      ? XP_REWARDS.BLOG_MIN
+      : XP_REWARDS.LESSON_MIN);
 
-  // tempo mínimo em segundos = 33% da estimativa de leitura
-  const requiredSeconds = Math.max(
-    5,
-    Math.round(estimatedMinutes * 60 * 0.33),
-  );
+  const effectiveMax =
+    xpMax ??
+    maxXp ??
+    (contentType === 'blog'
+      ? XP_REWARDS.BLOG_MAX
+      : XP_REWARDS.LESSON_MAX);
 
-  // Sempre que muda de conteúdo, reset de estado interno
+  const [seconds, setSeconds] = useState(0);
+  const [scrollPercent, setScrollPercent] = useState(0);
+  const [completed, setCompleted] = useState<boolean>(initialCompleted);
+  const [awarding, setAwarding] = useState(false);
+  const [alreadyAwarded, setAlreadyAwarded] =
+    useState<boolean>(initialCompleted);
+
+  // se o backend passar initialCompleted=true numa nova visita,
+  // alinhamos o estado interno
   useEffect(() => {
-    setHasScrolledToBottom(false);
-    setSecondsRead(0);
-    setIsCompleted(initialCompleted);
-    setError(null);
-    setInfo(null);
-    completionTriggeredRef.current = initialCompleted;
-  }, [contentId, initialCompleted]);
+    setCompleted(initialCompleted);
+    setAlreadyAwarded(initialCompleted);
+  }, [initialCompleted]);
 
-  // Timer de leitura (só se houver user e ainda não estiver concluído)
-  useEffect(() => {
-    if (!user || isCompleted) return;
+  const handleAwardXP = useCallback(async () => {
+    if (!userId) return;
+    if (completed || alreadyAwarded || awarding) return;
 
-    const interval = setInterval(() => {
-      setSecondsRead((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [user, isCompleted]);
-
-  // Listener de scroll para detetar "scroll até ao fundo"
-  useEffect(() => {
-    if (!user || isCompleted) return;
-
-    const handleScroll = () => {
-      const scrollPosition = window.innerHeight + window.scrollY;
-      const threshold = document.body.offsetHeight - 48; // 48px de margem
-
-      if (scrollPosition >= threshold) {
-        setHasScrolledToBottom(true);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [user, isCompleted]);
-
-  // Quando os 2 critérios forem cumpridos, tenta atribuir XP (uma vez)
-  useEffect(() => {
-    if (!user) return;
-    if (isCompleted) return;
-    if (completionTriggeredRef.current) return;
-
-    if (hasScrolledToBottom && secondsRead >= requiredSeconds) {
-      completionTriggeredRef.current = true;
-      void completeContent(user.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasScrolledToBottom, secondsRead, requiredSeconds, user, isCompleted]);
-
-  async function completeContent(userId: string) {
     try {
-      setIsAwarding(true);
-      setError(null);
-      setInfo(null);
+      setAwarding(true);
+      const xpEarned = getRandomXP(effectiveMin, effectiveMax);
 
       const endpoint =
-        contentType === 'lesson'
-          ? `/api/lessons/${contentId}/complete`
-          : `/api/blog/${contentId}/read`;
+        contentType === 'blog'
+          ? `/api/blog/${contentId}/read`
+          : `/api/lessons/${contentId}/complete`;
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
-          xpEarned: xpReward,
+          xpEarned,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        // Se for "já completado", marcamos como concluído mas sem duplicar XP
-        const errorMessage = String(data.error || '').toLowerCase();
-
-        if (
-          data.alreadyCompleted ||
-          errorMessage.includes('already') ||
-          errorMessage.includes('already completed') ||
-          errorMessage.includes('already read')
-        ) {
-          setIsCompleted(true);
-          setInfo('Already completed – no extra XP this time.');
-          if (onComplete) onComplete();
-          return;
-        }
-
-        setError(
-          data.error ||
-            'Could not register completion. Please try again.',
-        );
+        console.error('Failed to award XP:', data.error);
         return;
       }
 
-      // Atualizar XP local (localStorage) com o newTotal vindo da API
-      if (typeof window !== 'undefined' && typeof data.newTotal === 'number') {
-        try {
-          const storedUser = window.localStorage.getItem('user');
-          if (storedUser) {
-            const parsed = JSON.parse(storedUser);
-            const updated = {
-              ...parsed,
-              xp_total: data.newTotal,
-            };
-            window.localStorage.setItem('user', JSON.stringify(updated));
-          }
-        } catch (e) {
-          console.error('Failed to update user XP in localStorage:', e);
-        }
-
-        // Pedir ao AuthContext para recarregar o user a partir do localStorage
-        try {
-          await Promise.resolve(refreshUser());
-        } catch (e) {
-          console.error('refreshUser failed:', e);
-        }
-      }
-
-      setIsCompleted(true);
-      setInfo(
-        `+${xpReward} XP added to your account (first completion only).`,
-      );
-      if (onComplete) onComplete();
-    } catch (err) {
-      console.error('Error completing content:', err);
-      setError('Network error while registering completion.');
+      setCompleted(true);
+      setAlreadyAwarded(true);
+    } catch (error) {
+      console.error('Error in handleAwardXP:', error);
     } finally {
-      setIsAwarding(false);
+      setAwarding(false);
     }
+  }, [
+    userId,
+    contentId,
+    contentType,
+    effectiveMin,
+    effectiveMax,
+    completed,
+    alreadyAwarded,
+    awarding,
+  ]);
+
+  // Tracking de tempo
+  useEffect(() => {
+    if (!userId) return;
+    if (completed || alreadyAwarded) return; // ⚠️ não contar tempo se já está completo
+
+    const interval = setInterval(() => {
+      setSeconds((s) => s + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [userId, completed, alreadyAwarded]);
+
+  // Tracking de scroll
+  useEffect(() => {
+    if (!userId) return;
+    if (completed || alreadyAwarded) return; // ⚠️ não trackar scroll se já está completo
+
+    const handleScroll = () => {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop;
+      const scrollHeight = doc.scrollHeight - doc.clientHeight;
+      if (scrollHeight <= 0) {
+        setScrollPercent(100);
+        return;
+      }
+      const percent = Math.min(
+        100,
+        Math.round((scrollTop / scrollHeight) * 100),
+      );
+      setScrollPercent(percent);
+    };
+
+    handleScroll(); // inicial
+
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [userId, completed, alreadyAwarded]);
+
+  // Quando tempo + scroll atingem o mínimo, tentamos concluir
+  useEffect(() => {
+    if (!userId) return;
+    if (completed || alreadyAwarded || awarding) return;
+
+    if (seconds >= MIN_SECONDS && scrollPercent >= REQUIRED_SCROLL) {
+      void handleAwardXP();
+    }
+  }, [
+    userId,
+    seconds,
+    scrollPercent,
+    completed,
+    alreadyAwarded,
+    awarding,
+    handleAwardXP,
+  ]);
+
+  // UI – estados
+
+  if (!userId) {
+    // visitante não autenticado: só mostra aviso
+    return (
+      <div className="mt-6 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 text-sm text-gray-600 dark:text-gray-300">
+        <div className="flex items-center gap-2 mb-1">
+          <Clock className="h-4 w-4" />
+          <span>Reading tracker available only for logged users.</span>
+        </div>
+        <p>You can still read everything, but XP is only awarded when logged in.</p>
+      </div>
+    );
+  }
+
+  if (completed || alreadyAwarded) {
+    // ✅ Artigo / lição já completa — não reiniciar nada
+    return (
+      <div className="mt-6 rounded-lg border border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-950/20 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div>
+              <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                Content completed
+              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-300">
+                XP for this {contentType === 'blog' ? 'article' : 'lesson'} was
+                already awarded. You can revisit it any time without changing your XP.
+              </p>
+            </div>
+          </div>
+          <Badge className="bg-green-600 text-xs">
+            <Trophy className="h-3 w-3 mr-1" />
+            Done
+          </Badge>
+        </div>
+      </div>
+    );
   }
 
   const timeProgress = Math.min(
     100,
-    Math.round((secondsRead / requiredSeconds) * 100),
+    Math.round((seconds / MIN_SECONDS) * 100),
   );
+  const scrollProgress = Math.min(100, scrollPercent);
+  const overall = Math.round((timeProgress + scrollProgress) / 2);
 
   return (
-    <div className="space-y-4">
-      {/* Conteúdo em si */}
-      <div>{children}</div>
-
-      {/* Se não houver user → só mensagem informativa, sem tracking */}
-      {!user ? (
-        <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-900">
-          To earn XP for this{' '}
-          {contentType === 'lesson' ? 'lesson' : 'article'},{' '}
-          please{' '}
-          <span className="font-semibold">log in or sign up</span>.
-          Your reading progress will not be tracked while logged out.
+    <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-blue-600" />
+          <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+            Reading progress – XP tracker
+          </p>
         </div>
-      ) : (
-        <div className="mt-4 rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-700 shadow-sm">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="font-semibold">
-              Reading Progress (XP tracker)
+        <Badge variant="outline" className="text-xs">
+          {effectiveMin}–{effectiveMax} XP
+        </Badge>
+      </div>
+
+      <div className="space-y-2 mb-3 text-xs text-gray-700 dark:text-gray-200">
+        <p>
+          XP will be added once you read at least{' '}
+          <strong>{MIN_SECONDS} seconds</strong> and reach{' '}
+          <strong>{REQUIRED_SCROLL}%</strong> of this{' '}
+          {contentType === 'blog' ? 'article' : 'lesson'}.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span>Time</span>
+            <span>
+              {seconds}s / {MIN_SECONDS}s ({timeProgress}%)
             </span>
-            <span className="text-[11px] text-gray-500">
-              XP: {xpReward}
-            </span>
           </div>
-
-          <div className="space-y-2">
-            {/* Critério 1: Tempo de leitura */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                {secondsRead >= requiredSeconds ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Clock className="h-4 w-4 text-gray-400" />
-                )}
-                <div>
-                  <div className="font-medium">
-                    Read for at least {Math.round(requiredSeconds)} seconds
-                  </div>
-                  <div className="text-[11px] text-gray-500">
-                    {secondsRead}s / {requiredSeconds}s ({timeProgress}%)
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Critério 2: Scroll até ao fundo */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                {hasScrolledToBottom ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <ScrollText className="h-4 w-4 text-gray-400" />
-                )}
-                <div>
-                  <div className="font-medium">
-                    Scroll to the bottom of the page
-                  </div>
-                  <div className="text-[11px] text-gray-500">
-                    {hasScrolledToBottom
-                      ? 'Bottom reached'
-                      : 'Keep scrolling to reach the end'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Mensagens de estado */}
-          <div className="mt-2 text-[11px]">
-            {isCompleted ? (
-              <p className="flex items-center gap-1 text-green-700">
-                <CheckCircle className="h-3 w-3" />
-                <span>
-                  Content completed. XP awarded only the first time you fully
-                  consume it.
-                </span>
-              </p>
-            ) : isAwarding ? (
-              <p className="text-blue-600">XP will be added shortly...</p>
-            ) : (
-              <p className="text-gray-500">
-                Complete both steps to receive XP for this{' '}
-                {contentType === 'lesson' ? 'lesson' : 'article'}.
-              </p>
-            )}
-
-            {info && !isCompleted && (
-              <p className="mt-1 text-blue-600">{info}</p>
-            )}
-            {error && <p className="mt-1 text-red-600">{error}</p>}
-          </div>
+          <Progress value={timeProgress} />
         </div>
+
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span>Scroll</span>
+            <span>{scrollProgress}%</span>
+          </div>
+          <Progress value={scrollProgress} />
+        </div>
+
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span>Overall</span>
+            <span>{overall}%</span>
+          </div>
+          <Progress value={overall} />
+        </div>
+      </div>
+
+      {awarding && (
+        <p className="mt-3 text-xs text-blue-700 dark:text-blue-300">
+          Awarding XP…
+        </p>
       )}
     </div>
   );
 }
+
+export default ContentTracker;
