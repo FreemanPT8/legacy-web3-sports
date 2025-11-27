@@ -40,7 +40,9 @@ export default function DashboardPage() {
   const fetchMissions = useCallback(async () => {
     if (!user) return;
     try {
-      const response = await fetch(`/api/missions/generate?userId=${user.id}`);
+      const response = await fetch(
+        `/api/missions/generate?userId=${user.id}`,
+      );
       const data = await response.json();
       if (data.success) {
         setMissions(data.missions || []);
@@ -72,18 +74,17 @@ export default function DashboardPage() {
   const fetchXpHistory = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await fetch(
+      const response = await fetch(
         `/api/xp/history?userId=${user.id}&limit=20`,
       );
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setXpHistory(Array.isArray(data.history) ? data.history : []);
+      const data = await response.json();
+      if (data.success) {
+        setXpHistory(data.history || []);
       } else {
-        setXpHistory([]);
+        console.error('Failed to fetch XP history:', data.error);
       }
     } catch (error) {
       console.error('Failed to fetch XP history:', error);
-      setXpHistory([]);
     }
   }, [user]);
 
@@ -135,7 +136,6 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Cards topo */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="pb-3">
@@ -226,7 +226,6 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Missões + features */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -262,7 +261,8 @@ export default function DashboardPage() {
                         ? mission.user_missions[0]
                         : mission.user_missions;
                       const progress = missionData?.progress || 0;
-                      const completed = missionData?.completed || false;
+                      const completed =
+                        missionData?.completed || false;
                       return (
                         <div
                           key={mission.id}
@@ -291,8 +291,12 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           <Badge
-                            variant={completed ? 'default' : 'outline'}
-                            className={completed ? 'bg-green-600' : ''}
+                            variant={
+                              completed ? 'default' : 'outline'
+                            }
+                            className={
+                              completed ? 'bg-green-600' : ''
+                            }
                           >
                             {completed
                               ? t('dashboard.completedMission')
@@ -408,10 +412,11 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Activity */}
           <Card>
             <CardHeader>
-              <CardTitle>{t('dashboard.recentXpActivity')}</CardTitle>
+              <CardTitle>
+                {t('dashboard.recentXpActivity')}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {xpHistory.length === 0 ? (
@@ -433,7 +438,7 @@ export default function DashboardPage() {
                         <p className="text-sm text-gray-600 dark:text-gray-300">
                           {new Date(
                             tx.created_at,
-                          ).toLocaleDateString()}
+                          ).toLocaleString()}
                         </p>
                       </div>
                       <Badge className="bg-blue-600">
