@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   Calendar,
@@ -33,6 +32,7 @@ type BlogPost = {
   content: MultiLang | string;
   category?: string | null;
   author?: string | null;
+  author_id?: string | null;
   created_at?: string;
   views?: number | null;
   registered_views?: number | null;
@@ -41,7 +41,7 @@ type BlogPost = {
   registered_only?: boolean | null;
   xp_reward?: number | null;
   reading_time?: number | null;
-  is_completed?: boolean;
+  is_completed?: boolean | null;
 };
 
 export default function BlogPostPage() {
@@ -75,18 +75,10 @@ export default function BlogPostPage() {
           setPost(null);
           setIsCompleted(false);
         } else {
-          // post em si
           setPost(data.post);
           setNotFound(false);
-
-          // o backend pode devolver o flag como `isCompleted` (campo separado)
-          // ou como `post.is_completed`. Usamos o que existir.
-          const completedFromApi =
-            typeof data.isCompleted === 'boolean'
-              ? data.isCompleted
-              : !!data.post.is_completed;
-
-          setIsCompleted(completedFromApi);
+          // backend pode enviar is_completed dentro do post
+          setIsCompleted(!!data.post.is_completed);
         }
       } catch (error) {
         console.error('Error loading public blog post:', error);
@@ -136,7 +128,9 @@ export default function BlogPostPage() {
         <Header />
         <main className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
           <div className="text-center px-4">
-            <h1 className="text-2xl font-bold mb-2">Post not found</h1>
+            <h1 className="text-2xl font-bold mb-2">
+              Post not found
+            </h1>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
               The blog post you are looking for does not exist or is not
               published.
@@ -161,6 +155,12 @@ export default function BlogPostPage() {
   const estimatedMinutes =
     typeof post.reading_time === 'number' ? post.reading_time : 5;
 
+  const isAuthorUser =
+    !!user && !!post.author_id && post.author_id === user.id;
+
+  // Para o autor, nunca mostramos “Completed”
+  const effectiveCompleted = !isAuthorUser && isCompleted;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -183,7 +183,7 @@ export default function BlogPostPage() {
                     <Badge variant="outline">
                       {post.category || 'General'}
                     </Badge>
-                    {isCompleted && (
+                    {effectiveCompleted && (
                       <Badge className="bg-green-600 text-white flex items-center gap-1">
                         <CheckCircle className="h-3 w-3" />
                         Completed
@@ -208,7 +208,9 @@ export default function BlogPostPage() {
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {post.created_at
-                      ? new Date(post.created_at).toLocaleDateString()
+                      ? new Date(
+                          post.created_at,
+                        ).toLocaleDateString()
                       : '-'}
                   </span>
                   <span className="flex items-center gap-1">
@@ -228,11 +230,12 @@ export default function BlogPostPage() {
                   <ContentTracker
                     contentId={post.id}
                     contentType="blog"
-                    userId={user?.id ?? null}
                     xpReward={xpReward}
                     estimatedMinutes={estimatedMinutes}
-                    initialCompleted={isCompleted}
+                    initialCompleted={effectiveCompleted}
                     onComplete={() => setIsCompleted(true)}
+                    userId={user?.id ?? null}
+                    disabled={isAuthorUser}
                   >
                     <div
                       dangerouslySetInnerHTML={{

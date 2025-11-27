@@ -1,25 +1,24 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useEffect, useRef, useState } from 'react';
+import { Clock, CheckCircle2, Award, Info, Timer } from 'lucide-react';
 
-type ContentTrackerProps = {
+export interface ContentTrackerProps {
   contentId: string;
   contentType: 'blog' | 'lesson';
   xpReward: number;
   estimatedMinutes: number;
   initialCompleted?: boolean;
   onComplete?: () => void;
-  /**
-   * Opcional: se for passado, tem prioridade.
-   * Se não for passado, o componente usa o user do AuthContext.
-   */
+
+  // se não houver userId → só mostra aviso, não faz tracking nem XP
   userId?: string | null;
+
+  // para autores / casos em que não queremos tracker nem XP
+  disabled?: boolean;
+
   children: React.ReactNode;
-};
+}
 
 export function ContentTracker({
   contentId,
@@ -29,182 +28,223 @@ export function ContentTracker({
   initialCompleted = false,
   onComplete,
   userId,
+  disabled = false,
   children,
 }: ContentTrackerProps) {
-  const { user } = useAuth();
-  const effectiveUserId = userId ?? user?.id ?? null;
-
-  const [completed, setCompleted] = useState<boolean>(initialCompleted);
-  const [secondsRead, setSecondsRead] = useState<number>(
-    initialCompleted ? estimatedMinutes * 60 : 0,
+  const [completed, setCompleted] = useState<boolean>(!!initialCompleted);
+  const [timeProgress, setTimeProgress] = useState<number>(
+    initialCompleted ? 100 : 0,
   );
-  const [awarding, setAwarding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [scrollProgress, setScrollProgress] = useState<number>(
+    initialCompleted ? 100 : 0,
+  );
+  const [isAwarding, setIsAwarding] = useState(false);
 
-  // Se o backend disser que já está completo (ex: refresh)
+  const hasAwardedRef = useRef<boolean>(!!initialCompleted);
+
+  // se initialCompleted mudar (ex.: vindo do backend), sincroniza estado
   useEffect(() => {
-    setCompleted(initialCompleted);
+    setCompleted(!!initialCompleted);
     if (initialCompleted) {
-      setSecondsRead(estimatedMinutes * 60);
+      setTimeProgress(100);
+      setScrollProgress(100);
+      hasAwardedRef.current = true;
     }
-  }, [initialCompleted, estimatedMinutes]);
+  }, [initialCompleted]);
 
-  const requiredSeconds = useMemo(() => {
-    const base = estimatedMinutes * 60;
-    return Math.max(30, Math.round(base * 0.7)); // 70% do tempo, mínimo 30s
-  }, [estimatedMinutes]);
+  const canTrack = !!userId && !disabled && !completed;
 
-  // Contador de tempo enquanto está na página
+  // Timer baseado no tempo estimado
   useEffect(() => {
-    if (!effectiveUserId) return; // sem login → não conta
-    if (completed) return;        // já completo → não conta
+    if (!canTrack) return;
 
-    const interval = window.setInterval(() => {
-      setSecondsRead((s) => s + 1);
+    const totalMs = Math.max(estimatedMinutes, 1) * 60_000;
+    const start = Date.now();
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min(100, (elapsed / totalMs) * 100);
+      setTimeProgress(pct);
+
+      if (pct >= 100) {
+        clearInterval(interval);
+      }
     }, 1000);
 
-    return () => window.clearInterval(interval);
-  }, [effectiveUserId, completed]);
+    return () => clearInterval(interval);
+  }, [canTrack, estimatedMinutes]);
 
-  // Quando atinge o tempo mínimo, tenta atribuir XP
+  // Tracking de scroll
   useEffect(() => {
-    if (!effectiveUserId) return;
-    if (completed) return;
-    if (awarding) return;
-    if (secondsRead < requiredSeconds) return;
+    if (!canTrack) return;
 
-    const award = async () => {
-      try {
-        setAwarding(true);
-        setError(null);
+    const handleScroll = () => {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop;
+      const scrollHeight = doc.scrollHeight - doc.clientHeight;
+      if (scrollHeight <= 0) {
+        setScrollProgress(100);
+        return;
+      }
+      const pct = Math.min(100, (scrollTop / scrollHeight) * 100);
+      setScrollProgress(pct);
+    };
 
-        const url =
-          contentType === 'blog'
-            ? `/api/blog/${contentId}/read`
-            : `/api/lessons/${contentId}/complete`;
+    handleScroll();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [canTrack]);
 
-        const res = await fetch(url, {
+  // Quando tempo e scroll estiverem “quase completos”, tentamos concluir
+  useEffect(() => {
+    if (!canTrack) return;
+    if (hasAwardedRef.current) return;
+
+    if (timeProgress >= 90 && scrollProgress >= 90) {
+      void handleComplete();
+    }
+  }, [canTrack, timeProgress, scrollProgress]);
+
+  async function handleComplete() {
+    if (!canTrack) return;
+    if (!userId) return;
+    if (hasAwardedRef.current) return;
+
+    hasAwardedRef.current = true;
+    setIsAwarding(true);
+
+    try {
+      const endpoint =
+        contentType === 'blog'
+          ? `/api/blog/${contentId}/read`
+          : `/api/lessons/${contentId}/complete`;
+
+      // Mesmo que o servidor responda "já completo", o estado local fica completed
+      if (xpReward > 0) {
+        await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: effectiveUserId,
+            userId,
             xpEarned: xpReward,
           }),
         });
-
-        const data = await res.json();
-
-        // Sucesso ou já estava completo → marcamos como completo
-        if (res.ok && data.success) {
-          setCompleted(true);
-          onComplete?.();
-        } else if (data.alreadyCompleted || res.status === 409) {
-          setCompleted(true);
-          onComplete?.();
-        } else {
-          setError(data.error || 'Failed to award XP.');
-        }
-      } catch (err) {
-        console.error('ContentTracker award error:', err);
-        setError('Failed to award XP.');
-      } finally {
-        setAwarding(false);
       }
-    };
 
-    award();
-  }, [
-    effectiveUserId,
-    contentId,
-    contentType,
-    xpReward,
-    secondsRead,
-    requiredSeconds,
-    completed,
-    awarding,
-    onComplete,
-  ]);
+      setCompleted(true);
+      setTimeProgress(100);
+      setScrollProgress(100);
 
-  const progressPercent = useMemo(() => {
-    if (completed) return 100;
-    return Math.min(100, Math.round((secondsRead / requiredSeconds) * 100));
-  }, [secondsRead, requiredSeconds, completed]);
-
-  const label = contentType === 'blog' ? 'article' : 'lesson';
+      if (onComplete) onComplete();
+    } catch (error) {
+      console.error('Failed to complete content:', error);
+    } finally {
+      setIsAwarding(false);
+    }
+  }
 
   // --- RENDER ---
 
-  // Sem login → mostra aviso mas nunca bloqueia conteúdo
-  if (!effectiveUserId) {
-    return (
-      <>
-        <Card className="mb-4 border-dashed border-amber-300 bg-amber-50/60 dark:bg-amber-900/20">
-          <div className="flex items-start gap-3 p-4 text-sm text-amber-800 dark:text-amber-100">
-            <AlertCircle className="h-4 w-4 mt-0.5" />
-            <div>
-              <p className="font-medium">
-                Reading tracker available only for logged users.
-              </p>
-              <p className="text-xs mt-1">
-                You can still read everything, but XP is only awarded when logged in.
-              </p>
-            </div>
+  const noUser = !userId;
+  const isAuthorDisabled = !!userId && disabled;
+
+  let banner;
+  if (noUser) {
+    // não autenticado
+    banner = (
+      <div className="border border-dashed border-gray-300 bg-gray-50 text-gray-700 rounded-lg p-4 text-sm flex items-start gap-3">
+        <Info className="h-4 w-4 mt-0.5 text-gray-500" />
+        <div>
+          <p className="font-medium">
+            Reading tracker disponível apenas para utilizadores com login.
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Podes ler tudo à vontade, mas o XP só é registado quando estás
+            com sessão iniciada.
+          </p>
+        </div>
+      </div>
+    );
+  } else if (isAuthorDisabled) {
+    // autor do conteúdo
+    banner = (
+      <div className="border border-dashed border-amber-300 bg-amber-50 text-amber-900 rounded-lg p-4 text-sm flex items-start gap-3">
+        <Info className="h-4 w-4 mt-0.5 text-amber-600" />
+        <div>
+          <p className="font-medium">És o criador deste conteúdo.</p>
+          <p className="text-xs mt-1">
+            Podes reler o que quiseres, mas não ganhas XP por consumir
+            os teus próprios artigos ou lições. O XP vem dos leitores.
+          </p>
+        </div>
+      </div>
+    );
+  } else if (completed) {
+    // já completo (XP atribuído no passado)
+    banner = (
+      <div className="border border-green-300 bg-green-50 text-green-900 rounded-lg p-4 text-sm flex items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600" />
+          <div>
+            <p className="font-medium">Content completed</p>
+            <p className="text-xs mt-1">
+              O XP para este conteúdo já foi atribuído. Podes reler
+              sempre que quiseres sem alterar o teu XP.
+            </p>
           </div>
-        </Card>
-        {children}
-      </>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-semibold">
+          <Timer className="h-4 w-4 text-green-600" />
+          <span>Done</span>
+        </div>
+      </div>
+    );
+  } else {
+    // em progresso normal
+    const overall =
+      (timeProgress * 0.5 + scrollProgress * 0.5) > 100
+        ? 100
+        : (timeProgress * 0.5 + scrollProgress * 0.5);
+
+    banner = (
+      <div className="border border-blue-200 bg-blue-50 text-blue-900 rounded-lg p-4 text-sm space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-blue-600" />
+            <span className="font-medium">
+              Completa a leitura para ganhar {xpReward} XP.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-blue-800">
+            <Clock className="h-4 w-4" />
+            <span>
+              ~{estimatedMinutes} min ·{' '}
+              {Math.round(overall)}% concluído
+            </span>
+          </div>
+        </div>
+
+        <div className="w-full bg-blue-100 rounded-full h-2 overflow-hidden">
+          <div
+            className="h-2 rounded-full bg-blue-600 transition-all"
+            style={{ width: `${overall}%` }}
+          />
+        </div>
+
+        <p className="text-xs text-blue-800">
+          O progresso é calculado com base no tempo de leitura e na
+          rolagem da página. Quando estiver quase no fim, o XP é
+          registado automaticamente.
+          {isAwarding && ' A registar XP...'}
+        </p>
+      </div>
     );
   }
 
   return (
-    <>
-      <Card className="mb-4">
-        <div className="p-4 text-sm">
-          {completed ? (
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <div>
-                  <p className="font-semibold text-green-800">
-                    Content completed
-                  </p>
-                  <p className="text-xs text-green-700/80">
-                    XP for this {label} was already awarded. You can revisit it
-                    any time without changing your XP.
-                  </p>
-                </div>
-              </div>
-              <Badge className="bg-green-600 text-white">Done</Badge>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    Reading in progress – stay a bit longer to earn{' '}
-                    <strong>{xpReward} XP</strong>.
-                  </span>
-                </div>
-                <span className="text-xs text-gray-500">
-                  {Math.max(0, requiredSeconds - secondsRead)}s left
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              {error && (
-                <p className="text-xs text-red-600 mt-1">{error}</p>
-              )}
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {children}
-    </>
+    <div className="space-y-4">
+      {banner}
+      <div>{children}</div>
+    </div>
   );
 }
