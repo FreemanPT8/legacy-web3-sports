@@ -29,40 +29,86 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 2) Se não há user autenticado → devolve posts tal como estão
-    if (!user) {
-      return NextResponse.json({
-        success: true,
-        posts,
-      });
-    }
-
-    // 3) Buscar leituras/conclusões do user
     const postIds = posts.map((p: any) => p.id).filter(Boolean);
 
+    // 2) Autores
+    const authorIds = Array.from(
+      new Set(
+        posts
+          .map((p: any) => p.author_id)
+          .filter((id: string | null) => !!id),
+      ),
+    );
+
+    let authorMap = new Map<string, string>();
+    if (authorIds.length > 0) {
+      const { data: authors, error: authorsError } = await supabase
+        .from('users')
+        .select('id, username')
+        .in('id', authorIds);
+
+      if (!authorsError && authors) {
+        authorMap = new Map(
+          authors.map((a: any) => [a.id, a.username]),
+        );
+      }
+    }
+
+    // 3) Leituras (para stats + completed)
     const { data: reads, error: readsError } = await supabase
       .from('blog_reads')
-      .select('blog_post_id')
-      .eq('user_id', user.id)
+      .select('blog_post_id, user_id, xp_earned')
       .in('blog_post_id', postIds);
 
     if (readsError) {
       console.error('Error fetching blog reads:', readsError);
-      // Mesmo com erro, devolvemos posts sem flag de completado
+      // devolve sem stats/is_completed
+      const basicPosts = posts.map((p: any) => ({
+        ...p,
+        author: authorMap.get(p.author_id) || 'Admin',
+      }));
       return NextResponse.json({
         success: true,
-        posts,
+        posts: basicPosts,
       });
     }
 
-    const completedSet = new Set(
-      (reads || []).map((r: any) => r.blog_post_id),
-    );
+    const statsByPost = new Map<
+      string,
+      { totalXp: number; users: Set<string> }
+    >();
 
-    const enrichedPosts = posts.map((p: any) => ({
-      ...p,
-      is_completed: completedSet.has(p.id),
-    }));
+    (reads || []).forEach((r: any) => {
+      const id = r.blog_post_id;
+      if (!statsByPost.has(id)) {
+        statsByPost.set(id, { totalXp: 0, users: new Set() });
+      }
+      const entry = statsByPost.get(id)!;
+      entry.totalXp += r.xp_earned || 0;
+      if (r.user_id) {
+        entry.users.add(r.user_id);
+      }
+    });
+
+    const completedSet = new Set<string>();
+    if (user && reads) {
+      reads.forEach((r: any) => {
+        if (r.user_id === user.id) {
+          completedSet.add(r.blog_post_id);
+        }
+      });
+    }
+
+    const enrichedPosts = posts.map((p: any) => {
+      const stats = statsByPost.get(p.id);
+      return {
+        ...p,
+        author: authorMap.get(p.author_id) || 'Admin',
+        is_completed: completedSet.has(p.id),
+        total_xp_given: stats ? stats.totalXp : 0,
+        total_consumers: stats ? stats.users.size : 0,
+      };
+    });
 
     return NextResponse.json({
       success: true,

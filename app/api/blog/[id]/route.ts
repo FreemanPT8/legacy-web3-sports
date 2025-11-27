@@ -9,15 +9,14 @@ export async function GET(
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
-    const postId = params.id;
 
     // 1) Buscar post publicado
     const { data: post, error } = await supabase
       .from('blog_posts')
       .select('*')
-      .eq('id', postId)
+      .eq('id', params.id)
       .eq('published', true)
-      .single();
+      .maybeSingle();
 
     if (error || !post) {
       return NextResponse.json(
@@ -26,31 +25,58 @@ export async function GET(
       );
     }
 
-    // 2) Incrementar views (não bloqueia resposta se falhar)
-    void supabase
+    // 2) Incrementar views (total – registados + anónimos)
+    const currentViews = post.views ?? 0;
+    await supabase
       .from('blog_posts')
-      .update({ views: (post.views || 0) + 1 })
-      .eq('id', postId);
+      .update({ views: currentViews + 1 })
+      .eq('id', params.id);
 
-    // 3) Ver se este user já completou (blog_reads)
-    let isCompleted = false;
-
-    if (user) {
-      const { data: readRow, error: readError } = await supabase
-        .from('blog_reads')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('blog_post_id', postId)
+    // 3) Nome do autor (a partir de users.author_id)
+    let authorName = 'Admin';
+    if (post.author_id) {
+      const { data: authorData } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', post.author_id)
         .maybeSingle();
 
-      if (!readError && readRow) {
-        isCompleted = true;
+      if (authorData?.username) {
+        authorName = authorData.username;
+      }
+    }
+
+    // 4) Estatísticas de leituras (blog_reads)
+    let isCompleted = false;
+    let totalXpGiven = 0;
+    let totalConsumers = 0;
+
+    const { data: reads, error: readsError } = await supabase
+      .from('blog_reads')
+      .select('user_id, xp_earned, blog_post_id')
+      .eq('blog_post_id', params.id);
+
+    if (!readsError && reads) {
+      totalXpGiven = reads.reduce(
+        (sum: number, r: any) => sum + (r.xp_earned || 0),
+        0,
+      );
+      const uniqueUsers = new Set(reads.map((r: any) => r.user_id));
+      totalConsumers = uniqueUsers.size;
+
+      if (user) {
+        isCompleted = reads.some((r: any) => r.user_id === user.id);
       }
     }
 
     return NextResponse.json({
       success: true,
-      post,
+      post: {
+        ...post,
+        author: authorName,
+        total_xp_given: totalXpGiven,
+        total_consumers: totalConsumers,
+      },
       isCompleted,
     });
   } catch (error) {

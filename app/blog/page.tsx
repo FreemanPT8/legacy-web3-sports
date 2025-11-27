@@ -22,6 +22,7 @@ import {
   Lock,
   CheckCircle,
   Award,
+  Clock,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +40,9 @@ type BlogPost = {
   registered_only?: boolean | null;
   xp_reward?: number | null;
   is_completed?: boolean;
+  reading_time?: number | null;
+  total_xp_given?: number | null;
+  total_consumers?: number | null;
 };
 
 export default function BlogIndexPage() {
@@ -64,23 +68,7 @@ export default function BlogIndexPage() {
         if (!res.ok || !data.success) {
           setPosts([]);
         } else {
-          const basePosts = Array.isArray(data.posts) ? data.posts : [];
-
-          // extra: OR com localStorage para garantir "Completed" neste browser
-          if (typeof window !== 'undefined' && user) {
-            const enriched = basePosts.map((p: any) => {
-              const key = `content-completed:blog:${p.id}`;
-              const localCompleted =
-                window.localStorage.getItem(key) === 'true';
-              return {
-                ...p,
-                is_completed: p.is_completed || localCompleted,
-              };
-            });
-            setPosts(enriched);
-          } else {
-            setPosts(basePosts);
-          }
+          setPosts(Array.isArray(data.posts) ? data.posts : []);
         }
       } catch (error) {
         console.error('Error loading blog posts:', error);
@@ -91,7 +79,7 @@ export default function BlogIndexPage() {
     };
 
     fetchPosts();
-  }, [getToken, user]);
+  }, [getToken]);
 
   const getTitle = (title: MultiLang | string) => {
     if (typeof title === 'string') return title;
@@ -120,9 +108,7 @@ export default function BlogIndexPage() {
           <div className="max-w-5xl mx-auto">
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold mb-1">
-                  Legacy Blog
-                </h1>
+                <h1 className="text-3xl font-bold mb-1">Legacy Blog</h1>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
                   Articles about blockchain, Web3, sports, education and
                   community – plus XP rewards for readers.
@@ -177,6 +163,14 @@ export default function BlogIndexPage() {
                     typeof post.xp_reward === 'number'
                       ? post.xp_reward
                       : 15;
+                  const readingMinutes =
+                    typeof post.reading_time === 'number'
+                      ? post.reading_time
+                      : 5;
+                  const totalXpGiven = post.total_xp_given ?? 0;
+                  const totalConsumers = post.total_consumers ?? 0;
+
+                  const authorName = post.author || 'Admin';
 
                   return (
                     <Card
@@ -225,7 +219,7 @@ export default function BlogIndexPage() {
                         <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <User className="h-3 w-3" />
-                            {post.author || 'Admin'}
+                            {authorName}
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -235,11 +229,15 @@ export default function BlogIndexPage() {
                                 ).toLocaleDateString()
                               : '-'}
                           </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {readingMinutes} min read
+                          </span>
                           {typeof post.views === 'number' &&
                             post.views >= 0 && (
                               <span className="flex items-center gap-1">
                                 <Eye className="h-3 w-3" />
-                                {post.views}
+                                {post.views} views
                               </span>
                             )}
                         </div>
@@ -251,6 +249,20 @@ export default function BlogIndexPage() {
                             {excerpt}
                           </p>
                         )}
+
+                        {user && (
+                          <p className="mb-2 text-[11px] text-gray-500">
+                            XP given so far:{' '}
+                            <span className="font-semibold">
+                              {totalXpGiven} XP
+                            </span>{' '}
+                            · Registered readers:{' '}
+                            <span className="font-semibold">
+                              {totalConsumers}
+                            </span>
+                          </p>
+                        )}
+
                         <Link href={`/blog/${post.id}`}>
                           <Button variant="outline" size="sm">
                             Read article

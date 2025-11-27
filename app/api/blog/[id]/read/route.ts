@@ -1,58 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hasCompletedContent, markContentComplete, awardXP } from '@/lib/xp';
+import {
+  awardXP,
+  hasCompletedContent,
+  markContentComplete,
+} from '@/lib/xp';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const body = await request.json();
     const { userId, xpEarned } = body;
-    const postId = params.id;
 
-    if (!userId || !postId || !xpEarned) {
+    if (!userId || !xpEarned) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
+        { success: false, error: 'Missing userId or xpEarned' },
+        { status: 400 },
       );
     }
 
-    const alreadyRead = await hasCompletedContent(userId, postId, 'blog');
+    const blogId = params.id;
 
-    if (alreadyRead) {
+    // 1) Ver se já foi lido antes (não duplicar XP)
+    const already = await hasCompletedContent(userId, blogId, 'blog');
+    if (already) {
       return NextResponse.json(
-        { success: false, error: 'Article already read' },
-        { status: 400 }
+        {
+          success: false,
+          error: 'Blog already read',
+        },
+        { status: 409 },
       );
     }
 
-    const markResult = await markContentComplete(userId, postId, 'blog', xpEarned);
+    // 2) Registar leitura em blog_reads
+    const completeResult = await markContentComplete(
+      userId,
+      blogId,
+      'blog',
+      xpEarned,
+    );
 
-    if (!markResult.success) {
-      return NextResponse.json(markResult, { status: 500 });
+    if (!completeResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: completeResult.error || 'Failed to register blog read',
+        },
+        { status: 500 },
+      );
     }
 
+    // 3) Atribuir XP (xp_transactions + users.xp_total)
     const xpResult = await awardXP(
       userId,
       'Read blog article',
       xpEarned,
-      postId,
-      'blog'
+      blogId,
+      'blog_post',
     );
 
     if (!xpResult.success) {
-      return NextResponse.json(xpResult, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: xpResult.error || 'Failed to award XP for blog read',
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
       success: true,
-      xpEarned,
-      newTotal: xpResult.newTotal
+      newTotal: xpResult.newTotal,
     });
   } catch (error) {
+    console.error('Error in POST /api/blog/[id]/read:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
