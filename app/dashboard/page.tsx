@@ -16,13 +16,11 @@ import {
   Award,
   CheckCircle2,
 } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/loading';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const { t } = useLanguage();
-
   const [xpHistory, setXpHistory] = useState<any[]>([]);
   const [missions, setMissions] = useState<any[]>([]);
   const [loadingMissions, setLoadingMissions] = useState(true);
@@ -137,6 +135,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
+          {/* Cards topo */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="pb-3">
@@ -227,6 +226,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
+          {/* Missões + features */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -408,6 +408,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
+          {/* Activity */}
           <Card>
             <CardHeader>
               <CardTitle>{t('dashboard.recentXpActivity')}</CardTitle>

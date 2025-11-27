@@ -64,7 +64,23 @@ export default function BlogIndexPage() {
         if (!res.ok || !data.success) {
           setPosts([]);
         } else {
-          setPosts(Array.isArray(data.posts) ? data.posts : []);
+          const basePosts = Array.isArray(data.posts) ? data.posts : [];
+
+          // extra: OR com localStorage para garantir "Completed" neste browser
+          if (typeof window !== 'undefined' && user) {
+            const enriched = basePosts.map((p: any) => {
+              const key = `content-completed:blog:${p.id}`;
+              const localCompleted =
+                window.localStorage.getItem(key) === 'true';
+              return {
+                ...p,
+                is_completed: p.is_completed || localCompleted,
+              };
+            });
+            setPosts(enriched);
+          } else {
+            setPosts(basePosts);
+          }
         }
       } catch (error) {
         console.error('Error loading blog posts:', error);
@@ -75,7 +91,7 @@ export default function BlogIndexPage() {
     };
 
     fetchPosts();
-  }, [getToken]);
+  }, [getToken, user]);
 
   const getTitle = (title: MultiLang | string) => {
     if (typeof title === 'string') return title;
@@ -104,7 +120,9 @@ export default function BlogIndexPage() {
           <div className="max-w-5xl mx-auto">
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold mb-1">Legacy Blog</h1>
+                <h1 className="text-3xl font-bold mb-1">
+                  Legacy Blog
+                </h1>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
                   Articles about blockchain, Web3, sports, education and
                   community – plus XP rewards for readers.
@@ -114,13 +132,18 @@ export default function BlogIndexPage() {
                 {user ? (
                   <span>
                     Logged in as{' '}
-                    <span className="font-semibold">{user.username}</span>
+                    <span className="font-semibold">
+                      {user.username}
+                    </span>
                   </span>
                 ) : (
                   <>
                     <span>Login to earn XP from articles.</span>
                     <Link href="/login">
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
                         Login
                       </Button>
                     </Link>
@@ -156,7 +179,10 @@ export default function BlogIndexPage() {
                       : 15;
 
                   return (
-                    <Card key={post.id} className="hover:shadow-md transition">
+                    <Card
+                      key={post.id}
+                      className="hover:shadow-md transition"
+                    >
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex flex-wrap items-center gap-2">
@@ -204,15 +230,18 @@ export default function BlogIndexPage() {
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {post.created_at
-                              ? new Date(post.created_at).toLocaleDateString()
+                              ? new Date(
+                                  post.created_at,
+                                ).toLocaleDateString()
                               : '-'}
                           </span>
-                          {typeof post.views === 'number' && post.views >= 0 && (
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {post.views}
-                            </span>
-                          )}
+                          {typeof post.views === 'number' &&
+                            post.views >= 0 && (
+                              <span className="flex items-center gap-1">
+                                <Eye className="h-3 w-3" />
+                                {post.views}
+                              </span>
+                            )}
                         </div>
                       </CardHeader>
 

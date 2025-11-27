@@ -54,15 +54,33 @@ export function ContentTracker({
     Math.round(estimatedMinutes * 60 * 0.33),
   );
 
-  // Sempre que muda de conteúdo, reset de estado interno
+  // Helper para chave de storage
+  const getStorageKey = () =>
+    `content-completed:${contentType}:${contentId}`;
+
+  // Sempre que muda de conteúdo ou initialCompleted,
+  // sincronizamos com localStorage + backend
   useEffect(() => {
+    let localCompleted = false;
+
+    if (typeof window !== 'undefined' && user) {
+      try {
+        const key = getStorageKey();
+        localCompleted = window.localStorage.getItem(key) === 'true';
+      } catch {
+        // ignore erros de storage
+      }
+    }
+
+    const completed = initialCompleted || localCompleted;
+
     setHasScrolledToBottom(false);
     setSecondsRead(0);
-    setIsCompleted(initialCompleted);
+    setIsCompleted(completed);
     setError(null);
     setInfo(null);
-    completionTriggeredRef.current = initialCompleted;
-  }, [contentId, initialCompleted]);
+    completionTriggeredRef.current = completed;
+  }, [contentId, initialCompleted, user, contentType]);
 
   // Timer de leitura (só se houver user e ainda não estiver concluído)
   useEffect(() => {
@@ -80,8 +98,7 @@ export function ContentTracker({
     if (!user || isCompleted) return;
 
     const handleScroll = () => {
-      const scrollPosition =
-        window.innerHeight + window.scrollY;
+      const scrollPosition = window.innerHeight + window.scrollY;
       const threshold = document.body.offsetHeight - 48; // 48px de margem
 
       if (scrollPosition >= threshold) {
@@ -101,15 +118,22 @@ export function ContentTracker({
     if (isCompleted) return;
     if (completionTriggeredRef.current) return;
 
-    if (
-      hasScrolledToBottom &&
-      secondsRead >= requiredSeconds
-    ) {
+    if (hasScrolledToBottom && secondsRead >= requiredSeconds) {
       completionTriggeredRef.current = true;
       void completeContent(user.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasScrolledToBottom, secondsRead, requiredSeconds, user, isCompleted]);
+
+  function persistCompletedFlag() {
+    if (typeof window === 'undefined') return;
+    try {
+      const key = getStorageKey();
+      window.localStorage.setItem(key, 'true');
+    } catch {
+      // ignore
+    }
+  }
 
   async function completeContent(userId: string) {
     try {
@@ -134,18 +158,15 @@ export function ContentTracker({
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        const errMsg = typeof data.error === 'string' ? data.error : '';
+
         // Se for "já completado", marcamos como concluído mas sem duplicar XP
         if (
-          typeof data.error === 'string' &&
-          (data.error.toLowerCase().includes('already') ||
-            data.error
-              .toLowerCase()
-              .includes('already completed') ||
-            data.error
-              .toLowerCase()
-              .includes('already read'))
+          errMsg.toLowerCase().includes('already') ||
+          errMsg.toLowerCase().includes('já') // caso a msg venha em PT
         ) {
           setIsCompleted(true);
+          persistCompletedFlag();
           setInfo('Already completed – no extra XP this time.');
           if (onComplete) onComplete();
           return;
@@ -159,6 +180,7 @@ export function ContentTracker({
       }
 
       setIsCompleted(true);
+      persistCompletedFlag();
       setInfo(
         `+${xpReward} XP added to your account (first completion only).`,
       );
@@ -188,8 +210,7 @@ export function ContentTracker({
           {contentType === 'lesson' ? 'lesson' : 'article'},{' '}
           please{' '}
           <span className="font-semibold">log in or sign up</span>.
-          Your reading progress will not be tracked while logged
-          out.
+          Your reading progress will not be tracked while logged out.
         </div>
       ) : (
         <div className="mt-4 rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-700 shadow-sm">
@@ -206,19 +227,24 @@ export function ContentTracker({
             {/* Critério 1: Tempo de leitura */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                {secondsRead >= requiredSeconds ? (
+                {secondsRead >= requiredSeconds || isCompleted ? (
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
                   <Clock className="h-4 w-4 text-gray-400" />
                 )}
                 <div>
                   <div className="font-medium">
-                    Read for at least{' '}
-                    {Math.round(requiredSeconds)} seconds
+                    Read for at least {Math.round(requiredSeconds)} seconds
                   </div>
                   <div className="text-[11px] text-gray-500">
-                    {secondsRead}s / {requiredSeconds}s (
-                    {timeProgress}%)
+                    {isCompleted ? (
+                      <>Requirement already fulfilled</>
+                    ) : (
+                      <>
+                        {secondsRead}s / {requiredSeconds}s (
+                        {timeProgress}%)
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -227,7 +253,7 @@ export function ContentTracker({
             {/* Critério 2: Scroll até ao fundo */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                {hasScrolledToBottom ? (
+                {hasScrolledToBottom || isCompleted ? (
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
                   <ScrollText className="h-4 w-4 text-gray-400" />
@@ -237,7 +263,7 @@ export function ContentTracker({
                     Scroll to the bottom of the page
                   </div>
                   <div className="text-[11px] text-gray-500">
-                    {hasScrolledToBottom
+                    {hasScrolledToBottom || isCompleted
                       ? 'Bottom reached'
                       : 'Keep scrolling to reach the end'}
                   </div>
@@ -252,14 +278,12 @@ export function ContentTracker({
               <p className="flex items-center gap-1 text-green-700">
                 <CheckCircle className="h-3 w-3" />
                 <span>
-                  Content completed. XP awarded only the first time
-                  you fully consume it.
+                  Content completed. XP awarded only the first time you
+                  fully consume it.
                 </span>
               </p>
             ) : isAwarding ? (
-              <p className="text-blue-600">
-                XP will be added shortly...
-              </p>
+              <p className="text-blue-600">XP will be added shortly...</p>
             ) : (
               <p className="text-gray-500">
                 Complete both steps to receive XP for this{' '}
