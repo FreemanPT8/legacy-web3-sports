@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
-import { hasCompletedContent } from '@/lib/xp';
 
 export async function GET(
   request: NextRequest,
@@ -10,12 +9,13 @@ export async function GET(
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
+    const postId = params.id;
 
     // 1) Buscar post publicado
     const { data: post, error } = await supabase
       .from('blog_posts')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', postId)
       .eq('published', true)
       .single();
 
@@ -26,16 +26,26 @@ export async function GET(
       );
     }
 
-    // 2) Incrementar views (não precisa de admin, é só um update simples)
-    await supabase
+    // 2) Incrementar views (não bloqueia resposta se falhar)
+    void supabase
       .from('blog_posts')
       .update({ views: (post.views || 0) + 1 })
-      .eq('id', params.id);
+      .eq('id', postId);
 
-    // 3) Se houver user → ver se já completou este artigo
+    // 3) Ver se este user já completou (blog_reads)
     let isCompleted = false;
+
     if (user) {
-      isCompleted = await hasCompletedContent(user.id, params.id, 'blog');
+      const { data: readRow, error: readError } = await supabase
+        .from('blog_reads')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('blog_post_id', postId)
+        .maybeSingle();
+
+      if (!readError && readRow) {
+        isCompleted = true;
+      }
     }
 
     return NextResponse.json({
