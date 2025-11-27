@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
-import { hasCompletedContent } from '@/lib/xp';
 
 interface RouteContext {
   params: { id: string };
 }
 
-// usamos o client admin se existir (service role), senão o normal
+// Usar o mesmo padrão que o sistema de XP: admin se existir
 const db = supabaseAdmin ?? supabase;
 
 export async function GET(
@@ -20,8 +19,8 @@ export async function GET(
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
-    // 1) Buscar o post + info básica (inclui autor)
-    const { data: rawPost, error: postError } = await supabase
+    // 1) Buscar o post + info básica (incluindo autor)
+    const { data: rawPost, error: postError } = await db
       .from('blog_posts')
       .select(
         `
@@ -49,7 +48,20 @@ export async function GET(
       );
     }
 
-    // 2) Estatísticas de leituras registadas (blog_reads)
+    // 2) Incrementar views total (registados + anónimos)
+    const currentViews = rawPost.views ?? 0;
+    const updatedViews = currentViews + 1;
+
+    const { error: viewsError } = await db
+      .from('blog_posts')
+      .update({ views: updatedViews })
+      .eq('id', id);
+
+    if (viewsError) {
+      console.error('Error updating blog views:', viewsError);
+    }
+
+    // 3) Estatísticas de leituras registadas (blog_reads)
     const { data: reads, error: readsError } = await db
       .from('blog_reads')
       .select('user_id, xp_earned')
@@ -70,11 +82,8 @@ export async function GET(
       0,
     );
 
-    // 3) Estado "completed" para o utilizador atual,
-    // usando a mesma função central do XP (usa client admin)
-    const isCompleted = user
-      ? await hasCompletedContent(user.id, id, 'blog')
-      : false;
+    const isCompleted =
+      !!user && allReads.some((r: any) => r.user_id === user.id);
 
     const authorName =
       rawPost.author_user?.username ||
@@ -84,6 +93,7 @@ export async function GET(
     const post = {
       ...rawPost,
       author: authorName,
+      views: updatedViews,
       registered_readers: registeredReaders,
       total_xp_distributed: totalXpDistributed,
     };

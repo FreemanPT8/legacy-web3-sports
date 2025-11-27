@@ -22,7 +22,7 @@ export interface ContentTrackerProps {
    */
   initialCompleted?: boolean;
   /**
-   * Callback opcional para ecrãs que querem sincronizar estado local
+   * Callback opcional para os ecrãs que querem sincronizar estado local
    * (ex: marcar badge "Completed" na página da lição / blog).
    */
   onComplete?: () => void;
@@ -37,7 +37,7 @@ export function ContentTracker({
   initialCompleted = false,
   onComplete,
 }: ContentTrackerProps) {
-  const { user, refreshUser } = useAuth();
+  const { user, getToken } = useAuth();
 
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [secondsRead, setSecondsRead] = useState(0);
@@ -46,7 +46,7 @@ export function ContentTracker({
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const completionTriggeredRef = useRef(false);
+  const completionTriggeredRef = useRef(initialCompleted);
 
   // tempo mínimo em segundos = 33% da estimativa de leitura
   const requiredSeconds = Math.max(
@@ -63,6 +63,51 @@ export function ContentTracker({
     setInfo(null);
     completionTriggeredRef.current = initialCompleted;
   }, [contentId, initialCompleted]);
+
+  // ⚠️ NOVO: para conteúdos de BLOG, confirmar no backend se já está concluído
+  // Mesmo que initialCompleted venha a false, se o backend disser que já foi lido,
+  // marcamos logo como completo e não voltamos a atribuir XP.
+  useEffect(() => {
+    if (!user) return;
+    if (contentType !== 'blog') return;
+    // Se já veio como completo via prop, não precisamos de revalidar
+    if (initialCompleted) return;
+
+    let cancelled = false;
+
+    const checkCompletion = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch(`/api/blog/${contentId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          return;
+        }
+
+        if (!cancelled && data.isCompleted) {
+          setIsCompleted(true);
+          completionTriggeredRef.current = true;
+          setInfo('Content already completed earlier – no extra XP.');
+          if (onComplete) onComplete();
+        }
+      } catch (e) {
+        console.error('Error checking blog completion:', e);
+      }
+    };
+
+    void checkCompletion();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, getToken, contentId, contentType, initialCompleted, onComplete]);
 
   // Timer de leitura (só se houver user e ainda não estiver concluído)
   useEffect(() => {
@@ -107,25 +152,6 @@ export function ContentTracker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasScrolledToBottom, secondsRead, requiredSeconds, user, isCompleted]);
 
-  async function syncUserXp(newTotal: number | undefined) {
-    if (typeof newTotal !== 'number') return;
-
-    try {
-      if (typeof window !== 'undefined') {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          parsed.xp_total = newTotal;
-          localStorage.setItem('user', JSON.stringify(parsed));
-        }
-      }
-      // Recarrega o user do localStorage para o contexto
-      refreshUser();
-    } catch (err) {
-      console.error('Failed to sync XP total to local user:', err);
-    }
-  }
-
   async function completeContent(userId: string) {
     try {
       setIsAwarding(true);
@@ -150,17 +176,16 @@ export function ContentTracker({
 
       if (!res.ok || !data.success) {
         // Se for "já completado", marcamos como concluído mas sem duplicar XP
+        const rawError = typeof data.error === 'string' ? data.error.toLowerCase() : '';
+
         if (
-          typeof data.error === 'string' &&
-          (data.error.toLowerCase().includes('already') ||
-            data.error.toLowerCase().includes('already completed') ||
-            data.error.toLowerCase().includes('already read'))
+          rawError.includes('already') ||
+          rawError.includes('already completed') ||
+          rawError.includes('already read')
         ) {
           setIsCompleted(true);
           setInfo('Already completed – no extra XP this time.');
           if (onComplete) onComplete();
-          // mesmo assim, tenta sincronizar XP se o backend enviou newTotal
-          await syncUserXp(data.newTotal);
           return;
         }
 
@@ -175,10 +200,6 @@ export function ContentTracker({
       setInfo(
         `+${xpReward} XP added to your account (first completion only).`,
       );
-
-      // sincroniza XP total no contexto/localStorage
-      await syncUserXp(data.newTotal);
-
       if (onComplete) onComplete();
     } catch (err) {
       console.error('Error completing content:', err);
@@ -205,8 +226,7 @@ export function ContentTracker({
           {contentType === 'lesson' ? 'lesson' : 'article'},{' '}
           please{' '}
           <span className="font-semibold">log in or sign up</span>.
-          Your reading progress will not be tracked while logged
-          out.
+          Your reading progress will not be tracked while logged out.
         </div>
       ) : (
         <div className="mt-4 rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-700 shadow-sm">
@@ -230,12 +250,10 @@ export function ContentTracker({
                 )}
                 <div>
                   <div className="font-medium">
-                    Read for at least{' '}
-                    {Math.round(requiredSeconds)} seconds
+                    Read for at least {Math.round(requiredSeconds)} seconds
                   </div>
                   <div className="text-[11px] text-gray-500">
-                    {secondsRead}s / {requiredSeconds}s ({timeProgress}
-                    %)
+                    {secondsRead}s / {requiredSeconds}s ({timeProgress}%)
                   </div>
                 </div>
               </div>
@@ -269,14 +287,11 @@ export function ContentTracker({
               <p className="flex items-center gap-1 text-green-700">
                 <CheckCircle className="h-3 w-3" />
                 <span>
-                  Content completed. XP awarded only the first time
-                  you fully consume it.
+                  Content completed. XP awarded only the first time you fully consume it.
                 </span>
               </p>
             ) : isAwarding ? (
-              <p className="text-blue-600">
-                XP will be added shortly...
-              </p>
+              <p className="text-blue-600">XP will be added shortly...</p>
             ) : (
               <p className="text-gray-500">
                 Complete both steps to receive XP for this{' '}
@@ -284,7 +299,7 @@ export function ContentTracker({
               </p>
             )}
 
-            {info && !isCompleted && (
+            {info && (
               <p className="mt-1 text-blue-600">{info}</p>
             )}
             {error && (

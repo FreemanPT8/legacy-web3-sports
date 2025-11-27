@@ -1,85 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  awardXP,
-  hasCompletedContent,
-  markContentComplete,
-} from '@/lib/xp';
+import { awardXP, hasCompletedContent, markContentComplete } from '@/lib/xp';
+
+interface RouteContext {
+  params: { id: string };
+}
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: RouteContext
 ) {
+  const { id } = context.params;
+
   try {
     const body = await request.json();
-    const { userId, xpEarned } = body;
+    const { userId, xpEarned } = body || {};
 
-    if (!userId || !xpEarned) {
+    if (!userId || typeof xpEarned !== 'number') {
       return NextResponse.json(
         { success: false, error: 'Missing userId or xpEarned' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const blogId = params.id;
+    // 1) Ver se já está completo para este user
+    const alreadyCompleted = await hasCompletedContent(
+      userId,
+      id,
+      'blog'
+    );
 
-    // 1) Ver se já foi lido antes (não duplicar XP)
-    const already = await hasCompletedContent(userId, blogId, 'blog');
-    if (already) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Blog already read',
-        },
-        { status: 409 },
-      );
+    if (alreadyCompleted) {
+      return NextResponse.json({
+        success: false,
+        alreadyCompleted: true,
+        error: 'Already read',
+      });
     }
 
     // 2) Registar leitura em blog_reads
-    const completeResult = await markContentComplete(
+    const markResult = await markContentComplete(
       userId,
-      blogId,
+      id,
       'blog',
-      xpEarned,
+      xpEarned
     );
 
-    if (!completeResult.success) {
+    if (!markResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: completeResult.error || 'Failed to register blog read',
+          error:
+            markResult.error ||
+            'Failed to register blog read',
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
-    // 3) Atribuir XP (xp_transactions + users.xp_total)
-    const xpResult = await awardXP(
+    // 3) Atribuir XP ao utilizador
+    const awardResult = await awardXP(
       userId,
-      'Read blog article',
+      'Blog article read',
       xpEarned,
-      blogId,
-      'blog_post',
+      id,
+      'blog'
     );
 
-    if (!xpResult.success) {
+    if (!awardResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: xpResult.error || 'Failed to award XP for blog read',
+          error:
+            awardResult.error ||
+            'Failed to award XP for blog read',
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      newTotal: xpResult.newTotal,
+      newTotal: awardResult.newTotal,
     });
   } catch (error) {
     console.error('Error in POST /api/blog/[id]/read:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
