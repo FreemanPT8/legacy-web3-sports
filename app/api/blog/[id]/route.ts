@@ -1,82 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+import { hasCompletedContent } from '@/lib/xp';
+
+interface RouteContext {
+  params: { id: string };
+}
+
+// usamos o client admin se existir (service role), senão o normal
+const db = supabaseAdmin ?? supabase;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: RouteContext,
 ) {
+  const { id } = context.params;
+
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
-    // 1) Buscar post publicado
-    const { data: post, error } = await supabase
+    // 1) Buscar o post + info básica (inclui autor)
+    const { data: rawPost, error: postError } = await supabase
       .from('blog_posts')
-      .select('*')
-      .eq('id', params.id)
-      .eq('published', true)
+      .select(
+        `
+        *,
+        author_user:users!blog_posts_author_id_fkey (
+          username
+        )
+      `,
+      )
+      .eq('id', id)
       .maybeSingle();
 
-    if (error || !post) {
+    if (postError) {
+      console.error('Error fetching blog post:', postError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to load blog post' },
+        { status: 500 },
+      );
+    }
+
+    if (!rawPost) {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
         { status: 404 },
       );
     }
 
-    // 2) Incrementar views (total – registados + anónimos)
-    const currentViews = post.views ?? 0;
-    await supabase
-      .from('blog_posts')
-      .update({ views: currentViews + 1 })
-      .eq('id', params.id);
-
-    // 3) Nome do autor (a partir de users.author_id)
-    let authorName = 'Admin';
-    if (post.author_id) {
-      const { data: authorData } = await supabase
-        .from('users')
-        .select('username')
-        .eq('id', post.author_id)
-        .maybeSingle();
-
-      if (authorData?.username) {
-        authorName = authorData.username;
-      }
-    }
-
-    // 4) Estatísticas de leituras (blog_reads)
-    let isCompleted = false;
-    let totalXpGiven = 0;
-    let totalConsumers = 0;
-
-    const { data: reads, error: readsError } = await supabase
+    // 2) Estatísticas de leituras registadas (blog_reads)
+    const { data: reads, error: readsError } = await db
       .from('blog_reads')
-      .select('user_id, xp_earned, blog_post_id')
-      .eq('blog_post_id', params.id);
+      .select('user_id, xp_earned')
+      .eq('blog_post_id', id);
 
-    if (!readsError && reads) {
-      totalXpGiven = reads.reduce(
-        (sum: number, r: any) => sum + (r.xp_earned || 0),
-        0,
-      );
-      const uniqueUsers = new Set(reads.map((r: any) => r.user_id));
-      totalConsumers = uniqueUsers.size;
-
-      if (user) {
-        isCompleted = reads.some((r: any) => r.user_id === user.id);
-      }
+    if (readsError) {
+      console.error('Error fetching blog reads:', readsError);
     }
+
+    const allReads = reads || [];
+
+    const registeredReaders = new Set(
+      allReads.map((r: any) => r.user_id),
+    ).size;
+
+    const totalXpDistributed = allReads.reduce(
+      (sum: number, r: any) => sum + (r.xp_earned || 0),
+      0,
+    );
+
+    // 3) Estado "completed" para o utilizador atual,
+    // usando a mesma função central do XP (usa client admin)
+    const isCompleted = user
+      ? await hasCompletedContent(user.id, id, 'blog')
+      : false;
+
+    const authorName =
+      rawPost.author_user?.username ||
+      rawPost.author ||
+      'Admin';
+
+    const post = {
+      ...rawPost,
+      author: authorName,
+      registered_readers: registeredReaders,
+      total_xp_distributed: totalXpDistributed,
+    };
 
     return NextResponse.json({
       success: true,
-      post: {
-        ...post,
-        author: authorName,
-        total_xp_given: totalXpGiven,
-        total_consumers: totalConsumers,
-      },
+      post,
       isCompleted,
     });
   } catch (error) {

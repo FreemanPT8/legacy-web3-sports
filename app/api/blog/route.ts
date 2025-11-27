@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+
+const db = supabaseAdmin ?? supabase;
 
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
-    // 1) Buscar posts publicados
+    // 1) Buscar posts publicados + autor
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select('*')
+      .select(
+        `
+        *,
+        author_user:users!blog_posts_author_id_fkey (
+          username
+        )
+      `,
+      )
       .eq('published', true)
       .order('published_at', { ascending: false });
 
@@ -29,86 +38,52 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const postIds = posts.map((p: any) => p.id).filter(Boolean);
-
-    // 2) Autores
-    const authorIds = Array.from(
-      new Set(
-        posts
-          .map((p: any) => p.author_id)
-          .filter((id: string | null) => !!id),
-      ),
-    );
-
-    let authorMap = new Map<string, string>();
-    if (authorIds.length > 0) {
-      const { data: authors, error: authorsError } = await supabase
-        .from('users')
-        .select('id, username')
-        .in('id', authorIds);
-
-      if (!authorsError && authors) {
-        authorMap = new Map(
-          authors.map((a: any) => [a.id, a.username]),
-        );
-      }
+    // 2) Se não há user autenticado → devolve posts, mas com autor normalizado
+    if (!user) {
+      const mapped = posts.map((p: any) => ({
+        ...p,
+        author:
+          p.author_user?.username || p.author || 'Admin',
+      }));
+      return NextResponse.json({
+        success: true,
+        posts: mapped,
+      });
     }
 
-    // 3) Leituras (para stats + completed)
-    const { data: reads, error: readsError } = await supabase
+    // 3) Buscar leituras/conclusões do user (via client admin)
+    const postIds = posts.map((p: any) => p.id).filter(Boolean);
+
+    const { data: reads, error: readsError } = await db
       .from('blog_reads')
-      .select('blog_post_id, user_id, xp_earned')
+      .select('blog_post_id')
+      .eq('user_id', user.id)
       .in('blog_post_id', postIds);
 
     if (readsError) {
       console.error('Error fetching blog reads:', readsError);
-      // devolve sem stats/is_completed
-      const basicPosts = posts.map((p: any) => ({
+      // Mesmo com erro, devolvemos posts sem flag de completado
+      const mapped = posts.map((p: any) => ({
         ...p,
-        author: authorMap.get(p.author_id) || 'Admin',
+        author:
+          p.author_user?.username || p.author || 'Admin',
       }));
       return NextResponse.json({
         success: true,
-        posts: basicPosts,
+        posts: mapped,
       });
     }
 
-    const statsByPost = new Map<
-      string,
-      { totalXp: number; users: Set<string> }
-    >();
+    const completedSet = new Set(
+      (reads || []).map((r: any) => r.blog_post_id),
+    );
 
-    (reads || []).forEach((r: any) => {
-      const id = r.blog_post_id;
-      if (!statsByPost.has(id)) {
-        statsByPost.set(id, { totalXp: 0, users: new Set() });
-      }
-      const entry = statsByPost.get(id)!;
-      entry.totalXp += r.xp_earned || 0;
-      if (r.user_id) {
-        entry.users.add(r.user_id);
-      }
-    });
-
-    const completedSet = new Set<string>();
-    if (user && reads) {
-      reads.forEach((r: any) => {
-        if (r.user_id === user.id) {
-          completedSet.add(r.blog_post_id);
-        }
-      });
-    }
-
-    const enrichedPosts = posts.map((p: any) => {
-      const stats = statsByPost.get(p.id);
-      return {
-        ...p,
-        author: authorMap.get(p.author_id) || 'Admin',
-        is_completed: completedSet.has(p.id),
-        total_xp_given: stats ? stats.totalXp : 0,
-        total_consumers: stats ? stats.users.size : 0,
-      };
-    });
+    const enrichedPosts = posts.map((p: any) => ({
+      ...p,
+      author:
+        p.author_user?.username || p.author || 'Admin',
+      is_completed: completedSet.has(p.id),
+    }));
 
     return NextResponse.json({
       success: true,
