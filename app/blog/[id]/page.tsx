@@ -35,9 +35,13 @@ type BlogPost = {
   author?: string | null;
   created_at?: string;
   views?: number | null;
+  registered_views?: number | null;
+  registered_readers_count?: number | null;
+  total_xp_given?: number | null;
   registered_only?: boolean | null;
   xp_reward?: number | null;
   reading_time?: number | null;
+  is_completed?: boolean; // <- IMPORTANTE
 };
 
 export default function BlogPostPage() {
@@ -69,16 +73,19 @@ export default function BlogPostPage() {
         if (!res.ok || !data.success || !data.post) {
           setNotFound(true);
           setPost(null);
+          setIsCompleted(false);
         } else {
           setPost(data.post);
           setNotFound(false);
-          // backend pode (ou não) devolver isCompleted
-          setIsCompleted(!!data.isCompleted);
+          // ⚠️ AJUSTE CRÍTICO:
+          // o backend devolve is_completed dentro de post
+          setIsCompleted(!!data.post.is_completed);
         }
       } catch (error) {
         console.error('Error loading public blog post:', error);
         setNotFound(true);
         setPost(null);
+        setIsCompleted(false);
       } finally {
         setLoading(false);
       }
@@ -122,7 +129,9 @@ export default function BlogPostPage() {
         <Header />
         <main className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
           <div className="text-center px-4">
-            <h1 className="text-2xl font-bold mb-2">Post not found</h1>
+            <h1 className="text-2xl font-bold mb-2">
+              Post not found
+            </h1>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
               The blog post you are looking for does not exist or is not
               published.
@@ -170,8 +179,8 @@ export default function BlogPostPage() {
                       {post.category || 'General'}
                     </Badge>
                     {isCompleted && (
-                      <Badge className="bg-green-600 text-white">
-                        <CheckCircle className="h-3 w-3 mr-1" />
+                      <Badge className="bg-green-600 text-white flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
                         Completed
                       </Badge>
                     )}
@@ -203,7 +212,7 @@ export default function BlogPostPage() {
                     <Clock className="h-3 w-3" />
                     {estimatedMinutes} min read
                   </span>
-                  {post.views && post.views > 0 && (
+                  {typeof post.views === 'number' && post.views >= 0 && (
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
                       {post.views}
