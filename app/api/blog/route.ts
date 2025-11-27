@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
     // 1) Buscar posts publicados + autor
-    const { data: posts, error } = await supabase
+    const { data: posts, error } = await db
       .from('blog_posts')
       .select(
         `
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         author_user:users!blog_posts_author_id_fkey (
           username
         )
-      `,
+      `
       )
       .eq('published', true)
       .order('published_at', { ascending: false });
@@ -38,20 +38,24 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 2) Se não há user autenticado → devolve posts, mas com autor normalizado
+    // 2) Se não há user autenticado → devolve posts sem is_completed,
+    // mas com o nome do autor normalizado.
     if (!user) {
-      const mapped = posts.map((p: any) => ({
+      const normalized = posts.map((p: any) => ({
         ...p,
         author:
-          p.author_user?.username || p.author || 'Admin',
+          p.author_user?.username ||
+          p.author ||
+          'Admin',
       }));
+
       return NextResponse.json({
         success: true,
-        posts: mapped,
+        posts: normalized,
       });
     }
 
-    // 3) Buscar leituras/conclusões do user (via client admin)
+    // 3) Buscar leituras do user para marcar is_completed
     const postIds = posts.map((p: any) => p.id).filter(Boolean);
 
     const { data: reads, error: readsError } = await db
@@ -63,14 +67,17 @@ export async function GET(request: NextRequest) {
     if (readsError) {
       console.error('Error fetching blog reads:', readsError);
       // Mesmo com erro, devolvemos posts sem flag de completado
-      const mapped = posts.map((p: any) => ({
+      const normalized = posts.map((p: any) => ({
         ...p,
         author:
-          p.author_user?.username || p.author || 'Admin',
+          p.author_user?.username ||
+          p.author ||
+          'Admin',
       }));
+
       return NextResponse.json({
         success: true,
-        posts: mapped,
+        posts: normalized,
       });
     }
 
@@ -81,7 +88,9 @@ export async function GET(request: NextRequest) {
     const enrichedPosts = posts.map((p: any) => ({
       ...p,
       author:
-        p.author_user?.username || p.author || 'Admin',
+        p.author_user?.username ||
+        p.author ||
+        'Admin',
       is_completed: completedSet.has(p.id),
     }));
 

@@ -6,12 +6,13 @@ interface RouteContext {
   params: { id: string };
 }
 
-// Usar o mesmo padrão que o sistema de XP: admin se existir
+// Usamos o client admin quando existir (bypass RLS),
+// e caímos para o client normal se não houver service role.
 const db = supabaseAdmin ?? supabase;
 
 export async function GET(
   request: NextRequest,
-  context: RouteContext,
+  context: RouteContext
 ) {
   const { id } = context.params;
 
@@ -19,7 +20,7 @@ export async function GET(
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
-    // 1) Buscar o post + info básica (incluindo autor)
+    // 1) Buscar o post + info básica
     const { data: rawPost, error: postError } = await db
       .from('blog_posts')
       .select(
@@ -28,7 +29,7 @@ export async function GET(
         author_user:users!blog_posts_author_id_fkey (
           username
         )
-      `,
+      `
       )
       .eq('id', id)
       .maybeSingle();
@@ -37,31 +38,18 @@ export async function GET(
       console.error('Error fetching blog post:', postError);
       return NextResponse.json(
         { success: false, error: 'Failed to load blog post' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     if (!rawPost) {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    // 2) Incrementar views total (registados + anónimos)
-    const currentViews = rawPost.views ?? 0;
-    const updatedViews = currentViews + 1;
-
-    const { error: viewsError } = await db
-      .from('blog_posts')
-      .update({ views: updatedViews })
-      .eq('id', id);
-
-    if (viewsError) {
-      console.error('Error updating blog views:', viewsError);
-    }
-
-    // 3) Estatísticas de leituras registadas (blog_reads)
+    // 2) Estatísticas de leituras registadas (blog_reads)
     const { data: reads, error: readsError } = await db
       .from('blog_reads')
       .select('user_id, xp_earned')
@@ -74,12 +62,12 @@ export async function GET(
     const allReads = reads || [];
 
     const registeredReaders = new Set(
-      allReads.map((r: any) => r.user_id),
+      allReads.map((r: any) => r.user_id)
     ).size;
 
     const totalXpDistributed = allReads.reduce(
       (sum: number, r: any) => sum + (r.xp_earned || 0),
-      0,
+      0
     );
 
     const isCompleted =
@@ -93,7 +81,6 @@ export async function GET(
     const post = {
       ...rawPost,
       author: authorName,
-      views: updatedViews,
       registered_readers: registeredReaders,
       total_xp_distributed: totalXpDistributed,
     };
@@ -107,7 +94,7 @@ export async function GET(
     console.error('Error in GET /api/blog/[id]:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
