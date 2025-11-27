@@ -6,12 +6,12 @@ interface RouteContext {
   params: { id: string };
 }
 
-// usamos o client admin se existir (bypass RLS em produção)
+// Usamos o client admin sempre que existir (produção)
 const db = supabaseAdmin ?? supabase;
 
 export async function POST(
   request: NextRequest,
-  context: RouteContext
+  context: RouteContext,
 ) {
   const { id } = context.params;
 
@@ -26,30 +26,31 @@ export async function POST(
       );
     }
 
-    // 0) Buscar o post para saber quem é o autor
-    let isAuthor = false;
-    let authorId: string | null = null;
+    // 1) Obter autor do artigo
+    const { data: post, error: postError } = await db
+      .from('blog_posts')
+      .select('id, author_id')
+      .eq('id', id)
+      .maybeSingle();
 
-    try {
-      const { data: postRow, error: postError } = await db
-        .from('blog_posts')
-        .select('id, author_id')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (!postError && postRow) {
-        authorId = postRow.author_id ?? null;
-        if (authorId && authorId === userId) {
-          isAuthor = true;
-        }
-      } else if (postError) {
-        console.error('Error fetching blog post for creator bonus:', postError);
-      }
-    } catch (e) {
-      console.error('Fatal error loading blog post author:', e);
+    if (postError) {
+      console.error('Error fetching blog post in /read:', postError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to load blog post' },
+        { status: 500 },
+      );
     }
 
-    // 1) Ver se o conteúdo já está completo para este user
+    if (!post) {
+      return NextResponse.json(
+        { success: false, error: 'Post not found' },
+        { status: 404 },
+      );
+    }
+
+    const authorId = post.author_id as string | null;
+
+    // 2) Já completou este artigo?
     const alreadyCompleted = await hasCompletedContent(
       userId,
       id,
@@ -57,23 +58,24 @@ export async function POST(
     );
 
     if (alreadyCompleted) {
-      // Conteúdo já marcado como completo — não repetimos nada
       return NextResponse.json({
-        success: false,
+        success: true,
         alreadyCompleted: true,
-        error: 'Already read',
+        message: 'Already read',
       });
     }
 
-    // 2) Registar leitura em blog_reads
-    //    - se for o autor, marcamos como completo mas com xp_earned = 0
-    const xpToStore = isAuthor ? 0 : xpEarned;
+    // 3) Definir XP efectivo para o leitor
+    //    – criador não ganha XP por ler o próprio artigo
+    const effectiveXpForReader =
+      authorId && authorId === userId ? 0 : xpEarned;
 
+    // 4) Registar leitura em blog_reads
     const markResult = await markContentComplete(
       userId,
       id,
       'blog',
-      xpToStore,
+      effectiveXpForReader,
     );
 
     if (!markResult.success) {
@@ -81,73 +83,67 @@ export async function POST(
         {
           success: false,
           error:
-            markResult.error ||
-            'Failed to register blog read',
+            markResult.error || 'Failed to register blog read',
         },
         { status: 500 },
       );
     }
 
-    // 3) Se for o autor → não ganha XP, apenas fica marcado como completo
-    if (isAuthor) {
-      return NextResponse.json({
-        success: true,
-        newTotal: undefined,
-        isAuthor: true,
-      });
-    }
+    // 5) Atribuir XP ao leitor (pode ser 0 se for o autor)
+    let readerNewTotal: number | undefined;
 
-    // 4) Atribuir XP ao utilizador leitor
-    const awardResult = await awardXP(
-      userId,
-      'Blog article read',
-      xpEarned,
-      id,
-      'blog',
-    );
-
-    if (!awardResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            awardResult.error ||
-            'Failed to award XP for blog read',
-        },
-        { status: 500 },
+    if (effectiveXpForReader > 0) {
+      const awardResult = await awardXP(
+        userId,
+        'Blog article read',
+        effectiveXpForReader,
+        id,
+        'blog',
       );
+
+      if (!awardResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              awardResult.error ||
+              'Failed to award XP for blog read',
+          },
+          { status: 500 },
+        );
+      }
+
+      readerNewTotal = awardResult.newTotal;
     }
 
-    // 5) Bónus para o criador de conteúdo (19% do XP ganho pelo leitor)
-    //    Apenas se existir authorId e não for o próprio leitor
-    try {
-      if (authorId && authorId !== userId) {
-        const creatorBonus = Math.floor(xpEarned * 0.19);
-        if (creatorBonus > 0) {
-          const creatorResult = await awardXP(
-            authorId,
-            'Creator bonus: blog article read',
-            creatorBonus,
-            id,
-            'blog_creator',
+    // 6) Bónus de criador (19% do XP do leitor)
+    //    – só se existir autor e não for o próprio leitor
+    if (authorId && authorId !== userId && xpEarned > 0) {
+      const creatorBonus = Math.floor(xpEarned * 0.19);
+
+      if (creatorBonus > 0) {
+        const creatorResult = await awardXP(
+          authorId,
+          'Creator reward: blog article read',
+          creatorBonus,
+          id,
+          'blog_creator',
+        );
+
+        if (!creatorResult.success) {
+          console.error(
+            'Failed to award creator bonus XP:',
+            creatorResult.error,
           );
-
-          if (!creatorResult.success) {
-            console.error(
-              'Failed to award creator bonus for blog post:',
-              creatorResult.error,
-            );
-          }
+          // Não falhamos a resposta ao utilizador por causa disto
         }
       }
-    } catch (e) {
-      console.error('Fatal error awarding creator bonus (blog):', e);
     }
 
     return NextResponse.json({
       success: true,
-      newTotal: awardResult.newTotal,
-      isAuthor: false,
+      newTotal: readerNewTotal, // pode vir undefined se for o autor
+      alreadyCompleted: false,
     });
   } catch (error) {
     console.error('Error in POST /api/blog/[id]/read:', error);
