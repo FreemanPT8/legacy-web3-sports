@@ -35,6 +35,7 @@ interface Lesson {
   estimated_time?: number;
   order: number;
   module_id: string;
+  author_id?: string | null;
 }
 
 interface Module {
@@ -54,6 +55,7 @@ export default function LessonPage() {
   const [module, setModule] = useState<Module | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
 
@@ -71,9 +73,16 @@ export default function LessonPage() {
         const data = await response.json();
 
         if (data.success) {
-          setLesson(data.lesson);
+          const lessonData: Lesson = data.lesson;
+          setLesson(lessonData);
           setModule(data.module);
-          setIsCompleted(data.isCompleted || false);
+
+          const creatorFlag =
+            !!user && !!lessonData.author_id && lessonData.author_id === user.id;
+          setIsCreator(creatorFlag);
+
+          const completedFlag = !!data.isCompleted && !creatorFlag;
+          setIsCompleted(completedFlag);
 
           if (data.module?.lessons && Array.isArray(data.module.lessons)) {
             const lessons: Lesson[] = data.module.lessons
@@ -169,15 +178,21 @@ export default function LessonPage() {
             </div>
 
             {/* Header da lição */}
-            <Card className="mb-6">
+            <Card className="mb-4">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
                   <Badge variant="outline">{moduleTitle}</Badge>
-                  {isCompleted && (
-                    <Badge className="bg-green-600">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Completed
+                  {isCreator ? (
+                    <Badge className="bg-purple-600 text-white">
+                      Creator
                     </Badge>
+                  ) : (
+                    isCompleted && (
+                      <Badge className="bg-green-600 text-white flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Completed
+                      </Badge>
+                    )
                   )}
                 </div>
                 <CardTitle className="text-3xl">{title}</CardTitle>
@@ -201,15 +216,31 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
+            {/* Banner para criador */}
+            {isCreator && (
+              <Card className="mb-4 bg-purple-50 border-purple-200">
+                <CardContent className="py-4 text-sm text-purple-900">
+                  <p>
+                    <strong>You created this lesson.</strong> You don&apos;t
+                    earn XP by reading your own content. Every time another
+                    member completes this lesson, you automatically receive{' '}
+                    <strong>19% of the XP</strong> they earn.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Conteúdo + ContentTracker */}
             <Card className="mb-6">
               <CardContent className="prose prose-lg max-w-none py-8">
                 <ContentTracker
+                  userId={user?.id ?? null}
                   contentId={lesson.id}
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
-                  initialCompleted={isCompleted}
+                  initialCompleted={isCreator ? false : isCompleted}
+                  isAuthor={isCreator}
                   onComplete={() => setIsCompleted(true)}
                 >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
@@ -217,8 +248,8 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão */}
-            {isCompleted && (
+            {/* Mensagem de conclusão (apenas para não-criadores) */}
+            {!isCreator && isCompleted && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />

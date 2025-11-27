@@ -36,6 +36,7 @@ type Lesson = {
   order?: number;
   estimated_time?: number;
   is_completed?: boolean;
+  author_id?: string | null;
 };
 
 type Module = {
@@ -137,7 +138,13 @@ export default function CourseDetailPage() {
   );
 
   const totalLessons = allLessons.length;
-  const completedLessons = allLessons.filter((l) => l.is_completed).length;
+
+  const completedLessons = allLessons.filter((l) => {
+    const isCreator =
+      !!user && !!l.author_id && l.author_id === user.id;
+    return !!l.is_completed && !isCreator;
+  }).length;
+
   const progress =
     totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
@@ -150,13 +157,17 @@ export default function CourseDetailPage() {
     typeof course?.xp_threshold === 'number' ? course.xp_threshold! : 0;
   const courseLocked = userXP < courseXpRequired;
 
-  const handleLessonClick = (lesson: Lesson, requiredXP: number) => {
+  const handleLessonClick = (
+    lesson: Lesson,
+    requiredXP: number,
+    isCreator: boolean,
+  ) => {
     if (!user) {
       router.push('/login');
       return;
     }
 
-    if (userXP < requiredXP) {
+    if (!isCreator && userXP < requiredXP) {
       return;
     }
 
@@ -432,9 +443,15 @@ export default function CourseDetailPage() {
                                 lessonXp,
                               );
 
+                              const isCreator =
+                                !!user &&
+                                !!lesson.author_id &&
+                                lesson.author_id === user.id;
+
                               const isLocked =
-                                !user || userXP < requiredXP;
-                              const isCompleted = !!lesson.is_completed;
+                                !user || (!isCreator && userXP < requiredXP);
+                              const isCompleted =
+                                !!lesson.is_completed && !isCreator;
 
                               const duration =
                                 typeof lesson.estimated_time === 'number'
@@ -450,7 +467,11 @@ export default function CourseDetailPage() {
                                   key={lesson.id}
                                   type="button"
                                   onClick={() =>
-                                    handleLessonClick(lesson, requiredXP)
+                                    handleLessonClick(
+                                      lesson,
+                                      requiredXP,
+                                      isCreator,
+                                    )
                                   }
                                   disabled={isLocked}
                                   className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-left transition ${
@@ -464,6 +485,8 @@ export default function CourseDetailPage() {
                                       className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                                         isCompleted
                                           ? 'bg-green-600 text-white'
+                                          : isCreator
+                                          ? 'bg-purple-600 text-white'
                                           : 'bg-blue-100 text-blue-700'
                                       }`}
                                     >
@@ -497,8 +520,13 @@ export default function CourseDetailPage() {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    {isCompleted && (
-                                      <Badge className="bg-green-600">
+                                    {isCreator && (
+                                      <Badge className="bg-purple-600 text-white">
+                                        Creator
+                                      </Badge>
+                                    )}
+                                    {!isCreator && isCompleted && (
+                                      <Badge className="bg-green-600 text-white">
                                         {t('courses.completed') ||
                                           'Completed'}
                                       </Badge>
