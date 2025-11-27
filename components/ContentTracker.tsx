@@ -4,28 +4,36 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 type ContentTrackerProps = {
   contentId: string;
   contentType: 'blog' | 'lesson';
-  userId: string | null;
   xpReward: number;
   estimatedMinutes: number;
   initialCompleted?: boolean;
   onComplete?: () => void;
+  /**
+   * Opcional: se for passado, tem prioridade.
+   * Se não for passado, o componente usa o user do AuthContext.
+   */
+  userId?: string | null;
   children: React.ReactNode;
 };
 
 export function ContentTracker({
   contentId,
   contentType,
-  userId,
   xpReward,
   estimatedMinutes,
   initialCompleted = false,
   onComplete,
+  userId,
   children,
 }: ContentTrackerProps) {
+  const { user } = useAuth();
+  const effectiveUserId = userId ?? user?.id ?? null;
+
   const [completed, setCompleted] = useState<boolean>(initialCompleted);
   const [secondsRead, setSecondsRead] = useState<number>(
     initialCompleted ? estimatedMinutes * 60 : 0,
@@ -33,7 +41,7 @@ export function ContentTracker({
   const [awarding, setAwarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Se o backend passar de não-completo para completo (ex: refresh)
+  // Se o backend disser que já está completo (ex: refresh)
   useEffect(() => {
     setCompleted(initialCompleted);
     if (initialCompleted) {
@@ -43,25 +51,24 @@ export function ContentTracker({
 
   const requiredSeconds = useMemo(() => {
     const base = estimatedMinutes * 60;
-    // Podemos exigir, por ex., 70% do tempo estimado, mas nunca menos de 30s
-    return Math.max(30, Math.round(base * 0.7));
+    return Math.max(30, Math.round(base * 0.7)); // 70% do tempo, mínimo 30s
   }, [estimatedMinutes]);
 
-  // Timer simples enquanto o utilizador está na página
+  // Contador de tempo enquanto está na página
   useEffect(() => {
-    if (!userId) return;      // sem login não contamos tempo
-    if (completed) return;    // já completo → não continua a contar
+    if (!effectiveUserId) return; // sem login → não conta
+    if (completed) return;        // já completo → não conta
 
     const interval = window.setInterval(() => {
       setSecondsRead((s) => s + 1);
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [userId, completed]);
+  }, [effectiveUserId, completed]);
 
-  // Quando o tempo mínimo é atingido, tentar atribuir XP
+  // Quando atinge o tempo mínimo, tenta atribuir XP
   useEffect(() => {
-    if (!userId) return;
+    if (!effectiveUserId) return;
     if (completed) return;
     if (awarding) return;
     if (secondsRead < requiredSeconds) return;
@@ -79,16 +86,16 @@ export function ContentTracker({
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, xpEarned: xpReward }),
+          body: JSON.stringify({
+            userId: effectiveUserId,
+            xpEarned: xpReward,
+          }),
         });
 
         const data = await res.json();
 
-        // Já tinha XP ou acabou de receber → marcamos como completo
-        if (
-          res.ok &&
-          data.success
-        ) {
+        // Sucesso ou já estava completo → marcamos como completo
+        if (res.ok && data.success) {
           setCompleted(true);
           onComplete?.();
         } else if (data.alreadyCompleted || res.status === 409) {
@@ -107,7 +114,7 @@ export function ContentTracker({
 
     award();
   }, [
-    userId,
+    effectiveUserId,
     contentId,
     contentType,
     xpReward,
@@ -118,20 +125,17 @@ export function ContentTracker({
     onComplete,
   ]);
 
-  // --- UI helpers ---
-
   const progressPercent = useMemo(() => {
     if (completed) return 100;
     return Math.min(100, Math.round((secondsRead / requiredSeconds) * 100));
   }, [secondsRead, requiredSeconds, completed]);
 
-  const label =
-    contentType === 'blog' ? 'article' : 'lesson';
+  const label = contentType === 'blog' ? 'article' : 'lesson';
 
   // --- RENDER ---
 
-  // SEM LOGIN → mostra aviso mas NUNCA bloqueia o conteúdo
-  if (!userId) {
+  // Sem login → mostra aviso mas nunca bloqueia conteúdo
+  if (!effectiveUserId) {
     return (
       <>
         <Card className="mb-4 border-dashed border-amber-300 bg-amber-50/60 dark:bg-amber-900/20">
@@ -154,7 +158,6 @@ export function ContentTracker({
 
   return (
     <>
-      {/* Barra / estado de progresso */}
       <Card className="mb-4">
         <div className="p-4 text-sm">
           {completed ? (
@@ -201,7 +204,6 @@ export function ContentTracker({
         </div>
       </Card>
 
-      {/* Conteúdo REAL – nunca é bloqueado */}
       {children}
     </>
   );
