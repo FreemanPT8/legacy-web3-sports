@@ -230,21 +230,26 @@ export default function LessonPage() {
               </Card>
             )}
 
-            {/* Conteúdo + ContentTracker */}
+            {/* Conteúdo */}
             <Card className="mb-6">
               <CardContent className="prose prose-lg max-w-none py-8">
-                <ContentTracker
-                  userId={user?.id ?? null}
-                  contentId={lesson.id}
-                  contentType="lesson"
-                  xpReward={lesson.xp_reward}
-                  estimatedMinutes={durationMinutes}
-                  initialCompleted={isCreator ? false : isCompleted}
-                  isAuthor={isCreator}
-                  onComplete={() => setIsCompleted(true)}
-                >
+                {isCreator ? (
+                  // Criador: vê o conteúdo livremente, sem ContentTracker / XP
                   <div dangerouslySetInnerHTML={{ __html: content }} />
-                </ContentTracker>
+                ) : (
+                  // Utilizador normal: ContentTracker controla XP e completion
+                  <ContentTracker
+                    userId={user?.id ?? null}
+                    contentId={lesson.id}
+                    contentType="lesson"
+                    xpReward={lesson.xp_reward}
+                    estimatedMinutes={durationMinutes}
+                    initialCompleted={isCompleted}
+                    onComplete={() => setIsCompleted(true)}
+                  >
+                    <div dangerouslySetInnerHTML={{ __html: content }} />
+                  </ContentTracker>
+                )}
               </CardContent>
             </Card>
 
