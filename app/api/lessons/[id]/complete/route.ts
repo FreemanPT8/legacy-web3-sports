@@ -7,6 +7,13 @@ import {
   updateStreak,
 } from '@/lib/xp';
 
+/**
+ * This route handles lesson completion logic:
+ *
+ * - Users earn XP only on first completion
+ * - Creators NEVER earn XP for consuming their own content
+ * - Creators earn 19% of the XP awarded to each new reader (only on reader’s first completion)
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } },
@@ -25,7 +32,9 @@ export async function POST(
       );
     }
 
-    // 1) Buscar lição para saber autor e xp_reward
+    // -------------------------------------------------------------
+    // 1. Load lesson basics
+    // -------------------------------------------------------------
     const { data: lesson, error: lessonError } = await supabase
       .from('lessons')
       .select('id, author_id, xp_reward')
@@ -33,10 +42,6 @@ export async function POST(
       .single();
 
     if (lessonError || !lesson) {
-      console.error(
-        'Lesson not found in POST /api/lessons/[id]/complete:',
-        lessonError,
-      );
       return NextResponse.json(
         { success: false, error: 'Lesson not found' },
         { status: 404 },
@@ -44,8 +49,11 @@ export async function POST(
     }
 
     const isCreator = lesson.author_id === userId;
+    const lessonAuthorId = lesson.author_id;
 
-    // 2) Se for criador: não marcamos complete nem damos XP
+    // -------------------------------------------------------------
+    // 2. If creator consumes their own content → NEVER earn XP
+    // -------------------------------------------------------------
     if (isCreator) {
       return NextResponse.json({
         success: true,
@@ -56,7 +64,9 @@ export async function POST(
       });
     }
 
-    // 3) Verificar se já está completo para este utilizador
+    // -------------------------------------------------------------
+    // 3. Check if user already completed this lesson earlier
+    // -------------------------------------------------------------
     const alreadyCompleted = await hasCompletedContent(
       userId,
       lessonId,
@@ -64,6 +74,7 @@ export async function POST(
     );
 
     if (alreadyCompleted) {
+      // The user does not earn XP again
       return NextResponse.json({
         success: true,
         alreadyCompleted: true,
@@ -72,15 +83,19 @@ export async function POST(
       });
     }
 
-    // 4) Determinar XP a atribuir
+    // -------------------------------------------------------------
+    // 4. Determine XP to award to the READER
+    // -------------------------------------------------------------
     const xpToAward =
       typeof xpFromClient === 'number' && xpFromClient > 0
         ? xpFromClient
         : typeof lesson.xp_reward === 'number'
-          ? lesson.xp_reward
-          : 0;
+        ? lesson.xp_reward
+        : 0;
 
-    // 5) Marcar lição como completa
+    // -------------------------------------------------------------
+    // 5. Mark lesson as completed for the USER
+    // -------------------------------------------------------------
     const markResult = await markContentComplete(
       userId,
       lessonId,
@@ -89,19 +104,17 @@ export async function POST(
     );
 
     if (!markResult.success) {
-      console.error(
-        'Error in markContentComplete for lesson:',
-        markResult.error,
-      );
       return NextResponse.json(
-        { success: false, error: 'Failed to mark lesson as complete' },
+        { success: false, error: 'Failed to mark completion' },
         { status: 500 },
       );
     }
 
+    // -------------------------------------------------------------
+    // 6. Award XP to the READER
+    // -------------------------------------------------------------
     let newTotal: number | undefined = undefined;
 
-    // 6) Atribuir XP (se > 0)
     if (xpToAward > 0) {
       const xpResult = await awardXP(
         userId,
@@ -112,19 +125,36 @@ export async function POST(
       );
 
       if (!xpResult.success) {
-        console.error('Error in awardXP for lesson:', xpResult.error);
         return NextResponse.json(
-          { success: false, error: 'Failed to award XP' },
+          { success: false, error: 'Failed to award XP to reader' },
           { status: 500 },
         );
       }
 
       newTotal = xpResult.newTotal;
-
-      // Atualizar streak diário (não é crítico se falhar)
       await updateStreak(userId);
     }
 
+    // -------------------------------------------------------------
+    // 7. Pay AUTHOR BONUS → 19% of reader XP (only first read)
+    // -------------------------------------------------------------
+    if (lessonAuthorId && xpToAward > 0) {
+      const bonus = Math.floor(xpToAward * 0.19);
+
+      if (bonus > 0 && lessonAuthorId !== userId) {
+        await awardXP(
+          lessonAuthorId,
+          'author_bonus',
+          bonus,
+          lessonId,
+          'lesson_author_bonus',
+        );
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 8. Return final response
+    // -------------------------------------------------------------
     return NextResponse.json({
       success: true,
       alreadyCompleted: false,
