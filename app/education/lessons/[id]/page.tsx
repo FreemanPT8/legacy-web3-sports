@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ContentTracker } from '@/components/ContentTracker';
@@ -19,19 +20,12 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   ArrowRight,
-  CheckCircle,
-  Clock,
   Award,
   BookOpen,
-  User,
+  CheckCircle,
+  Clock,
+  PenSquare,
 } from 'lucide-react';
-import Link from 'next/link';
-
-interface LessonStats {
-  totalCompletions: number;
-  totalXpDistributed: number;
-  uniqueReaders: number;
-}
 
 interface Lesson {
   id: string;
@@ -44,11 +38,10 @@ interface Lesson {
   module_id: string;
   author_id?: string | null;
   author_name?: string | null;
-  created_at?: string;
-  stats?: LessonStats;
+  created_at?: string | null;
 }
 
-interface Module {
+interface ModuleWithLessons {
   id: string;
   title: any;
   course_id: string;
@@ -56,91 +49,116 @@ interface Module {
   author_id?: string | null;
 }
 
+interface LessonStats {
+  completedCount: number;
+  totalXpDistributed: number;
+}
+
+interface LessonApiResponse {
+  success: boolean;
+  lesson: Lesson;
+  module: ModuleWithLessons;
+  isCompleted: boolean;
+  isCreator: boolean;
+  stats?: LessonStats;
+}
+
 export default function LessonPage() {
   const params = useParams();
-  const router = useRouter();
   const { user, getToken } = useAuth();
   const { language } = useLanguage();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [module, setModule] = useState<Module | null>(null);
+  const [module, setModule] = useState<ModuleWithLessons | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  const [stats, setStats] = useState<LessonStats | null>(null);
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
-  const [isCreator, setIsCreator] = useState(false);
 
   useEffect(() => {
     const fetchLesson = async () => {
       setLoading(true);
       try {
         const token = getToken();
-        const response = await fetch(`/api/lessons/${params.id}`, {
+        const res = await fetch(`/api/lessons/${params.id}`, {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
-        const data = await response.json();
+        const data: LessonApiResponse = await res.json();
 
-        if (data.success) {
-          const fetchedLesson: Lesson = data.lesson;
-          const fetchedModule: Module = data.module;
-
-          setLesson(fetchedLesson);
-          setModule(fetchedModule);
-          setIsCompleted(data.isCompleted || false);
-
-          const computedCreator =
-            !!user && !!fetchedLesson.author_id
-              ? fetchedLesson.author_id === user.id
-              : false;
-
-          setIsCreator(data.isCreator || computedCreator);
-
-          if (
-            fetchedModule?.lessons &&
-            Array.isArray(fetchedModule.lessons)
-          ) {
-            const lessons: Lesson[] = fetchedModule.lessons
-              .slice()
-              .sort(
-                (a: Lesson, b: Lesson) =>
-                  (a.order || 0) - (b.order || 0),
-              );
-
-            const currentIndex = lessons.findIndex(
-              (l: Lesson) => l.id === params.id,
-            );
-
-            if (currentIndex > 0) {
-              setPrevLesson(lessons[currentIndex - 1]);
-            } else {
-              setPrevLesson(null);
-            }
-
-            if (currentIndex < lessons.length - 1) {
-              setNextLesson(lessons[currentIndex + 1]);
-            } else {
-              setNextLesson(null);
-            }
-          }
-        } else {
+        if (!res.ok || !data.success) {
           setLesson(null);
           setModule(null);
+          setIsCompleted(false);
+          setIsCreator(false);
+          setStats(null);
+          setNextLesson(null);
+          setPrevLesson(null);
+          return;
+        }
+
+        const fetchedLesson = data.lesson;
+        const fetchedModule = data.module;
+
+        setLesson(fetchedLesson);
+        setModule(fetchedModule);
+
+        // Se for criador, NUNCA marcamos como completed no frontend
+        const creatorFlag = !!data.isCreator;
+        setIsCreator(creatorFlag);
+        setIsCompleted(creatorFlag ? false : !!data.isCompleted);
+
+        if (data.stats) {
+          setStats(data.stats);
+        } else {
+          setStats(null);
+        }
+
+        // Calcular prev / next dentro do módulo
+        if (fetchedModule?.lessons && Array.isArray(fetchedModule.lessons)) {
+          const orderedLessons = [...fetchedModule.lessons].sort(
+            (a, b) => (a.order || 0) - (b.order || 0),
+          );
+
+          const currentIndex = orderedLessons.findIndex(
+            (l) => l.id === fetchedLesson.id,
+          );
+
+          if (currentIndex > 0) {
+            setPrevLesson(orderedLessons[currentIndex - 1]);
+          } else {
+            setPrevLesson(null);
+          }
+          if (currentIndex >= 0 && currentIndex < orderedLessons.length - 1) {
+            setNextLesson(orderedLessons[currentIndex + 1]);
+          } else {
+            setNextLesson(null);
+          }
+        } else {
+          setNextLesson(null);
+          setPrevLesson(null);
         }
       } catch (error) {
         console.error('Failed to fetch lesson:', error);
         setLesson(null);
         setModule(null);
+        setIsCompleted(false);
+        setIsCreator(false);
+        setStats(null);
+        setNextLesson(null);
+        setPrevLesson(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchLesson();
-  }, [params.id, user, getToken]);
+  }, [params.id, getToken]);
 
   if (loading) {
     return (
@@ -148,7 +166,7 @@ export default function LessonPage() {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-300">
               Loading lesson...
             </p>
@@ -185,19 +203,20 @@ export default function LessonPage() {
   }
 
   const title = getMultilingualContent(lesson.title, language);
-  const description = getMultilingualContent(
-    lesson.description,
-    language,
-  );
+  const description = getMultilingualContent(lesson.description, language);
   const content = getMultilingualContent(lesson.content, language);
   const moduleTitle = getMultilingualContent(module.title, language);
 
   const durationMinutes = lesson.estimated_time ?? 10;
+  const creatorName =
+    lesson.author_name ||
+    (lesson.author_id ? 'Creator' : 'Admin');
+  const createdAtStr = lesson.created_at
+    ? new Date(lesson.created_at).toLocaleDateString()
+    : '-';
 
-  const stats = lesson.stats;
-  const createdAt = lesson.created_at
-    ? new Date(lesson.created_at)
-    : null;
+  const completedCount = stats?.completedCount ?? 0;
+  const totalXpDistributed = stats?.totalXpDistributed ?? 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -216,19 +235,19 @@ export default function LessonPage() {
             </div>
 
             {/* Header da lição */}
-            <Card className="mb-6">
+            <Card className="mb-4">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
                   <Badge variant="outline">{moduleTitle}</Badge>
 
-                  {/* Creator vs Completed */}
                   {isCreator ? (
-                    <Badge className="bg-purple-600 text-white">
+                    <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                      <PenSquare className="h-3 w-3" />
                       Creator
                     </Badge>
                   ) : isCompleted ? (
-                    <Badge className="bg-green-600 text-white">
-                      <CheckCircle className="h-3 w-3 mr-1" />
+                    <Badge className="bg-green-600 text-white flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
                       Completed
                     </Badge>
                   ) : null}
@@ -250,54 +269,39 @@ export default function LessonPage() {
                     <Award className="h-4 w-4" />
                     <span>{lesson.xp_reward} XP reward</span>
                   </div>
-                  {lesson.author_name && (
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <span>
-                        Creator:{' '}
-                        <span className="font-semibold">
-                          {lesson.author_name}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                  {createdAt && (
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>
-                        Created at:{' '}
-                        {createdAt.toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                  )}
                 </div>
+              </CardContent>
+            </Card>
 
-                {stats && (
-                  <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-500">
-                    <span>
-                      Completed:{' '}
-                      <span className="font-semibold">
-                        {stats.totalCompletions}
-                      </span>{' '}
-                      time{stats.totalCompletions === 1 ? '' : 's'}
+            {/* Meta info: criador, datas e estatísticas */}
+            <Card className="mb-6">
+              <CardContent className="py-4 text-sm text-gray-700 dark:text-gray-300">
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                      Creator
                     </span>
-                    <span>
-                      XP distributed:{' '}
-                      <span className="font-semibold">
-                        {stats.totalXpDistributed} XP
-                      </span>
-                    </span>
-                    <span>
-                      Unique readers:{' '}
-                      <span className="font-semibold">
-                        {stats.uniqueReaders}
-                      </span>
-                    </span>
+                    <span className="font-semibold">{creatorName}</span>
                   </div>
-                )}
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                      Created at
+                    </span>
+                    <span>{createdAtStr}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                      Completed
+                    </span>
+                    <span>{completedCount} times</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                      XP distributed
+                    </span>
+                    <span>{totalXpDistributed} XP</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -319,7 +323,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão para não-criador */}
+            {/* Mensagem de conclusão → só para leitores, nunca para criador */}
             {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
@@ -345,10 +349,7 @@ export default function LessonPage() {
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Previous:{' '}
-                    {getMultilingualContent(
-                      prevLesson.title,
-                      language,
-                    )}
+                    {getMultilingualContent(prevLesson.title, language)}
                   </Button>
                 </Link>
               ) : (
@@ -362,10 +363,7 @@ export default function LessonPage() {
                 >
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
                     Next:{' '}
-                    {getMultilingualContent(
-                      nextLesson.title,
-                      language,
-                    )}
+                    {getMultilingualContent(nextLesson.title, language)}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>

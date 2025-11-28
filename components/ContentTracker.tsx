@@ -14,10 +14,10 @@ export interface ContentTrackerProps {
   // se não houver userId → só mostra aviso, não faz tracking nem XP
   userId?: string | null;
 
-  // para autores / casos em que não queremos tracker nem XP
+  // para desativar manualmente o tracker (casos especiais)
   disabled?: boolean;
 
-  // explicitamente: este user é o criador do conteúdo
+  // para autores / criadores de conteúdo (não ganham XP a consumir o próprio conteúdo)
   isAuthor?: boolean;
 
   children: React.ReactNode;
@@ -53,18 +53,13 @@ export function ContentTracker({
       setTimeProgress(100);
       setScrollProgress(100);
       hasAwardedRef.current = true;
-    } else {
-      // reset se deixar de estar completo
-      setTimeProgress(0);
-      setScrollProgress(0);
-      hasAwardedRef.current = false;
     }
   }, [initialCompleted]);
 
-  const noUser = !userId;
-  const isAuthorDisabled = !!userId && isAuthor;
-  const canTrack =
-    !!userId && !disabled && !completed && !isAuthorDisabled;
+  const isAuthorFlag = !!userId && !!isAuthor;
+  const trackerDisabled = !!userId && (disabled || isAuthorFlag);
+
+  const canTrack = !!userId && !trackerDisabled && !completed;
 
   // Timer baseado no tempo estimado
   useEffect(() => {
@@ -132,9 +127,7 @@ export function ContentTracker({
           : `/api/lessons/${contentId}/complete`;
 
       // Mesmo que o servidor responda "já completo", o estado local fica completed
-      let newCompleted = true;
-
-      if (xpReward > 0 || contentType === 'lesson') {
+      if (xpReward > 0) {
         await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -142,31 +135,24 @@ export function ContentTracker({
             userId,
             xpEarned: xpReward,
           }),
-        }).catch((err) => {
-          console.error('Failed to call content complete endpoint:', err);
-          // se falhar, não marcamos como completed localmente
-          newCompleted = false;
         });
       }
 
-      if (newCompleted) {
-        setCompleted(true);
-        setTimeProgress(100);
-        setScrollProgress(100);
+      setCompleted(true);
+      setTimeProgress(100);
+      setScrollProgress(100);
 
-        if (onComplete) onComplete();
-      } else {
-        hasAwardedRef.current = false;
-      }
+      if (onComplete) onComplete();
     } catch (error) {
       console.error('Failed to complete content:', error);
-      hasAwardedRef.current = false;
     } finally {
       setIsAwarding(false);
     }
   }
 
   // --- RENDER ---
+
+  const noUser = !userId;
 
   let banner;
   if (noUser) {
@@ -185,7 +171,7 @@ export function ContentTracker({
         </div>
       </div>
     );
-  } else if (isAuthorDisabled) {
+  } else if (isAuthorFlag) {
     // autor do conteúdo
     banner = (
       <div className="border border-dashed border-amber-300 bg-amber-50 text-amber-900 rounded-lg p-4 text-sm flex items-start gap-3">
@@ -221,10 +207,8 @@ export function ContentTracker({
     );
   } else {
     // em progresso normal
-    const overall =
-      timeProgress * 0.5 + scrollProgress * 0.5 > 100
-        ? 100
-        : timeProgress * 0.5 + scrollProgress * 0.5;
+    const overallRaw = timeProgress * 0.5 + scrollProgress * 0.5;
+    const overall = overallRaw > 100 ? 100 : overallRaw;
 
     banner = (
       <div className="border border-blue-200 bg-blue-50 text-blue-900 rounded-lg p-4 text-sm space-y-3">
@@ -238,7 +222,8 @@ export function ContentTracker({
           <div className="flex items-center gap-2 text-xs text-blue-800">
             <Clock className="h-4 w-4" />
             <span>
-              ~{estimatedMinutes} min · {Math.round(overall)}% concluído
+              ~{estimatedMinutes} min ·{' '}
+              {Math.round(overall)}% concluído
             </span>
           </div>
         </div>
