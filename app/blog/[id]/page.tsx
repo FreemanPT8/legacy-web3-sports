@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   Calendar,
@@ -19,6 +20,7 @@ import {
   Lock,
   CheckCircle,
   Clock,
+  PenSquare,
 } from 'lucide-react';
 import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,10 +40,11 @@ type BlogPost = {
   registered_views?: number | null;
   registered_readers_count?: number | null;
   total_xp_given?: number | null;
+  registered_readers?: number | null;
+  total_xp_distributed?: number | null;
   registered_only?: boolean | null;
   xp_reward?: number | null;
   reading_time?: number | null;
-  is_completed?: boolean | null;
 };
 
 export default function BlogPostPage() {
@@ -77,8 +80,8 @@ export default function BlogPostPage() {
         } else {
           setPost(data.post);
           setNotFound(false);
-          // backend pode enviar is_completed dentro do post
-          setIsCompleted(!!data.post.is_completed);
+          // flag de completado vem do backend
+          setIsCompleted(!!data.isCompleted);
         }
       } catch (error) {
         console.error('Error loading public blog post:', error);
@@ -113,7 +116,7 @@ export default function BlogPostPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
             <p className="mt-4 text-gray-600 dark:text-gray-300">
-              Loading post...
+              A carregar artigo...
             </p>
           </div>
         </main>
@@ -129,18 +132,17 @@ export default function BlogPostPage() {
         <main className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
           <div className="text-center px-4">
             <h1 className="text-2xl font-bold mb-2">
-              Post not found
+              Artigo não encontrado
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              The blog post you are looking for does not exist or is not
-              published.
+              O artigo que procuras não existe ou não está publicado.
             </p>
             <button
               onClick={() => router.push('/blog')}
               className="inline-flex items-center gap-2 text-blue-600 hover:underline"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to blog
+              Voltar ao blog
             </button>
           </div>
         </main>
@@ -155,11 +157,8 @@ export default function BlogPostPage() {
   const estimatedMinutes =
     typeof post.reading_time === 'number' ? post.reading_time : 5;
 
-  const isAuthorUser =
+  const isAuthor =
     !!user && !!post.author_id && post.author_id === user.id;
-
-  // Para o autor, nunca mostramos “Completed”
-  const effectiveCompleted = !isAuthorUser && isCompleted;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -173,7 +172,7 @@ export default function BlogPostPage() {
               className="mb-4 inline-flex items-center text-sm text-gray-600 dark:text-gray-300 hover:underline"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to blog
+              Voltar ao blog
             </button>
 
             <Card className="mb-6">
@@ -183,17 +182,25 @@ export default function BlogPostPage() {
                     <Badge variant="outline">
                       {post.category || 'General'}
                     </Badge>
-                    {effectiveCompleted && (
-                      <Badge className="bg-green-600 text-white flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Completed
+
+                    {isAuthor ? (
+                      <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                        <PenSquare className="h-3 w-3" />
+                        Creator
                       </Badge>
+                    ) : (
+                      isCompleted && (
+                        <Badge className="bg-green-600 text-white flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Completed
+                        </Badge>
+                      )
                     )}
                   </div>
                   {post.registered_only && (
                     <span className="flex items-center gap-1 text-xs text-amber-600">
                       <Lock className="h-3 w-3" />
-                      Members only
+                      Apenas membros registados
                     </span>
                   )}
                 </div>
@@ -228,14 +235,14 @@ export default function BlogPostPage() {
               <CardContent>
                 <div className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md">
                   <ContentTracker
+                    userId={user?.id ?? null}
                     contentId={post.id}
                     contentType="blog"
                     xpReward={xpReward}
                     estimatedMinutes={estimatedMinutes}
-                    initialCompleted={effectiveCompleted}
+                    initialCompleted={isCompleted && !isAuthor}
+                    disabled={isAuthor}
                     onComplete={() => setIsCompleted(true)}
-                    userId={user?.id ?? null}
-                    disabled={isAuthorUser}
                   >
                     <div
                       dangerouslySetInnerHTML={{

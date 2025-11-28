@@ -23,6 +23,7 @@ import {
   Clock,
   Award,
   BookOpen,
+  PenSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -81,10 +82,7 @@ export default function LessonPage() {
           setModule(fetchedModule);
           setIsCompleted(data.isCompleted || false);
 
-          // detectar se o user é o criador desta lição
-          if (typeof data.isCreator === 'boolean') {
-            setIsCreator(data.isCreator);
-          } else if (user && fetchedLesson.author_id) {
+          if (user && fetchedLesson.author_id) {
             setIsCreator(fetchedLesson.author_id === user.id);
           } else {
             setIsCreator(false);
@@ -129,7 +127,7 @@ export default function LessonPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-300">
-              Loading lesson...
+              A carregar lição...
             </p>
           </div>
         </main>
@@ -181,7 +179,7 @@ export default function LessonPage() {
               <Link href={`/education/courses/${module.course_id}`}>
                 <Button variant="ghost" className="mb-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Course
+                  Voltar ao Curso
                 </Button>
               </Link>
             </div>
@@ -192,13 +190,13 @@ export default function LessonPage() {
                 <div className="flex items-center justify-between mb-3">
                   <Badge variant="outline">{moduleTitle}</Badge>
 
-                  {/* Creator vs Completed */}
                   {isCreator ? (
-                    <Badge className="bg-purple-600 text-white">
+                    <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                      <PenSquare className="h-3 w-3" />
                       Creator
                     </Badge>
                   ) : isCompleted ? (
-                    <Badge className="bg-green-600 text-white">
+                    <Badge className="bg-green-600">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Completed
                     </Badge>
@@ -234,7 +232,7 @@ export default function LessonPage() {
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
-                  initialCompleted={isCompleted}
+                  initialCompleted={isCompleted && !isCreator}
                   disabled={isCreator}
                   onComplete={() => setIsCompleted(true)}
                 >
@@ -243,7 +241,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão (apenas para consumidores, não criador) */}
+            {/* Mensagem de conclusão para consumidores (não para criador) */}
             {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
