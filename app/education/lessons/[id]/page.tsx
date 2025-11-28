@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ContentTracker } from '@/components/ContentTracker';
@@ -23,9 +23,15 @@ import {
   Clock,
   Award,
   BookOpen,
-  PenSquare,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
+
+interface LessonStats {
+  totalCompletions: number;
+  totalXpDistributed: number;
+  uniqueReaders: number;
+}
 
 interface Lesson {
   id: string;
@@ -37,6 +43,9 @@ interface Lesson {
   order: number;
   module_id: string;
   author_id?: string | null;
+  author_name?: string | null;
+  created_at?: string;
+  stats?: LessonStats;
 }
 
 interface Module {
@@ -49,6 +58,7 @@ interface Module {
 
 export default function LessonPage() {
   const params = useParams();
+  const router = useRouter();
   const { user, getToken } = useAuth();
   const { language } = useLanguage();
 
@@ -81,7 +91,13 @@ export default function LessonPage() {
           setLesson(fetchedLesson);
           setModule(fetchedModule);
           setIsCompleted(data.isCompleted || false);
-          setIsCreator(!!data.isAuthor);
+
+          const computedCreator =
+            !!user && !!fetchedLesson.author_id
+              ? fetchedLesson.author_id === user.id
+              : false;
+
+          setIsCreator(data.isCreator || computedCreator);
 
           if (
             fetchedModule?.lessons &&
@@ -90,7 +106,8 @@ export default function LessonPage() {
             const lessons: Lesson[] = fetchedModule.lessons
               .slice()
               .sort(
-                (a: Lesson, b: Lesson) => (a.order || 0) - (b.order || 0),
+                (a: Lesson, b: Lesson) =>
+                  (a.order || 0) - (b.order || 0),
               );
 
             const currentIndex = lessons.findIndex(
@@ -99,21 +116,31 @@ export default function LessonPage() {
 
             if (currentIndex > 0) {
               setPrevLesson(lessons[currentIndex - 1]);
+            } else {
+              setPrevLesson(null);
             }
+
             if (currentIndex < lessons.length - 1) {
               setNextLesson(lessons[currentIndex + 1]);
+            } else {
+              setNextLesson(null);
             }
           }
+        } else {
+          setLesson(null);
+          setModule(null);
         }
       } catch (error) {
         console.error('Failed to fetch lesson:', error);
+        setLesson(null);
+        setModule(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchLesson();
-  }, [params.id, getToken]);
+  }, [params.id, user, getToken]);
 
   if (loading) {
     return (
@@ -158,11 +185,19 @@ export default function LessonPage() {
   }
 
   const title = getMultilingualContent(lesson.title, language);
-  const description = getMultilingualContent(lesson.description, language);
+  const description = getMultilingualContent(
+    lesson.description,
+    language,
+  );
   const content = getMultilingualContent(lesson.content, language);
   const moduleTitle = getMultilingualContent(module.title, language);
 
   const durationMinutes = lesson.estimated_time ?? 10;
+
+  const stats = lesson.stats;
+  const createdAt = lesson.created_at
+    ? new Date(lesson.created_at)
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -188,13 +223,12 @@ export default function LessonPage() {
 
                   {/* Creator vs Completed */}
                   {isCreator ? (
-                    <Badge className="bg-purple-600 text-white flex items-center gap-1">
-                      <PenSquare className="h-3 w-3" />
+                    <Badge className="bg-purple-600 text-white">
                       Creator
                     </Badge>
                   ) : isCompleted ? (
-                    <Badge className="bg-green-600 text-white flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3" />
+                    <Badge className="bg-green-600 text-white">
+                      <CheckCircle className="h-3 w-3 mr-1" />
                       Completed
                     </Badge>
                   ) : null}
@@ -207,7 +241,7 @@ export default function LessonPage() {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     <span>{durationMinutes} minutes</span>
@@ -216,7 +250,54 @@ export default function LessonPage() {
                     <Award className="h-4 w-4" />
                     <span>{lesson.xp_reward} XP reward</span>
                   </div>
+                  {lesson.author_name && (
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span>
+                        Creator:{' '}
+                        <span className="font-semibold">
+                          {lesson.author_name}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {createdAt && (
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span>
+                        Created at:{' '}
+                        {createdAt.toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {stats && (
+                  <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-500">
+                    <span>
+                      Completed:{' '}
+                      <span className="font-semibold">
+                        {stats.totalCompletions}
+                      </span>{' '}
+                      time{stats.totalCompletions === 1 ? '' : 's'}
+                    </span>
+                    <span>
+                      XP distributed:{' '}
+                      <span className="font-semibold">
+                        {stats.totalXpDistributed} XP
+                      </span>
+                    </span>
+                    <span>
+                      Unique readers:{' '}
+                      <span className="font-semibold">
+                        {stats.uniqueReaders}
+                      </span>
+                    </span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -229,8 +310,8 @@ export default function LessonPage() {
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
-                  disabled={isCreator}
-                  initialCompleted={isCreator ? false : isCompleted}
+                  initialCompleted={isCompleted}
+                  isAuthor={isCreator}
                   onComplete={() => setIsCompleted(true)}
                 >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
@@ -238,7 +319,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão — só para alunos, nunca para criador */}
+            {/* Mensagem de conclusão para não-criador */}
             {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
@@ -263,8 +344,11 @@ export default function LessonPage() {
                 >
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Previous{' '}
-                    {getMultilingualContent(prevLesson.title, language)}
+                    Previous:{' '}
+                    {getMultilingualContent(
+                      prevLesson.title,
+                      language,
+                    )}
                   </Button>
                 </Link>
               ) : (
@@ -277,8 +361,11 @@ export default function LessonPage() {
                   className="flex-1"
                 >
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Next{' '}
-                    {getMultilingualContent(nextLesson.title, language)}
+                    Next:{' '}
+                    {getMultilingualContent(
+                      nextLesson.title,
+                      language,
+                    )}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>

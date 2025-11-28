@@ -1,145 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 import {
-  awardXP,
   hasCompletedContent,
   markContentComplete,
+  awardXP,
+  updateStreak,
 } from '@/lib/xp';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
-
-const db = supabaseAdmin ?? supabase;
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
   try {
+    const lessonId = params.id;
     const body = await request.json();
-    const { userId, xpEarned } = body;
 
-    if (!userId || typeof xpEarned !== 'number') {
+    const userId = body?.userId as string | undefined;
+    const xpFromClient = body?.xpEarned as number | undefined;
+
+    if (!userId || !lessonId) {
       return NextResponse.json(
-        { success: false, error: 'Missing userId or xpEarned' },
+        { success: false, error: 'Missing userId or lessonId' },
         { status: 400 },
       );
     }
 
-    const lessonId = params.id;
+    // 1) Buscar lição para saber autor e xp_reward
+    const { data: lesson, error: lessonError } = await supabase
+      .from('lessons')
+      .select('id, author_id, xp_reward')
+      .eq('id', lessonId)
+      .single();
 
-    // 0) Descobrir quem é o autor da lição
-    let isAuthor = false;
-    let authorId: string | null = null;
-
-    try {
-      const { data: lessonRow, error: lessonError } = await db
-        .from('lessons')
-        .select('id, author_id')
-        .eq('id', lessonId)
-        .maybeSingle();
-
-      if (!lessonError && lessonRow) {
-        authorId = lessonRow.author_id ?? null;
-        if (authorId && authorId === userId) {
-          isAuthor = true;
-        }
-      } else if (lessonError) {
-        console.error('Error fetching lesson for creator bonus:', lessonError);
-      }
-    } catch (e) {
-      console.error('Fatal error loading lesson author:', e);
+    if (lessonError || !lesson) {
+      console.error(
+        'Lesson not found in POST /api/lessons/[id]/complete:',
+        lessonError,
+      );
+      return NextResponse.json(
+        { success: false, error: 'Lesson not found' },
+        { status: 404 },
+      );
     }
 
-    // ✅ Se for o autor da lição:
-    // - não regista completion,
-    // - não atribui XP ao próprio,
-    // - apenas devolve sucesso (o consumo do próprio conteúdo não gera XP).
-    if (isAuthor) {
+    const isCreator = lesson.author_id === userId;
+
+    // 2) Se for criador: não marcamos complete nem damos XP
+    if (isCreator) {
       return NextResponse.json({
         success: true,
-        isAuthor: true,
+        isCreator: true,
         alreadyCompleted: false,
+        xpEarned: 0,
+        newTotal: undefined,
       });
     }
 
-    // 1) Já completa por este utilizador?
-    const already = await hasCompletedContent(userId, lessonId, 'lesson');
-    if (already) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Lesson already completed',
-          alreadyCompleted: true,
-        },
-        { status: 409 },
-      );
-    }
-
-    // 2) Registar em lesson_completions (para este leitor)
-    const completeResult = await markContentComplete(
+    // 3) Verificar se já está completo para este utilizador
+    const alreadyCompleted = await hasCompletedContent(
       userId,
-      lessonId,
-      'lesson',
-      xpEarned,
-    );
-
-    if (!completeResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            completeResult.error || 'Failed to mark lesson complete',
-        },
-        { status: 500 },
-      );
-    }
-
-    // 3) Atribuir XP ao utilizador que completou a lição
-    const xpResult = await awardXP(
-      userId,
-      'Complete lesson',
-      xpEarned,
       lessonId,
       'lesson',
     );
 
-    if (!xpResult.success) {
+    if (alreadyCompleted) {
+      return NextResponse.json({
+        success: true,
+        alreadyCompleted: true,
+        xpEarned: 0,
+        newTotal: undefined,
+      });
+    }
+
+    // 4) Determinar XP a atribuir
+    const xpToAward =
+      typeof xpFromClient === 'number' && xpFromClient > 0
+        ? xpFromClient
+        : typeof lesson.xp_reward === 'number'
+          ? lesson.xp_reward
+          : 0;
+
+    // 5) Marcar lição como completa
+    const markResult = await markContentComplete(
+      userId,
+      lessonId,
+      'lesson',
+      xpToAward,
+    );
+
+    if (!markResult.success) {
+      console.error(
+        'Error in markContentComplete for lesson:',
+        markResult.error,
+      );
       return NextResponse.json(
-        {
-          success: false,
-          error: xpResult.error || 'Failed to award XP for lesson',
-        },
+        { success: false, error: 'Failed to mark lesson as complete' },
         { status: 500 },
       );
     }
 
-    // 4) Bónus de criador (19%) para o autor da lição, se existir e for diferente do leitor
-    try {
-      if (authorId && authorId !== userId) {
-        const creatorBonus = Math.floor(xpEarned * 0.19);
-        if (creatorBonus > 0) {
-          const creatorResult = await awardXP(
-            authorId,
-            'Creator bonus: lesson completed',
-            creatorBonus,
-            lessonId,
-            'lesson_creator',
-          );
+    let newTotal: number | undefined = undefined;
 
-          if (!creatorResult.success) {
-            console.error(
-              'Failed to award creator bonus for lesson:',
-              creatorResult.error,
-            );
-          }
-        }
+    // 6) Atribuir XP (se > 0)
+    if (xpToAward > 0) {
+      const xpResult = await awardXP(
+        userId,
+        'lesson_complete',
+        xpToAward,
+        lessonId,
+        'lesson',
+      );
+
+      if (!xpResult.success) {
+        console.error('Error in awardXP for lesson:', xpResult.error);
+        return NextResponse.json(
+          { success: false, error: 'Failed to award XP' },
+          { status: 500 },
+        );
       }
-    } catch (e) {
-      console.error('Fatal error awarding creator bonus (lesson):', e);
+
+      newTotal = xpResult.newTotal;
+
+      // Atualizar streak diário (não é crítico se falhar)
+      await updateStreak(userId);
     }
 
     return NextResponse.json({
       success: true,
-      newTotal: xpResult.newTotal,
-      isAuthor: false,
+      alreadyCompleted: false,
+      xpEarned: xpToAward,
+      newTotal,
     });
   } catch (error) {
     console.error('Error in POST /api/lessons/[id]/complete:', error);
