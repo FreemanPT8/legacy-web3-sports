@@ -23,6 +23,7 @@ import {
   Lock,
   ArrowRight,
   CheckCircle,
+  PenSquare,
 } from 'lucide-react';
 
 type Lesson = {
@@ -43,6 +44,7 @@ type Course = {
   xp_threshold: number;
   image_url?: string | null;
   modules?: Module[];
+  author_id?: string | null; // ✅ para badge Creator
 };
 
 export default function CoursesPage() {
@@ -54,6 +56,13 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
 
   const userXP = user?.xp_total || 0;
+
+  // ✅ helper para evitar textos tipo "courses.xxx"
+  const tr = (key: string, fallback: string) => {
+    const v = t(key);
+    if (!v || v === key) return fallback;
+    return v;
+  };
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -83,23 +92,27 @@ export default function CoursesPage() {
       case 'beginner':
         return (
           <Badge className="bg-green-600">
-            {t('education.level.beginner') || 'Beginner'}
+            {tr('education.level.beginner', 'Principiante')}
           </Badge>
         );
       case 'intermediate':
         return (
           <Badge className="bg-yellow-600">
-            {t('education.level.intermediate') || 'Intermediate'}
+            {tr('education.level.intermediate', 'Intermédio')}
           </Badge>
         );
       case 'advanced':
         return (
           <Badge className="bg-red-600">
-            {t('education.level.advanced') || 'Advanced'}
+            {tr('education.level.advanced', 'Avançado')}
           </Badge>
         );
       default:
-        return <Badge>{t('education.level.unknown') || 'All levels'}</Badge>;
+        return (
+          <Badge>
+            {tr('education.level.unknown', 'Todos os níveis')}
+          </Badge>
+        );
     }
   };
 
@@ -111,7 +124,7 @@ export default function CoursesPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-300">
-              {t('courses.loading') || 'Loading courses...'}
+              {tr('courses.loading', 'A carregar cursos...')}
             </p>
           </div>
         </main>
@@ -130,23 +143,30 @@ export default function CoursesPage() {
             <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  {t('courses.mainTitle') || t('courses.title') || 'Courses'}
+                  {tr(
+                    'courses.mainTitle',
+                    tr('courses.title', 'Cursos de Educação Web3'),
+                  )}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
-                  {t('courses.mainSubtitle') ||
-                    t('courses.subtitle') ||
-                    'Unlock structured learning paths about Web3, blockchain and the Apertum ecosystem. Earn XP as you progress.'}
+                  {tr(
+                    'courses.mainSubtitle',
+                    tr(
+                      'courses.subtitle',
+                      'Cursos completos sobre tecnologia blockchain, rede Apertum e Web3 no desporto.',
+                    ),
+                  )}
                 </p>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 {user ? (
                   <>
                     <span className="text-gray-600 dark:text-gray-300">
-                      {t('courses.yourXP') || 'Your XP'}:{' '}
+                      {tr('courses.yourXP', 'O teu XP')}:{' '}
                       <strong>{userXP}</strong>
                     </span>
                     <Badge variant="outline">
-                      {t('courses.loggedIn') || 'Signed in'}
+                      {tr('courses.loggedIn', 'Sessão iniciada')}
                     </Badge>
                   </>
                 ) : (
@@ -154,7 +174,7 @@ export default function CoursesPage() {
                     onClick={() => router.push('/login')}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {t('auth.login') || 'Login to earn XP'}
+                    {tr('auth.login', 'Entra para ganhar XP')}
                   </Button>
                 )}
               </div>
@@ -163,8 +183,10 @@ export default function CoursesPage() {
             {courses.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center text-gray-500">
-                  {t('courses.noCourses') ||
-                    'No courses available yet. Check back soon!'}
+                  {tr(
+                    'courses.noCourses',
+                    'Ainda não há cursos disponíveis. Volta em breve!',
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -203,6 +225,10 @@ export default function CoursesPage() {
 
                   const xpRequired = course.xp_threshold ?? 0;
                   const isLocked = userXP < xpRequired;
+                  const isCourseCreator =
+                    !!user &&
+                    !!course.author_id &&
+                    course.author_id === user.id;
 
                   return (
                     <Card
@@ -221,8 +247,14 @@ export default function CoursesPage() {
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start gap-3">
                           <div>
-                            <CardTitle className="text-lg line-clamp-2">
+                            <CardTitle className="text-lg line-clamp-2 flex items-center gap-2">
                               {title}
+                              {isCourseCreator && (
+                                <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                                  <PenSquare className="h-3 w-3" />
+                                  Creator
+                                </Badge>
+                              )}
                             </CardTitle>
                             {description && (
                               <CardDescription className="mt-1 line-clamp-3">
@@ -246,21 +278,21 @@ export default function CoursesPage() {
                             <BookOpen className="h-4 w-4 text-blue-600" />
                             <span>
                               {totalModules}{' '}
-                              {t('courses.modules') || 'modules'}
+                              {tr('courses.modules', 'módulos')}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <BookOpen className="h-4 w-4 text-blue-600" />
                             <span>
                               {totalLessons}{' '}
-                              {t('courses.lessons') || 'lessons'}
+                              {tr('courses.lessons', 'lições')}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Award className="h-4 w-4 text-blue-600" />
                             <span>
                               {totalXP}{' '}
-                              {t('courses.totalXP') || 'XP total'}
+                              {tr('courses.totalXP', 'XP disponível')}
                             </span>
                           </div>
                         </div>
@@ -270,7 +302,10 @@ export default function CoursesPage() {
                             <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
                               <Lock className="h-3 w-3" />
                               <span>
-                                {t('courses.unlockAt') || 'Unlock at'}{' '}
+                                {tr(
+                                  'courses.unlockAt',
+                                  'Desbloqueia ao atingir',
+                                )}{' '}
                                 <strong>{xpRequired} XP</strong>
                               </span>
                             </div>
@@ -278,8 +313,10 @@ export default function CoursesPage() {
                             <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
                               <CheckCircle className="h-3 w-3" />
                               <span>
-                                {t('courses.unlocked') ||
-                                  'You can access this course'}
+                                {tr(
+                                  'courses.unlocked',
+                                  'Curso disponível para ti',
+                                )}
                               </span>
                             </div>
                           )}
@@ -291,8 +328,10 @@ export default function CoursesPage() {
                               disabled={isLocked && !user}
                             >
                               <span className="text-xs">
-                                {t('courses.viewDetails') ||
-                                  'View course'}
+                                {tr(
+                                  'courses.viewDetails',
+                                  'Ver detalhes do curso',
+                                )}
                               </span>
                               <ArrowRight className="h-3 w-3 ml-1" />
                             </Button>

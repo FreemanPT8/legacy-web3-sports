@@ -25,6 +25,7 @@ import {
   Lock,
   CheckCircle,
   Clock,
+  PenSquare,
 } from 'lucide-react';
 
 type Lesson = {
@@ -36,7 +37,7 @@ type Lesson = {
   order?: number;
   estimated_time?: number;
   is_completed?: boolean;
-  author_id?: string | null; // ✅ criador da lição
+  author_id?: string | null;
 };
 
 type Module = {
@@ -46,7 +47,7 @@ type Module = {
   xp_threshold?: number;
   order?: number;
   lessons?: Lesson[];
-  author_id?: string | null; // ✅ criador do módulo (se existir)
+  author_id?: string | null;
 };
 
 type Course = {
@@ -57,7 +58,7 @@ type Course = {
   xp_threshold?: number;
   image_url?: string | null;
   modules?: Module[];
-  author_id?: string | null; // ✅ criador do curso
+  author_id?: string | null;
 };
 
 export default function CourseDetailPage() {
@@ -71,6 +72,13 @@ export default function CourseDetailPage() {
 
   const userXP = user?.xp_total || 0;
   const courseId = params.id as string;
+
+  // ✅ helper de tradução com fallback
+  const tr = (key: string, fallback: string) => {
+    const v = t(key);
+    if (!v || v === key) return fallback;
+    return v;
+  };
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -106,23 +114,27 @@ export default function CourseDetailPage() {
       case 'beginner':
         return (
           <Badge className="bg-green-600">
-            {t('education.level.beginner')}
+            {tr('education.level.beginner', 'Principiante')}
           </Badge>
         );
       case 'intermediate':
         return (
           <Badge className="bg-yellow-600">
-            {t('education.level.intermediate')}
+            {tr('education.level.intermediate', 'Intermédio')}
           </Badge>
         );
       case 'advanced':
         return (
           <Badge className="bg-red-600">
-            {t('education.level.advanced')}
+            {tr('education.level.advanced', 'Avançado')}
           </Badge>
         );
       default:
-        return <Badge>{t('education.level.unknown')}</Badge>;
+        return (
+          <Badge>
+            {tr('education.level.unknown', 'Todos os níveis')}
+          </Badge>
+        );
     }
   };
 
@@ -174,7 +186,7 @@ export default function CourseDetailPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-300">
-              {t('courses.loading')}
+              {tr('courses.loading', 'A carregar cursos...')}
             </p>
           </div>
         </main>
@@ -192,15 +204,17 @@ export default function CourseDetailPage() {
             <CardContent className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">
-                {t('courses.courseNotFound') || 'Course not found'}
+                {tr('courses.courseNotFound', 'Curso não encontrado')}
               </h3>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                {t('courses.courseNotFoundDesc') ||
-                  "This course doesn't exist or has been removed."}
+                {tr(
+                  'courses.courseNotFoundDesc',
+                  'Este curso não existe ou foi removido.',
+                )}
               </p>
               <Link href="/education/courses">
                 <Button className="bg-blue-600 hover:bg-blue-700">
-                  {t('courses.backToCourses') || 'Back to Courses'}
+                  {tr('courses.backToCourses', 'Voltar aos cursos')}
                 </Button>
               </Link>
             </CardContent>
@@ -212,7 +226,10 @@ export default function CourseDetailPage() {
   }
 
   const courseTitle = getMultilingualContent(course.title, language);
-  const courseDescription = getMultilingualContent(course.description, language);
+  const courseDescription = getMultilingualContent(
+    course.description,
+    language,
+  );
 
   const isCourseCreator =
     !!user && !!course.author_id && course.author_id === user.id;
@@ -228,7 +245,7 @@ export default function CourseDetailPage() {
               <Link href="/education/courses">
                 <Button variant="ghost" className="mb-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  {t('courses.backToCourses') || 'Back to Courses'}
+                  {tr('courses.backToCourses', 'Voltar aos cursos')}
                 </Button>
               </Link>
             </div>
@@ -250,7 +267,8 @@ export default function CourseDetailPage() {
                     <CardTitle className="text-3xl mb-2 flex items-center gap-3">
                       {courseTitle}
                       {isCourseCreator && (
-                        <Badge className="bg-purple-600 text-white">
+                        <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                          <PenSquare className="h-3 w-3" />
                           Creator
                         </Badge>
                       )}
@@ -263,7 +281,7 @@ export default function CourseDetailPage() {
                     {getLevelBadge(course.level)}
                     <Badge variant="outline">
                       {courseXpRequired} XP{' '}
-                      {t('courses.required') || 'required'}
+                      {tr('courses.required', 'necessário')}
                     </Badge>
                   </div>
                 </div>
@@ -274,7 +292,7 @@ export default function CourseDetailPage() {
                     <BookOpen className="h-5 w-5 text-blue-600" />
                     <div>
                       <div className="text-sm text-gray-500">
-                        {t('courses.modules') || 'Modules'}
+                        {tr('courses.modules', 'Módulos')}
                       </div>
                       <div className="font-semibold">
                         {modulesArray.length}
@@ -285,7 +303,7 @@ export default function CourseDetailPage() {
                     <Award className="h-5 w-5 text-blue-600" />
                     <div>
                       <div className="text-sm text-gray-500">
-                        {t('courses.lessons') || 'Lessons'}
+                        {tr('courses.lessons', 'Lições')}
                       </div>
                       <div className="font-semibold">{totalLessons}</div>
                     </div>
@@ -294,7 +312,7 @@ export default function CourseDetailPage() {
                     <Award className="h-5 w-5 text-blue-600" />
                     <div>
                       <div className="text-sm text-gray-500">
-                        {t('courses.xpAvailable') || 'XP available'}
+                        {tr('courses.xpAvailable', 'XP disponível')}
                       </div>
                       <div className="font-semibold">{totalXP} XP</div>
                     </div>
@@ -303,7 +321,7 @@ export default function CourseDetailPage() {
                     <CheckCircle className="h-5 w-5 text-blue-600" />
                     <div className="w-full">
                       <div className="flex justify-between text-sm text-gray-500 mb-1">
-                        <span>{t('courses.progress') || 'Progress'}</span>
+                        <span>{tr('courses.progress', 'Progresso')}</span>
                         <span>
                           {completedLessons}/{totalLessons}
                         </span>
@@ -317,9 +335,9 @@ export default function CourseDetailPage() {
                   <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm flex items-center gap-2">
                     <Lock className="h-4 w-4 text-amber-600" />
                     <span>
-                      {t('courses.unlockAt') || 'Unlock at'}{' '}
+                      {tr('courses.unlockAt', 'Desbloqueia ao atingir')}{' '}
                       <strong>{courseXpRequired} XP</strong>.{' '}
-                      {t('courses.yourXP') || 'Your XP'}:{' '}
+                      {tr('courses.yourXP', 'O teu XP')}:{' '}
                       <strong>{userXP}</strong>
                     </span>
                   </div>
@@ -333,19 +351,23 @@ export default function CourseDetailPage() {
                 <CardContent className="py-4 flex flex-col md:flex-row gap-3 md:items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-blue-900 mb-1">
-                      {t('courses.loginRequiredTitle') ||
-                        'Sign in to start learning'}
+                      {tr(
+                        'courses.loginRequiredTitle',
+                        'Entra para começares a aprender',
+                      )}
                     </h3>
                     <p className="text-sm text-blue-800">
-                      {t('courses.loginRequiredDesc') ||
-                        'Create a free account or sign in to unlock lessons and earn XP.'}
+                      {tr(
+                        'courses.loginRequiredDesc',
+                        'Cria uma conta gratuita ou inicia sessão para desbloquear lições e ganhar XP.',
+                      )}
                     </p>
                   </div>
                   <Button
                     className="bg-blue-600 hover:bg-blue-700"
                     onClick={() => router.push('/login')}
                   >
-                    {t('auth.login') || 'Login'}
+                    {tr('auth.login', 'Entrar')}
                   </Button>
                 </CardContent>
               </Card>
@@ -355,8 +377,10 @@ export default function CourseDetailPage() {
             {modulesArray.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-gray-500">
-                  {t('courses.noModules') ||
-                    'This course has no modules yet.'}
+                  {tr(
+                    'courses.noModules',
+                    'Este curso ainda não tem módulos.',
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -398,7 +422,8 @@ export default function CourseDetailPage() {
                             <CardTitle className="text-xl flex items-center gap-2">
                               {moduleIndex + 1}. {moduleTitle}
                               {isModuleCreator && (
-                                <Badge className="bg-purple-600 text-white">
+                                <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                                  <PenSquare className="h-3 w-3" />
                                   Creator
                                 </Badge>
                               )}
@@ -418,12 +443,12 @@ export default function CourseDetailPage() {
                             {userXP < moduleRequiredXP ? (
                               <span className="text-xs text-gray-500 flex items-center gap-1">
                                 <Lock className="h-3 w-3" />
-                                {t('courses.locked') || 'Locked'}
+                                {tr('courses.locked', 'Bloqueado')}
                               </span>
                             ) : (
                               <span className="text-xs text-green-600 flex items-center gap-1">
                                 <CheckCircle className="h-3 w-3" />
-                                {t('courses.availableNow') || 'Available'}
+                                {tr('courses.availableNow', 'Disponível agora')}
                               </span>
                             )}
                           </div>
@@ -432,8 +457,10 @@ export default function CourseDetailPage() {
                       <CardContent>
                         {moduleLessons.length === 0 ? (
                           <p className="text-sm text-gray-500">
-                            {t('courses.noLessons') ||
-                              'No lessons in this module yet.'}
+                            {tr(
+                              'courses.noLessons',
+                              'Ainda não há lições neste módulo.',
+                            )}
                           </p>
                         ) : (
                           <div className="space-y-2">
@@ -504,7 +531,8 @@ export default function CourseDetailPage() {
                                       <div className="font-medium flex items-center gap-2">
                                         {lessonTitle}
                                         {isLessonCreator && (
-                                          <Badge className="bg-purple-600 text-white">
+                                          <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                                            <PenSquare className="h-3 w-3" />
                                             Creator
                                           </Badge>
                                         )}
@@ -530,16 +558,23 @@ export default function CourseDetailPage() {
                                   <div className="flex items-center gap-2">
                                     {!isLessonCreator && isCompleted && (
                                       <Badge className="bg-green-600">
-                                        {t('courses.completed') ||
-                                          'Completed'}
+                                        {tr(
+                                          'courses.completed',
+                                          'Concluída',
+                                        )}
                                       </Badge>
                                     )}
                                     {isLocked && !isCompleted && (
                                       <Badge variant="outline">
                                         {user
-                                          ? t('courses.locked') || 'Locked'
-                                          : t('courses.loginToUnlock') ||
-                                            'Login to unlock'}
+                                          ? tr(
+                                              'courses.locked',
+                                              'Bloqueado',
+                                            )
+                                          : tr(
+                                              'courses.loginToUnlock',
+                                              'Entra para desbloquear',
+                                            )}
                                       </Badge>
                                     )}
                                   </div>

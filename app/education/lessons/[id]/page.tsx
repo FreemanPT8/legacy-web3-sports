@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ContentTracker } from '@/components/ContentTracker';
@@ -49,7 +49,6 @@ interface Module {
 
 export default function LessonPage() {
   const params = useParams();
-  const router = useRouter();
   const { user, getToken } = useAuth();
   const { language } = useLanguage();
 
@@ -81,12 +80,7 @@ export default function LessonPage() {
           setLesson(fetchedLesson);
           setModule(fetchedModule);
           setIsCompleted(data.isCompleted || false);
-
-          if (user && fetchedLesson.author_id) {
-            setIsCreator(fetchedLesson.author_id === user.id);
-          } else {
-            setIsCreator(false);
-          }
+          setIsCreator(!!data.isCreator);
 
           if (
             fetchedModule?.lessons &&
@@ -117,7 +111,7 @@ export default function LessonPage() {
     };
 
     fetchLesson();
-  }, [params.id, user, getToken]);
+  }, [params.id, getToken]);
 
   if (loading) {
     return (
@@ -127,7 +121,7 @@ export default function LessonPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-300">
-              A carregar lição...
+              Loading lesson...
             </p>
           </div>
         </main>
@@ -179,7 +173,7 @@ export default function LessonPage() {
               <Link href={`/education/courses/${module.course_id}`}>
                 <Button variant="ghost" className="mb-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Voltar ao Curso
+                  Back to Course
                 </Button>
               </Link>
             </div>
@@ -196,8 +190,8 @@ export default function LessonPage() {
                       Creator
                     </Badge>
                   ) : isCompleted ? (
-                    <Badge className="bg-green-600">
-                      <CheckCircle className="h-3 w-3 mr-1" />
+                    <Badge className="bg-green-600 text-white flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
                       Completed
                     </Badge>
                   ) : null}
@@ -232,8 +226,8 @@ export default function LessonPage() {
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
-                  initialCompleted={isCompleted && !isCreator}
-                  disabled={isCreator}
+                  initialCompleted={isCompleted}
+                  disabled={isCreator} // ✅ criador não tem Reading Progress
                   onComplete={() => setIsCompleted(true)}
                 >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
@@ -241,7 +235,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão para consumidores (não para criador) */}
+            {/* Mensagem de conclusão apenas para alunos, não para criador */}
             {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
