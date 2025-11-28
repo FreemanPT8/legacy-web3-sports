@@ -1,19 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { ContentTracker } from '@/components/ContentTracker';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
 import {
   ArrowLeft,
+  ArrowRight,
   Calendar,
   User,
   Eye,
@@ -21,13 +21,12 @@ import {
   CheckCircle,
   Clock,
   PenSquare,
+  Award,
 } from 'lucide-react';
-import { ContentTracker } from '@/components/ContentTracker';
-import { useAuth } from '@/contexts/AuthContext';
 
 type MultiLang = Record<string, string>;
 
-type BlogPost = {
+interface BlogPost {
   id: string;
   title: MultiLang | string;
   excerpt: MultiLang | string;
@@ -37,15 +36,19 @@ type BlogPost = {
   author_id?: string | null;
   created_at?: string;
   views?: number | null;
-  registered_views?: number | null;
-  registered_readers_count?: number | null;
-  total_xp_given?: number | null;
   registered_readers?: number | null;
   total_xp_distributed?: number | null;
   registered_only?: boolean | null;
   xp_reward?: number | null;
   reading_time?: number | null;
-};
+}
+
+interface BlogApiResponse {
+  success: boolean;
+  post: BlogPost;
+  isCompleted: boolean;
+  isAuthor: boolean;
+}
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -53,14 +56,18 @@ export default function BlogPostPage() {
   const { user, getToken } = useAuth();
 
   const [post, setPost] = useState<BlogPost | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isAuthor, setIsAuthor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
 
-  const id = params.id as string;
+  const id = String(params.id);
 
+  // -------------------------------------------------------
+  // FETCH BLOG POST
+  // -------------------------------------------------------
   useEffect(() => {
-    const fetchPost = async () => {
+    async function load() {
       setLoading(true);
       try {
         const token = getToken();
@@ -71,53 +78,49 @@ export default function BlogPostPage() {
           },
         });
 
-        const data = await res.json();
+        const data: BlogApiResponse = await res.json();
 
         if (!res.ok || !data.success || !data.post) {
           setNotFound(true);
           setPost(null);
           setIsCompleted(false);
-        } else {
-          setPost(data.post);
-          setNotFound(false);
-          // flag de completado vem do backend
-          setIsCompleted(!!data.isCompleted);
+          setIsAuthor(false);
+          return;
         }
-      } catch (error) {
-        console.error('Error loading public blog post:', error);
+
+        setPost(data.post);
+        setIsCompleted(data.isCompleted);
+        setIsAuthor(data.isAuthor);
+      } catch (err) {
+        console.error('Error fetching blog post:', err);
         setNotFound(true);
-        setPost(null);
-        setIsCompleted(false);
       } finally {
         setLoading(false);
       }
-    };
-
-    if (id) {
-      fetchPost();
     }
+
+    load();
   }, [id, getToken]);
 
-  const getTitle = (title: MultiLang | string) => {
-    if (typeof title === 'string') return title;
-    return title.en || title.pt || title.es || 'Untitled post';
+  // -------------------------------------------------------
+  // MULTILANG HELPERS
+  // -------------------------------------------------------
+  const getLang = (v: MultiLang | string) => {
+    if (typeof v === 'string') return v;
+    return v.en || v.pt || v.es || '---';
   };
 
-  const getContent = (content: MultiLang | string) => {
-    if (typeof content === 'string') return content;
-    return content.en || content.pt || content.es || '';
-  };
-
+  // -------------------------------------------------------
+  // LOADING SCREEN
+  // -------------------------------------------------------
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-            <p className="mt-4 text-gray-600 dark:text-gray-300">
-              A carregar artigo...
-            </p>
+            <div className="animate-spin h-12 w-12 border-b-2 border-blue-600 rounded-full mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-300">A carregar artigo...</p>
           </div>
         </main>
         <Footer />
@@ -125,25 +128,23 @@ export default function BlogPostPage() {
     );
   }
 
+  // -------------------------------------------------------
+  // NOT FOUND
+  // -------------------------------------------------------
   if (notFound || !post) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-          <div className="text-center px-4">
-            <h1 className="text-2xl font-bold mb-2">
-              Artigo não encontrado
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              O artigo que procuras não existe ou não está publicado.
+        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-2">Artigo não encontrado</h1>
+            <p className="text-gray-600 mb-4">
+              O artigo que procuras não existe ou foi removido.
             </p>
-            <button
-              onClick={() => router.push('/blog')}
-              className="inline-flex items-center gap-2 text-blue-600 hover:underline"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Voltar ao blog
-            </button>
+            <Button variant="ghost" onClick={() => router.push('/blog')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar ao Blog
+            </Button>
           </div>
         </main>
         <Footer />
@@ -151,14 +152,24 @@ export default function BlogPostPage() {
     );
   }
 
-  const htmlContent = getContent(post.content);
-  const xpReward =
-    typeof post.xp_reward === 'number' ? post.xp_reward : 0;
-  const estimatedMinutes =
+  // -------------------------------------------------------
+  // POST DATA
+  // -------------------------------------------------------
+  const title = getLang(post.title);
+  const content = getLang(post.content);
+  const date = post.created_at ? new Date(post.created_at).toLocaleDateString() : '-';
+  const xpReward = typeof post.xp_reward === 'number' ? post.xp_reward : 0;
+  const durationMinutes =
     typeof post.reading_time === 'number' ? post.reading_time : 5;
 
-  const isAuthor =
-    !!user && !!post.author_id && post.author_id === user.id;
+  const totalXp = post.total_xp_distributed || 0;
+  const registeredReaders = post.registered_readers || 0;
+
+  const showCompletedBadge = isCompleted && !isAuthor;
+
+  // -------------------------------------------------------
+  // RENDER
+  // -------------------------------------------------------
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -166,93 +177,143 @@ export default function BlogPostPage() {
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-10">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <button
-              onClick={() => router.push('/blog')}
-              className="mb-4 inline-flex items-center text-sm text-gray-600 dark:text-gray-300 hover:underline"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Voltar ao blog
-            </button>
+          <div className="max-w-4xl mx-auto">
 
-            <Card className="mb-6">
+            {/* BACK BUTTON */}
+            <div className="mb-6">
+              <Button variant="ghost" onClick={() => router.push('/blog')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar ao Blog
+              </Button>
+            </div>
+
+            {/* HEADER CARD */}
+            <Card className="mb-4">
               <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      {post.category || 'General'}
-                    </Badge>
+                <div className="flex items-center justify-between mb-3">
+                  <Badge variant="outline">{post.category || 'General'}</Badge>
 
-                    {isAuthor ? (
-                      <Badge className="bg-purple-600 text-white flex items-center gap-1">
-                        <PenSquare className="h-3 w-3" />
-                        Creator
+                  {isAuthor ? (
+                    <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                      <PenSquare className="h-3 w-3" />
+                      Creator
+                    </Badge>
+                  ) : (
+                    showCompletedBadge && (
+                      <Badge className="bg-green-600 text-white flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Completed
                       </Badge>
-                    ) : (
-                      isCompleted && (
-                        <Badge className="bg-green-600 text-white flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          Completed
-                        </Badge>
-                      )
-                    )}
-                  </div>
-                  {post.registered_only && (
-                    <span className="flex items-center gap-1 text-xs text-amber-600">
-                      <Lock className="h-3 w-3" />
-                      Apenas membros registados
-                    </span>
+                    )
                   )}
                 </div>
-                <CardTitle className="text-2xl md:text-3xl">
-                  {getTitle(post.title)}
-                </CardTitle>
-                <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    {post.author || 'Admin'}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {post.created_at
-                      ? new Date(
-                          post.created_at,
-                        ).toLocaleDateString()
-                      : '-'}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {estimatedMinutes} min read
-                  </span>
-                  {typeof post.views === 'number' && post.views >= 0 && (
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
-                      {post.views}
-                    </span>
-                  )}
-                </div>
+
+                <CardTitle className="text-3xl">{title}</CardTitle>
+
+                {post.excerpt && (
+                  <p className="text-gray-600 text-lg mt-2">{getLang(post.excerpt)}</p>
+                )}
               </CardHeader>
+
               <CardContent>
-                <div className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-img:shadow-md">
-                  <ContentTracker
-                    userId={user?.id ?? null}
-                    contentId={post.id}
-                    contentType="blog"
-                    xpReward={xpReward}
-                    estimatedMinutes={estimatedMinutes}
-                    initialCompleted={isCompleted && !isAuthor}
-                    disabled={isAuthor}
-                    onComplete={() => setIsCompleted(true)}
-                  >
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: htmlContent,
-                      }}
-                    />
-                  </ContentTracker>
+                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>{post.author || 'Admin'}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>{date}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{durationMinutes} min read</span>
+                  </div>
+
+                  {typeof post.views === 'number' && (
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      <span>{post.views}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
+
+            {/* STATS CARD */}
+            <Card className="mb-6">
+              <CardContent className="py-4 text-sm text-gray-700">
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">Creator</span>
+                    <span className="font-semibold">{post.author || 'Admin'}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">Created at</span>
+                    <span>{date}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">Completed</span>
+                    <span>{registeredReaders} times</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">XP distributed</span>
+                    <span>{totalXp} XP</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* CONTENT + TRACKER */}
+            <Card className="mb-6">
+              <CardContent className="prose prose-lg max-w-none py-8">
+                <ContentTracker
+                  userId={user?.id ?? null}
+                  contentId={post.id}
+                  contentType="blog"
+                  xpReward={xpReward}
+                  estimatedMinutes={durationMinutes}
+                  initialCompleted={isCompleted && !isAuthor}
+                  disabled={isAuthor}
+                  isAuthor={isAuthor}
+                  onComplete={() => setIsCompleted(true)}
+                >
+                  <div dangerouslySetInnerHTML={{ __html: content }} />
+                </ContentTracker>
+              </CardContent>
+            </Card>
+
+            {/* COMPLETION MESSAGE */}
+            {isCompleted && !isAuthor && (
+              <Card className="mb-6 bg-green-50 border-green-200">
+                <CardContent className="py-6 text-center">
+                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2" />
+                  <h3 className="text-lg font-semibold mb-1">Leitura concluída!</h3>
+                  <p className="text-sm text-gray-600">
+                    Recebeste {xpReward} XP pela primeira leitura deste artigo.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* CATEGORY NAVIGATION (placeholder para futuro prev/next) */}
+            <div className="flex justify-between mt-6 opacity-50 pointer-events-none">
+              <Button variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Previous Article
+              </Button>
+
+              <Button>
+                Next Article
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+
           </div>
         </div>
       </main>
