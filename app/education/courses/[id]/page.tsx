@@ -36,7 +36,7 @@ type Lesson = {
   order?: number;
   estimated_time?: number;
   is_completed?: boolean;
-  author_id?: string | null;
+  author_id?: string | null; // ✅ criador da lição
 };
 
 type Module = {
@@ -46,6 +46,7 @@ type Module = {
   xp_threshold?: number;
   order?: number;
   lessons?: Lesson[];
+  author_id?: string | null; // ✅ criador do módulo (se existir)
 };
 
 type Course = {
@@ -56,6 +57,7 @@ type Course = {
   xp_threshold?: number;
   image_url?: string | null;
   modules?: Module[];
+  author_id?: string | null; // ✅ criador do curso
 };
 
 export default function CourseDetailPage() {
@@ -138,13 +140,7 @@ export default function CourseDetailPage() {
   );
 
   const totalLessons = allLessons.length;
-
-  const completedLessons = allLessons.filter((l) => {
-    const isCreator =
-      !!user && !!l.author_id && l.author_id === user.id;
-    return !!l.is_completed && !isCreator;
-  }).length;
-
+  const completedLessons = allLessons.filter((l) => l.is_completed).length;
   const progress =
     totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
@@ -157,17 +153,13 @@ export default function CourseDetailPage() {
     typeof course?.xp_threshold === 'number' ? course.xp_threshold! : 0;
   const courseLocked = userXP < courseXpRequired;
 
-  const handleLessonClick = (
-    lesson: Lesson,
-    requiredXP: number,
-    isCreator: boolean,
-  ) => {
+  const handleLessonClick = (lesson: Lesson, requiredXP: number) => {
     if (!user) {
       router.push('/login');
       return;
     }
 
-    if (!isCreator && userXP < requiredXP) {
+    if (userXP < requiredXP) {
       return;
     }
 
@@ -222,6 +214,9 @@ export default function CourseDetailPage() {
   const courseTitle = getMultilingualContent(course.title, language);
   const courseDescription = getMultilingualContent(course.description, language);
 
+  const isCourseCreator =
+    !!user && !!course.author_id && course.author_id === user.id;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -252,8 +247,13 @@ export default function CourseDetailPage() {
               <CardHeader>
                 <div className="flex flex-wrap justify-between items-start gap-4">
                   <div>
-                    <CardTitle className="text-3xl mb-2">
+                    <CardTitle className="text-3xl mb-2 flex items-center gap-3">
                       {courseTitle}
+                      {isCourseCreator && (
+                        <Badge className="bg-purple-600 text-white">
+                          Creator
+                        </Badge>
+                      )}
                     </CardTitle>
                     <CardDescription className="text-base">
                       {courseDescription}
@@ -379,6 +379,11 @@ export default function CourseDetailPage() {
                     moduleXp,
                   );
 
+                  const isModuleCreator =
+                    !!user &&
+                    !!module.author_id &&
+                    module.author_id === user.id;
+
                   const moduleLessons = Array.isArray(module.lessons)
                     ? [...module.lessons].sort(
                         (a, b) => (a.order || 0) - (b.order || 0),
@@ -390,8 +395,13 @@ export default function CourseDetailPage() {
                       <CardHeader>
                         <div className="flex justify-between items-start gap-4">
                           <div>
-                            <CardTitle className="text-xl">
+                            <CardTitle className="text-xl flex items-center gap-2">
                               {moduleIndex + 1}. {moduleTitle}
+                              {isModuleCreator && (
+                                <Badge className="bg-purple-600 text-white">
+                                  Creator
+                                </Badge>
+                              )}
                             </CardTitle>
                             {moduleDescription && (
                               <CardDescription className="mt-1">
@@ -443,15 +453,14 @@ export default function CourseDetailPage() {
                                 lessonXp,
                               );
 
-                              const isCreator =
+                              const isLocked =
+                                !user || userXP < requiredXP;
+                              const isCompleted = !!lesson.is_completed;
+
+                              const isLessonCreator =
                                 !!user &&
                                 !!lesson.author_id &&
                                 lesson.author_id === user.id;
-
-                              const isLocked =
-                                !user || (!isCreator && userXP < requiredXP);
-                              const isCompleted =
-                                !!lesson.is_completed && !isCreator;
 
                               const duration =
                                 typeof lesson.estimated_time === 'number'
@@ -467,11 +476,7 @@ export default function CourseDetailPage() {
                                   key={lesson.id}
                                   type="button"
                                   onClick={() =>
-                                    handleLessonClick(
-                                      lesson,
-                                      requiredXP,
-                                      isCreator,
-                                    )
+                                    handleLessonClick(lesson, requiredXP)
                                   }
                                   disabled={isLocked}
                                   className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-left transition ${
@@ -483,14 +488,12 @@ export default function CourseDetailPage() {
                                   <div className="flex items-center gap-3">
                                     <div
                                       className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                                        isCompleted
+                                        isCompleted && !isLessonCreator
                                           ? 'bg-green-600 text-white'
-                                          : isCreator
-                                          ? 'bg-purple-600 text-white'
                                           : 'bg-blue-100 text-blue-700'
                                       }`}
                                     >
-                                      {isCompleted ? (
+                                      {isCompleted && !isLessonCreator ? (
                                         <CheckCircle className="h-4 w-4" />
                                       ) : (
                                         lesson.order ||
@@ -498,8 +501,13 @@ export default function CourseDetailPage() {
                                       )}
                                     </div>
                                     <div>
-                                      <div className="font-medium">
+                                      <div className="font-medium flex items-center gap-2">
                                         {lessonTitle}
+                                        {isLessonCreator && (
+                                          <Badge className="bg-purple-600 text-white">
+                                            Creator
+                                          </Badge>
+                                        )}
                                       </div>
                                       <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-1">
                                         <span className="flex items-center gap-1">
@@ -520,13 +528,8 @@ export default function CourseDetailPage() {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    {isCreator && (
-                                      <Badge className="bg-purple-600 text-white">
-                                        Creator
-                                      </Badge>
-                                    )}
-                                    {!isCreator && isCompleted && (
-                                      <Badge className="bg-green-600 text-white">
+                                    {!isLessonCreator && isCompleted && (
+                                      <Badge className="bg-green-600">
                                         {t('courses.completed') ||
                                           'Completed'}
                                       </Badge>

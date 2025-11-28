@@ -35,7 +35,7 @@ interface Lesson {
   estimated_time?: number;
   order: number;
   module_id: string;
-  author_id?: string | null;
+  author_id?: string | null; // ✅ para saber se o user é o criador
 }
 
 interface Module {
@@ -43,6 +43,7 @@ interface Module {
   title: any;
   course_id: string;
   lessons: Lesson[];
+  author_id?: string | null; // opcional, caso exista na tabela
 }
 
 export default function LessonPage() {
@@ -55,9 +56,9 @@ export default function LessonPage() {
   const [module, setModule] = useState<Module | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isCreator, setIsCreator] = useState(false);
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
+  const [isCreator, setIsCreator] = useState(false); // ✅ novo
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -73,19 +74,25 @@ export default function LessonPage() {
         const data = await response.json();
 
         if (data.success) {
-          const lessonData: Lesson = data.lesson;
-          setLesson(lessonData);
-          setModule(data.module);
+          const fetchedLesson: Lesson = data.lesson;
+          const fetchedModule: Module = data.module;
 
-          const creatorFlag =
-            !!user && !!lessonData.author_id && lessonData.author_id === user.id;
-          setIsCreator(creatorFlag);
+          setLesson(fetchedLesson);
+          setModule(fetchedModule);
+          setIsCompleted(data.isCompleted || false);
 
-          const completedFlag = !!data.isCompleted && !creatorFlag;
-          setIsCompleted(completedFlag);
+          // ✅ detectar se o user é o criador desta lição
+          if (user && fetchedLesson.author_id) {
+            setIsCreator(fetchedLesson.author_id === user.id);
+          } else {
+            setIsCreator(false);
+          }
 
-          if (data.module?.lessons && Array.isArray(data.module.lessons)) {
-            const lessons: Lesson[] = data.module.lessons
+          if (
+            fetchedModule?.lessons &&
+            Array.isArray(fetchedModule.lessons)
+          ) {
+            const lessons: Lesson[] = fetchedModule.lessons
               .slice()
               .sort(
                 (a: Lesson, b: Lesson) => (a.order || 0) - (b.order || 0),
@@ -178,22 +185,22 @@ export default function LessonPage() {
             </div>
 
             {/* Header da lição */}
-            <Card className="mb-4">
+            <Card className="mb-6">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
                   <Badge variant="outline">{moduleTitle}</Badge>
+
+                  {/* ✅ Creator vs Completed */}
                   {isCreator ? (
                     <Badge className="bg-purple-600 text-white">
                       Creator
                     </Badge>
-                  ) : (
-                    isCompleted && (
-                      <Badge className="bg-green-600 text-white flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Completed
-                      </Badge>
-                    )
-                  )}
+                  ) : isCompleted ? (
+                    <Badge className="bg-green-600">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Completed
+                    </Badge>
+                  ) : null}
                 </div>
                 <CardTitle className="text-3xl">{title}</CardTitle>
                 {description && (
@@ -216,45 +223,27 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Banner para criador */}
-            {isCreator && (
-              <Card className="mb-4 bg-purple-50 border-purple-200">
-                <CardContent className="py-4 text-sm text-purple-900">
-                  <p>
-                    <strong>You created this lesson.</strong> You don&apos;t
-                    earn XP by reading your own content. Every time another
-                    member completes this lesson, you automatically receive{' '}
-                    <strong>19% of the XP</strong> they earn.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Conteúdo */}
+            {/* Conteúdo + ContentTracker */}
             <Card className="mb-6">
               <CardContent className="prose prose-lg max-w-none py-8">
-                {isCreator ? (
-                  // Criador: vê o conteúdo livremente, sem ContentTracker / XP
+                <ContentTracker
+                  userId={user?.id ?? null}
+                  contentId={lesson.id}
+                  contentType="lesson"
+                  xpReward={lesson.xp_reward}
+                  estimatedMinutes={durationMinutes}
+                  // Mesmo que seja criador, o ContentTracker controla o XP via API.
+                  // O backend já garante que o criador não recebe XP.
+                  initialCompleted={isCompleted}
+                  onComplete={() => setIsCompleted(true)}
+                >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
-                ) : (
-                  // Utilizador normal: ContentTracker controla XP e completion
-                  <ContentTracker
-                    userId={user?.id ?? null}
-                    contentId={lesson.id}
-                    contentType="lesson"
-                    xpReward={lesson.xp_reward}
-                    estimatedMinutes={durationMinutes}
-                    initialCompleted={isCompleted}
-                    onComplete={() => setIsCompleted(true)}
-                  >
-                    <div dangerouslySetInnerHTML={{ __html: content }} />
-                  </ContentTracker>
-                )}
+                </ContentTracker>
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão (apenas para não-criadores) */}
-            {!isCreator && isCompleted && (
+            {/* Mensagem de conclusão (nota: o texto de XP é para consumidores, não para criador) */}
+            {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
