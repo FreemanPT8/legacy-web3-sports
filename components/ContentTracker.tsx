@@ -13,12 +13,10 @@ export interface ContentTrackerProps {
 
   userId?: string | null;
   disabled?: boolean;
-  isAuthor?: boolean;
+  isAuthor?: boolean; // backend determines this
 
   children: React.ReactNode;
 }
-
-// LEGACY :: MINI WIDGET – layout only, no logic touched
 
 export function ContentTracker({
   contentId,
@@ -32,33 +30,44 @@ export function ContentTracker({
   isAuthor = false,
   children,
 }: ContentTrackerProps) {
-  const [completed, setCompleted] = useState<boolean>(!!initialCompleted);
-  const [timeProgress, setTimeProgress] = useState<number>(
-    initialCompleted ? 100 : 0,
-  );
-  const [scrollProgress, setScrollProgress] = useState<number>(
-    initialCompleted ? 100 : 0,
-  );
-  const [isAwarding, setIsAwarding] = useState(false);
+  // --- STATES ----------------------------------------------------------
 
+  const [completed, setCompleted] = useState<boolean>(!!initialCompleted);
+  const [timeProgress, setTimeProgress] = useState<number>(initialCompleted ? 100 : 0);
+  const [scrollProgress, setScrollProgress] = useState<number>(initialCompleted ? 100 : 0);
+  const [isAwarding, setIsAwarding] = useState(false);
   const hasAwardedRef = useRef<boolean>(!!initialCompleted);
 
-  // sincronizar quando o backend indica completed
+  const noUser = !userId;
+  const isCreator = !!isAuthor && !!userId;
+
+  // se for autor → tracking desativado SEMPRE
+  const trackerDisabled = isCreator || disabled || noUser;
+  const canTrack = !trackerDisabled && !completed;
+
+  // -----------------------------------------------------------------------
+  // SYNC inicial do completed vindo do backend
+  // -----------------------------------------------------------------------
   useEffect(() => {
-    setCompleted(!!initialCompleted);
     if (initialCompleted) {
+      hasAwardedRef.current = true;
+      setCompleted(true);
       setTimeProgress(100);
       setScrollProgress(100);
-      hasAwardedRef.current = true;
+    } else {
+      // forçar completed = false para autores
+      if (isCreator) {
+        hasAwardedRef.current = true;
+        setCompleted(false);
+        setTimeProgress(0);
+        setScrollProgress(0);
+      }
     }
-  }, [initialCompleted]);
+  }, [initialCompleted, isCreator]);
 
-  const isAuthorFlag = !!userId && !!isAuthor;
-  const trackerDisabled = !!userId && (disabled || isAuthorFlag);
-
-  const canTrack = !!userId && !trackerDisabled && !completed;
-
-  // Timer
+  // -----------------------------------------------------------------------
+  // TIMER PROGRESS
+  // -----------------------------------------------------------------------
   useEffect(() => {
     if (!canTrack) return;
 
@@ -69,16 +78,15 @@ export function ContentTracker({
       const elapsed = Date.now() - start;
       const pct = Math.min(100, (elapsed / totalMs) * 100);
       setTimeProgress(pct);
-
-      if (pct >= 100) {
-        clearInterval(interval);
-      }
+      if (pct >= 100) clearInterval(interval);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [canTrack, estimatedMinutes]);
 
-  // Scroll tracking
+  // -----------------------------------------------------------------------
+  // SCROLL PROGRESS
+  // -----------------------------------------------------------------------
   useEffect(() => {
     if (!canTrack) return;
 
@@ -86,10 +94,12 @@ export function ContentTracker({
       const doc = document.documentElement;
       const scrollTop = window.scrollY || doc.scrollTop;
       const scrollHeight = doc.scrollHeight - doc.clientHeight;
+
       if (scrollHeight <= 0) {
         setScrollProgress(100);
         return;
       }
+
       const pct = Math.min(100, (scrollTop / scrollHeight) * 100);
       setScrollProgress(pct);
     };
@@ -99,7 +109,9 @@ export function ContentTracker({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [canTrack]);
 
-  // Finalização
+  // -----------------------------------------------------------------------
+  // AUTO-COMPLETE
+  // -----------------------------------------------------------------------
   useEffect(() => {
     if (!canTrack) return;
     if (hasAwardedRef.current) return;
@@ -109,10 +121,16 @@ export function ContentTracker({
     }
   }, [canTrack, timeProgress, scrollProgress]);
 
+  // -----------------------------------------------------------------------
+  // HANDLE COMPLETE: regista XP (não para autores)
+  // -----------------------------------------------------------------------
   async function handleComplete() {
     if (!canTrack) return;
     if (!userId) return;
     if (hasAwardedRef.current) return;
+
+    // autores nunca registam, nunca ganham XP → bloqueio TOTAL
+    if (isCreator) return;
 
     hasAwardedRef.current = true;
     setIsAwarding(true);
@@ -123,16 +141,14 @@ export function ContentTracker({
           ? `/api/blog/${contentId}/read`
           : `/api/lessons/${contentId}/complete`;
 
-      if (xpReward > 0) {
-        await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            xpEarned: xpReward,
-          }),
-        });
-      }
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          xpEarned: xpReward,
+        }),
+      });
 
       setCompleted(true);
       setTimeProgress(100);
@@ -141,18 +157,15 @@ export function ContentTracker({
       if (onComplete) onComplete();
     } catch (error) {
       console.error('Failed to complete content:', error);
+      // mesmo se falhar, não repetimos
     } finally {
       setIsAwarding(false);
     }
   }
 
-  // ---------------------------------------------------------------------
-  // RENDER – novo layout (mini widget flutuante)
-  // ---------------------------------------------------------------------
-
-  const noUser = !userId;
-
-  // 1) Banner inline ONLY for creators & non-authenticated
+  // -----------------------------------------------------------------------
+  // UI BANNERS PARA CRIADOR & NÃO-AUTENTICADO
+  // -----------------------------------------------------------------------
   let inlineBanner: React.ReactNode = null;
 
   if (noUser) {
@@ -160,31 +173,30 @@ export function ContentTracker({
       <div className="mb-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-700 flex items-start gap-3">
         <Info className="h-4 w-4 mt-0.5 text-gray-500" />
         <div>
-          <p className="font-medium">
-            Reading tracker disponível apenas para utilizadores com login.
-          </p>
-          <p className="mt-1 text-xs text-gray-500">
-            Podes ler tudo, mas o XP só é registado quando tens sessão iniciada.
-          </p>
+          <p className="font-medium">Reading tracker disponível apenas para utilizadores com login.</p>
+          <p className="mt-1 text-xs text-gray-500">Podes ler tudo, mas o XP só é registado quando tens sessão iniciada.</p>
         </div>
       </div>
     );
-  } else if (isAuthorFlag) {
+  } else if (isCreator) {
     inlineBanner = (
       <div className="mb-4 rounded-lg border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 flex items-start gap-3">
         <Info className="h-4 w-4 mt-0.5 text-amber-600" />
         <div>
           <p className="font-medium">És o criador deste conteúdo.</p>
           <p className="mt-1 text-xs">
-            Não ganhas XP por consumir o teu próprio conteúdo.  
-            O XP vem dos leitores.
+            Não ganhas XP ao consumir o teu próprio conteúdo.
+            <br />
+            Ganas 19% do XP que cada utilizador recebe pela primeira leitura concluída.
           </p>
         </div>
       </div>
     );
   }
 
-  // 2) FLUTUATING WIDGET — desktop bottom-right / mobile header
+  // -----------------------------------------------------------------------
+  // FLOATING WIDGET (apenas leitores)
+  // -----------------------------------------------------------------------
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -200,7 +212,7 @@ export function ContentTracker({
 
   let floatingWidget: React.ReactNode = null;
 
-  if (!noUser && !isAuthorFlag) {
+  if (!noUser && !isCreator) {
     if (completed) {
       floatingWidget = (
         <div className={widgetPosition}>
