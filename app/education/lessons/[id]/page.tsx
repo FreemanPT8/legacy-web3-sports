@@ -35,7 +35,7 @@ interface Lesson {
   estimated_time?: number;
   order: number;
   module_id: string;
-  author_id?: string | null; // ✅ para saber se o user é o criador
+  author_id?: string | null;
 }
 
 interface Module {
@@ -43,7 +43,7 @@ interface Module {
   title: any;
   course_id: string;
   lessons: Lesson[];
-  author_id?: string | null; // opcional, caso exista na tabela
+  author_id?: string | null;
 }
 
 export default function LessonPage() {
@@ -58,7 +58,7 @@ export default function LessonPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
-  const [isCreator, setIsCreator] = useState(false); // ✅ novo
+  const [isCreator, setIsCreator] = useState(false);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -81,8 +81,10 @@ export default function LessonPage() {
           setModule(fetchedModule);
           setIsCompleted(data.isCompleted || false);
 
-          // ✅ detectar se o user é o criador desta lição
-          if (user && fetchedLesson.author_id) {
+          // detectar se o user é o criador desta lição
+          if (typeof data.isCreator === 'boolean') {
+            setIsCreator(data.isCreator);
+          } else if (user && fetchedLesson.author_id) {
             setIsCreator(fetchedLesson.author_id === user.id);
           } else {
             setIsCreator(false);
@@ -190,13 +192,13 @@ export default function LessonPage() {
                 <div className="flex items-center justify-between mb-3">
                   <Badge variant="outline">{moduleTitle}</Badge>
 
-                  {/* ✅ Creator vs Completed */}
+                  {/* Creator vs Completed */}
                   {isCreator ? (
                     <Badge className="bg-purple-600 text-white">
                       Creator
                     </Badge>
                   ) : isCompleted ? (
-                    <Badge className="bg-green-600">
+                    <Badge className="bg-green-600 text-white">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Completed
                     </Badge>
@@ -232,9 +234,8 @@ export default function LessonPage() {
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
-                  // Mesmo que seja criador, o ContentTracker controla o XP via API.
-                  // O backend já garante que o criador não recebe XP.
                   initialCompleted={isCompleted}
+                  disabled={isCreator}
                   onComplete={() => setIsCompleted(true)}
                 >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
@@ -242,7 +243,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão (nota: o texto de XP é para consumidores, não para criador) */}
+            {/* Mensagem de conclusão (apenas para consumidores, não criador) */}
             {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">

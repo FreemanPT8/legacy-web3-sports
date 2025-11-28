@@ -12,7 +12,7 @@ const db = supabaseAdmin ?? supabase;
 
 export async function GET(
   request: NextRequest,
-  context: RouteContext
+  context: RouteContext,
 ) {
   const { id } = context.params;
 
@@ -20,7 +20,7 @@ export async function GET(
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
-    // 1) Buscar o post + info básica
+    // 1) Buscar o post + info básica (inclui author_id)
     const { data: rawPost, error: postError } = await db
       .from('blog_posts')
       .select(
@@ -29,7 +29,7 @@ export async function GET(
         author_user:users!blog_posts_author_id_fkey (
           username
         )
-      `
+      `,
       )
       .eq('id', id)
       .maybeSingle();
@@ -38,14 +38,14 @@ export async function GET(
       console.error('Error fetching blog post:', postError);
       return NextResponse.json(
         { success: false, error: 'Failed to load blog post' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (!rawPost) {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -62,21 +62,26 @@ export async function GET(
     const allReads = reads || [];
 
     const registeredReaders = new Set(
-      allReads.map((r: any) => r.user_id)
+      allReads.map((r: any) => r.user_id),
     ).size;
 
     const totalXpDistributed = allReads.reduce(
       (sum: number, r: any) => sum + (r.xp_earned || 0),
-      0
+      0,
     );
 
+    const isAuthor =
+      !!user &&
+      !!rawPost.author_id &&
+      rawPost.author_id === user.id;
+
     const isCompleted =
-      !!user && allReads.some((r: any) => r.user_id === user.id);
+      !!user &&
+      !isAuthor &&
+      allReads.some((r: any) => r.user_id === user.id);
 
     const authorName =
-      rawPost.author_user?.username ||
-      rawPost.author ||
-      'Admin';
+      rawPost.author_user?.username || rawPost.author || 'Admin';
 
     const post = {
       ...rawPost,
@@ -89,12 +94,13 @@ export async function GET(
       success: true,
       post,
       isCompleted,
+      isAuthor,
     });
   } catch (error) {
     console.error('Error in GET /api/blog/[id]:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

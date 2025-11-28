@@ -42,7 +42,7 @@ export function ContentTracker({
 
   const hasAwardedRef = useRef<boolean>(!!initialCompleted);
 
-  // se initialCompleted mudar (ex.: vindo do backend), sincroniza estado
+  // sincronizar quando initialCompleted muda (vindo do backend)
   useEffect(() => {
     setCompleted(!!initialCompleted);
     if (initialCompleted) {
@@ -201,10 +201,8 @@ export function ContentTracker({
     );
   } else {
     // em progresso normal
-    const overall =
-      (timeProgress * 0.5 + scrollProgress * 0.5) > 100
-        ? 100
-        : (timeProgress * 0.5 + scrollProgress * 0.5);
+    const overallRaw = timeProgress * 0.5 + scrollProgress * 0.5;
+    const overall = overallRaw > 100 ? 100 : overallRaw;
 
     banner = (
       <div className="border border-blue-200 bg-blue-50 text-blue-900 rounded-lg p-4 text-sm space-y-3">
@@ -218,8 +216,7 @@ export function ContentTracker({
           <div className="flex items-center gap-2 text-xs text-blue-800">
             <Clock className="h-4 w-4" />
             <span>
-              ~{estimatedMinutes} min ·{' '}
-              {Math.round(overall)}% concluído
+              ~{estimatedMinutes} min · {Math.round(overall)}% concluído
             </span>
           </div>
         </div>

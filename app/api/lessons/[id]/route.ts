@@ -4,13 +4,13 @@ import { verifyAuth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
-    // 1) Buscar lição
+    // 1) Buscar lição (inclui author_id)
     const { data: lesson, error: lessonError } = await supabase
       .from('lessons')
       .select('*')
@@ -43,16 +43,22 @@ export async function GET(
       );
     }
 
-    // 3) Ver se a lição já foi concluída pelo utilizador
+    // 3) Ver se a lição já foi concluída pelo utilizador (apenas se NÃO for criador)
+    const isCreator =
+      !!user &&
+      !!lesson.author_id &&
+      lesson.author_id === user.id;
+
     let isCompleted = false;
 
-    if (user) {
-      const { data: completion, error: completionError } = await supabase
-        .from('lesson_completions')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('lesson_id', params.id)
-        .maybeSingle();
+    if (user && !isCreator) {
+      const { data: completion, error: completionError } =
+        await supabase
+          .from('lesson_completions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('lesson_id', params.id)
+          .maybeSingle();
 
       if (!completionError && completion) {
         isCompleted = true;
@@ -64,6 +70,7 @@ export async function GET(
       lesson,
       module,
       isCompleted,
+      isCreator,
     });
   } catch (error) {
     console.error('Error in GET /api/lessons/[id]:', error);
