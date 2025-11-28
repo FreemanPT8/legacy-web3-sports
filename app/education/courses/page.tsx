@@ -44,7 +44,7 @@ type Course = {
   xp_threshold: number;
   image_url?: string | null;
   modules?: Module[];
-  author_id?: string | null; // ✅ para badge Creator
+  author_id?: string | null; // ✅ criador do curso
 };
 
 export default function CoursesPage() {
@@ -56,13 +56,6 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
 
   const userXP = user?.xp_total || 0;
-
-  // ✅ helper para evitar textos tipo "courses.xxx"
-  const tr = (key: string, fallback: string) => {
-    const v = t(key);
-    if (!v || v === key) return fallback;
-    return v;
-  };
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -92,25 +85,25 @@ export default function CoursesPage() {
       case 'beginner':
         return (
           <Badge className="bg-green-600">
-            {tr('education.level.beginner', 'Principiante')}
+            {t('education.level.beginner') || 'Beginner'}
           </Badge>
         );
       case 'intermediate':
         return (
           <Badge className="bg-yellow-600">
-            {tr('education.level.intermediate', 'Intermédio')}
+            {t('education.level.intermediate') || 'Intermediate'}
           </Badge>
         );
       case 'advanced':
         return (
           <Badge className="bg-red-600">
-            {tr('education.level.advanced', 'Avançado')}
+            {t('education.level.advanced') || 'Advanced'}
           </Badge>
         );
       default:
         return (
           <Badge>
-            {tr('education.level.unknown', 'Todos os níveis')}
+            {t('education.level.unknown') || 'All levels'}
           </Badge>
         );
     }
@@ -124,7 +117,7 @@ export default function CoursesPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-300">
-              {tr('courses.loading', 'A carregar cursos...')}
+              {t('courses.loading') || 'Loading courses...'}
             </p>
           </div>
         </main>
@@ -143,30 +136,25 @@ export default function CoursesPage() {
             <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  {tr(
-                    'courses.mainTitle',
-                    tr('courses.title', 'Cursos de Educação Web3'),
-                  )}
+                  {t('courses.mainTitle') ||
+                    t('courses.title') ||
+                    'Courses'}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
-                  {tr(
-                    'courses.mainSubtitle',
-                    tr(
-                      'courses.subtitle',
-                      'Cursos completos sobre tecnologia blockchain, rede Apertum e Web3 no desporto.',
-                    ),
-                  )}
+                  {t('courses.mainSubtitle') ||
+                    t('courses.subtitle') ||
+                    'Unlock structured learning paths about Web3, blockchain and the Apertum ecosystem. Earn XP as you progress.'}
                 </p>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 {user ? (
                   <>
                     <span className="text-gray-600 dark:text-gray-300">
-                      {tr('courses.yourXP', 'O teu XP')}:{' '}
+                      {t('courses.yourXP') || 'Your XP'}:{' '}
                       <strong>{userXP}</strong>
                     </span>
                     <Badge variant="outline">
-                      {tr('courses.loggedIn', 'Sessão iniciada')}
+                      {t('courses.loggedIn') || 'Signed in'}
                     </Badge>
                   </>
                 ) : (
@@ -174,7 +162,7 @@ export default function CoursesPage() {
                     onClick={() => router.push('/login')}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {tr('auth.login', 'Entra para ganhar XP')}
+                    {t('auth.login') || 'Login to earn XP'}
                   </Button>
                 )}
               </div>
@@ -183,10 +171,8 @@ export default function CoursesPage() {
             {courses.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center text-gray-500">
-                  {tr(
-                    'courses.noCourses',
-                    'Ainda não há cursos disponíveis. Volta em breve!',
-                  )}
+                  {t('courses.noCourses') ||
+                    'No courses available yet. Check back soon!'}
                 </CardContent>
               </Card>
             ) : (
@@ -201,7 +187,9 @@ export default function CoursesPage() {
                     language,
                   );
 
-                  const modulesArray: Module[] = Array.isArray(course.modules)
+                  const modulesArray: Module[] = Array.isArray(
+                    course.modules,
+                  )
                     ? (course.modules as Module[])
                     : [];
 
@@ -225,6 +213,7 @@ export default function CoursesPage() {
 
                   const xpRequired = course.xp_threshold ?? 0;
                   const isLocked = userXP < xpRequired;
+
                   const isCourseCreator =
                     !!user &&
                     !!course.author_id &&
@@ -278,21 +267,21 @@ export default function CoursesPage() {
                             <BookOpen className="h-4 w-4 text-blue-600" />
                             <span>
                               {totalModules}{' '}
-                              {tr('courses.modules', 'módulos')}
+                              {t('courses.modules') || 'modules'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <BookOpen className="h-4 w-4 text-blue-600" />
                             <span>
                               {totalLessons}{' '}
-                              {tr('courses.lessons', 'lições')}
+                              {t('courses.lessons') || 'lessons'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Award className="h-4 w-4 text-blue-600" />
                             <span>
                               {totalXP}{' '}
-                              {tr('courses.totalXP', 'XP disponível')}
+                              {t('courses.totalXP') || 'XP total'}
                             </span>
                           </div>
                         </div>
@@ -302,10 +291,7 @@ export default function CoursesPage() {
                             <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
                               <Lock className="h-3 w-3" />
                               <span>
-                                {tr(
-                                  'courses.unlockAt',
-                                  'Desbloqueia ao atingir',
-                                )}{' '}
+                                {t('courses.unlockAt') || 'Unlock at'}{' '}
                                 <strong>{xpRequired} XP</strong>
                               </span>
                             </div>
@@ -313,10 +299,8 @@ export default function CoursesPage() {
                             <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
                               <CheckCircle className="h-3 w-3" />
                               <span>
-                                {tr(
-                                  'courses.unlocked',
-                                  'Curso disponível para ti',
-                                )}
+                                {t('courses.unlocked') ||
+                                  'You can access this course'}
                               </span>
                             </div>
                           )}
@@ -328,10 +312,8 @@ export default function CoursesPage() {
                               disabled={isLocked && !user}
                             >
                               <span className="text-xs">
-                                {tr(
-                                  'courses.viewDetails',
-                                  'Ver detalhes do curso',
-                                )}
+                                {t('courses.viewDetails') ||
+                                  'View course'}
                               </span>
                               <ArrowRight className="h-3 w-3 ml-1" />
                             </Button>

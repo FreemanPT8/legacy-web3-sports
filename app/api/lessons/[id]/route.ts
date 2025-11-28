@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
-
-const db = supabaseAdmin ?? supabase;
 
 export async function GET(
   request: NextRequest,
@@ -13,11 +11,11 @@ export async function GET(
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
     // 1) Buscar lição
-    const { data: lesson, error: lessonError } = await db
+    const { data: lesson, error: lessonError } = await supabase
       .from('lessons')
       .select('*')
       .eq('id', params.id)
-      .single();
+      .maybeSingle();
 
     if (lessonError || !lesson) {
       return NextResponse.json(
@@ -27,7 +25,7 @@ export async function GET(
     }
 
     // 2) Buscar módulo + todas as lições do módulo (para prev/next)
-    const { data: module, error: moduleError } = await db
+    const { data: module, error: moduleError } = await supabase
       .from('modules')
       .select(
         `
@@ -36,7 +34,7 @@ export async function GET(
       `,
       )
       .eq('id', lesson.module_id)
-      .single();
+      .maybeSingle();
 
     if (moduleError || !module) {
       return NextResponse.json(
@@ -45,11 +43,16 @@ export async function GET(
       );
     }
 
-    // 3) Ver se a lição já foi concluída pelo utilizador
+    // 3) Ver se o user é o autor da lição
+    const isAuthor =
+      !!user && !!lesson.author_id && lesson.author_id === user.id;
+
+    // 4) Ver se a lição já foi concluída por ESTE utilizador
+    //    Se for autor, ignoramos completions (criador nunca "completa" a própria lição)
     let isCompleted = false;
 
-    if (user) {
-      const { data: completion, error: completionError } = await db
+    if (user && !isAuthor) {
+      const { data: completion, error: completionError } = await supabase
         .from('lesson_completions')
         .select('id')
         .eq('user_id', user.id)
@@ -61,15 +64,12 @@ export async function GET(
       }
     }
 
-    const isCreator =
-      !!user && !!lesson.author_id && lesson.author_id === user.id;
-
     return NextResponse.json({
       success: true,
       lesson,
       module,
       isCompleted,
-      isCreator,
+      isAuthor,
     });
   } catch (error) {
     console.error('Error in GET /api/lessons/[id]:', error);

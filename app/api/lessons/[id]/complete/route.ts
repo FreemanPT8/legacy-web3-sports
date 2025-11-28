@@ -48,12 +48,20 @@ export async function POST(
       console.error('Fatal error loading lesson author:', e);
     }
 
-    // 1) Já completa?
-    const already = await hasCompletedContent(
-      userId,
-      lessonId,
-      'lesson',
-    );
+    // ✅ Se for o autor da lição:
+    // - não regista completion,
+    // - não atribui XP ao próprio,
+    // - apenas devolve sucesso (o consumo do próprio conteúdo não gera XP).
+    if (isAuthor) {
+      return NextResponse.json({
+        success: true,
+        isAuthor: true,
+        alreadyCompleted: false,
+      });
+    }
+
+    // 1) Já completa por este utilizador?
+    const already = await hasCompletedContent(userId, lessonId, 'lesson');
     if (already) {
       return NextResponse.json(
         {
@@ -65,15 +73,12 @@ export async function POST(
       );
     }
 
-    // 2) Registar em lesson_completions
-    //    se for autor → xp_earned = 0
-    const xpToStore = isAuthor ? 0 : xpEarned;
-
+    // 2) Registar em lesson_completions (para este leitor)
     const completeResult = await markContentComplete(
       userId,
       lessonId,
       'lesson',
-      xpToStore,
+      xpEarned,
     );
 
     if (!completeResult.success) {
@@ -87,16 +92,7 @@ export async function POST(
       );
     }
 
-    // 3) Se for autor → não ganha XP, apenas fica marcado como completo
-    if (isAuthor) {
-      return NextResponse.json({
-        success: true,
-        newTotal: undefined,
-        isAuthor: true,
-      });
-    }
-
-    // 4) Atribuir XP ao utilizador que completou a lição
+    // 3) Atribuir XP ao utilizador que completou a lição
     const xpResult = await awardXP(
       userId,
       'Complete lesson',
@@ -115,7 +111,7 @@ export async function POST(
       );
     }
 
-    // 5) Bónus de criador (19%) para o autor da lição
+    // 4) Bónus de criador (19%) para o autor da lição, se existir e for diferente do leitor
     try {
       if (authorId && authorId !== userId) {
         const creatorBonus = Math.floor(xpEarned * 0.19);

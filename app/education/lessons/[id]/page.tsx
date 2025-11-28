@@ -62,6 +62,7 @@ export default function LessonPage() {
 
   useEffect(() => {
     const fetchLesson = async () => {
+      setLoading(true);
       try {
         const token = getToken();
         const response = await fetch(`/api/lessons/${params.id}`, {
@@ -80,7 +81,7 @@ export default function LessonPage() {
           setLesson(fetchedLesson);
           setModule(fetchedModule);
           setIsCompleted(data.isCompleted || false);
-          setIsCreator(!!data.isCreator);
+          setIsCreator(!!data.isAuthor);
 
           if (
             fetchedModule?.lessons &&
@@ -106,8 +107,9 @@ export default function LessonPage() {
         }
       } catch (error) {
         console.error('Failed to fetch lesson:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchLesson();
@@ -184,6 +186,7 @@ export default function LessonPage() {
                 <div className="flex items-center justify-between mb-3">
                   <Badge variant="outline">{moduleTitle}</Badge>
 
+                  {/* Creator vs Completed */}
                   {isCreator ? (
                     <Badge className="bg-purple-600 text-white flex items-center gap-1">
                       <PenSquare className="h-3 w-3" />
@@ -226,8 +229,8 @@ export default function LessonPage() {
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
-                  initialCompleted={isCompleted}
-                  disabled={isCreator} // ✅ criador não tem Reading Progress
+                  disabled={isCreator}
+                  initialCompleted={isCreator ? false : isCompleted}
                   onComplete={() => setIsCompleted(true)}
                 >
                   <div dangerouslySetInnerHTML={{ __html: content }} />
@@ -235,7 +238,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão apenas para alunos, não para criador */}
+            {/* Mensagem de conclusão — só para alunos, nunca para criador */}
             {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
@@ -260,11 +263,8 @@ export default function LessonPage() {
                 >
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Previous:{' '}
-                    {getMultilingualContent(
-                      prevLesson.title,
-                      language,
-                    )}
+                    Previous{' '}
+                    {getMultilingualContent(prevLesson.title, language)}
                   </Button>
                 </Link>
               ) : (
@@ -277,7 +277,7 @@ export default function LessonPage() {
                   className="flex-1"
                 >
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Next:{' '}
+                    Next{' '}
                     {getMultilingualContent(nextLesson.title, language)}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
