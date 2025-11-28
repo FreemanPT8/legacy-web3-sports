@@ -38,7 +38,7 @@ async function ensureCanManageCourses(request: NextRequest): Promise<AuthOk> {
   return { ok: true, user: currentUser, role };
 }
 
-// GET → (opcional, se precisares de editar num ecrã separado)
+// GET → obter dados de uma lição (para edição)
 export async function GET(
   request: NextRequest,
   { params }: { params: { lessonId: string } },
@@ -73,7 +73,7 @@ export async function GET(
   }
 }
 
-// PUT → atualizar lição
+// PUT → atualizar lição (inclui published/draft)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { lessonId: string } },
@@ -94,7 +94,7 @@ export async function PUT(
       estimated_time,
       image_url,
       file_url,
-      // published, // ⚠ só quando a coluna existir
+      published, // ✅ AGORA SUPORTADO
     } = body || {};
 
     const updatePayload: Record<string, any> = {};
@@ -113,16 +113,16 @@ export async function PUT(
     if (typeof file_url === 'string' || file_url === null)
       updatePayload.file_url = file_url;
 
-    // if (typeof published === 'boolean') {
-    //   updatePayload.published = published;
-    // }
+    if (typeof published === 'boolean') {
+      updatePayload.published = published;
+    }
 
     if (Object.keys(updatePayload).length === 0) {
       return NextResponse.json(
         {
           success: false,
           error:
-            'No updatable fields provided. (title, description, content, xp_reward, xp_threshold, order, estimated_time, image_url, file_url)',
+            'No updatable fields provided. (title, description, content, xp_reward, xp_threshold, order, estimated_time, image_url, file_url, published)',
         },
         { status: 400 },
       );
