@@ -9,7 +9,6 @@ import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
-
 import {
   Card,
   CardContent,
@@ -66,7 +65,7 @@ interface LessonApiResponse {
 
 export default function LessonPage() {
   const params = useParams();
-  const { user, getToken } = useAuth();
+  const { user } = useAuth();
   const { language } = useLanguage();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -79,62 +78,96 @@ export default function LessonPage() {
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
 
   useEffect(() => {
-    const load = async () => {
+    const fetchLesson = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
+        const lessonId = params.id as string;
+        const userId = user?.id || '';
+        const query = userId
+          ? `?userId=${encodeURIComponent(userId)}`
+          : '';
 
-        const token = getToken();
-        const res = await fetch(`/api/lessons/${params.id}`, {
+        const res = await fetch(`/api/lessons/${lessonId}${query}`, {
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
         const data: LessonApiResponse = await res.json();
 
-        if (!res.ok || !data.success) {
+        if (!res.ok || !data.success || !data.lesson || !data.module) {
           setLesson(null);
           setModule(null);
           setIsCompleted(false);
           setIsCreator(false);
           setStats(null);
+          setNextLesson(null);
+          setPrevLesson(null);
           return;
         }
 
-        setLesson(data.lesson);
-        setModule(data.module);
+        const fetchedLesson = data.lesson;
+        const fetchedModule = data.module;
 
+        setLesson(fetchedLesson);
+        setModule(fetchedModule);
+
+        // Criador nunca aparece como completed
         const creatorFlag = !!data.isCreator;
         setIsCreator(creatorFlag);
-
-        // Criador nunca aparece completed
         setIsCompleted(creatorFlag ? false : !!data.isCompleted);
 
-        setStats(data.stats ?? null);
+        if (data.stats) {
+          setStats(data.stats);
+        } else {
+          setStats(null);
+        }
 
-        // Prev / Next
-        const lessonsList = [...(data.module.lessons || [])].sort(
-          (a, b) => (a.order || 0) - (b.order || 0)
-        );
+        // Calcular prev / next dentro do módulo
+        if (fetchedModule?.lessons && Array.isArray(fetchedModule.lessons)) {
+          const orderedLessons = [...fetchedModule.lessons].sort(
+            (a, b) => (a.order || 0) - (b.order || 0),
+          );
 
-        const index = lessonsList.findIndex(l => l.id === data.lesson.id);
+          const currentIndex = orderedLessons.findIndex(
+            (l) => l.id === fetchedLesson.id,
+          );
 
-        setPrevLesson(index > 0 ? lessonsList[index - 1] : null);
-        setNextLesson(
-          index >= 0 && index < lessonsList.length - 1
-            ? lessonsList[index + 1]
-            : null
-        );
-      } catch (err) {
-        console.error('Lesson load error:', err);
+          if (currentIndex > 0) {
+            setPrevLesson(orderedLessons[currentIndex - 1]);
+          } else {
+            setPrevLesson(null);
+          }
+          if (
+            currentIndex >= 0 &&
+            currentIndex < orderedLessons.length - 1
+          ) {
+            setNextLesson(orderedLessons[currentIndex + 1]);
+          } else {
+            setNextLesson(null);
+          }
+        } else {
+          setNextLesson(null);
+          setPrevLesson(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch lesson:', error);
+        setLesson(null);
+        setModule(null);
+        setIsCompleted(false);
+        setIsCreator(false);
+        setStats(null);
+        setNextLesson(null);
+        setPrevLesson(null);
       } finally {
         setLoading(false);
       }
     };
 
-    load();
-  }, [params.id, getToken]);
+    if (params.id) {
+      fetchLesson();
+    }
+  }, [params.id, user?.id]);
 
   if (loading) {
     return (
@@ -143,7 +176,9 @@ export default function LessonPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">Loading lesson...</p>
+            <p className="text-gray-600 dark:text-gray-300">
+              Loading lesson...
+            </p>
           </div>
         </main>
         <Footer />
@@ -159,7 +194,9 @@ export default function LessonPage() {
           <Card className="max-w-md">
             <CardContent className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Lesson Not Found</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Lesson Not Found
+              </h3>
               <p className="text-gray-600 mb-4">
                 This lesson doesn&apos;t exist or has been removed.
               </p>
@@ -175,25 +212,23 @@ export default function LessonPage() {
   }
 
   const title = getMultilingualContent(lesson.title, language);
-  const description = getMultilingualContent(lesson.description, language);
+  const description = getMultilingualContent(
+    lesson.description,
+    language,
+  );
   const content = getMultilingualContent(lesson.content, language);
   const moduleTitle = getMultilingualContent(module.title, language);
 
   const durationMinutes = lesson.estimated_time ?? 10;
-
   const creatorName =
     lesson.author_name ||
     (lesson.author_id ? 'Creator' : 'Admin');
-
   const createdAtStr = lesson.created_at
     ? new Date(lesson.created_at).toLocaleDateString()
     : '-';
 
   const completedCount = stats?.completedCount ?? 0;
   const totalXpDistributed = stats?.totalXpDistributed ?? 0;
-
-  // Criador nunca pode passar completed ao ContentTracker
-  const finalInitialCompleted = isCreator ? false : isCompleted;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -202,7 +237,6 @@ export default function LessonPage() {
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-
             <div className="mb-6">
               <Link href={`/education/courses/${module.course_id}`}>
                 <Button variant="ghost" className="mb-4">
@@ -212,7 +246,7 @@ export default function LessonPage() {
               </Link>
             </div>
 
-            {/* Header da Lição */}
+            {/* Header da lição */}
             <Card className="mb-4">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
@@ -223,28 +257,26 @@ export default function LessonPage() {
                       <PenSquare className="h-3 w-3" />
                       Creator
                     </Badge>
-                  ) : finalInitialCompleted ? (
+                  ) : isCompleted ? (
                     <Badge className="bg-green-600 text-white flex items-center gap-1">
                       <CheckCircle className="h-3 w-3" />
                       Completed
                     </Badge>
                   ) : null}
                 </div>
-
                 <CardTitle className="text-3xl">{title}</CardTitle>
-
                 {description && (
-                  <p className="text-gray-600 text-lg mt-2">{description}</p>
+                  <p className="text-gray-600 text-lg mt-2">
+                    {description}
+                  </p>
                 )}
               </CardHeader>
-
               <CardContent>
                 <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     <span>{durationMinutes} minutes</span>
                   </div>
-
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4" />
                     <span>{lesson.xp_reward} XP reward</span>
@@ -253,7 +285,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Meta Info */}
+            {/* Meta info: criador, datas e estatísticas */}
             <Card className="mb-6">
               <CardContent className="py-4 text-sm text-gray-700 dark:text-gray-300">
                 <div className="grid gap-3 md:grid-cols-4">
@@ -263,21 +295,18 @@ export default function LessonPage() {
                     </span>
                     <span className="font-semibold">{creatorName}</span>
                   </div>
-
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
                       Created at
                     </span>
                     <span>{createdAtStr}</span>
                   </div>
-
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
                       Completed
                     </span>
                     <span>{completedCount} times</span>
                   </div>
-
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
                       XP distributed
@@ -288,7 +317,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Conteúdo + Tracking */}
+            {/* Conteúdo + ContentTracker */}
             <Card className="mb-6">
               <CardContent className="prose prose-lg max-w-none py-8">
                 <ContentTracker
@@ -297,7 +326,7 @@ export default function LessonPage() {
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
-                  initialCompleted={finalInitialCompleted}
+                  initialCompleted={isCompleted}
                   isAuthor={isCreator}
                   onComplete={() => setIsCompleted(true)}
                 >
@@ -306,8 +335,8 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Completed Banner (apenas leitores, nunca criador) */}
-            {finalInitialCompleted && !isCreator && (
+            {/* Mensagem de conclusão → só para leitores, nunca para criador */}
+            {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
@@ -315,7 +344,8 @@ export default function LessonPage() {
                     Lesson Completed!
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    You earned {lesson.xp_reward} XP for completing this lesson.
+                    You earned {lesson.xp_reward} XP for completing this
+                    lesson (only the first time you read it).
                   </p>
                 </CardContent>
               </Card>
@@ -324,11 +354,17 @@ export default function LessonPage() {
             {/* Navegação Prev / Next */}
             <div className="flex justify-between gap-4">
               {prevLesson ? (
-                <Link href={`/education/lessons/${prevLesson.id}`} className="flex-1">
+                <Link
+                  href={`/education/lessons/${prevLesson.id}`}
+                  className="flex-1"
+                >
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Previous:{' '}
-                    {getMultilingualContent(prevLesson.title, language)}
+                    {getMultilingualContent(
+                      prevLesson.title,
+                      language,
+                    )}
                   </Button>
                 </Link>
               ) : (
@@ -336,7 +372,10 @@ export default function LessonPage() {
               )}
 
               {nextLesson ? (
-                <Link href={`/education/lessons/${nextLesson.id}`} className="flex-1">
+                <Link
+                  href={`/education/lessons/${nextLesson.id}`}
+                  className="flex-1"
+                >
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
                     Next:{' '}
                     {getMultilingualContent(nextLesson.title, language)}
@@ -344,7 +383,10 @@ export default function LessonPage() {
                   </Button>
                 </Link>
               ) : (
-                <Link href={`/education/courses/${module.course_id}`} className="flex-1">
+                <Link
+                  href={`/education/courses/${module.course_id}`}
+                  className="flex-1"
+                >
                   <Button className="w-full bg-green-600 hover:bg-green-700">
                     Back to Course
                     <CheckCircle className="h-4 w-4 ml-2" />

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
-import { verifyAuth } from '@/lib/auth';
 
 interface RouteContext {
   params: { id: string };
@@ -16,11 +15,11 @@ export async function GET(
   const { id } = context.params;
 
   try {
-    const authHeader = request.headers.get('Authorization');
-    const user = authHeader ? await verifyAuth(authHeader) : null;
-    const userId = user?.id ?? null;
+    // Vamos receber o userId via query string (vindo do frontend)
+    const url = new URL(request.url);
+    const userId = url.searchParams.get('userId');
 
-    // 1) Buscar a lição (sem joins para evitar ruído)
+    // 1) Buscar a lição
     const { data: rawLesson, error: lessonError } = await db
       .from('lessons')
       .select('*')
@@ -42,7 +41,7 @@ export async function GET(
       );
     }
 
-    // 2) Buscar o módulo a que pertence
+    // 2) Buscar o módulo da lição
     const { data: rawModule, error: moduleError } = await db
       .from('modules')
       .select('id, title, course_id, author_id')
@@ -64,7 +63,7 @@ export async function GET(
       );
     }
 
-    // 3) Buscar TODAS as lições desse módulo (para prev/next)
+    // 3) Buscar TODAS as lições do módulo (para prev/next)
     const { data: moduleLessons, error: lessonsError } = await db
       .from('lessons')
       .select('id, title, order')
@@ -74,7 +73,7 @@ export async function GET(
       console.error('Error fetching module lessons:', lessonsError);
     }
 
-    // 4) Buscar completions desta lição (stats + isCompleted)
+    // 4) Buscar completions desta lição (para stats e isCompleted)
     const { data: completions, error: completionsError } = await db
       .from('lesson_completions')
       .select('user_id, xp_earned')
@@ -93,7 +92,7 @@ export async function GET(
     const completedCount = completionsArray.length;
 
     const totalXpDistributed = completionsArray.reduce(
-      (sum: number, row) => sum + (row.xp_earned || 0),
+      (sum: number, row: any) => sum + (row.xp_earned ?? 0),
       0,
     );
 
@@ -108,7 +107,8 @@ export async function GET(
       !isCreator &&
       completionsArray.some((c) => c.user_id === userId);
 
-    // 6) Montar objetos na forma esperada pelo frontend
+    // 6) Objetos no formato esperado pelo frontend
+
     const lesson = {
       id: rawLesson.id,
       title: rawLesson.title,
@@ -119,7 +119,7 @@ export async function GET(
       order: rawLesson.order,
       module_id: rawLesson.module_id,
       author_id: rawLesson.author_id,
-      author_name: rawLesson.author_name || null, // se existir na tabela
+      author_name: rawLesson.author_name || null,
       created_at: rawLesson.created_at,
     };
 
