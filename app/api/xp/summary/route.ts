@@ -5,6 +5,12 @@ import { verifyAuth } from '@/lib/auth';
 
 const db = supabaseAdmin ?? supabase;
 
+type UserRow = {
+  id: string;
+  username: string | null;
+  xp_total: number | null;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -33,7 +39,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const safeUsers = (users || []).map((u) => ({
+    const rawUsers = (users || []) as UserRow[];
+
+    const safeUsers = rawUsers.map((u: UserRow) => ({
       ...u,
       xp_total: Number(u.xp_total || 0),
     }));
@@ -49,13 +57,24 @@ export async function GET(request: NextRequest) {
     const avgXPPerUser =
       totalUsersWithXP > 0 ? Math.round(totalXP / totalUsersWithXP) : 0;
 
-    let topUser: { id: string; username: string | null; xp_total: number } | null =
-      null;
+    let topUser:
+      | {
+          id: string;
+          username: string | null;
+          xp_total: number;
+        }
+      | null = null;
 
     if (safeUsers.length > 0) {
-      topUser = safeUsers
+      const sorted = safeUsers
         .slice()
-        .sort((a, b) => (b.xp_total || 0) - (a.xp_total || 0))[0] as any;
+        .sort((a, b) => (b.xp_total || 0) - (a.xp_total || 0));
+      const t = sorted[0];
+      topUser = {
+        id: t.id,
+        username: t.username,
+        xp_total: t.xp_total || 0,
+      };
     }
 
     return NextResponse.json({
