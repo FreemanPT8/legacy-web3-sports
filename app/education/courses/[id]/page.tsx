@@ -37,6 +37,8 @@ type Lesson = {
   author_name?: string | null;
   isCompleted?: boolean;
   isCreator?: boolean;
+  xp_distributed_total?: number;
+  completed_count?: number;
 };
 
 type Module = {
@@ -47,6 +49,7 @@ type Module = {
   author_name?: string | null;
   isCreator?: boolean;
   lessons?: Lesson[];
+  xp_distributed_total?: number;
 };
 
 type Course = {
@@ -64,6 +67,7 @@ type Course = {
   total_modules?: number;
   total_lessons?: number;
   total_xp?: number;
+  xp_distributed_total?: number;
 };
 
 export default function CourseDetailPage() {
@@ -154,9 +158,7 @@ export default function CourseDetailPage() {
     if (!text) return 'LG';
     const words = text.trim().split(' ');
     if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-    return (
-      (words[0][0] || '') + (words[1][0] || '')
-    ).toUpperCase();
+    return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
   };
 
   if (loading) {
@@ -220,6 +222,7 @@ export default function CourseDetailPage() {
   const totalLessons = course.total_lessons ?? 0;
   const totalXP = course.total_xp ?? 0;
   const xpRequired = course.xp_threshold ?? 0;
+  const xpDistributed = course.xp_distributed_total ?? 0;
 
   const authorName = course.author_name || 'Admin';
   const isCourseCreator =
@@ -332,6 +335,16 @@ export default function CourseDetailPage() {
                         )}
                       </span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-green-600" />
+                      <span>
+                        {xpDistributed}{' '}
+                        {tr(
+                          'courses.xpDistributed',
+                          'XP já distribuído',
+                        )}
+                      </span>
+                    </div>
                     {xpRequired > 0 && (
                       <div className="mt-1 text-xs text-gray-500">
                         {tr(
@@ -377,6 +390,9 @@ export default function CourseDetailPage() {
                     ? (mod.lessons as Lesson[])
                     : [];
 
+                  const moduleXpDistributed =
+                    mod.xp_distributed_total ?? 0;
+
                   return (
                     <Card key={mod.id}>
                       <CardHeader className="pb-3">
@@ -391,10 +407,20 @@ export default function CourseDetailPage() {
                                 </Badge>
                               )}
                             </CardTitle>
-                            <div className="mt-1 text-xs text-gray-500">
-                              {tr('courses.by', 'Criado por')}{' '}
-                              <span className="font-semibold">
-                                {moduleAuthorName}
+                            <div className="mt-1 text-xs text-gray-500 flex flex-wrap items-center gap-2">
+                              <span>
+                                {tr('courses.by', 'Criado por')}{' '}
+                                <span className="font-semibold">
+                                  {moduleAuthorName}
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Award className="h-3 w-3 text-green-600" />
+                                {moduleXpDistributed}{' '}
+                                {tr(
+                                  'courses.moduleXpDistributed',
+                                  'XP distribuído neste módulo',
+                                )}
                               </span>
                             </div>
                           </div>
