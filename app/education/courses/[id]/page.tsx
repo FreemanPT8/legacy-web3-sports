@@ -21,6 +21,7 @@ import {
   Clock,
   CheckCircle,
   PenSquare,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -74,7 +75,7 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // helper para evitar mostrar "courses.x" no UI
+  // helper simples para evitar mostrar "courses.xyz" no UI
   const tr = (key: string, fallback: string) => {
     const val = t(key);
     return val === key ? fallback : val;
@@ -446,7 +447,7 @@ export default function CourseDetailPage() {
                                           'courses.openLesson',
                                           'Abrir lição',
                                         )}
-                                        <ArrowLeft className="h-3 w-3 rotate-180 ml-1" />
+                                        <ArrowRight className="h-3 w-3 ml-1" />
                                       </Button>
                                     </Link>
                                   </div>
