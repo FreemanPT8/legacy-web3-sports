@@ -1,9 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getMultilingualContent } from '@/lib/i18n';
+
 import {
   Card,
   CardContent,
@@ -11,6 +16,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+
 import {
   Calendar,
   User,
@@ -18,8 +25,8 @@ import {
   Clock,
   CheckCircle2,
   PenSquare,
+  Award,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 
 type MultiLang = Record<string, string>;
 
@@ -32,17 +39,21 @@ type BlogPost = {
   author_id?: string | null;
   created_at?: string;
   views?: number | null;
-  registered_views?: number | null;
-  registered_readers_count?: number | null;
-  total_xp_given?: number | null;
+
+  // métricas de XP / leitores (vindas da tabela, se existirem)
   xp_reward?: number | null;
   reading_time?: number | null;
+  total_xp_given?: number | null;
+  registered_readers_count?: number | null;
+
+  // flag calculada no /api/blog para o utilizador atual
   is_completed?: boolean | null;
 };
 
 export default function BlogPage() {
   const router = useRouter();
   const { user, getToken } = useAuth();
+  const { language } = useLanguage();
 
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,20 +88,16 @@ export default function BlogPage() {
     fetchPosts();
   }, [getToken]);
 
-  const getTitle = (title: MultiLang | string) => {
-    if (typeof title === 'string') return title;
-    return title.en || title.pt || title.es || 'Untitled post';
-  };
+  // helpers multilíngua
+  const resolveTitle = (title: MultiLang | string) =>
+    typeof title === 'string'
+      ? title
+      : getMultilingualContent(title, language);
 
-  const getExcerpt = (excerpt: MultiLang | string) => {
-    if (typeof excerpt === 'string') return excerpt;
-    return (
-      excerpt.en ||
-      excerpt.pt ||
-      excerpt.es ||
-      'No description available.'
-    );
-  };
+  const resolveExcerpt = (excerpt: MultiLang | string) =>
+    typeof excerpt === 'string'
+      ? excerpt
+      : getMultilingualContent(excerpt, language);
 
   const formatDate = (iso?: string) => {
     if (!iso) return '-';
@@ -99,22 +106,92 @@ export default function BlogPage() {
     return d.toLocaleDateString();
   };
 
+  // estatísticas globais para o header (XP total em jogo, nº artigos, etc.)
+  const globalStats = useMemo(() => {
+    if (!posts.length) {
+      return {
+        totalArticles: 0,
+        totalXpAvailable: 0,
+        totalRegisteredReaders: 0,
+      };
+    }
+
+    const totalArticles = posts.length;
+    const totalXpAvailable = posts.reduce((sum, p) => {
+      const xp = typeof p.xp_reward === 'number' ? p.xp_reward : 0;
+      return sum + xp;
+    }, 0);
+
+    const totalRegisteredReaders = posts.reduce((sum, p) => {
+      const readers =
+        typeof p.registered_readers_count === 'number'
+          ? p.registered_readers_count
+          : 0;
+      return sum + readers;
+    }, 0);
+
+    return {
+      totalArticles,
+      totalXpAvailable,
+      totalRegisteredReaders,
+    };
+  }, [posts]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-10">
         <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          {/* HERO / HEADER DO BLOG */}
+          <section className="max-w-4xl mx-auto mb-10">
+            <h1 className="text-3xl md:text-4xl font-bold mb-3">
               Blog
             </h1>
             <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
               Artigos para te ajudar a perceber o universo Web3, a
-              blockchain Apertum e a integração com o desporto.
+              blockchain Apertum e a integração com o desporto, sem
+              bullshit, sem hype, só conteúdo prático.
             </p>
-          </div>
 
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <Card className="border-blue-100 bg-blue-50/60">
+                <CardContent className="py-4">
+                  <div className="text-xs uppercase text-gray-500 mb-1">
+                    Artigos publicados
+                  </div>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {globalStats.totalArticles}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-emerald-100 bg-emerald-50/60">
+                <CardContent className="py-4">
+                  <div className="text-xs uppercase text-gray-500 mb-1">
+                    XP disponível para ganhar
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-700 flex items-center gap-1">
+                    <Award className="h-5 w-5" />
+                    {globalStats.totalXpAvailable}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-indigo-100 bg-indigo-50/60">
+                <CardContent className="py-4">
+                  <div className="text-xs uppercase text-gray-500 mb-1">
+                    Leituras registadas
+                  </div>
+                  <div className="text-2xl font-bold text-indigo-700">
+                    {globalStats.totalRegisteredReaders}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+
+          {/* LISTA DE POSTS */}
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="text-center">
@@ -131,15 +208,16 @@ export default function BlogPage() {
               </p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6">
+            <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
               {posts.map((post) => {
-                const isAuthor =
-                  !!user && !!post.author_id && post.author_id === user.id;
-                const isCompleted =
-                  !!post.is_completed && !isAuthor; // NUNCA mostrar completed ao autor
+                const title = resolveTitle(post.title);
+                const excerpt = resolveExcerpt(post.excerpt);
 
                 const xpReward =
-                  typeof post.xp_reward === 'number' ? post.xp_reward : 0;
+                  typeof post.xp_reward === 'number'
+                    ? post.xp_reward
+                    : 0;
+
                 const readingMinutes =
                   typeof post.reading_time === 'number'
                     ? post.reading_time
@@ -149,18 +227,26 @@ export default function BlogPage() {
                   typeof post.total_xp_given === 'number'
                     ? post.total_xp_given
                     : 0;
+
                 const registeredReaders =
                   typeof post.registered_readers_count === 'number'
                     ? post.registered_readers_count
                     : 0;
 
+                const isAuthor =
+                  !!user && !!post.author_id && post.author_id === user.id;
+
+                const isCompleted =
+                  !!post.is_completed && !isAuthor; // nunca mostrar completed ao autor
+
                 return (
                   <Card
                     key={post.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="flex flex-col hover:shadow-md transition-shadow cursor-pointer"
                     onClick={() => router.push(`/blog/${post.id}`)}
                   >
                     <CardHeader className="space-y-3">
+                      {/* Badges topo */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">
@@ -183,16 +269,18 @@ export default function BlogPage() {
                         </div>
                       </div>
 
-                      <CardTitle className="text-xl">
-                        {getTitle(post.title)}
+                      {/* Título + excerpt */}
+                      <CardTitle className="text-xl line-clamp-2">
+                        {title}
                       </CardTitle>
-
                       <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
-                        {getExcerpt(post.excerpt)}
+                        {excerpt}
                       </p>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+
+                    <CardContent className="flex-1 flex flex-col justify-between space-y-3">
+                      {/* Meta info */}
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-1">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
                           {post.author || 'Admin'}
@@ -205,15 +293,15 @@ export default function BlogPage() {
                           <Clock className="h-3 w-3" />
                           {readingMinutes} min read
                         </span>
-                        {typeof post.views === 'number' &&
-                          post.views >= 0 && (
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {post.views}
-                            </span>
-                          )}
+                        {typeof post.views === 'number' && post.views >= 0 && (
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            {post.views}
+                          </span>
+                        )}
                       </div>
 
+                      {/* Estatísticas de XP */}
                       <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-3">
                         <span>
                           XP por leitura:{' '}
@@ -222,7 +310,7 @@ export default function BlogPage() {
                           </span>
                         </span>
                         <span>
-                          XP distribuído até agora:{' '}
+                          XP distribuído:{' '}
                           <span className="font-semibold">
                             {totalXp} XP
                           </span>
@@ -238,7 +326,7 @@ export default function BlogPage() {
                   </Card>
                 );
               })}
-            </div>
+            </section>
           )}
         </div>
       </main>
