@@ -51,6 +51,7 @@ type Course = {
   total_modules?: number;
   total_lessons?: number;
   total_xp?: number;
+  xp_distributed_total?: number;
 };
 
 export default function CoursesPage() {
@@ -257,6 +258,9 @@ export default function CoursesPage() {
                       );
                     }, 0);
 
+                  const xpDistributed =
+                    course.xp_distributed_total ?? 0;
+
                   const xpRequired = course.xp_threshold ?? 0;
                   const isLocked = userXP < xpRequired;
 
@@ -265,7 +269,9 @@ export default function CoursesPage() {
                   const isCourseCreator = !!course.isCreator;
 
                   const imageUrl =
-                    course.image_url || course.thumbnail_url || null;
+                    course.image_url ||
+                    course.thumbnail_url ||
+                    null;
 
                   const initials = getInitials(title);
 
@@ -336,22 +342,26 @@ export default function CoursesPage() {
                           </div>
                         </div>
                       </CardHeader>
+
                       <CardContent className="flex-1 flex flex-col justify-between pt-0 space-y-4">
-                        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-blue-600" />
-                            <span>
-                              {totalModules}{' '}
-                              {tr('courses.modules', 'módulos')}
-                            </span>
+                        <div className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4 text-blue-600" />
+                              <span>
+                                {totalModules}{' '}
+                                {tr('courses.modules', 'módulos')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4 text-blue-600" />
+                              <span>
+                                {totalLessons}{' '}
+                                {tr('courses.lessons', 'lições')}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-blue-600" />
-                            <span>
-                              {totalLessons}{' '}
-                              {tr('courses.lessons', 'lições')}
-                            </span>
-                          </div>
+
                           <div className="flex items-center gap-2">
                             <Award className="h-4 w-4 text-blue-600" />
                             <span>
@@ -359,6 +369,14 @@ export default function CoursesPage() {
                               {tr(
                                 'courses.totalXP',
                                 'XP disponível',
+                              )}
+                              {xpDistributed > 0 && (
+                                <>
+                                  {' · '}
+                                  <span className="text-[11px] text-gray-500">
+                                    {xpDistributed} XP já distribuído
+                                  </span>
+                                </>
                               )}
                             </span>
                           </div>
