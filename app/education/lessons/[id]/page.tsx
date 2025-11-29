@@ -230,6 +230,10 @@ export default function LessonPage() {
   const completedCount = stats?.completedCount ?? 0;
   const totalXpDistributed = stats?.totalXpDistributed ?? 0;
 
+  const backHref = module.course_id
+    ? `/education/courses/${module.course_id}`
+    : '/education/courses';
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -238,7 +242,7 @@ export default function LessonPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="mb-6">
-              <Link href={`/education/courses/${module.course_id}`}>
+              <Link href={backHref}>
                 <Button variant="ghost" className="mb-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Course
@@ -383,10 +387,7 @@ export default function LessonPage() {
                   </Button>
                 </Link>
               ) : (
-                <Link
-                  href={`/education/courses/${module.course_id}`}
-                  className="flex-1"
-                >
+                <Link href={backHref} className="flex-1">
                   <Button className="w-full bg-green-600 hover:bg-green-700">
                     Back to Course
                     <CheckCircle className="h-4 w-4 ml-2" />

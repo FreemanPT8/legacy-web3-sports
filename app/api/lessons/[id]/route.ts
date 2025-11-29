@@ -15,7 +15,6 @@ export async function GET(
   const { id } = context.params;
 
   try {
-    // Vamos receber o userId via query string (vindo do frontend)
     const url = new URL(request.url);
     const userId = url.searchParams.get('userId');
 
@@ -41,36 +40,39 @@ export async function GET(
       );
     }
 
-    // 2) Buscar o módulo da lição
-    const { data: rawModule, error: moduleError } = await db
+    // 2) Tentar buscar o módulo da lição
+    let rawModule: any = null;
+    let moduleError: any = null;
+
+    const { data: moduleData, error: mError } = await db
       .from('modules')
       .select('id, title, course_id, author_id')
       .eq('id', rawLesson.module_id)
       .maybeSingle();
 
-    if (moduleError) {
-      console.error('Error fetching module:', moduleError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load module' },
-        { status: 500 },
-      );
+    if (mError) {
+      moduleError = mError;
+      console.error('Error fetching module (non-fatal):', mError);
+    } else {
+      rawModule = moduleData;
     }
 
-    if (!rawModule) {
-      return NextResponse.json(
-        { success: false, error: 'Module not found' },
-        { status: 404 },
-      );
-    }
+    // 3) Buscar TODAS as lições do módulo (para prev/next) — se tivermos módulo
+    let moduleLessons: any[] = [];
+    if (rawModule?.id) {
+      const { data: lessonsData, error: lessonsError } = await db
+        .from('lessons')
+        .select('id, title, order')
+        .eq('module_id', rawModule.id);
 
-    // 3) Buscar TODAS as lições do módulo (para prev/next)
-    const { data: moduleLessons, error: lessonsError } = await db
-      .from('lessons')
-      .select('id, title, order')
-      .eq('module_id', rawModule.id);
-
-    if (lessonsError) {
-      console.error('Error fetching module lessons:', lessonsError);
+      if (lessonsError) {
+        console.error(
+          'Error fetching module lessons (non-fatal):',
+          lessonsError,
+        );
+      } else if (Array.isArray(lessonsData)) {
+        moduleLessons = lessonsData;
+      }
     }
 
     // 4) Buscar completions desta lição (para stats e isCompleted)
@@ -81,7 +83,7 @@ export async function GET(
 
     if (completionsError) {
       console.error(
-        'Error fetching lesson completions:',
+        'Error fetching lesson completions (non-fatal):',
         completionsError,
       );
     }
@@ -123,19 +125,28 @@ export async function GET(
       created_at: rawLesson.created_at,
     };
 
-    const module = {
-      id: rawModule.id,
-      title: rawModule.title,
-      course_id: rawModule.course_id,
-      author_id: rawModule.author_id,
-      lessons: Array.isArray(moduleLessons)
-        ? moduleLessons.map((l: any) => ({
-            id: l.id,
-            title: l.title,
-            order: l.order,
-          }))
-        : [],
-    };
+    // Se o módulo falhar, devolvemos um módulo "mínimo" para a UI não rebentar.
+    const module = rawModule
+      ? {
+          id: rawModule.id,
+          title: rawModule.title,
+          course_id: rawModule.course_id,
+          author_id: rawModule.author_id,
+          lessons: Array.isArray(moduleLessons)
+            ? moduleLessons.map((l: any) => ({
+                id: l.id,
+                title: l.title,
+                order: l.order,
+              }))
+            : [],
+        }
+      : {
+          id: rawLesson.module_id,
+          title: { en: 'Module', pt: 'Módulo' },
+          course_id: '',
+          author_id: null,
+          lessons: [],
+        };
 
     const stats = {
       completedCount,
