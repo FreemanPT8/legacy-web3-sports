@@ -131,6 +131,15 @@ export default function CoursesPage() {
     }
   };
 
+  const getInitials = (text: string) => {
+    if (!text) return 'LG';
+    const words = text.trim().split(' ');
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (
+      (words[0][0] || '') + (words[1][0] || '')
+    ).toUpperCase();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -258,12 +267,15 @@ export default function CoursesPage() {
                   const imageUrl =
                     course.image_url || course.thumbnail_url || null;
 
+                  const initials = getInitials(title);
+
                   return (
                     <Card
                       key={course.id}
                       className="flex flex-col overflow-hidden hover:shadow-md transition-shadow"
                     >
-                      {imageUrl && (
+                      {/* Thumbnail / Placeholder */}
+                      {imageUrl ? (
                         <div className="w-full h-40 bg-gray-200 overflow-hidden">
                           <img
                             src={imageUrl}
@@ -271,7 +283,22 @@ export default function CoursesPage() {
                             className="w-full h-full object-cover"
                           />
                         </div>
+                      ) : (
+                        <div className="w-full h-40 bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 flex items-center justify-center">
+                          <div className="flex flex-col items-center text-white">
+                            <div className="flex items-center gap-2 mb-1">
+                              <BookOpen className="h-6 w-6" />
+                              <span className="text-xl font-bold">
+                                {initials}
+                              </span>
+                            </div>
+                            <span className="text-[11px] uppercase tracking-wide opacity-80">
+                              Legacy Course
+                            </span>
+                          </div>
+                        </div>
                       )}
+
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start gap-3">
                           <div>

@@ -150,6 +150,15 @@ export default function CourseDetailPage() {
     }
   };
 
+  const getInitials = (text: string) => {
+    if (!text) return 'LG';
+    const words = text.trim().split(' ');
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (
+      (words[0][0] || '') + (words[1][0] || '')
+    ).toUpperCase();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -205,6 +214,8 @@ export default function CourseDetailPage() {
   const imageUrl =
     course.image_url || course.thumbnail_url || null;
 
+  const initials = getInitials(title);
+
   const totalModules = course.total_modules ?? 0;
   const totalLessons = course.total_lessons ?? 0;
   const totalXP = course.total_xp ?? 0;
@@ -240,13 +251,28 @@ export default function CourseDetailPage() {
 
             {/* HEADER DO CURSO */}
             <Card className="mb-6 overflow-hidden">
-              {imageUrl && (
+              {/* Thumbnail / Placeholder */}
+              {imageUrl ? (
                 <div className="w-full h-56 bg-gray-200 overflow-hidden">
                   <img
                     src={imageUrl}
                     alt={title}
                     className="w-full h-full object-cover"
                   />
+                </div>
+              ) : (
+                <div className="w-full h-56 bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 flex items-center justify-center">
+                  <div className="flex flex-col items-center text-white">
+                    <div className="flex items-center gap-2 mb-1">
+                      <BookOpen className="h-7 w-7" />
+                      <span className="text-2xl font-bold">
+                        {initials}
+                      </span>
+                    </div>
+                    <span className="text-[11px] uppercase tracking-wide opacity-80">
+                      Legacy Course
+                    </span>
+                  </div>
                 </div>
               )}
 
