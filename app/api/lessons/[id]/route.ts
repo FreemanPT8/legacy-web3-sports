@@ -20,26 +20,10 @@ export async function GET(
     const user = authHeader ? await verifyAuth(authHeader) : null;
     const userId = user?.id ?? null;
 
-    // 1) Buscar a lição + autor
+    // 1) Buscar a lição (sem joins para evitar ruído)
     const { data: rawLesson, error: lessonError } = await db
       .from('lessons')
-      .select(
-        `
-        id,
-        title,
-        description,
-        content,
-        xp_reward,
-        estimated_time,
-        order,
-        module_id,
-        author_id,
-        created_at,
-        author_user:users!lessons_author_id_fkey (
-          username
-        )
-      `,
-      )
+      .select('*')
       .eq('id', id)
       .maybeSingle();
 
@@ -58,17 +42,10 @@ export async function GET(
       );
     }
 
-    // 2) Buscar módulo + todas as lições do módulo (para prev/next)
+    // 2) Buscar o módulo a que pertence
     const { data: rawModule, error: moduleError } = await db
       .from('modules')
-      .select(
-        `
-        id,
-        title,
-        course_id,
-        author_id
-      `,
-      )
+      .select('id, title, course_id, author_id')
       .eq('id', rawLesson.module_id)
       .maybeSingle();
 
@@ -87,25 +64,17 @@ export async function GET(
       );
     }
 
+    // 3) Buscar TODAS as lições desse módulo (para prev/next)
     const { data: moduleLessons, error: lessonsError } = await db
       .from('lessons')
-      .select(
-        `
-        id,
-        title,
-        order
-      `,
-      )
+      .select('id, title, order')
       .eq('module_id', rawModule.id);
 
     if (lessonsError) {
-      console.error(
-        'Error fetching module lessons:',
-        lessonsError,
-      );
+      console.error('Error fetching module lessons:', lessonsError);
     }
 
-    // 3) Buscar completions desta lição (para stats + isCompleted)
+    // 4) Buscar completions desta lição (stats + isCompleted)
     const { data: completions, error: completionsError } = await db
       .from('lesson_completions')
       .select('user_id, xp_earned')
@@ -128,7 +97,7 @@ export async function GET(
       0,
     );
 
-    // 4) Determinar se o utilizador atual é criador / leitor que já completou
+    // 5) Flags: criador / completed (criador nunca conta como completed)
     const isCreator =
       !!userId &&
       !!rawLesson.author_id &&
@@ -139,10 +108,19 @@ export async function GET(
       !isCreator &&
       completionsArray.some((c) => c.user_id === userId);
 
+    // 6) Montar objetos na forma esperada pelo frontend
     const lesson = {
-      ...rawLesson,
-      author_name:
-        rawLesson.author_user?.username || 'Admin',
+      id: rawLesson.id,
+      title: rawLesson.title,
+      description: rawLesson.description,
+      content: rawLesson.content,
+      xp_reward: rawLesson.xp_reward,
+      estimated_time: rawLesson.estimated_time,
+      order: rawLesson.order,
+      module_id: rawLesson.module_id,
+      author_id: rawLesson.author_id,
+      author_name: rawLesson.author_name || null, // se existir na tabela
+      created_at: rawLesson.created_at,
     };
 
     const module = {
@@ -151,23 +129,18 @@ export async function GET(
       course_id: rawModule.course_id,
       author_id: rawModule.author_id,
       lessons: Array.isArray(moduleLessons)
-        ? moduleLessons.map((l) => ({
-            ...l,
-            xp_reward: undefined,
-            estimated_time: undefined,
-            author_id: undefined,
-            author_name: undefined,
+        ? moduleLessons.map((l: any) => ({
+            id: l.id,
+            title: l.title,
+            order: l.order,
           }))
         : [],
     };
 
-    const stats =
-      completionsArray.length > 0
-        ? {
-            completedCount,
-            totalXpDistributed,
-          }
-        : { completedCount: 0, totalXpDistributed: 0 };
+    const stats = {
+      completedCount,
+      totalXpDistributed,
+    };
 
     return NextResponse.json({
       success: true,
