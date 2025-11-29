@@ -8,22 +8,22 @@ interface RouteContext {
 
 const db = supabaseAdmin ?? supabase;
 
-type LessonStatsRow = {
-  lesson_id: string;
-  completed_count: number | null;
-  total_xp: number | null;
+type LessonCompletionRow = {
+  lesson_id: string | null;
+  user_id: string | null;
+  xp_earned: number | null;
 };
 
-type ModuleStatsRow = {
-  module_id: string;
-  completed_count: number | null;
-  total_xp: number | null;
+type ModuleCompletionRow = {
+  module_id: string | null;
+  user_id: string | null;
+  xp_earned: number | null;
 };
 
-type CourseStatsRow = {
-  course_id: string;
-  completed_count: number | null;
-  total_xp: number | null;
+type CourseCompletionRow = {
+  course_id: string | null;
+  user_id: string | null;
+  xp_earned: number | null;
 };
 
 export async function GET(
@@ -101,173 +101,124 @@ export async function GET(
       lessonsArray = rawLessons || [];
     }
 
-    // 4) STATS & COMPLETIONS PARA ESTE USER
     const lessonIds = lessonsArray
       .map((l: any) => l.id)
       .filter((lid: any) => !!lid);
 
-    let lessonStatsMap: Record<
-      string,
-      { completedCount: number; totalXp: number }
-    > = {};
-    let moduleStatsMap: Record<
-      string,
-      { completedCount: number; totalXp: number }
-    > = {};
-    let courseStats: { completedCount: number; totalXp: number } = {
-      completedCount: 0,
-      totalXp: 0,
-    };
+    // 4) COMPLETIONS & STATS (lições / módulos / curso)
+    let lessonCompletions: LessonCompletionRow[] = [];
+    let moduleCompletions: ModuleCompletionRow[] = [];
+    let courseCompletions: CourseCompletionRow[] = [];
 
+    if (lessonIds.length > 0) {
+      const { data, error } = await db
+        .from('lesson_completions')
+        .select('lesson_id, user_id, xp_earned')
+        .in('lesson_id', lessonIds);
+
+      if (error) {
+        console.error(
+          'Error fetching lesson completions:',
+          error,
+        );
+      } else {
+        lessonCompletions = (data || []) as LessonCompletionRow[];
+      }
+    }
+
+    if (moduleIds.length > 0) {
+      const { data, error } = await db
+        .from('module_completions')
+        .select('module_id, user_id, xp_earned')
+        .in('module_id', moduleIds);
+
+      if (error) {
+        console.error(
+          'Error fetching module completions:',
+          error,
+        );
+      } else {
+        moduleCompletions = (data || []) as ModuleCompletionRow[];
+      }
+    }
+
+    {
+      const { data, error } = await db
+        .from('course_completions')
+        .select('course_id, user_id, xp_earned')
+        .eq('course_id', id);
+
+      if (error) {
+        console.error(
+          'Error fetching course completions:',
+          error,
+        );
+      } else {
+        courseCompletions = (data || []) as CourseCompletionRow[];
+      }
+    }
+
+    // 4.1) Maps de stats
+    const lessonStatsMap: Record<
+      string,
+      { completedCount: number; totalXp: number }
+    > = {};
+    const moduleStatsMap: Record<
+      string,
+      { completedCount: number; totalXp: number }
+    > = {};
+    let courseStats = { completedCount: 0, totalXp: 0 };
+
+    lessonCompletions.forEach((row) => {
+      if (!row.lesson_id) return;
+      const key = row.lesson_id;
+      if (!lessonStatsMap[key]) {
+        lessonStatsMap[key] = { completedCount: 0, totalXp: 0 };
+      }
+      lessonStatsMap[key].completedCount += 1;
+      lessonStatsMap[key].totalXp += row.xp_earned ?? 0;
+    });
+
+    moduleCompletions.forEach((row) => {
+      if (!row.module_id) return;
+      const key = row.module_id;
+      if (!moduleStatsMap[key]) {
+        moduleStatsMap[key] = { completedCount: 0, totalXp: 0 };
+      }
+      moduleStatsMap[key].completedCount += 1;
+      moduleStatsMap[key].totalXp += row.xp_earned ?? 0;
+    });
+
+    courseStats = courseCompletions.reduce(
+      (acc, row) => {
+        acc.completedCount += 1;
+        acc.totalXp += row.xp_earned ?? 0;
+        return acc;
+      },
+      { completedCount: 0, totalXp: 0 },
+    );
+
+    // 4.2) Sets de completions para ESTE user
     let userLessonCompletedSet = new Set<string>();
     let userModuleCompletedSet = new Set<string>();
     let userCourseCompleted = false;
 
-    // LESSON STATS
-    if (lessonIds.length > 0) {
-      const { data: lessonStats, error: lessonStatsError } =
-        await db
-          .from('lesson_completions')
-          .select(
-            'lesson_id, count(*) as completed_count, sum(xp_earned) as total_xp',
-          )
-          .in('lesson_id', lessonIds)
-          .group('lesson_id');
+    if (user) {
+      userLessonCompletedSet = new Set(
+        lessonCompletions
+          .filter((r) => r.user_id === user.id)
+          .map((r) => r.lesson_id as string),
+      );
 
-      if (lessonStatsError) {
-        console.error(
-          'Error fetching lesson stats:',
-          lessonStatsError,
-        );
-      } else {
-        (lessonStats || []).forEach((row: any) => {
-          const lesson_id = row.lesson_id as string;
-          const completed_count = Number(row.completed_count ?? 0);
-          const total_xp = Number(row.total_xp ?? 0);
-          lessonStatsMap[lesson_id] = {
-            completedCount: completed_count,
-            totalXp: total_xp,
-          };
-        });
-      }
+      userModuleCompletedSet = new Set(
+        moduleCompletions
+          .filter((r) => r.user_id === user.id)
+          .map((r) => r.module_id as string),
+      );
 
-      if (user) {
-        const { data: userLessonCompletions, error: ulcError } =
-          await db
-            .from('lesson_completions')
-            .select('lesson_id')
-            .eq('user_id', user.id)
-            .in('lesson_id', lessonIds);
-
-        if (ulcError) {
-          console.error(
-            'Error fetching user lesson completions:',
-            ulcError,
-          );
-        } else {
-          userLessonCompletedSet = new Set(
-            (userLessonCompletions || []).map(
-              (r: any) => r.lesson_id as string,
-            ),
-          );
-        }
-      }
-    }
-
-    // MODULE STATS
-    if (moduleIds.length > 0) {
-      const { data: moduleStats, error: moduleStatsError } =
-        await db
-          .from('module_completions')
-          .select(
-            'module_id, count(*) as completed_count, sum(xp_earned) as total_xp',
-          )
-          .in('module_id', moduleIds)
-          .group('module_id');
-
-      if (moduleStatsError) {
-        console.error(
-          'Error fetching module stats:',
-          moduleStatsError,
-        );
-      } else {
-        (moduleStats || []).forEach((row: any) => {
-          const module_id = row.module_id as string;
-          const completed_count = Number(row.completed_count ?? 0);
-          const total_xp = Number(row.total_xp ?? 0);
-          moduleStatsMap[module_id] = {
-            completedCount: completed_count,
-            totalXp: total_xp,
-          };
-        });
-      }
-
-      if (user) {
-        const {
-          data: userModuleCompletions,
-          error: umcError,
-        } = await db
-          .from('module_completions')
-          .select('module_id')
-          .eq('user_id', user.id)
-          .in('module_id', moduleIds);
-
-        if (umcError) {
-          console.error(
-            'Error fetching user module completions:',
-            umcError,
-          );
-        } else {
-          userModuleCompletedSet = new Set(
-            (userModuleCompletions || []).map(
-              (r: any) => r.module_id as string,
-            ),
-          );
-        }
-      }
-    }
-
-    // COURSE STATS
-    {
-      const { data: cStats, error: cStatsError } = await db
-        .from('course_completions')
-        .select(
-          'course_id, count(*) as completed_count, sum(xp_earned) as total_xp',
-        )
-        .eq('course_id', id)
-        .group('course_id');
-
-      if (cStatsError) {
-        console.error(
-          'Error fetching course stats:',
-          cStatsError,
-        );
-      } else if (cStats && cStats.length > 0) {
-        const row = cStats[0] as any;
-        courseStats = {
-          completedCount: Number(row.completed_count ?? 0),
-          totalXp: Number(row.total_xp ?? 0),
-        };
-      }
-
-      if (user) {
-        const { data: userCourseCompletions, error: uccError } =
-          await db
-            .from('course_completions')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('course_id', id)
-            .maybeSingle();
-
-        if (uccError) {
-          console.error(
-            'Error fetching user course completion:',
-            uccError,
-          );
-        } else {
-          userCourseCompleted = !!userCourseCompletions;
-        }
-      }
+      userCourseCompleted = courseCompletions.some(
+        (r) => r.user_id === user.id,
+      );
     }
 
     // 5) Map de autores

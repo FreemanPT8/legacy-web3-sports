@@ -4,24 +4,6 @@ import { verifyAuth } from '@/lib/auth';
 
 const db = supabaseAdmin ?? supabase;
 
-type LessonStatsRow = {
-  lesson_id: string;
-  completed_count: number | null;
-  total_xp: number | null;
-};
-
-type ModuleStatsRow = {
-  module_id: string;
-  completed_count: number | null;
-  total_xp: number | null;
-};
-
-type CourseStatsRow = {
-  course_id: string;
-  completed_count: number | null;
-  total_xp: number | null;
-};
-
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -185,63 +167,28 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 5) STATS: lesson_completions / module_completions / course_completions
+    // 5) COMPLETIONS PARA ESTE USER (lições / módulos / cursos)
     const lessonIds = lessonsArray
       .map((l: any) => l.id)
       .filter((lid: any) => !!lid);
-
-    let lessonStatsMap: Record<
-      string,
-      { completedCount: number; totalXp: number }
-    > = {};
-    let moduleStatsMap: Record<
-      string,
-      { completedCount: number; totalXp: number }
-    > = {};
-    let courseStatsMap: Record<
-      string,
-      { completedCount: number; totalXp: number }
-    > = {};
+    const moduleIds = modulesArray
+      .map((m: any) => m.id)
+      .filter((mid: any) => !!mid);
 
     let userLessonCompletedSet = new Set<string>();
     let userModuleCompletedSet = new Set<string>();
     let userCourseCompletedSet = new Set<string>();
 
-    // LESSON STATS
-    if (lessonIds.length > 0) {
-      const { data: lessonStats, error: lessonStatsError } =
-        await db
+    if (user) {
+      if (lessonIds.length > 0) {
+        const {
+          data: userLessonCompletions,
+          error: ulcError,
+        } = await db
           .from('lesson_completions')
-          .select(
-            'lesson_id, count(*) as completed_count, sum(xp_earned) as total_xp',
-          )
-          .in('lesson_id', lessonIds)
-          .group('lesson_id');
-
-      if (lessonStatsError) {
-        console.error(
-          'Error fetching lesson stats:',
-          lessonStatsError,
-        );
-      } else {
-        (lessonStats || []).forEach((row: any) => {
-          const lesson_id = row.lesson_id as string;
-          const completed_count = Number(row.completed_count ?? 0);
-          const total_xp = Number(row.total_xp ?? 0);
-          lessonStatsMap[lesson_id] = {
-            completedCount: completed_count,
-            totalXp: total_xp,
-          };
-        });
-      }
-
-      if (user) {
-        const { data: userLessonCompletions, error: ulcError } =
-          await db
-            .from('lesson_completions')
-            .select('lesson_id')
-            .eq('user_id', user.id)
-            .in('lesson_id', lessonIds);
+          .select('lesson_id')
+          .eq('user_id', user.id)
+          .in('lesson_id', lessonIds);
 
         if (ulcError) {
           console.error(
@@ -256,41 +203,8 @@ export async function GET(request: NextRequest) {
           );
         }
       }
-    }
 
-    // MODULE STATS
-    const moduleIds = modulesArray
-      .map((m: any) => m.id)
-      .filter((mid: any) => !!mid);
-
-    if (moduleIds.length > 0) {
-      const { data: moduleStats, error: moduleStatsError } =
-        await db
-          .from('module_completions')
-          .select(
-            'module_id, count(*) as completed_count, sum(xp_earned) as total_xp',
-          )
-          .in('module_id', moduleIds)
-          .group('module_id');
-
-      if (moduleStatsError) {
-        console.error(
-          'Error fetching module stats:',
-          moduleStatsError,
-        );
-      } else {
-        (moduleStats || []).forEach((row: any) => {
-          const module_id = row.module_id as string;
-          const completed_count = Number(row.completed_count ?? 0);
-          const total_xp = Number(row.total_xp ?? 0);
-          moduleStatsMap[module_id] = {
-            completedCount: completed_count,
-            totalXp: total_xp,
-          };
-        });
-      }
-
-      if (user) {
+      if (moduleIds.length > 0) {
         const {
           data: userModuleCompletions,
           error: umcError,
@@ -313,37 +227,8 @@ export async function GET(request: NextRequest) {
           );
         }
       }
-    }
 
-    // COURSE STATS
-    if (courseIds.length > 0) {
-      const { data: courseStats, error: courseStatsError } =
-        await db
-          .from('course_completions')
-          .select(
-            'course_id, count(*) as completed_count, sum(xp_earned) as total_xp',
-          )
-          .in('course_id', courseIds)
-          .group('course_id');
-
-      if (courseStatsError) {
-        console.error(
-          'Error fetching course stats:',
-          courseStatsError,
-        );
-      } else {
-        (courseStats || []).forEach((row: any) => {
-          const course_id = row.course_id as string;
-          const completed_count = Number(row.completed_count ?? 0);
-          const total_xp = Number(row.total_xp ?? 0);
-          courseStatsMap[course_id] = {
-            completedCount: completed_count,
-            totalXp: total_xp,
-          };
-        });
-      }
-
-      if (user) {
+      if (courseIds.length > 0) {
         const {
           data: userCourseCompletions,
           error: uccError,
@@ -389,10 +274,6 @@ export async function GET(request: NextRequest) {
       }
 
       const moduleLessonsRaw = lessonsByModule[m.id] || [];
-      const moduleStats = moduleStatsMap[m.id] || {
-        completedCount: 0,
-        totalXp: 0,
-      };
 
       const moduleLessons = moduleLessonsRaw
         .slice()
@@ -403,11 +284,6 @@ export async function GET(request: NextRequest) {
           const lessonAuthorName =
             (l.author_id && authorMap[l.author_id]) ||
             'Legacy Team';
-
-          const lessonStats = lessonStatsMap[l.id] || {
-            completedCount: 0,
-            totalXp: 0,
-          };
 
           const isLessonCreator =
             !!user &&
@@ -424,8 +300,6 @@ export async function GET(request: NextRequest) {
             author_name: lessonAuthorName,
             isCreator: isLessonCreator,
             isCompleted: isLessonCompletedForUser,
-            completed_count: lessonStats.completedCount,
-            total_xp_distributed: lessonStats.totalXp,
           };
         });
 
@@ -448,13 +322,11 @@ export async function GET(request: NextRequest) {
         author_name: moduleAuthorName,
         isCreator: isModuleCreator,
         isCompleted: isModuleCompletedForUser,
-        completed_count: moduleStats.completedCount,
-        total_xp_distributed: moduleStats.totalXp,
         lessons: moduleLessons,
       });
     });
 
-    // 8) Normalizar cursos com estatísticas
+    // 8) Normalizar cursos com estatísticas básicas
     const normalizedCourses = coursesArray.map((c: any) => {
       const courseModules = (modulesByCourse[c.id] || [])
         .slice()
@@ -495,11 +367,6 @@ export async function GET(request: NextRequest) {
         (c.author_id && authorMap[c.author_id]) ||
         'Legacy Team';
 
-      const courseStats = courseStatsMap[c.id] || {
-        completedCount: 0,
-        totalXp: 0,
-      };
-
       const isCourseCompletedForUser =
         !!user &&
         !isCourseCreator &&
@@ -514,8 +381,6 @@ export async function GET(request: NextRequest) {
         total_modules: totalModules,
         total_lessons: totalLessons,
         total_xp: totalXP,
-        completed_count: courseStats.completedCount,
-        total_xp_distributed: courseStats.totalXp,
       };
     });
 
