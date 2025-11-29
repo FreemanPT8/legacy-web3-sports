@@ -107,7 +107,7 @@ export async function GET(
     const completionsArray = allCompletions || [];
     const completedCount = completionsArray.length;
     const totalXpDistributed = completionsArray.reduce(
-      (sum, row: any) => sum + (row.xp_earned || 0),
+      (sum: number, row: any) => sum + (row.xp_earned || 0),
       0,
     );
 
