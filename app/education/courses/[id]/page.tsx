@@ -36,6 +36,7 @@ type Lesson = {
   author_id?: string | null;
   author_name?: string | null;
   isCompleted?: boolean;
+  isCreator?: boolean;
 };
 
 type Module = {
@@ -44,6 +45,7 @@ type Module = {
   order?: number | null;
   author_id?: string | null;
   author_name?: string | null;
+  isCreator?: boolean;
   lessons?: Lesson[];
 };
 
@@ -75,11 +77,14 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // helper simples para evitar mostrar "courses.xyz" no UI
   const tr = (key: string, fallback: string) => {
     const val = t(key);
     return val === key ? fallback : val;
   };
+
+  const isAdminUser =
+    !!user &&
+    (user.role === 'Super Admin' || user.role === 'Admin');
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -198,9 +203,7 @@ export default function CourseDetailPage() {
   );
 
   const imageUrl =
-    course.image_url ||
-    course.thumbnail_url ||
-    null;
+    course.image_url || course.thumbnail_url || null;
 
   const totalModules = course.total_modules ?? 0;
   const totalLessons = course.total_lessons ?? 0;
@@ -209,9 +212,10 @@ export default function CourseDetailPage() {
 
   const authorName = course.author_name || 'Admin';
   const isCourseCreator =
-    !!user &&
-    !!course.author_id &&
-    course.author_id === user.id;
+    !!course.isCreator ||
+    (!!user &&
+      ((course.author_id && course.author_id === user.id) ||
+        (!course.author_id && isAdminUser)));
 
   const modules: Module[] = Array.isArray(course.modules)
     ? (course.modules as Module[])
@@ -281,20 +285,25 @@ export default function CourseDetailPage() {
                     <div className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4 text-blue-600" />
                       <span>
-                        {totalModules} {tr('courses.modules', 'módulos')}
+                        {totalModules}{' '}
+                        {tr('courses.modules', 'módulos')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4 text-blue-600" />
                       <span>
-                        {totalLessons} {tr('courses.lessons', 'lições')}
+                        {totalLessons}{' '}
+                        {tr('courses.lessons', 'lições')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Award className="h-4 w-4 text-blue-600" />
                       <span>
                         {totalXP}{' '}
-                        {tr('courses.totalXP', 'XP disponível')}
+                        {tr(
+                          'courses.totalXP',
+                          'XP disponível',
+                        )}
                       </span>
                     </div>
                     {xpRequired > 0 && (
@@ -332,9 +341,11 @@ export default function CourseDetailPage() {
                     mod.author_name || 'Admin';
 
                   const isModuleCreator =
-                    !!user &&
-                    !!mod.author_id &&
-                    mod.author_id === user.id;
+                    !!mod.isCreator ||
+                    (!!user &&
+                      ((mod.author_id &&
+                        mod.author_id === user.id) ||
+                        (!mod.author_id && isAdminUser)));
 
                   const lessons: Lesson[] = Array.isArray(mod.lessons)
                     ? (mod.lessons as Lesson[])
@@ -384,12 +395,16 @@ export default function CourseDetailPage() {
                                 lesson.author_name || 'Admin';
 
                               const isLessonCreator =
-                                !!user &&
-                                !!lesson.author_id &&
-                                lesson.author_id === user.id;
+                                !!lesson.isCreator ||
+                                (!!user &&
+                                  ((lesson.author_id &&
+                                    lesson.author_id === user.id) ||
+                                    (!lesson.author_id &&
+                                      isAdminUser)));
 
                               const isCompleted =
-                                !!lesson.isCompleted && !isLessonCreator;
+                                !!lesson.isCompleted &&
+                                !isLessonCreator;
 
                               const estimatedMinutes =
                                 lesson.estimated_time ?? 10;

@@ -45,13 +45,12 @@ type Course = {
   image_url?: string | null;
   thumbnail_url?: string | null;
   modules?: Module[];
-
   author_id?: string | null;
   author_name?: string | null;
+  isCreator?: boolean;
   total_modules?: number;
   total_lessons?: number;
   total_xp?: number;
-  isCreator?: boolean;
 };
 
 export default function CoursesPage() {
@@ -64,7 +63,6 @@ export default function CoursesPage() {
 
   const userXP = user?.xp_total || 0;
 
-  // Helper para usar t() sem aparecer "courses.xxx" quando a chave não existe
   const tr = (key: string, fallback: string) => {
     const val = t(key);
     return val === key ? fallback : val;
@@ -72,14 +70,18 @@ export default function CoursesPage() {
 
   useEffect(() => {
     const fetchCourses = async () => {
+      setLoading(true);
       try {
         const token = getToken();
-        const res = await fetch('/api/courses?includeModules=true', {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        const res = await fetch(
+          '/api/courses?includeModules=true',
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
           },
-        });
+        );
 
         const data = await res.json();
 
@@ -146,53 +148,6 @@ export default function CoursesPage() {
     );
   }
 
-  // --- Stats globais (para os cards no topo) -----------------------------
-
-  const totalCourses = courses.length;
-
-  const totalModulesAll = courses.reduce((acc, course) => {
-    const modules = Array.isArray(course.modules) ? course.modules : [];
-    return acc + modules.length;
-  }, 0);
-
-  const totalLessonsAll = courses.reduce((acc, course) => {
-    const modules = Array.isArray(course.modules) ? course.modules : [];
-    return (
-      acc +
-      modules.reduce((mAcc, m) => {
-        const lessons = Array.isArray(m.lessons) ? m.lessons : [];
-        return mAcc + lessons.length;
-      }, 0)
-    );
-  }, 0);
-
-  const totalXPAll = courses.reduce((acc, course) => {
-    if (typeof course.total_xp === 'number') {
-      return acc + course.total_xp;
-    }
-
-    const modules = Array.isArray(course.modules) ? course.modules : [];
-    const courseXP = modules.reduce((mAcc, m) => {
-      const lessons = Array.isArray(m.lessons) ? m.lessons : [];
-      return (
-        mAcc +
-        lessons.reduce(
-          (lAcc, l) => lAcc + (l.xp_reward || 0),
-          0,
-        )
-      );
-    }, 0);
-
-    return acc + courseXP;
-  }, 0);
-
-  const unlockedCourses = user
-    ? courses.filter((c) => userXP >= (c.xp_threshold ?? 0)).length
-    : 0;
-  const lockedCourses = totalCourses - unlockedCourses;
-
-  // ----------------------------------------------------------------------
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -200,18 +155,15 @@ export default function CoursesPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             {/* Hero */}
-            <div className="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  {tr(
-                    'courses.mainTitle',
-                    'Cursos de Educação Web3',
-                  )}
+                  {tr('courses.mainTitle', 'Cursos')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
                   {tr(
                     'courses.mainSubtitle',
-                    'Cursos completos sobre tecnologia blockchain, rede Apertum e Web3 no desporto.',
+                    'Percursos estruturados sobre Web3, a blockchain Apertum e o ecossistema desportivo. Ganha XP à medida que avanças.',
                   )}
                 </p>
               </div>
@@ -219,7 +171,7 @@ export default function CoursesPage() {
                 {user ? (
                   <>
                     <span className="text-gray-600 dark:text-gray-300">
-                      O teu XP:{' '}
+                      {tr('courses.yourXP', 'O teu XP')}:{' '}
                       <strong>{userXP}</strong>
                     </span>
                     <Badge variant="outline">
@@ -240,58 +192,6 @@ export default function CoursesPage() {
               </div>
             </div>
 
-            {/* Cards de estatísticas gerais */}
-            <div className="grid md:grid-cols-3 gap-4 mb-8">
-              <Card>
-                <CardContent className="py-4 flex flex-col gap-1">
-                  <span className="text-xs uppercase text-gray-500">
-                    {tr('courses.stats.courses', 'Cursos')}
-                  </span>
-                  <span className="text-2xl font-bold">
-                    {totalCourses}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {unlockedCourses} desbloqueados • {lockedCourses} bloqueados
-                  </span>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="py-4 flex flex-col gap-1">
-                  <span className="text-xs uppercase text-gray-500">
-                    {tr('courses.stats.lessons', 'Módulos & Lições')}
-                  </span>
-                  <span className="text-2xl font-bold">
-                    {totalModulesAll} módulos • {totalLessonsAll} lições
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {tr(
-                      'courses.stats.lessonsHint',
-                      'Conteúdo estruturado para ir passo a passo.',
-                    )}
-                  </span>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="py-4 flex flex-col gap-1">
-                  <span className="text-xs uppercase text-gray-500">
-                    {tr('courses.stats.xp', 'XP disponível')}
-                  </span>
-                  <span className="text-2xl font-bold">
-                    {totalXPAll}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {tr(
-                      'courses.stats.xpHint',
-                      'XP total que podes ganhar nestes cursos.',
-                    )}
-                  </span>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Lista de cursos */}
             {courses.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center text-gray-500">
@@ -320,52 +220,43 @@ export default function CoursesPage() {
                     : [];
 
                   const totalModules =
-                    typeof course.total_modules === 'number'
-                      ? course.total_modules
-                      : modulesArray.length;
+                    course.total_modules ??
+                    modulesArray.length;
 
                   const totalLessons =
-                    typeof course.total_lessons === 'number'
-                      ? course.total_lessons
-                      : modulesArray.reduce(
-                          (acc, m) =>
-                            acc +
-                            (Array.isArray(m.lessons)
-                              ? m.lessons.length
-                              : 0),
-                          0,
-                        );
+                    course.total_lessons ??
+                    modulesArray.reduce(
+                      (acc, m) =>
+                        acc +
+                        (Array.isArray(m.lessons)
+                          ? m.lessons.length
+                          : 0),
+                      0,
+                    );
 
                   const totalXP =
-                    typeof course.total_xp === 'number'
-                      ? course.total_xp
-                      : modulesArray.reduce((acc, m) => {
-                          if (!Array.isArray(m.lessons)) return acc;
-                          return (
-                            acc +
-                            m.lessons.reduce(
-                              (accL, l) =>
-                                accL + (l.xp_reward || 0),
-                              0,
-                            )
-                          );
-                        }, 0);
+                    course.total_xp ??
+                    modulesArray.reduce((acc, m) => {
+                      if (!Array.isArray(m.lessons)) return acc;
+                      return (
+                        acc +
+                        m.lessons.reduce(
+                          (accL, l) =>
+                            accL + (l.xp_reward || 0),
+                          0,
+                        )
+                      );
+                    }, 0);
 
                   const xpRequired = course.xp_threshold ?? 0;
                   const isLocked = userXP < xpRequired;
 
-                  const isCourseCreator =
-                    !!user &&
-                    !!course.author_id &&
-                    course.author_id === user.id;
-
                   const authorName =
                     course.author_name || 'Admin';
+                  const isCourseCreator = !!course.isCreator;
 
                   const imageUrl =
-                    course.image_url ||
-                    course.thumbnail_url ||
-                    null;
+                    course.image_url || course.thumbnail_url || null;
 
                   return (
                     <Card
@@ -398,12 +289,12 @@ export default function CoursesPage() {
                                 {description}
                               </CardDescription>
                             )}
-                            <div className="mt-2 text-xs text-gray-500">
+                            <p className="mt-2 text-xs text-gray-500">
                               {tr('courses.by', 'Criado por')}{' '}
                               <span className="font-semibold">
                                 {authorName}
                               </span>
-                            </div>
+                            </p>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {getLevelBadge(course.level)}
@@ -453,7 +344,7 @@ export default function CoursesPage() {
                               <span>
                                 {tr(
                                   'courses.unlockAt',
-                                  'Desbloqueia com',
+                                  'Desbloqueia aos',
                                 )}{' '}
                                 <strong>{xpRequired} XP</strong>
                               </span>
@@ -464,13 +355,15 @@ export default function CoursesPage() {
                               <span>
                                 {tr(
                                   'courses.unlocked',
-                                  'Podes aceder a este curso',
+                                  'Já podes aceder a este curso',
                                 )}
                               </span>
                             </div>
                           )}
 
-                          <Link href={`/education/courses/${course.id}`}>
+                          <Link
+                            href={`/education/courses/${course.id}`}
+                          >
                             <Button
                               size="sm"
                               className="bg-blue-600 hover:bg-blue-700"

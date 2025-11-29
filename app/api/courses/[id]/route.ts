@@ -8,12 +8,18 @@ interface RouteContext {
 
 const db = supabaseAdmin ?? supabase;
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(
+  request: NextRequest,
+  context: RouteContext,
+) {
   const { id } = context.params;
 
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
+    const isAdminUser =
+      !!user &&
+      (user.role === 'Super Admin' || user.role === 'Admin');
 
     // 1) Curso
     const { data: rawCourse, error: courseError } = await db
@@ -37,7 +43,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // 2) Módulos do curso
+    // 2) Módulos
     const { data: rawModules, error: modulesError } = await db
       .from('modules')
       .select('*')
@@ -54,7 +60,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     const modulesArray: any[] = rawModules || [];
 
-    // 3) Lições dos módulos
+    // 3) Lições
     let lessonsArray: any[] = [];
     const moduleIds = modulesArray
       .map((m: any) => m.id)
@@ -77,7 +83,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       lessonsArray = rawLessons || [];
     }
 
-    // 4) Completions deste user (para badges Completed)
+    // 4) Completions para este user
     let completedSet = new Set<string>();
 
     if (user && lessonsArray.length > 0) {
@@ -93,7 +99,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
           .in('lesson_id', lessonIds);
 
         if (compError) {
-          console.error('Error fetching lesson completions:', compError);
+          console.error(
+            'Error fetching lesson completions:',
+            compError,
+          );
         } else {
           completedSet = new Set(
             (completions || []).map((c: any) => c.lesson_id),
@@ -102,7 +111,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       }
     }
 
-    // 5) Map de autores (curso + módulos + lições)
+    // 5) Map de autores
     const authorIdsSet = new Set<string>();
 
     if (rawCourse.author_id) authorIdsSet.add(rawCourse.author_id);
@@ -125,14 +134,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
       if (authorsError) {
         console.error('Error fetching authors:', authorsError);
       } else {
-        authorMap = {};
         (authors || []).forEach((u: any) => {
           authorMap[u.id] = u.username || 'User';
         });
       }
     }
 
-    // 6) Lições agrupadas por módulo + enriched
+    // 6) Lições por módulo (enriquecidas)
     const lessonsByModule: Record<string, any[]> = {};
     lessonsArray.forEach((l: any) => {
       if (!l.module_id) return;
@@ -151,36 +159,47 @@ export async function GET(request: NextRequest, context: RouteContext) {
           (a: any, b: any) => (a.order || 0) - (b.order || 0),
         )
         .map((l: any) => {
-          const lessonAuthorName =
-            (l.author_id && authorMap[l.author_id]) ||
-            l.author ||
-            'Admin';
-
           const isLessonCreator =
             !!user &&
-            !!l.author_id &&
-            l.author_id === user.id;
+            ((l.author_id && l.author_id === user.id) ||
+              (!l.author_id && isAdminUser));
 
           const isCompleted =
             !!user &&
             !isLessonCreator &&
             completedSet.has(l.id);
 
+          const lessonAuthorName =
+            (l.author_id && authorMap[l.author_id]) ||
+            l.author ||
+            (isLessonCreator && user
+              ? user.username
+              : 'Admin');
+
           return {
             ...l,
             author_name: lessonAuthorName,
             isCompleted,
+            isCreator: isLessonCreator,
           };
         });
+
+      const isModuleCreator =
+        !!user &&
+        ((m.author_id && m.author_id === user.id) ||
+          (!m.author_id && isAdminUser));
 
       const moduleAuthorName =
         (m.author_id && authorMap[m.author_id]) ||
         m.author ||
-        'Admin';
+        (isModuleCreator && user
+          ? user.username
+          : 'Admin');
 
       return {
         ...m,
         author_name: moduleAuthorName,
+        isCreator: isModuleCreator,
         lessons: moduleLessons,
       };
     });
@@ -206,16 +225,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }, 0);
 
+    const isCourseCreator =
+      !!user &&
+      ((rawCourse.author_id &&
+        rawCourse.author_id === user.id) ||
+        (!rawCourse.author_id && isAdminUser));
+
     const courseAuthorName =
       (rawCourse.author_id &&
         authorMap[rawCourse.author_id]) ||
       rawCourse.author ||
-      'Admin';
-
-    const isCourseCreator =
-      !!user &&
-      !!rawCourse.author_id &&
-      rawCourse.author_id === user.id;
+      (isCourseCreator && user ? user.username : 'Admin');
 
     const course = {
       ...rawCourse,

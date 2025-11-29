@@ -2,120 +2,129 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
 
-// Usamos sempre o client admin quando existir (bypass RLS)
+interface RouteContext {
+  params: { id: string };
+}
+
 const db = supabaseAdmin ?? supabase;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: RouteContext,
 ) {
+  const { id } = context.params;
+
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
+    const isAdminUser =
+      !!user &&
+      (user.role === 'Super Admin' || user.role === 'Admin');
 
-    // 1) Buscar lição
+    // 1) Buscar lição + módulo
     const { data: lesson, error: lessonError } = await db
       .from('lessons')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .maybeSingle();
 
-    if (lessonError || !lesson) {
+    if (lessonError) {
+      console.error('Error fetching lesson:', lessonError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to load lesson' },
+        { status: 500 },
+      );
+    }
+
+    if (!lesson) {
       return NextResponse.json(
         { success: false, error: 'Lesson not found' },
         { status: 404 },
       );
     }
 
-    // 2) Buscar módulo + todas as lições do módulo (para prev/next)
     const { data: module, error: moduleError } = await db
       .from('modules')
-      .select(
-        `
-        *,
-        lessons:lessons(*)
-      `,
-      )
-      .eq('id', (lesson as any).module_id)
+      .select('*')
+      .eq('id', lesson.module_id)
       .maybeSingle();
 
-    if (moduleError || !module) {
+    if (moduleError) {
+      console.error('Error fetching module:', moduleError);
       return NextResponse.json(
-        { success: false, error: 'Module not found' },
-        { status: 404 },
+        { success: false, error: 'Failed to load module' },
+        { status: 500 },
       );
     }
 
-    // 3) Determinar autor e se o utilizador atual é o criador
-    let authorId: string | null =
-      (lesson as any).author_id || (module as any).author_id || null;
-
-    // Fallback: se não houver author_id mas o user for Admin/Super Admin,
-    // assumimos que ele é o criador (fase inicial do Legacy)
-    if (
-      !authorId &&
-      user &&
-      (user.role === 'Admin' || user.role === 'Super Admin')
-    ) {
-      authorId = user.id;
-    }
-
-    let isCreator = false;
-    if (user && authorId && user.id === authorId) {
-      isCreator = true;
-    }
-
-    let authorName: string | null = null;
-    if (authorId) {
-      const { data: authorRow, error: authorError } = await db
-        .from('users')
-        .select('username')
-        .eq('id', authorId)
-        .maybeSingle();
-
-      if (!authorError && authorRow) {
-        authorName = (authorRow as any).username || null;
-      }
-    }
-
-    // 4) Ver se a lição já foi concluída pelo utilizador (apenas se NÃO for criador)
-    let isCompleted = false;
-
-    if (user && !isCreator) {
-      const { data: completion, error: completionError } = await db
-        .from('lesson_completions')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('lesson_id', params.id)
-        .maybeSingle();
-
-      if (!completionError && completion) {
-        isCompleted = true;
-      }
-    }
-
-    // 5) Estatísticas da lição (quantas vezes concluída, XP total distribuído)
-    const { data: allCompletions, error: statsError } = await db
+    // 2) Estatísticas de completions
+    const { data: completions, error: compError } = await db
       .from('lesson_completions')
-      .select('xp_earned')
-      .eq('lesson_id', params.id);
+      .select('lesson_id, user_id, xp_earned')
+      .eq('lesson_id', id);
 
-    if (statsError) {
-      console.error('Error fetching lesson completions stats:', statsError);
+    if (compError) {
+      console.error(
+        'Error fetching lesson completions:',
+        compError,
+      );
     }
 
-    const completionsArray = allCompletions || [];
+    const completionsArray: { user_id: string; xp_earned?: number | null }[] =
+      completions || [];
+
     const completedCount = completionsArray.length;
     const totalXpDistributed = completionsArray.reduce(
-      (sum: number, row: any) => sum + (row.xp_earned || 0),
+      (sum: number, row: { xp_earned?: number | null }) =>
+        sum + (row.xp_earned ?? 0),
       0,
     );
 
-    // 6) Montar resposta
+    // 3) Flags de autor e completed para este user
+    const isCreator =
+      !!user &&
+      ((lesson.author_id && lesson.author_id === user.id) ||
+        (!lesson.author_id && isAdminUser));
+
+    const isCompleted =
+      !!user &&
+      !isCreator &&
+      completionsArray.some((c) => c.user_id === user.id);
+
+    // 4) Nome do criador
+    let authorName: string | null = null;
+    if (lesson.author_id) {
+      const { data: author, error: authorError } = await db
+        .from('users')
+        .select('username')
+        .eq('id', lesson.author_id)
+        .maybeSingle();
+
+      if (authorError) {
+        console.error('Error fetching author user:', authorError);
+      } else if (author?.username) {
+        authorName = author.username;
+      }
+    }
+
+    if (!authorName) {
+      if (isCreator && user) {
+        authorName = user.username;
+      } else if (lesson.author) {
+        authorName = lesson.author;
+      } else {
+        authorName = 'Admin';
+      }
+    }
+
     const enrichedLesson = {
       ...lesson,
-      author_id: authorId,
       author_name: authorName,
+    };
+
+    const stats = {
+      completedCount,
+      totalXpDistributed,
     };
 
     return NextResponse.json({
@@ -124,10 +133,7 @@ export async function GET(
       module,
       isCompleted,
       isCreator,
-      stats: {
-        completedCount,
-        totalXpDistributed,
-      },
+      stats,
     });
   } catch (error) {
     console.error('Error in GET /api/lessons/[id]:', error);

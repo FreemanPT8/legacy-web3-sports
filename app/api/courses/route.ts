@@ -12,6 +12,9 @@ export async function GET(request: NextRequest) {
 
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
+    const isAdminUser =
+      !!user &&
+      (user.role === 'Super Admin' || user.role === 'Admin');
 
     // 1) Cursos publicados
     const { data: rawCourses, error: courseError } = await db
@@ -37,9 +40,8 @@ export async function GET(request: NextRequest) {
 
     const coursesArray: any[] = rawCourses;
 
-    // 2) Se não for preciso módulos, só normalizamos autores
+    // 2) Sem módulos → só normalizamos autor e isCreator
     if (!includeModules) {
-      // mapear author_ids
       const courseAuthorIds = coursesArray
         .map((c: any) => c.author_id)
         .filter((id: any) => !!id);
@@ -53,9 +55,11 @@ export async function GET(request: NextRequest) {
           .in('id', courseAuthorIds);
 
         if (authorsError) {
-          console.error('Error fetching course authors:', authorsError);
+          console.error(
+            'Error fetching course authors:',
+            authorsError,
+          );
         } else {
-          authorMap = {};
           (authors || []).forEach((u: any) => {
             authorMap[u.id] = u.username || 'User';
           });
@@ -63,13 +67,15 @@ export async function GET(request: NextRequest) {
       }
 
       const normalizedCourses = coursesArray.map((c: any) => {
+        const isCourseCreator =
+          !!user &&
+          ((c.author_id && c.author_id === user.id) ||
+            (!c.author_id && isAdminUser));
+
         const authorName =
           (c.author_id && authorMap[c.author_id]) ||
           c.author ||
-          'Admin';
-
-        const isCourseCreator =
-          !!user && !!c.author_id && c.author_id === user.id;
+          (isCourseCreator ? user!.username : 'Admin');
 
         return {
           ...c,
@@ -145,8 +151,8 @@ export async function GET(request: NextRequest) {
     });
 
     let authorMap: Record<string, string> = {};
-
     const allAuthorIds = Array.from(authorIdsSet);
+
     if (allAuthorIds.length > 0) {
       const { data: authors, error: authorsError } = await db
         .from('users')
@@ -156,14 +162,13 @@ export async function GET(request: NextRequest) {
       if (authorsError) {
         console.error('Error fetching authors:', authorsError);
       } else {
-        authorMap = {};
         (authors || []).forEach((u: any) => {
           authorMap[u.id] = u.username || 'User';
         });
       }
     }
 
-    // 5) Map de lições por módulo
+    // 5) Lições por módulo
     const lessonsByModule: Record<string, any[]> = {};
     lessonsArray.forEach((l: any) => {
       if (!l.module_id) return;
@@ -173,7 +178,7 @@ export async function GET(request: NextRequest) {
       lessonsByModule[l.module_id].push(l);
     });
 
-    // 6) Map de módulos por curso (com lições agregadas)
+    // 6) Módulos por curso (com lições enriquecidas)
     const modulesByCourse: Record<string, any[]> = {};
     modulesArray.forEach((m: any) => {
       const courseId = m.course_id;
@@ -207,7 +212,7 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    // 7) Normalizar cursos + estatísticas
+    // 7) Normalizar cursos com estatísticas
     const normalizedCourses = coursesArray.map((c: any) => {
       const courseModules = (modulesByCourse[c.id] || []).slice().sort(
         (a: any, b: any) => (a.order || 0) - (b.order || 0),
@@ -234,13 +239,15 @@ export async function GET(request: NextRequest) {
         );
       }, 0);
 
+      const isCourseCreator =
+        !!user &&
+        ((c.author_id && c.author_id === user.id) ||
+          (!c.author_id && isAdminUser));
+
       const authorName =
         (c.author_id && authorMap[c.author_id]) ||
         c.author ||
-        'Admin';
-
-      const isCourseCreator =
-        !!user && !!c.author_id && c.author_id === user.id;
+        (isCourseCreator ? user!.username : 'Admin');
 
       return {
         ...c,
