@@ -9,6 +9,7 @@ import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
+
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,6 +49,7 @@ interface ModuleWithLessons {
   course_id: string;
   lessons: Lesson[];
   author_id?: string | null;
+  author_name?: string | null;
 }
 
 interface LessonStats {
@@ -80,19 +83,13 @@ export default function LessonPage() {
   useEffect(() => {
     const fetchLesson = async () => {
       setLoading(true);
+
       try {
         const lessonId = params.id as string;
         const userId = user?.id || '';
-        const query = userId
-          ? `?userId=${encodeURIComponent(userId)}`
-          : '';
+        const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
 
-        const res = await fetch(`/api/lessons/${lessonId}${query}`, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
+        const res = await fetch(`/api/lessons/${lessonId}${query}`);
         const data: LessonApiResponse = await res.json();
 
         if (!res.ok || !data.success || !data.lesson || !data.module) {
@@ -112,46 +109,25 @@ export default function LessonPage() {
         setLesson(fetchedLesson);
         setModule(fetchedModule);
 
-        // Criador nunca aparece como completed
-        const creatorFlag = !!data.isCreator;
+        const creatorFlag = data.isCreator === true;
         setIsCreator(creatorFlag);
-        setIsCompleted(creatorFlag ? false : !!data.isCompleted);
+        setIsCompleted(creatorFlag ? false : data.isCompleted);
 
-        if (data.stats) {
-          setStats(data.stats);
-        } else {
-          setStats(null);
-        }
+        setStats(data.stats ?? null);
 
-        // Calcular prev / next dentro do módulo
-        if (fetchedModule?.lessons && Array.isArray(fetchedModule.lessons)) {
-          const orderedLessons = [...fetchedModule.lessons].sort(
-            (a, b) => (a.order || 0) - (b.order || 0),
+        // SORT prev/next
+        if (Array.isArray(fetchedModule.lessons)) {
+          const ordered = [...fetchedModule.lessons].sort(
+            (a, b) => (a.order || 0) - (b.order || 0)
           );
 
-          const currentIndex = orderedLessons.findIndex(
-            (l) => l.id === fetchedLesson.id,
-          );
+          const idx = ordered.findIndex((l) => l.id === fetchedLesson.id);
 
-          if (currentIndex > 0) {
-            setPrevLesson(orderedLessons[currentIndex - 1]);
-          } else {
-            setPrevLesson(null);
-          }
-          if (
-            currentIndex >= 0 &&
-            currentIndex < orderedLessons.length - 1
-          ) {
-            setNextLesson(orderedLessons[currentIndex + 1]);
-          } else {
-            setNextLesson(null);
-          }
-        } else {
-          setNextLesson(null);
-          setPrevLesson(null);
+          setPrevLesson(idx > 0 ? ordered[idx - 1] : null);
+          setNextLesson(idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null);
         }
-      } catch (error) {
-        console.error('Failed to fetch lesson:', error);
+      } catch (err) {
+        console.error('Failed to fetch lesson:', err);
         setLesson(null);
         setModule(null);
         setIsCompleted(false);
@@ -164,9 +140,7 @@ export default function LessonPage() {
       }
     };
 
-    if (params.id) {
-      fetchLesson();
-    }
+    if (params.id) fetchLesson();
   }, [params.id, user?.id]);
 
   if (loading) {
@@ -176,9 +150,7 @@ export default function LessonPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">
-              Loading lesson...
-            </p>
+            <p className="text-gray-600 dark:text-gray-300">Loading lesson...</p>
           </div>
         </main>
         <Footer />
@@ -194,12 +166,8 @@ export default function LessonPage() {
           <Card className="max-w-md">
             <CardContent className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">
-                Lesson Not Found
-              </h3>
-              <p className="text-gray-600 mb-4">
-                This lesson doesn&apos;t exist or has been removed.
-              </p>
+              <h3 className="text-xl font-semibold mb-2">Lesson Not Found</h3>
+              <p className="text-gray-600 mb-4">This lesson doesn&apos;t exist or has been removed.</p>
               <Link href="/education/courses">
                 <Button>Back to Courses</Button>
               </Link>
@@ -212,17 +180,12 @@ export default function LessonPage() {
   }
 
   const title = getMultilingualContent(lesson.title, language);
-  const description = getMultilingualContent(
-    lesson.description,
-    language,
-  );
+  const description = getMultilingualContent(lesson.description, language);
   const content = getMultilingualContent(lesson.content, language);
   const moduleTitle = getMultilingualContent(module.title, language);
 
   const durationMinutes = lesson.estimated_time ?? 10;
-  const creatorName =
-    lesson.author_name ||
-    (lesson.author_id ? 'Creator' : 'Admin');
+  const creatorName = lesson.author_name || (lesson.author_id ? 'Creator' : 'Admin');
   const createdAtStr = lesson.created_at
     ? new Date(lesson.created_at).toLocaleDateString()
     : '-';
@@ -241,6 +204,8 @@ export default function LessonPage() {
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
+
+            {/* Back */}
             <div className="mb-6">
               <Link href={backHref}>
                 <Button variant="ghost" className="mb-4">
@@ -250,7 +215,7 @@ export default function LessonPage() {
               </Link>
             </div>
 
-            {/* Header da lição */}
+            {/* HEADER */}
             <Card className="mb-4">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
@@ -268,19 +233,21 @@ export default function LessonPage() {
                     </Badge>
                   ) : null}
                 </div>
+
                 <CardTitle className="text-3xl">{title}</CardTitle>
+
                 {description && (
-                  <p className="text-gray-600 text-lg mt-2">
-                    {description}
-                  </p>
+                  <p className="text-gray-600 text-lg mt-2">{description}</p>
                 )}
               </CardHeader>
+
               <CardContent>
                 <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     <span>{durationMinutes} minutes</span>
                   </div>
+
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4" />
                     <span>{lesson.xp_reward} XP reward</span>
@@ -289,7 +256,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Meta info: criador, datas e estatísticas */}
+            {/* META INFO */}
             <Card className="mb-6">
               <CardContent className="py-4 text-sm text-gray-700 dark:text-gray-300">
                 <div className="grid gap-3 md:grid-cols-4">
@@ -299,18 +266,21 @@ export default function LessonPage() {
                     </span>
                     <span className="font-semibold">{creatorName}</span>
                   </div>
+
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
                       Created at
                     </span>
                     <span>{createdAtStr}</span>
                   </div>
+
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
                       Completed
                     </span>
                     <span>{completedCount} times</span>
                   </div>
+
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
                       XP distributed
@@ -321,7 +291,7 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Conteúdo + ContentTracker */}
+            {/* CONTENT + TRACKER */}
             <Card className="mb-6">
               <CardContent className="prose prose-lg max-w-none py-8">
                 <ContentTracker
@@ -330,7 +300,7 @@ export default function LessonPage() {
                   contentType="lesson"
                   xpReward={lesson.xp_reward}
                   estimatedMinutes={durationMinutes}
-                  initialCompleted={isCompleted}
+                  initialCompleted={isCompleted && !isCreator}
                   isAuthor={isCreator}
                   onComplete={() => setIsCompleted(true)}
                 >
@@ -339,36 +309,26 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* Mensagem de conclusão → só para leitores, nunca para criador */}
+            {/* COMPLETION MESSAGE (ONLY TESTERS) */}
             {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
-                  <h3 className="font-semibold text-lg mb-1">
-                    Lesson Completed!
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    You earned {lesson.xp_reward} XP for completing this
-                    lesson (only the first time you read it).
+                  <h3 className="font-semibold text-lg mb-1">Lesson Completed!</h3>
+                  <p className="text-sm text-gray-600">
+                    You earned {lesson.xp_reward} XP for completing this lesson.
                   </p>
                 </CardContent>
               </Card>
             )}
 
-            {/* Navegação Prev / Next */}
+            {/* NAVIGATION */}
             <div className="flex justify-between gap-4">
               {prevLesson ? (
-                <Link
-                  href={`/education/lessons/${prevLesson.id}`}
-                  className="flex-1"
-                >
+                <Link href={`/education/lessons/${prevLesson.id}`} className="flex-1">
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Previous:{' '}
-                    {getMultilingualContent(
-                      prevLesson.title,
-                      language,
-                    )}
+                    Previous: {getMultilingualContent(prevLesson.title, language)}
                   </Button>
                 </Link>
               ) : (
@@ -376,13 +336,9 @@ export default function LessonPage() {
               )}
 
               {nextLesson ? (
-                <Link
-                  href={`/education/lessons/${nextLesson.id}`}
-                  className="flex-1"
-                >
+                <Link href={`/education/lessons/${nextLesson.id}`} className="flex-1">
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Next:{' '}
-                    {getMultilingualContent(nextLesson.title, language)}
+                    Next: {getMultilingualContent(nextLesson.title, language)}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
