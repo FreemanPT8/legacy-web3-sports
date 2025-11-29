@@ -1,51 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+
+// Usamos sempre o client admin quando existir (bypass RLS)
+const db = supabaseAdmin ?? supabase;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
     // 1) Buscar lição
-    const { data: lesson, error: lessonError } = await supabase
+    const { data: lesson, error: lessonError } = await db
       .from('lessons')
       .select('*')
       .eq('id', params.id)
-      .single();
+      .maybeSingle();
 
     if (lessonError || !lesson) {
       return NextResponse.json(
         { success: false, error: 'Lesson not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // 2) Buscar módulo + todas as lições do módulo (para prev/next)
-    const { data: module, error: moduleError } = await supabase
+    const { data: module, error: moduleError } = await db
       .from('modules')
       .select(
         `
         *,
         lessons:lessons(*)
-      `
+      `,
       )
       .eq('id', (lesson as any).module_id)
-      .single();
+      .maybeSingle();
 
     if (moduleError || !module) {
       return NextResponse.json(
         { success: false, error: 'Module not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // 3) Determinar autor e se o utilizador atual é o criador
     let authorId: string | null =
       (lesson as any).author_id || (module as any).author_id || null;
+
+    // Fallback: se não houver author_id mas o user for Admin/Super Admin,
+    // assumimos que ele é o criador (fase inicial do Legacy)
+    if (
+      !authorId &&
+      user &&
+      (user.role === 'Admin' || user.role === 'Super Admin')
+    ) {
+      authorId = user.id;
+    }
 
     let isCreator = false;
     if (user && authorId && user.id === authorId) {
@@ -54,7 +67,7 @@ export async function GET(
 
     let authorName: string | null = null;
     if (authorId) {
-      const { data: authorRow, error: authorError } = await supabase
+      const { data: authorRow, error: authorError } = await db
         .from('users')
         .select('username')
         .eq('id', authorId)
@@ -69,7 +82,7 @@ export async function GET(
     let isCompleted = false;
 
     if (user && !isCreator) {
-      const { data: completion, error: completionError } = await supabase
+      const { data: completion, error: completionError } = await db
         .from('lesson_completions')
         .select('id')
         .eq('user_id', user.id)
@@ -82,7 +95,7 @@ export async function GET(
     }
 
     // 5) Estatísticas da lição (quantas vezes concluída, XP total distribuído)
-    const { data: allCompletions, error: statsError } = await supabase
+    const { data: allCompletions, error: statsError } = await db
       .from('lesson_completions')
       .select('xp_earned')
       .eq('lesson_id', params.id);
@@ -95,7 +108,7 @@ export async function GET(
     const completedCount = completionsArray.length;
     const totalXpDistributed = completionsArray.reduce(
       (sum, row: any) => sum + (row.xp_earned || 0),
-      0
+      0,
     );
 
     // 6) Montar resposta
@@ -120,7 +133,7 @@ export async function GET(
     console.error('Error in GET /api/lessons/[id]:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
