@@ -8,6 +8,11 @@ interface RouteContext {
 // Usamos o client admin quando existir (bypass RLS)
 const db = supabaseAdmin ?? supabase;
 
+type CompletionRow = {
+  user_id: string;
+  xp_earned: number | null;
+};
+
 export async function GET(
   request: NextRequest,
   context: RouteContext,
@@ -18,10 +23,17 @@ export async function GET(
     const url = new URL(request.url);
     const userId = url.searchParams.get('userId');
 
-    // 1) Buscar a lição
+    // 1) Buscar a lição + autor
     const { data: rawLesson, error: lessonError } = await db
       .from('lessons')
-      .select('*')
+      .select(
+        `
+        *,
+        author_user:users!lessons_author_id_fkey (
+          username
+        )
+      `,
+      )
       .eq('id', id)
       .maybeSingle();
 
@@ -40,24 +52,35 @@ export async function GET(
       );
     }
 
-    // 2) Tentar buscar o módulo da lição
+    // 2) Tentar buscar o módulo da lição (não fatal se falhar)
     let rawModule: any = null;
-    let moduleError: any = null;
 
-    const { data: moduleData, error: mError } = await db
+    const { data: moduleData, error: moduleError } = await db
       .from('modules')
-      .select('id, title, course_id, author_id')
+      .select(
+        `
+        id,
+        title,
+        course_id,
+        author_id,
+        author_user:users!modules_author_id_fkey (
+          username
+        )
+      `,
+      )
       .eq('id', rawLesson.module_id)
       .maybeSingle();
 
-    if (mError) {
-      moduleError = mError;
-      console.error('Error fetching module (non-fatal):', mError);
+    if (moduleError) {
+      console.error(
+        'Error fetching module (non-fatal):',
+        moduleError,
+      );
     } else {
       rawModule = moduleData;
     }
 
-    // 3) Buscar TODAS as lições do módulo (para prev/next) — se tivermos módulo
+    // 3) Buscar TODAS as lições do módulo (para prev/next), se o módulo existir
     let moduleLessons: any[] = [];
     if (rawModule?.id) {
       const { data: lessonsData, error: lessonsError } = await db
@@ -75,7 +98,7 @@ export async function GET(
       }
     }
 
-    // 4) Buscar completions desta lição (para stats e isCompleted)
+    // 4) Buscar completions desta lição na tabela LESSON_COMPLETIONS
     const { data: completions, error: completionsError } = await db
       .from('lesson_completions')
       .select('user_id, xp_earned')
@@ -88,13 +111,14 @@ export async function GET(
       );
     }
 
-    const completionsArray: { user_id: string; xp_earned: number | null }[] =
-      completions || [];
+    const completionsArray: CompletionRow[] = (completions ||
+      []) as CompletionRow[];
 
     const completedCount = completionsArray.length;
 
     const totalXpDistributed = completionsArray.reduce(
-      (sum: number, row: any) => sum + (row.xp_earned ?? 0),
+      (sum: number, row: CompletionRow) =>
+        sum + (row.xp_earned ?? 0),
       0,
     );
 
@@ -109,7 +133,9 @@ export async function GET(
       !isCreator &&
       completionsArray.some((c) => c.user_id === userId);
 
-    // 6) Objetos no formato esperado pelo frontend
+    // 6) Normalizar dados da lesson
+    const authorName =
+      rawLesson.author_user?.username || null;
 
     const lesson = {
       id: rawLesson.id,
@@ -121,17 +147,19 @@ export async function GET(
       order: rawLesson.order,
       module_id: rawLesson.module_id,
       author_id: rawLesson.author_id,
-      author_name: rawLesson.author_name || null,
+      author_name: authorName,
       created_at: rawLesson.created_at,
     };
 
-    // Se o módulo falhar, devolvemos um módulo "mínimo" para a UI não rebentar.
-    const module = rawModule
+    // 7) Normalizar dados do módulo (ou fallback mínimo se falhar)
+    const lessonModule = rawModule
       ? {
           id: rawModule.id,
           title: rawModule.title,
           course_id: rawModule.course_id,
           author_id: rawModule.author_id,
+          author_name:
+            rawModule.author_user?.username || null,
           lessons: Array.isArray(moduleLessons)
             ? moduleLessons.map((l: any) => ({
                 id: l.id,
@@ -145,6 +173,7 @@ export async function GET(
           title: { en: 'Module', pt: 'Módulo' },
           course_id: '',
           author_id: null,
+          author_name: null,
           lessons: [],
         };
 
@@ -156,7 +185,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       lesson,
-      module,
+      module: lessonModule,
       isCompleted,
       isCreator,
       stats,

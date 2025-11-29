@@ -8,6 +8,24 @@ interface RouteContext {
 
 const db = supabaseAdmin ?? supabase;
 
+type LessonStatsRow = {
+  lesson_id: string;
+  completed_count: number | null;
+  total_xp: number | null;
+};
+
+type ModuleStatsRow = {
+  module_id: string;
+  completed_count: number | null;
+  total_xp: number | null;
+};
+
+type CourseStatsRow = {
+  course_id: string;
+  completed_count: number | null;
+  total_xp: number | null;
+};
+
 export async function GET(
   request: NextRequest,
   context: RouteContext,
@@ -83,30 +101,171 @@ export async function GET(
       lessonsArray = rawLessons || [];
     }
 
-    // 4) Completions para este user
-    let completedSet = new Set<string>();
+    // 4) STATS & COMPLETIONS PARA ESTE USER
+    const lessonIds = lessonsArray
+      .map((l: any) => l.id)
+      .filter((lid: any) => !!lid);
 
-    if (user && lessonsArray.length > 0) {
-      const lessonIds = lessonsArray
-        .map((l: any) => l.id)
-        .filter((lid: any) => !!lid);
+    let lessonStatsMap: Record<
+      string,
+      { completedCount: number; totalXp: number }
+    > = {};
+    let moduleStatsMap: Record<
+      string,
+      { completedCount: number; totalXp: number }
+    > = {};
+    let courseStats: { completedCount: number; totalXp: number } = {
+      completedCount: 0,
+      totalXp: 0,
+    };
 
-      if (lessonIds.length > 0) {
-        const { data: completions, error: compError } = await db
+    let userLessonCompletedSet = new Set<string>();
+    let userModuleCompletedSet = new Set<string>();
+    let userCourseCompleted = false;
+
+    // LESSON STATS
+    if (lessonIds.length > 0) {
+      const { data: lessonStats, error: lessonStatsError } =
+        await db
           .from('lesson_completions')
-          .select('lesson_id')
-          .eq('user_id', user.id)
-          .in('lesson_id', lessonIds);
+          .select(
+            'lesson_id, count(*) as completed_count, sum(xp_earned) as total_xp',
+          )
+          .in('lesson_id', lessonIds)
+          .group('lesson_id');
 
-        if (compError) {
+      if (lessonStatsError) {
+        console.error(
+          'Error fetching lesson stats:',
+          lessonStatsError,
+        );
+      } else {
+        (lessonStats || []).forEach((row: any) => {
+          const lesson_id = row.lesson_id as string;
+          const completed_count = Number(row.completed_count ?? 0);
+          const total_xp = Number(row.total_xp ?? 0);
+          lessonStatsMap[lesson_id] = {
+            completedCount: completed_count,
+            totalXp: total_xp,
+          };
+        });
+      }
+
+      if (user) {
+        const { data: userLessonCompletions, error: ulcError } =
+          await db
+            .from('lesson_completions')
+            .select('lesson_id')
+            .eq('user_id', user.id)
+            .in('lesson_id', lessonIds);
+
+        if (ulcError) {
           console.error(
-            'Error fetching lesson completions:',
-            compError,
+            'Error fetching user lesson completions:',
+            ulcError,
           );
         } else {
-          completedSet = new Set(
-            (completions || []).map((c: any) => c.lesson_id),
+          userLessonCompletedSet = new Set(
+            (userLessonCompletions || []).map(
+              (r: any) => r.lesson_id as string,
+            ),
           );
+        }
+      }
+    }
+
+    // MODULE STATS
+    if (moduleIds.length > 0) {
+      const { data: moduleStats, error: moduleStatsError } =
+        await db
+          .from('module_completions')
+          .select(
+            'module_id, count(*) as completed_count, sum(xp_earned) as total_xp',
+          )
+          .in('module_id', moduleIds)
+          .group('module_id');
+
+      if (moduleStatsError) {
+        console.error(
+          'Error fetching module stats:',
+          moduleStatsError,
+        );
+      } else {
+        (moduleStats || []).forEach((row: any) => {
+          const module_id = row.module_id as string;
+          const completed_count = Number(row.completed_count ?? 0);
+          const total_xp = Number(row.total_xp ?? 0);
+          moduleStatsMap[module_id] = {
+            completedCount: completed_count,
+            totalXp: total_xp,
+          };
+        });
+      }
+
+      if (user) {
+        const {
+          data: userModuleCompletions,
+          error: umcError,
+        } = await db
+          .from('module_completions')
+          .select('module_id')
+          .eq('user_id', user.id)
+          .in('module_id', moduleIds);
+
+        if (umcError) {
+          console.error(
+            'Error fetching user module completions:',
+            umcError,
+          );
+        } else {
+          userModuleCompletedSet = new Set(
+            (userModuleCompletions || []).map(
+              (r: any) => r.module_id as string,
+            ),
+          );
+        }
+      }
+    }
+
+    // COURSE STATS
+    {
+      const { data: cStats, error: cStatsError } = await db
+        .from('course_completions')
+        .select(
+          'course_id, count(*) as completed_count, sum(xp_earned) as total_xp',
+        )
+        .eq('course_id', id)
+        .group('course_id');
+
+      if (cStatsError) {
+        console.error(
+          'Error fetching course stats:',
+          cStatsError,
+        );
+      } else if (cStats && cStats.length > 0) {
+        const row = cStats[0] as any;
+        courseStats = {
+          completedCount: Number(row.completed_count ?? 0),
+          totalXp: Number(row.total_xp ?? 0),
+        };
+      }
+
+      if (user) {
+        const { data: userCourseCompletions, error: uccError } =
+          await db
+            .from('course_completions')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('course_id', id)
+            .maybeSingle();
+
+        if (uccError) {
+          console.error(
+            'Error fetching user course completion:',
+            uccError,
+          );
+        } else {
+          userCourseCompleted = !!userCourseCompletions;
         }
       }
     }
@@ -152,6 +311,10 @@ export async function GET(
 
     const normalizedModules = modulesArray.map((m: any) => {
       const moduleLessonsRaw = lessonsByModule[m.id] || [];
+      const moduleStats = moduleStatsMap[m.id] || {
+        completedCount: 0,
+        totalXp: 0,
+      };
 
       const moduleLessons = moduleLessonsRaw
         .slice()
@@ -159,28 +322,32 @@ export async function GET(
           (a: any, b: any) => (a.order || 0) - (b.order || 0),
         )
         .map((l: any) => {
+          const lessonAuthorName =
+            (l.author_id && authorMap[l.author_id]) ||
+            'Legacy Team';
+
+          const lessonStats = lessonStatsMap[l.id] || {
+            completedCount: 0,
+            totalXp: 0,
+          };
+
           const isLessonCreator =
             !!user &&
             ((l.author_id && l.author_id === user.id) ||
               (!l.author_id && isAdminUser));
 
-          const isCompleted =
+          const isCompletedForUser =
             !!user &&
             !isLessonCreator &&
-            completedSet.has(l.id);
-
-          const lessonAuthorName =
-            (l.author_id && authorMap[l.author_id]) ||
-            l.author ||
-            (isLessonCreator && user
-              ? user.username
-              : 'Admin');
+            userLessonCompletedSet.has(l.id);
 
           return {
             ...l,
             author_name: lessonAuthorName,
-            isCompleted,
             isCreator: isLessonCreator,
+            isCompleted: isCompletedForUser,
+            completed_count: lessonStats.completedCount,
+            total_xp_distributed: lessonStats.totalXp,
           };
         });
 
@@ -191,15 +358,20 @@ export async function GET(
 
       const moduleAuthorName =
         (m.author_id && authorMap[m.author_id]) ||
-        m.author ||
-        (isModuleCreator && user
-          ? user.username
-          : 'Admin');
+        'Legacy Team';
+
+      const isModuleCompletedForUser =
+        !!user &&
+        !isModuleCreator &&
+        userModuleCompletedSet.has(m.id);
 
       return {
         ...m,
         author_name: moduleAuthorName,
         isCreator: isModuleCreator,
+        isCompleted: isModuleCompletedForUser,
+        completed_count: moduleStats.completedCount,
+        total_xp_distributed: moduleStats.totalXp,
         lessons: moduleLessons,
       };
     });
@@ -214,16 +386,19 @@ export async function GET(
       0,
     );
 
-    const totalXP = normalizedModules.reduce((acc: number, m: any) => {
-      if (!Array.isArray(m.lessons)) return acc;
-      return (
-        acc +
-        m.lessons.reduce(
-          (sum: number, l: any) => sum + (l.xp_reward || 0),
-          0,
-        )
-      );
-    }, 0);
+    const totalXP = normalizedModules.reduce(
+      (acc: number, m: any) => {
+        if (!Array.isArray(m.lessons)) return acc;
+        return (
+          acc +
+          m.lessons.reduce(
+            (sum: number, l: any) => sum + (l.xp_reward || 0),
+            0,
+          )
+        );
+      },
+      0,
+    );
 
     const isCourseCreator =
       !!user &&
@@ -234,17 +409,19 @@ export async function GET(
     const courseAuthorName =
       (rawCourse.author_id &&
         authorMap[rawCourse.author_id]) ||
-      rawCourse.author ||
-      (isCourseCreator && user ? user.username : 'Admin');
+      'Legacy Team';
 
     const course = {
       ...rawCourse,
       author_name: courseAuthorName,
       isCreator: isCourseCreator,
+      isCompleted: !!user && !isCourseCreator && userCourseCompleted,
       modules: normalizedModules,
       total_modules: totalModules,
       total_lessons: totalLessons,
       total_xp: totalXP,
+      completed_count: courseStats.completedCount,
+      total_xp_distributed: courseStats.totalXp,
     };
 
     return NextResponse.json({
