@@ -8,24 +8,6 @@ interface RouteContext {
 
 const db = supabaseAdmin ?? supabase;
 
-type LessonCompletionRow = {
-  lesson_id: string | null;
-  user_id: string | null;
-  xp_earned: number | null;
-};
-
-type ModuleCompletionRow = {
-  module_id: string | null;
-  user_id: string | null;
-  xp_earned: number | null;
-};
-
-type CourseCompletionRow = {
-  course_id: string | null;
-  user_id: string | null;
-  xp_earned: number | null;
-};
-
 export async function GET(
   request: NextRequest,
   context: RouteContext,
@@ -101,124 +83,32 @@ export async function GET(
       lessonsArray = rawLessons || [];
     }
 
-    const lessonIds = lessonsArray
-      .map((l: any) => l.id)
-      .filter((lid: any) => !!lid);
+    // 4) Completions de lições para este user (para badges Completed)
+    let completedSet = new Set<string>();
 
-    // 4) COMPLETIONS & STATS (lições / módulos / curso)
-    let lessonCompletions: LessonCompletionRow[] = [];
-    let moduleCompletions: ModuleCompletionRow[] = [];
-    let courseCompletions: CourseCompletionRow[] = [];
+    if (user && lessonsArray.length > 0) {
+      const lessonIds = lessonsArray
+        .map((l: any) => l.id)
+        .filter((lid: any) => !!lid);
 
-    if (lessonIds.length > 0) {
-      const { data, error } = await db
-        .from('lesson_completions')
-        .select('lesson_id, user_id, xp_earned')
-        .in('lesson_id', lessonIds);
+      if (lessonIds.length > 0) {
+        const { data: completions, error: compError } = await db
+          .from('lesson_completions')
+          .select('lesson_id')
+          .eq('user_id', user.id)
+          .in('lesson_id', lessonIds);
 
-      if (error) {
-        console.error(
-          'Error fetching lesson completions:',
-          error,
-        );
-      } else {
-        lessonCompletions = (data || []) as LessonCompletionRow[];
+        if (compError) {
+          console.error(
+            'Error fetching lesson completions:',
+            compError,
+          );
+        } else {
+          completedSet = new Set(
+            (completions || []).map((c: any) => c.lesson_id),
+          );
+        }
       }
-    }
-
-    if (moduleIds.length > 0) {
-      const { data, error } = await db
-        .from('module_completions')
-        .select('module_id, user_id, xp_earned')
-        .in('module_id', moduleIds);
-
-      if (error) {
-        console.error(
-          'Error fetching module completions:',
-          error,
-        );
-      } else {
-        moduleCompletions = (data || []) as ModuleCompletionRow[];
-      }
-    }
-
-    {
-      const { data, error } = await db
-        .from('course_completions')
-        .select('course_id, user_id, xp_earned')
-        .eq('course_id', id);
-
-      if (error) {
-        console.error(
-          'Error fetching course completions:',
-          error,
-        );
-      } else {
-        courseCompletions = (data || []) as CourseCompletionRow[];
-      }
-    }
-
-    // 4.1) Maps de stats
-    const lessonStatsMap: Record<
-      string,
-      { completedCount: number; totalXp: number }
-    > = {};
-    const moduleStatsMap: Record<
-      string,
-      { completedCount: number; totalXp: number }
-    > = {};
-    let courseStats = { completedCount: 0, totalXp: 0 };
-
-    lessonCompletions.forEach((row) => {
-      if (!row.lesson_id) return;
-      const key = row.lesson_id;
-      if (!lessonStatsMap[key]) {
-        lessonStatsMap[key] = { completedCount: 0, totalXp: 0 };
-      }
-      lessonStatsMap[key].completedCount += 1;
-      lessonStatsMap[key].totalXp += row.xp_earned ?? 0;
-    });
-
-    moduleCompletions.forEach((row) => {
-      if (!row.module_id) return;
-      const key = row.module_id;
-      if (!moduleStatsMap[key]) {
-        moduleStatsMap[key] = { completedCount: 0, totalXp: 0 };
-      }
-      moduleStatsMap[key].completedCount += 1;
-      moduleStatsMap[key].totalXp += row.xp_earned ?? 0;
-    });
-
-    courseStats = courseCompletions.reduce(
-      (acc, row) => {
-        acc.completedCount += 1;
-        acc.totalXp += row.xp_earned ?? 0;
-        return acc;
-      },
-      { completedCount: 0, totalXp: 0 },
-    );
-
-    // 4.2) Sets de completions para ESTE user
-    let userLessonCompletedSet = new Set<string>();
-    let userModuleCompletedSet = new Set<string>();
-    let userCourseCompleted = false;
-
-    if (user) {
-      userLessonCompletedSet = new Set(
-        lessonCompletions
-          .filter((r) => r.user_id === user.id)
-          .map((r) => r.lesson_id as string),
-      );
-
-      userModuleCompletedSet = new Set(
-        moduleCompletions
-          .filter((r) => r.user_id === user.id)
-          .map((r) => r.module_id as string),
-      );
-
-      userCourseCompleted = courseCompletions.some(
-        (r) => r.user_id === user.id,
-      );
     }
 
     // 5) Map de autores
@@ -250,57 +140,142 @@ export async function GET(
       }
     }
 
-    // 6) Lições por módulo (enriquecidas)
+    // 6) XP stats do lado das completions
+    const lessonStatsById: Record<
+      string,
+      { completedCount: number; totalXp: number }
+    > = {};
+    const moduleBonusXpById: Record<string, number> = {};
+    let courseBonusXp = 0;
+
+    // 6.1) lesson_completions
+    if (lessonsArray.length > 0) {
+      const lessonIdsAll = lessonsArray
+        .map((l: any) => l.id)
+        .filter((id: any) => !!id);
+
+      const { data: lessonCompletions, error: lessonCompError } =
+        await db
+          .from('lesson_completions')
+          .select('lesson_id, xp_earned')
+          .in('lesson_id', lessonIdsAll);
+
+      if (lessonCompError) {
+        console.error(
+          'Error fetching lesson completions:',
+          lessonCompError,
+        );
+      } else if (Array.isArray(lessonCompletions)) {
+        lessonCompletions.forEach((row: any) => {
+          const lid = row.lesson_id;
+          if (!lid) return;
+          if (!lessonStatsById[lid]) {
+            lessonStatsById[lid] = {
+              completedCount: 0,
+              totalXp: 0,
+            };
+          }
+          lessonStatsById[lid].completedCount += 1;
+          lessonStatsById[lid].totalXp += row.xp_earned || 0;
+        });
+      }
+    }
+
+    // 6.2) module_completions
+    if (modulesArray.length > 0) {
+      const moduleIdsAll = modulesArray
+        .map((m: any) => m.id)
+        .filter((id: any) => !!id);
+
+      const { data: moduleCompletions, error: moduleCompError } =
+        await db
+          .from('module_completions')
+          .select('module_id, xp_earned')
+          .in('module_id', moduleIdsAll);
+
+      if (moduleCompError) {
+        console.error(
+          'Error fetching module completions:',
+          moduleCompError,
+        );
+      } else if (Array.isArray(moduleCompletions)) {
+        moduleCompletions.forEach((row: any) => {
+          const mid = row.module_id;
+          if (!mid) return;
+          if (!moduleBonusXpById[mid]) {
+            moduleBonusXpById[mid] = 0;
+          }
+          moduleBonusXpById[mid] += row.xp_earned || 0;
+        });
+      }
+    }
+
+    // 6.3) course_completions
+    {
+      const { data: courseCompletions, error: courseCompError } =
+        await db
+          .from('course_completions')
+          .select('xp_earned')
+          .eq('course_id', id);
+
+      if (courseCompError) {
+        console.error(
+          'Error fetching course completions:',
+          courseCompError,
+        );
+      } else if (Array.isArray(courseCompletions)) {
+        courseBonusXp = courseCompletions.reduce(
+          (acc: number, row: any) => acc + (row.xp_earned || 0),
+          0,
+        );
+      }
+    }
+
+    // 7) Lições por módulo (enriquecidas)
     const lessonsByModule: Record<string, any[]> = {};
     lessonsArray.forEach((l: any) => {
       if (!l.module_id) return;
       if (!lessonsByModule[l.module_id]) {
         lessonsByModule[l.module_id] = [];
       }
-      lessonsByModule[l.module_id].push(l);
-    });
 
-    const normalizedModules = modulesArray.map((m: any) => {
-      const moduleLessonsRaw = lessonsByModule[m.id] || [];
-      const moduleStats = moduleStatsMap[m.id] || {
+      const stats = lessonStatsById[l.id] || {
         completedCount: 0,
         totalXp: 0,
       };
+
+      const isLessonCreator =
+        !!user &&
+        ((l.author_id && l.author_id === user.id) ||
+          (!l.author_id && isAdminUser));
+
+      const isCompleted =
+        !!user &&
+        !isLessonCreator &&
+        completedSet.has(l.id);
+
+      const lessonAuthorName =
+        (l.author_id && authorMap[l.author_id]) || 'Unknown';
+
+      lessonsByModule[l.module_id].push({
+        ...l,
+        author_name: lessonAuthorName,
+        isCompleted,
+        isCreator: isLessonCreator,
+        completed_count: stats.completedCount,
+        xp_distributed_total: stats.totalXp,
+      });
+    });
+
+    // 8) Módulos normalizados
+    const normalizedModules = modulesArray.map((m: any) => {
+      const moduleLessonsRaw = lessonsByModule[m.id] || [];
 
       const moduleLessons = moduleLessonsRaw
         .slice()
         .sort(
           (a: any, b: any) => (a.order || 0) - (b.order || 0),
-        )
-        .map((l: any) => {
-          const lessonAuthorName =
-            (l.author_id && authorMap[l.author_id]) ||
-            'Legacy Team';
-
-          const lessonStats = lessonStatsMap[l.id] || {
-            completedCount: 0,
-            totalXp: 0,
-          };
-
-          const isLessonCreator =
-            !!user &&
-            ((l.author_id && l.author_id === user.id) ||
-              (!l.author_id && isAdminUser));
-
-          const isCompletedForUser =
-            !!user &&
-            !isLessonCreator &&
-            userLessonCompletedSet.has(l.id);
-
-          return {
-            ...l,
-            author_name: lessonAuthorName,
-            isCreator: isLessonCreator,
-            isCompleted: isCompletedForUser,
-            completed_count: lessonStats.completedCount,
-            total_xp_distributed: lessonStats.totalXp,
-          };
-        });
+        );
 
       const isModuleCreator =
         !!user &&
@@ -308,26 +283,28 @@ export async function GET(
           (!m.author_id && isAdminUser));
 
       const moduleAuthorName =
-        (m.author_id && authorMap[m.author_id]) ||
-        'Legacy Team';
+        (m.author_id && authorMap[m.author_id]) || 'Unknown';
 
-      const isModuleCompletedForUser =
-        !!user &&
-        !isModuleCreator &&
-        userModuleCompletedSet.has(m.id);
+      const lessonXpDistributed = moduleLessons.reduce(
+        (acc: number, l: any) =>
+          acc + (l.xp_distributed_total || 0),
+        0,
+      );
+
+      const moduleBonusXp = moduleBonusXpById[m.id] || 0;
+      const moduleTotalXpDistributed =
+        lessonXpDistributed + moduleBonusXp;
 
       return {
         ...m,
         author_name: moduleAuthorName,
         isCreator: isModuleCreator,
-        isCompleted: isModuleCompletedForUser,
-        completed_count: moduleStats.completedCount,
-        total_xp_distributed: moduleStats.totalXp,
         lessons: moduleLessons,
+        xp_distributed_total: moduleTotalXpDistributed,
       };
     });
 
-    // 7) Estatísticas do curso
+    // 9) Estatísticas do curso
     const totalModules = normalizedModules.length;
 
     const totalLessons = normalizedModules.reduce(
@@ -337,19 +314,16 @@ export async function GET(
       0,
     );
 
-    const totalXP = normalizedModules.reduce(
-      (acc: number, m: any) => {
-        if (!Array.isArray(m.lessons)) return acc;
-        return (
-          acc +
-          m.lessons.reduce(
-            (sum: number, l: any) => sum + (l.xp_reward || 0),
-            0,
-          )
-        );
-      },
-      0,
-    );
+    const totalXP = normalizedModules.reduce((acc: number, m: any) => {
+      if (!Array.isArray(m.lessons)) return acc;
+      return (
+        acc +
+        m.lessons.reduce(
+          (sum: number, l: any) => sum + (l.xp_reward || 0),
+          0,
+        )
+      );
+    }, 0);
 
     const isCourseCreator =
       !!user &&
@@ -359,20 +333,39 @@ export async function GET(
 
     const courseAuthorName =
       (rawCourse.author_id &&
-        authorMap[rawCourse.author_id]) ||
-      'Legacy Team';
+        authorMap[rawCourse.author_id]) || 'Unknown';
+
+    const lessonXpDistributed = normalizedModules.reduce(
+      (acc: number, m: any) =>
+        acc +
+        (Array.isArray(m.lessons)
+          ? m.lessons.reduce(
+              (accL: number, l: any) =>
+                accL + (l.xp_distributed_total || 0),
+              0,
+            )
+          : 0),
+      0,
+    );
+
+    const moduleBonusTotal = normalizedModules.reduce(
+      (acc: number, m: any) =>
+        acc + (moduleBonusXpById[m.id] || 0),
+      0,
+    );
+
+    const totalXpDistributed =
+      lessonXpDistributed + moduleBonusTotal + courseBonusXp;
 
     const course = {
       ...rawCourse,
       author_name: courseAuthorName,
       isCreator: isCourseCreator,
-      isCompleted: !!user && !isCourseCreator && userCourseCompleted,
       modules: normalizedModules,
       total_modules: totalModules,
       total_lessons: totalLessons,
       total_xp: totalXP,
-      completed_count: courseStats.completedCount,
-      total_xp_distributed: courseStats.totalXp,
+      xp_distributed_total: totalXpDistributed,
     };
 
     return NextResponse.json({

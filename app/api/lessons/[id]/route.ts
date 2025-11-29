@@ -9,7 +9,7 @@ interface RouteContext {
 const db = supabaseAdmin ?? supabase;
 
 type CompletionRow = {
-  user_id: string;
+  user_id: string | null;
   xp_earned: number | null;
 };
 
@@ -85,7 +85,7 @@ export async function GET(
     if (rawModule?.id) {
       const { data: lessonsData, error: lessonsError } = await db
         .from('lessons')
-        .select('id, title, order')
+        .select('id, title, "order"')
         .eq('module_id', rawModule.id);
 
       if (lessonsError) {
@@ -98,7 +98,7 @@ export async function GET(
       }
     }
 
-    // 4) Buscar completions desta lição na tabela LESSON_COMPLETIONS
+    // 4) Buscar completions desta lição em lesson_completions
     const { data: completions, error: completionsError } = await db
       .from('lesson_completions')
       .select('user_id, xp_earned')
@@ -131,7 +131,9 @@ export async function GET(
     const isCompleted =
       !!userId &&
       !isCreator &&
-      completionsArray.some((c) => c.user_id === userId);
+      completionsArray.some(
+        (c) => c.user_id && c.user_id === userId,
+      );
 
     // 6) Normalizar dados da lesson
     const authorName =
