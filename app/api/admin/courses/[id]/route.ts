@@ -114,6 +114,8 @@ export async function PUT(
       xp_threshold,
       published,
       image_url,
+      xp_reward,
+      is_completed,
     } = course;
 
     if (!title) {
@@ -123,6 +125,22 @@ export async function PUT(
       );
     }
 
+    // Buscar estado anterior (para saber se acabou de ficar completed)
+    const { data: existing, error: existingError } = await supabase
+      .from('courses')
+      .select('id, is_completed, xp_reward')
+      .eq('id', params.id)
+      .maybeSingle();
+
+    if (existingError || !existing) {
+      console.error('Error loading existing course before update:', existingError);
+      return NextResponse.json(
+        { success: false, error: 'Course not found.' },
+        { status: 404 },
+      );
+    }
+
+    const wasCompleted = !!existing.is_completed;
     const now = new Date().toISOString();
 
     const { data: updated, error: updateError } = await supabase
@@ -134,6 +152,8 @@ export async function PUT(
         xp_threshold: typeof xp_threshold === 'number' ? xp_threshold : 0,
         published: !!published,
         image_url: image_url ?? null,
+        xp_reward: typeof xp_reward === 'number' ? xp_reward : existing.xp_reward ?? 0,
+        is_completed: typeof is_completed === 'boolean' ? is_completed : wasCompleted,
         updated_at: now,
       })
       .eq('id', params.id)
@@ -146,6 +166,24 @@ export async function PUT(
         { success: false, error: 'Failed to update course.' },
         { status: 500 },
       );
+    }
+
+    // Se acabou de ser marcado como completed e tem XP extra, aplicar XP retroativo
+    const justCompleted =
+      !wasCompleted && !!updated.is_completed && (updated.xp_reward ?? 0) > 0;
+
+    if (justCompleted) {
+      const { error: rpcError } = await supabase.rpc(
+        'apply_course_completion_xp',
+        { p_course_id: params.id },
+      );
+
+      if (rpcError) {
+        console.error(
+          'Error applying retro course XP via apply_course_completion_xp:',
+          rpcError,
+        );
+      }
     }
 
     return NextResponse.json({

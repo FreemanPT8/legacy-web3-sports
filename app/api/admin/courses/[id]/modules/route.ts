@@ -102,6 +102,7 @@ export async function POST(
       image_url,
       order,
       published,
+      is_completed,
     } = body || {};
 
     // Pelo menos um título em qualquer língua
@@ -129,9 +130,9 @@ export async function POST(
       xp_reward: typeof xp_reward === 'number' ? xp_reward : 0,
       image_url: typeof image_url === 'string' ? image_url : null,
       order: typeof order === 'number' ? order : 0,
+      is_completed: typeof is_completed === 'boolean' ? is_completed : false,
     };
 
-    // ⚠️ published só funciona se já tiveres adicionado a coluna na tabela
     if (typeof published === 'boolean') {
       insertPayload.published = published;
     }

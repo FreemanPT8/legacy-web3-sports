@@ -1,3 +1,4 @@
+// app/api/admin/courses/[id]/modules/[moduleId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
@@ -7,10 +8,11 @@ type EnsureResult =
   | { ok: true; user: any }
   | { ok: false; response: NextResponse };
 
-async function ensureCanManageCourses(request: NextRequest): Promise<EnsureResult> {
+async function ensureCanManageCourses(
+  request: NextRequest,
+): Promise<EnsureResult> {
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
-    // Aqui devolvemos SEMPRE um NextResponse
     return { ok: false, response: authResult.response! };
   }
 
@@ -57,7 +59,29 @@ async function handleUpdate(
       image_url,
       order,
       published,
+      is_completed,
     } = body || {};
+
+    // Buscar estado anterior do módulo
+    const { data: existing, error: existingError } = await supabase
+      .from('modules')
+      .select('id, course_id, is_completed, xp_reward')
+      .eq('id', params.moduleId)
+      .eq('course_id', params.id)
+      .maybeSingle();
+
+    if (existingError || !existing) {
+      console.error(
+        'Error loading existing module before update:',
+        existingError,
+      );
+      return NextResponse.json(
+        { success: false, error: 'Module not found.' },
+        { status: 404 },
+      );
+    }
+
+    const wasCompleted = !!existing.is_completed;
 
     const updatePayload: Record<string, any> = {};
 
@@ -67,7 +91,6 @@ async function handleUpdate(
       updatePayload.xp_threshold = xp_threshold;
     }
     if (typeof xp_reward === 'number') {
-      // 👈 aqui estava "x_reward", corrigi para "xp_reward"
       updatePayload.xp_reward = xp_reward;
     }
     if (typeof order === 'number') {
@@ -79,13 +102,16 @@ async function handleUpdate(
     if (typeof published === 'boolean') {
       updatePayload.published = published;
     }
+    if (typeof is_completed === 'boolean') {
+      updatePayload.is_completed = is_completed;
+    }
 
     if (Object.keys(updatePayload).length === 0) {
       return NextResponse.json(
         {
           success: false,
           error:
-            'No updatable fields provided. (title, description, xp_threshold, xp_reward, order, image_url, published)',
+            'No updatable fields provided. (title, description, xp_threshold, xp_reward, order, image_url, published, is_completed)',
         },
         { status: 400 },
       );
@@ -113,6 +139,24 @@ async function handleUpdate(
         { success: false, error: 'Failed to update module.' },
         { status: 500 },
       );
+    }
+
+    // Se acabou de ser marcado como completed e tem XP extra, aplica XP retroativo
+    const justCompleted =
+      !wasCompleted && !!updated.is_completed && (updated.xp_reward ?? 0) > 0;
+
+    if (justCompleted) {
+      const { error: rpcError } = await supabase.rpc(
+        'apply_module_completion_xp',
+        { p_module_id: params.moduleId },
+      );
+
+      if (rpcError) {
+        console.error(
+          'Error applying retro module XP via apply_module_completion_xp:',
+          rpcError,
+        );
+      }
     }
 
     return NextResponse.json({

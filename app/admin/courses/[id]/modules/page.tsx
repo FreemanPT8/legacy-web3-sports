@@ -56,6 +56,7 @@ type Module = {
   xp_reward: number;
   image_url?: string | null;
   published?: boolean;
+  is_completed?: boolean;
   lessons?: Lesson[];
   _isNew?: boolean;
 };
@@ -76,12 +77,14 @@ export default function CourseModulesPage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
-  const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
+  const [currentLanguage, setCurrentLanguage] =
+    useState<LangCode>('en');
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const isAdmin =
-    user && (user.role === 'Super Admin' || user.role === 'Admin');
+    user &&
+    (user.role === 'Super Admin' || user.role === 'Admin');
 
   // Proteção básica
   useEffect(() => {
@@ -101,19 +104,25 @@ export default function CourseModulesPage() {
       setLoadingData(true);
       try {
         const token = getToken();
-        const res = await fetch(`/api/admin/courses/${courseId}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        const res = await fetch(
+          `/api/admin/courses/${courseId}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token
+                ? { Authorization: `Bearer ${token}` }
+                : {}),
+            },
           },
-        });
+        );
 
         const data = await res.json();
         if (!res.ok || !data.success) {
           console.error('Failed to load course:', data);
           toast({
             title: 'Error loading course',
-            description: data.error || 'Failed to load course data.',
+            description:
+              data.error || 'Failed to load course data.',
             variant: 'destructive',
           });
           setCourse(null);
@@ -125,7 +134,9 @@ export default function CourseModulesPage() {
           const mods: Module[] = Array.isArray(c.modules)
             ? c.modules
                 .slice()
-                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .sort(
+                  (a, b) => (a.order || 0) - (b.order || 0),
+                )
                 .map((m) => ({
                   id: m.id,
                   order: m.order ?? 0,
@@ -135,6 +146,7 @@ export default function CourseModulesPage() {
                   xp_reward: m.xp_reward ?? 0,
                   image_url: m.image_url ?? null,
                   published: m.published ?? false,
+                  is_completed: m.is_completed ?? false,
                   lessons: m.lessons || [],
                 }))
             : [];
@@ -173,7 +185,9 @@ export default function CourseModulesPage() {
         if (i !== index) return m;
         const raw = m.title || {};
         const obj =
-          typeof raw === 'object' && raw !== null ? { ...raw } : {};
+          typeof raw === 'object' && raw !== null
+            ? { ...raw }
+            : {};
         (obj as any)[lang] = value;
         return { ...m, title: obj };
       }),
@@ -190,7 +204,9 @@ export default function CourseModulesPage() {
         if (i !== index) return m;
         const raw = m.description || {};
         const obj =
-          typeof raw === 'object' && raw !== null ? { ...raw } : {};
+          typeof raw === 'object' && raw !== null
+            ? { ...raw }
+            : {};
         (obj as any)[lang] = value;
         return { ...m, description: obj };
       }),
@@ -199,7 +215,13 @@ export default function CourseModulesPage() {
 
   function updateModuleField(
     index: number,
-    field: 'xp_threshold' | 'xp_reward' | 'order' | 'image_url' | 'published',
+    field:
+      | 'xp_threshold'
+      | 'xp_reward'
+      | 'order'
+      | 'image_url'
+      | 'published'
+      | 'is_completed',
     value: any,
   ) {
     setModules((prev) =>
@@ -235,6 +257,7 @@ export default function CourseModulesPage() {
         xp_reward: 0,
         image_url: null,
         published: false,
+        is_completed: false,
         lessons: [],
       };
 
@@ -243,7 +266,6 @@ export default function CourseModulesPage() {
   };
 
   const handleDeleteModule = async (module: Module, index: number) => {
-    // Se ainda não foi criado no backend, basta remover localmente
     if (!module.id) {
       setModules((prev) => prev.filter((_, i) => i !== index));
       return;
@@ -278,7 +300,9 @@ export default function CourseModulesPage() {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(token
+              ? { Authorization: `Bearer ${token}` }
+              : {}),
           },
         },
       );
@@ -287,7 +311,8 @@ export default function CourseModulesPage() {
       if (!res.ok || !data.success) {
         toast({
           title: 'Error deleting module',
-          description: data.error || 'Failed to delete module.',
+          description:
+            data.error || 'Failed to delete module.',
           variant: 'destructive',
         });
         return;
@@ -295,15 +320,19 @@ export default function CourseModulesPage() {
 
       toast({
         title: 'Module deleted',
-        description: 'The module was deleted successfully.',
+        description:
+          'The module was deleted successfully.',
       });
 
-      setModules((prev) => prev.filter((_, i) => i !== index));
+      setModules((prev) =>
+        prev.filter((_, i) => i !== index),
+      );
     } catch (err) {
       console.error('Error deleting module:', err);
       toast({
         title: 'Network error',
-        description: 'Could not delete module. Please try again.',
+        description:
+          'Could not delete module. Please try again.',
         variant: 'destructive',
       });
     }
@@ -315,7 +344,9 @@ export default function CourseModulesPage() {
     const title = module.title || {};
     const hasAnyTitle = LANGUAGES.some((lang) => {
       const v = (title as any)[lang.code];
-      return typeof v === 'string' && v.trim().length > 0;
+      return (
+        typeof v === 'string' && v.trim().length > 0
+      );
     });
 
     if (!hasAnyTitle) {
@@ -338,28 +369,34 @@ export default function CourseModulesPage() {
         image_url: module.image_url ?? null,
         order: module.order || index + 1,
         published: !!module.published,
+        is_completed: !!module.is_completed,
       };
 
       let res: Response;
       if (!module.id) {
-        // Criar novo módulo
-        res = await fetch(`/api/admin/courses/${courseId}/modules`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        res = await fetch(
+          `/api/admin/courses/${courseId}/modules`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token
+                ? { Authorization: `Bearer ${token}` }
+                : {}),
+            },
+            body: JSON.stringify(payload),
           },
-          body: JSON.stringify(payload),
-        });
+        );
       } else {
-        // Atualizar módulo existente
         res = await fetch(
           `/api/admin/courses/${courseId}/modules/${module.id}`,
           {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              ...(token
+                ? { Authorization: `Bearer ${token}` }
+                : {}),
             },
             body: JSON.stringify(payload),
           },
@@ -370,7 +407,8 @@ export default function CourseModulesPage() {
       if (!res.ok || !data.success) {
         toast({
           title: 'Error saving module',
-          description: data.error || 'Failed to save module.',
+          description:
+            data.error || 'Failed to save module.',
           variant: 'destructive',
         });
         setSaving(false);
@@ -381,7 +419,8 @@ export default function CourseModulesPage() {
 
       toast({
         title: 'Module saved',
-        description: 'Module data was saved successfully.',
+        description:
+          'Module data was saved successfully.',
       });
 
       setModules((prev) =>
@@ -398,7 +437,8 @@ export default function CourseModulesPage() {
       console.error('Error saving module:', err);
       toast({
         title: 'Network error',
-        description: 'Could not save module. Please try again.',
+        description:
+          'Could not save module. Please try again.',
         variant: 'destructive',
       });
     }
@@ -432,7 +472,10 @@ export default function CourseModulesPage() {
     );
   }
 
-  const courseTitle = getMultilingualContent(course.title, currentLanguage);
+  const courseTitle = getMultilingualContent(
+    course.title,
+    currentLanguage,
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -445,7 +488,10 @@ export default function CourseModulesPage() {
             <div className="flex justify-between items-center gap-4">
               <div>
                 <Link href="/admin/courses">
-                  <Button variant="ghost" className="mb-2">
+                  <Button
+                    variant="ghost"
+                    className="mb-2"
+                  >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back to Courses
                   </Button>
@@ -479,11 +525,15 @@ export default function CourseModulesPage() {
                     <Badge
                       key={lang.code}
                       variant={
-                        currentLanguage === lang.code ? 'default' : 'outline'
+                        currentLanguage === lang.code
+                          ? 'default'
+                          : 'outline'
                       }
                       className="cursor-pointer"
                       onClick={() =>
-                        setCurrentLanguage(lang.code as LangCode)
+                        setCurrentLanguage(
+                          lang.code as LangCode,
+                        )
                       }
                     >
                       {lang.name}
@@ -497,8 +547,8 @@ export default function CourseModulesPage() {
             {modules.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center text-gray-500">
-                  No modules yet. Click &quot;Add Module&quot; to create
-                  the first one.
+                  No modules yet. Click &quot;Add Module&quot; to
+                  create the first one.
                 </CardContent>
               </Card>
             ) : (
@@ -508,12 +558,15 @@ export default function CourseModulesPage() {
                     module.title,
                     currentLanguage,
                   );
-                  const description = getMultilingualContent(
-                    module.description,
-                    currentLanguage,
-                  );
+                  const description =
+                    getMultilingualContent(
+                      module.description,
+                      currentLanguage,
+                    );
 
-                  const lessonsCount = Array.isArray(module.lessons)
+                  const lessonsCount = Array.isArray(
+                    module.lessons,
+                  )
                     ? module.lessons.length
                     : 0;
 
@@ -535,10 +588,19 @@ export default function CourseModulesPage() {
                                   : 'bg-yellow-600'
                               }
                             >
-                              {module.published ? 'Published' : 'Draft'}
+                              {module.published
+                                ? 'Published'
+                                : 'Draft'}
                             </Badge>
+                            {module.is_completed && (
+                              <Badge className="bg-blue-600">
+                                Completed (XP active)
+                              </Badge>
+                            )}
                             {module._isNew && (
-                              <Badge className="bg-yellow-600">New</Badge>
+                              <Badge className="bg-yellow-600">
+                                New
+                              </Badge>
                             )}
                           </div>
                           <Input
@@ -559,7 +621,9 @@ export default function CourseModulesPage() {
                         </div>
                         <div className="flex flex-col gap-2 w-full md:w-56">
                           <div className="flex items-center gap-2">
-                            <Label className="text-xs">Order</Label>
+                            <Label className="text-xs">
+                              Order
+                            </Label>
                             <Input
                               type="number"
                               value={module.order}
@@ -567,7 +631,8 @@ export default function CourseModulesPage() {
                                 updateModuleField(
                                   index,
                                   'order',
-                                  parseInt(e.target.value) || 0,
+                                  parseInt(e.target.value) ||
+                                    0,
                                 )
                               }
                               className="h-8 text-xs"
@@ -578,7 +643,10 @@ export default function CourseModulesPage() {
                             variant="outline"
                             onClick={() => {
                               if (module.image_url) {
-                                window.open(module.image_url, '_blank');
+                                window.open(
+                                  module.image_url,
+                                  '_blank',
+                                );
                               }
                             }}
                           >
@@ -609,7 +677,8 @@ export default function CourseModulesPage() {
                         <div className="grid md:grid-cols-4 gap-4">
                           <div>
                             <Label className="text-xs">
-                              XP threshold (min XP to unlock module)
+                              XP threshold (min XP to unlock
+                              module)
                             </Label>
                             <Input
                               type="number"
@@ -618,7 +687,8 @@ export default function CourseModulesPage() {
                                 updateModuleField(
                                   index,
                                   'xp_threshold',
-                                  parseInt(e.target.value) || 0,
+                                  parseInt(e.target.value) ||
+                                    0,
                                 )
                               }
                               className="mt-1"
@@ -626,7 +696,8 @@ export default function CourseModulesPage() {
                           </div>
                           <div>
                             <Label className="text-xs">
-                              XP reward (extra XP when module completed)
+                              XP reward (extra XP when module
+                              completed)
                             </Label>
                             <Input
                               type="number"
@@ -635,7 +706,8 @@ export default function CourseModulesPage() {
                                 updateModuleField(
                                   index,
                                   'xp_reward',
-                                  parseInt(e.target.value) || 0,
+                                  parseInt(e.target.value) ||
+                                    0,
                                 )
                               }
                               className="mt-1"
@@ -660,23 +732,54 @@ export default function CourseModulesPage() {
                             />
                           </div>
                           <div>
-                            <Label className="text-xs">Published</Label>
-                            <div className="mt-1 flex items-center gap-2">
-                              <Switch
-                                checked={!!module.published}
-                                onCheckedChange={(checked) =>
-                                  updateModuleField(
-                                    index,
-                                    'published',
-                                    checked,
-                                  )
-                                }
-                              />
-                              <span className="text-xs text-gray-600">
-                                {module.published ? 'Published' : 'Draft'}
-                              </span>
+                            <Label className="text-xs">
+                              Status
+                            </Label>
+                            <div className="mt-1 space-y-1 text-xs">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!module.published}
+                                  onCheckedChange={(checked) =>
+                                    updateModuleField(
+                                      index,
+                                      'published',
+                                      checked,
+                                    )
+                                  }
+                                />
+                                <span>
+                                  {module.published
+                                    ? 'Published'
+                                    : 'Draft'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!module.is_completed}
+                                  onCheckedChange={(checked) =>
+                                    updateModuleField(
+                                      index,
+                                      'is_completed',
+                                      checked,
+                                    )
+                                  }
+                                />
+                                <span>
+                                  {module.is_completed
+                                    ? 'Completed (XP active)'
+                                    : 'Not completed'}
+                                </span>
+                              </div>
                             </div>
                           </div>
+                        </div>
+
+                        <div className="text-xs text-gray-500">
+                          Marking a module as completed with a
+                          positive XP reward will automatically
+                          grant that XP to all users who have
+                          already finished all lessons in this
+                          module (once).
                         </div>
 
                         <div className="flex justify-between gap-2 pt-2 border-t">
@@ -688,14 +791,14 @@ export default function CourseModulesPage() {
                                 } in this module.`}
                           </div>
                           <div className="flex gap-2">
-                            {/* Manage lessons – só depois de o módulo existir */}
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => {
                                 if (!module.id) {
                                   toast({
-                                    title: 'Save module first',
+                                    title:
+                                      'Save module first',
                                     description:
                                       'You need to save the module before managing lessons.',
                                   });
@@ -712,7 +815,10 @@ export default function CourseModulesPage() {
                               size="sm"
                               variant="outline"
                               onClick={() =>
-                                handleDeleteModule(module, index)
+                                handleDeleteModule(
+                                  module,
+                                  index,
+                                )
                               }
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
@@ -721,13 +827,18 @@ export default function CourseModulesPage() {
                             <Button
                               size="sm"
                               onClick={() =>
-                                handleSaveModule(module, index)
+                                handleSaveModule(
+                                  module,
+                                  index,
+                                )
                               }
                               disabled={saving}
                               className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <Save className="h-4 w-4 mr-1" />
-                              {saving ? 'Saving...' : 'Save module'}
+                              {saving
+                                ? 'Saving...'
+                                : 'Save module'}
                             </Button>
                           </div>
                         </div>

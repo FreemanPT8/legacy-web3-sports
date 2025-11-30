@@ -50,6 +50,8 @@ type CoursePayload = {
   xp_threshold: number;
   published: boolean;
   image_url?: string | null;
+  xp_reward: number;      // extra XP ao completar o curso
+  is_completed: boolean;  // curso fechado/completo
 };
 
 export default function EditCoursePage() {
@@ -64,7 +66,8 @@ export default function EditCoursePage() {
   const [loadingCourse, setLoadingCourse] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
+  const [currentLanguage, setCurrentLanguage] =
+    useState<LangCode>('en');
 
   const [course, setCourse] = useState<CoursePayload | null>(null);
 
@@ -103,7 +106,10 @@ export default function EditCoursePage() {
         const data: PermissionsResponse = await res.json();
 
         if (!res.ok || !data.success || !data.permissions) {
-          console.error('Error loading permissions for current user:', data);
+          console.error(
+            'Error loading permissions for current user:',
+            data,
+          );
           setCanManageCourses(false);
           setPermissionsLoaded(true);
           return;
@@ -112,7 +118,10 @@ export default function EditCoursePage() {
         setCanManageCourses(!!data.permissions.canManageCourses);
         setPermissionsLoaded(true);
       } catch (err) {
-        console.error('Unexpected error fetching permissions:', err);
+        console.error(
+          'Unexpected error fetching permissions:',
+          err,
+        );
         setCanManageCourses(false);
         setPermissionsLoaded(true);
       }
@@ -182,6 +191,9 @@ export default function EditCoursePage() {
             typeof c.xp_threshold === 'number' ? c.xp_threshold : 0,
           published: !!c.published,
           image_url: c.image_url ?? null,
+          xp_reward:
+            typeof c.xp_reward === 'number' ? c.xp_reward : 0,
+          is_completed: !!c.is_completed,
         };
 
         setCourse(payload);
@@ -232,21 +244,27 @@ export default function EditCoursePage() {
     setSaving(true);
     try {
       const token = getToken();
-      const res = await fetch(`/api/admin/courses/${params.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const res = await fetch(
+        `/api/admin/courses/${params.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token
+              ? { Authorization: `Bearer ${token}` }
+              : {}),
+          },
+          body: JSON.stringify({ course }),
         },
-        body: JSON.stringify({ course }),
-      });
+      );
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
         toast({
           title: 'Error updating course',
-          description: data.error || 'Failed to update course.',
+          description:
+            data.error || 'Failed to update course.',
           variant: 'destructive',
         });
         setSaving(false);
@@ -255,7 +273,8 @@ export default function EditCoursePage() {
 
       toast({
         title: 'Course updated',
-        description: 'The course was updated successfully.',
+        description:
+          'The course was updated successfully.',
       });
 
       router.push('/admin/courses');
@@ -263,7 +282,8 @@ export default function EditCoursePage() {
       console.error('Failed to update course:', err);
       toast({
         title: 'Network error',
-        description: 'Could not update course. Please try again.',
+        description:
+          'Could not update course. Please try again.',
         variant: 'destructive',
       });
       setSaving(false);
@@ -354,7 +374,7 @@ export default function EditCoursePage() {
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   Update title, description, level, XP requirement and
-                  publish status. Manage modules and lessons in the
+                  completion bonus. Manage modules and lessons in the
                   modules area.
                 </p>
               </div>
@@ -422,7 +442,8 @@ export default function EditCoursePage() {
                                 ...prev,
                                 title: {
                                   ...prev.title,
-                                  [currentLanguage]: e.target.value,
+                                  [currentLanguage]:
+                                    e.target.value,
                                 },
                               }
                             : prev,
@@ -486,9 +507,7 @@ export default function EditCoursePage() {
                       value={course.level}
                       onValueChange={(value) =>
                         setCourse((prev) =>
-                          prev
-                            ? { ...prev, level: value }
-                            : prev,
+                          prev ? { ...prev, level: value } : prev,
                         )
                       }
                     >
@@ -528,6 +547,55 @@ export default function EditCoursePage() {
                       min={0}
                       placeholder="0"
                     />
+                  </div>
+                </div>
+
+                {/* COMPLETION BONUS */}
+                <div className="border-t pt-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Course completed (bonus XP)</Label>
+                      <p className="text-xs text-gray-500 mt-1 max-w-md">
+                        When you mark this course as completed, all
+                        users who already finished every module will
+                        automatically receive the extra XP once.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={course.is_completed}
+                      onCheckedChange={(checked) =>
+                        setCourse((prev) =>
+                          prev
+                            ? { ...prev, is_completed: checked }
+                            : prev,
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="max-w-xs">
+                    <Label>Extra XP when course completed</Label>
+                    <Input
+                      type="number"
+                      value={course.xp_reward}
+                      onChange={(e) =>
+                        setCourse((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                xp_reward:
+                                  parseInt(e.target.value) || 0,
+                              }
+                            : prev,
+                        )
+                      }
+                      min={0}
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Set to 0 if this course should not give extra
+                      XP on completion.
+                    </p>
                   </div>
                 </div>
 
