@@ -69,7 +69,7 @@ interface LessonApiResponse {
 export default function LessonPage() {
   const params = useParams();
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [module, setModule] = useState<ModuleWithLessons | null>(null);
@@ -79,6 +79,11 @@ export default function LessonPage() {
   const [stats, setStats] = useState<LessonStats | null>(null);
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
+
+  const tr = (key: string, fallback: string) => {
+    const val = t(key);
+    return val === key ? fallback : val;
+  };
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -115,10 +120,10 @@ export default function LessonPage() {
 
         setStats(data.stats ?? null);
 
-        // SORT prev/next
+        // Calcular prev/next com base na ordem
         if (Array.isArray(fetchedModule.lessons)) {
           const ordered = [...fetchedModule.lessons].sort(
-            (a, b) => (a.order || 0) - (b.order || 0)
+            (a, b) => (a.order || 0) - (b.order || 0),
           );
 
           const idx = ordered.findIndex((l) => l.id === fetchedLesson.id);
@@ -150,7 +155,9 @@ export default function LessonPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">Loading lesson...</p>
+            <p className="text-gray-600 dark:text-gray-300">
+              {tr('lessons.loading', 'A carregar lição...')}
+            </p>
           </div>
         </main>
         <Footer />
@@ -166,10 +173,19 @@ export default function LessonPage() {
           <Card className="max-w-md">
             <CardContent className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Lesson Not Found</h3>
-              <p className="text-gray-600 mb-4">This lesson doesn&apos;t exist or has been removed.</p>
+              <h3 className="text-xl font-semibold mb-2">
+                {tr('lessons.notFound', 'Lição não encontrada')}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {tr(
+                  'lessons.notFoundDescription',
+                  'Esta lição não existe ou foi removida.',
+                )}
+              </p>
               <Link href="/education/courses">
-                <Button>Back to Courses</Button>
+                <Button>
+                  {tr('lessons.backToCourses', 'Voltar aos cursos')}
+                </Button>
               </Link>
             </CardContent>
           </Card>
@@ -204,13 +220,12 @@ export default function LessonPage() {
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-
             {/* Back */}
             <div className="mb-6">
               <Link href={backHref}>
                 <Button variant="ghost" className="mb-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Course
+                  {tr('lessons.backToCourse', 'Voltar ao curso')}
                 </Button>
               </Link>
             </div>
@@ -224,12 +239,12 @@ export default function LessonPage() {
                   {isCreator ? (
                     <Badge className="bg-purple-600 text-white flex items-center gap-1">
                       <PenSquare className="h-3 w-3" />
-                      Creator
+                      {tr('lessons.creatorBadge', 'Creator')}
                     </Badge>
                   ) : isCompleted ? (
                     <Badge className="bg-green-600 text-white flex items-center gap-1">
                       <CheckCircle className="h-3 w-3" />
-                      Completed
+                      {tr('lessons.completedBadge', 'Concluída')}
                     </Badge>
                   ) : null}
                 </div>
@@ -237,7 +252,9 @@ export default function LessonPage() {
                 <CardTitle className="text-3xl">{title}</CardTitle>
 
                 {description && (
-                  <p className="text-gray-600 text-lg mt-2">{description}</p>
+                  <p className="text-gray-600 text-lg mt-2">
+                    {description}
+                  </p>
                 )}
               </CardHeader>
 
@@ -245,12 +262,18 @@ export default function LessonPage() {
                 <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    <span>{durationMinutes} minutes</span>
+                    <span>
+                      {durationMinutes}{' '}
+                      {tr('lessons.minutes', 'minutos')}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4" />
-                    <span>{lesson.xp_reward} XP reward</span>
+                    <span>
+                      {lesson.xp_reward}{' '}
+                      {tr('lessons.xpReward', 'XP por conclusão')}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -262,28 +285,31 @@ export default function LessonPage() {
                 <div className="grid gap-3 md:grid-cols-4">
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
-                      Creator
+                      {tr('lessons.meta.creator', 'Criador')}
                     </span>
                     <span className="font-semibold">{creatorName}</span>
                   </div>
 
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
-                      Created at
+                      {tr('lessons.meta.createdAt', 'Criada em')}
                     </span>
                     <span>{createdAtStr}</span>
                   </div>
 
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
-                      Completed
+                      {tr('lessons.meta.completedTimes', 'Conclusões')}
                     </span>
-                    <span>{completedCount} times</span>
+                    <span>
+                      {completedCount}{' '}
+                      {tr('lessons.meta.times', 'vezes')}
+                    </span>
                   </div>
 
                   <div>
                     <span className="block text-xs uppercase text-gray-500 mb-1">
-                      XP distributed
+                      {tr('lessons.meta.xpDistributed', 'XP distribuído')}
                     </span>
                     <span>{totalXpDistributed} XP</span>
                   </div>
@@ -309,14 +335,19 @@ export default function LessonPage() {
               </CardContent>
             </Card>
 
-            {/* COMPLETION MESSAGE (ONLY TESTERS) */}
+            {/* COMPLETION MESSAGE (ONLY NON-CREATORS) */}
             {isCompleted && !isCreator && (
               <Card className="mb-6 bg-green-50 border-green-200">
                 <CardContent className="py-6 text-center">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
-                  <h3 className="font-semibold text-lg mb-1">Lesson Completed!</h3>
+                  <h3 className="font-semibold text-lg mb-1">
+                    {tr('lessons.completedTitle', 'Lição concluída!')}
+                  </h3>
                   <p className="text-sm text-gray-600">
-                    You earned {lesson.xp_reward} XP for completing this lesson.
+                    {tr(
+                      'lessons.completedDescription',
+                      'Ganhaste {xp} XP por completar esta lição.',
+                    ).replace('{xp}', String(lesson.xp_reward))}
                   </p>
                 </CardContent>
               </Card>
@@ -325,10 +356,14 @@ export default function LessonPage() {
             {/* NAVIGATION */}
             <div className="flex justify-between gap-4">
               {prevLesson ? (
-                <Link href={`/education/lessons/${prevLesson.id}`} className="flex-1">
+                <Link
+                  href={`/education/lessons/${prevLesson.id}`}
+                  className="flex-1"
+                >
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Previous: {getMultilingualContent(prevLesson.title, language)}
+                    {tr('lessons.previous', 'Anterior')}:{' '}
+                    {getMultilingualContent(prevLesson.title, language)}
                   </Button>
                 </Link>
               ) : (
@@ -336,16 +371,20 @@ export default function LessonPage() {
               )}
 
               {nextLesson ? (
-                <Link href={`/education/lessons/${nextLesson.id}`} className="flex-1">
+                <Link
+                  href={`/education/lessons/${nextLesson.id}`}
+                  className="flex-1"
+                >
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Next: {getMultilingualContent(nextLesson.title, language)}
+                    {tr('lessons.next', 'Seguinte')}:{' '}
+                    {getMultilingualContent(nextLesson.title, language)}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
               ) : (
                 <Link href={backHref} className="flex-1">
                   <Button className="w-full bg-green-600 hover:bg-green-700">
-                    Back to Course
+                    {tr('lessons.backToCourseCta', 'Voltar ao curso')}
                     <CheckCircle className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
