@@ -33,6 +33,14 @@ type XpSummary = {
   } | null;
 };
 
+type UserOption = {
+  id: string;
+  username: string;
+  full_name: string | null;
+  email: string | null;
+  xp_total: number | null;
+};
+
 export default function XPManagementPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
@@ -69,6 +77,13 @@ export default function XPManagementPage() {
     null,
   );
   const [resetSuccess, setResetSuccess] =
+    useState<string | null>(null);
+
+  // Lista de utilizadores para dropdown
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [usersLoading, setUsersLoading] =
+    useState<boolean>(true);
+  const [usersError, setUsersError] =
     useState<string | null>(null);
 
   // Guardar role/redirect
@@ -125,6 +140,70 @@ export default function XPManagementPage() {
     }
   }, []);
 
+  // Função para carregar utilizadores para dropdown
+  const loadUsers = useCallback(async () => {
+    setUsersLoading(true);
+    setUsersError(null);
+    try {
+      const token = getToken();
+      const res = await fetch('/api/admin/users/list', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token
+            ? { Authorization: `Bearer ${token}` }
+            : {}),
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setUsersError(
+          data.error ||
+            'Não foi possível carregar a lista de utilizadores.',
+        );
+        setUsers([]);
+        return;
+      }
+
+      const rawUsers: any[] = Array.isArray(data.users)
+        ? data.users
+        : [];
+
+      // Garantir tipos seguros
+      const normalized: UserOption[] = rawUsers.map(
+        (u: any) => ({
+          id: String(u.id),
+          username: String(u.username || '').trim(),
+          full_name: u.full_name
+            ? String(u.full_name)
+            : null,
+          email: u.email ? String(u.email) : null,
+          xp_total: u.xp_total ?? 0,
+        }),
+      );
+
+      // Se algum não tiver username, ordena por id
+      normalized.sort((a, b) => {
+        const nameA =
+          a.username || a.full_name || a.email || a.id;
+        const nameB =
+          b.username || b.full_name || b.email || b.id;
+        return nameA.localeCompare(nameB);
+      });
+
+      setUsers(normalized);
+    } catch (error) {
+      console.error('Failed to fetch users list:', error);
+      setUsersError(
+        'Erro inesperado a carregar utilizadores.',
+      );
+      setUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [getToken]);
+
   // Efeitos para carregar dados
   useEffect(() => {
     if (
@@ -133,8 +212,9 @@ export default function XPManagementPage() {
     ) {
       loadTransactions();
       loadSummary();
+      loadUsers();
     }
-  }, [user, loadTransactions, loadSummary]);
+  }, [user, loadTransactions, loadSummary, loadUsers]);
 
   // Handler para award manual de XP
   const handleAwardXp = async () => {
@@ -145,7 +225,7 @@ export default function XPManagementPage() {
     const xpNum = Number(xpAmount);
 
     if (!trimmedUserId) {
-      setAwardError('Tens de indicar o ID do utilizador.');
+      setAwardError('Tens de selecionar um utilizador.');
       return;
     }
     if (!Number.isFinite(xpNum) || xpNum === 0) {
@@ -186,11 +266,12 @@ export default function XPManagementPage() {
       }
 
       setAwardSuccess(
-        `XP atribuído com sucesso: ${xpNum} XP ao utilizador ${trimmedUserId}.`,
+        `XP atribuído com sucesso: ${xpNum} XP ao utilizador selecionado.`,
       );
-      setTargetUserId('');
       setXpAmount('');
       setReason('');
+
+      // Mantemos o utilizador selecionado – pode ser útil dar várias vezes ao mesmo
 
       // Recarregar summary e histórico
       loadSummary();
@@ -326,20 +407,69 @@ export default function XPManagementPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        User ID
+                    {/* Dropdown de utilizadores */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium">
+                        Utilizador
                       </label>
-                      <Input
-                        placeholder="Cola aqui o ID do utilizador"
-                        value={targetUserId}
-                        onChange={(e) =>
-                          setTargetUserId(
-                            e.target.value,
-                          )
-                        }
-                      />
+                      {usersLoading ? (
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
+                          A carregar utilizadores...
+                        </p>
+                      ) : usersError ? (
+                        <p className="text-xs text-red-600 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          {usersError}
+                        </p>
+                      ) : users.length === 0 ? (
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
+                          Ainda não há utilizadores registados.
+                        </p>
+                      ) : (
+                        <>
+                          <select
+                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:border-gray-700"
+                            value={targetUserId}
+                            onChange={(e) =>
+                              setTargetUserId(
+                                e.target.value,
+                              )
+                            }
+                          >
+                            <option value="">
+                              — Seleciona um
+                              utilizador —
+                            </option>
+                            {users.map((u) => {
+                              const labelName =
+                                u.username ||
+                                u.full_name ||
+                                u.email ||
+                                u.id;
+                              const xp =
+                                u.xp_total ?? 0;
+                              return (
+                                <option
+                                  key={u.id}
+                                  value={u.id}
+                                >
+                                  {labelName} — {xp} XP
+                                </option>
+                              );
+                            })}
+                          </select>
+                          {targetUserId && (
+                            <p className="text-[11px] text-gray-500">
+                              ID selecionado:{' '}
+                              <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">
+                                {targetUserId}
+                              </code>
+                            </p>
+                          )}
+                        </>
+                      )}
                     </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -387,7 +517,11 @@ export default function XPManagementPage() {
                     <Button
                       className="w-full bg-blue-600 hover:bg-blue-700"
                       onClick={handleAwardXp}
-                      disabled={awardLoading}
+                      disabled={
+                        awardLoading ||
+                        usersLoading ||
+                        users.length === 0
+                      }
                     >
                       {awardLoading
                         ? 'A atribuir XP...'
