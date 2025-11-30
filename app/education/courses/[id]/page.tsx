@@ -1,3 +1,4 @@
+// app/education/courses/[id]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -37,8 +38,6 @@ type Lesson = {
   author_name?: string | null;
   isCompleted?: boolean;
   isCreator?: boolean;
-  xp_distributed_total?: number;
-  completed_count?: number;
 };
 
 type Module = {
@@ -48,8 +47,10 @@ type Module = {
   author_id?: string | null;
   author_name?: string | null;
   isCreator?: boolean;
+  isCompleted?: boolean;
+  xp_available?: number;
+  xp_distributed?: number;
   lessons?: Lesson[];
-  xp_distributed_total?: number;
 };
 
 type Course = {
@@ -67,7 +68,8 @@ type Course = {
   total_modules?: number;
   total_lessons?: number;
   total_xp?: number;
-  xp_distributed_total?: number;
+  xp_distributed?: number;
+  xp_earned_by_user?: number;
 };
 
 export default function CourseDetailPage() {
@@ -158,7 +160,9 @@ export default function CourseDetailPage() {
     if (!text) return 'LG';
     const words = text.trim().split(' ');
     if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-    return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
+    return (
+      (words[0][0] || '') + (words[1][0] || '')
+    ).toUpperCase();
   };
 
   if (loading) {
@@ -222,7 +226,8 @@ export default function CourseDetailPage() {
   const totalLessons = course.total_lessons ?? 0;
   const totalXP = course.total_xp ?? 0;
   const xpRequired = course.xp_threshold ?? 0;
-  const xpDistributed = course.xp_distributed_total ?? 0;
+  const xpDistributed = course.xp_distributed ?? 0;
+  const userXpInCourse = course.xp_earned_by_user ?? 0;
 
   const authorName = course.author_name || 'Admin';
   const isCourseCreator =
@@ -341,10 +346,23 @@ export default function CourseDetailPage() {
                         {xpDistributed}{' '}
                         {tr(
                           'courses.xpDistributed',
-                          'XP já distribuído',
+                          'XP já entregue',
                         )}
                       </span>
                     </div>
+                    {user && (
+                      <div className="flex items-center gap-2 text-xs text-blue-900 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
+                        <Award className="h-3 w-3" />
+                        <span>
+                          {tr(
+                            'courses.yourXPInCourse',
+                            'Tu já ganhaste',
+                          )}{' '}
+                          <strong>{userXpInCourse} XP</strong>{' '}
+                          {tr('courses.inThisCourse', 'neste curso')}
+                        </span>
+                      </div>
+                    )}
                     {xpRequired > 0 && (
                       <div className="mt-1 text-xs text-gray-500">
                         {tr(
@@ -386,12 +404,16 @@ export default function CourseDetailPage() {
                         mod.author_id === user.id) ||
                         (!mod.author_id && isAdminUser)));
 
+                  const moduleXpAvailable =
+                    mod.xp_available ?? 0;
+                  const moduleXpDistributed =
+                    mod.xp_distributed ?? 0;
+                  const moduleIsCompleted =
+                    !!mod.isCompleted && !!user && !isModuleCreator;
+
                   const lessons: Lesson[] = Array.isArray(mod.lessons)
                     ? (mod.lessons as Lesson[])
                     : [];
-
-                  const moduleXpDistributed =
-                    mod.xp_distributed_total ?? 0;
 
                   return (
                     <Card key={mod.id}>
@@ -406,21 +428,27 @@ export default function CourseDetailPage() {
                                   Creator
                                 </Badge>
                               )}
+                              {moduleIsCompleted && (
+                                <Badge className="bg-green-600 text-white flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  Completed
+                                </Badge>
+                              )}
                             </CardTitle>
-                            <div className="mt-1 text-xs text-gray-500 flex flex-wrap items-center gap-2">
-                              <span>
-                                {tr('courses.by', 'Criado por')}{' '}
-                                <span className="font-semibold">
-                                  {moduleAuthorName}
-                                </span>
+                            <div className="mt-1 text-xs text-gray-500">
+                              {tr('courses.by', 'Criado por')}{' '}
+                              <span className="font-semibold">
+                                {moduleAuthorName}
                               </span>
-                              <span className="flex items-center gap-1">
-                                <Award className="h-3 w-3 text-green-600" />
-                                {moduleXpDistributed}{' '}
-                                {tr(
-                                  'courses.moduleXpDistributed',
-                                  'XP distribuído neste módulo',
-                                )}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1 text-xs text-gray-600 dark:text-gray-300">
+                            <div className="flex items-center gap-1">
+                              <Award className="h-3 w-3 text-blue-600" />
+                              <span>
+                                {moduleXpDistributed} /{' '}
+                                {moduleXpAvailable} XP
                               </span>
                             </div>
                           </div>
