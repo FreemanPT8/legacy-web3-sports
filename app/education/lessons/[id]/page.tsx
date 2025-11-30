@@ -1,243 +1,156 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { ContentTracker } from '@/components/ContentTracker';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getMultilingualContent } from '@/lib/i18n';
+
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   Award,
-  Clock,
+  BookOpen,
   CheckCircle,
+  Clock,
   PenSquare,
-  Users,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { getMultilingualContent } from '@/lib/i18n';
-import { ContentTracker } from '@/components/ContentTracker';
 
-type Lesson = {
+interface Lesson {
   id: string;
   title: any;
   description: any;
   content: any;
   xp_reward: number;
-  estimated_time?: number | null;
-  order?: number | null;
-  module_id?: string | null;
+  estimated_time?: number;
+  order: number;
+  module_id: string;
   author_id?: string | null;
   author_name?: string | null;
-  created_at?: string;
-};
+  created_at?: string | null;
+}
 
-type ModuleLessonLink = {
+interface ModuleWithLessons {
   id: string;
   title: any;
-  order?: number | null;
-};
-
-type LessonModule = {
-  id: string;
-  title: any;
-  course_id?: string | null;
+  course_id: string;
+  lessons: Lesson[];
   author_id?: string | null;
   author_name?: string | null;
-  lessons: ModuleLessonLink[];
-};
+}
 
-type LessonStats = {
+interface LessonStats {
   completedCount: number;
   totalXpDistributed: number;
-};
+}
 
-export default function LessonDetailPage() {
+interface LessonApiResponse {
+  success: boolean;
+  lesson: Lesson;
+  module: ModuleWithLessons;
+  isCompleted: boolean;
+  isCreator: boolean;
+  stats?: LessonStats;
+}
+
+export default function LessonPage() {
   const params = useParams();
-  const router = useRouter();
-  const lessonId = params.id as string;
-
-  const { user, getToken } = useAuth();
-  const { language, t } = useLanguage();
+  const { user } = useAuth();
+  const { language } = useLanguage();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [moduleData, setModuleData] = useState<LessonModule | null>(
-    null,
-  );
+  const [module, setModule] = useState<ModuleWithLessons | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const [stats, setStats] = useState<LessonStats | null>(null);
-  const [isCompleted, setIsCompleted] = useState<boolean>(false);
-  const [isCreator, setIsCreator] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [notFound, setNotFound] = useState<boolean>(false);
+  const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
+  const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
 
-  const tr = (key: string, fallback: string) => {
-    const val = t(key);
-    return val === key ? fallback : val;
-  };
-
-  const isAdminUser =
-    !!user &&
-    (user.role === 'Super Admin' || user.role === 'Admin');
-
-  // ---------------------------------------------------------------------------
-  // FETCH DA LIÇÃO (inclui stats + flags isCompleted / isCreator)
-  // ---------------------------------------------------------------------------
   useEffect(() => {
     const fetchLesson = async () => {
-      if (!lessonId) return;
       setLoading(true);
+
       try {
-        const token = getToken();
-        const userId = user?.id ?? '';
-        const paramsStr = userId ? `?userId=${userId}` : '';
-        const res = await fetch(
-          `/api/lessons/${lessonId}${paramsStr}`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-          },
-        );
+        const lessonId = params.id as string;
+        const userId = user?.id || '';
+        const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
 
-        const data = await res.json();
+        const res = await fetch(`/api/lessons/${lessonId}${query}`);
+        const data: LessonApiResponse = await res.json();
 
-        if (!res.ok || !data.success || !data.lesson) {
+        if (!res.ok || !data.success || !data.lesson || !data.module) {
           setLesson(null);
-          setModuleData(null);
-          setStats(null);
+          setModule(null);
           setIsCompleted(false);
           setIsCreator(false);
-          setNotFound(true);
-        } else {
-          setLesson(data.lesson as Lesson);
-          setModuleData(
-            (data.module || null) as LessonModule | null,
-          );
-          setStats(
-            (data.stats || null) as LessonStats | null,
-          );
-          setIsCompleted(!!data.isCompleted);
-          setIsCreator(!!data.isCreator);
-          setNotFound(false);
+          setStats(null);
+          setNextLesson(null);
+          setPrevLesson(null);
+          return;
         }
-      } catch (error) {
-        console.error('Failed to load lesson detail:', error);
+
+        const fetchedLesson = data.lesson;
+        const fetchedModule = data.module;
+
+        setLesson(fetchedLesson);
+        setModule(fetchedModule);
+
+        const creatorFlag = data.isCreator === true;
+        setIsCreator(creatorFlag);
+        setIsCompleted(creatorFlag ? false : data.isCompleted);
+
+        setStats(data.stats ?? null);
+
+        // SORT prev/next
+        if (Array.isArray(fetchedModule.lessons)) {
+          const ordered = [...fetchedModule.lessons].sort(
+            (a, b) => (a.order || 0) - (b.order || 0)
+          );
+
+          const idx = ordered.findIndex((l) => l.id === fetchedLesson.id);
+
+          setPrevLesson(idx > 0 ? ordered[idx - 1] : null);
+          setNextLesson(idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch lesson:', err);
         setLesson(null);
-        setModuleData(null);
-        setStats(null);
+        setModule(null);
         setIsCompleted(false);
         setIsCreator(false);
-        setNotFound(true);
+        setStats(null);
+        setNextLesson(null);
+        setPrevLesson(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLesson();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId, getToken, user?.id]);
+    if (params.id) fetchLesson();
+  }, [params.id, user?.id]);
 
-  // ---------------------------------------------------------------------------
-  // DERIVADOS (título, descrição, conteúdo, prev/next)
-  // ---------------------------------------------------------------------------
-  const title = useMemo(
-    () =>
-      lesson
-        ? getMultilingualContent(lesson.title, language)
-        : '',
-    [lesson, language],
-  );
-
-  const description = useMemo(
-    () =>
-      lesson
-        ? getMultilingualContent(lesson.description, language)
-        : '',
-    [lesson, language],
-  );
-
-  const contentHtml = useMemo(
-    () =>
-      lesson
-        ? getMultilingualContent(lesson.content, language)
-        : '',
-    [lesson, language],
-  );
-
-  const estimatedMinutes = lesson?.estimated_time ?? 10;
-  const xpReward = lesson?.xp_reward ?? 0;
-
-  const moduleTitle = useMemo(
-    () =>
-      moduleData
-        ? getMultilingualContent(moduleData.title, language)
-        : '',
-    [moduleData, language],
-  );
-
-  const moduleLessonsSorted: ModuleLessonLink[] = useMemo(() => {
-    if (!moduleData || !Array.isArray(moduleData.lessons)) {
-      return [];
-    }
-    return moduleData.lessons
-      .slice()
-      .sort(
-        (a: ModuleLessonLink, b: ModuleLessonLink) =>
-          (a.order || 0) - (b.order || 0),
-      );
-  }, [moduleData]);
-
-  const { prevLesson, nextLesson } = useMemo(() => {
-    if (!moduleLessonsSorted.length || !lessonId) {
-      return { prevLesson: null as ModuleLessonLink | null, nextLesson: null as ModuleLessonLink | null };
-    }
-    const index = moduleLessonsSorted.findIndex(
-      (l) => l.id === lessonId,
-    );
-    if (index === -1) {
-      return { prevLesson: null, nextLesson: null };
-    }
-    const prev =
-      index > 0 ? moduleLessonsSorted[index - 1] : null;
-    const next =
-      index < moduleLessonsSorted.length - 1
-        ? moduleLessonsSorted[index + 1]
-        : null;
-    return { prevLesson: prev, nextLesson: next };
-  }, [moduleLessonsSorted, lessonId]);
-
-  const authorName =
-    lesson?.author_name ||
-    (isCreator && user ? user.username : 'Admin');
-
-  // ---------------------------------------------------------------------------
-  // LOADING / NOT FOUND
-  // ---------------------------------------------------------------------------
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">
-              {tr(
-                'lessons.loading',
-                'A carregar lição...',
-              )}
-            </p>
+            <p className="text-gray-600 dark:text-gray-300">Loading lesson...</p>
           </div>
         </main>
         <Footer />
@@ -245,42 +158,44 @@ export default function LessonDetailPage() {
     );
   }
 
-  if (notFound || !lesson) {
+  if (!lesson || !module) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-          <div className="text-center px-4">
-            <h1 className="text-2xl font-bold mb-2">
-              {tr('lessons.notFound', 'Lição não encontrada')}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              {tr(
-                'lessons.notFoundDescription',
-                'A lição que procuras não existe ou não está publicada.',
-              )}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/education/courses"
-                className="inline-flex items-center gap-2 text-blue-600 hover:underline"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {tr(
-                  'lessons.backToCourses',
-                  'Voltar aos cursos',
-                )}
+        <main className="flex-1 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="text-center py-12">
+              <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Lesson Not Found</h3>
+              <p className="text-gray-600 mb-4">This lesson doesn&apos;t exist or has been removed.</p>
+              <Link href="/education/courses">
+                <Button>Back to Courses</Button>
               </Link>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </main>
         <Footer />
       </div>
     );
   }
 
-  const showCompletedBadge =
-    !!isCompleted && !isCreator;
+  const title = getMultilingualContent(lesson.title, language);
+  const description = getMultilingualContent(lesson.description, language);
+  const content = getMultilingualContent(lesson.content, language);
+  const moduleTitle = getMultilingualContent(module.title, language);
+
+  const durationMinutes = lesson.estimated_time ?? 10;
+  const creatorName = lesson.author_name || (lesson.author_id ? 'Creator' : 'Admin');
+  const createdAtStr = lesson.created_at
+    ? new Date(lesson.created_at).toLocaleDateString()
+    : '-';
+
+  const completedCount = stats?.completedCount ?? 0;
+  const totalXpDistributed = stats?.totalXpDistributed ?? 0;
+
+  const backHref = module.course_id
+    ? `/education/courses/${module.course_id}`
+    : '/education/courses';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -289,292 +204,152 @@ export default function LessonDetailPage() {
       <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            {/* NAV SUPERIOR */}
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    router.back()
-                  }
-                  className="flex items-center gap-1"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  {tr(
-                    'lessons.back',
-                    'Voltar',
-                  )}
-                </Button>
-                {moduleData?.course_id && (
-                  <Link
-                    href={`/education/courses/${moduleData.course_id}`}
-                    className="text-xs text-blue-600 hover:underline"
-                  >
-                    {tr(
-                      'lessons.backToCourse',
-                      'Ver curso completo',
-                    )}
-                  </Link>
-                )}
-              </div>
 
-              <div className="flex gap-2">
-                {prevLesson && (
-                  <Link
-                    href={`/education/lessons/${prevLesson.id}`}
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1"
-                    >
-                      <ArrowLeft className="h-3 w-3" />
-                      {tr(
-                        'lessons.prev',
-                        'Anterior',
-                      )}
-                    </Button>
-                  </Link>
-                )}
-                {nextLesson && (
-                  <Link
-                    href={`/education/lessons/${nextLesson.id}`}
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1"
-                    >
-                      {tr(
-                        'lessons.next',
-                        'Seguinte',
-                      )}
-                      <ArrowRight className="h-3 w-3" />
-                    </Button>
-                  </Link>
-                )}
-              </div>
+            {/* Back */}
+            <div className="mb-6">
+              <Link href={backHref}>
+                <Button variant="ghost" className="mb-4">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Course
+                </Button>
+              </Link>
             </div>
 
-            {/* CARD PRINCIPAL */}
-            <Card className="mb-6">
+            {/* HEADER */}
+            <Card className="mb-4">
               <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
-                        <BookOpen className="h-3 w-3 mr-1" />
-                        {tr(
-                          'lessons.lesson',
-                          'Lição',
-                        )}
-                      </Badge>
-                      {isCreator && (
-                        <Badge className="bg-purple-600 text-white flex items-center gap-1">
-                          <PenSquare className="h-3 w-3" />
-                          Creator
-                        </Badge>
-                      )}
-                      {showCompletedBadge && (
-                        <Badge className="bg-green-600 text-white flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          Completed
-                        </Badge>
-                      )}
-                    </div>
+                <div className="flex items-center justify-between mb-3">
+                  <Badge variant="outline">{moduleTitle}</Badge>
 
-                    <CardTitle className="text-2xl md:text-3xl">
-                      {title}
-                    </CardTitle>
-
-                    {description && (
-                      <CardDescription className="text-base text-gray-700 dark:text-gray-300">
-                        {description}
-                      </CardDescription>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                      <span>
-                        {tr(
-                          'lessons.by',
-                          'Criado por',
-                        )}{' '}
-                        <span className="font-semibold">
-                          {authorName}
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Award className="h-3 w-3 text-blue-600" />
-                        {xpReward} XP
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3 text-blue-600" />
-                        {estimatedMinutes}{' '}
-                        {tr(
-                          'lessons.minutes',
-                          'min',
-                        )}
-                      </span>
-                      {moduleTitle && (
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3 text-gray-500" />
-                          {tr(
-                            'lessons.module',
-                            'Módulo',
-                          )}
-                          :{' '}
-                          <span className="font-medium">
-                            {moduleTitle}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* STATS DA LIÇÃO */}
-                  <div className="flex flex-col items-end gap-2 text-xs">
-                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                      <Users className="h-3 w-3 text-blue-600" />
-                      <span>
-                        {tr(
-                          'lessons.completedCount',
-                          'Leituras concluídas',
-                        )}
-                        :{' '}
-                        <strong>
-                          {stats?.completedCount ?? 0}
-                        </strong>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                      <Award className="h-3 w-3 text-emerald-600" />
-                      <span>
-                        {tr(
-                          'lessons.totalXpDistributed',
-                          'XP distribuído',
-                        )}
-                        :{' '}
-                        <strong>
-                          {stats?.totalXpDistributed ?? 0} XP
-                        </strong>
-                      </span>
-                    </div>
-                    {isCreator && (
-                      <p className="mt-1 text-[11px] text-amber-700 max-w-xs text-right">
-                        {tr(
-                          'lessons.creatorInfo',
-                          'Não ganhas XP por leres a tua própria lição. Recebes 19% do XP que cada utilizador ganha na primeira conclusão.',
-                        )}
-                      </p>
-                    )}
-                  </div>
+                  {isCreator ? (
+                    <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                      <PenSquare className="h-3 w-3" />
+                      Creator
+                    </Badge>
+                  ) : isCompleted ? (
+                    <Badge className="bg-green-600 text-white flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      Completed
+                    </Badge>
+                  ) : null}
                 </div>
+
+                <CardTitle className="text-3xl">{title}</CardTitle>
+
+                {description && (
+                  <p className="text-gray-600 text-lg mt-2">{description}</p>
+                )}
               </CardHeader>
 
               <CardContent>
-                {/* TRACKER + CONTEÚDO */}
+                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{durationMinutes} minutes</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    <span>{lesson.xp_reward} XP reward</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* META INFO */}
+            <Card className="mb-6">
+              <CardContent className="py-4 text-sm text-gray-700 dark:text-gray-300">
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                      Creator
+                    </span>
+                    <span className="font-semibold">{creatorName}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                      Created at
+                    </span>
+                    <span>{createdAtStr}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                      Completed
+                    </span>
+                    <span>{completedCount} times</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                      XP distributed
+                    </span>
+                    <span>{totalXpDistributed} XP</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* CONTENT + TRACKER */}
+            <Card className="mb-6">
+              <CardContent className="prose prose-lg max-w-none py-8">
                 <ContentTracker
+                  userId={user?.id ?? null}
                   contentId={lesson.id}
                   contentType="lesson"
-                  xpReward={xpReward}
-                  estimatedMinutes={estimatedMinutes}
-                  initialCompleted={isCompleted}
-                  userId={user?.id ?? null}
+                  xpReward={lesson.xp_reward}
+                  estimatedMinutes={durationMinutes}
+                  initialCompleted={isCompleted && !isCreator}
                   isAuthor={isCreator}
+                  onComplete={() => setIsCompleted(true)}
                 >
-                  <article className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
-                    {contentHtml ? (
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: contentHtml,
-                        }}
-                      />
-                    ) : (
-                      <p className="text-gray-500">
-                        {tr(
-                          'lessons.noContent',
-                          'Ainda não há conteúdo disponível para esta lição.',
-                        )}
-                      </p>
-                    )}
-                  </article>
+                  <div dangerouslySetInnerHTML={{ __html: content }} />
                 </ContentTracker>
               </CardContent>
             </Card>
 
-            {/* NAV INFERIOR */}
-            <div className="flex flex-wrap justify-between gap-3 mt-4">
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    router.back()
-                  }
-                  className="flex items-center gap-1"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  {tr(
-                    'lessons.back',
-                    'Voltar',
-                  )}
-                </Button>
-                {moduleData?.course_id && (
-                  <Link
-                    href={`/education/courses/${moduleData.course_id}`}
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1"
-                    >
-                      <BookOpen className="h-3 w-3" />
-                      {tr(
-                        'lessons.viewCourse',
-                        'Ver curso',
-                      )}
-                    </Button>
-                  </Link>
-                )}
-              </div>
+            {/* COMPLETION MESSAGE (ONLY TESTERS) */}
+            {isCompleted && !isCreator && (
+              <Card className="mb-6 bg-green-50 border-green-200">
+                <CardContent className="py-6 text-center">
+                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
+                  <h3 className="font-semibold text-lg mb-1">Lesson Completed!</h3>
+                  <p className="text-sm text-gray-600">
+                    You earned {lesson.xp_reward} XP for completing this lesson.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
-              <div className="flex gap-2">
-                {prevLesson && (
-                  <Link
-                    href={`/education/lessons/${prevLesson.id}`}
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1"
-                    >
-                      <ArrowLeft className="h-3 w-3" />
-                      {tr(
-                        'lessons.prev',
-                        'Anterior',
-                      )}
-                    </Button>
-                  </Link>
-                )}
-                {nextLesson && (
-                  <Link
-                    href={`/education/lessons/${nextLesson.id}`}
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1"
-                    >
-                      {tr(
-                        'lessons.next',
-                        'Seguinte',
-                      )}
-                      <ArrowRight className="h-3 w-3" />
-                    </Button>
-                  </Link>
-                )}
-              </div>
+            {/* NAVIGATION */}
+            <div className="flex justify-between gap-4">
+              {prevLesson ? (
+                <Link href={`/education/lessons/${prevLesson.id}`} className="flex-1">
+                  <Button variant="outline" className="w-full">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Previous: {getMultilingualContent(prevLesson.title, language)}
+                  </Button>
+                </Link>
+              ) : (
+                <div className="flex-1" />
+              )}
+
+              {nextLesson ? (
+                <Link href={`/education/lessons/${nextLesson.id}`} className="flex-1">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    Next: {getMultilingualContent(nextLesson.title, language)}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link href={backHref} className="flex-1">
+                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                    Back to Course
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

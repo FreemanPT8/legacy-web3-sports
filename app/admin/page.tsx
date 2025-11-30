@@ -1,396 +1,463 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
-  Users,
-  BookOpen,
-  FileText,
-  Mail,
-  MessageCircle,
+  ArrowLeft,
   Award,
-  BarChart3,
-  Settings,
-  Trophy,
+  TrendingUp,
+  Clock,
+  ShieldAlert,
+  Loader2,
 } from 'lucide-react';
+import Link from 'next/link';
 
-type AdminStats = {
-  totalUsers: number;
-  totalAdmins: number;
-  totalSuperAdmins: number;
-  totalCourses: number;
-  totalLessons: number;
-  totalBlogPosts: number;
-  totalOnboardingPending: number;
-  totalHouses: number;
-  activeHouses: number;
-  buildingHouses: number;
-  developingHouses: number;
+type XPSummary = {
+  total_xp: number;
+  avg_xp_per_user: number;
+  top_user: {
+    id: string;
+    username: string | null;
+    xp_total: number;
+  } | null;
 };
 
-export default function AdminDashboardPage() {
+export default function XPManagementPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
+  const { user, loading, getToken } = useAuth();
+
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  // Estado para o reset global de XP
+  const [confirmText, setConfirmText] = useState('');
+  const [submittingReset, setSubmittingReset] = useState(false);
+  const [resetResultMessage, setResetResultMessage] = useState<string | null>(
+    null,
+  );
+  const [resetResultError, setResetResultError] = useState<string | null>(null);
+
+  // Estado para o resumo de XP
+  const [xpSummary, setXpSummary] = useState<XPSummary | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(true);
+
+  const REQUIRED_PHRASE = 'RESET ALL XP';
+
+  const isFreeman =
+    !!user && (user.username === 'freemanpt' || user.email === 'freemanpt');
 
   useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
     if (
       !loading &&
-      (!user || (user.role !== 'Admin' && user.role !== 'Super Admin'))
+      user &&
+      user.role !== 'Super Admin' &&
+      user.role !== 'Admin'
     ) {
-      router.push('/login');
+      router.push('/dashboard');
     }
   }, [user, loading, router]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        setLoadingStats(true);
-        const res = await fetch('/api/admin/stats');
-        const data = await res.json();
-
-        if (data.success) {
-          setStats(data.stats as AdminStats);
-        } else {
-          console.error('Failed to load admin stats:', data.error);
+        // XP history
+        const historyResponse = await fetch('/api/xp/history');
+        const historyData = await historyResponse.json();
+        if (historyData.success) {
+          setRecentTransactions(historyData.transactions?.slice(0, 50) || []);
         }
-      } catch (err) {
-        console.error('Error loading admin stats:', err);
+
+        // XP summary (apenas se admin / super admin e com token)
+        if (!user) return;
+
+        const token = getToken();
+        if (!token) {
+          setLoadingSummary(false);
+          return;
+        }
+
+        const summaryResponse = await fetch('/api/xp/summary', {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const summaryData = await summaryResponse.json();
+        if (summaryResponse.ok && summaryData.success) {
+          setXpSummary(summaryData.summary as XPSummary);
+        } else {
+          console.error(
+            'Failed to fetch XP summary:',
+            summaryData.error || summaryData,
+          );
+        }
+      } catch (error) {
+        console.error('Failed to fetch XP data:', error);
       } finally {
-        setLoadingStats(false);
+        setLoadingData(false);
+        setLoadingSummary(false);
       }
     };
 
-    fetchStats();
-  }, []);
+    if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
+      fetchData();
+    }
+  }, [user, getToken]);
 
-  if (loading || !user) {
-    return null;
+  async function handleResetSubmit(e: FormEvent) {
+    e.preventDefault();
+    setResetResultMessage(null);
+    setResetResultError(null);
+
+    if (!isFreeman) {
+      setResetResultError(
+        'Esta ação está limitada ao utilizador freemanpt durante a fase de testes.',
+      );
+      return;
+    }
+
+    if (confirmText.trim() !== REQUIRED_PHRASE) {
+      setResetResultError(
+        `Para confirmar, escreve exatamente: ${REQUIRED_PHRASE}`,
+      );
+      return;
+    }
+
+    try {
+      setSubmittingReset(true);
+
+      const token = getToken();
+      if (!token) {
+        setResetResultError(
+          'Sessão inválida. Faz login novamente e tenta outra vez.',
+        );
+        setSubmittingReset(false);
+        return;
+      }
+
+      const res = await fetch('/api/admin/xp/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setResetResultError(
+          data.error ||
+            'Ocorreu um erro ao tentar fazer reset global do XP.',
+        );
+      } else {
+        setResetResultMessage(
+          'Reset global de XP concluído com sucesso para todos os utilizadores e criadores.',
+        );
+        setConfirmText('');
+        // Opcional: atualizar estatísticas após reset
+        setXpSummary({
+          total_xp: 0,
+          avg_xp_per_user: 0,
+          top_user: null,
+        });
+        setRecentTransactions([]);
+      }
+    } catch (error) {
+      console.error('Erro ao chamar /api/admin/xp/reset:', error);
+      setResetResultError(
+        'Erro inesperado ao comunicar com o servidor. Tenta novamente em alguns segundos.',
+      );
+    } finally {
+      setSubmittingReset(false);
+    }
   }
+
+  if (
+    loading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin')
+  ) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalXPDisplay =
+    loadingSummary || !xpSummary ? '-' : xpSummary.total_xp.toString();
+
+  const avgXPDisplay =
+    loadingSummary || !xpSummary
+      ? '-'
+      : xpSummary.avg_xp_per_user.toString();
+
+  const topUserDisplay =
+    loadingSummary || !xpSummary
+      ? '-'
+      : xpSummary.top_user
+      ? `${xpSummary.top_user.username || 'User'} (${xpSummary.top_user.xp_total} XP)`
+      : '—';
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-blue-950/20 dark:to-gray-900 py-8">
         <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              Manage LEGACY platform content, users and sports Houses.
-            </p>
-          </div>
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <Link href="/admin">
+                <Button variant="ghost" className="mb-4">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Admin
+                </Button>
+              </Link>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                XP Management
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                Manually award or adjust user XP, view transaction history e
+                usar ferramentas avançadas de reset (fase de testes)
+              </p>
+            </div>
 
-          {/* TOP STATS */}
-          <div className="grid md:grid-cols-4 gap-4 mb-8">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-600" />
-                  Total Users
+            {/* Linha superior: Award XP + Stats */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-blue-600" />
+                    Award XP Manually
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        User ID
+                      </label>
+                      <Input placeholder="Enter user ID" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        XP Amount
+                      </label>
+                      <Input type="number" placeholder="e.g. 100" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Reason
+                      </label>
+                      <Input placeholder="e.g. Manual bonus award" />
+                    </div>
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                      Award XP
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    XP Statistics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span className="text-gray-600 dark:text-gray-300">
+                        Total XP Awarded
+                      </span>
+                      <span className="font-bold text-xl">
+                        {totalXPDisplay}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span className="text-gray-600 dark:text-gray-300">
+                        Avg XP per User
+                      </span>
+                      <span className="font-bold text-xl">
+                        {avgXPDisplay}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span className="text-gray-600 dark:text-gray-300">
+                        Top Earner
+                      </span>
+                      <span className="font-bold text-sm text-right">
+                        {topUserDisplay}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Cartão de Reset Global de XP (apenas freemanpt) */}
+            <Card className="mb-8 border-red-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5 text-red-600" />
+                  Global XP Reset (testing only)
                 </CardTitle>
-                <CardDescription>This month&apos;s user base</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
-                  {loadingStats || !stats ? '—' : stats.totalUsers}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Admins:{' '}
-                  {loadingStats || !stats ? '—' : stats.totalAdmins} | Super
-                  Admins:{' '}
-                  {loadingStats || !stats ? '—' : stats.totalSuperAdmins}
-                </p>
+                <form onSubmit={handleResetSubmit} className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-700 dark:text-gray-200">
+                      Esta ação:
+                    </p>
+                    <ul className="text-xs text-gray-600 dark:text-gray-300 list-disc list-inside space-y-1">
+                      <li>Remove todo o histórico de XP (lições, blog, etc.)</li>
+                      <li>Coloca o XP total de todos os utilizadores a 0</li>
+                      <li>
+                        Deve ser usada apenas na fase de testes para limpar o
+                        Legacy antes de um novo ciclo
+                      </li>
+                    </ul>
+                    <p className="mt-2 text-xs text-red-700 font-semibold">
+                      Operação destrutiva e irreversível.
+                    </p>
+                  </div>
+
+                  {!isFreeman && (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Apenas o utilizador <strong>freemanpt</strong> pode
+                      executar este reset global de XP.
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                      Passo de confirmação
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Para confirmar que não estás a clicar por engano, escreve
+                      exatamente a frase abaixo:
+                    </p>
+                    <div className="rounded-md bg-gray-100 dark:bg-gray-900 px-3 py-2 text-xs font-mono text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700">
+                      {REQUIRED_PHRASE}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="confirm-reset"
+                      className="text-sm font-medium text-gray-700 dark:text-gray-200"
+                    >
+                      Escreve a frase exata para prosseguir
+                    </label>
+                    <Input
+                      id="confirm-reset"
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value)}
+                      placeholder="Escreve aqui a frase de confirmação..."
+                      disabled={submittingReset || !isFreeman}
+                    />
+                  </div>
+
+                  {resetResultError && (
+                    <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800">
+                      {resetResultError}
+                    </div>
+                  )}
+
+                  {resetResultMessage && (
+                    <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-xs text-green-800">
+                      {resetResultMessage}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2">
+                    <p className="text-[11px] text-gray-500 max-w-xs">
+                      Esta ferramenta será removida quando o Legacy sair da fase
+                      de testes públicos.
+                    </p>
+
+                    <Button
+                      type="submit"
+                      variant="destructive"
+                      disabled={submittingReset || !isFreeman}
+                      className="flex items-center gap-2"
+                    >
+                      {submittingReset && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                      {submittingReset
+                        ? 'A fazer reset...'
+                        : 'Executar reset global de XP'}
+                    </Button>
+                  </div>
+                </form>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-green-600" />
-                  Active Courses
-                </CardTitle>
-                <CardDescription>Courses and lessons</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {loadingStats || !stats ? '—' : stats.totalCourses}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {loadingStats || !stats ? '—' : stats.totalLessons} total
-                  lessons
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-purple-600" />
-                  Blog Posts
-                </CardTitle>
-                <CardDescription>Published articles</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {loadingStats || !stats ? '—' : stats.totalBlogPosts}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Multilingual content
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-orange-500" />
-                  Pending Onboarding
-                </CardTitle>
-                <CardDescription>
-                  New House / platform requests
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {loadingStats || !stats ? '—' : stats.totalOnboardingPending}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {loadingStats || !stats ? '' : 'Awaiting review'}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* HOUSES STATS */}
-          <div className="grid md:grid-cols-3 gap-4 mb-10">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-amber-500" />
-                  Sports Houses
-                </CardTitle>
-                <CardDescription>Total Houses of Sports</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {loadingStats || !stats ? '—' : stats.totalHouses}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Houses
-                </CardTitle>
-                <CardDescription>
-                  Head of House + min. core team
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {loadingStats || !stats ? '—' : stats.activeHouses}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  In Construction / Development
-                </CardTitle>
-                <CardDescription>
-                  Reserved or early-stage Houses
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg font-semibold">
-                  Building:{' '}
-                  {loadingStats || !stats ? '—' : stats.buildingHouses}
-                </div>
-                <div className="text-lg font-semibold">
-                  Developing:{' '}
-                  {loadingStats || !stats ? '—' : stats.developingHouses}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* MAIN ADMIN CARDS */}
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            {/* Histórico de transações */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-blue-600" />
-                  User Management
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  Recent XP Transactions ({recentTransactions.length})
                 </CardTitle>
-                <CardDescription>
-                  View, edit, and manage user accounts and permissions.
-                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/users">Manage Users</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-green-600" />
-                  Course Management
-                </CardTitle>
-                <CardDescription>
-                  Create, edit, and organize courses, modules, and lessons.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/courses">Manage Courses</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-purple-600" />
-                  Blog Management
-                </CardTitle>
-                <CardDescription>
-                  Create and publish blog articles in multiple languages.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/blog">Manage Blog</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* HOUSES OF SPORTS CARD */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-amber-500" />
-                  Houses of Sports
-                </CardTitle>
-                <CardDescription>
-                  Manage Houses, Heads of House and House Moderators.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/houses">Manage Houses</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-orange-500" />
-                  Onboarding Submissions
-                </CardTitle>
-                <CardDescription>
-                  Review and respond to personalized onboarding requests.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/onboarding">View Submissions</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-blue-500" />
-                  Forum Moderation
-                </CardTitle>
-                <CardDescription>
-                  Monitor and moderate forum discussions and content.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/forum">Moderate Forum</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-yellow-500" />
-                  XP Management
-                </CardTitle>
-                <CardDescription>
-                  Manually award or adjust user XP and view transactions.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/xp">Manage XP</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-indigo-500" />
-                  Analytics
-                </CardTitle>
-                <CardDescription>
-                  View platform statistics, user engagement, and growth metrics.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/analytics">View Analytics</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* 👉 Atualizado: agora vai para /admin/settings/permissions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-gray-600" />
-                  Platform Settings & Permissions
-                </CardTitle>
-                <CardDescription>
-                  Configure platform settings and manage admin permissions.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/admin/settings/permissions">Permissions</Link>
-                </Button>
+                {loadingData ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                      Loading transactions...
+                    </p>
+                  </div>
+                ) : recentTransactions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Award className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-600 dark:text-gray-300">
+                      No transactions yet
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recentTransactions.map((tx) => (
+                      <div
+                        key={tx.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{tx.action}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            User ID: {tx.user_id.substring(0, 8)}... •{' '}
+                            {new Date(tx.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-green-600">
+                            +{tx.xp_earned} XP
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
-
-          {/* NOTE: Removed "Recent Activity" because it was fake data. */}
         </div>
       </main>
 
