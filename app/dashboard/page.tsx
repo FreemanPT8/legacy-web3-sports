@@ -17,6 +17,16 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+const DAILY_XP_LIMIT = 369;
+
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -140,6 +150,30 @@ export default function DashboardPage() {
     [user?.xp_total],
   );
 
+  // 🔎 XP ganho HOJE a partir do histórico (limitado às últimas 20 transações)
+  const todayXp = useMemo(() => {
+    if (!xpHistory || xpHistory.length === 0) return 0;
+    const now = new Date();
+    return xpHistory.reduce((sum, tx) => {
+      if (!tx.created_at || typeof tx.xp_earned !== 'number') return sum;
+      const d = new Date(tx.created_at);
+      if (isSameDay(now, d)) {
+        return sum + tx.xp_earned;
+      }
+      return sum;
+    }, 0);
+  }, [xpHistory]);
+
+  const todayLimitProgress = useMemo(() => {
+    if (DAILY_XP_LIMIT <= 0) return 0;
+    const ratio = (todayXp / DAILY_XP_LIMIT) * 100;
+    return Math.max(0, Math.min(100, Math.round(ratio)));
+  }, [todayXp]);
+
+  const remainingTodayXp = useMemo(() => {
+    return Math.max(DAILY_XP_LIMIT - todayXp, 0);
+  }, [todayXp]);
+
   if (loading || !user || !mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-blue-950/20 dark:to-gray-900">
@@ -171,7 +205,9 @@ export default function DashboardPage() {
             </p>
           </div>
 
+          {/* RESUMO RÁPIDO DE XP / STREAK / RANK */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {/* XP TOTAL + HOJE + LIMITES */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -190,6 +226,8 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* Progresso global de nível */}
                 <div className="mt-4">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600 dark:text-gray-300">
@@ -206,9 +244,37 @@ export default function DashboardPage() {
                     />
                   </div>
                 </div>
+
+                {/* 🔥 Bloco de XP diário / limite */}
+                <div className="mt-5 border-t pt-4">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-600 dark:text-gray-300">
+                      XP ganho hoje
+                    </span>
+                    <span className="font-semibold">
+                      {todayXp} / {DAILY_XP_LIMIT}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        todayXp >= DAILY_XP_LIMIT
+                          ? 'bg-amber-600'
+                          : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${todayLimitProgress}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                    {todayXp >= DAILY_XP_LIMIT
+                      ? 'Atingiste o limite diário de XP. Podes continuar a estudar, mas sem ganhar mais XP hoje.'
+                      : `Ainda podes ganhar até ${remainingTodayXp} XP hoje.`}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
+            {/* STREAK */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -236,6 +302,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
+            {/* GLOBAL RANK */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -269,8 +336,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* resto do ficheiro mantém-se igual */}
-          {/* Daily missions, unlocked features, recent XP activity */}
+          {/* MISSÕES + FEATURES DESBLOQUEADAS */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -457,6 +523,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
+          {/* HISTÓRICO DE XP */}
           <Card>
             <CardHeader>
               <CardTitle>
