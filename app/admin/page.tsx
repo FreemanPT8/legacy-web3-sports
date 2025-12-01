@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-
 import { useAuth } from '@/contexts/AuthContext';
+
 import {
   Card,
   CardHeader,
@@ -27,8 +27,9 @@ import {
   Award,
   BarChart3,
   Settings,
-  LayoutDashboard,
 } from 'lucide-react';
+
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
 
 type AdminStats = {
   totalUsers: number;
@@ -38,7 +39,6 @@ type AdminStats = {
   totalLessons: number;
   totalBlogPosts: number;
   totalOnboardingPending: number;
-
   totalHouses: number;
   activeHouses: number;
   buildingHouses: number;
@@ -51,145 +51,47 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
 
-  // PROTEÇÃO DE ACESSO
   useEffect(() => {
     if (!loading && (!user || (user.role !== 'Admin' && user.role !== 'Super Admin'))) {
       router.push('/login');
     }
   }, [user, loading, router]);
 
-  // CARREGAR ESTATÍSTICAS
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoadingStats(true);
         const res = await fetch('/api/admin/stats');
         const data = await res.json();
-        if (data.success) setStats(data.stats as AdminStats);
+        if (data.success) {
+          setStats(data.stats as AdminStats);
+        }
+      } catch (err) {
+        console.error('Error loading admin stats:', err);
       } finally {
         setLoadingStats(false);
       }
     };
+
     fetchStats();
   }, []);
 
-  if (loading || !user) return null;
+  if (loading || !user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950">
-
-        {/* LAYOUT EM 2 COLUNAS: MENU LATERAL + CONTEÚDO */}
         <div className="flex min-h-[calc(100vh-120px)]">
+          {/* Sidebar unificada */}
+          <AdminSidebar />
 
-          {/* -------------------------------------- */}
-          {/* MENU LATERAL FIXO */}
-          {/* -------------------------------------- */}
-          <aside
-            className="
-              w-64
-              bg-white dark:bg-gray-900
-              border-r border-gray-200 dark:border-gray-800
-              p-6
-              hidden md:flex flex-col gap-6
-              sticky top-0 h-[calc(100vh-120px)]
-            "
-          >
-            <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2 mb-1">
-                <LayoutDashboard className="h-5 w-5 text-blue-600" />
-                Admin Panel
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Ferramentas de gestão
-              </p>
-            </div>
-
-            <nav className="flex flex-col gap-2">
-
-              {/* Users */}
-              <Link href="/admin/users">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <Users className="h-4 w-4" />
-                  Users
-                </Button>
-              </Link>
-
-              {/* Courses */}
-              <Link href="/admin/courses">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Courses
-                </Button>
-              </Link>
-
-              {/* Blog */}
-              <Link href="/admin/blog">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <FileText className="h-4 w-4" />
-                  Blog
-                </Button>
-              </Link>
-
-              {/* Houses */}
-              <Link href="/admin/houses">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <Trophy className="h-4 w-4 text-amber-500" />
-                  Houses of Sports
-                </Button>
-              </Link>
-
-              {/* Onboarding */}
-              <Link href="/admin/onboarding">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <Mail className="h-4 w-4" />
-                  Onboarding
-                </Button>
-              </Link>
-
-              {/* Forum */}
-              <Link href="/admin/forum">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <MessageCircle className="h-4 w-4" />
-                  Forum
-                </Button>
-              </Link>
-
-              {/* XP */}
-              <Link href="/admin/xp">
-                <Button variant="ghost" className="w-full justify-start gap-2 text-blue-700">
-                  <Award className="h-4 w-4" />
-                  XP Management
-                </Button>
-              </Link>
-
-              {/* Analytics */}
-              <Link href="/admin/analytics">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Analytics
-                </Button>
-              </Link>
-
-              {/* Settings */}
-              <Link href="/admin/settings/permissions">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <Settings className="h-4 w-4" />
-                  Permissions
-                </Button>
-              </Link>
-
-            </nav>
-          </aside>
-
-          {/* -------------------------------------- */}
-          {/* CONTEÚDO PRINCIPAL */}
-          {/* -------------------------------------- */}
+          {/* Conteúdo principal */}
           <div className="flex-1 p-6 md:p-10">
-
-            {/* Header do Painel */}
+            {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl md:text-4xl font-bold mb-1">
                 Admin Dashboard
@@ -199,10 +101,8 @@ export default function AdminDashboardPage() {
               </p>
             </div>
 
-            {/* Estatísticas rápidas */}
+            {/* Top stats */}
             <div className="grid md:grid-cols-4 gap-4 mb-8">
-
-              {/* TOTAL USERS */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -216,13 +116,12 @@ export default function AdminDashboardPage() {
                     {loadingStats || !stats ? '—' : stats.totalUsers}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Admins: {stats?.totalAdmins ?? '—'} | Super Admins:{' '}
-                    {stats?.totalSuperAdmins ?? '—'}
+                    Admins: {loadingStats || !stats ? '—' : stats.totalAdmins} | Super
+                    Admins: {loadingStats || !stats ? '—' : stats.totalSuperAdmins}
                   </p>
                 </CardContent>
               </Card>
 
-              {/* COURSES */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -233,15 +132,14 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {stats?.totalCourses ?? '—'}
+                    {loadingStats || !stats ? '—' : stats.totalCourses}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {stats?.totalLessons ?? '—'} total lessons
+                    {loadingStats || !stats ? '—' : stats.totalLessons} total lessons
                   </p>
                 </CardContent>
               </Card>
 
-              {/* BLOG */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -252,30 +150,33 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {stats?.totalBlogPosts ?? '—'}
+                    {loadingStats || !stats ? '—' : stats.totalBlogPosts}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Multilingual content</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Multilingual content
+                  </p>
                 </CardContent>
               </Card>
 
-              {/* ONBOARDING */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap=2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Mail className="h-4 w-4 text-orange-500" />
                     Pending Onboarding
                   </CardTitle>
-                  <CardDescription>New House / platform requests</CardDescription>
+                  <CardDescription>
+                    New House / platform requests
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {stats?.totalOnboardingPending ?? '—'}
+                    {loadingStats || !stats ? '—' : stats.totalOnboardingPending}
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Houses */}
+            {/* Houses stats */}
             <div className="grid md:grid-cols-3 gap-4 mb-10">
               <Card>
                 <CardHeader className="pb-2">
@@ -287,43 +188,51 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {stats?.totalHouses ?? '—'}
+                    {loadingStats || !stats ? '—' : stats.totalHouses}
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Active Houses</CardTitle>
-                  <CardDescription>Head of House + team</CardDescription>
+                  <CardTitle className="text-sm font-medium">
+                    Active Houses
+                  </CardTitle>
+                  <CardDescription>
+                    Head of House + min. core team
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {stats?.activeHouses ?? '—'}
+                    {loadingStats || !stats ? '—' : stats.activeHouses}
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">In Construction / Development</CardTitle>
-                  <CardDescription>Early-stage Houses</CardDescription>
+                  <CardTitle className="text-sm font-medium">
+                    In Construction / Development
+                  </CardTitle>
+                  <CardDescription>
+                    Reserved or early-stage Houses
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-lg font-semibold">
-                    Building: {stats?.buildingHouses ?? '—'}
+                    Building:{' '}
+                    {loadingStats || !stats ? '—' : stats.buildingHouses}
                   </div>
                   <div className="text-lg font-semibold">
-                    Developing: {stats?.developingHouses ?? '—'}
+                    Developing:{' '}
+                    {loadingStats || !stats ? '—' : stats.developingHouses}
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* CARDS DE GESTÃO PRINCIPAL */}
-            <div className="grid md:grid-cols-3 gap-6 mb-20">
-              
-              {/* USERS */}
+            {/* Main management cards */}
+            <div className="grid md:grid-cols-3 gap-6 mb-10">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -331,7 +240,7 @@ export default function AdminDashboardPage() {
                     User Management
                   </CardTitle>
                   <CardDescription>
-                    View, edit, and manage user accounts.
+                    View, edit, and manage user accounts and permissions.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -341,7 +250,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* COURSES */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -349,7 +257,7 @@ export default function AdminDashboardPage() {
                     Course Management
                   </CardTitle>
                   <CardDescription>
-                    Organise courses, modules and lessons.
+                    Create, edit, and organize courses, modules, and lessons.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -359,7 +267,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* BLOG */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -367,7 +274,7 @@ export default function AdminDashboardPage() {
                     Blog Management
                   </CardTitle>
                   <CardDescription>
-                    Create and publish articles.
+                    Create and publish blog articles in multiple languages.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -377,7 +284,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* HOUSES */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -385,7 +291,7 @@ export default function AdminDashboardPage() {
                     Houses of Sports
                   </CardTitle>
                   <CardDescription>
-                    Manage Houses, Heads and teams.
+                    Manage Houses, Heads of House and House Moderators.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -395,7 +301,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* ONBOARDING */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -403,7 +308,7 @@ export default function AdminDashboardPage() {
                     Onboarding Submissions
                   </CardTitle>
                   <CardDescription>
-                    Personalised onboarding requests.
+                    Review and respond to personalized onboarding requests.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -413,7 +318,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* FORUM */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -421,7 +325,7 @@ export default function AdminDashboardPage() {
                     Forum Moderation
                   </CardTitle>
                   <CardDescription>
-                    Moderate discussions and reports.
+                    Monitor and moderate forum discussions and content.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -431,7 +335,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* XP */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -439,7 +342,7 @@ export default function AdminDashboardPage() {
                     XP Management
                   </CardTitle>
                   <CardDescription>
-                    Award, adjust and analyse XP.
+                    Manually award or adjust user XP and view transactions.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -449,7 +352,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* ANALYTICS */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -457,7 +359,7 @@ export default function AdminDashboardPage() {
                     Analytics
                   </CardTitle>
                   <CardDescription>
-                    Track progress and engagement.
+                    View platform statistics, user engagement, and growth metrics.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -467,15 +369,14 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* SETTINGS */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="h-5 w-5 text-gray-600" />
-                    Permissions & Settings
+                    Platform Settings & Permissions
                   </CardTitle>
                   <CardDescription>
-                    Manage admin-level roles & policy.
+                    Configure platform settings and manage admin permissions.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -485,7 +386,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
             </div>
-
           </div>
         </div>
       </main>
