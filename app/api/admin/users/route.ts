@@ -13,6 +13,8 @@ interface UserRow {
   country: string | null;
   xp_total: number | null;
   created_at: string | null;
+  last_login: string | null;
+  sports_role: string | null;
 }
 
 interface ListUserDTO {
@@ -24,6 +26,9 @@ interface ListUserDTO {
   country: string | null;
   xp_total: number;
   created_at: string | null;
+  last_login: string | null;
+  sports_role: string | null;
+  last_xp_at: string | null;
 }
 
 interface ListResponse {
@@ -47,7 +52,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('users')
       .select(
-        'id, username, full_name, email, role, country, xp_total, created_at',
+        'id, username, full_name, email, role, country, xp_total, created_at, last_login, sports_role',
       )
       .order('created_at', { ascending: false });
 
@@ -60,6 +65,23 @@ export async function GET(request: NextRequest) {
     }
 
     const rows = (data || []) as UserRow[];
+
+    // último XP por utilizador (limite para não rebentar)
+    const { data: xpRows, error: xpError } = await supabaseAdmin
+      .from('xp_transactions')
+      .select('user_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    if (xpError) {
+      console.error('Supabase error fetching xp_transactions:', xpError);
+    }
+    const lastXpMap = new Map<string, string>();
+    (xpRows || []).forEach((row: { user_id: string | null; created_at: string | null }) => {
+      if (!row.user_id || !row.created_at) return;
+      if (!lastXpMap.has(row.user_id)) {
+        lastXpMap.set(row.user_id, row.created_at);
+      }
+    });
 
     let filtered = rows;
     if (search) {
@@ -86,6 +108,9 @@ export async function GET(request: NextRequest) {
       country: u.country ?? null,
       xp_total: u.xp_total ?? 0,
       created_at: u.created_at,
+      last_login: u.last_login,
+      sports_role: u.sports_role,
+      last_xp_at: lastXpMap.get(u.id) ?? null,
     }));
 
     return NextResponse.json<ListResponse>(

@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,10 +77,11 @@ export default function CreateCoursePage() {
       de: '',
     } as Record<LangCode, string>,
     level: 'beginner',
-    xp_threshold: 0,
-    xp_reward_on_complete: 0,
-    image_url: '',
-    published: false,
+  xp_threshold: 0,
+  xp_reward_on_complete: 0,
+  image_url: '',
+  published: false,
+  is_completed: false,
   });
 
   // Proteção básica: só Admin / Super Admin
@@ -239,7 +237,6 @@ export default function CreateCoursePage() {
   if (!canManageCourses) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header />
         <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8 flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
             <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
@@ -248,12 +245,8 @@ export default function CreateCoursePage() {
               You don&apos;t have permission to create or edit courses. Please
               contact a Super Admin if you think this is a mistake.
             </p>
-            <Link href="/admin/courses">
-              <Button variant="outline">Back to courses</Button>
-            </Link>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -272,198 +265,177 @@ export default function CreateCoursePage() {
     '';
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            {/* Top bar */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <Link href="/admin/courses">
-                  <Button variant="ghost" className="mb-4">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Courses
-                  </Button>
-                </Link>
-                <h1 className="text-3xl font-bold">Create New Course</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  Start by defining the core information of the course.
-                  You&apos;ll add modules and lessons afterwards.
-                </p>
-              </div>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Course'}
-              </Button>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-5xl mx-auto">
+          {/* Top bar */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold">Create New Course</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                Start by defining the core information of the course. You&apos;ll add modules and lessons afterwards.
+              </p>
             </div>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Course'}
+            </Button>
+          </div>
 
-            {/* Layout em 2 colunas: meta + preview */}
-            <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
-              {/* Coluna esquerda: meta do curso */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Course Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Selector de língua */}
-                    <div className="flex gap-2 flex-wrap">
-                      {LANGUAGES.map((lang) => (
-                        <Badge
-                          key={lang.code}
-                          variant={
-                            currentLanguage === lang.code
-                              ? 'default'
-                              : 'outline'
-                          }
-                          className="cursor-pointer"
-                          onClick={() =>
-                            setCurrentLanguage(lang.code as LangCode)
-                          }
-                        >
-                          {lang.name}
-                        </Badge>
-                      ))}
+          {/* Layout em 2 colunas: meta + preview */}
+          <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
+            {/* Coluna esquerda: meta do curso */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Course Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Selector de língua */}
+                  <div className="flex gap-2 flex-wrap">
+                    {LANGUAGES.map((lang) => (
+                      <Badge
+                        key={lang.code}
+                        variant={currentLanguage === lang.code ? 'default' : 'outline'}
+                        className="cursor-pointer"
+                        onClick={() => setCurrentLanguage(lang.code as LangCode)}
+                      >
+                        {lang.name}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  {/* Título + descrição */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Title ({currentLangLabel})</Label>
+                      <Input
+                        value={course.title[currentLanguage]}
+                        onChange={(e) =>
+                          setCourse((prev) => ({
+                            ...prev,
+                            title: {
+                              ...prev.title,
+                              [currentLanguage]: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Enter course title"
+                        className="text-lg"
+                      />
                     </div>
 
-                    {/* Título + descrição */}
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Title ({currentLangLabel})</Label>
+                    <div>
+                      <Label>Description ({currentLangLabel})</Label>
+                      <Textarea
+                        value={course.description[currentLanguage]}
+                        onChange={(e) =>
+                          setCourse((prev) => ({
+                            ...prev,
+                            description: {
+                              ...prev.description,
+                              [currentLanguage]: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Enter course description"
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Level + XP threshold */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Level</Label>
+                      <Select
+                        value={course.level}
+                        onValueChange={(value) =>
+                          setCourse((prev) => ({ ...prev, level: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="advanced">Advanced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>XP Required to Unlock</Label>
+                      <Input
+                        type="number"
+                        value={course.xp_threshold}
+                        onChange={(e) =>
+                          setCourse((prev) => ({
+                            ...prev,
+                            xp_threshold: parseInt(e.target.value) || 0,
+                          }))
+                        }
+                        min={0}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Imagem + XP extra */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Course image URL</Label>
+                      <div className="flex gap-2 items-center mt-1">
                         <Input
-                          value={course.title[currentLanguage]}
+                          type="text"
+                          value={course.image_url}
                           onChange={(e) =>
                             setCourse((prev) => ({
                               ...prev,
-                              title: {
-                                ...prev.title,
-                                [currentLanguage]: e.target.value,
-                              },
+                              image_url: e.target.value,
                             }))
                           }
-                          placeholder="Enter course title"
-                          className="text-lg"
+                          placeholder="https://..."
                         />
-                      </div>
-
-                      <div>
-                        <Label>Description ({currentLangLabel})</Label>
-                        <Textarea
-                          value={course.description[currentLanguage]}
-                          onChange={(e) =>
-                            setCourse((prev) => ({
-                              ...prev,
-                              description: {
-                                ...prev.description,
-                                [currentLanguage]: e.target.value,
-                              },
-                            }))
-                          }
-                          placeholder="Enter course description"
-                          rows={4}
-                        />
+                        {course.image_url && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => window.open(course.image_url, '_blank')}
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
-
-                    {/* Level + XP threshold */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Level</Label>
-                        <Select
-                          value={course.level}
-                          onValueChange={(value) =>
-                            setCourse((prev) => ({ ...prev, level: value }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select level" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="beginner">Beginner</SelectItem>
-                            <SelectItem value="intermediate">
-                              Intermediate
-                            </SelectItem>
-                            <SelectItem value="advanced">Advanced</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>XP Required to Unlock</Label>
-                        <Input
-                          type="number"
-                          value={course.xp_threshold}
-                          onChange={(e) =>
-                            setCourse((prev) => ({
-                              ...prev,
-                              xp_threshold: parseInt(e.target.value) || 0,
-                            }))
-                          }
-                          min={0}
-                          placeholder="0"
-                        />
-                      </div>
+                    <div>
+                      <Label>XP reward (on course completion)</Label>
+                      <Input
+                        type="number"
+                        value={course.xp_reward_on_complete}
+                        onChange={(e) =>
+                          setCourse((prev) => ({
+                            ...prev,
+                            xp_reward_on_complete: parseInt(e.target.value) || 0,
+                          }))
+                        }
+                        min={0}
+                        placeholder="0"
+                      />
+                      <p className="text-[11px] text-gray-500 mt-1">
+                        Users will earn this XP once they complete all required content for this course.
+                      </p>
                     </div>
+                  </div>
 
-                    {/* Imagem + XP extra */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Course image URL</Label>
-                        <div className="flex gap-2 items-center mt-1">
-                          <Input
-                            type="text"
-                            value={course.image_url}
-                            onChange={(e) =>
-                              setCourse((prev) => ({
-                                ...prev,
-                                image_url: e.target.value,
-                              }))
-                            }
-                            placeholder="https://..."
-                          />
-                          {course.image_url && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              onClick={() =>
-                                window.open(course.image_url, '_blank')
-                              }
-                            >
-                              <ImageIcon className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <Label>XP reward (on course completion)</Label>
-                        <Input
-                          type="number"
-                          value={course.xp_reward_on_complete}
-                          onChange={(e) =>
-                            setCourse((prev) => ({
-                              ...prev,
-                              xp_reward_on_complete:
-                                parseInt(e.target.value) || 0,
-                            }))
-                          }
-                          min={0}
-                          placeholder="0"
-                        />
-                        <p className="text-[11px] text-gray-500 mt-1">
-                          Users will earn this XP once they complete all
-                          required content for this course.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="grid md:grid-cols-2 gap-4 border-t pt-4">
+                    <div className="flex items-center justify-between">
                       <Label>Published</Label>
                       <Switch
                         checked={course.published}
@@ -475,117 +447,122 @@ export default function CreateCoursePage() {
                         }
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Coluna direita: Summary + Preview */}
-              <div className="space-y-4">
-                {/* Course Summary */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      Course Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4 text-sm">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 text-blue-600" />
-                          Modules
-                        </span>
-                        <span className="font-semibold">0</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 text-blue-600" />
-                          Lessons
-                        </span>
-                        <span className="font-semibold">0</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <Award className="h-4 w-4 text-blue-600" />
-                          Total XP Available
-                        </span>
-                        <span className="font-semibold">0</span>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <Label>Completed</Label>
+                      <Switch
+                        checked={course.is_completed}
+                        onCheckedChange={(checked) =>
+                          setCourse((prev) => ({
+                            ...prev,
+                            is_completed: checked,
+                          }))
+                        }
+                      />
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-                    <div className="border-t pt-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span>Level</span>
-                        <Badge variant="outline" className="capitalize">
-                          {course.level}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Course XP Threshold</span>
-                        <Badge variant="outline">
-                          {course.xp_threshold} XP
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Status</span>
-                        <Badge
-                          className={
-                            course.published ? 'bg-green-600' : 'bg-yellow-600'
-                          }
-                        >
-                          {course.published ? 'Published' : 'Draft'}
-                        </Badge>
-                      </div>
+            {/* Coluna direita: Summary + Preview */}
+            <div className="space-y-4">
+              {/* Course Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Course Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-blue-600" />
+                        Modules
+                      </span>
+                      <span className="font-semibold">0</span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-blue-600" />
+                        Lessons
+                      </span>
+                      <span className="font-semibold">0</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-blue-600" />
+                        Total XP Available
+                      </span>
+                      <span className="font-semibold">0</span>
+                    </div>
+                  </div>
 
-                {/* Live Preview simples */}
-                <Card className="border-blue-200">
-                  <CardHeader className="flex flex-row items-center justify-between gap-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Eye className="h-4 w-4 text-blue-600" />
-                      Course Preview
-                    </CardTitle>
-                    <Badge variant="outline" className="text-[10px] uppercase">
-                      {currentLangLabel}
-                    </Badge>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm">
+                  <div className="border-t pt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span>Level</span>
+                      <Badge variant="outline" className="capitalize">
+                        {course.level}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Course XP Threshold</span>
+                      <Badge variant="outline">{course.xp_threshold} XP</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Status</span>
+                      <Badge className={course.published ? 'bg-green-600' : 'bg-yellow-600'}>
+                        {course.published ? 'Published' : 'Draft'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Completion</span>
+                      <Badge className={course.is_completed ? 'bg-green-600' : 'bg-yellow-600'}>
+                        {course.is_completed ? 'Completed' : 'Ongoing process'}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Live Preview simples */}
+              <Card className="border-blue-200">
+                <CardHeader className="flex flex-row items-center justify-between gap-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-blue-600" />
+                    Course Preview
+                  </CardTitle>
+                  <Badge variant="outline" className="text-[10px] uppercase">
+                    {currentLangLabel}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Title</div>
+                    <div className="font-semibold">
+                      {previewTitle || 'Untitled course'}
+                    </div>
+                  </div>
+                  {previewDescription && (
                     <div>
-                      <div className="text-xs text-gray-500 mb-1">Title</div>
-                      <div className="font-semibold">
-                        {previewTitle || 'Untitled course'}
-                      </div>
-                    </div>
-                    {previewDescription && (
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">
-                          Description
-                        </div>
-                        <p className="text-gray-700 dark:text-gray-200 line-clamp-4">
-                          {previewDescription}
-                        </p>
-                      </div>
-                    )}
-                    <div className="border-t pt-3 space-y-2">
-                      <div className="text-xs text-gray-500 mb-1">
-                        Structure preview
-                      </div>
-                      <p className="text-xs text-gray-400">
-                        You will add modules and lessons after creating the
-                        course.
+                      <div className="text-xs text-gray-500 mb-1">Description</div>
+                      <p className="text-gray-700 dark:text-gray-200 line-clamp-4">
+                        {previewDescription}
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  )}
+                  <div className="border-t pt-3 space-y-2">
+                    <div className="text-xs text-gray-500 mb-1">
+                      Structure preview
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      You will add modules and lessons after creating the course.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }

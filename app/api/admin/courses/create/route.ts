@@ -13,6 +13,7 @@ interface CoursePayload {
   published?: boolean;
   image_url?: string | null;
   xp_reward_on_complete?: number;
+  is_completed?: boolean;
 }
 
 interface LessonPayload {
@@ -102,6 +103,8 @@ export async function POST(request: NextRequest) {
         image_url: course.image_url ?? null,
         level: course.level || 'beginner',
         xp_reward_on_complete: course.xp_reward_on_complete ?? 0,
+        is_completed: course.is_completed ?? false,
+        author_id: currentUser.userId,
       })
       .select()
       .single();
