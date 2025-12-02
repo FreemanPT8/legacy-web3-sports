@@ -474,6 +474,39 @@ export default function AdminOnboardingPage() {
     user,
   ]);
 
+  // Agregados para métricas rápidas
+  const totalSubmissions = submissions.length;
+  const pendingStatuses: OnboardingStatus[] = [
+    'PENDING_RESPONSE',
+    'RESPONDED_WAITING',
+    'FIRST_CONTACT_SCHEDULED',
+    'FIRST_CONTACT_DONE',
+    'ONBOARDING_LEGACY',
+    'ONBOARDING_DAO1',
+  ];
+  const pendingCount = submissions.filter((s) =>
+    pendingStatuses.includes((s.status as OnboardingStatus) || 'PENDING_RESPONSE'),
+  ).length;
+  const doneCount = submissions.filter(
+    (s) => s.status === 'ONBOARDING_TELEGRAM',
+  ).length;
+  const withAccount = submissions.filter((s) => !!s.user_id).length;
+  const withoutAccount = totalSubmissions - withAccount;
+
+  const responsibleCounts = submissions.reduce(
+    (acc: Record<string, { name: string; count: number }>, s) => {
+      const key = s.assigned_to_user_id || 'unassigned';
+      const name =
+        s.assigned_to_full_name ||
+        s.assigned_to_username ||
+        (key === 'unassigned' ? 'Unassigned' : 'User');
+      if (!acc[key]) acc[key] = { name, count: 0 };
+      acc[key].count += 1;
+      return acc;
+    },
+    {},
+  );
+
   const canEditStatus =
     !!selected &&
     !!user &&
@@ -671,6 +704,61 @@ export default function AdminOnboardingPage() {
               Atualizar
             </button>
           </div>
+
+          {/* Métricas rápidas */}
+          <section className="grid md:grid-cols-4 gap-4">
+            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <div className="text-xs text-gray-500">Total submissions</div>
+              <div className="text-2xl font-bold">{totalSubmissions}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <div className="text-xs text-gray-500">Pending</div>
+              <div className="text-2xl font-bold text-amber-600">{pendingCount}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <div className="text-xs text-gray-500">Completed</div>
+              <div className="text-2xl font-bold text-green-600">{doneCount}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <div className="text-xs text-gray-500">With account</div>
+              <div className="text-2xl font-bold">
+                {withAccount}/{totalSubmissions}
+              </div>
+              <div className="text-[11px] text-gray-500">
+                {withoutAccount} sem conta
+              </div>
+            </div>
+          </section>
+
+          {/* Responsáveis */}
+          <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">Responsáveis</h2>
+              <p className="text-[11px] text-gray-400">
+                Submissões atribuídas a cada responsável
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+              {Object.entries(responsibleCounts)
+                .sort((a, b) => b[1].count - a[1].count)
+                .map(([id, info]) => (
+                  <div
+                    key={id}
+                    className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-semibold">
+                        {info.name || (id === 'unassigned' ? 'Unassigned' : 'User')}
+                      </span>
+                      <span className="text-[11px] text-gray-500">
+                        {id === 'unassigned' ? 'Sem responsável' : 'Responsável'}
+                      </span>
+                    </div>
+                    <div className="text-lg font-bold">{info.count}</div>
+                  </div>
+                ))}
+            </div>
+          </section>
 
           <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
             <div className="flex items-center justify-between">
