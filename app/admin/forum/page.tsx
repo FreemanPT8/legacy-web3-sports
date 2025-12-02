@@ -6,8 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MessageSquare } from 'lucide-react';
-import Link from 'next/link';
+import { MessageSquare } from 'lucide-react';
 
 export default function ForumManagementPage() {
   const router = useRouter();
@@ -19,7 +18,12 @@ export default function ForumManagementPage() {
     if (!loading && !user) {
       router.push('/login');
     }
-    if (!loading && user && user.role !== 'Super Admin' && user.role !== 'Admin') {
+    if (
+      !loading &&
+      user &&
+      user.role !== 'Super Admin' &&
+      user.role !== 'Admin'
+    ) {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
@@ -43,7 +47,11 @@ export default function ForumManagementPage() {
     }
   }, [user]);
 
-  if (loading || !user || (user.role !== 'Super Admin' && user.role !== 'Admin')) {
+  if (
+    loading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin')
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -54,24 +62,28 @@ export default function ForumManagementPage() {
     );
   }
 
+  const totalRooms = rooms.length;
+  const totalTopics = rooms.reduce(
+    (acc, room) => acc + (room.topics?.length || 0),
+    0,
+  );
+  const totalMembers = rooms.reduce(
+    (acc, room) => acc + (room.members_count || 0),
+    0,
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-blue-950/20 dark:to-gray-900 py-8">
       <div className="container mx-auto px-4">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div>
-            <Link href="/admin">
-              <Button variant="ghost" className="mb-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Admin
-              </Button>
-            </Link>
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">Forum Moderation</h1>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Monitor and moderate forum discussions
-                </p>
-              </div>
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex justify-between items-start gap-4">
+            <div className="space-y-1">
+              <h1 className="text-3xl md:text-4xl font-bold">
+                Forum Moderation
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                Monitor and moderate forum discussions
+              </p>
             </div>
           </div>
 
@@ -83,7 +95,7 @@ export default function ForumManagementPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{rooms.length}</div>
+                <div className="text-3xl font-bold">{totalRooms}</div>
               </CardContent>
             </Card>
 
@@ -94,21 +106,20 @@ export default function ForumManagementPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
-                  {rooms.reduce((acc, room) => acc + (room.topics?.length || 0), 0)}
-                </div>
+                <div className="text-3xl font-bold">{totalTopics}</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Members Unlocked
+                  Members (sum)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">Coming Soon</div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Users with 369+ XP</p>
+                <div className="text-3xl font-bold text-green-600">
+                  {totalMembers}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -133,16 +144,23 @@ export default function ForumManagementPage() {
               ) : (
                 <div className="space-y-4">
                   {rooms.map((room) => (
-                    <div key={room.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div
+                      key={room.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className="text-lg font-semibold">{room.name}</h3>
                             {room.xp_threshold > 0 && (
-                              <Badge variant="secondary">{room.xp_threshold} XP required</Badge>
+                              <Badge variant="secondary">
+                                {room.xp_threshold} XP required
+                              </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600 mb-3">{room.description}</p>
+                          <p className="text-sm text-gray-600 mb-3">
+                            {room.description}
+                          </p>
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
                               <MessageSquare className="h-4 w-4" />
@@ -152,11 +170,13 @@ export default function ForumManagementPage() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Link href={`/forum/${room.id}`}>
-                            <Button variant="outline" size="sm">
-                              View Room
-                            </Button>
-                          </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/forum/${room.id}`)}
+                          >
+                            View Room
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -166,7 +186,7 @@ export default function ForumManagementPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="mt-4">
             <CardHeader>
               <CardTitle>Moderation Actions</CardTitle>
             </CardHeader>
