@@ -122,9 +122,13 @@ export async function GET(request: NextRequest) {
     const totalXpAll30d = sumColumn(xpAll30d, 'xp_earned');
 
     // BLOG
+    type BlogPostRow = { id: string; published?: boolean | null; views?: number | null; title?: any };
     const [{ data: blogPosts, error: blogError }, { data: blogReads24h }, { data: blogReads30d }, { data: blogReadsAll }] =
       await Promise.all([
-        db.from('blog_posts').select('id, published, views, title'),
+        db.from('blog_posts').select('id, published, views, title') as {
+          data: BlogPostRow[] | null;
+          error: any;
+        },
         db.from('blog_reads').select('blog_post_id, xp_earned, completed_at').gte('completed_at', window24h),
         db.from('blog_reads').select('blog_post_id, xp_earned, completed_at').gte('completed_at', window30d),
         db.from('blog_reads').select('blog_post_id, xp_earned'),
@@ -132,7 +136,9 @@ export async function GET(request: NextRequest) {
 
     if (blogError) console.error('Error fetching blog posts in admin stats:', blogError);
 
-    const publishedPosts = (blogPosts || []).filter((p) => p.published);
+    const publishedPosts = (blogPosts || []).filter(
+      (p: BlogPostRow) => !!p.published,
+    );
     const totalBlogPosts = publishedPosts.length;
     const blogXpTotal = sumColumn(blogReadsAll, 'xp_earned');
     const blogXp24h = sumColumn(blogReads24h, 'xp_earned');
