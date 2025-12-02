@@ -26,10 +26,13 @@ type BlogPost = {
   category?: string | null;
   author?: string | null;
   author_id?: string | null;
+  author_name?: string | null;
   created_at: string | null;
   views?: number | null;
   published?: boolean | null;
   registered_only?: boolean | null;
+  xp_total_distributed?: number;
+  xp_creator_distributed?: number;
 };
 
 type PermissionsResponse = {
