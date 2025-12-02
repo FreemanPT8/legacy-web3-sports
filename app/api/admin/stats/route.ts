@@ -123,15 +123,29 @@ export async function GET(request: NextRequest) {
 
     // BLOG
     type BlogPostRow = { id: string; published?: boolean | null; views?: number | null; title?: any };
+    type BlogReadRow = {
+      blog_post_id?: string | null;
+      xp_earned?: number | null;
+      completed_at?: string | null;
+    };
     const [{ data: blogPosts, error: blogError }, { data: blogReads24h }, { data: blogReads30d }, { data: blogReadsAll }] =
       await Promise.all([
         db.from('blog_posts').select('id, published, views, title') as {
           data: BlogPostRow[] | null;
           error: any;
         },
-        db.from('blog_reads').select('blog_post_id, xp_earned, completed_at').gte('completed_at', window24h),
-        db.from('blog_reads').select('blog_post_id, xp_earned, completed_at').gte('completed_at', window30d),
-        db.from('blog_reads').select('blog_post_id, xp_earned'),
+        db
+          .from('blog_reads')
+          .select('blog_post_id, xp_earned, completed_at')
+          .gte('completed_at', window24h) as { data: BlogReadRow[] | null; error: any },
+        db
+          .from('blog_reads')
+          .select('blog_post_id, xp_earned, completed_at')
+          .gte('completed_at', window30d) as { data: BlogReadRow[] | null; error: any },
+        db.from('blog_reads').select('blog_post_id, xp_earned, completed_at') as {
+          data: BlogReadRow[] | null;
+          error: any;
+        },
       ]);
 
     if (blogError) console.error('Error fetching blog posts in admin stats:', blogError);
@@ -165,17 +179,17 @@ export async function GET(request: NextRequest) {
 
     const blogTop7d = calcTop(
       (blogReadsAll || []).filter(
-        (r) => r.completed_at && r.completed_at >= sinceDays(7),
+        (r: BlogReadRow) => r.completed_at && r.completed_at >= sinceDays(7),
       ),
     );
     const blogTop30d = calcTop(
       (blogReadsAll || []).filter(
-        (r) => r.completed_at && r.completed_at >= window30d,
+        (r: BlogReadRow) => r.completed_at && r.completed_at >= window30d,
       ),
     );
     const blogTop365d = calcTop(
       (blogReadsAll || []).filter(
-        (r) => r.completed_at && r.completed_at >= sinceDays(365),
+        (r: BlogReadRow) => r.completed_at && r.completed_at >= sinceDays(365),
       ),
     );
 
