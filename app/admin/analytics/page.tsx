@@ -180,6 +180,7 @@ export default function AnalyticsPage() {
   const totalLessons = stats.totalLessons ?? 0;
   const totalOnboardingPending = stats.totalOnboardingPending ?? 0;
   const totalHouses = stats.totalHouses ?? houses.length;
+  const housesMissingHead = houses.filter((h) => !h.head).length;
 
   const activeUsers = users.filter((u) => (u.xp_total || 0) > 0).length;
   const totalXP = users.reduce(
@@ -213,6 +214,20 @@ export default function AnalyticsPage() {
     .sort((a, b) => (b.xp_total_distributed || 0) - (a.xp_total_distributed || 0))
     .slice(0, 3);
 
+  const onboardingTotal = onboarding.length;
+  const onboardingDone = onboarding.filter((o) =>
+    ['ONBOARDING_LEGACY', 'ONBOARDING_DAO1', 'ONBOARDING_TELEGRAM'].includes(
+      o.status || '',
+    ),
+  ).length;
+  const onboardingConversion =
+    onboardingTotal > 0 ? Math.round((onboardingDone / onboardingTotal) * 100) : 0;
+
+  const publishedRateCourses =
+    totalCourses > 0 ? Math.round((publishedCourses / totalCourses) * 100) : 0;
+  const publishedRateBlog =
+    totalBlogPosts > 0 ? Math.round((publishedPosts / totalBlogPosts) * 100) : 0;
+
   const onboardingByStatus = onboarding.reduce(
     (acc: Record<string, number>, o) => {
       const st = o.status || 'UNKNOWN';
@@ -241,6 +256,26 @@ export default function AnalyticsPage() {
               Refresh
             </Button>
           </div>
+
+          {/* Highlights */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                Highlights
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-4 gap-4">
+              <Metric label="Onboarding conversion" value={`${onboardingConversion}%`} />
+              <Metric label="Courses published" value={`${publishedRateCourses}%`} />
+              <Metric label="Blog published" value={`${publishedRateBlog}%`} />
+              <Metric
+                label="Houses missing Head"
+                value={`${housesMissingHead}/${totalHouses}`}
+                highlight={housesMissingHead > 0}
+              />
+            </CardContent>
+          </Card>
 
           {/* Usuários */}
           <Card>
