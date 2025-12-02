@@ -8,15 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  ArrowLeft,
-  BookOpen,
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  Lock,
-} from 'lucide-react';
+import { BookOpen, Plus, Eye, Edit, Trash2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type Course = {
@@ -27,6 +19,8 @@ type Course = {
   is_published?: boolean;
   published?: boolean;
   level?: string | null;
+  author_id?: string | null;
+  author_name?: string | null;
 };
 
 type PermissionsResponse = {
@@ -271,12 +265,6 @@ export default function CoursesManagementPage() {
       <div className="container mx-auto px-4">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <Link href="/admin">
-              <Button variant="ghost" className="mb-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Admin
-              </Button>
-            </Link>
             <div className="flex justify-between items-center gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
@@ -384,6 +372,7 @@ export default function CoursesManagementPage() {
                 const title = getCourseTitle(course);
                 const description = getCourseDescription(course);
                 const isPublished = course.is_published ?? course.published;
+                const isCreator = !!user && course.author_id === user.id;
 
                 return (
                   <Card key={course.id} className="hover:shadow-lg transition-shadow">
@@ -398,7 +387,21 @@ export default function CoursesManagementPage() {
                         </div>
                       )}
                       <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-lg">{title}</CardTitle>
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            {title}
+                            {isCreator && (
+                              <Badge variant="outline" className="border-blue-500 text-blue-600">
+                                Creator
+                              </Badge>
+                            )}
+                          </CardTitle>
+                          {course.author_name && (
+                            <p className="text-xs text-gray-500">
+                              By {course.author_name}
+                            </p>
+                          )}
+                        </div>
                         <Badge className={isPublished ? 'bg-green-600' : 'bg-yellow-600'}>
                           {isPublished ? 'Published' : 'Draft'}
                         </Badge>
@@ -427,9 +430,9 @@ export default function CoursesManagementPage() {
                           size="sm"
                           variant="outline"
                           className="flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
-                          disabled={!canManageCourses}
+                          disabled={!canManageCourses || (!isSuperAdmin && !isCreator)}
                           onClick={() => {
-                            if (!canManageCourses) return;
+                            if (!canManageCourses || (!isSuperAdmin && !isCreator)) return;
                             router.push(`/admin/courses/${course.id}/edit`);
                           }}
                         >
