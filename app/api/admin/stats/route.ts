@@ -47,11 +47,15 @@ export async function GET(request: NextRequest) {
       0;
 
     // COURSES / MODULES / LESSONS
+    type CourseRow = { id: string; published?: boolean | null };
+    type ModuleRow = { id: string };
+    type LessonRow = { id: string };
+
     const [{ data: courses, error: coursesError }, { data: modules, error: modulesError }, { data: lessons, error: lessonsError }] =
       await Promise.all([
-        db.from('courses').select('id, published'),
-        db.from('modules').select('id'),
-        db.from('lessons').select('id'),
+        db.from('courses').select('id, published') as { data: CourseRow[] | null; error: any },
+        db.from('modules').select('id') as { data: ModuleRow[] | null; error: any },
+        db.from('lessons').select('id') as { data: LessonRow[] | null; error: any },
       ]);
 
     if (coursesError)
@@ -62,7 +66,8 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching lessons in admin stats:', lessonsError);
 
     const totalCourses = courses?.length || 0;
-    const activeCourses = courses?.filter((c) => c.published).length || 0;
+    const activeCourses =
+      courses?.filter((c: CourseRow) => !!c.published).length || 0;
     const totalModules = modules?.length || 0;
     const totalLessons = lessons?.length || 0;
 
