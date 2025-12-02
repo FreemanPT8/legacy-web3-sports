@@ -34,6 +34,9 @@ type AdminUser = {
   country: string | null;
   xp_total: number;
   created_at: string | null;
+  last_login: string | null;
+  sports_role: string | null;
+  last_xp_at: string | null;
 };
 
 type SortKey =
@@ -43,10 +46,10 @@ type SortKey =
   | 'role'
   | 'country'
   | 'xp_total'
-  | 'created_at';
+  | 'created_at'
+  | 'last_login'
+  | 'last_xp_at';
 type SortDirection = 'asc' | 'desc';
-
-type RoleFilter = 'all' | 'Super Admin' | 'Admin' | 'Member';
 
 type PermissionsResponse = {
   success: boolean;
@@ -74,6 +77,15 @@ type PermissionsSummaryResponse = {
   };
 };
 
+type StatsUsers = {
+  total: number;
+  superAdmins: number;
+  admins: number;
+  members: number;
+  new24h: number;
+  new30d: number;
+};
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
@@ -81,7 +93,19 @@ export default function AdminUsersPage() {
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [roleFilters, setRoleFilters] = useState<UserRole[]>([
+    'Super Admin',
+    'Admin',
+    'Member',
+  ]);
+  const [countryFilters, setCountryFilters] = useState<string[]>([]);
+  const [sportFilters, setSportFilters] = useState<string[]>([]);
+  const [lastLoginFilter, setLastLoginFilter] = useState<
+    'any' | 'last7d' | 'last30d' | 'never'
+  >('any');
+  const [lastXpFilter, setLastXpFilter] = useState<
+    'any' | 'last7d' | 'last30d' | 'never'
+  >('any');
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -102,10 +126,11 @@ export default function AdminUsersPage() {
   const [permissionsEditable, setPermissionsEditable] = useState(false);
   const [loadingUserPermissions, setLoadingUserPermissions] = useState(false);
   const [savingUserPermissions, setSavingUserPermissions] = useState(false);
+  const [userStats, setUserStats] = useState<StatsUsers | null>(null);
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
-  // Proteção básica da rota no client
+  // Proteção básica
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -117,7 +142,7 @@ export default function AdminUsersPage() {
     }
   }, [user, loading, router]);
 
-  // Buscar permissões do utilizador atual
+  // Permissões do utilizador atual
   useEffect(() => {
     if (loading || !user) return;
 
@@ -158,7 +183,7 @@ export default function AdminUsersPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  // Buscar lista de utilizadores
+  // Lista de utilizadores
   useEffect(() => {
     const fetchUsers = async () => {
       setIsLoadingUsers(true);
@@ -202,7 +227,52 @@ export default function AdminUsersPage() {
     }
   }, [user, getToken, toast]);
 
-  // Filtro + ordenação
+  // Stats rápidas (vêm de /api/admin/stats -> users block)
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = getToken();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch('/api/admin/stats', { headers });
+        const data = await res.json();
+        if (!res.ok || !data.success || !data.stats?.users) return;
+        const u = data.stats.users;
+        setUserStats({
+          total: u.total ?? 0,
+          superAdmins: u.superAdmins ?? 0,
+          admins: u.admins ?? 0,
+          members: u.members ?? 0,
+          new24h: u.new24h ?? 0,
+          new30d: u.new30d ?? 0,
+        });
+      } catch (err) {
+        console.error('Error loading user stats:', err);
+      }
+    };
+    if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
+      fetchStats();
+    }
+  }, [user, getToken]);
+
+  // Opções de filtros (país e desporto)
+  const countryOptions = useMemo(() => {
+    const set = new Set<string>();
+    users.forEach((u) => {
+      if (u.country) set.add(u.country);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [users]);
+
+  const sportOptions = useMemo(() => {
+    const set = new Set<string>();
+    users.forEach((u) => {
+      if (u.sports_role) set.add(u.sports_role);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [users]);
+
+  // Filtrar e ordenar
   const filteredAndSortedUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
     let list = [...users];
@@ -220,8 +290,45 @@ export default function AdminUsersPage() {
       });
     }
 
-    if (roleFilter !== 'all') {
-      list = list.filter((u) => u.role === roleFilter);
+    if (roleFilters.length > 0) {
+      list = list.filter((u) => roleFilters.includes(u.role as UserRole));
+    }
+
+    if (countryFilters.length > 0) {
+      list = list.filter(
+        (u) => u.country && countryFilters.includes(u.country),
+      );
+    }
+
+    if (sportFilters.length > 0) {
+      list = list.filter(
+        (u) => u.sports_role && sportFilters.includes(u.sports_role),
+      );
+    }
+
+    const now = Date.now();
+    const since = (days: number) => now - days * 24 * 60 * 60 * 1000;
+
+    if (lastLoginFilter !== 'any') {
+      list = list.filter((u) => {
+        const ts = u.last_login ? new Date(u.last_login).getTime() : 0;
+        if (lastLoginFilter === 'never') return !ts;
+        if (!ts) return false;
+        if (lastLoginFilter === 'last7d') return ts >= since(7);
+        if (lastLoginFilter === 'last30d') return ts >= since(30);
+        return true;
+      });
+    }
+
+    if (lastXpFilter !== 'any') {
+      list = list.filter((u) => {
+        const ts = u.last_xp_at ? new Date(u.last_xp_at).getTime() : 0;
+        if (lastXpFilter === 'never') return !ts;
+        if (!ts) return false;
+        if (lastXpFilter === 'last7d') return ts >= since(7);
+        if (lastXpFilter === 'last30d') return ts >= since(30);
+        return true;
+      });
     }
 
     list.sort((a, b) => {
@@ -253,6 +360,14 @@ export default function AdminUsersPage() {
           valA = a.xp_total ?? 0;
           valB = b.xp_total ?? 0;
           break;
+        case 'last_login':
+          valA = a.last_login ? new Date(a.last_login).getTime() : 0;
+          valB = b.last_login ? new Date(b.last_login).getTime() : 0;
+          break;
+        case 'last_xp_at':
+          valA = a.last_xp_at ? new Date(a.last_xp_at).getTime() : 0;
+          valB = b.last_xp_at ? new Date(b.last_xp_at).getTime() : 0;
+          break;
         case 'created_at':
         default:
           valA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -271,20 +386,28 @@ export default function AdminUsersPage() {
     });
 
     return list;
-  }, [users, search, roleFilter, sortKey, sortDirection]);
+  }, [
+    users,
+    search,
+    roleFilters,
+    countryFilters,
+    sportFilters,
+    lastLoginFilter,
+    lastXpFilter,
+    sortKey,
+    sortDirection,
+  ]);
 
-  const stats = useMemo(() => {
+  const statsLocal = useMemo(() => {
     const total = users.length;
     const superAdmins = users.filter((u) => u.role === 'Super Admin').length;
     const admins = users.filter((u) => u.role === 'Admin').length;
     const members = users.filter((u) => u.role === 'Member').length;
-
     return { total, superAdmins, admins, members };
   }, [users]);
 
   const canEditUsers = canManageUsers;
 
-  // Carregar permissões de um utilizador quando clicas no botão da linha
   const handleOpenUserPermissions = async (userRow: AdminUser) => {
     setSelectedUser(userRow);
     setSelectedUserRole(
@@ -414,7 +537,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Atualizar role
   const handleChangeRole = async (
     userId: string,
     newRole: UserRole,
@@ -429,7 +551,6 @@ export default function AdminUsersPage() {
       return;
     }
 
-    // Só Super Admin pode mexer em papéis de Super Admin
     if (
       !isSuperAdmin &&
       (currentRole === 'Super Admin' || newRole === 'Super Admin')
@@ -479,7 +600,6 @@ export default function AdminUsersPage() {
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
       );
 
-      // Se estivermos a editar permissões deste user e mudamos role:
       if (selectedUser && selectedUser.id === userId) {
         setSelectedUser({ ...selectedUser, role: newRole });
         setSelectedUserRole(newRole);
@@ -501,7 +621,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Apagar utilizador
   const handleDeleteUser = async (userId: string, username: string | null) => {
     if (!canEditUsers) {
       toast({
@@ -531,9 +650,7 @@ export default function AdminUsersPage() {
     }
 
     const confirmation = window.prompt(
-      `Type "delete" to permanently remove user "${
-        username || userId
-      }". This action cannot be undone.`,
+      `Type "delete" to permanently remove user "${username || userId}". This action cannot be undone.`,
     );
 
     if (confirmation !== 'delete') {
@@ -629,6 +746,13 @@ export default function AdminUsersPage() {
     );
   };
 
+  const toggleArrayFilter = (current: string[], value: string): string[] => {
+    if (current.includes(value)) {
+      return current.filter((v) => v !== value);
+    }
+    return [...current, value];
+  };
+
   if (loading || !permissionsLoaded) {
     return (
       <div className="py-8">
@@ -641,192 +765,228 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl md:text-4xl font-bold mb-6">
-          Admin – User Management
+          Admin — User Management
         </h1>
 
         {/* STAT CARDS */}
-        <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <div className="grid gap-4 md:grid-cols-6 mb-6">
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium">
-                Super Admins
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-red-600">
-                {stats.superAdmins}
+              <div className="text-2xl font-bold">
+                {userStats ? userStats.total : statsLocal.total}
               </div>
             </CardContent>
           </Card>
-
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-medium">Super Admins</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold text-red-600">
+                {userStats ? userStats.superAdmins : statsLocal.superAdmins}
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm font-medium">Admins</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="text-2xl font-bold text-gray-700">
-                {stats.admins}
+                {userStats ? userStats.admins : statsLocal.admins}
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm font-medium">Members</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="text-2xl font-bold text-blue-600">
-                {stats.members}
+                {userStats ? userStats.members : statsLocal.members}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-medium">Novos 24h</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold text-green-600">
+                {userStats ? userStats.new24h : 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-medium">Novos 30d</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold text-green-600">
+                {userStats ? userStats.new30d : 0}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* USER MANAGEMENT CARD */}
+        {/* USER MANAGEMENT */}
         <Card>
           <CardHeader>
             <CardTitle>User Management</CardTitle>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              View all platform users. Only admins with the{' '}
-              <strong>Manage Users</strong> permission can change roles or
-              delete users. Super Admin is required to manage{' '}
-              <strong>Super Admin</strong> roles and extra admin permissions.
+              Filtros avançados por role, país, desporto, último login e último XP.
             </p>
           </CardHeader>
           <CardContent>
-            {/* SEARCH + ROLE FILTER */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-              <div className="flex gap-2 items-center">
-                <Input
-                  placeholder="Search by username, name or email..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="max-w-md"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => setSearch('')}
-                  disabled={!search}
-                >
-                  Clear
-                </Button>
+            <div className="flex flex-col gap-4 mb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder="Search by username, name or email..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="max-w-md"
+                  />
+                  <Button variant="outline" onClick={() => setSearch('')} disabled={!search}>
+                    Clear
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Last login:</span>
+                    <Select value={lastLoginFilter} onValueChange={(v) => setLastLoginFilter(v as typeof lastLoginFilter)}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">Any</SelectItem>
+                        <SelectItem value="last7d">Últimos 7 dias</SelectItem>
+                        <SelectItem value="last30d">Últimos 30 dias</SelectItem>
+                        <SelectItem value="never">Nunca</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Último XP:</span>
+                    <Select value={lastXpFilter} onValueChange={(v) => setLastXpFilter(v as typeof lastXpFilter)}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">Any</SelectItem>
+                        <SelectItem value="last7d">Últimos 7 dias</SelectItem>
+                        <SelectItem value="last30d">Últimos 30 dias</SelectItem>
+                        <SelectItem value="never">Nunca</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  Filter by role:
-                </span>
-                <Select
-                  value={roleFilter}
-                  onValueChange={(value) => setRoleFilter(value as RoleFilter)}
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="Super Admin">Super Admins</SelectItem>
-                    <SelectItem value="Admin">Admins</SelectItem>
-                    <SelectItem value="Member">Members</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              <div className="grid md:grid-cols-3 gap-3">
+                <div>
+                  <p className="text-xs font-semibold mb-2">Roles</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(['Super Admin', 'Admin', 'Member'] as UserRole[]).map((r) => (
+                      <Button
+                        key={r}
+                        size="sm"
+                        variant={roleFilters.includes(r) ? 'secondary' : 'outline'}
+                        onClick={() =>
+                          setRoleFilters((prev) =>
+                            prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
+                          )
+                        }
+                      >
+                        {r}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold mb-2">País</p>
+                  <div className="flex flex-wrap gap-2">
+                    {countryOptions.map((c) => (
+                      <Button
+                        key={c}
+                        size="sm"
+                        variant={countryFilters.includes(c) ? 'secondary' : 'outline'}
+                        onClick={() => setCountryFilters((prev) => toggleArrayFilter(prev, c))}
+                      >
+                        {c}
+                      </Button>
+                    ))}
+                    {countryOptions.length === 0 && (
+                      <span className="text-xs text-gray-400">Sem dados</span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold mb-2">Desporto</p>
+                  <div className="flex flex-wrap gap-2">
+                    {sportOptions.map((s) => (
+                      <Button
+                        key={s}
+                        size="sm"
+                        variant={sportFilters.includes(s) ? 'secondary' : 'outline'}
+                        onClick={() => setSportFilters((prev) => toggleArrayFilter(prev, s))}
+                      >
+                        {s}
+                      </Button>
+                    ))}
+                    {sportOptions.length === 0 && (
+                      <span className="text-xs text-gray-400">Sem dados</span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* TABLE */}
             <div className="overflow-x-auto border rounded-lg bg-white dark:bg-gray-900">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th
-                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                      onClick={() => handleSort('username')}
-                    >
-                      <span className="inline-flex items-center">
-                        Username
-                        {renderSortIcon('username')}
-                      </span>
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('username')}>
+                      <span className="inline-flex items-center">Username{renderSortIcon('username')}</span>
                     </th>
-                    <th
-                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                      onClick={() => handleSort('full_name')}
-                    >
-                      <span className="inline-flex items-center">
-                        Name
-                        {renderSortIcon('full_name')}
-                      </span>
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('full_name')}>
+                      <span className="inline-flex items-center">Name{renderSortIcon('full_name')}</span>
                     </th>
-                    <th
-                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                      onClick={() => handleSort('email')}
-                    >
-                      <span className="inline-flex items-center">
-                        Email
-                        {renderSortIcon('email')}
-                      </span>
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('email')}>
+                      <span className="inline-flex items-center">Email{renderSortIcon('email')}</span>
                     </th>
-                    <th
-                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                      onClick={() => handleSort('role')}
-                    >
-                      <span className="inline-flex items-center">
-                        Role
-                        {renderSortIcon('role')}
-                      </span>
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('role')}>
+                      <span className="inline-flex items-center">Role{renderSortIcon('role')}</span>
                     </th>
-                    <th
-                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                      onClick={() => handleSort('country')}
-                    >
-                      <span className="inline-flex items-center">
-                        Country
-                        {renderSortIcon('country')}
-                      </span>
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('country')}>
+                      <span className="inline-flex items-center">Country{renderSortIcon('country')}</span>
                     </th>
-                    <th
-                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                      onClick={() => handleSort('xp_total')}
-                    >
-                      <span className="inline-flex items-center">
-                        XP
-                        {renderSortIcon('xp_total')}
-                      </span>
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('xp_total')}>
+                      <span className="inline-flex items-center">XP{renderSortIcon('xp_total')}</span>
                     </th>
-                    <th
-                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                      onClick={() => handleSort('created_at')}
-                    >
-                      <span className="inline-flex items-center">
-                        Created
-                        {renderSortIcon('created_at')}
-                      </span>
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('created_at')}>
+                      <span className="inline-flex items-center">Created{renderSortIcon('created_at')}</span>
                     </th>
-                    <th className="px-4 py-2 text-left font-semibold">
-                      Change Role
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('last_login')}>
+                      <span className="inline-flex items-center">Last login{renderSortIcon('last_login')}</span>
                     </th>
-                    <th className="px-4 py-2 text-left font-semibold">
-                      Permissions
+                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('last_xp_at')}>
+                      <span className="inline-flex items-center">Last XP{renderSortIcon('last_xp_at')}</span>
                     </th>
-                    <th className="px-4 py-2 text-left font-semibold">
-                      Actions
-                    </th>
+                    <th className="px-4 py-2 text-left font-semibold">Change Role</th>
+                    <th className="px-4 py-2 text-left font-semibold">Permissions</th>
+                    <th className="px-4 py-2 text-left font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {isLoadingUsers && (
                     <tr>
-                      <td
-                        colSpan={11}
-                        className="px-4 py-6 text-center text-gray-500"
-                      >
+                      <td colSpan={12} className="px-4 py-6 text-center text-gray-500">
                         Loading users...
                       </td>
                     </tr>
@@ -834,10 +994,7 @@ export default function AdminUsersPage() {
 
                   {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={11}
-                        className="px-4 py-6 text-center text-gray-500"
-                      >
+                      <td colSpan={12} className="px-4 py-6 text-center text-gray-500">
                         No users found.
                       </td>
                     </tr>
@@ -849,37 +1006,25 @@ export default function AdminUsersPage() {
                         <td className="px-4 py-2 font-medium">
                           {u.username || <span className="text-gray-400">-</span>}
                           {user?.id === u.id && (
-                            <span className="ml-1 text-[10px] text-blue-500">
-                              (you)
-                            </span>
+                            <span className="ml-1 text-[10px] text-blue-500">(you)</span>
                           )}
                         </td>
+                        <td className="px-4 py-2">{u.full_name || <span className="text-gray-400">-</span>}</td>
+                        <td className="px-4 py-2">{u.email || <span className="text-gray-400">-</span>}</td>
                         <td className="px-4 py-2">
-                          {u.full_name || <span className="text-gray-400">-</span>}
+                          <Badge variant={getRoleBadgeVariant(u.role)}>{u.role}</Badge>
                         </td>
-                        <td className="px-4 py-2">
-                          {u.email || <span className="text-gray-400">-</span>}
-                        </td>
-                        <td className="px-4 py-2">
-                          <Badge variant={getRoleBadgeVariant(u.role)}>
-                            {u.role}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-2">
-                          {u.country || <span className="text-gray-400">-</span>}
-                        </td>
+                        <td className="px-4 py-2">{u.country || <span className="text-gray-400">-</span>}</td>
                         <td className="px-4 py-2">{u.xp_total ?? 0}</td>
-                        <td className="px-4 py-2">
-                          {u.created_at ? formatDate(u.created_at) : '-'}
-                        </td>
+                        <td className="px-4 py-2">{u.created_at ? formatDate(u.created_at) : '-'}</td>
+                        <td className="px-4 py-2 text-xs">{u.last_login ? formatDate(u.last_login) : '—'}</td>
+                        <td className="px-4 py-2 text-xs">{u.last_xp_at ? formatDate(u.last_xp_at) : '—'}</td>
                         <td className="px-4 py-2">
                           {canEditUsers ? (
                             <Select
                               disabled={updatingUserId === u.id}
                               value={
-                                (['Super Admin', 'Admin', 'Member'].includes(
-                                  u.role as UserRole,
-                                )
+                                (['Super Admin', 'Admin', 'Member'].includes(u.role as UserRole)
                                   ? u.role
                                   : 'Member') as UserRole
                               }
@@ -893,23 +1038,15 @@ export default function AdminUsersPage() {
                               <SelectContent>
                                 <SelectItem value="Member">Member</SelectItem>
                                 <SelectItem value="Admin">Admin</SelectItem>
-                                <SelectItem value="Super Admin">
-                                  Super Admin
-                                </SelectItem>
+                                <SelectItem value="Super Admin">Super Admin</SelectItem>
                               </SelectContent>
                             </Select>
                           ) : (
-                            <span className="text-xs text-gray-400">
-                              View only
-                            </span>
+                            <span className="text-xs text-gray-400">View only</span>
                           )}
                         </td>
                         <td className="px-4 py-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenUserPermissions(u)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => handleOpenUserPermissions(u)}>
                             View / Edit
                           </Button>
                         </td>
@@ -933,20 +1070,15 @@ export default function AdminUsersPage() {
               </table>
             </div>
 
-            {/* PAINEL DE PERMISSÕES DO UTILIZADOR SELECIONADO */}
             {selectedUser && (
               <div className="mt-6 border-t pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h2 className="text-lg font-semibold">
-                      Permissions for{' '}
-                      {selectedUser.username || selectedUser.email || 'user'}
+                      Permissions for {selectedUser.username || selectedUser.email || 'user'}
                     </h2>
                     <p className="text-xs text-gray-500">
-                      Role:{' '}
-                      <span className="font-medium">
-                        {selectedUserRole || selectedUser.role}
-                      </span>
+                      Role: <span className="font-medium">{selectedUserRole || selectedUser.role}</span>
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -979,24 +1111,18 @@ export default function AdminUsersPage() {
                   <>
                     {selectedUserRole === 'Super Admin' && (
                       <p className="text-sm text-gray-500 mb-2">
-                        Super Admin already has all permissions. Extra overrides
-                        are not needed.
+                        Super Admin already has all permissions. Extra overrides are not needed.
                       </p>
                     )}
                     {selectedUserRole === 'Member' && (
                       <p className="text-sm text-gray-500 mb-2">
-                        Members cannot have admin permissions. Change the role to{' '}
-                        <strong>Admin</strong> if you want to grant admin-level
-                        permissions.
+                        Members cannot have admin permissions. Change the role to <strong>Admin</strong> if you want to grant admin-level permissions.
                       </p>
                     )}
                     {selectedUserRole === 'Admin' && (
                       <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                         {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
-                          <label
-                            key={key}
-                            className="flex items-center gap-2 text-sm"
-                          >
+                          <label key={key} className="flex items-center gap-2 text-sm">
                             <Checkbox
                               checked={!!selectedUserPermissions[key]}
                               disabled={
@@ -1005,9 +1131,7 @@ export default function AdminUsersPage() {
                                 !isSuperAdmin ||
                                 savingUserPermissions
                               }
-                              onCheckedChange={(checked) =>
-                                handleTogglePermission(key, Boolean(checked))
-                              }
+                              onCheckedChange={(checked) => handleTogglePermission(key, Boolean(checked))}
                             />
                             <span>{PERMISSION_LABELS[key]}</span>
                           </label>
