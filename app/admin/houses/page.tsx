@@ -306,6 +306,15 @@ export default function AdminHousesPage() {
     return null;
   }
 
+  const totalHouses = houses.length;
+  const activeHouses = houses.filter((h) => h.status === 'active').length;
+  const buildingHouses = houses.filter(
+    (h) => h.status === 'under_construction',
+  ).length;
+  const developingHouses = houses.filter(
+    (h) => h.status === 'development',
+  ).length;
+
   return (
     <div className="space-y-8 bg-gray-50 py-10">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -323,6 +332,56 @@ export default function AdminHousesPage() {
               Create new House
             </Button>
           </Link>
+        </div>
+
+        {/* Métricas rápidas */}
+        <div className="grid md:grid-cols-4 gap-4 mb-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-600">
+                Total Houses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalHouses}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-600">
+                Active
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {activeHouses}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-600">
+                Under construction
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-amber-600">
+                {buildingHouses}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-600">
+                In development
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {developingHouses}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filtros */}

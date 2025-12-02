@@ -61,6 +61,10 @@ interface AdminHouseDTO {
 interface HousesGetResponse {
   success: boolean;
   houses?: AdminHouseDTO[];
+  totalHouses?: number;
+  activeHouses?: number;
+  buildingHouses?: number;
+  developingHouses?: number;
   error?: string;
 }
 
@@ -294,9 +298,23 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Totais por estado
+    const totalHouses = result.length;
+    const activeHouses = result.filter((h) => h.status === 'active').length;
+    const buildingHouses = result.filter(
+      (h) => h.status === 'under_construction',
+    ).length;
+    const developingHouses = result.filter(
+      (h) => h.status === 'development',
+    ).length;
+
     return NextResponse.json<HousesGetResponse>({
       success: true,
       houses: result,
+      totalHouses,
+      activeHouses,
+      buildingHouses,
+      developingHouses,
     });
   } catch (err: any) {
     console.error('Unexpected error in GET /api/admin/houses:', err);
