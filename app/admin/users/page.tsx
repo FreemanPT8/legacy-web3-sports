@@ -106,6 +106,7 @@ export default function AdminUsersPage() {
   const [lastXpFilter, setLastXpFilter] = useState<
     'any' | 'last7d' | 'last30d' | 'never'
   >('any');
+  const [showFilters, setShowFilters] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -711,11 +712,11 @@ export default function AdminUsersPage() {
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'Super Admin':
-        return 'destructive' as const;
+        return 'destructive' as const; // vermelho
       case 'Admin':
-        return 'secondary' as const;
+        return 'outline' as const; // branco contornado
       default:
-        return 'outline' as const;
+        return 'secondary' as const; // branco/acinzentado
     }
   };
 
@@ -854,97 +855,113 @@ export default function AdminUsersPage() {
                     Clear
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Last login:</span>
-                    <Select value={lastLoginFilter} onValueChange={(v) => setLastLoginFilter(v as typeof lastLoginFilter)}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any</SelectItem>
-                        <SelectItem value="last7d">Últimos 7 dias</SelectItem>
-                        <SelectItem value="last30d">Últimos 30 dias</SelectItem>
-                        <SelectItem value="never">Nunca</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Último XP:</span>
-                    <Select value={lastXpFilter} onValueChange={(v) => setLastXpFilter(v as typeof lastXpFilter)}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any</SelectItem>
-                        <SelectItem value="last7d">Últimos 7 dias</SelectItem>
-                        <SelectItem value="last30d">Últimos 30 dias</SelectItem>
-                        <SelectItem value="never">Nunca</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" onClick={() => setShowFilters((p) => !p)}>
+                    {showFilters ? 'Esconder filtros' : 'Procurar por filtros'}
+                  </Button>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-3">
-                <div>
-                  <p className="text-xs font-semibold mb-2">Roles</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(['Super Admin', 'Admin', 'Member'] as UserRole[]).map((r) => (
-                      <Button
-                        key={r}
-                        size="sm"
-                        variant={roleFilters.includes(r) ? 'secondary' : 'outline'}
-                        onClick={() =>
-                          setRoleFilters((prev) =>
-                            prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
-                          )
-                        }
+              {showFilters && (
+                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Last login:</span>
+                      <Select
+                        value={lastLoginFilter}
+                        onValueChange={(v) => setLastLoginFilter(v as typeof lastLoginFilter)}
                       >
-                        {r}
-                      </Button>
-                    ))}
+                        <SelectTrigger className="w-[150px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Any</SelectItem>
+                          <SelectItem value="last7d">Últimos 7 dias</SelectItem>
+                          <SelectItem value="last30d">Últimos 30 dias</SelectItem>
+                          <SelectItem value="never">Nunca</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Último XP:</span>
+                      <Select
+                        value={lastXpFilter}
+                        onValueChange={(v) => setLastXpFilter(v as typeof lastXpFilter)}
+                      >
+                        <SelectTrigger className="w-[150px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Any</SelectItem>
+                          <SelectItem value="last7d">Últimos 7 dias</SelectItem>
+                          <SelectItem value="last30d">Últimos 30 dias</SelectItem>
+                          <SelectItem value="never">Nunca</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <p className="text-xs font-semibold mb-2">País</p>
-                  <div className="flex flex-wrap gap-2">
-                    {countryOptions.map((c) => (
-                      <Button
-                        key={c}
-                        size="sm"
-                        variant={countryFilters.includes(c) ? 'secondary' : 'outline'}
-                        onClick={() => setCountryFilters((prev) => toggleArrayFilter(prev, c))}
-                      >
-                        {c}
-                      </Button>
-                    ))}
-                    {countryOptions.length === 0 && (
-                      <span className="text-xs text-gray-400">Sem dados</span>
-                    )}
-                  </div>
-                </div>
+                  <div className="grid md:grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs font-semibold mb-2">Roles</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(['Super Admin', 'Admin', 'Member'] as UserRole[]).map((r) => (
+                          <Button
+                            key={r}
+                            size="sm"
+                            variant={roleFilters.includes(r) ? 'secondary' : 'outline'}
+                            onClick={() =>
+                              setRoleFilters((prev) =>
+                                prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
+                              )
+                            }
+                          >
+                            {r}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
 
-                <div>
-                  <p className="text-xs font-semibold mb-2">Desporto</p>
-                  <div className="flex flex-wrap gap-2">
-                    {sportOptions.map((s) => (
-                      <Button
-                        key={s}
-                        size="sm"
-                        variant={sportFilters.includes(s) ? 'secondary' : 'outline'}
-                        onClick={() => setSportFilters((prev) => toggleArrayFilter(prev, s))}
-                      >
-                        {s}
-                      </Button>
-                    ))}
-                    {sportOptions.length === 0 && (
-                      <span className="text-xs text-gray-400">Sem dados</span>
-                    )}
+                    <div>
+                      <p className="text-xs font-semibold mb-2">País</p>
+                      <div className="flex flex-wrap gap-2">
+                        {countryOptions.map((c) => (
+                          <Button
+                            key={c}
+                            size="sm"
+                            variant={countryFilters.includes(c) ? 'secondary' : 'outline'}
+                            onClick={() => setCountryFilters((prev) => toggleArrayFilter(prev, c))}
+                          >
+                            {c}
+                          </Button>
+                        ))}
+                        {countryOptions.length === 0 && (
+                          <span className="text-xs text-gray-400">Sem dados</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold mb-2">Desporto</p>
+                      <div className="flex flex-wrap gap-2">
+                        {sportOptions.map((s) => (
+                          <Button
+                            key={s}
+                            size="sm"
+                            variant={sportFilters.includes(s) ? 'secondary' : 'outline'}
+                            onClick={() => setSportFilters((prev) => toggleArrayFilter(prev, s))}
+                          >
+                            {s}
+                          </Button>
+                        ))}
+                        {sportOptions.length === 0 && (
+                          <span className="text-xs text-gray-400">Sem dados</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="overflow-x-auto border rounded-lg bg-white dark:bg-gray-900">
