@@ -8,7 +8,13 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -18,6 +24,8 @@ import {
   Clock,
   ShieldAlert,
   Loader2,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
@@ -32,12 +40,30 @@ type XPSummary = {
   } | null;
 };
 
+type XPHistoryItem = {
+  id: string;
+  action: string;
+  xp_earned: number;
+  created_at: string;
+};
+
 export default function XPManagementPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
 
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<XPHistoryItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+
+  const [historyUserId, setHistoryUserId] = useState('');
+  const [historyLimit, setHistoryLimit] = useState(20);
+
+  const [awardUserId, setAwardUserId] = useState('');
+  const [awardAmount, setAwardAmount] = useState('');
+  const [awardReason, setAwardReason] = useState('');
+
+  const [awardLoading, setAwardLoading] = useState(false);
+  const [awardError, setAwardError] = useState<string | null>(null);
+  const [awardSuccess, setAwardSuccess] = useState<string | null>(null);
 
   const [confirmText, setConfirmText] = useState('');
   const [submittingReset, setSubmittingReset] = useState(false);
@@ -52,10 +78,10 @@ export default function XPManagementPage() {
   const isFreeman =
     !!user && (user.username === 'freemanpt' || user.email === 'freemanpt');
 
+  // Redirect if not allowed
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
+    if (!loading && !user) router.push('/login');
+
     if (
       !loading &&
       user &&
@@ -66,117 +92,193 @@ export default function XPManagementPage() {
     }
   }, [user, loading, router]);
 
+  // Load summary + history
   useEffect(() => {
-    const fetchData = async () => {
+    if (!user) return;
+    if (user.role !== 'Super Admin' && user.role !== 'Admin') return;
+
+    const load = async () => {
       try {
-        const historyResponse = await fetch('/api/xp/history');
-        const historyData = await historyResponse.json();
-        if (historyData.success) {
-          setRecentTransactions(historyData.transactions?.slice(0, 50) || []);
-        }
-
-        if (!user) return;
-
         const token = getToken();
-        if (!token) {
-          setLoadingSummary(false);
-          return;
+
+        if (token) {
+          const summaryRes = await fetch('/api/xp/summary', {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const summaryData = await summaryRes.json();
+
+          if (summaryRes.ok && summaryData.success) {
+            setXpSummary(summaryData.summary as XPSummary);
+          }
         }
 
-        const summaryResponse = await fetch('/api/xp/summary', {
+        if (xpSummary?.top_user?.id) {
+          await loadHistory(xpSummary.top_user.id);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar XP summary / history:', err);
+      } finally {
+        setLoadingSummary(false);
+        setLoadingData(false);
+      }
+    };
+
+    load();
+  }, [user]);
+
+  // Load history for a user
+  async function loadHistory(forUser?: string) {
+    const uid = (forUser || historyUserId || '').trim();
+    if (!uid) {
+      setRecentTransactions([]);
+      return;
+    }
+
+    setLoadingData(true);
+
+    try {
+      const params = new URLSearchParams({
+        userId: uid,
+        limit: String(historyLimit),
+      });
+
+      const res = await fetch(`/api/xp/history?${params}`);
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setRecentTransactions(data.history as XPHistoryItem[]);
+      } else {
+        setRecentTransactions([]);
+        console.error('Histórico falhou:', data.error);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar histórico:', err);
+      setRecentTransactions([]);
+    } finally {
+      setLoadingData(false);
+    }
+  }
+
+  // Handle Award XP manual
+  async function handleAwardXP(e: FormEvent) {
+    e.preventDefault();
+    setAwardLoading(true);
+    setAwardError(null);
+    setAwardSuccess(null);
+
+    if (!awardUserId || !awardAmount || !awardReason) {
+      setAwardError('Preenche todos os campos.');
+      setAwardLoading(false);
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      setAwardError('Token inválido. Faz login novamente.');
+      setAwardLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/xp/award', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: awardUserId,
+          xpAmount: Number(awardAmount),
+          action: awardReason,
+          referenceId: null,
+          referenceType: 'manual_award',
+          actionType: null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setAwardError(data.error || 'Erro ao atribuir XP.');
+      } else {
+        setAwardSuccess(`Atribuído ${awardAmount} XP a ${awardUserId}.`);
+        setAwardUserId('');
+        setAwardAmount('');
+        setAwardReason('');
+
+        await loadHistory(awardUserId);
+
+        const summaryRes = await fetch('/api/xp/summary', {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
         });
 
-        const summaryData = await summaryResponse.json();
-        if (summaryResponse.ok && summaryData.success) {
-          setXpSummary(summaryData.summary as XPSummary);
-        } else {
-          console.error('Failed to fetch XP summary:', summaryData.error || summaryData);
+        const summaryData = await summaryRes.json();
+        if (summaryRes.ok && summaryData.success) {
+          setXpSummary(summaryData.summary);
         }
-      } catch (error) {
-        console.error('Failed to fetch XP data:', error);
-      } finally {
-        setLoadingData(false);
-        setLoadingSummary(false);
       }
-    };
-
-    if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
-      fetchData();
+    } catch (err) {
+      setAwardError('Erro inesperado ao atribuir XP.');
+    } finally {
+      setAwardLoading(false);
     }
-  }, [user, getToken]);
+  }
 
+  // Reset XP
   async function handleResetSubmit(e: FormEvent) {
     e.preventDefault();
     setResetResultMessage(null);
     setResetResultError(null);
 
     if (!isFreeman) {
-      setResetResultError(
-        'Esta ação está limitada ao utilizador freemanpt durante a fase de testes.',
-      );
+      setResetResultError('Apenas freemanpt pode fazer reset global.');
       return;
     }
 
     if (confirmText.trim() !== REQUIRED_PHRASE) {
-      setResetResultError(
-        `Para confirmar, escreve exatamente: ${REQUIRED_PHRASE}`,
-      );
+      setResetResultError(`Escreve exatamente: ${REQUIRED_PHRASE}`);
       return;
     }
 
     try {
       setSubmittingReset(true);
-
       const token = getToken();
-      if (!token) {
-        setResetResultError(
-          'Sessão inválida. Faz login novamente e tenta outra vez.',
-        );
-        setSubmittingReset(false);
-        return;
-      }
 
       const res = await fetch('/api/admin/xp/reset', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : '',
         },
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setResetResultError(
-          data.error ||
-            'Ocorreu um erro ao tentar fazer reset global do XP.',
-        );
+        setResetResultError(data.error || 'Erro ao resetar XP.');
       } else {
-        setResetResultMessage(
-          'Reset global de XP concluído com sucesso para todos os utilizadores e criadores.',
-        );
-        setConfirmText('');
+        setResetResultMessage('XP global resetado com sucesso.');
+        setRecentTransactions([]);
         setXpSummary({
           total_xp: 0,
           avg_xp_per_user: 0,
           top_user: null,
         });
-        setRecentTransactions([]);
       }
-    } catch (error) {
-      console.error('Erro ao chamar /api/admin/xp/reset:', error);
-      setResetResultError(
-        'Erro inesperado ao comunicar com o servidor. Tenta novamente em alguns segundos.',
-      );
+    } catch {
+      setResetResultError('Erro inesperado.');
     } finally {
       setSubmittingReset(false);
     }
   }
 
+  // Loading state
   if (
     loading ||
     !user ||
@@ -184,270 +286,204 @@ export default function XPManagementPage() {
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
-        </div>
+        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
       </div>
     );
   }
-
-  const totalXPDisplay =
-    loadingSummary || !xpSummary ? '-' : xpSummary.total_xp.toString();
-
-  const avgXPDisplay =
-    loadingSummary || !xpSummary
-      ? '-'
-      : xpSummary.avg_xp_per_user.toString();
-
-  const topUserDisplay =
-    loadingSummary || !xpSummary
-      ? '-'
-      : xpSummary.top_user
-      ? `${xpSummary.top_user.username || 'User'} (${xpSummary.top_user.xp_total} XP)`
-      : '—';
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-blue-950/20 dark:to-gray-900">
+      <main className="flex-1 bg-gray-50 dark:bg-gray-950">
         <div className="flex min-h-[calc(100vh-120px)]">
-          {/* Sidebar unificada */}
           <AdminSidebar />
 
-          {/* Conteúdo principal */}
-          <div className="flex-1 p-6 md:p-10">
-            {/* Header XP */}
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                XP Management
-              </h1>
+          <div className="flex-1 p-6 md:p-10 space-y-12">
+
+            {/* TITLE */}
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">XP Management</h1>
               <p className="text-gray-600 dark:text-gray-300">
-                Manually award or adjust user XP, view transaction history e usar ferramentas avançadas de reset (fase de testes).
+                Estatísticas, histórico e atribuição manual de XP.
               </p>
             </div>
 
-            {/* Linha superior: Award XP + Stats */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-blue-600" />
-                    Award XP Manually
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        User ID
-                      </label>
-                      <Input placeholder="Enter user ID" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        XP Amount
-                      </label>
-                      <Input type="number" placeholder="e.g. 100" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Reason
-                      </label>
-                      <Input placeholder="e.g. Manual bonus award" />
-                    </div>
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                      Award XP
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    XP Statistics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-gray-600 dark:text-gray-300">
-                        Total XP Awarded
-                      </span>
-                      <span className="font-bold text-xl">
-                        {totalXPDisplay}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-gray-600 dark:text-gray-300">
-                        Avg XP per User
-                      </span>
-                      <span className="font-bold text-xl">
-                        {avgXPDisplay}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-gray-600 dark:text-gray-300">
-                        Top Earner
-                      </span>
-                      <span className="font-bold text-sm text-right">
-                        {topUserDisplay}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Reset Global de XP (apenas freeman) */}
-            <Card className="mb-8 border-red-300">
+            {/* AWARD XP */}
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5 text-red-600" />
-                  Global XP Reset (testing only)
+                  <Award className="h-5 w-5 text-blue-600" /> Award XP Manually
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleResetSubmit} className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-700 dark:text-gray-200">
-                      Esta ação:
-                    </p>
-                    <ul className="text-xs text-gray-600 dark:text-gray-300 list-disc list-inside space-y-1">
-                      <li>Remove todo o histórico de XP (lições, blog, etc.)</li>
-                      <li>Coloca o XP total de todos os utilizadores a 0</li>
-                      <li>
-                        Deve ser usada apenas na fase de testes para limpar o Legacy antes de um novo ciclo
-                      </li>
-                    </ul>
-                    <p className="mt-2 text-xs text-red-700 font-semibold">
-                      Operação destrutiva e irreversível.
-                    </p>
-                  </div>
+                <form onSubmit={handleAwardXP} className="space-y-4">
+                  <Input
+                    placeholder="User ID"
+                    value={awardUserId}
+                    onChange={(e) => setAwardUserId(e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="XP Amount"
+                    value={awardAmount}
+                    onChange={(e) => setAwardAmount(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Reason"
+                    value={awardReason}
+                    onChange={(e) => setAwardReason(e.target.value)}
+                  />
 
-                  {!isFreeman && (
-                    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                      Apenas o utilizador <strong>freemanpt</strong> pode
-                      executar este reset global de XP.
-                    </div>
+                  {awardError && (
+                    <p className="text-sm text-red-600 flex items-center gap-2">
+                      <XCircle className="h-4 w-4" /> {awardError}
+                    </p>
                   )}
 
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                      Passo de confirmação
-                    </label>
-                    <p className="text-xs text-gray-500 mb-1">
-                      Para confirmar que não estás a clicar por engano, escreve
-                      exatamente a frase abaixo:
+                  {awardSuccess && (
+                    <p className="text-sm text-green-600 flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" /> {awardSuccess}
                     </p>
-                    <div className="rounded-md bg-gray-100 dark:bg-gray-900 px-3 py-2 text-xs font-mono text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700">
-                      {REQUIRED_PHRASE}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="confirm-reset"
-                      className="text-sm font-medium text-gray-700 dark:text-gray-200"
-                    >
-                      Escreve a frase exata para prosseguir
-                    </label>
-                    <Input
-                      id="confirm-reset"
-                      value={confirmText}
-                      onChange={(e) => setConfirmText(e.target.value)}
-                      placeholder="Escreve aqui a frase de confirmação..."
-                      disabled={submittingReset || !isFreeman}
-                    />
-                  </div>
-
-                  {resetResultError && (
-                    <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800">
-                      {resetResultError}
-                    </div>
                   )}
 
-                  {resetResultMessage && (
-                    <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-xs text-green-800">
-                      {resetResultMessage}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-2">
-                    <p className="text-[11px] text-gray-500 max-w-xs">
-                      Esta ferramenta será removida quando o Legacy sair da fase
-                      de testes públicos.
-                    </p>
-
-                    <Button
-                      type="submit"
-                      variant="destructive"
-                      disabled={submittingReset || !isFreeman}
-                      className="flex items-center gap-2"
-                    >
-                      {submittingReset && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
-                      {submittingReset
-                        ? 'A fazer reset...'
-                        : 'Executar reset global de XP'}
-                    </Button>
-                  </div>
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={awardLoading}
+                    type="submit"
+                  >
+                    {awardLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    Award XP
+                  </Button>
                 </form>
               </CardContent>
             </Card>
 
-            {/* Histórico de transações */}
+            {/* XP SUMMARY */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  Recent XP Transactions ({recentTransactions.length})
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  XP Statistics
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="space-y-3">
+                  <p>Total XP: <strong>{xpSummary?.total_xp ?? '-'}</strong></p>
+                  <p>Avg per User: <strong>{xpSummary?.avg_xp_per_user ?? '-'}</strong></p>
+
+                  {xpSummary?.top_user && (
+                    <div className="flex items-center gap-4 mt-4">
+                      <div>
+                        <p className="font-semibold">{xpSummary.top_user.username}</p>
+                        <p className="text-xs text-gray-500">{xpSummary.top_user.xp_total} XP</p>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setHistoryUserId(xpSummary.top_user!.id);
+                          loadHistory(xpSummary.top_user!.id);
+                        }}
+                      >
+                        Ver histórico
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* HISTORY */}
+            <Card>
+              <CardHeader>
+                <CardTitle>XP History</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+
+                <div className="flex flex-col md:flex-row gap-4">
+                  <Input
+                    placeholder="User ID"
+                    value={historyUserId}
+                    onChange={(e) => setHistoryUserId(e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    min={1}
+                    max={200}
+                    value={historyLimit}
+                    onChange={(e) => setHistoryLimit(Number(e.target.value))}
+                  />
+                  <Button onClick={() => loadHistory()}>Carregar histórico</Button>
+                </div>
+
                 {loadingData ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                      Loading transactions...
-                    </p>
-                  </div>
+                  <p className="text-gray-500">A carregar...</p>
                 ) : recentTransactions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Award className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 dark:text-gray-300">
-                      No transactions yet
-                    </p>
-                  </div>
+                  <p className="text-gray-500">Sem histórico.</p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {recentTransactions.map((tx) => (
                       <div
                         key={tx.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                        className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800 flex justify-between"
                       >
                         <div>
                           <p className="font-medium">{tx.action}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
-                            User ID: {tx.user_id.substring(0, 8)}... •{' '}
+                          <p className="text-xs text-gray-500">
                             {new Date(tx.created_at).toLocaleString()}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-green-600">
-                            +{tx.xp_earned} XP
-                          </p>
-                        </div>
+                        <p className="font-bold text-green-600">
+                          +{tx.xp_earned} XP
+                        </p>
                       </div>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {/* RESET XP */}
+            <Card className="border-red-300">
+              <CardHeader>
+                <CardTitle className="flex gap-2 items-center">
+                  <ShieldAlert className="h-5 w-5 text-red-600" />
+                  Global XP Reset
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleResetSubmit} className="space-y-4">
+
+                  <Input
+                    placeholder="Escreve: RESET ALL XP"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                  />
+
+                  {resetResultError && (
+                    <p className="text-red-600 text-sm">{resetResultError}</p>
+                  )}
+                  {resetResultMessage && (
+                    <p className="text-green-600 text-sm">{resetResultMessage}</p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    variant="destructive"
+                    disabled={!isFreeman || submittingReset}
+                    className="flex gap-2"
+                  >
+                    {submittingReset && (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )}
+                    Executar reset global
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
           </div>
         </div>
       </main>
