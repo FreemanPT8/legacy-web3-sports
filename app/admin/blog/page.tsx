@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  ArrowLeft,
   FileText,
   Plus,
   Eye,
@@ -237,50 +235,42 @@ export default function BlogManagementPage() {
   const draftPosts = posts.filter(
     (p: any) => p.status === 'draft' || !p.published,
   );
+  const xpTotalAll = posts.reduce(
+    (acc, p: any) => acc + (p.xp_total_distributed || 0),
+    0,
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
       <div className="container mx-auto px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <Link href="/admin">
-              <Button variant="ghost" className="mb-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Admin
-              </Button>
-            </Link>
-            <div className="flex justify-between items-center gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  Blog Management
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Create and manage blog posts in multiple languages.
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex justify-between items-start gap-4">
+            <div className="space-y-2">
+              <h1 className="text-3xl md:text-4xl font-bold">Blog Management</h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                Create and manage blog posts with real metrics (XP, views, author).
+              </p>
+              {!canManageBlog && (
+                <p className="mt-1 text-sm text-amber-700 flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  You can view posts, but you don&apos;t have permission to create or edit them.
                 </p>
-                {!canManageBlog && (
-                  <p className="mt-2 text-sm text-amber-700 flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    You can view posts, but you don&apos;t have permission to
-                    create or edit them.
-                  </p>
-                )}
-              </div>
-              <Link
-                href={canManageBlog ? '/admin/blog/create' : '#'}
-                aria-disabled={!canManageBlog}
-              >
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={!canManageBlog}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Post
-                </Button>
-              </Link>
+              )}
             </div>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!canManageBlog}
+              onClick={() => {
+                if (!canManageBlog) return;
+                router.push('/admin/blog/create');
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Post
+            </Button>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="grid md:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -317,6 +307,19 @@ export default function BlogManagementPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  XP Distributed (total)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-600">
+                  {xpTotalAll}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {loadingData ? (
@@ -338,18 +341,17 @@ export default function BlogManagementPage() {
                 <p className="text-gray-600 mb-6">
                   Create your first blog post to get started
                 </p>
-                <Link
-                  href={canManageBlog ? '/admin/blog/create' : '#'}
-                  aria-disabled={!canManageBlog}
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={!canManageBlog}
+                  onClick={() => {
+                    if (!canManageBlog) return;
+                    router.push('/admin/blog/create');
+                  }}
                 >
-                  <Button
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                    disabled={!canManageBlog}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Post
-                  </Button>
-                </Link>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Post
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -367,13 +369,16 @@ export default function BlogManagementPage() {
                     const views = post.views ?? 0;
                     const statusLabel =
                       post.status || (post.published ? 'published' : 'draft');
+                    const isCreator = user && post.author_id === user.id;
+                    const xpTotal = post.xp_total_distributed || 0;
+                    const xpCreator = post.xp_creator_distributed || 0;
                     return (
                       <div
                         key={post.id}
                         className="p-4 rounded-lg border bg-white dark:bg-gray-900 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <Badge
                               className={
                                 statusLabel === 'published'
@@ -386,6 +391,19 @@ export default function BlogManagementPage() {
                             {post.category && (
                               <Badge variant="outline">{post.category}</Badge>
                             )}
+                            {isCreator && (
+                              <Badge variant="outline">Creator</Badge>
+                            )}
+                            {xpTotal > 0 && (
+                              <Badge variant="outline" className="gap-1">
+                                XP: {xpTotal}
+                              </Badge>
+                            )}
+                            {xpCreator > 0 && (
+                              <Badge variant="outline" className="gap-1">
+                                Creator XP: {xpCreator}
+                              </Badge>
+                            )}
                           </div>
                           <h3 className="text-lg font-semibold truncate">
                             {title}
@@ -393,10 +411,10 @@ export default function BlogManagementPage() {
                           <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
                             {excerpt}
                           </p>
-                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
                             <span className="flex items-center gap-1">
                               <User className="h-3 w-3" />
-                              {post.author || 'Admin'}
+                              {post.author_name || post.author || 'Admin'}
                             </span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />

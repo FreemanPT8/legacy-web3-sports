@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,10 +17,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
-import { ArrowLeft, Save, Lock } from 'lucide-react';
+import { Save, Lock, Award, Eye, Loader2 } from 'lucide-react';
 
 import {
   BlockEditor,
@@ -55,8 +58,11 @@ type BlogPost = {
   published?: boolean | null;
   registered_only?: boolean | null;
   author_id?: string | null;
+  author_name?: string | null;
   created_at?: string;
   updated_at?: string;
+  xp_total_distributed?: number;
+  xp_creator_distributed?: number;
 };
 
 const LANGUAGES: { code: LangCode; name: string }[] = [
@@ -95,6 +101,10 @@ export default function EditBlogPostPage() {
   const [blocksByLanguage, setBlocksByLanguage] =
     useState<BlocksByLanguage>({});
   const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
+  const [metrics, setMetrics] = useState<{
+    xpTotal: number;
+    xpCreator: number;
+  }>({ xpTotal: 0, xpCreator: 0 });
 
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -230,13 +240,19 @@ export default function EditBlogPostPage() {
           published: p.published ?? false,
           registered_only: p.registered_only ?? false,
           author_id: p.author_id ?? null,
+          author_name: p.author_name ?? null,
           created_at: p.created_at,
           updated_at: p.updated_at,
+          xp_total_distributed: p.xp_total_distributed ?? 0,
+          xp_creator_distributed: p.xp_creator_distributed ?? 0,
         };
 
         setPost(normalized);
+        setMetrics({
+          xpTotal: normalized.xp_total_distributed || 0,
+          xpCreator: normalized.xp_creator_distributed || 0,
+        });
 
-        // Inicializar blocos: um bloco HTML por língua com o HTML existente
         const initialBlocks: BlocksByLanguage = {};
         LANGUAGES.forEach(({ code }) => {
           const html = safeContent[code] || '';
@@ -274,13 +290,6 @@ export default function EditBlogPostPage() {
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
     currentLanguage;
 
-  const handleBlocksChange = (lang: LangCode, blocks: any[]) => {
-    setBlocksByLanguage((prev) => ({
-      ...prev,
-      [lang]: blocks,
-    }));
-  };
-
   const handleFieldChange = (
     field:
       | 'category'
@@ -317,14 +326,12 @@ export default function EditBlogPostPage() {
     if (!user || !isAdmin || !canManageBlog || !post) {
       toast({
         title: 'Not allowed',
-        description:
-          'You do not have permission to edit blog posts.',
+        description: 'You do not have permission to edit blog posts.',
         variant: 'destructive',
       });
       return;
     }
 
-    // Pelo menos um título
     const hasAnyTitle = LANGUAGES.some((l) => {
       const v = post.title[l.code];
       return typeof v === 'string' && v.trim().length > 0;
@@ -333,8 +340,7 @@ export default function EditBlogPostPage() {
     if (!hasAnyTitle) {
       toast({
         title: 'Missing title',
-        description:
-          'Please provide a title in at least one language.',
+        description: 'Please provide a title in at least one language.',
         variant: 'destructive',
       });
       return;
@@ -342,7 +348,6 @@ export default function EditBlogPostPage() {
 
     setSaving(true);
     try {
-      // Converter blocos → HTML por língua
       const content = serializeBlocksByLanguage(blocksByLanguage);
 
       const token = getToken();
@@ -415,14 +420,10 @@ export default function EditBlogPostPage() {
 
   if (!post) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            Blog post not found.
-          </p>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <p className="text-gray-600 dark:text-gray-300">
+          Blog post not found.
+        </p>
       </div>
     );
   }
@@ -430,228 +431,249 @@ export default function EditBlogPostPage() {
   const canEdit = canManageBlog;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <Link href="/admin/blog">
-                  <Button variant="ghost" className="mb-2">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Blog
-                  </Button>
-                </Link>
-                <h1 className="text-3xl font-bold">
-                  Edit Blog Post
-                </h1>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSave}
-                  disabled={saving || !canEdit}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge
+                  variant={post.published ? 'default' : 'outline'}
+                  className={post.published ? 'bg-green-600' : ''}
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save changes'}
-                </Button>
+                  {post.published ? 'Published' : 'Draft'}
+                </Badge>
+                {post.author_name && (
+                  <Badge variant="outline">Author: {post.author_name}</Badge>
+                )}
+                {metrics.xpTotal > 0 && (
+                  <Badge variant="outline" className="gap-1">
+                    <Award className="h-4 w-4 text-blue-600" />
+                    XP: {metrics.xpTotal}
+                  </Badge>
+                )}
+                {metrics.xpCreator > 0 && (
+                  <Badge variant="outline" className="gap-1">
+                    <Award className="h-4 w-4 text-emerald-600" />
+                    Creator XP: {metrics.xpCreator}
+                  </Badge>
+                )}
               </div>
+              <h1 className="text-3xl font-bold">Edit Blog Post</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Update content, XP, and publishing options. Metrics are shown above.
+              </p>
             </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/blog/${post.id}`)}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                View public
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || !canEdit}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {saving ? 'Saving...' : 'Save changes'}
+              </Button>
+            </div>
+          </div>
 
-            {!canEdit && (
-              <Card className="mb-4 border-amber-300 bg-amber-50">
-                <CardContent className="py-3 text-sm text-amber-800 flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  You can view this post but do not have permission to edit it.
+          {!canEdit && (
+            <Card className="mb-2 border-amber-300 bg-amber-50">
+              <CardContent className="py-3 text-sm text-amber-800 flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                You can view this post but do not have permission to edit it.
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Content</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex gap-2 flex-wrap">
+                    {LANGUAGES.map((lang) => (
+                      <Badge
+                        key={lang.code}
+                        variant={
+                          currentLanguage === lang.code
+                            ? 'default'
+                            : 'outline'
+                        }
+                        className="cursor-pointer"
+                        onClick={() =>
+                          setCurrentLanguage(lang.code as LangCode)
+                        }
+                      >
+                        {lang.name}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  <div>
+                    <Label>Title ({currentLangLabel})</Label>
+                    <Input
+                      value={post.title[currentLanguage] || ''}
+                      onChange={(e) =>
+                        handleMLFieldChange(
+                          'title',
+                          currentLanguage,
+                          e.target.value,
+                        )
+                      }
+                      placeholder="Enter post title"
+                      className="text-lg"
+                      disabled={!canEdit}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Excerpt ({currentLangLabel})</Label>
+                    <Textarea
+                      value={post.excerpt[currentLanguage] || ''}
+                      onChange={(e) =>
+                        handleMLFieldChange(
+                          'excerpt',
+                          currentLanguage,
+                          e.target.value,
+                        )
+                      }
+                      placeholder="Brief summary of the post"
+                      rows={3}
+                      disabled={!canEdit}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Body ({currentLangLabel})</Label>
+                    <BlockEditor
+                      value={blocksByLanguage}
+                      onChange={setBlocksByLanguage}
+                      initialLanguage={currentLanguage}
+                      className="mt-2"
+                    />
+                  </div>
                 </CardContent>
               </Card>
-            )}
+            </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Conteúdo */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Content</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex gap-2 flex-wrap">
-                      {LANGUAGES.map((lang) => (
-                        <Badge
-                          key={lang.code}
-                          variant={
-                            currentLanguage === lang.code
-                              ? 'default'
-                              : 'outline'
-                          }
-                          className="cursor-pointer"
-                          onClick={() =>
-                            setCurrentLanguage(lang.code as LangCode)
-                          }
-                        >
-                          {lang.name}
-                        </Badge>
-                      ))}
-                    </div>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Category</Label>
+                    <Select
+                      value={post.category || 'Blockchain'}
+                      onValueChange={(value) =>
+                        handleFieldChange('category', value)
+                      }
+                      disabled={!canEdit}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    <div>
-                      <Label>Title ({currentLangLabel})</Label>
-                      <Input
-                        value={post.title[currentLanguage] || ''}
-                        onChange={(e) =>
-                          handleMLFieldChange(
-                            'title',
-                            currentLanguage,
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Enter post title"
-                        className="text-lg"
-                        disabled={!canEdit}
-                      />
-                    </div>
+                  <div>
+                    <Label>Reading Time (minutes)</Label>
+                    <Input
+                      type="number"
+                      value={post.reading_time ?? 5}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          'reading_time',
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
+                      min={1}
+                      max={60}
+                      disabled={!canEdit}
+                    />
+                  </div>
 
-                    <div>
-                      <Label>Excerpt ({currentLangLabel})</Label>
-                      <Textarea
-                        value={post.excerpt[currentLanguage] || ''}
-                        onChange={(e) =>
-                          handleMLFieldChange(
-                            'excerpt',
-                            currentLanguage,
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Brief summary of the post"
-                        rows={3}
-                        disabled={!canEdit}
-                      />
-                    </div>
+                  <div>
+                    <Label>XP Reward</Label>
+                    <Input
+                      type="number"
+                      value={post.xp_reward ?? 15}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          'xp_reward',
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
+                      min={5}
+                      max={50}
+                      disabled={!canEdit}
+                    />
+                  </div>
 
-                    <div>
-                      <Label>Body ({currentLangLabel})</Label>
-                      <BlockEditor
-                        value={blocksByLanguage}
-                        onChange={setBlocksByLanguage}
-                        initialLanguage={currentLanguage}
-                        className="mt-2"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  <div>
+                    <Label>XP Required to Unlock</Label>
+                    <Input
+                      type="number"
+                      value={post.xp_threshold ?? 0}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          'xp_threshold',
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
+                      min={0}
+                      disabled={!canEdit}
+                    />
+                  </div>
 
-              {/* Settings */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Settings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Category</Label>
-                      <Select
-                        value={post.category || 'Blockchain'}
-                        onValueChange={(value) =>
-                          handleFieldChange('category', value)
-                        }
-                        disabled={!canEdit}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
-                              {cat}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <Label>Published</Label>
+                    <Switch
+                      checked={!!post.published}
+                      onCheckedChange={(checked) =>
+                        handleFieldChange('published', checked)
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
 
-                    <div>
-                      <Label>Reading Time (minutes)</Label>
-                      <Input
-                        type="number"
-                        value={post.reading_time ?? 5}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            'reading_time',
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        min={1}
-                        max={60}
-                        disabled={!canEdit}
-                      />
-                    </div>
-
-                    <div>
-                      <Label>XP Reward</Label>
-                      <Input
-                        type="number"
-                        value={post.xp_reward ?? 15}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            'xp_reward',
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        min={5}
-                        max={50}
-                        disabled={!canEdit}
-                      />
-                    </div>
-
-                    <div>
-                      <Label>XP Required to Unlock</Label>
-                      <Input
-                        type="number"
-                        value={post.xp_threshold ?? 0}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            'xp_threshold',
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        min={0}
-                        disabled={!canEdit}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <Label>Published</Label>
-                      <Switch
-                        checked={!!post.published}
-                        onCheckedChange={(checked) =>
-                          handleFieldChange('published', checked)
-                        }
-                        disabled={!canEdit}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label>Registered users only</Label>
-                      <Switch
-                        checked={!!post.registered_only}
-                        onCheckedChange={(checked) =>
-                          handleFieldChange('registered_only', checked)
-                        }
-                        disabled={!canEdit}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  <div className="flex items-center justify-between">
+                    <Label>Registered users only</Label>
+                    <Switch
+                      checked={!!post.registered_only}
+                      onCheckedChange={(checked) =>
+                        handleFieldChange('registered_only', checked)
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }

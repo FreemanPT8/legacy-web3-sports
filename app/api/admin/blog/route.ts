@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
@@ -51,13 +51,15 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
+    const client = supabaseAdmin || supabase;
+
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const search = searchParams.get('search');
     const status = searchParams.get('status'); // 'published' | 'draft' | null
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    let query = supabase
+    let query = client
       .from('blog_posts')
       .select('*')
       .order('created_at', { ascending: false })
@@ -90,9 +92,79 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const posts = data || [];
+
+    // Enriquecer com autor, XP total e XP do criador
+    const ids = posts.map((p) => p.id).filter(Boolean);
+    let authorMap: Record<string, string> = {};
+    let xpTotalMap: Record<string, number> = {};
+    let xpCreatorMap: Record<string, number> = {};
+
+    if (ids.length > 0) {
+      // Autores
+      const authorIds = Array.from(
+        new Set(posts.map((p: any) => p.author_id).filter(Boolean)),
+      ) as string[];
+      if (authorIds.length > 0) {
+        const { data: authors } = await client
+          .from('users')
+          .select('id, full_name, username')
+          .in('id', authorIds);
+        if (authors) {
+          authorMap = authors.reduce((acc, a: any) => {
+            acc[a.id] = a.full_name || a.username || '';
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+
+      // XP total distribuído por post
+      const { data: xpRows } = await client
+        .from('blog_reads')
+        .select('blog_post_id, xp_earned')
+        .in('blog_post_id', ids);
+      if (xpRows) {
+        xpTotalMap = xpRows.reduce((acc: Record<string, number>, row: any) => {
+          const key = row.blog_post_id;
+          acc[key] = (acc[key] || 0) + (row.xp_earned ?? 0);
+          return acc;
+        }, {});
+      }
+
+      // XP para criador (quando author_id existe)
+      const creatorRows = await Promise.all(
+        posts
+          .filter((p: any) => p.author_id)
+          .map(async (p: any) => {
+            const { data: tx } = await client
+              .from('xp_transactions')
+              .select('xp_earned')
+              .eq('reference_type', 'blog_post')
+              .eq('reference_id', p.id)
+              .eq('user_id', p.author_id as string);
+            const sum =
+              (tx || []).reduce(
+                (acc: number, row: any) => acc + (row?.xp_earned ?? 0),
+                0,
+              ) || 0;
+            return { id: p.id, sum };
+          }),
+      );
+      creatorRows.forEach((r) => {
+        xpCreatorMap[r.id] = r.sum;
+      });
+    }
+
+    const enriched = posts.map((p: any) => ({
+      ...p,
+      author_name: p.author || authorMap[p.author_id || ''] || null,
+      xp_total_distributed: xpTotalMap[p.id] || 0,
+      xp_creator_distributed: xpCreatorMap[p.id] || 0,
+    }));
+
     return NextResponse.json({
       success: true,
-      posts: data || [],
+      posts: enriched,
     });
   } catch (error) {
     console.error('Unexpected error in GET /api/admin/blog:', error);

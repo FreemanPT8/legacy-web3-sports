@@ -85,9 +85,52 @@ export async function GET(
       );
     }
 
+    // Autor
+    let authorName: string | null = null;
+    if (data.author_id) {
+      const { data: author } = await supabaseAdmin
+        .from('users')
+        .select('full_name, username')
+        .eq('id', data.author_id as string)
+        .maybeSingle();
+      authorName = author?.full_name || author?.username || null;
+    }
+
+    // XP total distribuído
+    const { data: xpRows } = await supabaseAdmin
+      .from('blog_reads')
+      .select('xp_earned')
+      .eq('blog_post_id', params.postId);
+    const xpTotalDistributed =
+      (xpRows || []).reduce(
+        (acc: number, row: any) => acc + (row?.xp_earned ?? 0),
+        0,
+      ) || 0;
+
+    // XP para o criador
+    let xpCreatorDistributed = 0;
+    if (data.author_id) {
+      const { data: xpCreatorRows } = await supabaseAdmin
+        .from('xp_transactions')
+        .select('xp_earned')
+        .eq('reference_type', 'blog_post')
+        .eq('reference_id', params.postId)
+        .eq('user_id', data.author_id as string);
+      xpCreatorDistributed =
+        (xpCreatorRows || []).reduce(
+          (acc: number, row: any) => acc + (row?.xp_earned ?? 0),
+          0,
+        ) || 0;
+    }
+
     return NextResponse.json({
       success: true,
-      post: data,
+      post: {
+        ...data,
+        author_name: authorName,
+        xp_total_distributed: xpTotalDistributed,
+        xp_creator_distributed: xpCreatorDistributed,
+      },
     });
   } catch (error) {
     console.error(
