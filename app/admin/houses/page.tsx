@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import {
   Card,
   CardContent,
@@ -51,7 +49,7 @@ interface ApiResponse {
   houses?: AdminHouse[];
 }
 
-// --- tipos para gestão de Heads ---
+// tipos para gestão de Heads
 interface AssigneeUser {
   id: string;
   username: string | null;
@@ -106,13 +104,13 @@ export default function AdminHousesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | HouseStatus>('all');
 
-  // --- estados para gestão de Head ---
+  // estados para gestão de Head
   const [assignees, setAssignees] = useState<AssigneeUser[]>([]);
   const [assigneesLoading, setAssigneesLoading] = useState(false);
   const [assigneesError, setAssigneesError] = useState<string | null>(null);
-  const [savingHeadForHouseId, setSavingHeadForHouseId] = useState<
-    string | null
-  >(null);
+  const [savingHeadForHouseId, setSavingHeadForHouseId] = useState<string | null>(
+    null,
+  );
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
@@ -138,9 +136,7 @@ export default function AdminHousesPage() {
 
         const res = await fetch('/api/admin/houses', {
           method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const data: ApiResponse = await res.json();
@@ -164,7 +160,6 @@ export default function AdminHousesPage() {
     fetchHouses();
   }, [authLoading, user, getToken, router]);
 
-  // carregar lista de possíveis Heads (Admins / Super Admins)
   const loadAssignees = async () => {
     if (!isSuperAdmin) return;
     if (assigneesLoading || assignees.length > 0) return;
@@ -194,16 +189,13 @@ export default function AdminHousesPage() {
         return;
       }
 
-      // apenas Admin / Super Admin podem ser Heads
       const filtered = (data.users || []).filter(
-        (u) => u.role === 'Admin' || u.role === 'Super Admin'
+        (u) => u.role === 'Admin' || u.role === 'Super Admin',
       );
       setAssignees(filtered);
     } catch (err: any) {
       console.error('Error loading assignees:', err);
-      setAssigneesError(
-        err?.message || 'Unexpected error while loading admins'
-      );
+      setAssigneesError(err?.message || 'Unexpected error while loading admins');
       setAssignees([]);
     } finally {
       setAssigneesLoading(false);
@@ -220,9 +212,7 @@ export default function AdminHousesPage() {
 
       const res = await fetch('/api/admin/houses', {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data: ApiResponse = await res.json();
@@ -240,7 +230,6 @@ export default function AdminHousesPage() {
     }
   };
 
-  // mudar Head de uma House (usa agora /api/admin/houses/[houseId]/head)
   const handleChangeHead = async (houseId: string, headUserId: string | '') => {
     if (!isSuperAdmin) return;
 
@@ -256,12 +245,9 @@ export default function AdminHousesPage() {
       let data: HeadPostResponse;
 
       if (!headUserId) {
-        // remover Head
         res = await fetch(`/api/admin/houses/${houseId}/head`, {
           method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         data = await res.json();
         if (!res.ok || !data.success) {
@@ -269,16 +255,13 @@ export default function AdminHousesPage() {
           return;
         }
       } else {
-        // definir / alterar Head
         res = await fetch(`/api/admin/houses/${houseId}/head`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            userId: headUserId,
-          }),
+          body: JSON.stringify({ userId: headUserId }),
         });
         data = await res.json();
         if (!res.ok || !data.success) {
@@ -315,236 +298,188 @@ export default function AdminHousesPage() {
     });
   }, [houses, search, statusFilter]);
 
+  if (
+    authLoading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin')
+  ) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-
-      <main className="flex-1 py-10">
-        <div className="container mx-auto px-4 max-w-6xl">
-          {/* Título + botão criar */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-1">Houses of Sports</h1>
-              <p className="text-gray-600">
-                View and manage Houses, Heads of House and House Moderators.
-              </p>
-            </div>
-            <Link href="/admin/houses/create">
-              <Button type="button">
-                <Plus className="h-4 w-4 mr-2" />
-                Create new House
-              </Button>
-            </Link>
+    <div className="space-y-8 bg-gray-50 py-10">
+      <div className="container mx-auto px-4 max-w-6xl">
+        {/* Título + botão criar */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Houses of Sports</h1>
+            <p className="text-gray-600">
+              View and manage Houses, Heads of House and House Moderators.
+            </p>
           </div>
-
-          {/* Filtros */}
-          <Card className="mb-6">
-            <CardContent className="pt-6 flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex-1 w-full">
-                <Input
-                  placeholder="Search by sport, country or Head of House..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <div className="w-full md:w-60">
-                <Select
-                  value={statusFilter}
-                  onValueChange={(val) =>
-                    setStatusFilter(val as 'all' | HouseStatus)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearch('');
-                  setStatusFilter('all');
-                }}
-              >
-                Clear filters
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Erro */}
-          {error && (
-            <Card className="mb-4 border-red-200 bg-red-50">
-              <CardContent className="pt-4 pb-4 text-red-800 text-sm">
-                {error}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Lista */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                Houses list
-              </CardTitle>
-              <CardDescription>
-                Showing {filtered.length} of {houses.length} Houses.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Loading Houses of Sports...
-                </div>
-              ) : filtered.length === 0 ? (
-                <p className="py-8 text-center text-gray-500 text-sm">
-                  {houses.length === 0
-                    ? 'No Houses found. Create the first House using the button above.'
-                    : 'No Houses match the current filters.'}
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="text-left py-2 px-3">Sport</th>
-                        <th className="text-left py-2 px-3">Country</th>
-                        <th className="text-left py-2 px-3">Status</th>
-                        <th className="text-left py-2 px-3">Head of House</th>
-                        <th className="text-left py-2 px-3">Moderators</th>
-                        <th className="text-left py-2 px-3">Created</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((house) => (
-                        <tr
-                          key={house.id}
-                          className="border-b hover:bg-gray-50 cursor-pointer"
-                          onClick={() =>
-                            router.push(`/admin/houses/${house.id}`)
-                          }
-                        >
-                          <td className="py-2 px-3">
-                            <Link
-                              href={`/admin/houses/${house.id}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="block"
-                            >
-                              <div className="font-medium text-blue-700 hover:underline">
-                                {house.sport_name || 'Unknown sport'}
-                              </div>
-                              <div className="text-xs text-gray-500 uppercase">
-                                {house.sport_code}
-                              </div>
-                            </Link>
-                            <div className="text-[10px] text-gray-400 mt-0.5">
-                              {house.id}
-                            </div>
-                          </td>
-                          <td className="py-2 px-3">
-                            <span className="uppercase text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                              {house.country_code}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3">
-                            <StatusBadge status={house.status} />
-                          </td>
-                          <td className="py-2 px-3">
-                            <div className="flex flex-col gap-1">
-                              {house.head ? (
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {house.head.full_name ||
-                                      house.head.username}
-                                  </span>
-                                  {house.head.username && (
-                                    <span className="text-xs text-gray-500">
-                                      @{house.head.username}
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-400">
-                                  No Head defined
-                                </span>
-                              )}
-
-                              {isSuperAdmin && (
-                                <div
-                                  className="mt-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <select
-                                    className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    value={house.head?.user_id || ''}
-                                    onChange={(e) =>
-                                      handleChangeHead(
-                                        house.id,
-                                        e.target.value
-                                      )
-                                    }
-                                    onFocus={() => {
-                                      if (assignees.length === 0) {
-                                        void loadAssignees();
-                                      }
-                                    }}
-                                    disabled={
-                                      assigneesLoading ||
-                                      savingHeadForHouseId === house.id
-                                    }
-                                  >
-                                    <option value="">
-                                      {house.head
-                                        ? 'Remove Head'
-                                        : 'Define Head'}
-                                    </option>
-                                    {assignees.map((u) => (
-                                      <option key={u.id} value={u.id}>
-                                        {u.full_name || u.username || u.email}{' '}
-                                        ({u.role})
-                                      </option>
-                                    ))}
-                                  </select>
-                                  {assigneesError && (
-                                    <div className="mt-1 text-[10px] text-red-500">
-                                      {assigneesError}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-xs text-gray-600">
-                            {house.moderators_count ?? 0}
-                          </td>
-                          <td className="py-2 px-3 text-xs text-gray-500">
-                            {house.created_at
-                              ? format(
-                                  new Date(house.created_at),
-                                  'dd/MM/yyyy'
-                                )
-                              : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <Link href="/admin/houses/create">
+            <Button type="button">
+              <Plus className="h-4 w-4 mr-2" />
+              Create new House
+            </Button>
+          </Link>
         </div>
-      </main>
 
-      <Footer />
+        {/* Filtros */}
+        <Card className="mb-6">
+          <CardContent className="pt-6 flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1 w-full">
+              <Input
+                placeholder="Search by sport, country or Head of House..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="w-full md:w-60">
+              <Select
+                value={statusFilter}
+                onValueChange={(val) =>
+                  setStatusFilter(val as 'all' | HouseStatus)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearch('');
+                setStatusFilter('all');
+              }}
+            >
+              Clear filters
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Erro */}
+        {error && (
+          <Card className="mb-4 border-red-200 bg-red-50">
+            <CardContent className="pt-4 pb-4 text-red-800 text-sm">
+              {error}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Lista */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              Houses list
+            </CardTitle>
+            <CardDescription>
+              Showing {filtered.length} of {houses.length} Houses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading Houses of Sports...
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="py-8 text-center text-gray-500 text-sm">
+                {houses.length === 0
+                  ? 'No Houses found. Create the first House using the button above.'
+                  : 'No Houses match the current filters.'}
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left py-2 px-3">Sport</th>
+                      <th className="text-left py-2 px-3">Country</th>
+                      <th className="text-left py-2 px-3">Status</th>
+                      <th className="text-left py-2 px-3">Head of House</th>
+                      <th className="text-left py-2 px-3">Moderators</th>
+                      <th className="text-left py-2 px-3">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((house) => (
+                      <tr
+                        key={house.id}
+                        className="border-b hover:bg-gray-50 cursor-pointer"
+                        onClick={() => router.push(`/admin/houses/${house.id}`)}
+                      >
+                        <td className="py-2 px-3">
+                          <Link
+                            href={`/admin/houses/${house.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="block"
+                          >
+                            <div className="font-medium text-blue-700 hover:underline">
+                              {house.sport_name || 'Unknown sport'}
+                            </div>
+                            <div className="text-xs text-gray-500 uppercase">
+                              {house.sport_code}
+                            </div>
+                          </Link>
+                          <div className="text-[10px] text-gray-400 mt-0.5">
+                            {house.id}
+                          </div>
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className="uppercase text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                            {house.country_code}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3">
+                          <StatusBadge status={house.status} />
+                        </td>
+                        <td className="py-2 px-3">
+                          <div className="flex flex-col gap-1">
+                            {house.head ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {house.head.full_name || house.head.username}
+                                </span>
+                                {house.head.username && (
+                                  <span className="text-xs text-gray-500">
+                                    @{house.head.username}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">
+                                No Head defined
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2 px-3 text-xs text-gray-600">
+                          {house.moderators_count ?? 0}
+                        </td>
+                        <td className="py-2 px-3 text-xs text-gray-500">
+                          {house.created_at
+                            ? format(new Date(house.created_at), 'dd/MM/yyyy')
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

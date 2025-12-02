@@ -3,8 +3,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -432,7 +430,10 @@ export default function AdminUsersPage() {
     }
 
     // Só Super Admin pode mexer em papéis de Super Admin
-    if (!isSuperAdmin && (currentRole === 'Super Admin' || newRole === 'Super Admin')) {
+    if (
+      !isSuperAdmin &&
+      (currentRole === 'Super Admin' || newRole === 'Super Admin')
+    ) {
       toast({
         title: 'Not allowed',
         description: 'Only Super Admin can change Super Admin roles.',
@@ -620,440 +621,406 @@ export default function AdminUsersPage() {
   };
 
   const renderSortIcon = (key: SortKey) => {
-    if (sortKey !== key)
-      return <span className="ml-1 text-xs text-gray-400">↕</span>;
+    if (sortKey !== key) return <span className="ml-1 text-xs text-gray-400">↕</span>;
     return (
       <span className="ml-1 text-xs text-gray-600">
-        {sortDirection === 'asc' ? '▲' : '▼'}
+        {sortDirection === 'asc' ? '↑' : '↓'}
       </span>
     );
   };
 
   if (loading || !permissionsLoaded) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8 flex items-center justify-center">
-          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
-        </main>
-        <Footer />
+      <div className="py-8">
+        <p className="text-gray-600 dark:text-gray-300">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <div className="space-y-6">
+      <div className="container mx-auto px-4">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6">
+          Admin – User Management
+        </h1>
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold mb-6">
-            Admin · User Management
-          </h1>
-
-          {/* STAT CARDS */}
-          <div className="grid gap-4 md:grid-cols-4 mb-6">
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">
-                  Total Users
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold">{stats.total}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">
-                  Super Admins
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-red-600">
-                  {stats.superAdmins}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Admins</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-gray-700">
-                  {stats.admins}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Members</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-blue-600">
-                  {stats.members}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* USER MANAGEMENT CARD */}
+        {/* STAT CARDS */}
+        <div className="grid gap-4 md:grid-cols-4 mb-6">
           <Card>
-            <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                View all platform users. Only admins with the{' '}
-                <strong>Manage Users</strong> permission can change roles or
-                delete users. Super Admin is required to manage{' '}
-                <strong>Super Admin</strong> roles and extra admin permissions.
-              </p>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             </CardHeader>
-            <CardContent>
-              {/* SEARCH + ROLE FILTER */}
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="Search by username, name or email..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="max-w-md"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => setSearch('')}
-                    disabled={!search}
-                  >
-                    Clear
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    Filter by role:
-                  </span>
-                  <Select
-                    value={roleFilter}
-                    onValueChange={(value) =>
-                      setRoleFilter(value as RoleFilter)
-                    }
-                  >
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="Super Admin">Super Admins</SelectItem>
-                      <SelectItem value="Admin">Admins</SelectItem>
-                      <SelectItem value="Member">Members</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold">{stats.total}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-medium">
+                Super Admins
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold text-red-600">
+                {stats.superAdmins}
               </div>
+            </CardContent>
+          </Card>
 
-              {/* TABLE */}
-              <div className="overflow-x-auto border rounded-lg bg-white dark:bg-gray-900">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('username')}
-                      >
-                        <span className="inline-flex items-center">
-                          Username
-                          {renderSortIcon('username')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('full_name')}
-                      >
-                        <span className="inline-flex items-center">
-                          Name
-                          {renderSortIcon('full_name')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('email')}
-                      >
-                        <span className="inline-flex items-center">
-                          Email
-                          {renderSortIcon('email')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('role')}
-                      >
-                        <span className="inline-flex items-center">
-                          Role
-                          {renderSortIcon('role')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('country')}
-                      >
-                        <span className="inline-flex items-center">
-                          Country
-                          {renderSortIcon('country')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('xp_total')}
-                      >
-                        <span className="inline-flex items-center">
-                          XP
-                          {renderSortIcon('xp_total')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('created_at')}
-                      >
-                        <span className="inline-flex items-center">
-                          Created
-                          {renderSortIcon('created_at')}
-                        </span>
-                      </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Change Role
-                      </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Permissions
-                      </th>
-                      <th className="px-4 py-2 text-left font-semibold">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {isLoadingUsers && (
-                      <tr>
-                        <td
-                          colSpan={11}
-                          className="px-4 py-6 text-center text-gray-500"
-                        >
-                          Loading users...
-                        </td>
-                      </tr>
-                    )}
-
-                    {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={11}
-                          className="px-4 py-6 text-center text-gray-500"
-                        >
-                          No users found.
-                        </td>
-                      </tr>
-                    )}
-
-                    {!isLoadingUsers &&
-                      filteredAndSortedUsers.map((u) => (
-                        <tr key={u.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 font-medium">
-                            {u.username || (
-                              <span className="text-gray-400">-</span>
-                            )}
-                            {user?.id === u.id && (
-                              <span className="ml-1 text-[10px] text-blue-500">
-                                (you)
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2">
-                            {u.full_name || (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2">
-                            {u.email || (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2">
-                            <Badge variant={getRoleBadgeVariant(u.role)}>
-                              {u.role}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-2">
-                            {u.country || (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2">{u.xp_total ?? 0}</td>
-                          <td className="px-4 py-2">
-                            {u.created_at ? formatDate(u.created_at) : '-'}
-                          </td>
-                          <td className="px-4 py-2">
-                            {canEditUsers ? (
-                              <Select
-                                disabled={updatingUserId === u.id}
-                                value={
-                                  (['Super Admin', 'Admin', 'Member'].includes(
-                                    u.role as UserRole,
-                                  )
-                                    ? u.role
-                                    : 'Member') as UserRole
-                                }
-                                onValueChange={(value) =>
-                                  handleChangeRole(
-                                    u.id,
-                                    value as UserRole,
-                                    u.role,
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="w-[140px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Member">Member</SelectItem>
-                                  <SelectItem value="Admin">Admin</SelectItem>
-                                  <SelectItem value="Super Admin">
-                                    Super Admin
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <span className="text-xs text-gray-400">
-                                View only
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenUserPermissions(u)}
-                            >
-                              View / Edit
-                            </Button>
-                          </td>
-                          <td className="px-4 py-2">
-                            {canEditUsers && isSuperAdmin ? (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                disabled={deletingUserId === u.id}
-                                onClick={() =>
-                                  handleDeleteUser(u.id, u.username)
-                                }
-                              >
-                                {deletingUserId === u.id
-                                  ? 'Deleting...'
-                                  : 'Delete'}
-                              </Button>
-                            ) : (
-                              <span className="text-xs text-gray-400">-</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-medium">Admins</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold text-gray-700">
+                {stats.admins}
               </div>
+            </CardContent>
+          </Card>
 
-              {/* PAINEL DE PERMISSÕES DO UTILIZADOR SELECIONADO */}
-              {selectedUser && (
-                <div className="mt-6 border-t pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h2 className="text-lg font-semibold">
-                        Permissions for{' '}
-                        {selectedUser.username || selectedUser.email || 'user'}
-                      </h2>
-                      <p className="text-xs text-gray-500">
-                        Role:{' '}
-                        <span className="font-medium">
-                          {selectedUserRole || selectedUser.role}
-                        </span>
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUser(null);
-                          setSelectedUserRole(null);
-                          setSelectedUserPermissions({});
-                        }}
-                      >
-                        Close
-                      </Button>
-                      {permissionsEditable && canEditUsers && isSuperAdmin && (
-                        <Button
-                          size="sm"
-                          onClick={handleSaveUserPermissions}
-                          disabled={savingUserPermissions || loadingUserPermissions}
-                        >
-                          {savingUserPermissions ? 'Saving...' : 'Save'}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {loadingUserPermissions ? (
-                    <p className="text-sm text-gray-500">Loading permissions...</p>
-                  ) : (
-                    <>
-                      {selectedUserRole === 'Super Admin' && (
-                        <p className="text-sm text-gray-500 mb-2">
-                          Super Admin already has all permissions. Extra overrides
-                          are not needed.
-                        </p>
-                      )}
-                      {selectedUserRole === 'Member' && (
-                        <p className="text-sm text-gray-500 mb-2">
-                          Members cannot have admin permissions. Change the role to{' '}
-                          <strong>Admin</strong> if you want to grant admin-level
-                          permissions.
-                        </p>
-                      )}
-                      {selectedUserRole === 'Admin' && (
-                        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-                          {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
-                            <label
-                              key={key}
-                              className="flex items-center gap-2 text-sm"
-                            >
-                              <Checkbox
-                                checked={!!selectedUserPermissions[key]}
-                                disabled={
-                                  !permissionsEditable ||
-                                  !canEditUsers ||
-                                  !isSuperAdmin ||
-                                  savingUserPermissions
-                                }
-                                onCheckedChange={(checked) =>
-                                  handleTogglePermission(
-                                    key,
-                                    Boolean(checked),
-                                  )
-                                }
-                              />
-                              <span>{PERMISSION_LABELS[key]}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-medium">Members</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold text-blue-600">
+                {stats.members}
+              </div>
             </CardContent>
           </Card>
         </div>
-      </main>
 
-      <Footer />
+        {/* USER MANAGEMENT CARD */}
+        <Card>
+          <CardHeader>
+            <CardTitle>User Management</CardTitle>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              View all platform users. Only admins with the{' '}
+              <strong>Manage Users</strong> permission can change roles or
+              delete users. Super Admin is required to manage{' '}
+              <strong>Super Admin</strong> roles and extra admin permissions.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {/* SEARCH + ROLE FILTER */}
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="Search by username, name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="max-w-md"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => setSearch('')}
+                  disabled={!search}
+                >
+                  Clear
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Filter by role:
+                </span>
+                <Select
+                  value={roleFilter}
+                  onValueChange={(value) => setRoleFilter(value as RoleFilter)}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="Super Admin">Super Admins</SelectItem>
+                    <SelectItem value="Admin">Admins</SelectItem>
+                    <SelectItem value="Member">Members</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* TABLE */}
+            <div className="overflow-x-auto border rounded-lg bg-white dark:bg-gray-900">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th
+                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                      onClick={() => handleSort('username')}
+                    >
+                      <span className="inline-flex items-center">
+                        Username
+                        {renderSortIcon('username')}
+                      </span>
+                    </th>
+                    <th
+                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                      onClick={() => handleSort('full_name')}
+                    >
+                      <span className="inline-flex items-center">
+                        Name
+                        {renderSortIcon('full_name')}
+                      </span>
+                    </th>
+                    <th
+                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                      onClick={() => handleSort('email')}
+                    >
+                      <span className="inline-flex items-center">
+                        Email
+                        {renderSortIcon('email')}
+                      </span>
+                    </th>
+                    <th
+                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                      onClick={() => handleSort('role')}
+                    >
+                      <span className="inline-flex items-center">
+                        Role
+                        {renderSortIcon('role')}
+                      </span>
+                    </th>
+                    <th
+                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                      onClick={() => handleSort('country')}
+                    >
+                      <span className="inline-flex items-center">
+                        Country
+                        {renderSortIcon('country')}
+                      </span>
+                    </th>
+                    <th
+                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                      onClick={() => handleSort('xp_total')}
+                    >
+                      <span className="inline-flex items-center">
+                        XP
+                        {renderSortIcon('xp_total')}
+                      </span>
+                    </th>
+                    <th
+                      className="px-4 py-2 text-left font-semibold cursor-pointer select-none"
+                      onClick={() => handleSort('created_at')}
+                    >
+                      <span className="inline-flex items-center">
+                        Created
+                        {renderSortIcon('created_at')}
+                      </span>
+                    </th>
+                    <th className="px-4 py-2 text-left font-semibold">
+                      Change Role
+                    </th>
+                    <th className="px-4 py-2 text-left font-semibold">
+                      Permissions
+                    </th>
+                    <th className="px-4 py-2 text-left font-semibold">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {isLoadingUsers && (
+                    <tr>
+                      <td
+                        colSpan={11}
+                        className="px-4 py-6 text-center text-gray-500"
+                      >
+                        Loading users...
+                      </td>
+                    </tr>
+                  )}
+
+                  {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={11}
+                        className="px-4 py-6 text-center text-gray-500"
+                      >
+                        No users found.
+                      </td>
+                    </tr>
+                  )}
+
+                  {!isLoadingUsers &&
+                    filteredAndSortedUsers.map((u) => (
+                      <tr key={u.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 font-medium">
+                          {u.username || <span className="text-gray-400">-</span>}
+                          {user?.id === u.id && (
+                            <span className="ml-1 text-[10px] text-blue-500">
+                              (you)
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2">
+                          {u.full_name || <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-2">
+                          {u.email || <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-2">
+                          <Badge variant={getRoleBadgeVariant(u.role)}>
+                            {u.role}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2">
+                          {u.country || <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-2">{u.xp_total ?? 0}</td>
+                        <td className="px-4 py-2">
+                          {u.created_at ? formatDate(u.created_at) : '-'}
+                        </td>
+                        <td className="px-4 py-2">
+                          {canEditUsers ? (
+                            <Select
+                              disabled={updatingUserId === u.id}
+                              value={
+                                (['Super Admin', 'Admin', 'Member'].includes(
+                                  u.role as UserRole,
+                                )
+                                  ? u.role
+                                  : 'Member') as UserRole
+                              }
+                              onValueChange={(value) =>
+                                handleChangeRole(u.id, value as UserRole, u.role)
+                              }
+                            >
+                              <SelectTrigger className="w-[140px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Member">Member</SelectItem>
+                                <SelectItem value="Admin">Admin</SelectItem>
+                                <SelectItem value="Super Admin">
+                                  Super Admin
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-xs text-gray-400">
+                              View only
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenUserPermissions(u)}
+                          >
+                            View / Edit
+                          </Button>
+                        </td>
+                        <td className="px-4 py-2">
+                          {canEditUsers && isSuperAdmin ? (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={deletingUserId === u.id}
+                              onClick={() => handleDeleteUser(u.id, u.username)}
+                            >
+                              {deletingUserId === u.id ? 'Deleting...' : 'Delete'}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* PAINEL DE PERMISSÕES DO UTILIZADOR SELECIONADO */}
+            {selectedUser && (
+              <div className="mt-6 border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">
+                      Permissions for{' '}
+                      {selectedUser.username || selectedUser.email || 'user'}
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      Role:{' '}
+                      <span className="font-medium">
+                        {selectedUserRole || selectedUser.role}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedUser(null);
+                        setSelectedUserRole(null);
+                        setSelectedUserPermissions({});
+                      }}
+                    >
+                      Close
+                    </Button>
+                    {permissionsEditable && canEditUsers && isSuperAdmin && (
+                      <Button
+                        size="sm"
+                        onClick={handleSaveUserPermissions}
+                        disabled={savingUserPermissions || loadingUserPermissions}
+                      >
+                        {savingUserPermissions ? 'Saving...' : 'Save'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {loadingUserPermissions ? (
+                  <p className="text-sm text-gray-500">Loading permissions...</p>
+                ) : (
+                  <>
+                    {selectedUserRole === 'Super Admin' && (
+                      <p className="text-sm text-gray-500 mb-2">
+                        Super Admin already has all permissions. Extra overrides
+                        are not needed.
+                      </p>
+                    )}
+                    {selectedUserRole === 'Member' && (
+                      <p className="text-sm text-gray-500 mb-2">
+                        Members cannot have admin permissions. Change the role to{' '}
+                        <strong>Admin</strong> if you want to grant admin-level
+                        permissions.
+                      </p>
+                    )}
+                    {selectedUserRole === 'Admin' && (
+                      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                        {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
+                          <label
+                            key={key}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <Checkbox
+                              checked={!!selectedUserPermissions[key]}
+                              disabled={
+                                !permissionsEditable ||
+                                !canEditUsers ||
+                                !isSuperAdmin ||
+                                savingUserPermissions
+                              }
+                              onCheckedChange={(checked) =>
+                                handleTogglePermission(key, Boolean(checked))
+                              }
+                            />
+                            <span>{PERMISSION_LABELS[key]}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

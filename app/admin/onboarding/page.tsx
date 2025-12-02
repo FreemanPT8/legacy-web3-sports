@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { RefreshCcw, StickyNote, Clock } from 'lucide-react';
 
 type OnboardingStatus =
@@ -29,7 +27,7 @@ interface OnboardingSubmission {
   assigned_to_user_id: string | null;
   assigned_to_username: string | null;
   assigned_to_full_name: string | null;
-  user_id: string | null; // ligação à conta LEGACY
+  user_id: string | null;
   phone: string | null;
   telegram: string | null;
   organization: string | null;
@@ -61,7 +59,6 @@ interface AssigneesResponse {
   users?: AssigneeUser[];
 }
 
-// ---- Notas ----
 interface NoteDTO {
   id: string;
   submission_id: string;
@@ -85,7 +82,6 @@ interface NotesPostResponse {
   error?: string;
 }
 
-// ---- Histórico de estado ----
 interface HistoryItemDTO {
   id: string;
   submission_id: string;
@@ -158,7 +154,6 @@ export default function AdminOnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // filtros
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<
     OnboardingStatus | 'ALL' | undefined
@@ -166,31 +161,23 @@ export default function AdminOnboardingPage() {
   const [accountFilter, setAccountFilter] = useState<'ALL' | 'WITH' | 'WITHOUT'>(
     'ALL'
   );
-  const [sportFilter, setSportFilter] = useState<string | 'ALL' | undefined>(
-    'ALL'
-  );
-  const [responsibleFilter, setResponsibleFilter] = useState<'ALL' | 'MINE'>(
-    'ALL'
-  );
+  const [sportFilter, setSportFilter] = useState<string | 'ALL' | undefined>('ALL');
+  const [responsibleFilter, setResponsibleFilter] = useState<'ALL' | 'MINE'>('ALL');
 
-  // detalhes
   const [selected, setSelected] = useState<OnboardingSubmission | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [updatingAssignee, setUpdatingAssignee] = useState(false);
 
-  // lista de possíveis responsáveis (Super Admin + Admin)
   const [assignees, setAssignees] = useState<AssigneeUser[]>([]);
   const [assigneesError, setAssigneesError] = useState<string | null>(null);
   const [assigneesLoading, setAssigneesLoading] = useState(false);
 
-  // Notas internas
   const [notes, setNotes] = useState<NoteDTO[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
 
-  // Histórico de estado
   const [history, setHistory] = useState<HistoryItemDTO[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -237,9 +224,7 @@ export default function AdminOnboardingPage() {
       }
 
       const query = params.toString();
-      const url = query
-        ? `/api/admin/onboarding?${query}`
-        : '/api/admin/onboarding';
+      const url = query ? `/api/admin/onboarding?${query}` : '/api/admin/onboarding';
 
       const res = await fetch(url, {
         headers: {
@@ -268,7 +253,6 @@ export default function AdminOnboardingPage() {
   }
 
   async function loadAssignees() {
-    // Só faz sentido para Super Admin
     if (!isSuperAdmin) return;
     if (assigneesLoading || assignees.length > 0) return;
 
@@ -302,16 +286,13 @@ export default function AdminOnboardingPage() {
       setAssignees(data.users || []);
     } catch (err: any) {
       console.error('Error loading assignees:', err);
-      setAssigneesError(
-        err?.message || 'Network error while loading assignees'
-      );
+      setAssigneesError(err?.message || 'Network error while loading assignees');
       setAssignees([]);
     } finally {
       setAssigneesLoading(false);
     }
   }
 
-  // ---- Notas ----
   async function loadNotes(submissionId: string) {
     setNotesLoading(true);
     setNotesError(null);
@@ -387,7 +368,6 @@ export default function AdminOnboardingPage() {
     }
   }
 
-  // ---- Histórico ----
   async function loadHistory(submissionId: string) {
     setHistoryLoading(true);
     setHistoryError(null);
@@ -471,14 +451,12 @@ export default function AdminOnboardingPage() {
       list = list.filter((s) => s.assigned_to_user_id === user.id);
     }
 
-    // Filtro por conta criada / sem conta
     if (accountFilter === 'WITH') {
       list = list.filter((s) => !!s.user_id);
     } else if (accountFilter === 'WITHOUT') {
       list = list.filter((s) => !s.user_id);
     }
 
-    // ordenar por sequence_number asc como padrão
     list.sort((a, b) => {
       const aSeq = a.sequence_number ?? 0;
       const bSeq = b.sequence_number ?? 0;
@@ -541,15 +519,11 @@ export default function AdminOnboardingPage() {
         return;
       }
 
-      // atualizar state local sem refetch total
       setSubmissions((prev) =>
-        prev.map((s) =>
-          s.id === selected.id ? { ...s, status: newStatus } : s
-        )
+        prev.map((s) => (s.id === selected.id ? { ...s, status: newStatus } : s))
       );
       setSelected((prev) => (prev ? { ...prev, status: newStatus } : prev));
 
-      // recarregar histórico para mostrar nova entrada
       void loadHistory(selected.id);
     } finally {
       setUpdatingStatus(false);
@@ -642,8 +616,7 @@ export default function AdminOnboardingPage() {
         return;
       }
 
-      const selectedUser =
-        assignees.find((u) => u.id === targetUserId) || null;
+      const selectedUser = assignees.find((u) => u.id === targetUserId) || null;
 
       setSubmissions((prev) =>
         prev.map((s) =>
@@ -651,12 +624,8 @@ export default function AdminOnboardingPage() {
             ? {
                 ...s,
                 assigned_to_user_id: targetUserId || null,
-                assigned_to_full_name: selectedUser
-                  ? selectedUser.full_name
-                  : null,
-                assigned_to_username: selectedUser
-                  ? selectedUser.username
-                  : null,
+                assigned_to_full_name: selectedUser ? selectedUser.full_name : null,
+                assigned_to_username: selectedUser ? selectedUser.username : null,
               }
             : s
         )
@@ -667,12 +636,8 @@ export default function AdminOnboardingPage() {
           ? {
               ...prev,
               assigned_to_user_id: targetUserId || null,
-              assigned_to_full_name: selectedUser
-                ? selectedUser.full_name
-                : null,
-              assigned_to_username: selectedUser
-                ? selectedUser.username
-                : null,
+              assigned_to_full_name: selectedUser ? selectedUser.full_name : null,
+              assigned_to_username: selectedUser ? selectedUser.username : null,
             }
           : prev
       );
@@ -682,9 +647,7 @@ export default function AdminOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-
+    <div className="min-h-screen bg-gray-50">
       <main className="flex-1">
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
           <div className="flex items-center justify-between gap-3">
@@ -709,7 +672,6 @@ export default function AdminOnboardingPage() {
             </button>
           </div>
 
-          {/* FILTROS */}
           <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-900">Filtros</h2>
@@ -719,11 +681,8 @@ export default function AdminOnboardingPage() {
             </div>
 
             <div className="grid md:grid-cols-5 gap-3">
-              {/* Pesquisa livre */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">
-                  Pesquisa
-                </label>
+                <label className="text-xs font-medium text-gray-700">Pesquisa</label>
                 <input
                   type="text"
                   value={search}
@@ -733,17 +692,12 @@ export default function AdminOnboardingPage() {
                 />
               </div>
 
-              {/* Estado */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">
-                  Estado
-                </label>
+                <label className="text-xs font-medium text-gray-700">Estado</label>
                 <select
                   value={statusFilter ?? 'ALL'}
                   onChange={(e) =>
-                    setStatusFilter(
-                      (e.target.value as OnboardingStatus | 'ALL') || 'ALL'
-                    )
+                    setStatusFilter((e.target.value as OnboardingStatus | 'ALL') || 'ALL')
                   }
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
@@ -756,11 +710,8 @@ export default function AdminOnboardingPage() {
                 </select>
               </div>
 
-              {/* Conta criada / sem conta */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">
-                  Conta
-                </label>
+                <label className="text-xs font-medium text-gray-700">Conta</label>
                 <select
                   value={accountFilter}
                   onChange={(e) =>
@@ -774,16 +725,11 @@ export default function AdminOnboardingPage() {
                 </select>
               </div>
 
-              {/* Desporto */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">
-                  Desporto
-                </label>
+                <label className="text-xs font-medium text-gray-700">Desporto</label>
                 <select
                   value={sportFilter ?? 'ALL'}
-                  onChange={(e) =>
-                    setSportFilter((e.target.value as string) || 'ALL')
-                  }
+                  onChange={(e) => setSportFilter((e.target.value as string) || 'ALL')}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="ALL">Todos os desportos</option>
@@ -795,30 +741,24 @@ export default function AdminOnboardingPage() {
                 </select>
               </div>
 
-              {/* Responsável */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">
-                  Responsável
-                </label>
+                <label className="text-xs font-medium text-gray-700">Responsável</label>
                 <select
                   value={responsibleFilter}
-                  onChange={(e) =>
-                    setResponsibleFilter(e.target.value as 'ALL' | 'MINE')
-                  }
+                  onChange={(e) => setResponsibleFilter(e.target.value as 'ALL' | 'MINE')}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="ALL">Todas as submissões</option>
                   <option value="MINE">Só as minhas</option>
                 </select>
                 <p className="text-[10px] text-gray-400">
-                  &quot;Só as minhas&quot; mostra submissões onde és o
-                  responsável atribuído.
+                  &quot;Só as minhas&quot; mostra submissões onde és o responsável
+                  atribuído.
                 </p>
               </div>
             </div>
           </section>
 
-          {/* LISTA + DETALHE */}
           <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -826,8 +766,7 @@ export default function AdminOnboardingPage() {
                   Lista de submissões
                 </h2>
                 <p className="text-[11px] text-gray-500">
-                  Cada submissão tem um número sequencial global para
-                  referência.
+                  Cada submissão tem um número sequencial global para referência.
                 </p>
               </div>
             </div>
@@ -844,9 +783,7 @@ export default function AdminOnboardingPage() {
               </p>
             )}
 
-            {loading && (
-              <p className="text-xs text-gray-500">A carregar submissões…</p>
-            )}
+            {loading && <p className="text-xs text-gray-500">A carregar submissões…</p>}
 
             {!loading && filteredSubmissions.length > 0 && (
               <div className="overflow-x-auto">
@@ -895,9 +832,7 @@ export default function AdminOnboardingPage() {
                             {s.country || '—'}
                           </td>
                           <td className="py-2 pr-3 text-xs text-gray-700">
-                            {s.sports_category_code ||
-                              s.sports_category ||
-                              '—'}
+                            {s.sports_category_code || s.sports_category || '—'}
                           </td>
                           <td className="py-2 pr-3">
                             <span className={statusBadgeClass(s.status)}>
@@ -910,9 +845,7 @@ export default function AdminOnboardingPage() {
                             </span>
                           </td>
                           <td className="py-2 pr-3 text-xs text-gray-700">
-                            {s.assigned_to_full_name ||
-                              s.assigned_to_username ||
-                              '—'}
+                            {s.assigned_to_full_name || s.assigned_to_username || '—'}
                           </td>
                           <td className="py-2 pr-3 text-[11px] text-gray-500">
                             {s.created_at
@@ -927,7 +860,6 @@ export default function AdminOnboardingPage() {
               </div>
             )}
 
-            {/* Painel de detalhes */}
             {selected && (
               <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50/60 p-4 space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -939,35 +871,25 @@ export default function AdminOnboardingPage() {
                     <p className="text-[11px] text-gray-500">
                       Criada em{' '}
                       {selected.created_at
-                        ? new Date(
-                            selected.created_at
-                          ).toLocaleString('pt-PT')
+                        ? new Date(selected.created_at).toLocaleString('pt-PT')
                         : '—'}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     <div>
-                      <span className="font-medium text-gray-700">
-                        Estado:{' '}
-                      </span>
+                      <span className="font-medium text-gray-700">Estado: </span>
                       <span className={statusBadgeClass(selected.status)}>
                         {formatStatus(selected.status)}
                       </span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">
-                        Conta:{' '}
-                      </span>
-                      <span
-                        className={accountBadgeClass(!!selected.user_id)}
-                      >
+                      <span className="font-medium text-gray-700">Conta: </span>
+                      <span className={accountBadgeClass(!!selected.user_id)}>
                         {selected.user_id ? 'Conta criada' : 'Sem conta'}
                       </span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">
-                        Responsável:{' '}
-                      </span>
+                      <span className="font-medium text-gray-700">Responsável: </span>
                       <span className="text-gray-800">
                         {selected.assigned_to_full_name ||
                           selected.assigned_to_username ||
@@ -977,7 +899,6 @@ export default function AdminOnboardingPage() {
                   </div>
                 </div>
 
-                {/* Contactos / Desporto / Web3 */}
                 <div className="grid md:grid-cols-3 gap-3 text-xs">
                   <div className="space-y-1">
                     <div className="text-[11px] font-semibold text-gray-700">
@@ -1008,15 +929,11 @@ export default function AdminOnboardingPage() {
                         '—'}
                     </p>
                     <p>
-                      <span className="font-medium">
-                        Papel no desporto:
-                      </span>{' '}
+                      <span className="font-medium">Papel no desporto:</span>{' '}
                       {selected.sports_role || '—'}
                     </p>
                     <p>
-                      <span className="font-medium">
-                        Organização / Clube:
-                      </span>{' '}
+                      <span className="font-medium">Organização / Clube:</span>{' '}
                       {selected.organization || '—'}
                     </p>
                   </div>
@@ -1026,15 +943,11 @@ export default function AdminOnboardingPage() {
                       Web3 & Interesses
                     </div>
                     <p>
-                      <span className="font-medium">
-                        Experiência Web3:
-                      </span>{' '}
+                      <span className="font-medium">Experiência Web3:</span>{' '}
                       {selected.web3_experience || '—'}
                     </p>
                     <p>
-                      <span className="font-medium">
-                        Áreas de interesse:
-                      </span>{' '}
+                      <span className="font-medium">Áreas de interesse:</span>{' '}
                       {selected.interests && selected.interests.length > 0
                         ? selected.interests.join(', ')
                         : '—'}
@@ -1042,7 +955,6 @@ export default function AdminOnboardingPage() {
                   </div>
                 </div>
 
-                {/* Mensagem */}
                 <div className="space-y-1 text-xs">
                   <div className="text-[11px] font-semibold text-gray-700">
                     Mensagem
@@ -1052,13 +964,10 @@ export default function AdminOnboardingPage() {
                   </div>
                 </div>
 
-                {/* Notas internas */}
                 <div className="border-t border-gray-200 pt-3 space-y-3 text-xs">
                   <div className="flex items-center gap-2">
                     <StickyNote className="h-4 w-4 text-gray-500" />
-                    <h4 className="font-semibold text-gray-800">
-                      Notas internas
-                    </h4>
+                    <h4 className="font-semibold text-gray-800">Notas internas</h4>
                   </div>
 
                   <div className="space-y-2">
@@ -1106,9 +1015,7 @@ export default function AdminOnboardingPage() {
                                 'Utilizador'}
                             </div>
                             <div className="text-[10px] text-gray-400">
-                              {new Date(
-                                n.created_at
-                              ).toLocaleString('pt-PT')}
+                              {new Date(n.created_at).toLocaleString('pt-PT')}
                             </div>
                           </div>
                           <div className="text-[11px] text-gray-700 whitespace-pre-wrap">
@@ -1127,7 +1034,6 @@ export default function AdminOnboardingPage() {
                   )}
                 </div>
 
-                {/* Histórico de estado */}
                 <div className="border-t border-gray-200 pt-3 space-y-3 text-xs">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-gray-500" />
@@ -1137,9 +1043,7 @@ export default function AdminOnboardingPage() {
                   </div>
 
                   {historyLoading && (
-                    <p className="text-[11px] text-gray-400">
-                      A carregar histórico…
-                    </p>
+                    <p className="text-[11px] text-gray-400">A carregar histórico…</p>
                   )}
                   {historyError && (
                     <p className="text-[11px] text-red-500">{historyError}</p>
@@ -1153,20 +1057,14 @@ export default function AdminOnboardingPage() {
                   {history.length > 0 && (
                     <ol className="space-y-2">
                       {history.map((h) => (
-                        <li
-                          key={h.id}
-                          className="flex items-start gap-2 text-[11px]"
-                        >
+                        <li key={h.id} className="flex items-start gap-2 text-[11px]">
                           <div className="mt-[3px] h-2 w-2 rounded-full bg-blue-500" />
                           <div>
                             <div className="font-medium text-gray-800">
-                              {formatStatus(h.old_status)} →{' '}
-                              {formatStatus(h.new_status)}
+                              {formatStatus(h.old_status)} → {formatStatus(h.new_status)}
                             </div>
                             <div className="text-[10px] text-gray-500">
-                              {new Date(
-                                h.created_at
-                              ).toLocaleString('pt-PT')}{' '}
+                              {new Date(h.created_at).toLocaleString('pt-PT')}{' '}
                               —{' '}
                               {h.changed_by_full_name ||
                                 h.changed_by_username ||
@@ -1180,9 +1078,7 @@ export default function AdminOnboardingPage() {
                   )}
                 </div>
 
-                {/* Gestão de responsável & estado */}
                 <div className="border-t border-gray-200 pt-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  {/* Responsável */}
                   <div className="flex flex-col gap-2 text-xs">
                     <div className="font-semibold text-gray-800">
                       Responsável pelo onboarding
@@ -1199,15 +1095,11 @@ export default function AdminOnboardingPage() {
 
                       {isSuperAdmin && (
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-gray-500">
-                            ou escolher:
-                          </span>
+                          <span className="text-[11px] text-gray-500">ou escolher:</span>
                           <select
                             className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-[11px] shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             value={selected.assigned_to_user_id || ''}
-                            onChange={(e) =>
-                              handleAssignToUser(e.target.value)
-                            }
+                            onChange={(e) => handleAssignToUser(e.target.value)}
                             onFocus={() => {
                               if (assignees.length === 0) {
                                 void loadAssignees();
@@ -1215,9 +1107,7 @@ export default function AdminOnboardingPage() {
                             }}
                             disabled={updatingAssignee}
                           >
-                            <option value="">
-                              Sem responsável definido
-                            </option>
+                            <option value="">Sem responsável definido</option>
                             {assignees.map((u) => (
                               <option key={u.id} value={u.id}>
                                 {u.full_name || u.username || u.email} ({u.role})
@@ -1228,31 +1118,22 @@ export default function AdminOnboardingPage() {
                       )}
 
                       {assigneesError && isSuperAdmin && (
-                        <span className="text-[11px] text-red-500">
-                          {assigneesError}
-                        </span>
+                        <span className="text-[11px] text-red-500">{assigneesError}</span>
                       )}
                     </div>
                     <p className="text-[11px] text-gray-400">
-                      Super Admin pode atribuir a qualquer Admin / Super
-                      Admin. Admin pode atribuir a si próprio.
+                      Super Admin pode atribuir a qualquer Admin / Super Admin. Admin pode
+                      atribuir a si próprio.
                     </p>
                   </div>
 
-                  {/* Estado */}
                   <div className="flex flex-col gap-2 text-xs">
-                    <div className="font-semibold text-gray-800">
-                      Estado do processo
-                    </div>
+                    <div className="font-semibold text-gray-800">Estado do processo</div>
                     <div className="flex items-center gap-2">
                       <select
                         className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-[11px] shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         value={selected.status || 'PENDING_RESPONSE'}
-                        onChange={(e) =>
-                          handleChangeStatus(
-                            e.target.value as OnboardingStatus
-                          )
-                        }
+                        onChange={(e) => handleChangeStatus(e.target.value as OnboardingStatus)}
                         disabled={!canEditStatus || updatingStatus}
                       >
                         {STATUS_ORDER.map((st) => (
@@ -1263,8 +1144,7 @@ export default function AdminOnboardingPage() {
                       </select>
                       {!canEditStatus && (
                         <span className="text-[10px] text-gray-400">
-                          Só o responsável (Admin) ou um Super Admin pode
-                          alterar o estado.
+                          Só o responsável (Admin) ou um Super Admin pode alterar o estado.
                         </span>
                       )}
                     </div>
@@ -1275,8 +1155,6 @@ export default function AdminOnboardingPage() {
           </section>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }
