@@ -21,6 +21,8 @@ type Course = {
   level?: string | null;
   author_id?: string | null;
   author_name?: string | null;
+  xp_total_distributed?: number | null;
+  xp_creator_distributed?: number | null;
 };
 
 type PermissionsResponse = {
@@ -373,6 +375,8 @@ export default function CoursesManagementPage() {
                 const description = getCourseDescription(course);
                 const isPublished = course.is_published ?? course.published;
                 const isCreator = !!user && course.author_id === user.id;
+                const xpTotal = course.xp_total_distributed ?? 0;
+                const xpCreator = course.xp_creator_distributed ?? 0;
 
                 return (
                   <Card key={course.id} className="hover:shadow-lg transition-shadow">
@@ -413,6 +417,16 @@ export default function CoursesManagementPage() {
                       </p>
                       <div className="text-sm text-gray-500 mb-4">
                         Level: {levelLabel(course)}
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs mb-4">
+                        <Badge variant="outline">
+                          {xpTotal} XP distributed
+                        </Badge>
+                        {isCreator && (
+                          <Badge variant="outline" className="border-blue-500 text-blue-600">
+                            Creator share: {xpCreator} XP
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <Button
