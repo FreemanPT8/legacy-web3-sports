@@ -709,15 +709,17 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'Super Admin':
-        return 'destructive' as const; // vermelho
-      case 'Admin':
-        return 'outline' as const; // branco contornado
-      default:
-        return 'secondary' as const; // branco/acinzentado
+  const getRoleBadgeStyle = (role: string) => {
+    if (role === 'Super Admin') {
+      return { variant: 'destructive' as const, className: '' };
     }
+    if (role === 'Admin') {
+      return {
+        variant: 'outline' as const,
+        className: 'border-blue-500 text-blue-600',
+      };
+    }
+    return { variant: 'secondary' as const, className: '' };
   };
 
   const formatDate = (iso: string | null) => {
@@ -1029,7 +1031,14 @@ export default function AdminUsersPage() {
                         <td className="px-4 py-2">{u.full_name || <span className="text-gray-400">-</span>}</td>
                         <td className="px-4 py-2">{u.email || <span className="text-gray-400">-</span>}</td>
                         <td className="px-4 py-2">
-                          <Badge variant={getRoleBadgeVariant(u.role)}>{u.role}</Badge>
+                          {(() => {
+                            const { variant, className } = getRoleBadgeStyle(u.role);
+                            return (
+                              <Badge variant={variant} className={className}>
+                                {u.role}
+                              </Badge>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-2">{u.country || <span className="text-gray-400">-</span>}</td>
                         <td className="px-4 py-2">{u.xp_total ?? 0}</td>
