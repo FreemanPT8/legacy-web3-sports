@@ -19,6 +19,21 @@ import {
 
 const DAILY_XP_LIMIT = 369;
 
+type XPSummary = {
+  xp_total: number;
+  xp_today: number;
+  xp_last_7_days: number;
+  xp_last_30_days: number;
+  streak_count: number;
+  streak_updated_at: string | null;
+  recent_transactions: {
+    id: string;
+    action: string;
+    xp_earned: number;
+    created_at: string;
+  }[];
+};
+
 function isSameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -29,12 +44,16 @@ function isSameDay(a: Date, b: Date) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, getToken } = useAuth();
   const { t } = useLanguage();
 
-  const [xpHistory, setXpHistory] = useState<any[]>([]);
+  const [xpSummary, setXpSummary] = useState<XPSummary | null>(null);
+  const [xpLoading, setXpLoading] = useState(false);
+  const [xpError, setXpError] = useState<string | null>(null);
+
   const [missions, setMissions] = useState<any[]>([]);
   const [loadingMissions, setLoadingMissions] = useState(true);
+
   const [streak, setStreak] = useState(0);
   const [mounted, setMounted] = useState(false);
 
@@ -54,12 +73,11 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
 
+  // 🔹 MISSÕES
   const fetchMissions = useCallback(async () => {
     if (!user) return;
     try {
-      const response = await fetch(
-        `/api/missions/generate?userId=${user.id}`,
-      );
+      const response = await fetch(`/api/missions/generate?userId=${user.id}`);
       const data = await response.json();
       if (data.success) {
         setMissions(data.missions || []);
@@ -71,6 +89,7 @@ export default function DashboardPage() {
     }
   }, [user]);
 
+  // 🔹 STREAK (continua a usar /api/streak/update porque pode dar bónus)
   const updateStreak = useCallback(async () => {
     if (!user) return;
     try {
@@ -88,39 +107,17 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  const fetchXpHistory = useCallback(async () => {
-    if (!user) return;
-    try {
-      const response = await fetch(
-        `/api/xp/history?userId=${user.id}&limit=20`,
-      );
-      const data = await response.json();
-      if (data.success) {
-        setXpHistory(data.history || []);
-      } else {
-        console.error('Failed to fetch XP history:', data.error);
-      }
-    } catch (error) {
-      console.error('Failed to fetch XP history:', error);
-    }
-  }, [user]);
-
+  // 🔹 GLOBAL RANK
   const fetchGlobalRank = useCallback(async () => {
     if (!user) return;
     try {
       setLoadingRank(true);
-      const response = await fetch(
-        `/api/leaderboard/rank?userId=${user.id}`,
-      );
+      const response = await fetch(`/api/leaderboard/rank?userId=${user.id}`);
       const data = await response.json();
       if (data.success) {
         setGlobalRank({
-          rank:
-            typeof data.rank === 'number' ? data.rank : null,
-          totalUsers:
-            typeof data.totalUsers === 'number'
-              ? data.totalUsers
-              : 0,
+          rank: typeof data.rank === 'number' ? data.rank : null,
+          totalUsers: typeof data.totalUsers === 'number' ? data.totalUsers : 0,
         });
       } else {
         console.error('Failed to fetch global rank:', data.error);
@@ -132,26 +129,85 @@ export default function DashboardPage() {
     }
   }, [user]);
 
+  // 🔹 NOVO: carregar resumo de XP + histórico a partir de /api/me/xp
+  const fetchXpSummary = useCallback(async () => {
+    if (!user) return;
+    const token = getToken();
+    if (!token) {
+      setXpError('Token inválido ou expirado');
+      return;
+    }
+
+    try {
+      setXpLoading(true);
+      setXpError(null);
+
+      const response = await fetch('/api/me/xp', {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error('Failed to fetch XP summary:', data.error);
+        setXpError(data.error || 'Falha ao carregar XP');
+        return;
+      }
+
+      const xpData = data.xp as XPSummary;
+      setXpSummary(xpData);
+
+      // Se o streak vier daqui e for maior, sincronizamos o estado local
+      if (typeof xpData.streak_count === 'number' && xpData.streak_count > 0) {
+        setStreak(xpData.streak_count);
+      }
+    } catch (error) {
+      console.error('Failed to fetch XP summary:', error);
+      setXpError('Falha ao carregar XP');
+    } finally {
+      setXpLoading(false);
+    }
+  }, [user, getToken]);
+
+  // 🔹 Efeito principal
   useEffect(() => {
     if (user) {
       fetchMissions();
       updateStreak();
-      fetchXpHistory();
       fetchGlobalRank();
+      fetchXpSummary();
     }
-  }, [user, fetchMissions, updateStreak, fetchXpHistory, fetchGlobalRank]);
+  }, [user, fetchMissions, updateStreak, fetchGlobalRank, fetchXpSummary]);
+
+  // ------- DERIVADOS DE XP (sempre que possível a partir de xpSummary) -----
+
+  const xpTotal = useMemo(() => {
+    if (xpSummary) return xpSummary.xp_total;
+    return typeof user?.xp_total === 'number' ? user.xp_total : 0;
+  }, [xpSummary, user?.xp_total]);
+
+  const level = useMemo(
+    () => (xpTotal ? Math.floor(xpTotal / 100) : 0),
+    [xpTotal],
+  );
 
   const xpProgress = useMemo(
-    () => (user?.xp_total ? user.xp_total % 100 : 0),
-    [user?.xp_total],
-  );
-  const level = useMemo(
-    () => (user?.xp_total ? Math.floor(user.xp_total / 100) : 0),
-    [user?.xp_total],
+    () => (xpTotal ? xpTotal % 100 : 0),
+    [xpTotal],
   );
 
-  // 🔎 XP ganho HOJE a partir do histórico (limitado às últimas 20 transações)
+  const xpHistory = useMemo(
+    () => xpSummary?.recent_transactions || [],
+    [xpSummary],
+  );
+
   const todayXp = useMemo(() => {
+    if (xpSummary) return xpSummary.xp_today || 0;
+
+    // fallback: calcula a partir de xpHistory (caso falhe xpSummary)
     if (!xpHistory || xpHistory.length === 0) return 0;
     const now = new Date();
     return xpHistory.reduce((sum, tx) => {
@@ -162,7 +218,7 @@ export default function DashboardPage() {
       }
       return sum;
     }, 0);
-  }, [xpHistory]);
+  }, [xpSummary, xpHistory]);
 
   const todayLimitProgress = useMemo(() => {
     if (DAILY_XP_LIMIT <= 0) return 0;
@@ -170,9 +226,10 @@ export default function DashboardPage() {
     return Math.max(0, Math.min(100, Math.round(ratio)));
   }, [todayXp]);
 
-  const remainingTodayXp = useMemo(() => {
-    return Math.max(DAILY_XP_LIMIT - todayXp, 0);
-  }, [todayXp]);
+  const remainingTodayXp = useMemo(
+    () => Math.max(DAILY_XP_LIMIT - todayXp, 0),
+    [todayXp],
+  );
 
   if (loading || !user || !mounted) {
     return (
@@ -203,6 +260,10 @@ export default function DashboardPage() {
             <p className="text-gray-600 dark:text-gray-300">
               {t('dashboard.trackProgress')}
             </p>
+
+            {xpError && (
+              <p className="mt-2 text-sm text-red-600">{xpError}</p>
+            )}
           </div>
 
           {/* RESUMO RÁPIDO DE XP / STREAK / RANK */}
@@ -219,7 +280,7 @@ export default function DashboardPage() {
                   <Trophy className="h-10 w-10 text-blue-600" />
                   <div>
                     <div className="text-3xl font-bold">
-                      {user.xp_total}
+                      {xpLoading && !xpSummary ? '...' : xpTotal}
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       {t('dashboard.level')} {level}
@@ -372,8 +433,7 @@ export default function DashboardPage() {
                         ? mission.user_missions[0]
                         : mission.user_missions;
                       const progress = missionData?.progress || 0;
-                      const completed =
-                        missionData?.completed || false;
+                      const completed = missionData?.completed || false;
                       return (
                         <div
                           key={mission.id}
@@ -402,12 +462,8 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           <Badge
-                            variant={
-                              completed ? 'default' : 'outline'
-                            }
-                            className={
-                              completed ? 'bg-green-600' : ''
-                            }
+                            variant={completed ? 'default' : 'outline'}
+                            className={completed ? 'bg-green-600' : ''}
                           >
                             {completed
                               ? t('dashboard.completedMission')
@@ -439,80 +495,70 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    {user.xp_total >= 99 ? (
+                    {xpTotal >= 99 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                     ) : (
                       <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <span
                       className={
-                        user.xp_total >= 99
-                          ? 'text-gray-700'
-                          : 'text-gray-400'
+                        xpTotal >= 99 ? 'text-gray-700' : 'text-gray-400'
                       }
                     >
                       {t('dashboard.profileEditing')} (99 XP)
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    {user.xp_total >= 369 ? (
+                    {xpTotal >= 369 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                     ) : (
                       <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <span
                       className={
-                        user.xp_total >= 369
-                          ? 'text-gray-700'
-                          : 'text-gray-400'
+                        xpTotal >= 369 ? 'text-gray-700' : 'text-gray-400'
                       }
                     >
                       {t('dashboard.forumReadAccess')} (369 XP)
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    {user.xp_total >= 444 ? (
+                    {xpTotal >= 444 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                     ) : (
                       <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <span
                       className={
-                        user.xp_total >= 444
-                          ? 'text-gray-700'
-                          : 'text-gray-400'
+                        xpTotal >= 444 ? 'text-gray-700' : 'text-gray-400'
                       }
                     >
                       {t('dashboard.forumInteract')} (444 XP)
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    {user.xp_total >= 555 ? (
+                    {xpTotal >= 555 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                     ) : (
                       <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <span
                       className={
-                        user.xp_total >= 555
-                          ? 'text-gray-700'
-                          : 'text-gray-400'
+                        xpTotal >= 555 ? 'text-gray-700' : 'text-gray-400'
                       }
                     >
                       {t('dashboard.forumPostCreate')} (555 XP)
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    {user.xp_total >= 3333 ? (
+                    {xpTotal >= 3333 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                     ) : (
                       <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <span
                       className={
-                        user.xp_total >= 3333
-                          ? 'text-gray-700'
-                          : 'text-gray-400'
+                        xpTotal >= 3333 ? 'text-gray-700' : 'text-gray-400'
                       }
                     >
                       {t('dashboard.hallOfFame')} (3333 XP)
@@ -526,12 +572,10 @@ export default function DashboardPage() {
           {/* HISTÓRICO DE XP */}
           <Card>
             <CardHeader>
-              <CardTitle>
-                {t('dashboard.recentXpActivity')}
-              </CardTitle>
+              <CardTitle>{t('dashboard.recentXpActivity')}</CardTitle>
             </CardHeader>
             <CardContent>
-              {xpHistory.length === 0 ? (
+              {!xpHistory || xpHistory.length === 0 ? (
                 <div className="text-center py-8">
                   <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-600 dark:text-gray-300">
@@ -548,9 +592,7 @@ export default function DashboardPage() {
                       <div>
                         <p className="font-medium">{tx.action}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-300">
-                          {new Date(
-                            tx.created_at,
-                          ).toLocaleString()}
+                          {new Date(tx.created_at).toLocaleString()}
                         </p>
                       </div>
                       <Badge className="bg-blue-600">
