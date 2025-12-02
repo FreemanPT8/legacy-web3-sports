@@ -55,9 +55,49 @@ export async function GET(
       );
     }
 
+    // Autor
+    let authorName: string | null = null;
+    if (data.author_id) {
+      const { data: author } = await supabase
+        .from('users')
+        .select('full_name, username')
+        .eq('id', data.author_id as string)
+        .maybeSingle();
+      authorName = author?.full_name || author?.username || null;
+    }
+
+    // XP total distribuído (todos)
+    const { data: xpTotalRow } = await supabase
+      .from('course_total_xp_distributed')
+      .select('total_xp_distributed')
+      .eq('course_id', params.id)
+      .maybeSingle();
+    const xpTotalDistributed = xpTotalRow?.total_xp_distributed ?? 0;
+
+    // XP para o criador (via xp_transactions)
+    let xpCreatorDistributed = 0;
+    if (data.author_id) {
+      const { data: xpCreatorRows } = await supabase
+        .from('xp_transactions')
+        .select('xp_earned')
+        .eq('reference_type', 'course')
+        .eq('reference_id', params.id)
+        .eq('user_id', data.author_id as string);
+      xpCreatorDistributed =
+        (xpCreatorRows || []).reduce(
+          (acc: number, row: any) => acc + (row?.xp_earned ?? 0),
+          0,
+        ) || 0;
+    }
+
     return NextResponse.json({
       success: true,
-      course: data,
+      course: {
+        ...data,
+        author_name: authorName,
+        xp_total_distributed: xpTotalDistributed,
+        xp_creator_distributed: xpCreatorDistributed,
+      },
     });
   } catch (error) {
     console.error('Unexpected error in GET /api/admin/courses/[id]:', error);

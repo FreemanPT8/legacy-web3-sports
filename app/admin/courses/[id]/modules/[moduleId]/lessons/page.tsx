@@ -2,10 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,7 +18,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
 import {
-  ArrowLeft,
   Plus,
   Save,
   Trash2,
@@ -67,6 +62,10 @@ type Module = {
 type Course = {
   id: string;
   title: any;
+  author_name?: string | null;
+  is_completed?: boolean | null;
+  xp_total_distributed?: number;
+  xp_creator_distributed?: number;
 };
 
 export default function ModuleLessonsPage() {
@@ -461,14 +460,10 @@ export default function ModuleLessonsPage() {
 
   if (!course || !module) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            Course or module not found.
-          </p>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600 dark:text-gray-300">
+          Course or module not found.
+        </p>
       </div>
     );
   }
@@ -477,367 +472,336 @@ export default function ModuleLessonsPage() {
   const moduleTitle = getMultilingualContent(module.title, currentLanguage);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto space-y-6">
-            {/* Top bar */}
-            <div className="flex justify-between items-center gap-4">
-              <div>
-                <Button
-                  variant="ghost"
-                  className="mb-2"
-                  onClick={() =>
-                    router.push(`/admin/courses/${courseId}/modules`)
-                  }
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Modules
-                </Button>
-                <h1 className="text-2xl md:text-3xl font-bold mb-1">
-                  Manage Lessons
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Course:{' '}
-                  <span className="font-semibold">
-                    {courseTitle || 'Untitled course'}
-                  </span>
-                  {' · '}
-                  Module:{' '}
-                  <span className="font-semibold">
-                    {moduleTitle || 'Untitled module'}
-                  </span>
-                </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Top bar */}
+          <div className="flex justify-between items-center gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold mb-1">
+                Manage Lessons
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Course:{' '}
+                <span className="font-semibold">
+                  {courseTitle || 'Untitled course'}
+                </span>
+                {' · '}
+                Module:{' '}
+                <span className="font-semibold">
+                  {moduleTitle || 'Untitled module'}
+                </span>
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2 text-xs">
+                <Badge className={course.is_completed ? 'bg-green-600' : 'bg-yellow-600'}>
+                  {course.is_completed ? 'Completed' : 'Ongoing process'}
+                </Badge>
+                {typeof course.xp_total_distributed === 'number' && (
+                  <Badge variant="outline">
+                    Total XP distributed: {course.xp_total_distributed}
+                  </Badge>
+                )}
+                {typeof course.xp_creator_distributed === 'number' && (
+                  <Badge variant="outline">
+                    XP to creator: {course.xp_creator_distributed}
+                  </Badge>
+                )}
+                {course.author_name && (
+                  <Badge variant="secondary">Creator: {course.author_name}</Badge>
+                )}
               </div>
-              <Button onClick={handleAddLesson}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Lesson
-              </Button>
             </div>
+            <Button onClick={handleAddLesson}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Lesson
+            </Button>
+          </div>
 
-            {/* Selector de língua */}
+          {/* Selector de língua */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">
+                Language for titles, descriptions & content
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGES.map((lang) => (
+                  <Badge
+                    key={lang.code}
+                    variant={currentLanguage === lang.code ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setCurrentLanguage(lang.code as LangCode)}
+                  >
+                    {lang.name}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lista de lições */}
+          {lessons.length === 0 ? (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">
-                  Language for titles, descriptions & content
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {LANGUAGES.map((lang) => (
-                    <Badge
-                      key={lang.code}
-                      variant={
-                        currentLanguage === lang.code ? 'default' : 'outline'
-                      }
-                      className="cursor-pointer"
-                      onClick={() =>
-                        setCurrentLanguage(lang.code as LangCode)
-                      }
-                    >
-                      {lang.name}
-                    </Badge>
-                  ))}
-                </div>
+              <CardContent className="py-10 text-center text-gray-500">
+                No lessons yet. Click &quot;Add Lesson&quot; to create the first one.
               </CardContent>
             </Card>
+          ) : (
+            <div className="space-y-4">
+              {lessons.map((lesson, index) => {
+                const title = getMultilingualContent(lesson.title, currentLanguage);
+                const description = getMultilingualContent(
+                  lesson.description,
+                  currentLanguage,
+                );
+                const content = getMultilingualContent(lesson.content, currentLanguage);
 
-            {/* Lista de lições */}
-            {lessons.length === 0 ? (
-              <Card>
-                <CardContent className="py-10 text-center text-gray-500">
-                  No lessons yet. Click &quot;Add Lesson&quot; to create
-                  the first one.
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {lessons.map((lesson, index) => {
-                  const title = getMultilingualContent(
-                    lesson.title,
-                    currentLanguage,
-                  );
-                  const description = getMultilingualContent(
-                    lesson.description,
-                    currentLanguage,
-                  );
-                  const content = getMultilingualContent(
-                    lesson.content,
-                    currentLanguage,
-                  );
+                const savingThis = savingLessonId === (lesson.id || 'new');
 
-                  const savingThis =
-                    savingLessonId === (lesson.id || 'new');
-
-                  return (
-                    <Card
-                      key={lesson.id || `new-${index}`}
-                      className="border-blue-100"
-                    >
-                      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline">
-                              Lesson {lesson.order || index + 1}
-                            </Badge>
-                            {lesson._isNew && (
-                              <Badge className="bg-yellow-600">
-                                New
-                              </Badge>
-                            )}
-                          </div>
-                          <Input
-                            value={title}
+                return (
+                  <Card key={lesson.id || `new-${index}`} className="border-blue-100">
+                    <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline">Lesson {lesson.order || index + 1}</Badge>
+                          {lesson._isNew && <Badge className="bg-yellow-600">New</Badge>}
+                        </div>
+                        <Input
+                          value={title}
+                          onChange={(e) =>
+                            updateLessonMLField(index, 'title', currentLanguage, e.target.value)
+                          }
+                          placeholder={`Lesson title (${currentLangLabel})`}
+                          className="text-sm font-semibold"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          {lesson.estimated_time || 0} minutes · XP: {lesson.xp_reward || 0}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 w-full md:w-40">
+                        <Label className="text-xs">Order</Label>
+                        <Input
+                          type="number"
+                          value={lesson.order}
+                          onChange={(e) =>
+                            updateLessonField(
+                              index,
+                              'order',
+                              parseInt(e.target.value) || 0,
+                            )
+                          }
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs">
+                            Description ({currentLangLabel})
+                          </Label>
+                          <Textarea
+                            value={description}
                             onChange={(e) =>
                               updateLessonMLField(
                                 index,
-                                'title',
+                                'description',
                                 currentLanguage,
                                 e.target.value,
                               )
                             }
-                            placeholder={`Lesson title (${currentLangLabel})`}
-                            className="text-sm font-semibold"
+                            rows={3}
+                            className="text-xs mt-1"
                           />
-                          <p className="text-xs text-gray-500 mt-1">
-                            {lesson.estimated_time || 0} minutes · XP:{' '}
-                            {lesson.xp_reward || 0}
-                          </p>
                         </div>
-                        <div className="flex flex-col gap-2 w-full md:w-40">
-                          <Label className="text-xs">Order</Label>
+                        <div>
+                          <Label className="text-xs">
+                            Content HTML ({currentLangLabel})
+                          </Label>
+                          <Textarea
+                            value={content}
+                            onChange={(e) =>
+                              updateLessonMLField(
+                                index,
+                                'content',
+                                currentLanguage,
+                                e.target.value,
+                              )
+                            }
+                            rows={6}
+                            className="text-xs mt-1 font-mono"
+                            placeholder="<p>HTML for this lesson...</p>"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-4 gap-4">
+                        <div>
+                          <Label className="text-xs">
+                            XP reward (earned when completed)
+                          </Label>
                           <Input
                             type="number"
-                            value={lesson.order}
+                            value={lesson.xp_reward}
                             onChange={(e) =>
                               updateLessonField(
                                 index,
-                                'order',
+                                'xp_reward',
                                 parseInt(e.target.value) || 0,
                               )
                             }
-                            className="h-8 text-xs"
+                            className="mt-1"
                           />
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-xs">
-                              Description ({currentLangLabel})
-                            </Label>
-                            <Textarea
-                              value={description}
-                              onChange={(e) =>
-                                updateLessonMLField(
-                                  index,
-                                  'description',
-                                  currentLanguage,
-                                  e.target.value,
-                                )
-                              }
-                              rows={3}
-                              className="text-xs mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">
-                              Content HTML ({currentLangLabel})
-                            </Label>
-                            <Textarea
-                              value={content}
-                              onChange={(e) =>
-                                updateLessonMLField(
-                                  index,
-                                  'content',
-                                  currentLanguage,
-                                  e.target.value,
-                                )
-                              }
-                              rows={6}
-                              className="text-xs mt-1 font-mono"
-                              placeholder="<p>HTML for this lesson...</p>"
-                            />
-                          </div>
+                        <div>
+                          <Label className="text-xs">
+                            XP threshold (min XP to unlock)
+                          </Label>
+                          <Input
+                            type="number"
+                            value={lesson.xp_threshold}
+                            onChange={(e) =>
+                              updateLessonField(
+                                index,
+                                'xp_threshold',
+                                parseInt(e.target.value) || 0,
+                              )
+                            }
+                            className="mt-1"
+                          />
                         </div>
-
-                        <div className="grid md:grid-cols-4 gap-4">
-                          <div>
-                            <Label className="text-xs">
-                              XP reward (earned when completed)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={lesson.xp_reward}
-                              onChange={(e) =>
-                                updateLessonField(
-                                  index,
-                                  'xp_reward',
-                                  parseInt(e.target.value) || 0,
-                                )
-                              }
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">
-                              XP threshold (min XP to unlock)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={lesson.xp_threshold}
-                              onChange={(e) =>
-                                updateLessonField(
-                                  index,
-                                  'xp_threshold',
-                                  parseInt(e.target.value) || 0,
-                                )
-                              }
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">
-                              Estimated time (minutes)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={lesson.estimated_time}
-                              onChange={(e) =>
-                                updateLessonField(
-                                  index,
-                                  'estimated_time',
-                                  parseInt(e.target.value) || 0,
-                                )
-                              }
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">File URL</Label>
-                            <Input
-                              type="text"
-                              value={lesson.file_url || ''}
-                              onChange={(e) =>
-                                updateLessonField(
-                                  index,
-                                  'file_url',
-                                  e.target.value || null,
-                                )
-                              }
-                              placeholder="https://..."
-                              className="mt-1"
-                            />
-                          </div>
+                        <div>
+                          <Label className="text-xs">
+                            Estimated time (minutes)
+                          </Label>
+                          <Input
+                            type="number"
+                            value={lesson.estimated_time}
+                            onChange={(e) =>
+                              updateLessonField(
+                                index,
+                                'estimated_time',
+                                parseInt(e.target.value) || 0,
+                              )
+                            }
+                            className="mt-1"
+                          />
                         </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-xs">Lesson image URL</Label>
-                            <Input
-                              type="text"
-                              value={lesson.image_url || ''}
-                              onChange={(e) =>
-                                updateLessonField(
-                                  index,
-                                  'image_url',
-                                  e.target.value || null,
-                                )
-                              }
-                              placeholder="https://..."
-                              className="mt-1"
-                            />
-                          </div>
+                        <div>
+                          <Label className="text-xs">File URL</Label>
+                          <Input
+                            type="text"
+                            value={lesson.file_url || ''}
+                            onChange={(e) =>
+                              updateLessonField(
+                                index,
+                                'file_url',
+                                e.target.value || null,
+                              )
+                            }
+                            placeholder="https://..."
+                            className="mt-1"
+                          />
                         </div>
+                      </div>
 
-                        <div className="flex justify-between gap-2 pt-2 border-t">
-                          <div className="text-xs text-gray-500">
-                            Lesson ID:{' '}
-                            {lesson.id ? lesson.id : 'Not saved yet'}
-                          </div>
-                          <div className="flex gap-2 flex-wrap justify-end">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                if (!lesson.id) {
-                                  toast({
-                                    title: 'Save lesson first',
-                                    description:
-                                      'You need to save the lesson before opening the advanced editor.',
-                                    variant: 'destructive',
-                                  });
-                                  return;
-                                }
-                                router.push(
-                                  `/admin/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}`,
-                                );
-                              }}
-                            >
-                              <LayoutTemplate className="h-4 w-4 mr-1" />
-                              Open editor
-                            </Button>
-
-                            {/* Preview as student – abre página pública */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                if (!lesson.id) {
-                                  toast({
-                                    title: 'Save lesson first',
-                                    description:
-                                      'You need to save the lesson before previewing it as a student.',
-                                    variant: 'destructive',
-                                  });
-                                  return;
-                                }
-                                window.open(
-                                  `/education/lessons/${lesson.id}`,
-                                  '_blank',
-                                );
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Preview
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleDeleteLesson(lesson, index)
-                              }
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                handleSaveLesson(lesson, index)
-                              }
-                              disabled={!!savingLessonId}
-                              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              <Save className="h-4 w-4 mr-1" />
-                              {savingThis ? 'Saving...' : 'Save lesson'}
-                            </Button>
-                          </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs">Lesson image URL</Label>
+                          <Input
+                            type="text"
+                            value={lesson.image_url || ''}
+                            onChange={(e) =>
+                              updateLessonField(
+                                index,
+                                'image_url',
+                                e.target.value || null,
+                              )
+                            }
+                            placeholder="https://..."
+                            className="mt-1"
+                          />
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                      </div>
+
+                      <div className="flex justify-between gap-2 pt-2 border-t">
+                        <div className="text-xs text-gray-500">
+                          Lesson ID: {lesson.id ? lesson.id : 'Not saved yet'}
+                        </div>
+                        <div className="flex gap-2 flex-wrap justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (!lesson.id) {
+                                toast({
+                                  title: 'Save lesson first',
+                                  description:
+                                    'You need to save the lesson before opening the advanced editor.',
+                                  variant: 'destructive',
+                                });
+                                return;
+                              }
+                              router.push(
+                                `/admin/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}`,
+                              );
+                            }}
+                          >
+                            <LayoutTemplate className="h-4 w-4 mr-1" />
+                            Open editor
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (!lesson.id) {
+                                toast({
+                                  title: 'Save lesson first',
+                                  description:
+                                    'You need to save the lesson before previewing it as a student.',
+                                  variant: 'destructive',
+                                });
+                                return;
+                              }
+                              window.open(
+                                `/education/lessons/${lesson.id}`,
+                                '_blank',
+                              );
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Preview
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteLesson(lesson, index)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveLesson(lesson, index)}
+                            disabled={!!savingLessonId}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            {savingThis ? 'Saving...' : 'Save lesson'}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }
