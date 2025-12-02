@@ -745,6 +745,47 @@ export default function AdminHouseDetailPage() {
             </div>
           )}
 
+          {/* Quick metrics */}
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-gray-600">Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StatusBadge status={house.status} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-gray-600">Head of House</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {head ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium">
+                      {head.full_name || head.username || 'Head'}
+                    </span>
+                    {head.username && (
+                      <span className="text-xs text-gray-500">@{head.username}</span>
+                    )}
+                  </div>
+                ) : (
+                  <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
+                    Missing Head
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-gray-600">Moderators</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{moderators.length}</div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* GRID PRINCIPAL */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Info + status */}
