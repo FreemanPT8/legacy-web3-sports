@@ -23,6 +23,7 @@ type Course = {
   author_name?: string | null;
   xp_total_distributed?: number | null;
   xp_creator_distributed?: number | null;
+  modules?: any[];
 };
 
 type PermissionsResponse = {
@@ -136,7 +137,7 @@ export default function CoursesManagementPage() {
       setLoadingData(true);
       try {
         const token = getToken();
-        const response = await fetch('/api/admin/courses', {
+        const response = await fetch('/api/admin/courses?includeModules=true', {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -259,6 +260,15 @@ export default function CoursesManagementPage() {
   const draftCourses = courses.filter(
     (c: any) => !(c.is_published ?? c.published),
   );
+  const totalModules = courses.reduce(
+    (acc, c: any) => acc + ((c.modules || []).length || 0),
+    0,
+  );
+  const totalLessons = courses.reduce((acc, c: any) => {
+    const modules = c.modules || [];
+    const lessons = modules.flatMap((m: any) => m.lessons || []);
+    return acc + lessons.length;
+  }, 0);
 
   const levelLabel = (course: Course) => course.level || 'Beginner';
 
@@ -335,6 +345,21 @@ export default function CoursesManagementPage() {
                 </div>
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  Modules / Lessons
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-semibold text-blue-700">
+                  {totalModules} modules
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">
+                  {totalLessons} lessons
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {loadingData ? (
@@ -377,6 +402,11 @@ export default function CoursesManagementPage() {
                 const isCreator = !!user && course.author_id === user.id;
                 const xpTotal = course.xp_total_distributed ?? 0;
                 const xpCreator = course.xp_creator_distributed ?? 0;
+                const modulesCount = (course.modules || []).length;
+                const lessonsCount = (course.modules || []).reduce(
+                  (acc: number, m: any) => acc + ((m.lessons || []).length || 0),
+                  0,
+                );
 
                 return (
                   <Card key={course.id} className="hover:shadow-lg transition-shadow">
@@ -421,6 +451,9 @@ export default function CoursesManagementPage() {
                       <div className="flex flex-wrap gap-2 text-xs mb-4">
                         <Badge variant="outline">
                           {xpTotal} XP distributed
+                        </Badge>
+                        <Badge variant="outline">
+                          {modulesCount} modules · {lessonsCount} lessons
                         </Badge>
                         {isCreator && (
                           <Badge variant="outline" className="border-blue-500 text-blue-600">
