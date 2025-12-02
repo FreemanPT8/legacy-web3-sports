@@ -111,10 +111,13 @@ export async function GET(request: NextRequest) {
           .select('id, full_name, username')
           .in('id', authorIds);
         if (authors) {
-          authorMap = authors.reduce((acc, a: any) => {
-            acc[a.id] = a.full_name || a.username || '';
-            return acc;
-          }, {} as Record<string, string>);
+          authorMap = authors.reduce(
+            (acc: Record<string, string>, a: any) => {
+              acc[a.id] = a.full_name || a.username || '';
+              return acc;
+            },
+            {} as Record<string, string>,
+          );
         }
       }
 
