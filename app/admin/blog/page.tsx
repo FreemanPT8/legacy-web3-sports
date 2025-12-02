@@ -242,6 +242,23 @@ export default function BlogManagementPage() {
     (acc, p: any) => acc + (p.xp_total_distributed || 0),
     0,
   );
+  const totalViewsAll = posts.reduce(
+    (acc, p: any) => acc + (p.views || 0),
+    0,
+  );
+
+  const topByViews = [...posts]
+    .filter((p) => (p.views || 0) > 0)
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 3);
+
+  const topByXP = [...posts]
+    .filter((p) => (p.xp_total_distributed || 0) > 0)
+    .sort(
+      (a, b) =>
+        (b.xp_total_distributed || 0) - (a.xp_total_distributed || 0),
+    )
+    .slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
@@ -323,7 +340,81 @@ export default function BlogManagementPage() {
                 </div>
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  Views (total)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-600">
+                  {totalViewsAll}
+                </div>
+              </CardContent>
+            </Card>
           </div>
+
+          {posts.length > 0 && (
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Top Posts by Views
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {topByViews.length === 0 ? (
+                    <p className="text-sm text-gray-500">No views yet.</p>
+                  ) : (
+                    topByViews.map((p, idx) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between text-sm border rounded-md px-3 py-2 bg-white dark:bg-gray-900"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">#{idx + 1}</Badge>
+                          <span className="font-semibold truncate max-w-[180px]">
+                            {resolveLocalizedText(p.title) || 'Untitled'}
+                          </span>
+                        </div>
+                        <div className="text-gray-600">{p.views || 0} views</div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Top Posts by XP
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {topByXP.length === 0 ? (
+                    <p className="text-sm text-gray-500">No XP distributed yet.</p>
+                  ) : (
+                    topByXP.map((p, idx) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between text-sm border rounded-md px-3 py-2 bg-white dark:bg-gray-900"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">#{idx + 1}</Badge>
+                          <span className="font-semibold truncate max-w-[180px]">
+                            {resolveLocalizedText(p.title) || 'Untitled'}
+                          </span>
+                        </div>
+                        <div className="text-gray-600">
+                          {p.xp_total_distributed || 0} XP
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {loadingData ? (
             <Card>
