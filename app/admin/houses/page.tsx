@@ -314,6 +314,7 @@ export default function AdminHousesPage() {
   const developingHouses = houses.filter(
     (h) => h.status === 'development',
   ).length;
+  const missingHeads = houses.filter((h) => !h.head).length;
 
   return (
     <div className="space-y-8 bg-gray-50 py-10">
@@ -335,7 +336,7 @@ export default function AdminHousesPage() {
         </div>
 
         {/* Métricas rápidas */}
-        <div className="grid md:grid-cols-4 gap-4 mb-4">
+        <div className="grid md:grid-cols-5 gap-4 mb-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-gray-600">
@@ -379,6 +380,18 @@ export default function AdminHousesPage() {
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
                 {developingHouses}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-600">
+                Missing Head
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {missingHeads}
               </div>
             </CardContent>
           </Card>
@@ -516,9 +529,9 @@ export default function AdminHousesPage() {
                                 )}
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-400">
-                                No Head defined
-                              </span>
+                              <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
+                                Missing Head
+                              </Badge>
                             )}
                           </div>
                         </td>
