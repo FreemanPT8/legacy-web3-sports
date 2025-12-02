@@ -73,6 +73,10 @@ export default function BlogManagementPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageBlog, setCanManageBlog] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'recent' | 'views' | 'xp'>('recent');
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
@@ -260,6 +264,36 @@ export default function BlogManagementPage() {
     )
     .slice(0, 3);
 
+  const filteredPosts = posts
+    .filter((p) => {
+      const st = p.status || (p.published ? 'published' : 'draft');
+      if (statusFilter !== 'all' && st !== statusFilter) return false;
+      if (
+        categoryFilter.trim() &&
+        !(p.category || '').toLowerCase().includes(categoryFilter.toLowerCase())
+      )
+        return false;
+      if (
+        authorFilter.trim() &&
+        !(p.author_name || p.author || '')
+          .toLowerCase()
+          .includes(authorFilter.toLowerCase())
+      )
+        return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'views') return (b.views || 0) - (a.views || 0);
+      if (sortBy === 'xp')
+        return (
+          (b.xp_total_distributed || 0) - (a.xp_total_distributed || 0)
+        );
+      // recent
+      const da = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const db = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return db - da;
+    });
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
       <div className="container mx-auto px-4">
@@ -416,6 +450,58 @@ export default function BlogManagementPage() {
             </div>
           )}
 
+          {/* Filtros */}
+          <Card>
+            <CardContent className="pt-6 grid md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <p className="text-xs text-gray-500">Status</p>
+                <select
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as 'all' | 'published' | 'draft')
+                  }
+                >
+                  <option value="all">All</option>
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-gray-500">Category</p>
+                <input
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  placeholder="e.g. News"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-gray-500">Author</p>
+                <input
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={authorFilter}
+                  onChange={(e) => setAuthorFilter(e.target.value)}
+                  placeholder="name or username"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-gray-500">Order by</p>
+                <select
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={sortBy}
+                  onChange={(e) =>
+                    setSortBy(e.target.value as 'recent' | 'views' | 'xp')
+                  }
+                >
+                  <option value="recent">Most recent</option>
+                  <option value="views">Views</option>
+                  <option value="xp">XP distributed</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
           {loadingData ? (
             <Card>
               <CardContent className="text-center py-12">
@@ -425,7 +511,7 @@ export default function BlogManagementPage() {
                 </p>
               </CardContent>
             </Card>
-          ) : posts.length === 0 ? (
+          ) : filteredPosts.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -451,11 +537,11 @@ export default function BlogManagementPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>All Posts ({posts.length})</CardTitle>
+                <CardTitle>All Posts ({filteredPosts.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {posts.map((post) => {
+                  {filteredPosts.map((post) => {
                     const title =
                       resolveLocalizedText(post.title) || 'Untitled post';
                     const excerpt =
