@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     const posts = data || [];
 
     // Enriquecer com autor, XP total e XP do criador
-    const ids = posts.map((p) => p.id).filter(Boolean);
+    const ids = posts.map((p: any) => p.id).filter(Boolean);
     let authorMap: Record<string, string> = {};
     let xpTotalMap: Record<string, number> = {};
     let xpCreatorMap: Record<string, number> = {};
