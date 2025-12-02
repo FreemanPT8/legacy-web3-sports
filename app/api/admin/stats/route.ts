@@ -194,9 +194,18 @@ export async function GET(request: NextRequest) {
     );
 
     // ONBOARDING
-    const { data: onboardingSubmissions, error: onboardingError } = await db
+    type OnboardingRow = {
+      id: string;
+      status?: string | null;
+      assigned_to_user_id?: string | null;
+      created_at?: string | null;
+    };
+    const { data: onboardingSubmissions, error: onboardingError } = (await db
       .from('onboarding_submissions')
-      .select('id, status, assigned_to_user_id, created_at');
+      .select('id, status, assigned_to_user_id, created_at')) as {
+      data: OnboardingRow[] | null;
+      error: any;
+    };
     if (onboardingError) {
       console.error('Error fetching onboarding submissions in admin stats:', onboardingError);
     }
@@ -211,12 +220,12 @@ export async function GET(request: NextRequest) {
     ];
 
     const totalOnboardingPending =
-      onboardingSubmissions?.filter((f) =>
+      onboardingSubmissions?.filter((f: OnboardingRow) =>
         pendingStatuses.includes(f.status || ''),
       ).length || 0;
 
     const onboardingByStatus = (onboardingSubmissions || []).reduce(
-      (acc: Record<string, number>, form: any) => {
+      (acc: Record<string, number>, form: OnboardingRow) => {
         const s = form?.status || 'unknown';
         acc[s] = (acc[s] || 0) + 1;
         return acc;
@@ -225,7 +234,7 @@ export async function GET(request: NextRequest) {
     );
 
     const onboardingByResponsible = (onboardingSubmissions || []).reduce(
-      (acc: Record<string, number>, form: any) => {
+      (acc: Record<string, number>, form: OnboardingRow) => {
         const uid = form?.assigned_to_user_id;
         if (!uid) return acc;
         acc[uid] = (acc[uid] || 0) + 1;
@@ -235,8 +244,9 @@ export async function GET(request: NextRequest) {
     );
 
     const pendingPorAbrir =
-      onboardingSubmissions?.filter((f) => f.status === 'PENDING_RESPONSE')
-        .length || 0;
+      onboardingSubmissions?.filter(
+        (f: OnboardingRow) => f.status === 'PENDING_RESPONSE',
+      ).length || 0;
 
     // HOUSES OF SPORTS
     const { data: houses, error: housesError } = await db
