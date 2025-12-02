@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 
 export async function GET(request: NextRequest) {
@@ -10,69 +10,105 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // ----------------------------
+    // USERS
+    // ----------------------------
     const { data: users } = await supabase
       .from('users')
-      .select('id, created_at')
-      .order('created_at', { ascending: false });
+      .select('id, created_at, role');
 
+    const totalUsers = users?.length || 0;
+    const totalAdmins = users?.filter(u => u.role === 'Admin').length || 0;
+    const totalSuperAdmins = users?.filter(u => u.role === 'Super Admin').length || 0;
+
+    // Growth calculation
+    const now = new Date();
+    const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
+
+    const usersThisMonth =
+      users?.filter(u => new Date(u.created_at) > monthAgo).length || 0;
+
+    const lastMonthUsers =
+      users?.filter(u => {
+        const created = new Date(u.created_at);
+        return created > twoMonthsAgo && created <= monthAgo;
+      }).length || 1;
+
+    const userGrowth = lastMonthUsers
+      ? Math.round(((usersThisMonth - lastMonthUsers) / lastMonthUsers) * 100)
+      : 0;
+
+    // ----------------------------
+    // COURSES + LESSONS
+    // ----------------------------
     const { data: courses } = await supabase
       .from('courses')
       .select('id, published');
 
+    const { data: lessons } = await supabase
+      .from('lessons')
+      .select('id');
+
+    const totalCourses = courses?.length || 0;
+    const totalLessons = lessons?.length || 0;
+
+    // ----------------------------
+    // BLOG POSTS
+    // ----------------------------
     const { data: blogPosts } = await supabase
       .from('blog_posts')
       .select('id, published');
 
+    const totalBlogPosts = blogPosts?.filter(p => p.published).length || 0;
+
+    // ----------------------------
+    // ONBOARDING
+    // ----------------------------
     const { data: onboardingForms } = await supabase
       .from('onboarding_forms')
       .select('id, reviewed');
 
-    const totalUsers = users?.length || 0;
-    const usersThisMonth = users?.filter(u => {
-      const created = new Date(u.created_at);
-      const now = new Date();
-      const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      return created > monthAgo;
-    }).length || 0;
+    const totalOnboardingPending =
+      onboardingForms?.filter(f => !f.reviewed).length || 0;
 
-    const lastMonthUsers = users?.filter(u => {
-      const created = new Date(u.created_at);
-      const now = new Date();
-      const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
-      const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      return created > twoMonthsAgo && created <= monthAgo;
-    }).length || 1;
+    // ----------------------------
+    // HOUSES OF SPORTS
+    // ----------------------------
+    const { data: houses } = await supabase
+      .from('houses_of_sports')
+      .select('id, status');
 
-    const userGrowth = lastMonthUsers > 0
-      ? Math.round(((usersThisMonth - lastMonthUsers) / lastMonthUsers) * 100)
-      : 0;
+    const totalHouses = houses?.length || 0;
+    const activeHouses = houses?.filter(h => h.status === 'active').length || 0;
+    const buildingHouses = houses?.filter(h => h.status === 'building').length || 0;
+    const developingHouses = houses?.filter(h => h.status === 'developing').length || 0;
 
-    const activeCourses = courses?.filter(c => c.published).length || 0;
-    const totalCourses = courses?.length || 0;
-
-    const publishedPosts = blogPosts?.filter(p => p.published).length || 0;
-    const totalPosts = blogPosts?.length || 0;
-
-    const pendingOnboarding = onboardingForms?.filter(f => !f.reviewed).length || 0;
-
-    const { data: lessons } = await supabase
-      .from('lessons')
-      .select('id');
-    const totalLessons = lessons?.length || 0;
-
+    // ----------------------------
+    // RETURN FINAL STATS OBJECT
+    // ----------------------------
     return NextResponse.json({
       success: true,
       stats: {
         totalUsers,
+        totalAdmins,
+        totalSuperAdmins,
+
         usersThisMonth,
         userGrowth: userGrowth > 0 ? `+${userGrowth}%` : `${userGrowth}%`,
-        activeCourses,
+
         totalCourses,
         totalLessons,
-        publishedPosts,
-        totalPosts,
-        pendingOnboarding
-      }
+
+        totalBlogPosts,
+
+        totalOnboardingPending,
+
+        totalHouses,
+        activeHouses,
+        buildingHouses,
+        developingHouses,
+      },
     });
   } catch (error) {
     console.error('Error fetching admin stats:', error);

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -29,6 +28,7 @@ import {
 } from 'lucide-react';
 
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { UserSelect } from '@/components/admin/UserSelect';
 
 type XPSummary = {
   total_xp: number;
@@ -51,94 +51,78 @@ export default function XPManagementPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
 
-  const [recentTransactions, setRecentTransactions] = useState<XPHistoryItem[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
-
-  const [historyUserId, setHistoryUserId] = useState('');
-  const [historyLimit, setHistoryLimit] = useState(20);
-
-  const [awardUserId, setAwardUserId] = useState('');
+  // Award XP
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [awardAmount, setAwardAmount] = useState('');
   const [awardReason, setAwardReason] = useState('');
 
   const [awardLoading, setAwardLoading] = useState(false);
-  const [awardError, setAwardError] = useState<string | null>(null);
   const [awardSuccess, setAwardSuccess] = useState<string | null>(null);
+  const [awardError, setAwardError] = useState<string | null>(null);
 
-  const [confirmText, setConfirmText] = useState('');
-  const [submittingReset, setSubmittingReset] = useState(false);
-  const [resetResultMessage, setResetResultMessage] = useState<string | null>(null);
-  const [resetResultError, setResetResultError] = useState<string | null>(null);
-
+  // XP summary
   const [xpSummary, setXpSummary] = useState<XPSummary | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
 
+  // XP history
+  const [historyLimit, setHistoryLimit] = useState(20);
+  const [history, setHistory] = useState<XPHistoryItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Reset XP
   const REQUIRED_PHRASE = 'RESET ALL XP';
+  const [confirmText, setConfirmText] = useState('');
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const isFreeman =
     !!user && (user.username === 'freemanpt' || user.email === 'freemanpt');
 
-  // Redirect if not allowed
+  // Access control
   useEffect(() => {
     if (!loading && !user) router.push('/login');
-
-    if (
-      !loading &&
-      user &&
-      user.role !== 'Super Admin' &&
-      user.role !== 'Admin'
-    ) {
+    if (!loading && user && user.role !== 'Super Admin' && user.role !== 'Admin') {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
-  // Load summary + history
+  // Load XP summary on page load
   useEffect(() => {
     if (!user) return;
     if (user.role !== 'Super Admin' && user.role !== 'Admin') return;
 
-    const load = async () => {
+    async function loadSummary() {
       try {
         const token = getToken();
+        const res = await fetch('/api/xp/summary', {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: token ? `Bearer ${token}` : '',
+          },
+        });
 
-        if (token) {
-          const summaryRes = await fetch('/api/xp/summary', {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          const summaryData = await summaryRes.json();
-
-          if (summaryRes.ok && summaryData.success) {
-            setXpSummary(summaryData.summary as XPSummary);
-          }
-        }
-
-        if (xpSummary?.top_user?.id) {
-          await loadHistory(xpSummary.top_user.id);
-        }
+        const data = await res.json();
+        if (res.ok && data.success) setXpSummary(data.summary);
       } catch (err) {
-        console.error('Erro ao carregar XP summary / history:', err);
+        console.error('Failed to load summary:', err);
       } finally {
         setLoadingSummary(false);
-        setLoadingData(false);
       }
-    };
+    }
 
-    load();
+    loadSummary();
   }, [user]);
 
-  // Load history for a user
-  async function loadHistory(forUser?: string) {
-    const uid = (forUser || historyUserId || '').trim();
+  // Load history for a selected user
+  async function loadHistory(userId?: string) {
+    const uid = userId || selectedUserId;
     if (!uid) {
-      setRecentTransactions([]);
+      setHistory([]);
       return;
     }
 
-    setLoadingData(true);
+    setLoadingHistory(true);
 
     try {
       const params = new URLSearchParams({
@@ -149,48 +133,50 @@ export default function XPManagementPage() {
       const res = await fetch(`/api/xp/history?${params}`);
       const data = await res.json();
 
-      if (res.ok && data.success) {
-        setRecentTransactions(data.history as XPHistoryItem[]);
-      } else {
-        setRecentTransactions([]);
-        console.error('Histórico falhou:', data.error);
-      }
+      if (res.ok && data.success) setHistory(data.history);
+      else setHistory([]);
     } catch (err) {
-      console.error('Erro ao carregar histórico:', err);
-      setRecentTransactions([]);
+      console.error('History error:', err);
+      setHistory([]);
     } finally {
-      setLoadingData(false);
+      setLoadingHistory(false);
     }
   }
 
-  // Handle Award XP manual
+  // Manual Award XP
   async function handleAwardXP(e: FormEvent) {
     e.preventDefault();
-    setAwardLoading(true);
     setAwardError(null);
     setAwardSuccess(null);
 
-    if (!awardUserId || !awardAmount || !awardReason) {
-      setAwardError('Preenche todos os campos.');
-      setAwardLoading(false);
+    if (!selectedUserId) {
+      setAwardError('Seleciona um utilizador.');
       return;
     }
 
-    const token = getToken();
-    if (!token) {
-      setAwardError('Token inválido. Faz login novamente.');
-      setAwardLoading(false);
+    if (selectedUserId === user?.id) {
+      setAwardError('Não podes atribuir XP a ti próprio.');
       return;
     }
+
+    if (!awardAmount || Number(awardAmount) <= 0) {
+      setAwardError('Define um valor válido de XP.');
+      return;
+    }
+
+    if (!awardReason.trim()) {
+      setAwardError('Define uma razão.');
+      return;
+    }
+
+    setAwardLoading(true);
 
     try {
       const res = await fetch('/api/xp/award', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: awardUserId,
+          userId: selectedUserId,
           xpAmount: Number(awardAmount),
           action: awardReason,
           referenceId: null,
@@ -204,50 +190,50 @@ export default function XPManagementPage() {
       if (!res.ok || !data.success) {
         setAwardError(data.error || 'Erro ao atribuir XP.');
       } else {
-        setAwardSuccess(`Atribuído ${awardAmount} XP a ${awardUserId}.`);
-        setAwardUserId('');
+        setAwardSuccess(`Atribuído ${awardAmount} XP.`);
         setAwardAmount('');
         setAwardReason('');
 
-        await loadHistory(awardUserId);
+        loadHistory(selectedUserId);
 
-        const summaryRes = await fetch('/api/xp/summary', {
+        // Refresh summary
+        const token = getToken();
+        const sRes = await fetch('/api/xp/summary', {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            Authorization: token ? `Bearer ${token}` : '',
           },
         });
 
-        const summaryData = await summaryRes.json();
-        if (summaryRes.ok && summaryData.success) {
-          setXpSummary(summaryData.summary);
-        }
+        const sData = await sRes.json();
+        if (sRes.ok && sData.success) setXpSummary(sData.summary);
       }
     } catch (err) {
-      setAwardError('Erro inesperado ao atribuir XP.');
+      setAwardError('Erro inesperado.');
     } finally {
       setAwardLoading(false);
     }
   }
 
-  // Reset XP
-  async function handleResetSubmit(e: FormEvent) {
+  // Global reset
+  async function handleReset(e: FormEvent) {
     e.preventDefault();
-    setResetResultMessage(null);
-    setResetResultError(null);
+    setResetError(null);
+    setResetSuccess(null);
 
     if (!isFreeman) {
-      setResetResultError('Apenas freemanpt pode fazer reset global.');
+      setResetError('Apenas freemanpt pode usar esta ferramenta.');
       return;
     }
 
-    if (confirmText.trim() !== REQUIRED_PHRASE) {
-      setResetResultError(`Escreve exatamente: ${REQUIRED_PHRASE}`);
+    if (confirmText !== REQUIRED_PHRASE) {
+      setResetError(`Escreve exatamente: ${REQUIRED_PHRASE}`);
       return;
     }
+
+    setResetLoading(true);
 
     try {
-      setSubmittingReset(true);
       const token = getToken();
 
       const res = await fetch('/api/admin/xp/reset', {
@@ -261,10 +247,10 @@ export default function XPManagementPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setResetResultError(data.error || 'Erro ao resetar XP.');
+        setResetError(data.error || 'Erro ao resetar XP.');
       } else {
-        setResetResultMessage('XP global resetado com sucesso.');
-        setRecentTransactions([]);
+        setResetSuccess('XP global resetado com sucesso.');
+        setHistory([]);
         setXpSummary({
           total_xp: 0,
           avg_xp_per_user: 0,
@@ -272,24 +258,13 @@ export default function XPManagementPage() {
         });
       }
     } catch {
-      setResetResultError('Erro inesperado.');
+      setResetError('Erro inesperado.');
     } finally {
-      setSubmittingReset(false);
+      setResetLoading(false);
     }
   }
 
-  // Loading state
-  if (
-    loading ||
-    !user ||
-    (user.role !== 'Super Admin' && user.role !== 'Admin')
-  ) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-      </div>
-    );
-  }
+  if (loading || !user) return null;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -297,13 +272,18 @@ export default function XPManagementPage() {
 
       <main className="flex-1 bg-gray-50 dark:bg-gray-950">
         <div className="flex min-h-[calc(100vh-120px)]">
+
+          {/* Sidebar */}
           <AdminSidebar />
 
+          {/* Content */}
           <div className="flex-1 p-6 md:p-10 space-y-12">
 
-            {/* TITLE */}
+            {/* HEADER */}
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">XP Management</h1>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                XP Management
+              </h1>
               <p className="text-gray-600 dark:text-gray-300">
                 Estatísticas, histórico e atribuição manual de XP.
               </p>
@@ -313,49 +293,56 @@ export default function XPManagementPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-blue-600" /> Award XP Manually
+                  <Award className="h-5 w-5 text-blue-600" />
+                  Award XP Manually
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAwardXP} className="space-y-4">
-                  <Input
-                    placeholder="User ID"
-                    value={awardUserId}
-                    onChange={(e) => setAwardUserId(e.target.value)}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="XP Amount"
-                    value={awardAmount}
-                    onChange={(e) => setAwardAmount(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Reason"
-                    value={awardReason}
-                    onChange={(e) => setAwardReason(e.target.value)}
-                  />
+              <CardContent className="space-y-4">
 
-                  {awardError && (
-                    <p className="text-sm text-red-600 flex items-center gap-2">
-                      <XCircle className="h-4 w-4" /> {awardError}
-                    </p>
+                <UserSelect
+                  label="Selecionar utilizador"
+                  value={selectedUserId}
+                  onChange={(v) => {
+                    setSelectedUserId(v);
+                    loadHistory(v);
+                  }}
+                />
+
+                <Input
+                  type="number"
+                  placeholder="XP Amount"
+                  value={awardAmount}
+                  onChange={(e) => setAwardAmount(e.target.value)}
+                />
+
+                <Input
+                  placeholder="Reason"
+                  value={awardReason}
+                  onChange={(e) => setAwardReason(e.target.value)}
+                />
+
+                {awardError && (
+                  <p className="text-sm text-red-600 flex items-center gap-2">
+                    <XCircle className="h-4 w-4" /> {awardError}
+                  </p>
+                )}
+
+                {awardSuccess && (
+                  <p className="text-sm text-green-600 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" /> {awardSuccess}
+                  </p>
+                )}
+
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={awardLoading}
+                  onClick={handleAwardXP}
+                >
+                  {awardLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   )}
-
-                  {awardSuccess && (
-                    <p className="text-sm text-green-600 flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4" /> {awardSuccess}
-                    </p>
-                  )}
-
-                  <Button
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    disabled={awardLoading}
-                    type="submit"
-                  >
-                    {awardLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    Award XP
-                  </Button>
-                </form>
+                  Award XP
+                </Button>
               </CardContent>
             </Card>
 
@@ -368,46 +355,41 @@ export default function XPManagementPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <p>Total XP: <strong>{xpSummary?.total_xp ?? '-'}</strong></p>
-                  <p>Avg per User: <strong>{xpSummary?.avg_xp_per_user ?? '-'}</strong></p>
+                {loadingSummary ? (
+                  <p>A carregar...</p>
+                ) : (
+                  <div className="space-y-3">
+                    <p>Total XP: <strong>{xpSummary?.total_xp ?? '-'}</strong></p>
+                    <p>Avg per User: <strong>{xpSummary?.avg_xp_per_user ?? '-'}</strong></p>
 
-                  {xpSummary?.top_user && (
-                    <div className="flex items-center gap-4 mt-4">
-                      <div>
-                        <p className="font-semibold">{xpSummary.top_user.username}</p>
-                        <p className="text-xs text-gray-500">{xpSummary.top_user.xp_total} XP</p>
-                      </div>
-
+                    {xpSummary?.top_user && (
                       <Button
-                        size="sm"
                         variant="outline"
+                        size="sm"
                         onClick={() => {
-                          setHistoryUserId(xpSummary.top_user!.id);
+                          setSelectedUserId(xpSummary.top_user!.id);
                           loadHistory(xpSummary.top_user!.id);
                         }}
                       >
-                        Ver histórico
+                        Ver histórico do top user
                       </Button>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* HISTORY */}
+            {/* XP HISTORY */}
             <Card>
               <CardHeader>
-                <CardTitle>XP History</CardTitle>
+                <CardTitle className="flex gap-2 items-center">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  XP History
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
 
-                <div className="flex flex-col md:flex-row gap-4">
-                  <Input
-                    placeholder="User ID"
-                    value={historyUserId}
-                    onChange={(e) => setHistoryUserId(e.target.value)}
-                  />
+                <div className="flex gap-4">
                   <Input
                     type="number"
                     min={1}
@@ -415,16 +397,18 @@ export default function XPManagementPage() {
                     value={historyLimit}
                     onChange={(e) => setHistoryLimit(Number(e.target.value))}
                   />
-                  <Button onClick={() => loadHistory()}>Carregar histórico</Button>
+                  <Button onClick={() => loadHistory()}>
+                    Recarregar
+                  </Button>
                 </div>
 
-                {loadingData ? (
-                  <p className="text-gray-500">A carregar...</p>
-                ) : recentTransactions.length === 0 ? (
+                {loadingHistory ? (
+                  <p>A carregar histórico...</p>
+                ) : history.length === 0 ? (
                   <p className="text-gray-500">Sem histórico.</p>
                 ) : (
                   <div className="space-y-2">
-                    {recentTransactions.map((tx) => (
+                    {history.map((tx) => (
                       <div
                         key={tx.id}
                         className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800 flex justify-between"
@@ -448,13 +432,13 @@ export default function XPManagementPage() {
             {/* RESET XP */}
             <Card className="border-red-300">
               <CardHeader>
-                <CardTitle className="flex gap-2 items-center">
+                <CardTitle className="flex items-center gap-2">
                   <ShieldAlert className="h-5 w-5 text-red-600" />
                   Global XP Reset
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleResetSubmit} className="space-y-4">
+                <form onSubmit={handleReset} className="space-y-4">
 
                   <Input
                     placeholder="Escreve: RESET ALL XP"
@@ -462,28 +446,27 @@ export default function XPManagementPage() {
                     onChange={(e) => setConfirmText(e.target.value)}
                   />
 
-                  {resetResultError && (
-                    <p className="text-red-600 text-sm">{resetResultError}</p>
+                  {resetError && (
+                    <p className="text-sm text-red-600">{resetError}</p>
                   )}
-                  {resetResultMessage && (
-                    <p className="text-green-600 text-sm">{resetResultMessage}</p>
+
+                  {resetSuccess && (
+                    <p className="text-sm text-green-600">{resetSuccess}</p>
                   )}
 
                   <Button
                     type="submit"
                     variant="destructive"
-                    disabled={!isFreeman || submittingReset}
-                    className="flex gap-2"
+                    disabled={!isFreeman || resetLoading}
                   >
-                    {submittingReset && (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    {resetLoading && (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     )}
                     Executar reset global
                   </Button>
                 </form>
               </CardContent>
             </Card>
-
           </div>
         </div>
       </main>
