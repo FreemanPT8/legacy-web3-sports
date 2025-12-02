@@ -1,3 +1,4 @@
+// app/api/lessons/[id]/complete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import {
@@ -19,18 +20,25 @@ export async function POST(
 ) {
   const { id } = context.params;
 
+  if (!id) {
+    return NextResponse.json(
+      { success: false, error: 'Missing lesson id in route params' },
+      { status: 400 },
+    );
+  }
+
   try {
     const body = await request.json();
     const { userId, xpEarned } = body || {};
 
-    if (!userId || typeof xpEarned !== 'number') {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Missing userId or xpEarned' },
+        { success: false, error: 'Missing userId' },
         { status: 400 },
       );
     }
 
-    // 1) Obter lição (para saber autor, xp_reward, etc.)
+    // 1) Obter lição (para saber autor e XP base)
     const { data: lesson, error: lessonError } = await db
       .from('lessons')
       .select('id, author_id, xp_reward')
@@ -38,10 +46,7 @@ export async function POST(
       .maybeSingle();
 
     if (lessonError) {
-      console.error(
-        'Error fetching lesson in /complete:',
-        lessonError,
-      );
+      console.error('Error fetching lesson in /complete:', lessonError);
       return NextResponse.json(
         { success: false, error: 'Failed to load lesson' },
         { status: 500 },
@@ -56,13 +61,13 @@ export async function POST(
     }
 
     const authorId = lesson.author_id as string | null;
+    const baseLessonXP =
+      typeof lesson.xp_reward === 'number' && Number.isFinite(lesson.xp_reward)
+        ? lesson.xp_reward
+        : 0;
 
     // 2) Já completou esta lição?
-    const alreadyCompleted = await hasCompletedContent(
-      userId,
-      id,
-      'lesson',
-    );
+    const alreadyCompleted = await hasCompletedContent(userId, id, 'lesson');
 
     if (alreadyCompleted) {
       return NextResponse.json({
@@ -72,10 +77,19 @@ export async function POST(
       });
     }
 
-    // 3) Definir XP efectivo para o leitor
-    //    – criador não ganha XP por consumir a própria lição
+    // 3) Determinar o XP do leitor
+    //    - Cliente pode sugerir xpEarned, mas o servidor decide.
+    //    - Nunca damos mais do que xp_reward da lição.
+    const requestedXp =
+      typeof xpEarned === 'number' && Number.isFinite(xpEarned)
+        ? xpEarned
+        : baseLessonXP;
+
+    const safeReaderXP = Math.max(0, Math.min(requestedXp, baseLessonXP));
+
+    // Criador nunca ganha XP por consumir a própria lição
     const effectiveXpForReader =
-      authorId && authorId === userId ? 0 : xpEarned;
+      authorId && authorId === userId ? 0 : safeReaderXP;
 
     // 4) Registar conclusão em lesson_completions
     const markResult = await markContentComplete(
@@ -125,10 +139,10 @@ export async function POST(
     }
 
     // 6) Bónus de criador (19% do XP do leitor),
-    //    só se existir autor e não for o próprio leitor,
+    //    só se existir autor, não for o próprio leitor,
     //    e apenas se houver XP positivo nessa leitura
-    if (authorId && authorId !== userId && xpEarned > 0) {
-      const creatorBonus = Math.floor(xpEarned * 0.19);
+    if (authorId && authorId !== userId && effectiveXpForReader > 0) {
+      const creatorBonus = Math.floor(effectiveXpForReader * 0.19);
 
       if (creatorBonus > 0) {
         const creatorResult = await awardXP(
@@ -155,10 +169,7 @@ export async function POST(
       alreadyCompleted: false,
     });
   } catch (error) {
-    console.error(
-      'Error in POST /api/lessons/[id]/complete:',
-      error,
-    );
+    console.error('Error in POST /api/lessons/[id]/complete:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
       { status: 500 },

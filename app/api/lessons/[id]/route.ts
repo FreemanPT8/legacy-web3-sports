@@ -1,3 +1,4 @@
+// app/api/lessons/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 
@@ -18,6 +19,13 @@ export async function GET(
   context: RouteContext,
 ) {
   const { id } = context.params;
+
+  if (!id) {
+    return NextResponse.json(
+      { success: false, error: 'Missing lesson id in route params' },
+      { status: 400 },
+    );
+  }
 
   try {
     const url = new URL(request.url);
@@ -72,10 +80,7 @@ export async function GET(
       .maybeSingle();
 
     if (moduleError) {
-      console.error(
-        'Error fetching module (non-fatal):',
-        moduleError,
-      );
+      console.error('Error fetching module (non-fatal):', moduleError);
     } else {
       rawModule = moduleData;
     }
@@ -111,33 +116,27 @@ export async function GET(
       );
     }
 
-    const completionsArray: CompletionRow[] = (completions ||
-      []) as CompletionRow[];
+    const completionsArray: CompletionRow[] =
+      ((completions || []) as CompletionRow[]) || [];
 
     const completedCount = completionsArray.length;
 
     const totalXpDistributed = completionsArray.reduce(
-      (sum: number, row: CompletionRow) =>
-        sum + (row.xp_earned ?? 0),
+      (sum: number, row: CompletionRow) => sum + (row.xp_earned ?? 0),
       0,
     );
 
     // 5) Flags: criador / completed (criador nunca conta como completed)
     const isCreator =
-      !!userId &&
-      !!rawLesson.author_id &&
-      rawLesson.author_id === userId;
+      !!userId && !!rawLesson.author_id && rawLesson.author_id === userId;
 
     const isCompleted =
       !!userId &&
       !isCreator &&
-      completionsArray.some(
-        (c) => c.user_id && c.user_id === userId,
-      );
+      completionsArray.some((c) => c.user_id && c.user_id === userId);
 
     // 6) Normalizar dados da lesson
-    const authorName =
-      rawLesson.author_user?.username || null;
+    const authorName = rawLesson.author_user?.username || null;
 
     const lesson = {
       id: rawLesson.id,
@@ -160,8 +159,7 @@ export async function GET(
           title: rawModule.title,
           course_id: rawModule.course_id,
           author_id: rawModule.author_id,
-          author_name:
-            rawModule.author_user?.username || null,
+          author_name: rawModule.author_user?.username || null,
           lessons: Array.isArray(moduleLessons)
             ? moduleLessons.map((l: any) => ({
                 id: l.id,
