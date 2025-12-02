@@ -249,9 +249,10 @@ export async function GET(request: NextRequest) {
       ).length || 0;
 
     // HOUSES OF SPORTS
-    const { data: houses, error: housesError } = await db
+    type HouseRow = { id: string; status?: string | null };
+    const { data: houses, error: housesError } = (await db
       .from('houses_of_sports')
-      .select('id, status');
+      .select('id, status')) as { data: HouseRow[] | null; error: any };
     if (housesError) console.error('Error fetching houses in admin stats:', housesError);
 
     const statusMap = {
@@ -265,15 +266,17 @@ export async function GET(request: NextRequest) {
 
     const totalHouses = houses?.length || 0;
     const activeHouses =
-      houses?.filter((h) => statusMap[(h.status || '').toLowerCase()] === 'active')
+      houses?.filter(
+        (h: HouseRow) => statusMap[(h.status || '').toLowerCase()] === 'active',
+      )
         .length || 0;
     const buildingHouses =
       houses?.filter(
-        (h) => statusMap[(h.status || '').toLowerCase()] === 'building',
+        (h: HouseRow) => statusMap[(h.status || '').toLowerCase()] === 'building',
       ).length || 0;
     const developingHouses =
       houses?.filter(
-        (h) => statusMap[(h.status || '').toLowerCase()] === 'developing',
+        (h: HouseRow) => statusMap[(h.status || '').toLowerCase()] === 'developing',
       ).length || 0;
 
     return NextResponse.json({
