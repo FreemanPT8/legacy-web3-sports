@@ -22,21 +22,28 @@ export async function GET(request: NextRequest) {
     const window30d = sinceDays(30);
 
     // USERS
+    type UserRow = { id: string; role?: string | null; created_at?: string | null };
     const { data: users, error: usersError } = await db
       .from('users')
-      .select('id, role, created_at', { count: 'exact' });
+      .select('id, role, created_at', { count: 'exact' }) as { data: UserRow[] | null; error: any };
     if (usersError) console.error('Error fetching users in admin stats:', usersError);
 
     const totalUsers = users?.length || 0;
-    const totalAdmins = users?.filter((u) => u.role === 'Admin').length || 0;
+    const totalAdmins =
+      users?.filter((u: UserRow) => u.role === 'Admin').length || 0;
     const totalSuperAdmins =
-      users?.filter((u) => u.role === 'Super Admin').length || 0;
-    const totalMembers = users?.filter((u) => u.role === 'Member').length || 0;
+      users?.filter((u: UserRow) => u.role === 'Super Admin').length || 0;
+    const totalMembers =
+      users?.filter((u: UserRow) => u.role === 'Member').length || 0;
     const newUsers24h =
-      users?.filter((u) => u.created_at && u.created_at >= window24h).length ||
+      users?.filter(
+        (u: UserRow) => u.created_at && u.created_at >= window24h,
+      ).length ||
       0;
     const newUsers30d =
-      users?.filter((u) => u.created_at && u.created_at >= window30d).length ||
+      users?.filter(
+        (u: UserRow) => u.created_at && u.created_at >= window30d,
+      ).length ||
       0;
 
     // COURSES / MODULES / LESSONS
