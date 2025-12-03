@@ -126,6 +126,8 @@ export default function CreateBlogPostPage() {
     hasImage && !isValidUrl(post.image_url)
       ? 'Insere um URL valido (http/https).'
       : '';
+  const titleLength = (post.title[currentLanguage] || '').trim().length;
+  const excerptLength = (post.excerpt[currentLanguage] || '').trim().length;
 
   // Cache simples de imagens recentes (localStorage)
   useEffect(() => {
@@ -494,7 +496,12 @@ export default function CreateBlogPostPage() {
                         </div>
 
                         <div>
-                          <Label>Title ({currentLangLabel})</Label>
+                          <div className="flex items-center justify-between">
+                            <Label>Title ({currentLangLabel})</Label>
+                            <span className="text-[11px] text-gray-400">
+                              {titleLength}/60 recomendado
+                            </span>
+                          </div>
                           <Input
                             value={post.title[currentLanguage] || ''}
                             onChange={(e) =>
@@ -512,7 +519,12 @@ export default function CreateBlogPostPage() {
                         </div>
 
                         <div>
-                          <Label>Excerpt ({currentLangLabel})</Label>
+                          <div className="flex items-center justify-between">
+                            <Label>Excerpt ({currentLangLabel})</Label>
+                            <span className="text-[11px] text-gray-400">
+                              {excerptLength}/160 recomendado
+                            </span>
+                          </div>
                           <Textarea
                             value={post.excerpt[currentLanguage] || ''}
                             onChange={(e) =>
@@ -654,6 +666,17 @@ export default function CreateBlogPostPage() {
                         {imageUrlError}
                       </p>
                     )}
+
+                    <div className="mt-2 text-[11px] text-gray-500 space-y-1">
+                      <p className="font-semibold text-gray-700">
+                        Dicas rápidas de SEO
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Título com 50–60 caracteres e 1–2 keywords.</li>
+                        <li>Resumo/meta com 150–160 caracteres.</li>
+                        <li>Thumbnail com alt descritivo (usa o título como base).</li>
+                      </ul>
+                    </div>
                     {hasImage && !imageUrlError && (
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 mb-1">Preview</p>
