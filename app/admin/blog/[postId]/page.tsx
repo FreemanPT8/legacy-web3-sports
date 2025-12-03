@@ -122,6 +122,9 @@ export default function EditBlogPostPage() {
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageBlog, setCanManageBlog] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>(
+    'desktop',
+  );
   const hasImage = !!post?.image_url && post.image_url.trim().length > 0;
   const imageUrlError =
     hasImage && !isValidUrl(post?.image_url || '')
@@ -638,21 +641,49 @@ export default function EditBlogPostPage() {
                         {imageUrlError}
                       </p>
                     )}
-                    {hasImage && !imageUrlError && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-500 mb-1">Preview</p>
-                        <div className="rounded-lg border bg-white p-2">
-                          <SafeImage
-                            src={post.image_url ?? ''}
-                            alt="Post thumbnail preview"
-                            className="w-full h-40 object-cover rounded-md"
-                            width={400}
-                            height={160}
-                          />
+                      {hasImage && !imageUrlError && (
+                        <div className="mt-2 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-500">Preview</p>
+                            <div className="flex gap-1">
+                              <Button
+                                type="button"
+                                size="xs"
+                                variant={
+                                  previewMode === 'desktop' ? 'default' : 'outline'
+                                }
+                                onClick={() => setPreviewMode('desktop')}
+                              >
+                                Desktop
+                              </Button>
+                              <Button
+                                type="button"
+                                size="xs"
+                                variant={
+                                  previewMode === 'mobile' ? 'default' : 'outline'
+                                }
+                                onClick={() => setPreviewMode('mobile')}
+                              >
+                                Mobile
+                              </Button>
+                            </div>
+                          </div>
+                          <div
+                            className={`rounded-lg border bg-white p-2 ${
+                              previewMode === 'mobile' ? 'max-w-xs mx-auto' : ''
+                            }`}
+                          >
+                            <SafeImage
+                              src={post.image_url ?? ''}
+                              alt="Post thumbnail preview"
+                              className="w-full h-40 object-cover rounded-md"
+                              width={400}
+                              height={160}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
                   <div>
                     <Label>Reading Time (minutes)</Label>

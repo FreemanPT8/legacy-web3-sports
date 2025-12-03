@@ -105,6 +105,9 @@ export default function CreateBlogPostPage() {
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'preview'>(
     'basic',
   );
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>(
+    'desktop',
+  );
 
   const isValidUrl = (value: string) => {
     if (!value.trim()) return true;
@@ -363,16 +366,44 @@ export default function CreateBlogPostPage() {
             {/* COLUNA ESQUERDA */}
             <div className="lg:col-span-2 space-y-6">
               {activeTab === 'preview' ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Preview ({currentLangLabel})</CardTitle>
+                <Card
+                  className={
+                    previewMode === 'mobile' ? 'max-w-md mx-auto' : undefined
+                  }
+                >
+                  <CardHeader className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Preview ({currentLangLabel})</CardTitle>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={previewMode === 'desktop' ? 'default' : 'outline'}
+                          onClick={() => setPreviewMode('desktop')}
+                        >
+                          Desktop
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={previewMode === 'mobile' ? 'default' : 'outline'}
+                          onClick={() => setPreviewMode('mobile')}
+                        >
+                          Mobile
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Title</p>
-                      <p className="text-xl font-semibold">
-                        {post.title[currentLanguage] || 'Untitled post'}
-                      </p>
+                  <CardContent
+                    className={`space-y-4 ${
+                      previewMode === 'mobile' ? 'max-w-xs mx-auto' : ''
+                    }`}
+                  >
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Title</p>
+                        <p className="text-xl font-semibold">
+                          {post.title[currentLanguage] || 'Untitled post'}
+                        </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Excerpt</p>
@@ -391,10 +422,10 @@ export default function CreateBlogPostPage() {
                         {post.published ? 'Published' : 'Draft'}
                       </Badge>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Body preview is available after saving; use the Block
-                      Editor to craft the full content.
-                    </div>
+                      <div className="text-xs text-gray-500">
+                        Body preview is available after saving; use the Block
+                        Editor to craft the full content.
+                      </div>
                   </CardContent>
                 </Card>
               ) : (
