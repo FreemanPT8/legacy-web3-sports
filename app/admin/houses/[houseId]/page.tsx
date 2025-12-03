@@ -1216,8 +1216,6 @@ export default function AdminHouseDetailPage() {
           </Card>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }
