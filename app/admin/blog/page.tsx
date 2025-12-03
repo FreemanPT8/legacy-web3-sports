@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { SafeImage } from '@/components/SafeImage';
+import { SafeImage } from '@/app/components/SafeImage';
 
 type BlogPost = {
   id: string;
