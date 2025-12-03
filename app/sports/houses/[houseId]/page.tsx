@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -6,13 +6,8 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Loader2,
-  ArrowLeft,
-  Users,
-  User,
-  Trophy,
-} from 'lucide-react';
+import { SafeImage } from '@/app/components/SafeImage';
+import { Loader2, ArrowLeft, Users, User, Trophy } from 'lucide-react';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -49,7 +44,7 @@ function formatStatusLabel(status: HouseStatus): string {
     case 'active':
       return 'Ativa';
     case 'under_construction':
-      return 'Em construção';
+      return 'Em construÃ§Ã£o';
     case 'development':
       return 'Em desenvolvimento';
     default:
@@ -133,7 +128,7 @@ export default function PublicHouseProfilePage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="flex items-center gap-2 text-gray-600">
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span>A carregar House of Sports…</span>
+            <span>A carregar House of Sportsâ€¦</span>
           </div>
         </main>
         <Footer />
@@ -148,14 +143,14 @@ export default function PublicHouseProfilePage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-gray-700 mb-4">
-              {error || 'House não encontrada ou ainda não está disponível.'}
+              {error || 'House nÃ£o encontrada ou ainda nÃ£o estÃ¡ disponÃ­vel.'}
             </p>
             <button
               onClick={() => router.push('/sports/houses')}
               className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar às Houses
+              Voltar Ã s Houses
             </button>
           </div>
         </main>
@@ -164,7 +159,7 @@ export default function PublicHouseProfilePage() {
     );
   }
 
-  // House em development só visível para Admin/Super Admin
+  // House em development sÃ³ visÃ­vel para Admin/Super Admin
   if (house.status === 'development' && !isAdmin) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
@@ -172,15 +167,15 @@ export default function PublicHouseProfilePage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md px-4">
             <p className="text-gray-700 mb-4">
-              Esta House ainda está em desenvolvimento e não tem perfil público
-              disponível.
+              Esta House ainda estÃ¡ em desenvolvimento e nÃ£o tem perfil pÃºblico
+              disponÃ­vel.
             </p>
             <button
               onClick={() => router.push('/sports/houses')}
               className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar às Houses
+              Voltar Ã s Houses
             </button>
           </div>
         </main>
@@ -203,7 +198,7 @@ export default function PublicHouseProfilePage() {
                 className="inline-flex items-center text-xs text-gray-500 hover:text-gray-700"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Voltar às Houses
+                Voltar Ã s Houses
               </button>
             </div>
 
@@ -211,15 +206,21 @@ export default function PublicHouseProfilePage() {
               <div className="flex items-start gap-4">
                 {/* Avatar da House (imagem se existir) */}
                 <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white border border-blue-100 flex items-center justify-center shadow-sm overflow-hidden">
-                  {house.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                  {house.avatar_url && house.avatar_url.trim() !== '' ? (
+                    <SafeImage
                       src={house.avatar_url}
                       alt={`Imagem da House ${house.name}`}
                       className="h-full w-full object-cover"
+                      width={80}
+                      height={80}
                     />
                   ) : (
-                    <Trophy className="h-8 w-8 text-blue-500" />
+                    <div className="flex flex-col items-center justify-center text-blue-600">
+                      <Trophy className="h-8 w-8" />
+                      <span className="text-[10px] font-semibold uppercase">
+                        {house.sport_code || 'House'}
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -260,7 +261,7 @@ export default function PublicHouseProfilePage() {
                 <p className="text-gray-500 max-w-xs text-left md:text-right">
                   Esta House representa a comunidade de{' '}
                   {house.sport_name || 'um desporto'} em{' '}
-                  {house.country_code || 'um país'} dentro do ecossistema
+                  {house.country_code || 'um paÃ­s'} dentro do ecossistema
                   Web3/Apertum.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -284,9 +285,9 @@ export default function PublicHouseProfilePage() {
           </div>
         </section>
 
-        {/* CONTEÚDO PRINCIPAL DA HOUSE */}
+        {/* CONTEÃšDO PRINCIPAL DA HOUSE */}
         <section className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-          {/* Descrição / visão da House */}
+          {/* DescriÃ§Ã£o / visÃ£o da House */}
           <div className="grid gap-6 md:grid-cols-[1.7fr,1.3fr]">
             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
               <h2 className="text-sm font-semibold text-gray-900 mb-2">
@@ -300,9 +301,9 @@ export default function PublicHouseProfilePage() {
               ) : (
                 <>
                   <p className="text-xs text-gray-600 mb-2">
-                    As Houses of Sports são comunidades focadas num desporto
-                    específico, ligadas ao universo Web3 e à Apertum
-                    Blockchain. O objetivo desta House é juntar atletas,
+                    As Houses of Sports sÃ£o comunidades focadas num desporto
+                    especÃ­fico, ligadas ao universo Web3 e Ã  Apertum
+                    Blockchain. O objetivo desta House Ã© juntar atletas,
                     treinadores, clubes e entusiastas que queiram explorar
                     novas formas de{' '}
                     <strong>
@@ -311,16 +312,16 @@ export default function PublicHouseProfilePage() {
                     .
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
-                    Nesta fase inicial, a House está a definir a sua visão, a
-                    estrutura de comunidade, as missões e o tipo de conteúdo
-                    educativo que vai disponibilizar: desde noções base de
-                    blockchain e Web3 até modelos de participação em comunidade
+                    Nesta fase inicial, a House estÃ¡ a definir a sua visÃ£o, a
+                    estrutura de comunidade, as missÃµes e o tipo de conteÃºdo
+                    educativo que vai disponibilizar: desde noÃ§Ãµes base de
+                    blockchain e Web3 atÃ© modelos de participaÃ§Ã£o em comunidade
                     no desporto.
                   </p>
                   <p className="text-[11px] text-gray-500 mt-2">
-                    Em versões futuras, o Head of House e a equipa vão poder
-                    editar esta secção diretamente no painel de administração,
-                    definindo a identidade visual e a descrição oficial da
+                    Em versÃµes futuras, o Head of House e a equipa vÃ£o poder
+                    editar esta secÃ§Ã£o diretamente no painel de administraÃ§Ã£o,
+                    definindo a identidade visual e a descriÃ§Ã£o oficial da
                     House.
                   </p>
                 </>
@@ -340,20 +341,20 @@ export default function PublicHouseProfilePage() {
                       {head.full_name || head.username}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {head.username && <>@{head.username} · </>}
+                      {head.username && <>@{head.username} Â· </>}
                       {head.role || 'Membro'}
                     </p>
                     <p className="mt-2 text-[11px] text-gray-500">
-                      O Head of House é responsável por orientar a comunidade,
-                      definir prioridades de conteúdo, missões e eventos, sempre
-                      ligado à visão da SPORTS OFFICES e ao ecossistema da
+                      O Head of House Ã© responsÃ¡vel por orientar a comunidade,
+                      definir prioridades de conteÃºdo, missÃµes e eventos, sempre
+                      ligado Ã  visÃ£o da SPORTS OFFICES e ao ecossistema da
                       Apertum.
                     </p>
                   </div>
                 ) : (
                   <p className="text-xs text-gray-500">
-                    Esta House ainda não tem Head definido publicamente. Quando
-                    o Head estiver atribuído, vais poder ver aqui quem lidera a
+                    Esta House ainda nÃ£o tem Head definido publicamente. Quando
+                    o Head estiver atribuÃ­do, vais poder ver aqui quem lidera a
                     comunidade deste desporto.
                   </p>
                 )}
@@ -366,9 +367,9 @@ export default function PublicHouseProfilePage() {
                 </h3>
                 {moderators.length === 0 ? (
                   <p className="text-xs text-gray-500">
-                    Ainda não existem moderadores públicos para esta House.
-                    Moderadores vão apoiar o Head na gestão de missões,
-                    conteúdo e comunidade.
+                    Ainda nÃ£o existem moderadores pÃºblicos para esta House.
+                    Moderadores vÃ£o apoiar o Head na gestÃ£o de missÃµes,
+                    conteÃºdo e comunidade.
                   </p>
                 ) : (
                   <ul className="space-y-2 text-xs text-gray-700">
@@ -378,7 +379,7 @@ export default function PublicHouseProfilePage() {
                           {mod.full_name || mod.username}
                         </span>
                         <span className="text-gray-500">
-                          {mod.username && <>@{mod.username} · </>}
+                          {mod.username && <>@{mod.username} Â· </>}
                           {mod.role || 'Membro'}
                         </span>
                       </li>
@@ -389,31 +390,31 @@ export default function PublicHouseProfilePage() {
             </div>
           </div>
 
-          {/* Secção futura para membros / XP / chat */}
+          {/* SecÃ§Ã£o futura para membros / XP / chat */}
           <div className="rounded-xl border border-dashed border-gray-300 bg_white/60 bg-white p-5 text-xs text-gray-600">
             <h2 className="text-sm font-semibold text-gray-900 mb-2">
               O que vem a seguir para esta House?
             </h2>
             <p className="mb-2">
-              Em próximos desenvolvimentos, esta página vai mostrar:
+              Em prÃ³ximos desenvolvimentos, esta pÃ¡gina vai mostrar:
             </p>
             <ul className="list-disc list-inside space-y-1">
               <li>
-                Número de membros ativos da House e XP coletivo (soma de XP de
+                NÃºmero de membros ativos da House e XP coletivo (soma de XP de
                 todos os membros).
               </li>
               <li>
-                Um botão para entrar no <strong>chat privado da House</strong>{' '}
+                Um botÃ£o para entrar no <strong>chat privado da House</strong>{' '}
                 (apenas para membros).
               </li>
               <li>
-                Missões e trilhos de aprendizagem específicos deste desporto,
-                com recompensas em XP e, mais tarde, integração on-chain.
+                MissÃµes e trilhos de aprendizagem especÃ­ficos deste desporto,
+                com recompensas em XP e, mais tarde, integraÃ§Ã£o on-chain.
               </li>
             </ul>
             <p className="mt-3 text-[11px] text-gray-500">
-              Para já, o passo mais importante é garantires que o teu perfil
-              está alinhado com o desporto certo através do onboarding
+              Para jÃ¡, o passo mais importante Ã© garantires que o teu perfil
+              estÃ¡ alinhado com o desporto certo atravÃ©s do onboarding
               personalizado.
             </p>
           </div>
@@ -422,19 +423,19 @@ export default function PublicHouseProfilePage() {
           <div className="border-t pt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold text-gray-900">
-                Queres fazer parte desta visão para o desporto em Web3?
+                Queres fazer parte desta visÃ£o para o desporto em Web3?
               </h3>
               <p className="text-xs text-gray-500 max-w-xl">
                 A LEGACY existe para ajudar profissionais e entusiastas a
-                navegarem o mundo da blockchain e da comunidade, sem jargão
-                técnico e passo a passo, desporto a desporto.
+                navegarem o mundo da blockchain e da comunidade, sem jargÃ£o
+                tÃ©cnico e passo a passo, desporto a desporto.
               </p>
             </div>
             <Link
               href="/sports/onboarding"
               className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
-              Começar onboarding personalizado
+              ComeÃ§ar onboarding personalizado
             </Link>
           </div>
         </section>
@@ -444,3 +445,4 @@ export default function PublicHouseProfilePage() {
     </div>
   );
 }
+
