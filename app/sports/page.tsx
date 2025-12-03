@@ -20,6 +20,8 @@ interface Sport {
 interface House {
   id: string;
   name: string;
+  avatar_url?: string | null;
+  cover_image_url?: string | null;
   country_code: string | null;
   status: PublicHouseStatus;
   created_at: string | null;
@@ -421,8 +423,26 @@ function HousesSection({
             className="block rounded-xl border border-slate-700 bg-slate-900/70 p-4 shadow-sm hover:border-emerald-400/80 hover:shadow-md hover:shadow-emerald-500/20 transition"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-semibold text-slate-50">
-                {house.name}
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-50 min-w-0">
+                <div className="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center text-[11px] font-semibold text-slate-200 overflow-hidden border border-slate-700 shrink-0">
+                  {house.avatar_url || house.cover_image_url ? (
+                    <SafeImage
+                      src={house.avatar_url || house.cover_image_url || ''}
+                      alt={house.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {house.name
+                        .split(' ')
+                        .map((p) => p[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <span className="truncate">{house.name}</span>
               </div>
               {house.country_code && (
                 <span className="text-[10px] font-mono uppercase bg-slate-800 rounded px-2 py-0.5 text-slate-200">
@@ -480,4 +500,5 @@ function HousesSection({
     </div>
   );
 }
+
 
