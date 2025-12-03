@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,11 +42,11 @@ type PermissionsResponse = {
 
 const LANGUAGES: { code: LangCode; name: string }[] = [
   { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'fr', name: 'French' },
+  { code: 'it', name: 'Italian' },
+  { code: 'de', name: 'German' },
 ];
 
 const CATEGORIES = [
@@ -102,8 +100,11 @@ export default function CreateBlogPostPage() {
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageBlog, setCanManageBlog] = useState(false);
+  const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'preview'>(
+    'basic',
+  );
 
-  // Proteção básica
+  // Protecao basica
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -115,7 +116,7 @@ export default function CreateBlogPostPage() {
     }
   }, [user, loading, router]);
 
-  // Verificar permissões finas (canManageBlog)
+  // Verificar permissoes finas (canManageBlog)
   useEffect(() => {
     if (loading || !user) return;
 
@@ -166,7 +167,7 @@ export default function CreateBlogPostPage() {
       return;
     }
 
-    // Validar título em pelo menos uma língua
+    // Validar titulo em pelo menos uma lingua
     const hasAnyTitle = Object.values(post.title).some(
       (v) => typeof v === 'string' && v.trim().length > 0,
     );
@@ -182,7 +183,7 @@ export default function CreateBlogPostPage() {
 
     setSaving(true);
     try {
-      // 1) Serializar blocos → HTML por língua
+      // 1) Serializar blocos em HTML por lingua
       const contentByLang = serializeBlocksByLanguage(blocksByLanguage);
 
       const token = getToken();
@@ -246,7 +247,7 @@ export default function CreateBlogPostPage() {
     !permissionsLoaded
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
@@ -257,22 +258,18 @@ export default function CreateBlogPostPage() {
 
   if (!canManageBlog) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto px-4">
-            <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">No permission</h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              You don&apos;t have permission to create or edit blog posts.
-              Please contact a Super Admin if you think this is a mistake.
-            </p>
-            <Link href="/admin/blog">
-              <Button variant="outline">Back to blog</Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="text-center max-w-md mx-auto px-4">
+          <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">No permission</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            You don&apos;t have permission to create or edit blog posts.
+            Please contact a Super Admin if you think this is a mistake.
+          </p>
+          <Link href="/admin/blog">
+            <Button variant="outline">Back to blog</Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -282,241 +279,364 @@ export default function CreateBlogPostPage() {
     currentLanguage;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <Link href="/admin/blog">
-                  <Button variant="ghost" className="mb-4">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Blog
-                  </Button>
-                </Link>
-                <h1 className="text-3xl font-bold">Create New Blog Post</h1>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => handleSave(false)}
-                  disabled={saving}
-                  variant="outline"
-                  className="disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Draft
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Link href="/admin/blog">
+                <Button variant="ghost" className="mb-2">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Blog
                 </Button>
-                <Button
-                  onClick={() => handleSave(true)}
-                  disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  {saving ? 'Publishing...' : 'Publish'}
-                </Button>
-              </div>
+              </Link>
+              <h1 className="text-3xl font-bold">Create New Blog Post</h1>
             </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                variant="outline"
+                className="disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Draft
+              </Button>
+              <Button
+                onClick={() => handleSave(true)}
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                {saving ? 'Publishing...' : 'Publish'}
+              </Button>
+            </div>
+          </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* COLUNA ESQUERDA: CONTEÚDO */}
-              <div className="lg:col-span-2 space-y-6">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={activeTab === 'basic' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('basic')}
+            >
+              Basic content
+            </Button>
+            <Button
+              variant={activeTab === 'advanced' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('advanced')}
+            >
+              Advanced
+            </Button>
+            <Button
+              variant={activeTab === 'preview' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('preview')}
+            >
+              Preview
+            </Button>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* COLUNA ESQUERDA */}
+            <div className="lg:col-span-2 space-y-6">
+              {activeTab === 'preview' ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Content</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Tabs de línguas para Título / Excerpt */}
-                    <div className="flex gap-2 flex-wrap">
-                      {LANGUAGES.map((lang) => (
-                        <Badge
-                          key={lang.code}
-                          variant={
-                            currentLanguage === lang.code
-                              ? 'default'
-                              : 'outline'
-                          }
-                          className="cursor-pointer"
-                          onClick={() => setCurrentLanguage(lang.code)}
-                        >
-                          {lang.name}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    <div>
-                      <Label>Title ({currentLangLabel})</Label>
-                      <Input
-                        value={post.title[currentLanguage] || ''}
-                        onChange={(e) =>
-                          setPost((prev) => ({
-                            ...prev,
-                            title: {
-                              ...prev.title,
-                              [currentLanguage]: e.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="Enter post title"
-                        className="text-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Excerpt ({currentLangLabel})</Label>
-                      <Textarea
-                        value={post.excerpt[currentLanguage] || ''}
-                        onChange={(e) =>
-                          setPost((prev) => ({
-                            ...prev,
-                            excerpt: {
-                              ...prev.excerpt,
-                              [currentLanguage]: e.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="Brief summary of the post"
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Body (all languages)</Label>
-                      <p className="text-xs text-gray-500 mb-2">
-                        Use the block editor below to build the article body.
-                        Inside the editor you can switch languages for the
-                        content blocks.
-                      </p>
-                      <BlockEditor
-                        value={blocksByLanguage}
-                        onChange={setBlocksByLanguage}
-                        initialLanguage={currentLanguage}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* COLUNA DIREITA: SETTINGS */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Settings</CardTitle>
+                    <CardTitle>Preview ({currentLangLabel})</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label>Category</Label>
-                      <Select
-                        value={post.category}
-                        onValueChange={(value) =>
-                          setPost((prev) => ({ ...prev, category: value }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
-                              {cat}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <p className="text-xs text-gray-500 mb-1">Title</p>
+                      <p className="text-xl font-semibold">
+                        {post.title[currentLanguage] || 'Untitled post'}
+                      </p>
                     </div>
-
                     <div>
-                      <Label>Reading Time (minutes)</Label>
-                      <Input
-                        type="number"
-                        value={post.reading_time}
-                        onChange={(e) =>
-                          setPost((prev) => ({
-                            ...prev,
-                            reading_time: parseInt(e.target.value) || 0,
-                          }))
-                        }
-                        min={1}
-                        max={60}
-                      />
+                      <p className="text-xs text-gray-500 mb-1">Excerpt</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-200">
+                        {post.excerpt[currentLanguage] || 'No excerpt yet.'}
+                      </p>
                     </div>
-
-                    <div>
-                      <Label>XP Reward</Label>
-                      <Input
-                        type="number"
-                        value={post.xp_reward}
-                        onChange={(e) =>
-                          setPost((prev) => ({
-                            ...prev,
-                            xp_reward: parseInt(e.target.value) || 0,
-                          }))
-                        }
-                        min={5}
-                        max={50}
-                      />
+                    <div className="flex gap-2 flex-wrap text-xs text-gray-600">
+                      <Badge variant="outline">{post.category}</Badge>
+                      <Badge variant="outline">{post.reading_time} min</Badge>
+                      <Badge variant="outline">{post.xp_reward} XP</Badge>
+                      {post.registered_only && (
+                        <Badge variant="outline">Registered only</Badge>
+                      )}
+                      <Badge variant={post.published ? 'default' : 'outline'}>
+                        {post.published ? 'Published' : 'Draft'}
+                      </Badge>
                     </div>
-
-                    <div>
-                      <Label>XP Required to Unlock</Label>
-                      <Input
-                        type="number"
-                        value={post.xp_threshold}
-                        onChange={(e) =>
-                          setPost((prev) => ({
-                            ...prev,
-                            xp_threshold: parseInt(e.target.value) || 0,
-                          }))
-                        }
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <Label>Published</Label>
-                      <Switch
-                        checked={post.published}
-                        onCheckedChange={(checked) =>
-                          setPost((prev) => ({ ...prev, published: checked }))
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label>Registered users only</Label>
-                      <Switch
-                        checked={post.registered_only}
-                        onCheckedChange={(checked) =>
-                          setPost((prev) => ({
-                            ...prev,
-                            registered_only: checked,
-                          }))
-                        }
-                      />
+                    <div className="text-xs text-gray-500">
+                      Body preview is available after saving; use the Block
+                      Editor to craft the full content.
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card className="bg-blue-50">
+              ) : (
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Publishing Tips</CardTitle>
+                    <CardTitle>
+                      {activeTab === 'basic' ? 'Content' : 'Advanced settings'}
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-gray-700">
-                    <p>• Write engaging titles that capture attention</p>
-                    <p>• Use clear and concise language</p>
-                    <p>• Break long content into headings and sections</p>
-                    <p>• Add images and video links to make it dynamic</p>
-                    <p>• Add appropriate XP rewards based on content length</p>
+                  <CardContent className="space-y-6">
+                    {activeTab === 'basic' ? (
+                      <>
+                        <div className="flex gap-2 flex-wrap">
+                          {LANGUAGES.map((lang) => (
+                            <Badge
+                              key={lang.code}
+                              variant={
+                                currentLanguage === lang.code
+                                  ? 'default'
+                                  : 'outline'
+                              }
+                              className="cursor-pointer"
+                              onClick={() => setCurrentLanguage(lang.code)}
+                            >
+                              {lang.name}
+                            </Badge>
+                          ))}
+                        </div>
+
+                        <div>
+                          <Label>Title ({currentLangLabel})</Label>
+                          <Input
+                            value={post.title[currentLanguage] || ''}
+                            onChange={(e) =>
+                              setPost((prev) => ({
+                                ...prev,
+                                title: {
+                                  ...prev.title,
+                                  [currentLanguage]: e.target.value,
+                                },
+                              }))
+                            }
+                            placeholder="Enter post title"
+                            className="text-lg"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Excerpt ({currentLangLabel})</Label>
+                          <Textarea
+                            value={post.excerpt[currentLanguage] || ''}
+                            onChange={(e) =>
+                              setPost((prev) => ({
+                                ...prev,
+                                excerpt: {
+                                  ...prev.excerpt,
+                                  [currentLanguage]: e.target.value,
+                                },
+                              }))
+                            }
+                            placeholder="Brief summary of the post"
+                            rows={3}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Body (all languages)</Label>
+                          <p className="text-xs text-gray-500 mb-2">
+                            Use the block editor below to build the article
+                            body. Inside the editor you can switch languages for
+                            the content blocks.
+                          </p>
+                          <BlockEditor
+                            value={blocksByLanguage}
+                            onChange={setBlocksByLanguage}
+                            initialLanguage={currentLanguage}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>XP Reward</Label>
+                          <Input
+                            type="number"
+                            value={post.xp_reward}
+                            onChange={(e) =>
+                              setPost((prev) => ({
+                                ...prev,
+                                xp_reward: parseInt(e.target.value) || 0,
+                              }))
+                            }
+                            min={5}
+                            max={50}
+                          />
+                        </div>
+                        <div>
+                          <Label>XP Required to Unlock</Label>
+                          <Input
+                            type="number"
+                            value={post.xp_threshold}
+                            onChange={(e) =>
+                              setPost((prev) => ({
+                                ...prev,
+                                xp_threshold: parseInt(e.target.value) || 0,
+                              }))
+                            }
+                            min={0}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between pt-4 border-t col-span-2">
+                          <Label>Published</Label>
+                          <Switch
+                            checked={post.published}
+                            onCheckedChange={(checked) =>
+                              setPost((prev) => ({
+                                ...prev,
+                                published: checked,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="flex items-center justify-between col-span-2">
+                          <Label>Registered users only</Label>
+                          <Switch
+                            checked={post.registered_only}
+                            onCheckedChange={(checked) =>
+                              setPost((prev) => ({
+                                ...prev,
+                                registered_only: checked,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              </div>
+              )}
+            </div>
+
+            {/* COLUNA DIREITA: SETTINGS */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Category</Label>
+                    <Select
+                      value={post.category}
+                      onValueChange={(value) =>
+                        setPost((prev) => ({ ...prev, category: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Reading Time (minutes)</Label>
+                    <Input
+                      type="number"
+                      value={post.reading_time}
+                      onChange={(e) =>
+                        setPost((prev) => ({
+                          ...prev,
+                          reading_time: parseInt(e.target.value) || 0,
+                        }))
+                      }
+                      min={1}
+                      max={60}
+                    />
+                  </div>
+
+                  {activeTab === 'advanced' && (
+                    <>
+                      <div>
+                        <Label>XP Reward</Label>
+                        <Input
+                          type="number"
+                          value={post.xp_reward}
+                          onChange={(e) =>
+                            setPost((prev) => ({
+                              ...prev,
+                              xp_reward: parseInt(e.target.value) || 0,
+                            }))
+                          }
+                          min={5}
+                          max={50}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>XP Required to Unlock</Label>
+                        <Input
+                          type="number"
+                          value={post.xp_threshold}
+                          onChange={(e) =>
+                            setPost((prev) => ({
+                              ...prev,
+                              xp_threshold: parseInt(e.target.value) || 0,
+                            }))
+                          }
+                          min={0}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <Label>Published</Label>
+                        <Switch
+                          checked={post.published}
+                          onCheckedChange={(checked) =>
+                            setPost((prev) => ({
+                              ...prev,
+                              published: checked,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label>Registered users only</Label>
+                        <Switch
+                          checked={post.registered_only}
+                          onCheckedChange={(checked) =>
+                            setPost((prev) => ({
+                              ...prev,
+                              registered_only: checked,
+                            }))
+                          }
+                        />
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-blue-50">
+                <CardHeader>
+                  <CardTitle className="text-sm">Publishing Tips</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-gray-700">
+                  <p>- Write engaging titles that capture attention</p>
+                  <p>- Use clear and concise language</p>
+                  <p>- Break long content into headings and sections</p>
+                  <p>- Add images and video links to make it dynamic</p>
+                  <p>- Add appropriate XP rewards based on content length</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }
