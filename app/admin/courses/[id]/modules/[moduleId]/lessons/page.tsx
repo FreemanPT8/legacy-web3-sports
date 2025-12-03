@@ -88,6 +88,8 @@ export default function ModuleLessonsPage() {
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>(
     'desktop',
   );
+  const [recentImages, setRecentImages] = useState<string[]>([]);
+  const RECENT_IMAGES_KEY = 'lessons_recent_images';
   const isValidUrl = (value: string) => {
     if (!value.trim()) return true;
     try {
@@ -792,11 +794,32 @@ export default function ModuleLessonsPage() {
                             }
                             placeholder="https://..."
                             className={`mt-1 ${imageUrlInvalid ? 'border-red-400' : ''}`}
+                            onBlur={() => addRecentImage(lesson.image_url || '')}
                           />
                           {imageUrlInvalid && (
                             <p className="text-[11px] text-red-600 mt-1">
                               Insere um URL valido (http/https).
                             </p>
+                          )}
+                          <p className="text-[11px] text-gray-500 mt-1">
+                            Sugestão: 16:9, mínimo 1200x675, formatos webp/jpg.
+                          </p>
+                          {recentImages.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {recentImages.map((url) => (
+                                <Button
+                                  key={url}
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    updateLessonField(index, 'image_url', url)
+                                  }
+                                >
+                                  Usar imagem recente
+                                </Button>
+                              ))}
+                            </div>
                           )}
                           {lesson.image_url && !imageUrlInvalid && (
                             <div className="mt-2 border rounded-md p-2 bg-white">
@@ -893,6 +916,42 @@ export default function ModuleLessonsPage() {
       </div>
     </div>
   );
+
+  // Cache simple de imagens recentes (localStorage)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(RECENT_IMAGES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentImages(parsed.filter((u) => typeof u === 'string'));
+      }
+    } catch (err) {
+      console.warn('Could not load recent lesson images cache', err);
+    }
+  }, []);
+
+  const persistRecentImages = (list: string[]) => {
+    setRecentImages(list);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(list));
+      } catch (err) {
+        console.warn('Could not persist recent lesson images cache', err);
+      }
+    }
+  };
+
+  const addRecentImage = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed || !isValidUrl(trimmed)) return;
+    const next = [trimmed, ...recentImages.filter((i) => i !== trimmed)].slice(
+      0,
+      5,
+    );
+    persistRecentImages(next);
+  };
 }
 
 
