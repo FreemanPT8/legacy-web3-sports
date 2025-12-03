@@ -59,12 +59,25 @@ export default function EditCoursePage() {
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageCourses, setCanManageCourses] = useState(false);
+  const imageUrlError =
+    course?.image_url && !isValidUrl(course.image_url)
+      ? 'Insere um URL válido (http/https).'
+      : '';
 
   const [loadingCourse, setLoadingCourse] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [currentLanguage, setCurrentLanguage] =
     useState<LangCode>('en');
+  const isValidUrl = (value: string) => {
+    if (!value.trim()) return true;
+    try {
+      const url = new URL(value.trim());
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
 
   const [course, setCourse] = useState<CoursePayload | null>(null);
   const [authorName, setAuthorName] = useState<string | null>(null);
@@ -496,10 +509,16 @@ export default function EditCoursePage() {
                                   : e.target.value,
                             }
                           : prev,
-                      )
-                    }
-                    placeholder="https://..."
+                    )
+                  }
+                    className={imageUrlError ? 'border-red-400' : undefined}
+                  placeholder="https://..."
                   />
+                  {imageUrlError && (
+                    <p className="text-[11px] text-red-600 mt-1">
+                      {imageUrlError}
+                    </p>
+                  )}
                 </div>
               </div>
 

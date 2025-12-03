@@ -85,6 +85,15 @@ export default function ModuleLessonsPage() {
   const [savingLessonId, setSavingLessonId] = useState<string | 'new' | null>(
     null,
   );
+  const isValidUrl = (value: string) => {
+    if (!value.trim()) return true;
+    try {
+      const url = new URL(value.trim());
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
 
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
@@ -720,8 +729,18 @@ export default function ModuleLessonsPage() {
                               )
                             }
                             placeholder="https://..."
-                            className="mt-1"
+                            className={`mt-1 ${
+                              lesson.image_url && !isValidUrl(lesson.image_url)
+                                ? 'border-red-400'
+                                : ''
+                            }`}
                           />
+                          {lesson.image_url &&
+                            !isValidUrl(lesson.image_url) && (
+                              <p className="text-[11px] text-red-600 mt-1">
+                                Insere um URL válido (http/https).
+                              </p>
+                            )}
                         </div>
                       </div>
 
