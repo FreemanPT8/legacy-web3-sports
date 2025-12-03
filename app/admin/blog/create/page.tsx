@@ -92,6 +92,7 @@ export default function CreateBlogPostPage() {
     xp_threshold: 0,
     published: false,
     registered_only: false,
+    image_url: '',
   });
 
   const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
@@ -203,6 +204,7 @@ export default function CreateBlogPostPage() {
           xp_threshold: post.xp_threshold,
           registered_only: post.registered_only,
           published: publish,
+          image_url: post.image_url?.trim() || null,
           author_id: user.id,
         }),
       });
@@ -540,6 +542,21 @@ export default function CreateBlogPostPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <Label>Thumbnail (image URL)</Label>
+                    <Input
+                      type="text"
+                      value={post.image_url}
+                      onChange={(e) =>
+                        setPost((prev) => ({
+                          ...prev,
+                          image_url: e.target.value,
+                        }))
+                      }
+                      placeholder="https://example.com/cover.jpg"
+                    />
                   </div>
 
                   <div>
