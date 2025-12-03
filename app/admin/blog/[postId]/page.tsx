@@ -648,7 +648,7 @@ export default function EditBlogPostPage() {
                             <div className="flex gap-1">
                               <Button
                                 type="button"
-                                size="xs"
+                                size="sm"
                                 variant={
                                   previewMode === 'desktop' ? 'default' : 'outline'
                                 }
@@ -658,7 +658,7 @@ export default function EditBlogPostPage() {
                               </Button>
                               <Button
                                 type="button"
-                                size="xs"
+                                size="sm"
                                 variant={
                                   previewMode === 'mobile' ? 'default' : 'outline'
                                 }
