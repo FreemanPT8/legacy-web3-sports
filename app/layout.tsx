@@ -9,10 +9,44 @@ import { Toaster } from '@/components/ui/toaster';
 // Mantemos só um objeto com className vazio para não rebentar o JSX
 const inter = { className: '' };
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const defaultOgImage =
+  process.env.NEXT_PUBLIC_OG_IMAGE || `${appUrl}/favicon.ico`;
+
 export const metadata: Metadata = {
-  title: 'LEGACY - Gamified Web3 Education Platform',
+  metadataBase: new URL(appUrl),
+  title: {
+    default: 'LEGACY - Gamified Web3 Education Platform',
+    template: '%s | LEGACY',
+  },
   description:
     'Master Web3 on Apertum Blockchain. Earn XP, unlock content, and lead the leaderboard.',
+  openGraph: {
+    title: 'LEGACY - Gamified Web3 Education Platform',
+    description:
+      'Master Web3 on Apertum Blockchain. Earn XP, unlock content, and lead the leaderboard.',
+    url: appUrl,
+    siteName: 'LEGACY',
+    images: [
+      {
+        url: defaultOgImage,
+        width: 1200,
+        height: 630,
+        alt: 'LEGACY',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LEGACY - Gamified Web3 Education Platform',
+    description:
+      'Master Web3 on Apertum Blockchain. Earn XP, unlock content, and lead the leaderboard.',
+    images: [defaultOgImage],
+  },
+  alternates: {
+    canonical: appUrl,
+  },
 };
 
 export default function RootLayout({
