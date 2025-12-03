@@ -23,6 +23,7 @@ import { Switch } from '@/components/ui/switch';
 
 import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { SafeImage } from '@/app/components/SafeImage';
 
 import {
   BlockEditor,
@@ -563,15 +564,12 @@ export default function CreateBlogPostPage() {
                           Preview
                         </p>
                         <div className="rounded-lg border bg-white p-2">
-                          <img
+                          <SafeImage
                             src={post.image_url}
                             alt="Post thumbnail preview"
                             className="w-full h-40 object-cover rounded-md"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                'none';
-                            }}
+                            width={400}
+                            height={160}
                           />
                         </div>
                       </div>

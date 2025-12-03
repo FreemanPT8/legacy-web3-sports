@@ -27,6 +27,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 
 import { Save, Lock, Award, Eye, Loader2 } from 'lucide-react';
+import { SafeImage } from '@/app/components/SafeImage';
 
 import {
   BlockEditor,
@@ -616,15 +617,12 @@ export default function EditBlogPostPage() {
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 mb-1">Preview</p>
                         <div className="rounded-lg border bg-white p-2">
-                          <img
+                          <SafeImage
                             src={post.image_url ?? ''}
                             alt="Post thumbnail preview"
                             className="w-full h-40 object-cover rounded-md"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                'none';
-                            }}
+                            width={400}
+                            height={160}
                           />
                         </div>
                       </div>
