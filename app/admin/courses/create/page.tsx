@@ -77,12 +77,25 @@ export default function CreateCoursePage() {
       de: '',
     } as Record<LangCode, string>,
     level: 'beginner',
-  xp_threshold: 0,
-  xp_reward_on_complete: 0,
-  image_url: '',
-  published: false,
-  is_completed: false,
+    xp_threshold: 0,
+    xp_reward_on_complete: 0,
+    image_url: '',
+    published: false,
+    is_completed: false,
   });
+  const isValidUrl = (value: string) => {
+    if (!value.trim()) return true;
+    try {
+      const url = new URL(value.trim());
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+  const imageUrlError =
+    course.image_url && !isValidUrl(course.image_url)
+      ? 'Insere um URL válido (http/https).'
+      : '';
 
   // Proteção básica: só Admin / Super Admin
   useEffect(() => {
@@ -393,27 +406,33 @@ export default function CreateCoursePage() {
                       <div className="flex gap-2 items-center mt-1">
                         <Input
                           type="text"
-                          value={course.image_url}
-                          onChange={(e) =>
-                            setCourse((prev) => ({
-                              ...prev,
-                              image_url: e.target.value,
-                            }))
-                          }
-                          placeholder="https://..."
-                        />
-                        {course.image_url && (
-                          <Button
-                            type="button"
-                            variant="outline"
+                      value={course.image_url}
+                      onChange={(e) =>
+                        setCourse((prev) => ({
+                          ...prev,
+                          image_url: e.target.value,
+                        }))
+                      }
+                      placeholder="https://..."
+                      className={imageUrlError ? 'border-red-400' : undefined}
+                    />
+                    {course.image_url && (
+                      <Button
+                        type="button"
+                        variant="outline"
                             size="icon"
                             onClick={() => window.open(course.image_url, '_blank')}
-                          >
-                            <ImageIcon className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
+                    {imageUrlError && (
+                      <p className="text-[11px] text-red-600 mt-1">
+                        {imageUrlError}
+                      </p>
+                    )}
+                  </div>
                     <div>
                       <Label>XP reward (on course completion)</Label>
                       <Input
