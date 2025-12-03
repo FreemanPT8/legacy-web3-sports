@@ -494,8 +494,8 @@ export default function AdminHousesPage() {
                       >
                         <td className="py-2 px-3">
                           <div className="flex items-center gap-3">
-                            {house.avatar_url && house.avatar_url.trim() !== '' && (
-                              <div className="w-12 h-12 rounded-md overflow-hidden border bg-gray-50 flex-shrink-0">
+                            <div className="w-12 h-12 rounded-md overflow-hidden border bg-gray-50 flex-shrink-0 flex items-center justify-center text-xs text-gray-500">
+                              {house.avatar_url && house.avatar_url.trim() !== '' ? (
                                 <SafeImage
                                   src={house.avatar_url}
                                   alt={house.sport_name || 'House'}
@@ -503,8 +503,14 @@ export default function AdminHousesPage() {
                                   width={64}
                                   height={64}
                                 />
-                              </div>
-                            )}
+                              ) : (
+                                <span className="font-semibold">
+                                  {house.sport_code?.slice(0, 3)?.toUpperCase() ||
+                                    house.country_code?.slice(0, 2) ||
+                                    'H'}
+                                </span>
+                              )}
+                            </div>
                             <Link
                               href={`/admin/houses/${house.id}`}
                               onClick={(e) => e.stopPropagation()}
