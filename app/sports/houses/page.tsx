@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -53,7 +53,7 @@ function formatStatusLabel(status: PublicHouseStatus): string {
     case 'ACTIVE':
       return 'Ativa';
     case 'UNDER_CONSTRUCTION':
-      return 'Em construção';
+      return 'Em construÃ§Ã£o';
     case 'IN_DEVELOPMENT':
       return 'Em desenvolvimento';
     default:
@@ -201,7 +201,7 @@ export default function HousesOfSportsPage() {
     fetchHouses();
   }, []);
 
-  // Opções de filtros derivadas dos dados
+  // OpÃ§Ãµes de filtros derivadas dos dados
   const sportOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const h of houses) {
@@ -302,24 +302,24 @@ export default function HousesOfSportsPage() {
             <div className="grid md:grid-cols-[2fr,1.3fr] gap-8 items-center">
               <div>
                 <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 mb-3">
-                  Houses of Sports · Comunidades por desporto
+                  Houses of Sports Â· Comunidades por desporto
                 </span>
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
                   As Houses oficiais de cada desporto.
                 </h1>
                 <p className="mt-3 text-sm md:text-base text-gray-600 max-w-xl">
                   Cada House of Sports representa a comunidade oficial de{' '}
-                  <strong>um desporto num país</strong>. É aqui que Heads of
+                  <strong>um desporto num paÃ­s</strong>. Ã‰ aqui que Heads of
                   House, moderadores e membros se juntam para aprender Web3,
                   explorar a Apertum Blockchain e construir o futuro do
                   desporto em comunidade.
                 </p>
 
                 <p className="mt-4 text-xs text-gray-500 max-w-lg">
-                  As Houses ativas vão ter missões, XP, conteúdo exclusivo e um
-                  chat privado para membros. As Houses em construção estão a
+                  As Houses ativas vÃ£o ter missÃµes, XP, conteÃºdo exclusivo e um
+                  chat privado para membros. As Houses em construÃ§Ã£o estÃ£o a
                   montar as bases da comunidade. As em desenvolvimento ainda
-                  estão a ganhar forma nos bastidores.
+                  estÃ£o a ganhar forma nos bastidores.
                 </p>
 
                 <div className="mt-5 flex flex-wrap gap-3">
@@ -355,7 +355,7 @@ export default function HousesOfSportsPage() {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-amber-500" />
-                      Em construção
+                      Em construÃ§Ã£o
                     </span>
                     <span className="font-semibold text-gray-900">
                       {totalUnderConstruction}
@@ -373,8 +373,8 @@ export default function HousesOfSportsPage() {
                 </div>
 
                 <div className="mt-4 border-t pt-3 text-[11px] text-gray-500">
-                  Se representas um desporto, podes vir a liderar a tua própria
-                  House. O primeiro passo é fazer o onboarding personalizado de
+                  Se representas um desporto, podes vir a liderar a tua prÃ³pria
+                  House. O primeiro passo Ã© fazer o onboarding personalizado de
                   desporto.
                 </div>
               </div>
@@ -391,15 +391,15 @@ export default function HousesOfSportsPage() {
                 Explora as Houses de desporto
               </h2>
               <p className="text-xs text-gray-500 max-w-xl">
-                Vê quais as Houses já estão em movimento e quais estão a ser
-                preparadas. Algumas vão abrir inscrições para membros em breve.
+                VÃª quais as Houses jÃ¡ estÃ£o em movimento e quais estÃ£o a ser
+                preparadas. Algumas vÃ£o abrir inscriÃ§Ãµes para membros em breve.
               </p>
             </div>
 
             <div className="w-full md:w-64">
               <input
                 type="text"
-                placeholder="Pesquisar por desporto, país, Head…"
+                placeholder="Pesquisar por desporto, paÃ­s, Headâ€¦"
                 value={search}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -411,7 +411,7 @@ export default function HousesOfSportsPage() {
             </div>
           </div>
 
-          {/* Filtros avançados */}
+          {/* Filtros avanÃ§ados */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <span className="text-gray-500">Filtrar por:</span>
@@ -428,7 +428,7 @@ export default function HousesOfSportsPage() {
               >
                 <option value="ALL">Todos os estados</option>
                 <option value="ACTIVE">Ativas</option>
-                <option value="UNDER_CONSTRUCTION">Em construção</option>
+                <option value="UNDER_CONSTRUCTION">Em construÃ§Ã£o</option>
                 <option value="IN_DEVELOPMENT">Em desenvolvimento</option>
               </select>
 
@@ -460,7 +460,7 @@ export default function HousesOfSportsPage() {
                 }}
                 className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
-                <option value="ALL">Todos os países</option>
+                <option value="ALL">Todos os paÃ­ses</option>
                 {countryOptions.map((code) => (
                   <option key={code} value={code}>
                     {code}
@@ -489,36 +489,36 @@ export default function HousesOfSportsPage() {
           )}
 
           {loading ? (
-            <p className="text-sm text-gray-500">A carregar Houses…</p>
+            <p className="text-sm text-gray-500">A carregar Housesâ€¦</p>
           ) : (
             <>
               {/* ACTIVE */}
               <HousesSection
                 title="Houses ativas"
-                description="Comunidades que já têm liderança definida e estão prontas a receber membros."
+                description="Comunidades que jÃ¡ tÃªm lideranÃ§a definida e estÃ£o prontas a receber membros."
                 houses={grouped.active}
                 clickable={true}
-                emptyMessage="Ainda não existem Houses ativas. Em breve algumas Houses vão abrir as portas para membros."
+                emptyMessage="Ainda nÃ£o existem Houses ativas. Em breve algumas Houses vÃ£o abrir as portas para membros."
               />
 
-              {/* UNDER CONSTRUCTION — também clicáveis */}
+              {/* UNDER CONSTRUCTION â€” tambÃ©m clicÃ¡veis */}
               <HousesSection
-                title="Houses em construção"
-                description="Casas que já têm Head of House e/ou moderadores a preparar a comunidade."
+                title="Houses em construÃ§Ã£o"
+                description="Casas que jÃ¡ tÃªm Head of House e/ou moderadores a preparar a comunidade."
                 houses={grouped.underConstruction}
                 clickable={true}
-                emptyMessage="Ainda não existem Houses em construção."
+                emptyMessage="Ainda nÃ£o existem Houses em construÃ§Ã£o."
               />
 
-              {/* IN DEVELOPMENT – apenas para Admin / Super Admin */}
+              {/* IN DEVELOPMENT â€“ apenas para Admin / Super Admin */}
               {isAdmin && (
                 <HousesSection
-                  title="Houses em desenvolvimento (visível só para equipa)"
-                  description="Ideias de Houses que ainda estão a ser trabalhadas nos bastidores."
+                  title="Houses em desenvolvimento (visÃ­vel sÃ³ para equipa)"
+                  description="Ideias de Houses que ainda estÃ£o a ser trabalhadas nos bastidores."
                   houses={grouped.inDevelopment}
                   clickable={false}
                   subtle
-                  emptyMessage="Ainda não existem Houses em desenvolvimento."
+                  emptyMessage="Ainda nÃ£o existem Houses em desenvolvimento."
                 />
               )}
             </>
@@ -532,7 +532,7 @@ export default function HousesOfSportsPage() {
                   Queres criar ou liderar uma House do teu desporto?
                 </h3>
                 <p className="text-xs text-gray-500 max-w-xl">
-                  Se és profissional ou entusiasta sério de um desporto, podes
+                  Se Ã©s profissional ou entusiasta sÃ©rio de um desporto, podes
                   fazer o onboarding personalizado e ser acompanhado por um Head
                   of House na tua jornada Web3.
                 </p>
@@ -541,7 +541,7 @@ export default function HousesOfSportsPage() {
                 href="/sports/onboarding"
                 className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
-                Começar onboarding personalizado
+                ComeÃ§ar onboarding personalizado
               </Link>
             </div>
           </div>
@@ -618,7 +618,7 @@ function HousesSection({
                     </div>
                     {house.sport && (
                       <div className="text-[11px] uppercase text-gray-400 mt-0.5">
-                        {house.sport.name} � {house.sport.code}
+                        {house.sport.name} • {house.sport.code}
                       </div>
                     )}
                   </div>
@@ -643,7 +643,7 @@ function HousesSection({
                 {house.head ? (
                   <>
                     Head of House: <span className="font-medium">{house.head.full_name || house.head.username}</span>
-                    {house.moderators.length > 0 && (<> � {house.moderators.length} moderador(es)</>)}
+                    {house.moderators.length > 0 && (<> • {house.moderators.length} moderador(es)</>)}
                   </>
                 ) : (
                   <>Head of House ainda nao definido.</>
@@ -680,3 +680,4 @@ function HousesSection({
     </section>
   );
 }
+
