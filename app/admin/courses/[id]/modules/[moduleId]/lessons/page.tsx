@@ -85,6 +85,9 @@ export default function ModuleLessonsPage() {
   const [savingLessonId, setSavingLessonId] = useState<string | 'new' | null>(
     null,
   );
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>(
+    'desktop',
+  );
   const isValidUrl = (value: string) => {
     if (!value.trim()) return true;
     try {
@@ -520,10 +523,30 @@ export default function ModuleLessonsPage() {
                 )}
               </div>
             </div>
-            <Button onClick={handleAddLesson}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Lesson
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:flex bg-white dark:bg-gray-900 rounded-md border p-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={previewMode === 'desktop' ? 'default' : 'ghost'}
+                  onClick={() => setPreviewMode('desktop')}
+                >
+                  Desktop
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={previewMode === 'mobile' ? 'default' : 'ghost'}
+                  onClick={() => setPreviewMode('mobile')}
+                >
+                  Mobile
+                </Button>
+              </div>
+              <Button onClick={handleAddLesson}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Lesson
+              </Button>
+            </div>
           </div>
 
           {/* Selector de língua */}
@@ -573,6 +596,12 @@ export default function ModuleLessonsPage() {
                   !!lesson.file_url && !isValidUrl(lesson.file_url || '');
                 const imageUrlInvalid =
                   !!lesson.image_url && !isValidUrl(lesson.image_url || '');
+                const previewContainer =
+                  previewMode === 'mobile' ? 'max-w-xs' : 'max-w-2xl';
+                const previewText =
+                  previewMode === 'mobile'
+                    ? 'text-sm leading-relaxed'
+                    : 'text-base leading-relaxed';
 
                 return (
                   <Card key={lesson.id || `new-${index}`} className="border-blue-100">
@@ -651,6 +680,25 @@ export default function ModuleLessonsPage() {
                             className="text-xs mt-1 font-mono"
                             placeholder="<p>HTML for this lesson...</p>"
                           />
+                        </div>
+                      </div>
+
+                      <div
+                        className={`border rounded-lg p-4 bg-white dark:bg-gray-900 space-y-2 ${previewContainer}`}
+                      >
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>Preview ({previewMode})</span>
+                          <span>
+                            {previewMode === 'mobile' ? 'Mobile width' : 'Desktop width'}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold">
+                            {title || 'Untitled lesson'}
+                          </p>
+                          <p className={`text-gray-700 dark:text-gray-200 ${previewText}`}>
+                            {description || 'No description yet.'}
+                          </p>
                         </div>
                       </div>
 
