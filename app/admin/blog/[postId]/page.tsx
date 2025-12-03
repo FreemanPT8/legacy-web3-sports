@@ -643,6 +643,69 @@ export default function EditBlogPostPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card
+                className={previewMode === 'mobile' ? 'max-w-md' : undefined}
+              >
+                <CardHeader className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Preview ({currentLangLabel})</CardTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={previewMode === 'desktop' ? 'default' : 'outline'}
+                        onClick={() => setPreviewMode('desktop')}
+                      >
+                        Desktop
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={previewMode === 'mobile' ? 'default' : 'outline'}
+                        onClick={() => setPreviewMode('mobile')}
+                      >
+                        Mobile
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent
+                  className={`space-y-4 ${
+                    previewMode === 'mobile' ? 'max-w-xs' : ''
+                  }`}
+                >
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Title</p>
+                    <p className="text-xl font-semibold">
+                      {post.title[currentLanguage] || 'Untitled post'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Excerpt</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-200">
+                      {post.excerpt[currentLanguage] || 'No excerpt yet.'}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-wrap text-xs text-gray-600">
+                    <Badge variant="outline">{post.category || 'Category'}</Badge>
+                    <Badge variant="outline">
+                      {post.reading_time ?? 5} min
+                    </Badge>
+                    <Badge variant="outline">{post.xp_reward ?? 15} XP</Badge>
+                    {post.registered_only && (
+                      <Badge variant="outline">Registered only</Badge>
+                    )}
+                    <Badge variant={post.published ? 'default' : 'outline'}>
+                      {post.published ? 'Published' : 'Draft'}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-gray-500">
+                    Body preview usa os blocos guardados. Verifica imagem e meta
+                    antes de publicar.
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="space-y-6">
