@@ -39,11 +39,11 @@ type PermissionsResponse = {
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'fr', name: 'French' },
+  { code: 'it', name: 'Italian' },
+  { code: 'de', name: 'German' },
 ] as const;
 
 type LangCode = (typeof LANGUAGES)[number]['code'];
@@ -92,11 +92,11 @@ export default function CreateCoursePage() {
       return false;
     }
   };
+  const hasImage = !!course.image_url && course.image_url.trim().length > 0;
   const imageUrlError =
-    course.image_url && !isValidUrl(course.image_url)
-      ? 'Insere um URL válido (http/https).'
+    hasImage && !isValidUrl(course.image_url)
+      ? 'Insere um URL valido (http/https).'
       : '';
-
   // Proteção básica: só Admin / Super Admin
   useEffect(() => {
     if (loading) return;
@@ -276,6 +276,12 @@ export default function CreateCoursePage() {
     course.description[currentLanguage] ||
     course.description.en ||
     '';
+  const currentTitle =
+    (course.title[currentLanguage] || course.title.en || '').trim();
+  const currentDescription =
+    (course.description[currentLanguage] || course.description.en || '').trim();
+  const titleLength = currentTitle.length;
+  const descriptionLength = currentDescription.length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
@@ -406,20 +412,20 @@ export default function CreateCoursePage() {
                       <div className="flex gap-2 items-center mt-1">
                         <Input
                           type="text"
-                      value={course.image_url}
-                      onChange={(e) =>
-                        setCourse((prev) => ({
-                          ...prev,
-                          image_url: e.target.value,
-                        }))
-                      }
-                      placeholder="https://..."
-                      className={imageUrlError ? 'border-red-400' : undefined}
-                    />
-                    {course.image_url && (
-                      <Button
-                        type="button"
-                        variant="outline"
+                          value={course.image_url}
+                          onChange={(e) =>
+                            setCourse((prev) => ({
+                              ...prev,
+                              image_url: e.target.value,
+                            }))
+                          }
+                          placeholder="https://..."
+                          className={imageUrlError ? 'border-red-400' : undefined}
+                        />
+                        {course.image_url && (
+                          <Button
+                            type="button"
+                            variant="outline"
                             size="icon"
                             onClick={() => window.open(course.image_url, '_blank')}
                         >
@@ -431,6 +437,19 @@ export default function CreateCoursePage() {
                       <p className="text-[11px] text-red-600 mt-1">
                         {imageUrlError}
                       </p>
+                    )}
+                    {!imageUrlError && hasImage && (
+                      <div className="mt-2 rounded-md border bg-white p-2">
+                        <div className="text-[11px] text-gray-500 mb-1">
+                          Thumbnail preview
+                        </div>
+                        <img
+                          src={course.image_url}
+                          alt="Course cover preview"
+                          className="h-32 w-full object-cover rounded"
+                          loading="lazy"
+                        />
+                      </div>
                     )}
                   </div>
                     <div>
@@ -539,6 +558,31 @@ export default function CreateCoursePage() {
                       </Badge>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* SEO helper */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">SEO helper</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span>Title length</span>
+                    <Badge variant="outline">{titleLength} chars</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Description length</span>
+                    <Badge variant="outline">
+                      {descriptionLength} chars
+                    </Badge>
+                  </div>
+                  <ul className="list-disc list-inside text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                    <li>Use a clear benefit in the title.</li>
+                    <li>Add a concise summary (150–160 chars) for search/social.</li>
+                    <li>Include 1–2 relevant keywords naturally.</li>
+                    <li>Add a good cover image with alt text on publish.</li>
+                  </ul>
                 </CardContent>
               </Card>
 
