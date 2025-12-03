@@ -11,6 +11,9 @@ type Props = {
   height?: number;
   fallbackSrc?: string;
   priority?: boolean;
+  sizes?: string;
+  style?: React.CSSProperties;
+  fill?: boolean;
 };
 
 const defaultFallback = '/favicon.ico';
@@ -23,18 +26,25 @@ export function SafeImage({
   height = 450,
   fallbackSrc,
   priority = false,
+  sizes,
+  style,
+  fill = false,
 }: Props) {
   const [currentSrc, setCurrentSrc] = React.useState(src || fallbackSrc || defaultFallback);
+  const fallback = fallbackSrc || defaultFallback;
 
   return (
     <Image
-      src={currentSrc || fallbackSrc || defaultFallback}
+      src={currentSrc || fallback}
       alt={alt || 'Image'}
       className={className}
-      width={width}
-      height={height}
+      width={fill ? undefined : width}
+      height={fill ? undefined : height}
+      sizes={sizes}
+      style={style}
+      fill={fill}
       loading={priority ? 'eager' : 'lazy'}
-      onError={() => setCurrentSrc(fallbackSrc || defaultFallback)}
+      onError={() => setCurrentSrc(fallback)}
     />
   );
 }
