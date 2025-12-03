@@ -567,6 +567,12 @@ export default function ModuleLessonsPage() {
                 const content = getMultilingualContent(lesson.content, currentLanguage);
 
                 const savingThis = savingLessonId === (lesson.id || 'new');
+                const titleLength = (title || '').length;
+                const descriptionLength = (description || '').length;
+                const fileUrlInvalid =
+                  !!lesson.file_url && !isValidUrl(lesson.file_url || '');
+                const imageUrlInvalid =
+                  !!lesson.image_url && !isValidUrl(lesson.image_url || '');
 
                 return (
                   <Card key={lesson.id || `new-${index}`} className="border-blue-100">
@@ -584,8 +590,11 @@ export default function ModuleLessonsPage() {
                           placeholder={`Lesson title (${currentLangLabel})`}
                           className="text-sm font-semibold"
                         />
+                        <div className="text-[11px] text-gray-500 mt-1">
+                          {titleLength} chars / description {descriptionLength} chars
+                        </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          {lesson.estimated_time || 0} minutes · XP: {lesson.xp_reward || 0}
+                          {lesson.estimated_time || 0} minutes - XP: {lesson.xp_reward || 0}
                         </p>
                       </div>
                       <div className="flex flex-col gap-2 w-full md:w-40">
@@ -697,22 +706,26 @@ export default function ModuleLessonsPage() {
                             className="mt-1"
                           />
                         </div>
-                        <div>
-                          <Label className="text-xs">File URL</Label>
-                          <Input
-                            type="text"
-                            value={lesson.file_url || ''}
-                            onChange={(e) =>
-                              updateLessonField(
-                                index,
-                                'file_url',
-                                e.target.value || null,
-                              )
-                            }
-                            placeholder="https://..."
-                            className="mt-1"
-                          />
-                        </div>
+                      <div>
+                        <Label className="text-xs">File URL</Label>
+                        <Input
+                          type="text"
+                          value={lesson.file_url || ''}
+                          onChange={(e) =>
+                            updateLessonField(
+                              index,
+                              'file_url',
+                              e.target.value || null,
+                            )
+                          }
+                          placeholder="https://..."
+                          className={`mt-1 ${fileUrlInvalid ? 'border-red-400' : ''}`}
+                        />
+                        {fileUrlInvalid && (
+                          <p className="text-[11px] text-red-600 mt-1">
+                            Insere um URL valido (http/https).
+                          </p>
+                        )}
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-4">
@@ -729,18 +742,26 @@ export default function ModuleLessonsPage() {
                               )
                             }
                             placeholder="https://..."
-                            className={`mt-1 ${
-                              lesson.image_url && !isValidUrl(lesson.image_url)
-                                ? 'border-red-400'
-                                : ''
-                            }`}
+                            className={`mt-1 ${imageUrlInvalid ? 'border-red-400' : ''}`}
                           />
-                          {lesson.image_url &&
-                            !isValidUrl(lesson.image_url) && (
-                              <p className="text-[11px] text-red-600 mt-1">
-                                Insere um URL válido (http/https).
-                              </p>
-                            )}
+                          {imageUrlInvalid && (
+                            <p className="text-[11px] text-red-600 mt-1">
+                              Insere um URL valido (http/https).
+                            </p>
+                          )}
+                          {lesson.image_url && !imageUrlInvalid && (
+                            <div className="mt-2 border rounded-md p-2 bg-white">
+                              <div className="text-[11px] text-gray-500 mb-1">Preview</div>
+                              <img
+                                src={lesson.image_url}
+                                alt="Lesson cover preview"
+                                className="w-full h-32 object-cover rounded"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -824,3 +845,5 @@ export default function ModuleLessonsPage() {
     </div>
   );
 }
+
+
