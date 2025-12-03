@@ -51,6 +51,7 @@ type BlogPost = {
   title: MultiLang;
   excerpt: MultiLang;
   content: MultiLang;
+  image_url?: string | null;
   category?: string | null;
   reading_time?: number | null;
   xp_reward?: number | null;
@@ -239,6 +240,7 @@ export default function EditBlogPostPage() {
           xp_threshold: p.xp_threshold ?? 0,
           published: p.published ?? false,
           registered_only: p.registered_only ?? false,
+          image_url: p.image_url ?? '',
           author_id: p.author_id ?? null,
           author_name: p.author_name ?? null,
           created_at: p.created_at,
@@ -297,7 +299,8 @@ export default function EditBlogPostPage() {
       | 'xp_reward'
       | 'xp_threshold'
       | 'published'
-      | 'registered_only',
+      | 'registered_only'
+      | 'image_url',
     value: any,
   ) => {
     if (!post) return;
@@ -367,6 +370,7 @@ export default function EditBlogPostPage() {
           xp_threshold: post.xp_threshold,
           published: post.published,
           registered_only: post.registered_only,
+          image_url: post.image_url?.trim() || null,
         }),
       });
 
@@ -595,6 +599,36 @@ export default function EditBlogPostPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <Label>Thumbnail (image URL)</Label>
+                    <Input
+                      type="text"
+                      value={post.image_url ?? ''}
+                      onChange={(e) =>
+                        handleFieldChange('image_url', e.target.value)
+                      }
+                      placeholder="https://example.com/cover.jpg"
+                      disabled={!canEdit}
+                    />
+                    {post.image_url && post.image_url.trim() !== '' && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 mb-1">Preview</p>
+                        <div className="rounded-lg border bg-white p-2">
+                          <img
+                            src={post.image_url ?? ''}
+                            alt="Post thumbnail preview"
+                            className="w-full h-40 object-cover rounded-md"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display =
+                                'none';
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
