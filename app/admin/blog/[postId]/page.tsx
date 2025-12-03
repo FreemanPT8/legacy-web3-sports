@@ -110,8 +110,6 @@ export default function EditBlogPostPage() {
     xpTotal: number;
     xpCreator: number;
   }>({ xpTotal: 0, xpCreator: 0 });
-  const titleLength = (post?.title?.[currentLanguage] || '').trim().length;
-  const excerptLength = (post?.excerpt?.[currentLanguage] || '').trim().length;
 
   // Cache de imagens recentes (localStorage)
   useEffect(() => {

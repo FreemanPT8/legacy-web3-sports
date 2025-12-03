@@ -126,8 +126,6 @@ export default function CreateBlogPostPage() {
     hasImage && !isValidUrl(post.image_url)
       ? 'Insere um URL valido (http/https).'
       : '';
-  const titleLength = (post.title[currentLanguage] || '').trim().length;
-  const excerptLength = (post.excerpt[currentLanguage] || '').trim().length;
 
   // Cache simples de imagens recentes (localStorage)
   useEffect(() => {
