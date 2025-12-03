@@ -106,6 +106,20 @@ export default function CreateBlogPostPage() {
     'basic',
   );
 
+  const isValidUrl = (value: string) => {
+    if (!value.trim()) return true;
+    try {
+      const url = new URL(value.trim());
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+  const imageUrlError =
+    post.image_url && !isValidUrl(post.image_url)
+      ? 'Insere um URL válido (http/https).'
+      : '';
+
   // Protecao basica
   useEffect(() => {
     if (loading) return;
@@ -547,22 +561,28 @@ export default function CreateBlogPostPage() {
 
                   <div>
                     <Label>Thumbnail (image URL)</Label>
-                    <Input
-                      type="text"
-                      value={post.image_url}
-                      onChange={(e) =>
-                        setPost((prev) => ({
-                          ...prev,
-                          image_url: e.target.value,
-                        }))
-                      }
-                      placeholder="https://example.com/cover.jpg"
-                    />
-                    {post.image_url.trim() && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-500 mb-1">
-                          Preview
-                        </p>
+                  <Input
+                    type="text"
+                    value={post.image_url}
+                    onChange={(e) =>
+                      setPost((prev) => ({
+                        ...prev,
+                        image_url: e.target.value,
+                      }))
+                    }
+                    placeholder="https://example.com/cover.jpg"
+                    className={imageUrlError ? 'border-red-400' : undefined}
+                  />
+                  {imageUrlError && (
+                    <p className="text-[11px] text-red-600 mt-1">
+                      {imageUrlError}
+                    </p>
+                  )}
+                  {post.image_url.trim() && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500 mb-1">
+                        Preview
+                      </p>
                         <div className="rounded-lg border bg-white p-2">
                           <SafeImage
                             src={post.image_url}

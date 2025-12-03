@@ -107,12 +107,25 @@ export default function EditBlogPostPage() {
     xpTotal: number;
     xpCreator: number;
   }>({ xpTotal: 0, xpCreator: 0 });
+  const isValidUrl = (value: string) => {
+    if (!value.trim()) return true;
+    try {
+      const url = new URL(value.trim());
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
 
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageBlog, setCanManageBlog] = useState(false);
+  const imageUrlError =
+    post?.image_url && !isValidUrl(post.image_url)
+      ? 'Insere um URL válido (http/https).'
+      : '';
 
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
@@ -606,18 +619,24 @@ export default function EditBlogPostPage() {
                     <Label>Thumbnail (image URL)</Label>
                     <Input
                       type="text"
-                      value={post.image_url ?? ''}
-                      onChange={(e) =>
-                        handleFieldChange('image_url', e.target.value)
-                      }
-                      placeholder="https://example.com/cover.jpg"
-                      disabled={!canEdit}
-                    />
-                    {post.image_url && post.image_url.trim() !== '' && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-500 mb-1">Preview</p>
-                        <div className="rounded-lg border bg-white p-2">
-                          <SafeImage
+                    value={post.image_url ?? ''}
+                    onChange={(e) =>
+                      handleFieldChange('image_url', e.target.value)
+                    }
+                    placeholder="https://example.com/cover.jpg"
+                    disabled={!canEdit}
+                    className={imageUrlError ? 'border-red-400' : undefined}
+                  />
+                  {imageUrlError && (
+                    <p className="text-[11px] text-red-600 mt-1">
+                      {imageUrlError}
+                    </p>
+                  )}
+                  {post.image_url && post.image_url.trim() !== '' && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500 mb-1">Preview</p>
+                      <div className="rounded-lg border bg-white p-2">
+                        <SafeImage
                             src={post.image_url ?? ''}
                             alt="Post thumbnail preview"
                             className="w-full h-40 object-cover rounded-md"
