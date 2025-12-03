@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, supabase } from '@/lib/supabase';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -71,10 +71,11 @@ interface HousePublicResponse {
 // Public endpoint: returns info for the public House page
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   const { houseId } = params;
+  const client = supabaseAdmin ?? supabase; // fallback if service role is missing
 
   try {
     // 1) Load House
-    const { data: houseRow, error: houseError } = await supabaseAdmin
+    const { data: houseRow, error: houseError } = await client
       .from('houses_of_sports')
       .select(
         'id, name, sport_id, country_code, status, avatar_url, description, created_at'
@@ -102,7 +103,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     // 2) Load Sport
     let sport: SportRow | null = null;
     if (house.sport_id) {
-      const { data: sportRow, error: sportError } = await supabaseAdmin
+      const { data: sportRow, error: sportError } = await client
         .from('sports')
         .select('id, code, name')
         .eq('id', house.sport_id)
@@ -118,7 +119,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     // 3) Load Head of House
     let headUser: PublicUserDTO | null = null;
 
-    const { data: headRow, error: headError } = await supabaseAdmin
+    const { data: headRow, error: headError } = await client
       .from('house_heads')
       .select('house_id, admin_id')
       .eq('house_id', houseId)
@@ -127,7 +128,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     if (headError) {
       console.error('Supabase error loading house_head in public API:', headError);
     } else if (headRow) {
-      const { data: adminAssign, error: adminError } = await supabaseAdmin
+      const { data: adminAssign, error: adminError } = await client
         .from('admin_assignments')
         .select('id, user_id')
         .eq('id', (headRow as any).admin_id)
@@ -139,7 +140,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
           adminError
         );
       } else if (adminAssign) {
-        const { data: user, error: userError } = await supabaseAdmin
+        const { data: user, error: userError } = await client
           .from('users')
           .select('id, username, full_name, role, avatar_url')
           .eq('id', (adminAssign as AdminAssignmentRow).user_id)
@@ -164,7 +165,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     }
 
     // 4) Load moderators
-    const { data: modsRows, error: modsError } = await supabaseAdmin
+    const { data: modsRows, error: modsError } = await client
       .from('house_moderators')
       .select('house_id, user_id')
       .eq('house_id', houseId);
@@ -179,7 +180,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     } else if (modsRows && modsRows.length > 0) {
       const userIds = Array.from(new Set(modsRows.map((m: any) => m.user_id)));
 
-      const { data: usersData, error: usersError } = await supabaseAdmin
+      const { data: usersData, error: usersError } = await client
         .from('users')
         .select('id, username, full_name, role, avatar_url')
         .in('id', userIds);
