@@ -115,9 +115,10 @@ export default function CreateBlogPostPage() {
       return false;
     }
   };
+  const hasImage = !!post.image_url && post.image_url.trim().length > 0;
   const imageUrlError =
-    post.image_url && !isValidUrl(post.image_url)
-      ? 'Insere um URL válido (http/https).'
+    hasImage && !isValidUrl(post.image_url)
+      ? 'Insere um URL valido (http/https).'
       : '';
 
   // Protecao basica
@@ -582,22 +583,20 @@ export default function CreateBlogPostPage() {
                       {imageUrlError}
                     </p>
                   )}
-                  {post.image_url.trim() && (
+                  {hasImage && !imageUrlError && (
                     <div className="mt-2">
-                      <p className="text-xs text-gray-500 mb-1">
-                        Preview
-                      </p>
-                        <div className="rounded-lg border bg-white p-2">
-                          <SafeImage
-                            src={post.image_url}
-                            alt="Post thumbnail preview"
-                            className="w-full h-40 object-cover rounded-md"
-                            width={400}
-                            height={160}
-                          />
-                        </div>
+                      <p className="text-xs text-gray-500 mb-1">Preview</p>
+                      <div className="rounded-lg border bg-white p-2">
+                        <SafeImage
+                          src={post.image_url}
+                          alt="Post thumbnail preview"
+                          className="w-full h-40 object-cover rounded-md"
+                          width={400}
+                          height={160}
+                        />
                       </div>
-                    )}
+                    </div>
+                  )}
                   </div>
 
                   <div>

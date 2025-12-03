@@ -122,8 +122,9 @@ export default function EditBlogPostPage() {
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageBlog, setCanManageBlog] = useState(false);
+  const hasImage = !!post?.image_url && post.image_url.trim().length > 0;
   const imageUrlError =
-    post?.image_url && !isValidUrl(post.image_url)
+    hasImage && !isValidUrl(post?.image_url || '')
       ? 'Insere um URL valido (http/https).'
       : '';
 
@@ -624,24 +625,24 @@ export default function EditBlogPostPage() {
                     <Label>Thumbnail (image URL)</Label>
                     <Input
                       type="text"
-                    value={post.image_url ?? ''}
-                    onChange={(e) =>
-                      handleFieldChange('image_url', e.target.value)
-                    }
-                    placeholder="https://example.com/cover.jpg"
-                    disabled={!canEdit}
-                    className={imageUrlError ? 'border-red-400' : undefined}
-                  />
-                  {imageUrlError && (
-                    <p className="text-[11px] text-red-600 mt-1">
-                      {imageUrlError}
-                    </p>
-                  )}
-                  {post.image_url && post.image_url.trim() !== '' && (
-                    <div className="mt-2">
-                      <p className="text-xs text-gray-500 mb-1">Preview</p>
-                      <div className="rounded-lg border bg-white p-2">
-                        <SafeImage
+                      value={post.image_url ?? ''}
+                      onChange={(e) =>
+                        handleFieldChange('image_url', e.target.value)
+                      }
+                      placeholder="https://example.com/cover.jpg"
+                      disabled={!canEdit}
+                      className={imageUrlError ? 'border-red-400' : undefined}
+                    />
+                    {imageUrlError && (
+                      <p className="text-[11px] text-red-600 mt-1">
+                        {imageUrlError}
+                      </p>
+                    )}
+                    {hasImage && !imageUrlError && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 mb-1">Preview</p>
+                        <div className="rounded-lg border bg-white p-2">
+                          <SafeImage
                             src={post.image_url ?? ''}
                             alt="Post thumbnail preview"
                             className="w-full h-40 object-cover rounded-md"
