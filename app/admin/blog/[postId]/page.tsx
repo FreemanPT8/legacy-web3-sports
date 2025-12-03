@@ -47,6 +47,8 @@ type PermissionsResponse = {
 
 type MultiLang = Record<string, string>;
 
+const RECENT_IMAGES_KEY = 'legacy_recent_images';
+
 type BlogPost = {
   id: string;
   title: MultiLang;
@@ -102,11 +104,27 @@ export default function EditBlogPostPage() {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [blocksByLanguage, setBlocksByLanguage] =
     useState<BlocksByLanguage>({});
+  const [recentImages, setRecentImages] = useState<string[]>([]);
   const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
   const [metrics, setMetrics] = useState<{
     xpTotal: number;
     xpCreator: number;
   }>({ xpTotal: 0, xpCreator: 0 });
+
+  // Cache de imagens recentes (localStorage)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(RECENT_IMAGES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentImages(parsed.filter((u) => typeof u === 'string'));
+      }
+    } catch (err) {
+      console.warn('Could not load recent images cache', err);
+    }
+  }, []);
   const isValidUrl = (value: string) => {
     if (!value.trim()) return true;
     try {
@@ -115,6 +133,27 @@ export default function EditBlogPostPage() {
     } catch {
       return false;
     }
+  };
+
+  const persistRecentImages = (list: string[]) => {
+    setRecentImages(list);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(list));
+      } catch (err) {
+        console.warn('Could not persist recent images cache', err);
+      }
+    }
+  };
+
+  const addRecentImage = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed || !isValidUrl(trimmed)) return;
+    const next = [trimmed, ...recentImages.filter((i) => i !== trimmed)].slice(
+      0,
+      5,
+    );
+    persistRecentImages(next);
   };
 
   const [loadingData, setLoadingData] = useState(true);
@@ -629,9 +668,11 @@ export default function EditBlogPostPage() {
                     <Input
                       type="text"
                       value={post.image_url ?? ''}
-                      onChange={(e) =>
-                        handleFieldChange('image_url', e.target.value)
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        handleFieldChange('image_url', value);
+                        addRecentImage(value);
+                      }}
                       placeholder="https://example.com/cover.jpg"
                       disabled={!canEdit}
                       className={imageUrlError ? 'border-red-400' : undefined}
@@ -641,49 +682,78 @@ export default function EditBlogPostPage() {
                         {imageUrlError}
                       </p>
                     )}
-                      {hasImage && !imageUrlError && (
-                        <div className="mt-2 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs text-gray-500">Preview</p>
-                            <div className="flex gap-1">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={
-                                  previewMode === 'desktop' ? 'default' : 'outline'
-                                }
-                                onClick={() => setPreviewMode('desktop')}
-                              >
-                                Desktop
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={
-                                  previewMode === 'mobile' ? 'default' : 'outline'
-                                }
-                                onClick={() => setPreviewMode('mobile')}
-                              >
-                                Mobile
-                              </Button>
-                            </div>
-                          </div>
-                          <div
-                            className={`rounded-lg border bg-white p-2 ${
-                              previewMode === 'mobile' ? 'max-w-xs mx-auto' : ''
-                            }`}
-                          >
-                            <SafeImage
-                              src={post.image_url ?? ''}
-                              alt="Post thumbnail preview"
-                              className="w-full h-40 object-cover rounded-md"
-                              width={400}
-                              height={160}
-                            />
+                    {hasImage && !imageUrlError && (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500">Preview</p>
+                          <div className="flex gap-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={
+                                previewMode === 'desktop' ? 'default' : 'outline'
+                              }
+                              onClick={() => setPreviewMode('desktop')}
+                            >
+                              Desktop
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={
+                                previewMode === 'mobile' ? 'default' : 'outline'
+                              }
+                              onClick={() => setPreviewMode('mobile')}
+                            >
+                              Mobile
+                            </Button>
                           </div>
                         </div>
-                      )}
-                    </div>
+                        <div
+                          className={`rounded-lg border bg-white p-2 ${
+                            previewMode === 'mobile' ? 'max-w-xs mx-auto' : ''
+                          }`}
+                        >
+                          <SafeImage
+                            src={post.image_url ?? ''}
+                            alt="Post thumbnail preview"
+                            className="w-full h-40 object-cover rounded-md"
+                            width={400}
+                            height={160}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {recentImages.length > 0 && (
+                      <div className="mt-3 space-y-1 text-[11px] text-gray-600">
+                        <div className="flex items-center justify-between">
+                          <span>Imagens recentes</span>
+                          <button
+                            type="button"
+                            className="text-red-500 hover:underline"
+                            onClick={() => persistRecentImages([])}
+                            disabled={!canEdit}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {recentImages.map((url) => (
+                            <button
+                              key={url}
+                              type="button"
+                              className="rounded border border-gray-200 bg-white px-2 py-1 text-[11px] hover:border-blue-400 disabled:opacity-50"
+                              onClick={() => handleFieldChange('image_url', url)}
+                              disabled={!canEdit}
+                            >
+                              {url.length > 28 ? `${url.slice(0, 28)}…` : url}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <div>
                     <Label>Reading Time (minutes)</Label>

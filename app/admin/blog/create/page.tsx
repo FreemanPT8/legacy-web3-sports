@@ -63,6 +63,8 @@ const CATEGORIES = [
 
 type MultiLang = Record<string, string>;
 
+const RECENT_IMAGES_KEY = 'legacy_recent_images';
+
 export default function CreateBlogPostPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
@@ -95,6 +97,7 @@ export default function CreateBlogPostPage() {
     registered_only: false,
     image_url: '',
   });
+  const [recentImages, setRecentImages] = useState<string[]>([]);
 
   const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
   const [blocksByLanguage, setBlocksByLanguage] =
@@ -124,6 +127,41 @@ export default function CreateBlogPostPage() {
       ? 'Insere um URL valido (http/https).'
       : '';
 
+  // Cache simples de imagens recentes (localStorage)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(RECENT_IMAGES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentImages(parsed.filter((u) => typeof u === 'string'));
+      }
+    } catch (err) {
+      console.warn('Could not load recent images cache', err);
+    }
+  }, []);
+
+  const persistRecentImages = (list: string[]) => {
+    setRecentImages(list);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(list));
+      } catch (err) {
+        console.warn('Could not persist recent images cache', err);
+      }
+    }
+  };
+
+  const addRecentImage = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed || !isValidUrl(trimmed)) return;
+    const next = [trimmed, ...recentImages.filter((i) => i !== trimmed)].slice(
+      0,
+      5,
+    );
+    persistRecentImages(next);
+  };
   // Protecao basica
   useEffect(() => {
     if (loading) return;
@@ -597,37 +635,71 @@ export default function CreateBlogPostPage() {
 
                   <div>
                     <Label>Thumbnail (image URL)</Label>
-                  <Input
-                    type="text"
-                    value={post.image_url}
-                    onChange={(e) =>
-                      setPost((prev) => ({
-                        ...prev,
-                        image_url: e.target.value,
-                      }))
-                    }
-                    placeholder="https://example.com/cover.jpg"
-                    className={imageUrlError ? 'border-red-400' : undefined}
-                  />
-                  {imageUrlError && (
-                    <p className="text-[11px] text-red-600 mt-1">
-                      {imageUrlError}
-                    </p>
-                  )}
-                  {hasImage && !imageUrlError && (
-                    <div className="mt-2">
-                      <p className="text-xs text-gray-500 mb-1">Preview</p>
-                      <div className="rounded-lg border bg-white p-2">
-                        <SafeImage
-                          src={post.image_url}
-                          alt="Post thumbnail preview"
-                          className="w-full h-40 object-cover rounded-md"
-                          width={400}
-                          height={160}
-                        />
+                    <Input
+                      type="text"
+                      value={post.image_url}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setPost((prev) => ({
+                          ...prev,
+                          image_url: value,
+                        }));
+                        addRecentImage(value);
+                      }}
+                      placeholder="https://example.com/cover.jpg"
+                      className={imageUrlError ? 'border-red-400' : undefined}
+                    />
+                    {imageUrlError && (
+                      <p className="text-[11px] text-red-600 mt-1">
+                        {imageUrlError}
+                      </p>
+                    )}
+                    {hasImage && !imageUrlError && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 mb-1">Preview</p>
+                        <div className="rounded-lg border bg-white p-2">
+                          <SafeImage
+                            src={post.image_url}
+                            alt="Post thumbnail preview"
+                            className="w-full h-40 object-cover rounded-md"
+                            width={400}
+                            height={160}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {recentImages.length > 0 && (
+                      <div className="mt-3 space-y-1 text-[11px] text-gray-600">
+                        <div className="flex items-center justify-between">
+                          <span>Imagens recentes</span>
+                          <button
+                            type="button"
+                            className="text-red-500 hover:underline"
+                            onClick={() => persistRecentImages([])}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {recentImages.map((url) => (
+                            <button
+                              key={url}
+                              type="button"
+                              className="rounded border border-gray-200 bg-white px-2 py-1 text-[11px] hover:border-blue-400"
+                              onClick={() =>
+                                setPost((prev) => ({
+                                  ...prev,
+                                  image_url: url,
+                                }))
+                              }
+                            >
+                              {url.length > 28 ? `${url.slice(0, 28)}…` : url}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
