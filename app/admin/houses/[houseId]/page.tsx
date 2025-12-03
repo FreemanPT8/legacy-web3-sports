@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import {
   Card,
   CardContent,
@@ -664,38 +662,31 @@ export default function AdminHouseDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-gray-600">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Loading House details...</span>
-          </div>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center gap-2 text-gray-600">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading House details...</span>
+        </div>
       </div>
     );
   }
 
   if (!house) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-gray-700 mb-4">
-              {error || 'House not found or could not be loaded.'}
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/admin/houses')}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Houses
-            </Button>
-          </div>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-3">
+          <p className="text-gray-700">
+            {error || 'House not found or could not be loaded.'}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/admin/houses')}
+            className="inline-flex items-center"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Houses
+          </Button>
+        </div>
       </div>
     );
   }
@@ -703,10 +694,8 @@ export default function AdminHouseDetailPage() {
   const publicProfileUrl = `/sports/houses/${house.id}`;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-
-      <main className="flex-1 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <main className="py-8">
         <div className="container mx-auto px-4 max-w-5xl">
           <button
             onClick={() => router.push('/admin/houses')}
