@@ -706,26 +706,27 @@ export default function ModuleLessonsPage() {
                             className="mt-1"
                           />
                         </div>
-                      <div>
-                        <Label className="text-xs">File URL</Label>
-                        <Input
-                          type="text"
-                          value={lesson.file_url || ''}
-                          onChange={(e) =>
-                            updateLessonField(
-                              index,
-                              'file_url',
-                              e.target.value || null,
-                            )
-                          }
-                          placeholder="https://..."
-                          className={`mt-1 ${fileUrlInvalid ? 'border-red-400' : ''}`}
-                        />
-                        {fileUrlInvalid && (
-                          <p className="text-[11px] text-red-600 mt-1">
-                            Insere um URL valido (http/https).
-                          </p>
-                        )}
+                        <div>
+                          <Label className="text-xs">File URL</Label>
+                          <Input
+                            type="text"
+                            value={lesson.file_url || ''}
+                            onChange={(e) =>
+                              updateLessonField(
+                                index,
+                                'file_url',
+                                e.target.value || null,
+                              )
+                            }
+                            placeholder="https://..."
+                            className={`mt-1 ${fileUrlInvalid ? 'border-red-400' : ''}`}
+                          />
+                          {fileUrlInvalid && (
+                            <p className="text-[11px] text-red-600 mt-1">
+                              Insere um URL valido (http/https).
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-4">
