@@ -46,6 +46,7 @@ type UserRow = {
   role?: string | null;
   xp_total?: number | null;
   created_at?: string | null;
+  last_login?: string | null;
 };
 
 type CourseRow = {
