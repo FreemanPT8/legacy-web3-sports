@@ -11,7 +11,7 @@ type RouteParams = {
 
 interface HouseRow {
   id: string;
-  name: string | null;
+  name_i18n: Record<string, string> | null;
   sport_id: string | null;
   country_code: string | null;
   status: HouseStatus | null;
@@ -23,7 +23,7 @@ interface HouseRow {
 interface SportRow {
   id: string;
   code: string | null;
-  name: string | null;
+  name_i18n: Record<string, string> | null;
 }
 
 interface AdminAssignmentRow {
@@ -59,6 +59,23 @@ interface PublicUserDTO {
   avatar_url: string | null;
 }
 
+function resolveLocaleName(
+  name_i18n: Record<string, string> | null,
+  fallback?: string | null,
+): string | null {
+  if (!name_i18n) return fallback ?? null;
+  return (
+    name_i18n.en ||
+    name_i18n.pt ||
+    name_i18n.es ||
+    name_i18n.fr ||
+    name_i18n.de ||
+    name_i18n.it ||
+    fallback ||
+    null
+  );
+}
+
 interface HousePublicResponse {
   success: boolean;
   error?: string;
@@ -78,7 +95,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const { data: houseRow, error: houseError } = await client
       .from('houses_of_sports')
       .select(
-        'id, name, sport_id, country_code, status, avatar_url, description, created_at'
+        'id, name_i18n, sport_id, country_code, status, avatar_url, description, created_at'
       )
       .eq('id', houseId)
       .maybeSingle();
@@ -105,7 +122,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     if (house.sport_id) {
       const { data: sportRow, error: sportError } = await client
         .from('sports')
-        .select('id, code, name')
+        .select('id, code, name_i18n')
         .eq('id', house.sport_id)
         .maybeSingle();
 
@@ -204,8 +221,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     const dto: HousePublicDTO = {
       id: house.id,
-      name: house.name || 'Unnamed House',
-      sport_name: sport?.name ?? null,
+      name: resolveLocaleName(house.name_i18n, null) || 'Unnamed House',
+      sport_name: sport ? resolveLocaleName(sport.name_i18n, sport.code) : null,
       sport_code: sport?.code ?? null,
       country_code: house.country_code ?? '',
       status: (house.status as HouseStatus) ?? 'development',
