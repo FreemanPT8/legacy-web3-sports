@@ -10,12 +10,14 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SafeImage } from '@/app/components/SafeImage';
 
 type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
 interface House {
   id: string;
   name: string;
+  avatar_url?: string | null;
   country_code: string | null;
   status: PublicHouseStatus;
   created_at: string | null;
@@ -566,6 +568,21 @@ function HousesSection({
   emptyMessage: string;
   subtle?: boolean;
 }) {
+  const renderAvatar = (house: House) => (
+    <SafeImage
+      src={house.avatar_url ?? ''}
+      alt={`Avatar da House ${house.name}`}
+      width={48}
+      height={48}
+      className="h-12 w-12 rounded-full object-cover border border-gray-200 bg-gray-100"
+      fallbackContent={
+        <div className="h-12 w-12 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-sm font-semibold">
+          {house.name?.trim()?.[0]?.toUpperCase() ?? 'H'}
+        </div>
+      }
+    />
+  );
+
   if (houses.length === 0) {
     return (
       <section className={subtle ? 'opacity-80' : ''}>
@@ -592,16 +609,19 @@ function HousesSection({
         {houses.map((house) => {
           const CardContent = (
             <div className="h-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:border-blue-400 hover:shadow-md transition flex flex-col">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex-1">
-                  <div className="text-sm font-semibold text-gray-900">
-                    {house.name}
-                  </div>
-                  {house.sport && (
-                    <div className="text-[11px] uppercase text-gray-400 mt-0.5">
-                      {house.sport.name} · {house.sport.code}
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-3 flex-1">
+                  {renderAvatar(house)}
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      {house.name}
                     </div>
-                  )}
+                    {house.sport && (
+                      <div className="text-[11px] uppercase text-gray-400 mt-0.5">
+                        {house.sport.name} � {house.sport.code}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {house.country_code && (
                   <span className="text-[10px] font-mono uppercase bg-gray-100 rounded px-2 py-0.5">
@@ -611,13 +631,10 @@ function HousesSection({
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <span className={statusBadgeClass(house.status)}>
-                  {formatStatusLabel(house.status)}
-                </span>
+                <span className={statusBadgeClass(house.status)}>{formatStatusLabel(house.status)}</span>
                 {house.created_at && (
                   <span className="text-[10px] text-gray-400">
-                    Criada em{' '}
-                    {new Date(house.created_at).toLocaleDateString('pt-PT')}
+                    Criada em {new Date(house.created_at).toLocaleDateString('pt-PT')}
                   </span>
                 )}
               </div>
@@ -625,30 +642,22 @@ function HousesSection({
               <div className="mt-1 text-[11px] text-gray-600 flex-1">
                 {house.head ? (
                   <>
-                    Head of House:{' '}
-                    <span className="font-medium">
-                      {house.head.full_name || house.head.username}
-                    </span>
-                    {house.moderators.length > 0 && (
-                      <> · {house.moderators.length} moderador(es)</>
-                    )}
+                    Head of House: <span className="font-medium">{house.head.full_name || house.head.username}</span>
+                    {house.moderators.length > 0 && (<> � {house.moderators.length} moderador(es)</>)}
                   </>
                 ) : (
-                  <>Head of House ainda não definido.</>
+                  <>Head of House ainda nao definido.</>
                 )}
               </div>
 
               {!clickable && (
                 <p className="mt-3 text-[10px] text-gray-400">
-                  Perfil público ainda não disponível. Em breve vais poder ver
-                  mais detalhes desta House.
+                  Perfil publico ainda nao disponivel. Em breve vais poder ver mais detalhes desta House.
                 </p>
               )}
 
               {clickable && (
-                <p className="mt-3 text-[11px] text-blue-700">
-                  Ver perfil público →
-                </p>
+                <p className="mt-3 text-[11px] text-blue-700">Ver perfil publico ?</p>
               )}
             </div>
           );
@@ -661,13 +670,8 @@ function HousesSection({
             );
           }
 
-          // clicável: vai para /sports/houses/[houseId]
           return (
-            <Link
-              key={house.id}
-              href={`/sports/houses/${house.id}`}
-              className="block"
-            >
+            <Link key={house.id} href={`/sports/houses/${house.id}`} className="block">
               {CardContent}
             </Link>
           );
