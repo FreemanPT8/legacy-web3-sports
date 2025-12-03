@@ -124,10 +124,6 @@ export default function EditBlogPostPage() {
   const [canManageBlog, setCanManageBlog] = useState(false);
   const imageUrlError =
     post?.image_url && !isValidUrl(post.image_url)
-      ? 'Insere um URL válido (http/https).'
-      : '';
-  const imageUrlError =
-    post?.image_url && !isValidUrl(post.image_url)
       ? 'Insere um URL v�lido (http/https).'
       : '';
 
