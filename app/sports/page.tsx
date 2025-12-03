@@ -422,6 +422,18 @@ function HousesSection({
             href={`/sports/houses/${house.id}`}
             className="block rounded-xl border border-slate-700 bg-slate-900/70 p-4 shadow-sm hover:border-emerald-400/80 hover:shadow-md hover:shadow-emerald-500/20 transition"
           >
+            <div className="mb-3 h-20 rounded-lg border border-slate-800 overflow-hidden bg-slate-900/40">
+              {house.cover_image_url || house.avatar_url ? (
+                <SafeImage
+                  src={house.cover_image_url || house.avatar_url || ''}
+                  alt={house.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-r from-emerald-500/20 via-blue-500/15 to-slate-700/30" />
+              )}
+            </div>
+
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3 text-sm font-semibold text-slate-50 min-w-0">
                 <div className="h-12 w-12 rounded-xl bg-slate-800 flex items-center justify-center text-[12px] font-semibold text-slate-200 overflow-hidden border border-slate-700 shrink-0">
