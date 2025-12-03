@@ -731,11 +731,19 @@ export default function AdminHouseDetailPage() {
                 .
               </p>
             </div>
-            <div className="text-xs text-gray-500 text-right">
+            <div className="flex flex-col items-end gap-2 text-xs text-gray-500 text-right">
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(publicProfileUrl, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Public profile
+                </Button>
+              </div>
               <div>ID: {house.id}</div>
-              {createdAtFormatted && (
-                <div>Created at: {createdAtFormatted}</div>
-              )}
+              {createdAtFormatted && <div>Created at: {createdAtFormatted}</div>}
             </div>
           </div>
 
