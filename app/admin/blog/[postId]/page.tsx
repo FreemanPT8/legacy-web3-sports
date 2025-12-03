@@ -124,7 +124,7 @@ export default function EditBlogPostPage() {
   const [canManageBlog, setCanManageBlog] = useState(false);
   const imageUrlError =
     post?.image_url && !isValidUrl(post.image_url)
-      ? 'Insere um URL v�lido (http/https).'
+      ? 'Insere um URL valido (http/https).'
       : '';
 
   const isAdmin =
@@ -305,10 +305,6 @@ export default function EditBlogPostPage() {
   const currentLangLabel =
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
     currentLanguage;
-  const currentTitle = (post.title[currentLanguage] || '').trim();
-  const currentExcerpt = (post.excerpt[currentLanguage] || '').trim();
-  const titleLength = currentTitle.length;
-  const excerptLength = currentExcerpt.length;
 
   const handleFieldChange = (
     field:
@@ -449,6 +445,11 @@ export default function EditBlogPostPage() {
       </div>
     );
   }
+
+  const currentTitle = (post.title?.[currentLanguage] || '').trim();
+  const currentExcerpt = (post.excerpt?.[currentLanguage] || '').trim();
+  const titleLength = currentTitle.length;
+  const excerptLength = currentExcerpt.length;
 
   const canEdit = canManageBlog;
 
