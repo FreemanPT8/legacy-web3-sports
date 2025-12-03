@@ -24,6 +24,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Trophy, Loader2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
+import { SafeImage } from '@/app/components/SafeImage';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -34,6 +35,7 @@ interface AdminHouse {
   country_code: string;
   status: HouseStatus;
   created_at: string;
+  avatar_url?: string | null;
   head?: {
     user_id: string;
     username: string | null;
@@ -491,18 +493,31 @@ export default function AdminHousesPage() {
                         onClick={() => router.push(`/admin/houses/${house.id}`)}
                       >
                         <td className="py-2 px-3">
-                          <Link
-                            href={`/admin/houses/${house.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="block"
-                          >
-                            <div className="font-medium text-blue-700 hover:underline">
-                              {house.sport_name || 'Unknown sport'}
-                            </div>
-                            <div className="text-xs text-gray-500 uppercase">
-                              {house.sport_code}
-                            </div>
-                          </Link>
+                          <div className="flex items-center gap-3">
+                            {house.avatar_url && house.avatar_url.trim() !== '' && (
+                              <div className="w-12 h-12 rounded-md overflow-hidden border bg-gray-50 flex-shrink-0">
+                                <SafeImage
+                                  src={house.avatar_url}
+                                  alt={house.sport_name || 'House'}
+                                  className="w-full h-full object-cover"
+                                  width={64}
+                                  height={64}
+                                />
+                              </div>
+                            )}
+                            <Link
+                              href={`/admin/houses/${house.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block"
+                            >
+                              <div className="font-medium text-blue-700 hover:underline">
+                                {house.sport_name || 'Unknown sport'}
+                              </div>
+                              <div className="text-xs text-gray-500 uppercase">
+                                {house.sport_code}
+                              </div>
+                            </Link>
+                          </div>
                           <div className="text-[10px] text-gray-400 mt-0.5">
                             {house.id}
                           </div>

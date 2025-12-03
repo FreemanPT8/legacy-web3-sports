@@ -31,6 +31,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { SafeImage } from '@/app/components/SafeImage';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -989,10 +990,12 @@ export default function AdminHouseDetailPage() {
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
                   {avatarDraft ? (
-                    <img
+                    <SafeImage
                       src={avatarDraft}
                       alt={house.name}
                       className="h-20 w-20 rounded-xl object-cover border border-gray-200 bg-gray-100"
+                      width={80}
+                      height={80}
                     />
                   ) : (
                     <div className="h-20 w-20 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[10px] text-gray-400 text-center px-2">
