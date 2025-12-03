@@ -56,19 +56,19 @@ export default function EditCoursePage() {
   const params = useParams();
   const { toast } = useToast();
   const { user, loading, getToken } = useAuth();
-
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageCourses, setCanManageCourses] = useState(false);
-  const imageUrlError =
-    course?.image_url && !isValidUrl(course.image_url)
-      ? 'Insere um URL válido (http/https).'
-      : '';
-
   const [loadingCourse, setLoadingCourse] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [currentLanguage, setCurrentLanguage] =
     useState<LangCode>('en');
+
+  const [course, setCourse] = useState<CoursePayload | null>(null);
+  const [authorName, setAuthorName] = useState<string | null>(null);
+  const [xpTotalDistributed, setXpTotalDistributed] = useState<number>(0);
+  const [xpCreatorDistributed, setXpCreatorDistributed] = useState<number>(0);
+
   const isValidUrl = (value: string) => {
     if (!value.trim()) return true;
     try {
@@ -79,10 +79,10 @@ export default function EditCoursePage() {
     }
   };
 
-  const [course, setCourse] = useState<CoursePayload | null>(null);
-  const [authorName, setAuthorName] = useState<string | null>(null);
-  const [xpTotalDistributed, setXpTotalDistributed] = useState<number>(0);
-  const [xpCreatorDistributed, setXpCreatorDistributed] = useState<number>(0);
+  const imageUrlError =
+    course?.image_url && !isValidUrl(course.image_url)
+      ? 'Insere um URL válido (http/https).'
+      : '';
 
   // Proteção básica
   useEffect(() => {
