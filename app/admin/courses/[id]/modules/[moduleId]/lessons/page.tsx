@@ -574,6 +574,36 @@ export default function ModuleLessonsPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">SEO & legibilidade (ajuda rápida)</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-gray-700 dark:text-gray-200 space-y-2">
+              <div className="grid md:grid-cols-3 gap-3 text-xs">
+                <div className="border rounded p-2 bg-white dark:bg-gray-900">
+                  <div className="font-semibold">Título</div>
+                  <div>Ideal 50-60 caracteres, claro e sem jargão.</div>
+                </div>
+                <div className="border rounded p-2 bg-white dark:bg-gray-900">
+                  <div className="font-semibold">Descrição</div>
+                  <div>Objetiva: 140-180 caracteres a resumir a lição.</div>
+                </div>
+                <div className="border rounded p-2 bg-white dark:bg-gray-900">
+                  <div className="font-semibold">Imagem</div>
+                  <div>16:9, ≥1200x675 (webp/jpg) + alt descritivo.</div>
+                </div>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Usa a palavra-chave no título e no primeiro parágrafo.</li>
+                <li>Inclui 1 link interno para um curso/módulo/lesson relacionado.</li>
+                <li>Mantém XP/threshold coerente com a duração e dificuldade.</li>
+              </ul>
+              <p className="text-[11px] text-gray-500">
+                Dicas não bloqueiam publicação; são só lembretes rápidos.
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Lista de lições */}
           {lessons.length === 0 ? (
             <Card>
