@@ -40,6 +40,8 @@ const LANGUAGES = [
 
 type LangCode = (typeof LANGUAGES)[number]['code'];
 
+const RECENT_IMAGES_KEY = 'legacy_recent_course_images';
+
 type CoursePayload = {
   title: Record<LangCode, string>;
   description: Record<LangCode, string>;
@@ -68,6 +70,7 @@ export default function EditCoursePage() {
   const [authorName, setAuthorName] = useState<string | null>(null);
   const [xpTotalDistributed, setXpTotalDistributed] = useState<number>(0);
   const [xpCreatorDistributed, setXpCreatorDistributed] = useState<number>(0);
+  const [recentImages, setRecentImages] = useState<string[]>([]);
 
   const isValidUrl = (value: string) => {
     if (!value.trim()) return true;
@@ -83,6 +86,41 @@ export default function EditCoursePage() {
     course?.image_url && !isValidUrl(course.image_url)
       ? 'Insere um URL válido (http/https).'
       : '';
+
+  const persistRecentImages = (list: string[]) => {
+    setRecentImages(list);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(list));
+      } catch (err) {
+        console.warn('Could not persist recent images cache', err);
+      }
+    }
+  };
+
+  const addRecentImage = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed || !isValidUrl(trimmed)) return;
+    const next = [trimmed, ...recentImages.filter((i) => i !== trimmed)].slice(
+      0,
+      5,
+    );
+    persistRecentImages(next);
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(RECENT_IMAGES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentImages(parsed.filter((u) => typeof u === 'string'));
+      }
+    } catch (err) {
+      console.warn('Could not load recent images cache', err);
+    }
+  }, []);
 
   // Proteção básica
   useEffect(() => {
@@ -511,6 +549,7 @@ export default function EditCoursePage() {
                           : prev,
                     )
                   }
+                    onBlur={(e) => addRecentImage(e.target.value)}
                     className={imageUrlError ? 'border-red-400' : undefined}
                   placeholder="https://..."
                   />
@@ -518,6 +557,43 @@ export default function EditCoursePage() {
                     <p className="text-[11px] text-red-600 mt-1">
                       {imageUrlError}
                     </p>
+                  )}
+                  {course.image_url && isValidUrl(course.image_url) && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      <a
+                        href={course.image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Ver imagem
+                      </a>
+                    </div>
+                  )}
+                  {recentImages.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      <div className="text-[11px] text-gray-500">
+                        Imagens recentes
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {recentImages.map((url) => (
+                          <Button
+                            key={url}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() =>
+                              setCourse((prev) =>
+                                prev ? { ...prev, image_url: url } : prev,
+                              )
+                            }
+                          >
+                            {url.length > 28 ? `${url.slice(0, 28)}…` : url}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
