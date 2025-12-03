@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -56,6 +56,7 @@ export default function CreateCoursePage() {
   const [saving, setSaving] = useState(false);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageCourses, setCanManageCourses] = useState(false);
+  const [recentImages, setRecentImages] = useState<string[]>([]);
 
   const [currentLanguage, setCurrentLanguage] = useState<LangCode>('en');
 
@@ -97,6 +98,44 @@ export default function CreateCoursePage() {
     hasImage && !isValidUrl(course.image_url)
       ? 'Insere um URL valido (http/https).'
       : '';
+
+  const RECENT_IMAGES_KEY = 'course_recent_images';
+
+  // cache simples de imagens recentes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(RECENT_IMAGES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentImages(parsed.filter((u) => typeof u === 'string'));
+      }
+    } catch (err) {
+      console.warn('Could not load recent images cache', err);
+    }
+  }, []);
+
+  const persistRecentImages = (list: string[]) => {
+    setRecentImages(list);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(list));
+      } catch (err) {
+        console.warn('Could not persist recent images cache', err);
+      }
+    }
+  };
+
+  const addRecentImage = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed || !isValidUrl(trimmed)) return;
+    const next = [trimmed, ...recentImages.filter((i) => i !== trimmed)].slice(
+      0,
+      5,
+    );
+    persistRecentImages(next);
+  };
   // Proteção básica: só Admin / Super Admin
   useEffect(() => {
     if (loading) return;
@@ -410,18 +449,19 @@ export default function CreateCoursePage() {
                     <div>
                       <Label>Course image URL</Label>
                       <div className="flex gap-2 items-center mt-1">
-                        <Input
-                          type="text"
-                          value={course.image_url}
-                          onChange={(e) =>
-                            setCourse((prev) => ({
-                              ...prev,
-                              image_url: e.target.value,
-                            }))
-                          }
-                          placeholder="https://..."
-                          className={imageUrlError ? 'border-red-400' : undefined}
-                        />
+                          <Input
+                            type="text"
+                            value={course.image_url}
+                            onChange={(e) =>
+                              setCourse((prev) => ({
+                                ...prev,
+                                image_url: e.target.value,
+                              }))
+                            }
+                            onBlur={(e) => addRecentImage(e.target.value)}
+                            placeholder="https://..."
+                            className={imageUrlError ? 'border-red-400' : undefined}
+                          />
                         {course.image_url && (
                           <Button
                             type="button"
@@ -449,8 +489,33 @@ export default function CreateCoursePage() {
                           className="h-32 w-full object-cover rounded"
                           loading="lazy"
                         />
-                      </div>
-                    )}
+                        </div>
+                      )}
+                      {recentImages.length > 0 && (
+                        <div className="mt-2">
+                          <div className="text-[11px] text-gray-500">
+                            Imagens recentes
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {recentImages.map((url) => (
+                              <Button
+                                key={url}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setCourse((prev) => ({
+                                    ...prev,
+                                    image_url: url,
+                                  }))
+                                }
+                              >
+                                Usar
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
                     <div>
                       <Label>XP reward (on course completion)</Label>
