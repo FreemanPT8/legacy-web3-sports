@@ -228,6 +228,15 @@ export default function AnalyticsPage() {
   const publishedRateBlog =
     totalBlogPosts > 0 ? Math.round((publishedPosts / totalBlogPosts) * 100) : 0;
 
+  const now = Date.now();
+  const dailyActiveUsers = users.filter((u) => {
+    if (!u.last_login) return false;
+    const ts = new Date(u.last_login).getTime();
+    return now - ts <= 24 * 60 * 60 * 1000;
+  }).length;
+  const completionRateUsers =
+    totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
+
   const onboardingByStatus = onboarding.reduce(
     (acc: Record<string, number>, o) => {
       const st = o.status || 'UNKNOWN';
@@ -447,13 +456,13 @@ export default function AnalyticsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-green-600" />
-                Engagement (placeholders)
+                Engagement
               </CardTitle>
             </CardHeader>
             <CardContent className="grid md:grid-cols-3 gap-4">
-              <Metric label="Avg Session Time" value="-" />
-              <Metric label="Daily Active Users" value="-" />
-              <Metric label="Completion Rate" value="-" />
+              <Metric label="Daily Active (24h login)" value={dailyActiveUsers} />
+              <Metric label="Active Users (XP>0)" value={activeUsers} />
+              <Metric label="Engagement rate" value={`${completionRateUsers}%`} />
             </CardContent>
           </Card>
         </div>
