@@ -423,8 +423,8 @@ function HousesSection({
             className="block rounded-xl border border-slate-700 bg-slate-900/70 p-4 shadow-sm hover:border-emerald-400/80 hover:shadow-md hover:shadow-emerald-500/20 transition"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-50 min-w-0">
-                <div className="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center text-[11px] font-semibold text-slate-200 overflow-hidden border border-slate-700 shrink-0">
+              <div className="flex items-center gap-3 text-sm font-semibold text-slate-50 min-w-0">
+                <div className="h-12 w-12 rounded-xl bg-slate-800 flex items-center justify-center text-[12px] font-semibold text-slate-200 overflow-hidden border border-slate-700 shrink-0">
                   {house.avatar_url || house.cover_image_url ? (
                     <SafeImage
                       src={house.avatar_url || house.cover_image_url || ''}
