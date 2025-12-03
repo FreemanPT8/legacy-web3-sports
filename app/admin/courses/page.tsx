@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Plus, Eye, Edit, Trash2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { SafeImage } from '@/app/components/SafeImage';
 
 type Course = {
   id: string;
@@ -409,18 +410,16 @@ export default function CoursesManagementPage() {
                 );
 
                 return (
-                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
+                    <Card key={course.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       {course.image_url && (
                         <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 overflow-hidden">
-                          <img
+                          <SafeImage
                             src={course.image_url}
                             alt={title}
                             className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              e.currentTarget.src = '/favicon.ico';
-                            }}
+                            width={800}
+                            height={200}
                           />
                         </div>
                       )}
