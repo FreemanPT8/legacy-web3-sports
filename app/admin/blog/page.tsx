@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { SafeImage } from '@/components/SafeImage';
 
 type BlogPost = {
   id: string;
@@ -28,6 +29,7 @@ type BlogPost = {
   author_id?: string | null;
   author_name?: string | null;
   created_at: string | null;
+  image_url?: string | null;
   views?: number | null;
   published?: boolean | null;
   registered_only?: boolean | null;
@@ -558,51 +560,66 @@ export default function BlogManagementPage() {
                         className="p-4 rounded-lg border bg-white dark:bg-gray-900 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <Badge
-                              className={
-                                statusLabel === 'published'
-                                  ? 'bg-green-600'
-                                  : 'bg-yellow-600'
-                              }
-                            >
-                              {statusLabel}
-                            </Badge>
-                            {post.category && (
-                              <Badge variant="outline">{post.category}</Badge>
+                          <div className="flex items-start gap-3">
+                            {post.image_url && post.image_url.trim() !== '' && (
+                              <div className="w-28 h-20 flex-shrink-0 overflow-hidden rounded-md border bg-gray-50">
+                                <SafeImage
+                                  src={post.image_url ?? ''}
+                                  alt={title}
+                                  className="w-full h-full object-cover"
+                                  width={160}
+                                  height={120}
+                                />
+                              </div>
                             )}
-                            {isCreator && (
-                              <Badge variant="outline">Creator</Badge>
-                            )}
-                            {xpTotal > 0 && (
-                              <Badge variant="outline" className="gap-1">
-                                XP: {xpTotal}
-                              </Badge>
-                            )}
-                            {xpCreator > 0 && (
-                              <Badge variant="outline" className="gap-1">
-                                Creator XP: {xpCreator}
-                              </Badge>
-                            )}
-                          </div>
-                          <h3 className="text-lg font-semibold truncate">
-                            {title}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
-                            {excerpt}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                            <span className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {post.author_name || post.author || 'Admin'}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {post.created_at
-                                ? new Date(post.created_at).toLocaleDateString()
-                                : '-'}
-                            </span>
-                            {views > 0 && <span>{views} views</span>}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <Badge
+                                  className={
+                                    statusLabel === 'published'
+                                      ? 'bg-green-600'
+                                      : 'bg-yellow-600'
+                                  }
+                                >
+                                  {statusLabel}
+                                </Badge>
+                                {post.category && (
+                                  <Badge variant="outline">{post.category}</Badge>
+                                )}
+                                {isCreator && (
+                                  <Badge variant="outline">Creator</Badge>
+                                )}
+                                {xpTotal > 0 && (
+                                  <Badge variant="outline" className="gap-1">
+                                    XP: {xpTotal}
+                                  </Badge>
+                                )}
+                                {xpCreator > 0 && (
+                                  <Badge variant="outline" className="gap-1">
+                                    Creator XP: {xpCreator}
+                                  </Badge>
+                                )}
+                              </div>
+                              <h3 className="text-lg font-semibold truncate">
+                                {title}
+                              </h3>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
+                                {excerpt}
+                              </p>
+                              <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                                <span className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {post.author_name || post.author || 'Admin'}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {post.created_at
+                                    ? new Date(post.created_at).toLocaleDateString()
+                                    : '-'}
+                                </span>
+                                {views > 0 && <span>{views} views</span>}
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2 ml-4">
