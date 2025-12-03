@@ -480,7 +480,7 @@ export default function AdminHousesPage() {
                       <th className="text-left py-2 px-3">Sport</th>
                       <th className="text-left py-2 px-3">Country</th>
                       <th className="text-left py-2 px-3">Status</th>
-                      <th className="text-left py-2 px-3">Head of House</th>
+                        <th className="text-left py-2 px-3">Head of House</th>
                       <th className="text-left py-2 px-3">Moderators</th>
                       <th className="text-left py-2 px-3">Created</th>
                     </tr>
@@ -536,26 +536,46 @@ export default function AdminHousesPage() {
                         <td className="py-2 px-3">
                           <StatusBadge status={house.status} />
                         </td>
-                        <td className="py-2 px-3">
-                          <div className="flex flex-col gap-1">
-                            {house.head ? (
-                              <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {house.head.full_name || house.head.username}
-                                </span>
-                                {house.head.username && (
-                                  <span className="text-xs text-gray-500">
-                                    @{house.head.username}
+                          <td className="py-2 px-3">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-full overflow-hidden border bg-gray-50 flex-shrink-0 flex items-center justify-center text-[11px] text-gray-500">
+                                {house.head?.avatar_url &&
+                                house.head.avatar_url.trim() !== '' ? (
+                                  <SafeImage
+                                    src={house.head.avatar_url}
+                                    alt={house.head.full_name || house.head.username || 'Head of House'}
+                                    className="w-full h-full object-cover"
+                                    width={40}
+                                    height={40}
+                                  />
+                                ) : (
+                                  <span className="font-semibold">
+                                    {(house.head?.full_name || house.head?.username || 'Head')
+                                      .slice(0, 2)
+                                      .toUpperCase()}
                                   </span>
                                 )}
                               </div>
-                            ) : (
-                              <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
-                                Missing Head
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
+                              <div className="flex flex-col gap-1">
+                                {house.head ? (
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {house.head.full_name || house.head.username}
+                                    </span>
+                                    {house.head.username && (
+                                      <span className="text-xs text-gray-500">
+                                        @{house.head.username}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
+                                    Missing Head
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </td>
                         <td className="py-2 px-3 text-xs text-gray-600">
                           {house.moderators_count ?? 0}
                         </td>
