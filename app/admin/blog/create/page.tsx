@@ -294,6 +294,10 @@ export default function CreateBlogPostPage() {
   const currentLangLabel =
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
     currentLanguage;
+  const currentTitle = (post.title[currentLanguage] || '').trim();
+  const currentExcerpt = (post.excerpt[currentLanguage] || '').trim();
+  const titleLength = currentTitle.length;
+  const excerptLength = currentExcerpt.length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
@@ -685,6 +689,37 @@ export default function CreateBlogPostPage() {
                   <p>- Break long content into headings and sections</p>
                   <p>- Add images and video links to make it dynamic</p>
                   <p>- Add appropriate XP rewards based on content length</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">SEO helper (não bloqueia)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-gray-700">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="rounded border p-2 bg-white">
+                      <div className="font-semibold">Título</div>
+                      <div>{titleLength} caracteres (ideal 60-70)</div>
+                    </div>
+                    <div className="rounded border p-2 bg-white">
+                      <div className="font-semibold">Resumo</div>
+                      <div>{excerptLength} caracteres (ideal 150-160)</div>
+                    </div>
+                    <div className="rounded border p-2 bg-white col-span-2">
+                      <div className="font-semibold">Imagem</div>
+                      <div>Usa 1200x630 webp &lt; 500KB + alt descritivo.</div>
+                    </div>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Escolhe 1 palavra-chave e coloca no título e no resumo.</li>
+                    <li>Adiciona 1 link interno para um curso ou post relacionado.</li>
+                    <li>Define categoria e thumbnail com URL válido.</li>
+                    <li>Para conteúdo PT, mantém o título claro e sem jargão.</li>
+                  </ul>
+                  <p className="text-xs text-gray-500">
+                    Estes são lembretes rápidos; não impedem a publicação.
+                  </p>
                 </CardContent>
               </Card>
             </div>
