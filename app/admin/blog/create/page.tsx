@@ -557,6 +557,25 @@ export default function CreateBlogPostPage() {
                       }
                       placeholder="https://example.com/cover.jpg"
                     />
+                    {post.image_url.trim() && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 mb-1">
+                          Preview
+                        </p>
+                        <div className="rounded-lg border bg-white p-2">
+                          <img
+                            src={post.image_url}
+                            alt="Post thumbnail preview"
+                            className="w-full h-40 object-cover rounded-md"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display =
+                                'none';
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
