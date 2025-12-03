@@ -1,10 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SafeImage } from '@/app/components/SafeImage';
 
 type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
@@ -136,7 +137,7 @@ export default function SportsPage() {
               {/* Texto principal */}
               <div>
                 <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-3 py-1 text-xs font-semibold text-emerald-300 mb-4 border border-emerald-700/40">
-                  Educação Web3 · Comunidades de Desporto
+                  EducaÃ§Ã£o Web3 Â· Comunidades de Desporto
                 </span>
 
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-50">
@@ -144,23 +145,23 @@ export default function SportsPage() {
                 </h1>
 
                 <p className="mt-4 text-sm md:text-base text-slate-300 max-w-xl leading-relaxed">
-                  A LEGACY é o ponto de entrada para profissionais e
+                  A LEGACY Ã© o ponto de entrada para profissionais e
                   entusiastas que querem perceber o que a{' '}
                   <strong>blockchain</strong>, a{' '}
                   <strong>Apertum Blockchain</strong> e a{' '}
-                  <strong>Web3</strong> podem trazer ao desporto na próxima
-                  década: comunidades mais fortes, reputação digital, XP
+                  <strong>Web3</strong> podem trazer ao desporto na prÃ³xima
+                  dÃ©cada: comunidades mais fortes, reputaÃ§Ã£o digital, XP
                   partilhado e novas formas de reconhecer contributos reais.
                 </p>
 
                 {user ? (
                   <p className="mt-4 text-xs text-slate-400">
-                    Estás autenticado como{' '}
+                    EstÃ¡s autenticado como{' '}
                     <span className="font-semibold">
                       @{user.username ?? 'member'}
                     </span>
                     . Faz o onboarding personalizado, descobre as Houses
-                    mais alinhadas com o teu desporto e começa a acumular XP
+                    mais alinhadas com o teu desporto e comeÃ§a a acumular XP
                     na tua jornada Web3.
                   </p>
                 ) : (
@@ -168,7 +169,7 @@ export default function SportsPage() {
                     Cria uma conta gratuita para fazer o{' '}
                     <strong>onboarding personalizado</strong>, aprender
                     sobre blockchain, Web3 e comunidades de desporto, e
-                    juntar-te às Houses oficiais de cada disciplina.
+                    juntar-te Ã s Houses oficiais de cada disciplina.
                   </p>
                 )}
 
@@ -196,7 +197,7 @@ export default function SportsPage() {
 
                 {loading ? (
                   <p className="text-xs text-slate-400">
-                    A carregar dados das Houses…
+                    A carregar dados das Housesâ€¦
                   </p>
                 ) : (
                   <div className="space-y-3 text-xs">
@@ -207,7 +208,7 @@ export default function SportsPage() {
                     />
                     <RowStatus
                       colorClass="bg-amber-300"
-                      label="Houses em construção"
+                      label="Houses em construÃ§Ã£o"
                       value={housesByStatus.UNDER_CONSTRUCTION.length}
                     />
                     {isLegacyTeam && (
@@ -221,10 +222,10 @@ export default function SportsPage() {
                 )}
 
                 <p className="mt-4 text-[11px] text-slate-400 leading-relaxed">
-                  Cada House representa um desporto num país e vai agregando
-                  membros, XP e iniciativas. As Houses ativas já estão a ser
-                  lideradas por um Head of House e vão ganhar cada vez mais
-                  funções on-chain.
+                  Cada House representa um desporto num paÃ­s e vai agregando
+                  membros, XP e iniciativas. As Houses ativas jÃ¡ estÃ£o a ser
+                  lideradas por um Head of House e vÃ£o ganhar cada vez mais
+                  funÃ§Ãµes on-chain.
                 </p>
 
                 <div className="mt-4 text-right">
@@ -232,7 +233,7 @@ export default function SportsPage() {
                     href="/sports/houses"
                     className="inline-flex items-center text-[11px] font-medium text-emerald-300 hover:text-emerald-200"
                   >
-                    Ver todas as Houses →
+                    Ver todas as Houses â†’
                   </Link>
                 </div>
               </div>
@@ -240,7 +241,7 @@ export default function SportsPage() {
           </div>
         </section>
 
-        {/* VISÃO GERAL + HOUSES */}
+        {/* VISÃƒO GERAL + HOUSES */}
         <section className="max-w-6xl mx-auto px-4 py-10 space-y-8">
           {error && (
             <div className="rounded-md border border-red-500/40 bg-red-900/30 px-3 py-2 text-sm text-red-200 mb-4">
@@ -248,22 +249,22 @@ export default function SportsPage() {
             </div>
           )}
 
-          {/* Introdução às Houses */}
+          {/* IntroduÃ§Ã£o Ã s Houses */}
           <div>
             <h2 className="text-lg font-semibold mb-1">
-              House of Sports – visão geral
+              House of Sports â€“ visÃ£o geral
             </h2>
             <p className="text-xs text-slate-300 max-w-3xl">
-              As Houses of Sports são coletivos de jogadores, treinadores,
-              organizações e entusiastas do mesmo desporto, focados em
-              explorar a Web3 em conjunto. As Houses ativas já estão abertas
-              a membros; as Houses em construção estão a preparar conteúdos,
-              missões e estrutura; e as Houses em desenvolvimento representam
-              as próximas ondas de desportos a entrar no ecossistema.
+              As Houses of Sports sÃ£o coletivos de jogadores, treinadores,
+              organizaÃ§Ãµes e entusiastas do mesmo desporto, focados em
+              explorar a Web3 em conjunto. As Houses ativas jÃ¡ estÃ£o abertas
+              a membros; as Houses em construÃ§Ã£o estÃ£o a preparar conteÃºdos,
+              missÃµes e estrutura; e as Houses em desenvolvimento representam
+              as prÃ³ximas ondas de desportos a entrar no ecossistema.
             </p>
           </div>
 
-          {/* RESUMO RÁPIDO (texto) */}
+          {/* RESUMO RÃPIDO (texto) */}
           <div className="flex flex-col md:flex-row gap-6 md:items-end md:justify-between">
             <div className="text-xs text-slate-300 space-y-1">
               <p>
@@ -276,7 +277,7 @@ export default function SportsPage() {
                 <span className="font-semibold">
                   {housesByStatus.UNDER_CONSTRUCTION.length}
                 </span>{' '}
-                em construção
+                em construÃ§Ã£o
               </p>
               <p>
                 <span className="font-semibold">
@@ -286,7 +287,7 @@ export default function SportsPage() {
                 {!isLegacyTeam && (
                   <span className="text-[11px] text-slate-400">
                     {' '}
-                    (apenas visíveis à equipa LEGACY)
+                    (apenas visÃ­veis Ã  equipa LEGACY)
                   </span>
                 )}
               </p>
@@ -296,22 +297,22 @@ export default function SportsPage() {
           {/* HOUSES ATIVAS */}
           <HousesSection
             title="Houses ativas"
-            description="Comunidades de desporto que já estão a funcionar e a receber membros."
+            description="Comunidades de desporto que jÃ¡ estÃ£o a funcionar e a receber membros."
             houses={housesByStatus.ACTIVE}
           />
 
-          {/* HOUSES EM CONSTRUÇÃO */}
+          {/* HOUSES EM CONSTRUÃ‡ÃƒO */}
           <HousesSection
-            title="Houses em construção"
-            description="Casas que já têm liderança definida e estão a preparar missões, conteúdos e eventos."
+            title="Houses em construÃ§Ã£o"
+            description="Casas que jÃ¡ tÃªm lideranÃ§a definida e estÃ£o a preparar missÃµes, conteÃºdos e eventos."
             houses={housesByStatus.UNDER_CONSTRUCTION}
           />
 
-          {/* HOUSES EM DESENVOLVIMENTO – só equipa LEGACY */}
+          {/* HOUSES EM DESENVOLVIMENTO â€“ sÃ³ equipa LEGACY */}
           {isLegacyTeam && (
             <HousesSection
               title="Houses em desenvolvimento"
-              description="Ideias de Houses que estão a ganhar forma. É o pipeline para as próximas comunidades a lançar."
+              description="Ideias de Houses que estÃ£o a ganhar forma. Ã‰ o pipeline para as prÃ³ximas comunidades a lanÃ§ar."
               houses={visibleInDevelopment}
             />
           )}
@@ -322,33 +323,33 @@ export default function SportsPage() {
           <div className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-2 gap-8 items-center">
             <div>
               <h2 className="text-lg font-semibold mb-2">
-                Para quem é o LEGACY?
+                Para quem Ã© o LEGACY?
               </h2>
               <p className="text-xs text-slate-300 mb-3 leading-relaxed">
-                Para treinadores, atletas, dirigentes, criadores de conteúdo e
-                entusiastas que querem entender, sem jargão técnico, como a
+                Para treinadores, atletas, dirigentes, criadores de conteÃºdo e
+                entusiastas que querem entender, sem jargÃ£o tÃ©cnico, como a
                 Web3 e a Apertum Blockchain podem impactar o desporto na
-                próxima década: desde reputação digital até recompensas
+                prÃ³xima dÃ©cada: desde reputaÃ§Ã£o digital atÃ© recompensas
                 partilhadas dentro de comunidades.
               </p>
               <p className="text-xs text-slate-300 leading-relaxed">
-                O onboarding é personalizado por desporto: escolhes a tua
+                O onboarding Ã© personalizado por desporto: escolhes a tua
                 disciplina, explicas o teu contexto e recebemos-te nas Houses
-                e conteúdos mais adequados ao teu perfil.
+                e conteÃºdos mais adequados ao teu perfil.
               </p>
             </div>
 
             <div className="bg-slate-900/70 border border-slate-700/70 rounded-2xl p-5 text-xs text-slate-200 space-y-3">
               <p>
                 1. Escolhe o teu desporto e responde a poucas perguntas sobre
-                o teu papel (atleta, treinador, organização, etc.).
+                o teu papel (atleta, treinador, organizaÃ§Ã£o, etc.).
               </p>
               <p>
-                2. Recebe uma sugestão de House of Sports e um trajeto de
-                conteúdos Web3 alinhado com os teus objetivos.
+                2. Recebe uma sugestÃ£o de House of Sports e um trajeto de
+                conteÃºdos Web3 alinhado com os teus objetivos.
               </p>
               <p>
-                3. Começa a acumular XP à medida que completas missões,
+                3. ComeÃ§a a acumular XP Ã  medida que completas missÃµes,
                 cursos e participas na comunidade.
               </p>
 
@@ -357,7 +358,7 @@ export default function SportsPage() {
                   href="/sports/onboarding"
                   className="inline-flex items-center rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-emerald-950 hover:bg-emerald-400 transition shadow-sm"
                 >
-                  Começar onboarding de desporto
+                  ComeÃ§ar onboarding de desporto
                 </Link>
               </div>
             </div>
@@ -431,16 +432,38 @@ function HousesSection({
             </div>
             {house.sport && (
               <div className="text-[11px] uppercase text-slate-400 mb-1">
-                {house.sport.name} · {house.sport.code}
+                {house.sport.name} Â· {house.sport.code}
               </div>
             )}
             {house.head ? (
-              <p className="text-xs text-slate-200 mb-1">
-                Head of House:{' '}
-                <span className="font-medium">
-                  {house.head.full_name || house.head.username}
-                </span>
-              </p>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-7 w-7 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-semibold text-slate-200 overflow-hidden border border-slate-700">
+                  {house.head.avatar_url ? (
+                    <SafeImage
+                      src={house.head.avatar_url}
+                      alt={house.head.full_name || house.head.username || 'Head of House'}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {(house.head.full_name || house.head.username || '?')
+                        .split(' ')
+                        .map((p) => p[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-slate-200 leading-tight">
+                  <div className="font-medium">
+                    {house.head.full_name || house.head.username || 'Head of House'}
+                  </div>
+                  {house.head.username && (
+                    <div className="text-[11px] text-slate-400">@{house.head.username}</div>
+                  )}
+                </div>
+              </div>
             ) : (
               <p className="text-xs text-slate-400 mb-1">
                 Head of House a definir.
@@ -448,7 +471,7 @@ function HousesSection({
             )}
             <p className="text-[11px] text-slate-400">
               {house.moderators.length > 0
-                ? `${house.moderators.length} moderador(es) já atribuídos.`
+                ? `${house.moderators.length} moderador(es) jÃ¡ atribuÃ­dos.`
                 : 'Sem moderadores definidos ainda.'}
             </p>
           </Link>
@@ -457,3 +480,4 @@ function HousesSection({
     </div>
   );
 }
+
