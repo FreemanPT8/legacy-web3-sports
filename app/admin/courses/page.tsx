@@ -417,6 +417,10 @@ export default function CoursesManagementPage() {
                             src={course.image_url}
                             alt={title}
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.src = '/favicon.ico';
+                            }}
                           />
                         </div>
                       )}
