@@ -12,6 +12,7 @@ interface HouseRow {
   country_code: string | null;
   status: string | null;
   created_at: string | null;
+  avatar_url?: string | null;
 }
 
 interface SportRow {
@@ -49,6 +50,7 @@ interface AdminHouseDTO {
   country_code: string;
   status: HouseStatus;
   created_at: string;
+  avatar_url: string | null;
   head: {
     user_id: string;
     username: string | null;
@@ -120,7 +122,7 @@ export async function GET(request: NextRequest) {
     // 1) Houses base
     const { data: housesData, error: housesError } = await supabaseAdmin
       .from('houses_of_sports')
-      .select('id, sport_id, country_code, status, created_at')
+      .select('id, sport_id, country_code, status, created_at, avatar_url')
       .order('created_at', { ascending: true });
 
     if (housesError) {
@@ -286,6 +288,7 @@ export async function GET(request: NextRequest) {
         country_code: (h.country_code || '').toUpperCase(),
         status: normalizedStatus,
         created_at: h.created_at || new Date().toISOString(),
+        avatar_url: h.avatar_url ?? null,
         head: headUser
           ? {
               user_id: headUser.id,
