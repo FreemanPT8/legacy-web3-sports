@@ -26,9 +26,21 @@ import type {
   MediaAsset,
   SeoConfig,
   BuilderState,
+  BlogBuilderState,
 } from '@/types/builder';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
+
+const BLOG_CATEGORY_SUGGESTIONS = [
+  'Blockchain',
+  'Web3',
+  'NFTs',
+  'DeFi',
+  'Sports',
+  'Education',
+  'Technology',
+  'Community',
+] as const;
 
 type ListField =
   | 'keyTakeaways'
@@ -224,6 +236,9 @@ export function AdditionalStep() {
     [patchState, state.schedule],
   );
 
+  const isBlog = state.entityType === 'blog';
+  const blogState = isBlog ? (state as BlogBuilderState) : null;
+
   return (
     <div className="space-y-6">
       <ScheduleSection
@@ -245,6 +260,15 @@ export function AdditionalStep() {
         durationMinutes={durationMinutesRemainder}
         onDurationChange={updateDuration}
       />
+
+      {isBlog && blogState && (
+        <BlogMetaSection
+          state={blogState}
+          onChange={(fields) =>
+            patchState(fields as Partial<BuilderState>)
+          }
+        />
+      )}
 
       <ListSection
         title="Key takeaways"
@@ -557,6 +581,116 @@ function AttachmentsSection({
             </div>
           </div>
         ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BlogMetaSection({
+  state,
+  onChange,
+}: {
+  state: BlogBuilderState;
+  onChange: (fields: Partial<BlogBuilderState>) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Blog meta & access</CardTitle>
+        <p className="text-sm text-gray-500">
+          Ajusta leitura estimada, categoria e gating para o artigo.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label>Estimated reading time (minutes)</Label>
+            <Input
+              type="number"
+              min={1}
+              value={state.readingTimeMinutes}
+              onChange={(event) =>
+                onChange({
+                  readingTimeMinutes: Math.max(
+                    1,
+                    Number(event.target.value) || 1,
+                  ),
+                })
+              }
+            />
+          </div>
+          <div>
+            <Label>XP reward</Label>
+            <Input
+              type="number"
+              min={0}
+              value={state.xp.reward}
+              onChange={(event) =>
+                onChange({
+                  xp: {
+                    ...state.xp,
+                    reward: Number(event.target.value) || 0,
+                  },
+                })
+              }
+            />
+          </div>
+          <div>
+            <Label>XP required to unlock</Label>
+            <Input
+              type="number"
+              min={0}
+              value={state.xp.threshold}
+              onChange={(event) =>
+                onChange({
+                  xp: {
+                    ...state.xp,
+                    threshold: Number(event.target.value) || 0,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-semibold">Registered users only</p>
+              <p className="text-xs text-gray-500">
+                Restringe o artigo a membros logados.
+              </p>
+            </div>
+            <Switch
+              checked={state.registeredOnly}
+              onCheckedChange={(checked) =>
+                onChange({ registeredOnly: checked })
+              }
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label>Category</Label>
+          <Input
+            value={state.category}
+            onChange={(event) =>
+              onChange({ category: event.target.value })
+            }
+            placeholder="Ex.: Web3, Education, Sports..."
+          />
+          <div className="flex flex-wrap gap-2">
+            {BLOG_CATEGORY_SUGGESTIONS.map((category) => (
+              <Badge
+                key={category}
+                variant={
+                  state.category === category ? 'default' : 'outline'
+                }
+                className="cursor-pointer"
+                onClick={() => onChange({ category })}
+              >
+                {category}
+              </Badge>
+            ))}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
