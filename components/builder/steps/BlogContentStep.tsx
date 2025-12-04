@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { LANGUAGES, type LangCode } from '@/types/builder';
+import { LANGUAGES, type LangCode, type BlogBuilderState } from '@/types/builder';
 import { useBuilderState } from '@/hooks/useBuilderState';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
