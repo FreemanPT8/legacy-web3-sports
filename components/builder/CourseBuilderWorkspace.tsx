@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { CourseBasicsStep } from '@/components/builder/steps/CourseBasicsStep';
 import { CurriculumStep } from '@/components/builder/steps/CurriculumStep';
@@ -67,6 +68,7 @@ export function CourseBuilderWorkspace({
         xpTotalDistributed={metadata.xpTotalDistributed}
         onManageModules={metadata.onManageModules}
       />
+      <CourseQualityChecklist />
       <LegacyPreviewPanel>
         <CoursePreview />
       </LegacyPreviewPanel>
@@ -75,8 +77,8 @@ export function CourseBuilderWorkspace({
 
   return (
     <BuilderShell
-      title="Legacy Builder — Course"
-      description="Três etapas unificadas: Basics, Curriculum e Additional."
+      title="Legacy Builder - Course"
+      description="Tres etapas unificadas: Basics, Curriculum e Additional."
       editor={editor}
       preview={previewColumn}
       onPreview={onPreview ? () => onPreview(courseState.slug) : undefined}
@@ -138,6 +140,153 @@ function CourseStatusCard({
         >
           Manage modules
         </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CourseQualityChecklist() {
+  const { state } = useBuilderContext();
+  const course = state as CourseBuilderState;
+  const topics = course.curriculum.topics;
+  const totalLessons = topics.reduce(
+    (sum, topic) => sum + topic.lessons.length,
+    0,
+  );
+  const totalQuizzes = topics.reduce(
+    (sum, topic) => sum + topic.quizzes.length,
+    0,
+  );
+  const topicsWithoutLessons = topics.filter(
+    (topic) => topic.lessons.length === 0,
+  );
+  const lessonsMissingContent = topics.flatMap((topic) =>
+    topic.lessons.filter(
+      (lesson) => !lesson.content || lesson.content.trim().length === 0,
+    ),
+  );
+  const hasTitle = Object.values(course.title || {}).some(
+    (value) => value.trim().length > 0,
+  );
+  const hasSlug = course.slug.trim().length > 0;
+
+  const rules = [
+    {
+      label: 'Title & slug defined',
+      done: hasTitle && hasSlug,
+      hint: 'Add at least one translation and a unique slug in Basics.',
+    },
+    {
+      label: 'Cover image selected',
+      done: Boolean(course.coverImage),
+      hint: 'Choose a cover image from the media library.',
+    },
+    {
+      label: 'Curriculum populated',
+      done: topics.length > 0 && topicsWithoutLessons.length === 0,
+      hint: 'Add topics and ensure each has at least one lesson.',
+    },
+    {
+      label: 'Lessons with content',
+      done: lessonsMissingContent.length === 0,
+      hint: 'Open lessons with missing content inside Curriculum.',
+    },
+    {
+      label: 'SEO metadata complete',
+      done:
+        course.seo.metaTitle.trim().length > 0 &&
+        course.seo.metaDescription.trim().length > 0 &&
+        course.seo.slug.trim().length > 0,
+      hint: 'Fill meta title, description and slug in Additional -> SEO.',
+    },
+    {
+      label: 'Schedule reviewed',
+      done:
+        Boolean(course.schedule.publishAt) ||
+        course.schedule.status !== 'draft',
+      hint: 'Set publish date/time or update status in Additional -> Publishing.',
+    },
+  ];
+
+  const completed = rules.filter((rule) => rule.done).length;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Readiness checklist</CardTitle>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {completed}/{rules.length} tasks complete
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {rules.map((rule) => (
+          <div
+            key={rule.label}
+            className="rounded-xl border border-gray-200 px-3 py-2 dark:border-gray-800"
+          >
+            <div className="flex items-start gap-2">
+              {rule.done ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />
+              ) : (
+                <AlertCircle className="mt-0.5 h-4 w-4 text-amber-500" />
+              )}
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {rule.label}
+                </p>
+                {!rule.done && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {rule.hint}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-3 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-200">
+          <p className="font-semibold text-gray-900 dark:text-gray-100">
+            Curriculum coverage
+          </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <div>
+              <p className="text-xs uppercase text-gray-500">Topics</p>
+              <p className="text-lg font-semibold">{topics.length}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-gray-500">Lessons</p>
+              <p className="text-lg font-semibold">{totalLessons}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-gray-500">Quizzes</p>
+              <p className="text-lg font-semibold">{totalQuizzes}</p>
+            </div>
+          </div>
+          {(topicsWithoutLessons.length > 0 ||
+            lessonsMissingContent.length > 0) && (
+            <div className="mt-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              {topicsWithoutLessons.length > 0 && (
+                <div>
+                  <p className="font-semibold">
+                    Topics needing lessons ({topicsWithoutLessons.length})
+                  </p>
+                  <ul className="list-inside list-disc">
+                    {topicsWithoutLessons.slice(0, 3).map((topic) => (
+                      <li key={topic.id}>{topic.title || 'Untitled topic'}</li>
+                    ))}
+                    {topicsWithoutLessons.length > 3 && <li>...</li>}
+                  </ul>
+                </div>
+              )}
+              {lessonsMissingContent.length > 0 && (
+                <p>
+                  {lessonsMissingContent.length} lesson
+                  {lessonsMissingContent.length === 1 ? '' : 's'} missing
+                  content.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
