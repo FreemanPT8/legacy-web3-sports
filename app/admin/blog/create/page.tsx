@@ -65,6 +65,14 @@ type MultiLang = Record<string, string>;
 
 const RECENT_IMAGES_KEY = 'legacy_recent_images';
 
+type MediaItem = {
+  id: string;
+  url: string;
+  title?: string | null;
+  alt?: string | null;
+  tags?: string[] | null;
+};
+
 export default function CreateBlogPostPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
@@ -111,6 +119,11 @@ export default function CreateBlogPostPage() {
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>(
     'desktop',
   );
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [mediaSearch, setMediaSearch] = useState('');
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   const isValidUrl = (value: string) => {
     if (!value.trim()) return true;
@@ -161,6 +174,32 @@ export default function CreateBlogPostPage() {
       5,
     );
     persistRecentImages(next);
+  };
+
+  const loadMedia = async (search?: string) => {
+    setMediaLoading(true);
+    setMediaError(null);
+    try {
+      const token = getToken();
+      const url = search
+        ? `/api/admin/media/list?search=${encodeURIComponent(search)}`
+        : '/api/admin/media/list';
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setMediaError(data.error || 'Falha ao carregar biblioteca.');
+        setMedia([]);
+        return;
+      }
+      setMedia(data.items || []);
+    } catch (err: any) {
+      setMediaError(err?.message || 'Erro ao carregar biblioteca.');
+      setMedia([]);
+    } finally {
+      setMediaLoading(false);
+    }
   };
   // Protecao basica
   useEffect(() => {
@@ -648,17 +687,30 @@ export default function CreateBlogPostPage() {
                     <Input
                       type="text"
                       value={post.image_url}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setPost((prev) => ({
-                          ...prev,
-                          image_url: value,
-                        }));
-                        addRecentImage(value);
-                      }}
-                      placeholder="https://example.com/cover.jpg"
-                      className={imageUrlError ? 'border-red-400' : undefined}
-                    />
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setPost((prev) => ({
+                        ...prev,
+                        image_url: value,
+                      }));
+                      addRecentImage(value);
+                    }}
+                    placeholder="https://example.com/cover.jpg"
+                    className={imageUrlError ? 'border-red-400' : undefined}
+                  />
+                    <div className="flex items-center gap-2 mt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowLibrary(true);
+                          void loadMedia();
+                        }}
+                      >
+                        Selecionar da library
+                      </Button>
+                    </div>
                     {imageUrlError && (
                       <p className="text-[11px] text-red-600 mt-1">
                         {imageUrlError}
@@ -855,6 +907,108 @@ export default function CreateBlogPostPage() {
           </div>
         </div>
       </div>
+
+      {showLibrary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            className="absolute inset-0"
+            onClick={() => setShowLibrary(false)}
+            aria-label="Fechar biblioteca"
+          />
+          <div className="relative z-10 w-full max-w-4xl bg-white rounded-lg shadow-lg border">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <div>
+                <h3 className="text-lg font-semibold">Biblioteca de media</h3>
+                <p className="text-xs text-gray-500">
+                  Escolhe uma imagem existente ou pesquisa por título/tags.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLibrary(false)}
+              >
+                Fechar
+              </Button>
+            </div>
+
+            <div className="px-4 py-3 space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  value={mediaSearch}
+                  onChange={(e) => setMediaSearch(e.target.value)}
+                  placeholder="Procurar por título ou tags..."
+                />
+                <Button
+                  type="button"
+                  onClick={() => void loadMedia(mediaSearch)}
+                  disabled={mediaLoading}
+                >
+                  {mediaLoading ? 'A carregar...' : 'Pesquisar'}
+                </Button>
+              </div>
+
+              {mediaError && (
+                <p className="text-sm text-red-600">{mediaError}</p>
+              )}
+
+              <div className="max-h-[420px] overflow-y-auto border rounded-md p-3 bg-gray-50">
+                {mediaLoading ? (
+                  <p className="text-sm text-gray-500">A carregar…</p>
+                ) : media.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Nenhum ficheiro encontrado.
+                  </p>
+                ) : (
+                  <div className="grid sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {media.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="rounded-md border bg-white hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 p-2 text-left"
+                        onClick={() => {
+                          setPost((prev) => ({
+                            ...prev,
+                            image_url: item.url,
+                          }));
+                          addRecentImage(item.url);
+                          setShowLibrary(false);
+                        }}
+                      >
+                        <div className="w-full h-28 rounded-md overflow-hidden bg-gray-100 border">
+                          <SafeImage
+                            src={item.url}
+                            alt={item.alt || item.title || 'Media'}
+                            width={240}
+                            height={160}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="mt-2 text-xs text-gray-700 line-clamp-2">
+                          {item.title || item.alt || 'Sem título'}
+                        </div>
+                        {item.tags && item.tags.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-gray-500">
+                            {item.tags.slice(0, 3).map((t) => (
+                              <span
+                                key={t}
+                                className="px-2 py-0.5 bg-gray-100 rounded-full border"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

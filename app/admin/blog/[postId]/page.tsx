@@ -69,6 +69,16 @@ type BlogPost = {
   xp_creator_distributed?: number;
 };
 
+type MediaItem = {
+  id: string;
+  url: string;
+  title?: string | null;
+  alt?: string | null;
+  folder?: string | null;
+  created_at?: string | null;
+  tags?: string[] | null;
+};
+
 const LANGUAGES: { code: LangCode; name: string }[] = [
   { code: 'en', name: 'English' },
   { code: 'pt', name: 'Português' },
@@ -110,6 +120,11 @@ export default function EditBlogPostPage() {
     xpTotal: number;
     xpCreator: number;
   }>({ xpTotal: 0, xpCreator: 0 });
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [mediaSearch, setMediaSearch] = useState('');
+  const [mediaError, setMediaError] = useState<string>('');
 
   // Cache de imagens recentes (localStorage)
   useEffect(() => {
@@ -154,6 +169,121 @@ export default function EditBlogPostPage() {
       5,
     );
     persistRecentImages(next);
+  };
+
+  // Media library
+  const loadMedia = async () => {
+    setMediaLoading(true);
+    setMediaError('');
+    try {
+      const token = getToken();
+      const url = mediaSearch.trim()
+        ? `/api/admin/media?search=${encodeURIComponent(mediaSearch.trim())}`
+        : '/api/admin/media';
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setMediaError(data.error || 'Failed to load media.');
+        setMedia([]);
+        return;
+      }
+      setMedia(data.items || data.media || []);
+    } catch (err: any) {
+      setMediaError(err?.message || 'Failed to load media.');
+      setMedia([]);
+    } finally {
+      setMediaLoading(false);
+    }
+  };
+
+  const renderMediaLibrary = () => {
+    if (!showLibrary) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="w-full max-w-4xl rounded-lg bg-white shadow-xl max-h-[80vh] overflow-hidden">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <div>
+              <h3 className="text-lg font-semibold">Media library</h3>
+              <p className="text-xs text-gray-500">
+                Seleciona uma imagem existente para usar como thumbnail.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowLibrary(false)}>
+              Fechar
+            </Button>
+          </div>
+
+          <div className="space-y-3 p-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <Input
+                placeholder="Procurar por título, alt ou tags..."
+                value={mediaSearch}
+                onChange={(e) => setMediaSearch(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button onClick={loadMedia} disabled={mediaLoading}>
+                  {mediaLoading ? 'A carregar...' : 'Recarregar'}
+                </Button>
+                <Button variant="outline" onClick={() => setShowLibrary(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+
+            {mediaError && (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {mediaError}
+              </div>
+            )}
+
+            {mediaLoading ? (
+              <p className="text-sm text-gray-500">A carregar media...</p>
+            ) : media.length === 0 ? (
+              <p className="text-sm text-gray-500">Nenhuma imagem encontrada.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                {media.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="flex flex-col overflow-hidden rounded-md border border-gray-200 bg-white text-left shadow-sm transition hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    onClick={() => {
+                      handleFieldChange('image_url', item.url);
+                      addRecentImage(item.url);
+                      setShowLibrary(false);
+                    }}
+                  >
+                    <div className="h-32 w-full overflow-hidden bg-gray-100">
+                      <SafeImage
+                        src={item.url}
+                        alt={item.alt || item.title || 'Imagem'}
+                        className="h-full w-full object-cover"
+                        width={400}
+                        height={160}
+                      />
+                    </div>
+                    <div className="p-2 text-xs text-gray-700">
+                      <div className="font-semibold line-clamp-1">
+                        {item.title || 'Sem título'}
+                      </div>
+                      {item.alt && (
+                        <div className="text-gray-500 line-clamp-1">Alt: {item.alt}</div>
+                      )}
+                      {item.folder && (
+                        <div className="text-gray-400 line-clamp-1">/{item.folder}</div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const [loadingData, setLoadingData] = useState(true);
@@ -497,9 +627,10 @@ export default function EditBlogPostPage() {
   const canEdit = canManageBlog;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-6xl mx-auto space-y-6">
+    <>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
@@ -738,18 +869,33 @@ export default function EditBlogPostPage() {
 
                   <div>
                     <Label>Thumbnail (image URL)</Label>
-                    <Input
-                      type="text"
-                      value={post.image_url ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        handleFieldChange('image_url', value);
-                        addRecentImage(value);
-                      }}
-                      placeholder="https://example.com/cover.jpg"
-                      disabled={!canEdit}
-                      className={imageUrlError ? 'border-red-400' : undefined}
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        type="text"
+                        value={post.image_url ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          handleFieldChange('image_url', value);
+                          addRecentImage(value);
+                        }}
+                        placeholder="https://example.com/cover.jpg"
+                        disabled={!canEdit}
+                        className={imageUrlError ? 'border-red-400' : undefined}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!canEdit}
+                          onClick={async () => {
+                            await loadMedia();
+                            setShowLibrary(true);
+                          }}
+                        >
+                          Selecionar da library
+                        </Button>
+                      </div>
+                    </div>
                     {imageUrlError && (
                       <p className="text-[11px] text-red-600 mt-1">
                         {imageUrlError}
@@ -950,9 +1096,11 @@ export default function EditBlogPostPage() {
               </Card>
             </div>
           </div>
+          </div>
         </div>
       </div>
-    </div>
+      {renderMediaLibrary()}
+    </>
   );
 }
 

@@ -449,69 +449,73 @@ export default function CreateCoursePage() {
                     <div>
                       <Label>Course image URL</Label>
                       <div className="flex gap-2 items-center mt-1">
-                          <Input
-                            type="text"
-                            value={course.image_url}
-                            onChange={(e) =>
-                              setCourse((prev) => ({
-                                ...prev,
-                                image_url: e.target.value,
-                              }))
-                            }
-                            onBlur={(e) => addRecentImage(e.target.value)}
-                            placeholder="https://..."
-                            className={imageUrlError ? 'border-red-400' : undefined}
-                          />
+                        <Input
+                          type="text"
+                          value={course.image_url}
+                          onChange={(e) =>
+                            setCourse((prev) => ({
+                              ...prev,
+                              image_url: e.target.value,
+                            }))
+                          }
+                          onBlur={(e) => addRecentImage(e.target.value)}
+                          placeholder="https://..."
+                          className={imageUrlError ? 'border-red-400' : undefined}
+                        />
                         {course.image_url && (
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
                             onClick={() => window.open(course.image_url, '_blank')}
-                        >
-                          <ImageIcon className="h-4 w-4" />
-                        </Button>
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {imageUrlError && (
+                        <p className="text-[11px] text-red-600 mt-1">
+                          {imageUrlError}
+                        </p>
                       )}
-                    </div>
-                    {imageUrlError && (
-                      <p className="text-[11px] text-red-600 mt-1">
-                        {imageUrlError}
-                      </p>
-                    )}
-                    {!imageUrlError && hasImage && (
-                      <div className="mt-2 rounded-md border bg-white p-2">
-                        <div className="text-[11px] text-gray-500 mb-1">
-                          Thumbnail preview
-                        </div>
-                        <img
-                          src={course.image_url}
-                          alt="Course cover preview"
-                          className="h-32 w-full object-cover rounded"
-                          loading="lazy"
-                        />
+                      {!imageUrlError && hasImage && (
+                        <div className="mt-2 rounded-md border bg-white p-2">
+                          <div className="text-[11px] text-gray-500 mb-1">
+                            Thumbnail preview
+                          </div>
+                          <img
+                            src={course.image_url}
+                            alt="Course cover preview"
+                            className="h-32 w-full object-cover rounded"
+                            loading="lazy"
+                          />
                         </div>
                       )}
                       {recentImages.length > 0 && (
-                        <div className="mt-2">
+                        <div className="mt-3 space-y-2">
                           <div className="text-[11px] text-gray-500">
-                            Imagens recentes
+                            Recent images
                           </div>
-                          <div className="flex flex-wrap gap-2 mt-1">
+                          <div className="flex flex-wrap gap-2">
                             {recentImages.map((url) => (
-                              <Button
+                              <button
                                 key={url}
                                 type="button"
-                                variant="outline"
-                                size="sm"
                                 onClick={() =>
                                   setCourse((prev) => ({
                                     ...prev,
                                     image_url: url,
                                   }))
                                 }
+                                className="w-20 h-14 rounded-md border border-gray-200 bg-white shadow-sm overflow-hidden hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
-                                Usar
-                              </Button>
+                                <img
+                                  src={url}
+                                  alt="Recent cover"
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </button>
                             ))}
                           </div>
                         </div>
