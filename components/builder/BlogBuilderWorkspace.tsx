@@ -12,6 +12,7 @@ import { useBuilderContext } from '@/contexts/BuilderContext';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useLivePreview } from '@/hooks/useLivePreview';
 import type { BlogBuilderState } from '@/types/builder';
+import { LANGUAGES } from '@/types/builder';
 
 interface BlogBuilderWorkspaceProps {
   saving: boolean;
@@ -99,6 +100,28 @@ function BlogStatusCard({ authorName }: { authorName: string | null }) {
         ? 'Scheduled'
         : 'Published';
 
+  const countWords = (value: string) =>
+    value
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(' ')
+      .filter(Boolean).length;
+
+  const languageStats = LANGUAGES.map((lang) => {
+    const content = blog.content?.[lang.code] ?? '';
+    const words = content ? countWords(content) : 0;
+    return { code: lang.code, name: lang.name, words };
+  });
+
+  const filledLanguages = languageStats.filter((stat) => stat.words > 0);
+  const totalWords = languageStats.reduce((sum, stat) => sum + stat.words, 0);
+  const estimatedMinutes = Math.max(1, Math.ceil(totalWords / 200));
+  const readingTimeCopy =
+    blog.readingTimeMinutes === estimatedMinutes
+      ? `${blog.readingTimeMinutes} min`
+      : `${blog.readingTimeMinutes} min (est. ${estimatedMinutes} min)`;
+
   return (
     <Card>
       <CardHeader>
@@ -115,12 +138,35 @@ function BlogStatusCard({ authorName }: { authorName: string | null }) {
           )}
         </div>
         <div className="grid gap-3">
-          <StatusRow label="Reading time" value={`${blog.readingTimeMinutes} min`} />
+          <StatusRow label="Reading time" value={readingTimeCopy} />
           <StatusRow label="XP reward" value={`${blog.xp.reward} XP`} />
           <StatusRow
             label="Access"
             value={blog.registeredOnly ? 'Members only' : 'Public'}
           />
+          <StatusRow
+            label="Content coverage"
+            value={
+              filledLanguages.length > 0
+                ? `${filledLanguages.length} / ${languageStats.length} languages • ${totalWords.toLocaleString()} words`
+                : 'No content yet'
+            }
+          />
+          {filledLanguages.length > 0 && (
+            <div className="rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:text-gray-300">
+              <p className="mb-1 font-semibold text-gray-800 dark:text-gray-100">
+                Language breakdown
+              </p>
+              <ul className="space-y-1">
+                {filledLanguages.map((lang) => (
+                  <li key={lang.code} className="flex items-center justify-between">
+                    <span>{lang.name}</span>
+                    <span className="font-semibold">{lang.words.toLocaleString()} words</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <StatusRow label="Schedule status" value={`${scheduleStatusCopy} • ${timezoneLabel}`} />
           <StatusRow label="Publish at" value={formatDate(blog.schedule.publishAt)} />
           <StatusRow label="Expire at" value={formatDate(blog.schedule.expireAt)} />
