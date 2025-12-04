@@ -79,6 +79,25 @@ export function BlogBuilderWorkspace({
 function BlogStatusCard({ authorName }: { authorName: string | null }) {
   const { state } = useBuilderContext();
   const blog = state as BlogBuilderState;
+  const timezoneLabel =
+    blog.schedule.timezone === 'CET' ? 'CET (Europe/Berlin)' : blog.schedule.timezone;
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return 'Not set';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Invalid date';
+    return date.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  };
+
+  const scheduleStatusCopy =
+    blog.schedule.status === 'draft'
+      ? 'Draft'
+      : blog.schedule.status === 'scheduled'
+        ? 'Scheduled'
+        : 'Published';
 
   return (
     <Card>
@@ -90,7 +109,7 @@ function BlogStatusCard({ authorName }: { authorName: string | null }) {
           <Badge variant={blog.published ? 'default' : 'outline'}>
             {blog.published ? 'Published' : 'Draft'}
           </Badge>
-          <Badge variant="outline">{blog.category}</Badge>
+          {blog.category && <Badge variant="outline">{blog.category}</Badge>}
           {authorName && (
             <Badge variant="outline">Author: {authorName}</Badge>
           )}
@@ -102,6 +121,9 @@ function BlogStatusCard({ authorName }: { authorName: string | null }) {
             label="Access"
             value={blog.registeredOnly ? 'Members only' : 'Public'}
           />
+          <StatusRow label="Schedule status" value={`${scheduleStatusCopy} • ${timezoneLabel}`} />
+          <StatusRow label="Publish at" value={formatDate(blog.schedule.publishAt)} />
+          <StatusRow label="Expire at" value={formatDate(blog.schedule.expireAt)} />
         </div>
         <Button
           type="button"
