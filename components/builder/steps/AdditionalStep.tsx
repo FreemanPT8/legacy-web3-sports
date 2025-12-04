@@ -355,7 +355,7 @@ export function AdditionalStep() {
             : attachmentLibrary.closeLibrary()
         }
         title="Select attachment"
-        description="Escolhe ficheiros existentes, faz upload ou insere URLs externos."
+        description="Pick existing files, upload new assets, or insert external URLs."
         library={attachmentLibrary}
         onSelect={handleAttachmentSelect}
         allowUrl
@@ -366,7 +366,7 @@ export function AdditionalStep() {
           open ? void seoLibrary.openLibrary() : seoLibrary.closeLibrary()
         }
         title="Select OG image"
-        description="Seleciona ou envia uma imagem optimizada para SEO/social."
+        description="Select or upload an image optimized for SEO or social."
         library={seoLibrary}
         onSelect={handleSeoImageSelect}
         allowUrl
@@ -458,7 +458,7 @@ function ListSection({
       </CardHeader>
       <CardContent className="space-y-3">
         {values.length === 0 && (
-          <p className="text-sm text-gray-500">Ainda não adicionaste itens.</p>
+          <p className="text-sm text-gray-500">No items added yet.</p>
         )}
         {values.map((value, index) => (
           <div key={`${title}-${index}`} className="flex items-center gap-3">
@@ -513,7 +513,7 @@ function AttachmentsSection({
         <div>
           <CardTitle>Attachments & assets</CardTitle>
           <p className="text-sm text-gray-500">
-            Upload PDFs, templates ou ligações externas (Notion, Dropbox, etc.).
+            Upload PDFs, templates, or link external resources (Notion, Dropbox, etc.).
           </p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={onOpenLibrary}>
@@ -523,7 +523,7 @@ function AttachmentsSection({
       </CardHeader>
       <CardContent className="space-y-4">
         {attachments.length === 0 && (
-          <p className="text-sm text-gray-500">Sem anexos ainda.</p>
+          <p className="text-sm text-gray-500">No attachments yet.</p>
         )}
         {attachments.map((attachment) => (
           <div
@@ -655,7 +655,7 @@ function BlogMetaSection({
             <div>
               <p className="text-sm font-semibold">Registered users only</p>
               <p className="text-xs text-gray-500">
-                Restringe o artigo a membros logados.
+                Restrict the article to logged-in members.
               </p>
             </div>
             <Switch
@@ -674,7 +674,7 @@ function BlogMetaSection({
             onChange={(event) =>
               onChange({ category: event.target.value })
             }
-            placeholder="Ex.: Web3, Education, Sports..."
+            placeholder="e.g., Web3, Education, Sports"
           />
           <div className="flex flex-wrap gap-2">
             {BLOG_CATEGORY_SUGGESTIONS.map((category) => (
@@ -805,7 +805,7 @@ function IntegrationsSection({
       <CardHeader>
         <CardTitle>Google integrations</CardTitle>
         <p className="text-sm text-gray-500">
-          Mantém registo das integrações activas para este curso.
+          Keep track of which integrations are active for this course.
         </p>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
