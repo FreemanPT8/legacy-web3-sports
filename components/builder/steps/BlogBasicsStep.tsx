@@ -157,7 +157,7 @@ export function BlogBasicsStep() {
                   },
                 })
               }
-              placeholder="Short summary used on cards e SEO."
+              placeholder="Short summary used on cards and SEO."
               minRows={4}
             />
           </div>
@@ -290,7 +290,7 @@ function CoverImageSection({
         </div>
       ) : (
         <p className="text-xs text-gray-500">
-          Recommended 1600×900 image. Supports JPG, PNG, WEBP.
+          Recommended 1600x900 image. Supports JPG, PNG, WEBP.
         </p>
       )}
 
@@ -302,7 +302,7 @@ function CoverImageSection({
             : mediaLibrary.closeLibrary()
         }
         title="Select cover image"
-        description="Choose uma imagem existente, faz upload ou insere URL."
+        description="Pick an existing image, upload a new one, or paste an external URL."
         library={mediaLibrary}
         onSelect={(asset) => {
           onPick(asset);

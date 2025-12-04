@@ -46,7 +46,7 @@ export function BlogContentStep() {
         <div>
           <p className="font-semibold">Content stats</p>
           <p className="text-xs text-gray-500">
-            {wordCount.toLocaleString()} words • ~{estimatedMinutes} min read
+            {wordCount.toLocaleString()} words - ~{estimatedMinutes} min read
           </p>
         </div>
         <Button
@@ -73,7 +73,7 @@ export function BlogContentStep() {
             },
           })
         }
-        placeholder={`Write the article in ${currentLangLabel} com headings, embeds, listas e links.`}
+        placeholder={`Write the article in ${currentLangLabel} with headings, embeds, lists, and links.`}
         minRows={18}
       />
     </div>
