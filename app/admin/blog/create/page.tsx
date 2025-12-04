@@ -691,7 +691,7 @@ export default function CreateBlogPostPage() {
                     )}
 
                     {recentImages.length > 0 && (
-                      <div className="mt-3 space-y-1 text-[11px] text-gray-600">
+                      <div className="mt-3 space-y-2 text-[11px] text-gray-600">
                         <div className="flex items-center justify-between">
                           <span>Imagens recentes</span>
                           <button
@@ -707,15 +707,21 @@ export default function CreateBlogPostPage() {
                             <button
                               key={url}
                               type="button"
-                              className="rounded border border-gray-200 bg-white px-2 py-1 text-[11px] hover:border-blue-400"
+                              className="w-20 h-14 rounded-md border border-gray-200 bg-white overflow-hidden hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
                               onClick={() =>
                                 setPost((prev) => ({
                                   ...prev,
                                   image_url: url,
                                 }))
                               }
+                              title={url}
                             >
-                              {url.length > 28 ? `${url.slice(0, 28)}…` : url}
+                              <img
+                                src={url}
+                                alt="Miniatura recente"
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
                             </button>
                           ))}
                         </div>
