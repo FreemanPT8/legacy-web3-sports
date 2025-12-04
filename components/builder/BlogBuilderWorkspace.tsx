@@ -67,7 +67,7 @@ export function BlogBuilderWorkspace({
 
   return (
     <BuilderShell
-      title="Legacy Builder — Blog Post"
+      title="Legacy Builder - Blog Post"
       description="Three unified steps: Basics, Content and Additional settings."
       editor={editor}
       preview={previewColumn}
@@ -150,7 +150,7 @@ function BlogStatusCard({ authorName }: { authorName: string | null }) {
             label="Content coverage"
             value={
               filledLanguages.length > 0
-                ? `${filledLanguages.length} / ${languageStats.length} languages • ${totalWords.toLocaleString()} words`
+                ? `${filledLanguages.length} / ${languageStats.length} languages - ${totalWords.toLocaleString()} words`
                 : 'No content yet'
             }
           />
@@ -169,7 +169,7 @@ function BlogStatusCard({ authorName }: { authorName: string | null }) {
               </ul>
             </div>
           )}
-          <StatusRow label="Schedule status" value={`${scheduleStatusCopy} • ${timezoneLabel}`} />
+          <StatusRow label="Schedule status" value={`${scheduleStatusCopy} - ${timezoneLabel}`} />
           <StatusRow label="Publish at" value={formatDate(blog.schedule.publishAt)} />
           <StatusRow label="Expire at" value={formatDate(blog.schedule.expireAt)} />
         </div>
@@ -218,12 +218,12 @@ function BlogQualityChecklist() {
           blog.seo.metaDescription.trim().length &&
           blog.seo.slug.trim().length,
       ),
-      hint: 'Review Meta title, description and slug in Additional → SEO.',
+      hint: 'Review Meta title, description and slug in Additional -> SEO.',
     },
     {
       label: 'Schedule reviewed',
       done: Boolean(blog.schedule.publishAt || blog.schedule.status !== 'draft'),
-      hint: 'Set publish date/time or update status in Additional → Publishing.',
+      hint: 'Set publish date/time or update status in Additional -> Publishing.',
     },
   ];
 
