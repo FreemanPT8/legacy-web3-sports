@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', authResult.user!.userId)
       .eq('entity_type', entityType)
       .eq('entity_id', entityId)
-      .maybeSingle<DraftResponse>();
+      .maybeSingle();
 
     if (error) {
       console.error('Failed to read builder draft:', error);
@@ -58,15 +58,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const draft = data as DraftResponse | null;
+
     return NextResponse.json({
       success: true,
-      draft: data
+      draft: draft
         ? {
-            id: data.id,
-            entityType: data.entity_type,
-            entityId: data.entity_id,
-            state: data.state,
-            updatedAt: data.updated_at,
+            id: draft.id,
+            entityType: draft.entity_type,
+            entityId: draft.entity_id,
+            state: draft.state,
+            updatedAt: draft.updated_at,
           }
         : null,
     });
