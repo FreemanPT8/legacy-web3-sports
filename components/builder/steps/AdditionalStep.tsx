@@ -578,6 +578,18 @@ function AttachmentsSection({
                   }
                 />
               </div>
+              {attachment.asset.type === 'image' && (
+                <div className="relative h-32 w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                  <Image
+                    src={attachment.asset.thumbnailUrl ?? attachment.asset.url}
+                    alt={attachment.asset.title || 'Attachment preview'}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 320px"
+                    unoptimized
+                  />
+                </div>
+              )}
             </div>
           </div>
         ))}
