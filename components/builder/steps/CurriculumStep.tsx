@@ -5,7 +5,6 @@ import {
   DndContext,
   type DragEndEvent,
   type DraggableAttributes,
-  type SyntheticListenerMap,
   PointerSensor,
   useSensor,
   useSensors,
@@ -257,7 +256,7 @@ interface TopicCardProps {
   setExpandedLessonId: (lessonId: string | null) => void;
   onPickMedia: (lessonId: string, mode: 'video' | 'attachment') => void;
   dragAttributes?: DraggableAttributes;
-  dragListeners?: SyntheticListenerMap;
+  dragListeners?: Record<string, unknown>;
 }
 
 function SortableTopicCard(props: TopicCardProps) {
