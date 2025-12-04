@@ -312,7 +312,7 @@ export default function CreateBlogPostPage() {
         onSubmit={handleSave}
         onAutosave={handleAutosave}
         metadata={{
-          authorName: user.full_name || user.email || null,
+          authorName: user?.username || user?.email || null,
         }}
       />
     </BuilderProvider>
