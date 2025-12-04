@@ -317,7 +317,7 @@ export default function CreateCoursePage() {
         onSubmit={handleSave}
         onAutosave={handleAutosave}
         metadata={{
-          authorName: user?.full_name || user?.email || null,
+          authorName: user?.username || user?.email || null,
           xpTotalDistributed: 0,
           xpCreatorDistributed: 0,
         }}
