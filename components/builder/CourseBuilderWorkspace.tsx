@@ -101,6 +101,30 @@ function CourseStatusCard({
   onManageModules?: () => void;
 }) {
   const { state } = useBuilderContext();
+  const course = state as CourseBuilderState;
+  const timezoneLabel =
+    course.schedule.timezone === 'CET'
+      ? 'CET (Europe/Berlin)'
+      : course.schedule.timezone;
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return 'Not set';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Invalid date';
+    return date.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  };
+
+  const scheduleStatusCopy =
+    course.schedule.status === 'draft'
+      ? 'Draft'
+      : course.schedule.status === 'scheduled'
+        ? 'Scheduled'
+        : 'Published';
+
+  const accessLabel = course.isPaid ? 'Paid / members only' : 'Free / open';
   return (
     <Card>
       <CardHeader>
@@ -129,6 +153,21 @@ function CourseStatusCard({
           <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-900">
             <span>XP to creator</span>
             <span className="font-semibold">{xpCreatorDistributed}</span>
+          </div>
+          <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-800 dark:bg-gray-900">
+            <StatusRow label="Access" value={accessLabel} />
+            <StatusRow
+              label="Schedule status"
+              value={`${scheduleStatusCopy} - ${timezoneLabel}`}
+            />
+            <StatusRow
+              label="Publish at"
+              value={formatDate(course.schedule.publishAt)}
+            />
+            <StatusRow
+              label="Expire at"
+              value={formatDate(course.schedule.expireAt)}
+            />
           </div>
         </div>
         <Button
@@ -289,5 +328,16 @@ function CourseQualityChecklist() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function StatusRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-gray-600 dark:text-gray-300">{label}</span>
+      <span className="font-semibold text-gray-900 dark:text-gray-100">
+        {value}
+      </span>
+    </div>
   );
 }
