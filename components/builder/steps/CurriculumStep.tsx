@@ -32,7 +32,8 @@ import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 
 export function CurriculumStep() {
   const { state, patchState } = useBuilderState();
-  const topics = (state as CourseBuilderState).curriculum.topics;
+  const courseState = state as CourseBuilderState;
+  const topics = courseState.curriculum.topics;
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
   const lessonLibrary = useMediaLibrary();
   const [mediaPicker, setMediaPicker] = useState<{
@@ -51,12 +52,12 @@ export function CurriculumStep() {
     (updater: (current: TopicState[]) => TopicState[]) => {
       patchState({
         curriculum: {
-          ...state.curriculum,
-          topics: updater(state.curriculum.topics),
+          ...courseState.curriculum,
+          topics: updater(courseState.curriculum.topics),
         },
       });
     },
-    [patchState, state.curriculum],
+    [patchState, courseState.curriculum],
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
