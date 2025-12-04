@@ -13,6 +13,7 @@ import { useAutosave } from '@/hooks/useAutosave';
 import { useLivePreview } from '@/hooks/useLivePreview';
 import type { BlogBuilderState } from '@/types/builder';
 import { LANGUAGES } from '@/types/builder';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface BlogBuilderWorkspaceProps {
   saving: boolean;
@@ -57,6 +58,7 @@ export function BlogBuilderWorkspace({
   const previewColumn = (
     <div className="space-y-6">
       <BlogStatusCard authorName={metadata?.authorName || null} />
+      <BlogQualityChecklist />
       <LegacyPreviewPanel>
         <BlogPreview />
       </LegacyPreviewPanel>
@@ -179,6 +181,88 @@ function BlogStatusCard({ authorName }: { authorName: string | null }) {
         >
           Manage versions (soon)
         </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BlogQualityChecklist() {
+  const { state } = useBuilderContext();
+  const blog = state as BlogBuilderState;
+  const firstFilledLanguage = LANGUAGES.find(
+    (lang) => blog.content?.[lang.code]?.trim().length,
+  );
+
+  const rules = [
+    {
+      label: 'Title & slug defined',
+      done:
+        Object.values(blog.title).some((value) => value.trim().length > 0) &&
+        blog.slug.trim().length > 0,
+      hint: 'Fill at least one title translation and set a slug in Basics.',
+    },
+    {
+      label: 'Cover image selected',
+      done: Boolean(blog.coverImage),
+      hint: 'Choose a cover image from the media library on Basics.',
+    },
+    {
+      label: 'Content drafted',
+      done: Boolean(firstFilledLanguage),
+      hint: 'Write content in at least one language in the Content step.',
+    },
+    {
+      label: 'SEO metadata complete',
+      done: Boolean(
+        blog.seo.metaTitle.trim().length &&
+          blog.seo.metaDescription.trim().length &&
+          blog.seo.slug.trim().length,
+      ),
+      hint: 'Review Meta title, description and slug in Additional → SEO.',
+    },
+    {
+      label: 'Schedule reviewed',
+      done: Boolean(blog.schedule.publishAt || blog.schedule.status !== 'draft'),
+      hint: 'Set publish date/time or update status in Additional → Publishing.',
+    },
+  ];
+
+  const total = rules.length;
+  const completed = rules.filter((rule) => rule.done).length;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Readiness checklist</CardTitle>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {completed}/{total} tasks completed
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {rules.map((rule) => (
+          <div
+            key={rule.label}
+            className="rounded-xl border border-gray-200 px-3 py-2 dark:border-gray-800"
+          >
+            <div className="flex items-start gap-2">
+              {rule.done ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />
+              ) : (
+                <AlertCircle className="mt-0.5 h-4 w-4 text-amber-500" />
+              )}
+              <div>
+                <p className="text-sm font-semibold">
+                  {rule.label}
+                </p>
+                {!rule.done && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {rule.hint}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
