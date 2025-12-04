@@ -37,13 +37,14 @@ export function CourseBuilderWorkspace({
   metadata,
 }: CourseBuilderWorkspaceProps) {
   const { state, activeStep } = useBuilderContext();
+  const courseState = state as CourseBuilderState;
 
-  useAutosave({
-    data: state,
+  useAutosave<CourseBuilderState>({
+    data: courseState,
     save: onAutosave ?? (async () => {}),
     enabled: Boolean(onAutosave),
   });
-  useLivePreview({ data: state });
+  useLivePreview({ data: courseState });
 
   const editor = useMemo(() => {
     switch (activeStep) {
@@ -78,8 +79,8 @@ export function CourseBuilderWorkspace({
       description="Três etapas unificadas: Basics, Curriculum e Additional."
       editor={editor}
       preview={previewColumn}
-      onPreview={onPreview ? () => onPreview(state.slug) : undefined}
-      onSubmit={() => onSubmit(state)}
+      onPreview={onPreview ? () => onPreview(courseState.slug) : undefined}
+      onSubmit={() => onSubmit(courseState)}
       submitLabel={saving ? 'Saving...' : 'Save Changes'}
       submitDisabled={saving}
     />

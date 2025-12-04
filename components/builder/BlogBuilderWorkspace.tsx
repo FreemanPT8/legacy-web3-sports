@@ -31,13 +31,14 @@ export function BlogBuilderWorkspace({
   metadata,
 }: BlogBuilderWorkspaceProps) {
   const { state, activeStep } = useBuilderContext();
+  const blogState = state as BlogBuilderState;
 
-  useAutosave({
-    data: state,
+  useAutosave<BlogBuilderState>({
+    data: blogState,
     save: onAutosave ?? (async () => {}),
     enabled: Boolean(onAutosave),
   });
-  useLivePreview({ data: state });
+  useLivePreview({ data: blogState });
 
   const editor = useMemo(() => {
     switch (activeStep) {
@@ -67,8 +68,8 @@ export function BlogBuilderWorkspace({
       description="Basics, Content and Additional settings in a single flow."
       editor={editor}
       preview={previewColumn}
-      onPreview={onPreview ? () => onPreview(state.slug) : undefined}
-      onSubmit={() => onSubmit(state as BlogBuilderState)}
+      onPreview={onPreview ? () => onPreview(blogState.slug) : undefined}
+      onSubmit={() => onSubmit(blogState)}
       submitLabel={saving ? 'Saving...' : 'Publish / Update'}
       submitDisabled={saving}
     />
