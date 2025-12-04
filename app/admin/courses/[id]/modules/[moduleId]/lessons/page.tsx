@@ -100,6 +100,42 @@ export default function ModuleLessonsPage() {
     }
   };
 
+  // Cache simples de imagens recentes (localStorage)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(RECENT_IMAGES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentImages(parsed.filter((u) => typeof u === 'string'));
+      }
+    } catch (err) {
+      console.warn('Could not load recent lesson images cache', err);
+    }
+  }, []);
+
+  const persistRecentImages = (list: string[]) => {
+    setRecentImages(list);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(list));
+      } catch (err) {
+        console.warn('Could not persist recent lesson images cache', err);
+      }
+    }
+  };
+
+  const addRecentImage = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed || !isValidUrl(trimmed)) return;
+    const next = [trimmed, ...recentImages.filter((i) => i !== trimmed)].slice(
+      0,
+      5,
+    );
+    persistRecentImages(next);
+  };
+
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
 
@@ -946,42 +982,6 @@ export default function ModuleLessonsPage() {
       </div>
     </div>
   );
-
-  // Cache simple de imagens recentes (localStorage)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem(RECENT_IMAGES_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        setRecentImages(parsed.filter((u) => typeof u === 'string'));
-      }
-    } catch (err) {
-      console.warn('Could not load recent lesson images cache', err);
-    }
-  }, []);
-
-  const persistRecentImages = (list: string[]) => {
-    setRecentImages(list);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(list));
-      } catch (err) {
-        console.warn('Could not persist recent lesson images cache', err);
-      }
-    }
-  };
-
-  const addRecentImage = (url: string) => {
-    const trimmed = url.trim();
-    if (!trimmed || !isValidUrl(trimmed)) return;
-    const next = [trimmed, ...recentImages.filter((i) => i !== trimmed)].slice(
-      0,
-      5,
-    );
-    persistRecentImages(next);
-  };
 }
 
 
