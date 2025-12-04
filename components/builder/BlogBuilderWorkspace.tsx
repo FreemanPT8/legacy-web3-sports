@@ -65,7 +65,7 @@ export function BlogBuilderWorkspace({
   return (
     <BuilderShell
       title="Legacy Builder — Blog Post"
-      description="Basics, Content and Additional settings in a single flow."
+      description="Three unified steps: Basics, Content and Additional settings."
       editor={editor}
       preview={previewColumn}
       onPreview={onPreview ? () => onPreview(blogState.slug) : undefined}
