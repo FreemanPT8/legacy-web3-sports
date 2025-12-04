@@ -6,12 +6,13 @@ import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
 export function BlogContentStep() {
   const { state, patchState } = useBuilderState();
+  const blogState = state as BlogBuilderState;
   const [language, setLanguage] = useState<LangCode>('en');
 
   const currentLangLabel =
     LANGUAGES.find((lang) => lang.code === language)?.name || language;
 
-  const bodyValue = state.content[language] ?? '';
+  const bodyValue = blogState.content[language] ?? '';
 
   return (
     <div className="space-y-4">
@@ -38,7 +39,7 @@ export function BlogContentStep() {
         onChange={(next) =>
           patchState({
             content: {
-              ...state.content,
+              ...blogState.content,
               [language]: next,
             },
           })
