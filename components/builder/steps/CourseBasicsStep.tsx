@@ -85,7 +85,7 @@ export function CourseBasicsStep() {
     const iso = fromInput(nextDate, nextTime);
     const validation = validateFutureDate(iso);
     if (!validation.valid) {
-      setScheduleError(validation.reason || 'Escolhe um horário no futuro.');
+      setScheduleError(validation.reason || 'Choose a future CET time.');
       return;
     }
     setScheduleError(null);
@@ -145,7 +145,7 @@ export function CourseBasicsStep() {
             <div className="flex items-center justify-between">
               <Label>Title ({languageLabel})</Label>
               <span className="text-xs text-gray-500">
-                Placeholder: “(NOME DO CURSO)”
+                Placeholder: "(NOME DO CURSO)"
               </span>
             </div>
               <Input
@@ -175,7 +175,7 @@ export function CourseBasicsStep() {
               />
               {!slugTouched && suggestedSlug && (
                 <p className="mt-1 text-xs text-gray-500">
-                  Sugestão automática: {suggestedSlug}
+                  Automatic suggestion: {suggestedSlug}
                 </p>
               )}
             </div>
@@ -205,16 +205,16 @@ export function CourseBasicsStep() {
             onChange={(next) =>
               updateTranslatedField('longDescription', language, next)
             }
-            placeholder="Use headings, listas, callouts, embeds..."
+            placeholder="Use headings, lists, callouts, embeds..."
             minRows={8}
           />
           <p className="text-xs text-gray-500">
-            Editor rico estilo Notion vem a seguir. Esta versão permite conteúdo base para validar fluxo.
+            A richer editor is coming soon; this version lets you validate content flow.
           </p>
         </div>
 
         <div className="space-y-4 rounded-2xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
-          <Label>Course Cover (1600×900 recomendado)</Label>
+          <Label>Course Cover (1600x900 recommended)</Label>
           {coverUrl ? (
             <div className="relative h-48 w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
               <Image
@@ -230,7 +230,7 @@ export function CourseBasicsStep() {
           ) : (
             <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 text-gray-500">
               <ImageIcon className="mb-2 h-8 w-8" />
-              Nenhuma imagem seleccionada
+              No cover selected yet
             </div>
           )}
           <div className="flex flex-wrap gap-2">
@@ -361,7 +361,7 @@ export function CourseBasicsStep() {
               Publication schedule ({timezone})
             </Label>
             <p className="text-xs text-gray-500">
-              Define quando o curso fica disponível (horário CET).
+              Set when the course becomes available (CET).
             </p>
           </div>
           <div className="flex gap-2">
@@ -414,7 +414,7 @@ export function CourseBasicsStep() {
               </div>
             </div>
             <p className="text-xs text-gray-500">
-              O curso será publicado automaticamente no horário definido (CET).
+              The course will publish automatically at the selected CET time.
             </p>
           </>
         ) : (
