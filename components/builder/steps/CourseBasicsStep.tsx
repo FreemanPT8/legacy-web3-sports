@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CalendarClock, ImageIcon } from 'lucide-react';
-import { LANGUAGES, type LangCode } from '@/types/builder';
+import { LANGUAGES, type LangCode, type CourseBuilderState } from '@/types/builder';
 import { useBuilderState } from '@/hooks/useBuilderState';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { useScheduleCET } from '@/hooks/useScheduleCET';
@@ -37,6 +37,7 @@ export function CourseBasicsStep() {
     patchState,
     setCoverImage,
   } = useBuilderState();
+  const courseState = state as CourseBuilderState;
   const [language, setLanguage] = useState<LangCode>('en');
   const [slugTouched, setSlugTouched] = useState(false);
   const mediaLibrary = useMediaLibrary();
@@ -46,17 +47,17 @@ export function CourseBasicsStep() {
   const [scheduleTime, setScheduleTime] = useState('');
   const [scheduleError, setScheduleError] = useState<string | null>(null);
 
-  const coverUrl = state.coverImage?.url;
+  const coverUrl = courseState.coverImage?.url;
   const languageLabel =
     LANGUAGES.find((lang) => lang.code === language)?.name ||
     language;
 
-  const titleValue = state.title[language] ?? '';
-  const descriptionValue = state.longDescription[language] ?? '';
+  const titleValue = courseState.title[language] ?? '';
+  const descriptionValue = courseState.longDescription[language] ?? '';
 
-  const xpReward = state.xp.reward;
-  const xpThreshold = state.xp.threshold;
-  const isScheduled = Boolean(state.schedule.publishAt);
+  const xpReward = courseState.xp.reward;
+  const xpThreshold = courseState.xp.threshold;
+  const isScheduled = Boolean(courseState.schedule.publishAt);
 
   const suggestedSlug = useMemo(() => slugify(titleValue), [titleValue]);
   const minDate = useMemo(() => {
@@ -65,8 +66,8 @@ export function CourseBasicsStep() {
   }, [toInputValues]);
 
   useEffect(() => {
-    if (state.schedule.publishAt) {
-      const parsed = toInputValues(state.schedule.publishAt);
+    if (courseState.schedule.publishAt) {
+      const parsed = toInputValues(courseState.schedule.publishAt);
       setScheduleDate(parsed.date);
       setScheduleTime(parsed.time);
     } else {
@@ -74,7 +75,7 @@ export function CourseBasicsStep() {
       setScheduleTime('');
       setScheduleError(null);
     }
-  }, [state.schedule.publishAt, toInputValues]);
+  }, [courseState.schedule.publishAt, toInputValues]);
 
   const applySchedule = (nextDate: string, nextTime: string) => {
     if (!nextDate || !nextTime) {
@@ -90,7 +91,7 @@ export function CourseBasicsStep() {
     setScheduleError(null);
     patchState({
       schedule: {
-        ...state.schedule,
+        ...courseState.schedule,
         publishAt: iso,
         status: 'scheduled',
       },
@@ -103,9 +104,9 @@ export function CourseBasicsStep() {
       setScheduleError(null);
       patchState({
         schedule: {
-          ...state.schedule,
+          ...courseState.schedule,
           publishAt: null,
-          status: state.published ? 'published' : 'draft',
+          status: courseState.published ? 'published' : 'draft',
         },
       });
       return;
@@ -147,15 +148,15 @@ export function CourseBasicsStep() {
                 Placeholder: “(NOME DO CURSO)”
               </span>
             </div>
-            <Input
-              value={titleValue}
-              onChange={(event) => {
-                const value = event.target.value;
-                updateTranslatedField('title', language, value);
-                if (!slugTouched && value.trim().length > 0) {
-                  patchState({ slug: slugify(value) });
-                }
-              }}
+              <Input
+                value={titleValue}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  updateTranslatedField('title', language, value);
+                  if (!slugTouched && value.trim().length > 0) {
+                    patchState({ slug: slugify(value) });
+                  }
+                }}
               placeholder="(NOME DO CURSO)"
               className="text-lg font-semibold"
             />
@@ -165,7 +166,7 @@ export function CourseBasicsStep() {
             <div>
               <Label>Slug</Label>
               <Input
-                value={state.slug}
+                value={courseState.slug}
                 onChange={(event) => {
                   setSlugTouched(true);
                   patchState({ slug: slugify(event.target.value) });
@@ -182,11 +183,11 @@ export function CourseBasicsStep() {
               <div>
                 <Label className="text-xs text-gray-500">Access</Label>
                 <p className="text-sm font-semibold">
-                  {state.isPaid ? 'Paid' : 'Free'}
+                  {courseState.isPaid ? 'Paid' : 'Free'}
                 </p>
               </div>
               <Switch
-                checked={state.isPaid}
+                checked={courseState.isPaid}
                 onCheckedChange={(checked) =>
                   patchState({ isPaid: checked })
                 }
@@ -218,7 +219,7 @@ export function CourseBasicsStep() {
             <div className="relative h-48 w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
               <Image
                 src={coverUrl}
-                alt={state.coverImage?.alt || 'Course cover preview'}
+                alt={courseState.coverImage?.alt || 'Course cover preview'}
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 480px"
@@ -268,9 +269,9 @@ export function CourseBasicsStep() {
         <div>
           <Label>Level</Label>
           <Select
-            value={state.level}
+            value={courseState.level}
             onValueChange={(level) =>
-              patchState({ level: level as typeof state.level })
+              patchState({ level: level as typeof courseState.level })
             }
           >
             <SelectTrigger>
@@ -292,7 +293,7 @@ export function CourseBasicsStep() {
             onChange={(event) =>
               patchState({
                 xp: {
-                  ...state.xp,
+                  ...courseState.xp,
                   reward: Number(event.target.value) || 0,
                 },
               })
@@ -308,7 +309,7 @@ export function CourseBasicsStep() {
             onChange={(event) =>
               patchState({
                 xp: {
-                  ...state.xp,
+                  ...courseState.xp,
                   threshold: Number(event.target.value) || 0,
                 },
               })
@@ -324,11 +325,11 @@ export function CourseBasicsStep() {
               Published
             </Label>
             <p className="text-sm font-semibold">
-              {state.published ? 'Online' : 'Draft'}
+              {courseState.published ? 'Online' : 'Draft'}
             </p>
           </div>
           <Switch
-            checked={state.published}
+            checked={courseState.published}
             onCheckedChange={(checked) =>
               patchState({ published: checked })
             }
@@ -340,11 +341,11 @@ export function CourseBasicsStep() {
               Course status
             </Label>
             <p className="text-sm font-semibold">
-              {state.isCompleted ? 'Completed' : 'In progress'}
+              {courseState.isCompleted ? 'Completed' : 'In progress'}
             </p>
           </div>
           <Switch
-            checked={state.isCompleted}
+            checked={courseState.isCompleted}
             onCheckedChange={(checked) =>
               patchState({ isCompleted: checked })
             }
