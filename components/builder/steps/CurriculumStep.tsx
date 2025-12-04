@@ -18,6 +18,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Plus, Trash2, BookOpenCheck, ListChecks } from 'lucide-react';
 
 import { useBuilderState } from '@/hooks/useBuilderState';
+import type { CourseBuilderState } from '@/types/builder';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
