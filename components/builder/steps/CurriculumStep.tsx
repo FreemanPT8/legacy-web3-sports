@@ -23,11 +23,12 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Plus, Trash2, BookOpenCheck, ListChecks } from 'lucide-react';
+import { GripVertical, Plus, Trash2, BookOpenCheck, ListChecks, CalendarClock } from 'lucide-react';
 
 import { useBuilderState } from '@/hooks/useBuilderState';
-import type { CourseBuilderState } from '@/types/builder';
+import type { CourseBuilderState, ScheduleConfig } from '@/types/builder';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
+import { useScheduleCET } from '@/hooks/useScheduleCET';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,16 @@ import { createLesson, createTopic } from '@/lib/curriculum';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import type { LessonState, TopicState, MediaAsset } from '@/types/builder';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+type ScheduleUtils = ReturnType<typeof useScheduleCET>;
+type DragListenerMap = ReturnType<typeof useSortable>['listeners'];
 
 export function CurriculumStep() {
   const { state, patchState } = useBuilderState();
@@ -49,6 +60,7 @@ export function CurriculumStep() {
     lessonId: string;
     mode: 'video' | 'attachment';
   } | null>(null);
+  const scheduleUtils = useScheduleCET();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -66,6 +78,17 @@ export function CurriculumStep() {
       });
     },
     [patchState, courseState.curriculum],
+  );
+
+  const updateTopicSchedule = useCallback(
+    (topicId: string, schedule: ScheduleConfig) => {
+      updateTopics((current) =>
+        current.map((topic) =>
+          topic.id === topicId ? { ...topic, schedule } : topic,
+        ),
+      );
+    },
+    [updateTopics],
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -184,7 +207,7 @@ export function CurriculumStep() {
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">Curriculum builder</h2>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Organiza tópicos, lições e quizzes. Arrasta para reordenar e adiciona novos blocos em segundos.
+          Organize topics, lessons and quizzes. Drag to reorder and add new blocks in seconds.
         </p>
       </div>
 
@@ -208,6 +231,10 @@ export function CurriculumStep() {
                 onPickMedia={(lessonId, mode) =>
                   handleOpenMediaPicker(topic.id, lessonId, mode)
                 }
+                onScheduleChange={(nextSchedule) =>
+                  updateTopicSchedule(topic.id, nextSchedule)
+                }
+                scheduleUtils={scheduleUtils}
               />
             ))}
           </div>
@@ -239,7 +266,7 @@ export function CurriculumStep() {
             ? 'Select lesson video'
             : 'Select lesson attachment'
         }
-        description="Upload, pesquisa ou insere media para ligares ��s lições."
+        description="Upload, search or insert media to connect with lessons instantly."
         library={lessonLibrary}
         onSelect={handleAssetSelect}
         allowUrl
@@ -262,8 +289,10 @@ interface TopicCardProps {
   expandedLessonId: string | null;
   setExpandedLessonId: Dispatch<SetStateAction<string | null>>;
   onPickMedia: (lessonId: string, mode: 'video' | 'attachment') => void;
+  onScheduleChange: (schedule: ScheduleConfig) => void;
+  scheduleUtils: ScheduleUtils;
   dragAttributes?: DraggableAttributes;
-  dragListeners?: Record<string, unknown>;
+  dragListeners?: DragListenerMap;
 }
 
 function SortableTopicCard(props: TopicCardProps) {
@@ -294,6 +323,8 @@ function TopicCard({
   expandedLessonId,
   setExpandedLessonId,
   onPickMedia,
+  onScheduleChange,
+  scheduleUtils,
 }: TopicCardProps) {
   return (
     <Card className="border-gray-200 shadow-sm dark:border-gray-800">
@@ -339,6 +370,13 @@ function TopicCard({
           </Badge>
         </div>
 
+        <ScheduleForm
+          heading="Topic schedule"
+          schedule={topic.schedule}
+          scheduleUtils={scheduleUtils}
+          onChange={onScheduleChange}
+        />
+
         <div className="space-y-3">
           {topic.lessons.map((lesson, lessonIndex) => (
             <LessonCard
@@ -354,6 +392,7 @@ function TopicCard({
                 )
               }
               onPickMedia={(mode) => onPickMedia(lesson.id, mode)}
+              scheduleUtils={scheduleUtils}
             />
           ))}
           {topic.lessons.length === 0 && (
@@ -386,6 +425,7 @@ interface LessonCardProps {
   isExpanded: boolean;
   onToggle: () => void;
   onPickMedia: (mode: 'video' | 'attachment') => void;
+  scheduleUtils: ScheduleUtils;
 }
 
 function LessonCard({
@@ -396,6 +436,7 @@ function LessonCard({
   isExpanded,
   onToggle,
   onPickMedia,
+  scheduleUtils,
 }: LessonCardProps) {
   const attachmentCount = lesson.attachments.length;
   const videoUrl = lesson.video?.url || '';
@@ -574,6 +615,16 @@ function LessonCard({
             </Button>
           </div>
 
+          <ScheduleForm
+            heading="Lesson schedule"
+            schedule={lesson.schedule}
+            scheduleUtils={scheduleUtils}
+            onChange={(nextSchedule) =>
+              onChange((prev) => ({ ...prev, schedule: nextSchedule }))
+            }
+            className="bg-gray-50 dark:bg-gray-900"
+          />
+
           <div>
             <LabelSmall>Attachments</LabelSmall>
             <div className="space-y-3">
@@ -639,6 +690,169 @@ function LessonCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface ScheduleFormProps {
+  heading: string;
+  schedule: ScheduleConfig;
+  scheduleUtils: ScheduleUtils;
+  onChange: (schedule: ScheduleConfig) => void;
+  className?: string;
+}
+
+function ScheduleForm({
+  heading,
+  schedule,
+  scheduleUtils,
+  onChange,
+  className,
+}: ScheduleFormProps) {
+  const publishInputs = schedule.publishAt
+    ? scheduleUtils.toInputValues(schedule.publishAt)
+    : { date: '', time: '' };
+  const expireInputs = schedule.expireAt
+    ? scheduleUtils.toInputValues(schedule.expireAt)
+    : { date: '', time: '' };
+
+  const handleInputChange = (
+    field: 'publishAt' | 'expireAt',
+    part: 'date' | 'time',
+    value: string,
+  ) => {
+    const current = field === 'publishAt' ? publishInputs : expireInputs;
+    const next = { ...current, [part]: value };
+    if (next.date && next.time) {
+      const iso = scheduleUtils.fromInput(next.date, next.time);
+      onChange({
+        ...schedule,
+        [field]: iso,
+        status:
+          field === 'publishAt' && schedule.status === 'draft'
+            ? 'scheduled'
+            : schedule.status,
+      });
+    } else {
+      onChange({
+        ...schedule,
+        [field]: null,
+        status:
+          field === 'publishAt' && schedule.status === 'scheduled'
+            ? 'draft'
+            : schedule.status,
+      });
+    }
+  };
+
+  const handleClear = (field: 'publishAt' | 'expireAt') => {
+    onChange({
+      ...schedule,
+      [field]: null,
+      status:
+        field === 'publishAt' && schedule.status === 'scheduled'
+          ? 'draft'
+          : schedule.status,
+    });
+  };
+
+  return (
+    <div
+      className={cn(
+        'rounded-xl border border-dashed border-gray-200 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900/60',
+        className,
+      )}
+    >
+      <div className="mb-3 flex flex-wrap items-center justify-between text-xs text-gray-500">
+        <span className="font-semibold uppercase">{heading}</span>
+        <span className="inline-flex items-center gap-1">
+          <CalendarClock className="h-3 w-3" />
+          {scheduleUtils.timezone}
+        </span>
+      </div>
+      <div className="mb-3">
+        <Select
+          value={schedule.status}
+          onValueChange={(value) =>
+            onChange({ ...schedule, status: value as ScheduleConfig['status'] })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="scheduled">Scheduled</SelectItem>
+            <SelectItem value="published">Published</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <ScheduleInputRow
+          label="Publish at (CET)"
+          dateValue={publishInputs.date}
+          timeValue={publishInputs.time}
+          onDateChange={(value) => handleInputChange('publishAt', 'date', value)}
+          onTimeChange={(value) => handleInputChange('publishAt', 'time', value)}
+          onClear={() => handleClear('publishAt')}
+        />
+        <ScheduleInputRow
+          label="Expire at (CET)"
+          dateValue={expireInputs.date}
+          timeValue={expireInputs.time}
+          onDateChange={(value) => handleInputChange('expireAt', 'date', value)}
+          onTimeChange={(value) => handleInputChange('expireAt', 'time', value)}
+          onClear={() => handleClear('expireAt')}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface ScheduleInputRowProps {
+  label: string;
+  dateValue: string;
+  timeValue: string;
+  onDateChange: (value: string) => void;
+  onTimeChange: (value: string) => void;
+  onClear: () => void;
+}
+
+function ScheduleInputRow({
+  label,
+  dateValue,
+  timeValue,
+  onDateChange,
+  onTimeChange,
+  onClear,
+}: ScheduleInputRowProps) {
+  const hasValue = Boolean(dateValue || timeValue);
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] uppercase text-gray-500">{label}</p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          type="date"
+          value={dateValue}
+          onChange={(event) => onDateChange(event.target.value)}
+        />
+        <Input
+          type="time"
+          value={timeValue}
+          onChange={(event) => onTimeChange(event.target.value)}
+        />
+      </div>
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClear}
+          disabled={!hasValue}
+        >
+          Clear
+        </Button>
+      </div>
     </div>
   );
 }
