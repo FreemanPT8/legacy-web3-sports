@@ -4,6 +4,8 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   DndContext,
   type DragEndEvent,
+  type DraggableAttributes,
+  type SyntheticListenerMap,
   PointerSensor,
   useSensor,
   useSensors,
@@ -254,6 +256,8 @@ interface TopicCardProps {
   expandedLessonId: string | null;
   setExpandedLessonId: (lessonId: string | null) => void;
   onPickMedia: (lessonId: string, mode: 'video' | 'attachment') => void;
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: SyntheticListenerMap;
 }
 
 function SortableTopicCard(props: TopicCardProps) {
@@ -284,10 +288,7 @@ function TopicCard({
   expandedLessonId,
   setExpandedLessonId,
   onPickMedia,
-}: TopicCardProps & {
-  dragAttributes?: Record<string, unknown>;
-  dragListeners?: Record<string, unknown>;
-}) {
+}: TopicCardProps) {
   return (
     <Card className="border-gray-200 shadow-sm dark:border-gray-800">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
