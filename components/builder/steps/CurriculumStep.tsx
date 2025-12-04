@@ -251,6 +251,9 @@ interface TopicCardProps {
     lessonId: string,
     updater: (lesson: LessonState) => LessonState,
   ) => void;
+  expandedLessonId: string | null;
+  setExpandedLessonId: (lessonId: string | null) => void;
+  onPickMedia: (lessonId: string, mode: 'video' | 'attachment') => void;
 }
 
 function SortableTopicCard(props: TopicCardProps) {
@@ -284,9 +287,6 @@ function TopicCard({
 }: TopicCardProps & {
   dragAttributes?: Record<string, unknown>;
   dragListeners?: Record<string, unknown>;
-  expandedLessonId: string | null;
-  setExpandedLessonId: (lessonId: string | null) => void;
-  onPickMedia: (lessonId: string, mode: 'video' | 'attachment') => void;
 }) {
   return (
     <Card className="border-gray-200 shadow-sm dark:border-gray-800">
