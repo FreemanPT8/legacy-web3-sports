@@ -2,22 +2,22 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useBuilderContext } from '@/contexts/BuilderContext';
 import type { BuilderState } from '@/types/builder';
 
-interface UseAutosaveOptions {
-  data: BuilderState;
+interface UseAutosaveOptions<T extends BuilderState> {
+  data: T;
   delay?: number;
   enabled?: boolean;
-  save: (payload: BuilderState) => Promise<void>;
+  save: (payload: T) => Promise<void>;
 }
 
-export function useAutosave({
+export function useAutosave<T extends BuilderState>({
   data,
   delay = 5000,
   enabled = true,
   save,
-}: UseAutosaveOptions) {
+}: UseAutosaveOptions<T>) {
   const { autosaveState, setAutosaveState } = useBuilderContext();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const latestDataRef = useRef<BuilderState>(data);
+  const latestDataRef = useRef<T>(data);
 
   useEffect(() => {
     latestDataRef.current = data;
