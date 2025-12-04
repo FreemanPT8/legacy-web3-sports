@@ -31,7 +31,7 @@ import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 
 export function CurriculumStep() {
   const { state, patchState } = useBuilderState();
-  const topics = state.curriculum.topics;
+  const topics = (state as CourseBuilderState).curriculum.topics;
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
   const lessonLibrary = useMediaLibrary();
   const [mediaPicker, setMediaPicker] = useState<{
