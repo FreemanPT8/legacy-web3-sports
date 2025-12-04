@@ -10,10 +10,25 @@ interface CoursePayload {
   description: Record<LangCode, string>;
   level?: string;
   xp_threshold?: number;
+  xp_reward?: number;
   published?: boolean;
   image_url?: string | null;
-  xp_reward_on_complete?: number;
   is_completed?: boolean;
+  is_paid?: boolean;
+  overview?: string;
+  key_takeaways?: string[];
+  target_audience?: string[];
+  duration_minutes?: number;
+  bonuses?: string[];
+  special_requirements?: string[];
+  attachments?: any[];
+  seo?: any;
+  google_integrations?: any;
+  curriculum?: any;
+  schedule?: {
+    publishAt?: string | null;
+    expireAt?: string | null;
+  };
 }
 
 interface LessonPayload {
@@ -92,18 +107,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const publish_at =
+      course.schedule && typeof course.schedule.publishAt === 'string'
+        ? course.schedule.publishAt
+        : null;
+    const expire_at =
+      course.schedule && typeof course.schedule.expireAt === 'string'
+        ? course.schedule.expireAt
+        : null;
+
     const { data: newCourse, error: courseError } = await supabase
       .from('courses')
       .insert({
         title: course.title,
         description: course.description,
         xp_threshold: course.xp_threshold ?? 0,
+        xp_reward: course.xp_reward ?? 0,
         published: course.published ?? false,
         order: 0,
         image_url: course.image_url ?? null,
         level: course.level || 'beginner',
-        xp_reward_on_complete: course.xp_reward_on_complete ?? 0,
         is_completed: course.is_completed ?? false,
+        is_paid: course.is_paid ?? false,
+        overview: course.overview ?? '',
+        key_takeaways: course.key_takeaways ?? [],
+        target_audience: course.target_audience ?? [],
+        duration_minutes: course.duration_minutes ?? 0,
+        bonuses: course.bonuses ?? [],
+        special_requirements: course.special_requirements ?? [],
+        attachments: course.attachments ?? [],
+        seo: course.seo ?? null,
+        google_integrations: course.google_integrations ?? null,
+        curriculum: course.curriculum ?? { topics: [] },
+        publish_at,
+        expire_at,
         author_id: currentUser.userId,
       })
       .select()
@@ -125,15 +162,15 @@ export async function POST(request: NextRequest) {
     // 2) Criar módulos + lições (opcional, hoje estamos a passar modules: [])
     if (modules && Array.isArray(modules) && modules.length > 0) {
       for (let moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
-        const module = modules[moduleIndex];
+        const modulePayload = modules[moduleIndex];
 
         const { data: newModule, error: moduleError } = await supabase
           .from('modules')
           .insert({
             course_id: newCourse.id,
-            title: module.titles,
-            description: module.descriptions,
-            order: module.order ?? moduleIndex + 1,
+            title: modulePayload.titles,
+            description: modulePayload.descriptions,
+            order: modulePayload.order ?? moduleIndex + 1,
           })
           .select()
           .single();
@@ -144,11 +181,11 @@ export async function POST(request: NextRequest) {
         }
 
         if (
-          module.lessons &&
-          Array.isArray(module.lessons) &&
-          module.lessons.length > 0
+          modulePayload.lessons &&
+          Array.isArray(modulePayload.lessons) &&
+          modulePayload.lessons.length > 0
         ) {
-          const lessonsToInsert = module.lessons.map(
+          const lessonsToInsert = modulePayload.lessons.map(
             (lesson, lessonIndex) => ({
               module_id: newModule.id,
               title: lesson.titles,

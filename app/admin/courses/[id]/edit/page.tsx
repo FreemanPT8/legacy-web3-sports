@@ -1,128 +1,62 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Lock } from 'lucide-react';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { BuilderProvider } from '@/contexts/BuilderContext';
+import type { CourseBuilderState } from '@/types/builder';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Save, Lock, ListChecks, Award, CheckCircle2, Loader2 } from 'lucide-react';
+  buildCourseRequestPayload,
+  mapCourseToBuilderState,
+} from '@/lib/course-builder';
+import { CourseBuilderWorkspace } from '@/components/builder/CourseBuilderWorkspace';
 
 type PermissionsResponse = {
   success: boolean;
-  error?: string;
   permissions?: {
     canManageCourses?: boolean;
-    [key: string]: any;
   };
+  error?: string;
 };
 
-const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
-];
-
-type LangCode = (typeof LANGUAGES)[number]['code'];
-
-const RECENT_IMAGES_KEY = 'legacy_recent_course_images';
-
-type CoursePayload = {
-  title: Record<LangCode, string>;
-  description: Record<LangCode, string>;
-  level: string;
-  xp_threshold: number;
-  published: boolean;
-  image_url?: string | null;
-  xp_reward: number;      // extra XP ao completar o curso
-  is_completed: boolean;  // curso fechado/completo
+type CourseApiResponse = {
+  success: boolean;
+  course?: any;
+  error?: string;
 };
+
 
 export default function EditCoursePage() {
-  const router = useRouter();
   const params = useParams();
+  const router = useRouter();
   const { toast } = useToast();
   const { user, loading, getToken } = useAuth();
+
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageCourses, setCanManageCourses] = useState(false);
   const [loadingCourse, setLoadingCourse] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [currentLanguage, setCurrentLanguage] =
-    useState<LangCode>('en');
-
-  const [course, setCourse] = useState<CoursePayload | null>(null);
+  const [builderState, setBuilderState] =
+    useState<CourseBuilderState | null>(null);
   const [authorName, setAuthorName] = useState<string | null>(null);
-  const [xpTotalDistributed, setXpTotalDistributed] = useState<number>(0);
-  const [xpCreatorDistributed, setXpCreatorDistributed] = useState<number>(0);
-  const [recentImages, setRecentImages] = useState<string[]>([]);
+  const [xpTotalDistributed, setXpTotalDistributed] = useState(0);
+  const [xpCreatorDistributed, setXpCreatorDistributed] = useState(0);
 
-  const isValidUrl = (value: string) => {
-    if (!value.trim()) return true;
-    try {
-      const url = new URL(value.trim());
-      return url.protocol === 'http:' || url.protocol === 'https:';
-    } catch {
-      return false;
-    }
-  };
+  const courseId = params?.id?.toString() || '';
+  const entityType: 'course' = 'course';
 
-  const imageUrlError =
-    course?.image_url && !isValidUrl(course.image_url)
-      ? 'Insere um URL válido (http/https).'
-      : '';
+  const buildAuthHeaders = useCallback(() => {
+    const token = getToken();
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  }, [getToken]);
 
-  const persistRecentImages = (list: string[]) => {
-    setRecentImages(list);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(list));
-      } catch (err) {
-        console.warn('Could not persist recent images cache', err);
-      }
-    }
-  };
-
-  const addRecentImage = (url: string) => {
-    const trimmed = url.trim();
-    if (!trimmed || !isValidUrl(trimmed)) return;
-    const next = [trimmed, ...recentImages.filter((i) => i !== trimmed)].slice(
-      0,
-      5,
-    );
-    persistRecentImages(next);
-  };
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem(RECENT_IMAGES_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        setRecentImages(parsed.filter((u) => typeof u === 'string'));
-      }
-    } catch (err) {
-      console.warn('Could not load recent images cache', err);
-    }
-  }, []);
-
-  // Proteção básica
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -134,7 +68,6 @@ export default function EditCoursePage() {
     }
   }, [user, loading, router]);
 
-  // Verificar permissões finas (canManageCourses)
   useEffect(() => {
     if (loading || !user) return;
 
@@ -153,27 +86,16 @@ export default function EditCoursePage() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-
         const data: PermissionsResponse = await res.json();
-
-        if (!res.ok || !data.success || !data.permissions) {
-          console.error(
-            'Error loading permissions for current user:',
-            data,
-          );
+        if (!res.ok || !data.success) {
           setCanManageCourses(false);
-          setPermissionsLoaded(true);
-          return;
+        } else {
+          setCanManageCourses(Boolean(data.permissions?.canManageCourses));
         }
-
-        setCanManageCourses(!!data.permissions.canManageCourses);
-        setPermissionsLoaded(true);
-      } catch (err) {
-        console.error(
-          'Unexpected error fetching permissions:',
-          err,
-        );
+      } catch (error) {
+        console.error('Unexpected error fetching permissions:', error);
         setCanManageCourses(false);
+      } finally {
         setPermissionsLoaded(true);
       }
     };
@@ -181,24 +103,17 @@ export default function EditCoursePage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  // Carregar dados do curso
   useEffect(() => {
+    if (!user || !courseId) return;
     const fetchCourse = async () => {
-      if (!user) return;
       setLoadingCourse(true);
       try {
-        const token = getToken();
-        const res = await fetch(`/api/admin/courses/${params.id}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+        const headers = buildAuthHeaders();
+        const res = await fetch(`/api/admin/courses/${courseId}`, {
+          headers,
         });
-
-        const data = await res.json();
-
+        const data: CourseApiResponse = await res.json();
         if (!res.ok || !data.success || !data.course) {
-          console.error('Error loading course for edit:', data);
           toast({
             title: 'Error',
             description: data.error || 'Failed to load course.',
@@ -207,56 +122,38 @@ export default function EditCoursePage() {
           router.push('/admin/courses');
           return;
         }
+        let nextState = mapCourseToBuilderState(data.course);
 
-        const c = data.course;
-
-        const normalizeJsonb = (
-          raw: any,
-        ): Record<LangCode, string> => {
-          if (!raw || typeof raw !== 'object') {
-            return {
-              en: '',
-              pt: '',
-              es: '',
-              fr: '',
-              it: '',
-              de: '',
-            };
+        try {
+          const draftRes = await fetch(
+            `/api/builder/draft?entityType=${entityType}&entityId=${courseId}`,
+            { headers },
+          );
+          const draftData = await draftRes.json();
+          if (
+            draftRes.ok &&
+            draftData.success &&
+            draftData.draft?.state?.entityType === entityType
+          ) {
+            nextState = draftData.draft.state as CourseBuilderState;
+            toast({
+              title: 'Draft restored',
+              description: 'Unsaved edits were recovered from autosave.',
+            });
           }
-          const obj = raw as Record<string, string>;
-          return {
-            en: obj.en || '',
-            pt: obj.pt || '',
-            es: obj.es || '',
-            fr: obj.fr || '',
-            it: obj.it || '',
-            de: obj.de || '',
-          };
-        };
+        } catch (draftError) {
+          console.warn('Unable to restore course draft', draftError);
+        }
 
-        const payload: CoursePayload = {
-          title: normalizeJsonb(c.title),
-          description: normalizeJsonb(c.description),
-          level: c.level || 'beginner',
-          xp_threshold:
-            typeof c.xp_threshold === 'number' ? c.xp_threshold : 0,
-          published: !!c.published,
-          image_url: c.image_url ?? null,
-          xp_reward:
-            typeof c.xp_reward === 'number' ? c.xp_reward : 0,
-          is_completed: !!c.is_completed,
-        };
-
-        setCourse(payload);
-        setAuthorName(c.author_name || null);
-        setXpTotalDistributed(c.xp_total_distributed || 0);
-        setXpCreatorDistributed(c.xp_creator_distributed || 0);
+        setBuilderState(nextState);
+        setAuthorName(data.course.author_name || null);
+        setXpTotalDistributed(data.course.xp_total_distributed || 0);
+        setXpCreatorDistributed(data.course.xp_creator_distributed || 0);
       } catch (error) {
         console.error('Failed to fetch course for edit:', error);
         toast({
           title: 'Network error',
-          description:
-            'Could not load course data. Please try again.',
+          description: 'Could not load course data. Please try again.',
           variant: 'destructive',
         });
         router.push('/admin/courses');
@@ -265,84 +162,155 @@ export default function EditCoursePage() {
       }
     };
 
-    if (user) {
-      fetchCourse();
-    }
-  }, [user, getToken, params.id, router, toast]);
+    fetchCourse();
+  }, [user, buildAuthHeaders, courseId, router, toast, entityType]);
 
-  const handleSave = async () => {
-    if (!user || !canManageCourses || !course) {
-      toast({
-        title: 'Not allowed',
-        description:
-          'You do not have permission to edit courses.',
-        variant: 'destructive',
+  const persistCourse = useCallback(
+    async (state: CourseBuilderState) => {
+      if (!courseId) {
+        throw new Error('Missing course id.');
+      }
+
+      const headers = buildAuthHeaders();
+      const res = await fetch(`/api/admin/courses/${courseId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          course: buildCourseRequestPayload(state),
+        }),
       });
-      return;
-    }
-
-    const hasAnyTitle = Object.values(course.title).some(
-      (v) => typeof v === 'string' && v.trim().length > 0,
-    );
-
-    if (!hasAnyTitle) {
-      toast({
-        title: 'Missing title',
-        description:
-          'Please add a title in at least one language.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const token = getToken();
-      const res = await fetch(
-        `/api/admin/courses/${params.id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token
-              ? { Authorization: `Bearer ${token}` }
-              : {}),
-          },
-          body: JSON.stringify({ course }),
-        },
-      );
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save course.');
+      }
+
+      return data;
+    },
+    [courseId, buildAuthHeaders],
+  );
+
+  const saveDraft = useCallback(
+    async (state: CourseBuilderState) => {
+      if (!courseId) return;
+      const headers = buildAuthHeaders();
+      const res = await fetch('/api/builder/draft', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          entityType,
+          entityId: courseId,
+          state,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save course draft.');
+      }
+    },
+    [buildAuthHeaders, courseId, entityType],
+  );
+
+  const clearDraft = useCallback(async () => {
+    if (!courseId) return;
+    try {
+      const headers = buildAuthHeaders();
+      const res = await fetch('/api/builder/draft', {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({
+          entityType,
+          entityId: courseId,
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload?.error || 'Failed to delete draft.');
+      }
+    } catch (error) {
+      console.warn('Unable to clear course draft', error);
+    }
+  }, [buildAuthHeaders, courseId, entityType]);
+
+  const handleSave = useCallback(
+    async (state: CourseBuilderState) => {
+      if (!user || !canManageCourses || !courseId) {
         toast({
-          title: 'Error updating course',
-          description:
-            data.error || 'Failed to update course.',
+          title: 'Not allowed',
+          description: 'You do not have permission to edit courses.',
           variant: 'destructive',
         });
-        setSaving(false);
         return;
       }
 
-      toast({
-        title: 'Course updated',
-        description:
-          'The course was updated successfully.',
-      });
+      const hasAnyTitle = Object.values(state.title).some(
+        (value) => typeof value === 'string' && value.trim().length > 0,
+      );
+      if (!hasAnyTitle) {
+        toast({
+          title: 'Missing title',
+          description: 'Please add a title in at least one language.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-      router.push('/admin/courses');
-    } catch (err) {
-      console.error('Failed to update course:', err);
-      toast({
-        title: 'Network error',
-        description:
-          'Could not update course. Please try again.',
-        variant: 'destructive',
-      });
-      setSaving(false);
-    }
-  };
+      setSaving(true);
+      try {
+        await persistCourse(state);
+        await clearDraft();
+        toast({
+          title: 'Course updated',
+          description: 'The course was updated successfully.',
+        });
+        router.push('/admin/courses');
+      } catch (error) {
+        console.error('Failed to update course:', error);
+        toast({
+          title: 'Network error',
+          description: 'Could not update course. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setSaving(false);
+      }
+    },
+    [
+      user,
+      canManageCourses,
+      courseId,
+      persistCourse,
+      clearDraft,
+      router,
+      toast,
+    ],
+  );
+
+  const handleAutosave = useCallback(
+    async (state: CourseBuilderState) => {
+      if (!user || !canManageCourses || !courseId || saving) {
+        return;
+      }
+
+      const hasAnyTitle = Object.values(state.title).some(
+        (value) => typeof value === 'string' && value.trim().length > 0,
+      );
+
+      if (!hasAnyTitle) {
+        return;
+      }
+
+      await saveDraft(state);
+    },
+    [user, canManageCourses, courseId, saving, saveDraft],
+  );
+
+  const handlePreview = useCallback((slug: string) => {
+    if (!slug) return;
+    const href = `/courses/${slug}`;
+    window.open(href, '_blank');
+  }, []);
 
   if (
     loading ||
@@ -353,10 +321,8 @@ export default function EditCoursePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
-            Loading...
-          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -368,12 +334,10 @@ export default function EditCoursePage() {
         <main className="flex-1 py-8 flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
             <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">
-              No permission
-            </h1>
+            <h1 className="text-2xl font-bold mb-2">No permission</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              You don&apos;t have permission to edit courses. Please
-              contact a Super Admin if you think this is a mistake.
+              You don&apos;t have permission to edit courses. Please contact a
+              Super Admin if you think this is a mistake.
             </p>
           </div>
         </main>
@@ -381,7 +345,7 @@ export default function EditCoursePage() {
     );
   }
 
-  if (loadingCourse || !course) {
+  if (loadingCourse || !builderState) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <main className="flex-1 flex items-center justify-center">
@@ -396,337 +360,21 @@ export default function EditCoursePage() {
     );
   }
 
-  const currentLangLabel =
-    LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
-    currentLanguage;
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant={course.is_completed ? 'default' : 'outline'}
-                  className={course.is_completed ? 'bg-green-600' : ''}
-                >
-                  {course.is_completed ? 'Completed' : 'Ongoing process'}
-                </Badge>
-                <Badge variant="outline">
-                  {course.published ? 'Published' : 'Draft'}
-                </Badge>
-                {authorName && (
-                  <Badge variant="outline">Creator: {authorName}</Badge>
-                )}
-              </div>
-              <h1 className="text-3xl font-bold">Edit Course</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Update title, description, level, XP requirement and completion bonus.
-              </p>
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <Badge variant="outline" className="gap-1">
-                  <Award className="h-4 w-4 text-blue-600" />
-                  Total XP distributed: {xpTotalDistributed}
-                </Badge>
-                {authorName && (
-                  <Badge variant="outline" className="gap-1">
-                    <Award className="h-4 w-4 text-emerald-600" />
-                    XP to creator: {xpCreatorDistributed}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col md:flex-row gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  router.push(`/admin/courses/${params.id}/modules`)
-                }
-              >
-                <ListChecks className="h-4 w-4 mr-2" />
-                Manage Modules
-              </Button>
-
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {!saving && <Save className="h-4 w-4 mr-2" />}
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex gap-2 flex-wrap">
-                {LANGUAGES.map((lang) => (
-                  <Badge
-                    key={lang.code}
-                    variant={
-                      currentLanguage === lang.code
-                        ? 'default'
-                        : 'outline'
-                    }
-                    className="cursor-pointer"
-                    onClick={() =>
-                      setCurrentLanguage(lang.code as LangCode)
-                    }
-                  >
-                    {lang.name}
-                  </Badge>
-                ))}
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label>Title ({currentLangLabel})</Label>
-                  <Input
-                    value={course.title[currentLanguage]}
-                    onChange={(e) =>
-                      setCourse((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              title: {
-                                ...prev.title,
-                                [currentLanguage]:
-                                  e.target.value,
-                              },
-                            }
-                          : prev,
-                      )
-                    }
-                    placeholder="Enter course title"
-                    className="text-lg"
-                  />
-                </div>
-
-                <div>
-                  <Label>Description ({currentLangLabel})</Label>
-                  <Textarea
-                    value={course.description[currentLanguage]}
-                    onChange={(e) =>
-                      setCourse((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              description: {
-                                ...prev.description,
-                                [currentLanguage]:
-                                  e.target.value,
-                              },
-                            }
-                          : prev,
-                      )
-                    }
-                    placeholder="Enter course description"
-                    rows={4}
-                  />
-                </div>
-
-                <div>
-                  <Label>Course Image URL (optional)</Label>
-                  <div className="flex gap-2 items-center mt-1">
-                    <Input
-                      value={course.image_url || ''}
-                      onChange={(e) =>
-                        setCourse((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                image_url:
-                                  e.target.value.trim() === ''
-                                    ? null
-                                    : e.target.value,
-                              }
-                            : prev,
-                        )
-                      }
-                      onBlur={(e) => addRecentImage(e.target.value)}
-                      className={imageUrlError ? 'border-red-400' : undefined}
-                      placeholder="https://..."
-                    />
-                    {course.image_url && isValidUrl(course.image_url) && (
-                      <a
-                        href={course.image_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-blue-600 hover:underline whitespace-nowrap"
-                      >
-                        Ver imagem
-                      </a>
-                    )}
-                  </div>
-                  {imageUrlError && (
-                    <p className="text-[11px] text-red-600 mt-1">
-                      {imageUrlError}
-                    </p>
-                  )}
-                  {course.image_url && isValidUrl(course.image_url) && (
-                    <div className="mt-2 text-xs text-gray-500 space-y-1">
-                      <div>Pré-visualização</div>
-                      <img
-                        src={course.image_url}
-                        alt="Capa do curso"
-                        className="h-28 w-full max-w-xs rounded-md object-cover border border-gray-200"
-                        loading="lazy"
-                      />
-                    </div>
-                  )}
-                  {recentImages.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      <div className="text-[11px] text-gray-500">
-                        Imagens recentes
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {recentImages.map((url) => (
-                          <button
-                            key={url}
-                            type="button"
-                            onClick={() =>
-                              setCourse((prev) =>
-                                prev ? { ...prev, image_url: url } : prev,
-                              )
-                            }
-                            className="w-20 h-14 rounded-md border border-gray-200 bg-white shadow-sm overflow-hidden hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <img
-                              src={url}
-                              alt="Recent cover"
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Level</Label>
-                  <Select
-                    value={course.level}
-                    onValueChange={(value) =>
-                      setCourse((prev) =>
-                        prev ? { ...prev, level: value } : prev,
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">
-                        Beginner
-                      </SelectItem>
-                      <SelectItem value="intermediate">
-                        Intermediate
-                      </SelectItem>
-                      <SelectItem value="advanced">
-                        Advanced
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>XP Required to Unlock (course)</Label>
-                  <Input
-                    type="number"
-                    value={course.xp_threshold}
-                    onChange={(e) =>
-                      setCourse((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              xp_threshold:
-                                parseInt(e.target.value) || 0,
-                            }
-                          : prev,
-                      )
-                    }
-                    min={0}
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t pt-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Course completed (bonus XP)</Label>
-                    <p className="text-xs text-gray-500 mt-1 max-w-md">
-                      When you mark this course as completed, all
-                      users who already finished every module will
-                      automatically receive the extra XP once.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={course.is_completed}
-                    onCheckedChange={(checked) =>
-                      setCourse((prev) =>
-                        prev
-                          ? { ...prev, is_completed: checked }
-                          : prev,
-                      )
-                    }
-                  />
-                </div>
-
-                <div className="max-w-xs">
-                  <Label>Extra XP when course completed</Label>
-                  <Input
-                    type="number"
-                    value={course.xp_reward}
-                    onChange={(e) =>
-                      setCourse((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              xp_reward:
-                                parseInt(e.target.value) || 0,
-                            }
-                          : prev,
-                      )
-                    }
-                    min={0}
-                    placeholder="0"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Set to 0 if this course should not give extra
-                    XP on completion.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t">
-                <Label>Published</Label>
-                <Switch
-                  checked={course.published}
-                  onCheckedChange={(checked) =>
-                    setCourse((prev) =>
-                      prev
-                        ? { ...prev, published: checked }
-                        : prev,
-                    )
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+    <BuilderProvider initialState={builderState}>
+      <CourseBuilderWorkspace
+        saving={saving}
+        onSubmit={handleSave}
+        onPreview={handlePreview}
+        onAutosave={handleAutosave}
+        metadata={{
+          authorName,
+          xpTotalDistributed,
+          xpCreatorDistributed,
+          onManageModules: () =>
+            router.push(`/admin/courses/${courseId}/modules`),
+        }}
+      />
+    </BuilderProvider>
   );
 }

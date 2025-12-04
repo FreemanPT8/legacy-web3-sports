@@ -156,6 +156,18 @@ export async function PUT(
       image_url,
       xp_reward,
       is_completed,
+      schedule,
+      is_paid,
+      overview,
+      key_takeaways,
+      target_audience,
+      duration_minutes,
+      bonuses,
+      special_requirements,
+      attachments,
+      seo,
+      google_integrations,
+      curriculum,
     } = course;
 
     if (!title) {
@@ -168,7 +180,9 @@ export async function PUT(
     // Buscar estado anterior (para saber se acabou de ficar completed)
     const { data: existing, error: existingError } = await supabase
       .from('courses')
-      .select('id, is_completed, xp_reward')
+      .select(
+        'id, is_completed, xp_reward, is_paid, overview, key_takeaways, target_audience, duration_minutes, bonuses, special_requirements, attachments, seo, google_integrations, curriculum',
+      )
       .eq('id', params.id)
       .maybeSingle();
 
@@ -183,6 +197,15 @@ export async function PUT(
     const wasCompleted = !!existing.is_completed;
     const now = new Date().toISOString();
 
+    const publish_at =
+      schedule && typeof schedule.publishAt === 'string'
+        ? schedule.publishAt
+        : null;
+    const expire_at =
+      schedule && typeof schedule.expireAt === 'string'
+        ? schedule.expireAt
+        : null;
+
     const { data: updated, error: updateError } = await supabase
       .from('courses')
       .update({
@@ -194,6 +217,30 @@ export async function PUT(
         image_url: image_url ?? null,
         xp_reward: typeof xp_reward === 'number' ? xp_reward : existing.xp_reward ?? 0,
         is_completed: typeof is_completed === 'boolean' ? is_completed : wasCompleted,
+        is_paid: typeof is_paid === 'boolean' ? is_paid : existing.is_paid ?? false,
+        overview: typeof overview === 'string' ? overview : existing.overview ?? '',
+        key_takeaways: Array.isArray(key_takeaways)
+          ? key_takeaways
+          : existing.key_takeaways ?? [],
+        target_audience: Array.isArray(target_audience)
+          ? target_audience
+          : existing.target_audience ?? [],
+        duration_minutes:
+          typeof duration_minutes === 'number'
+            ? duration_minutes
+            : existing.duration_minutes ?? 0,
+        bonuses: Array.isArray(bonuses) ? bonuses : existing.bonuses ?? [],
+        special_requirements: Array.isArray(special_requirements)
+          ? special_requirements
+          : existing.special_requirements ?? [],
+        attachments: Array.isArray(attachments)
+          ? attachments
+          : existing.attachments ?? [],
+        seo: seo ?? existing.seo ?? null,
+        google_integrations: google_integrations ?? existing.google_integrations ?? null,
+        curriculum: curriculum ?? existing.curriculum ?? { topics: [] },
+        publish_at: publish_at ?? null,
+        expire_at: expire_at ?? null,
         updated_at: now,
       })
       .eq('id', params.id)

@@ -16,6 +16,20 @@ interface BlogPayload {
   published?: boolean;
   registered_only?: boolean;
   author_id?: string;
+  image_url?: string | null;
+  overview?: string;
+  key_takeaways?: string[];
+  target_audience?: string[];
+  duration_minutes?: number;
+  bonuses?: string[];
+  special_requirements?: string[];
+  attachments?: any[];
+  seo?: any;
+  google_integrations?: any;
+  schedule?: {
+    publishAt?: string | null;
+    expireAt?: string | null;
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -75,6 +89,17 @@ export async function POST(request: NextRequest) {
       published,
       registered_only,
       author_id,
+      image_url,
+      overview,
+      key_takeaways,
+      target_audience,
+      duration_minutes,
+      bonuses,
+      special_requirements,
+      attachments,
+      seo,
+      google_integrations,
+      schedule,
     } = body;
 
     // 3) Validações
@@ -113,6 +138,18 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
+    const publish_at =
+      schedule && typeof schedule.publishAt === 'string'
+        ? schedule.publishAt
+        : null;
+    const expire_at =
+      schedule && typeof schedule.expireAt === 'string'
+        ? schedule.expireAt
+        : null;
+    const published_at =
+      published && typeof published === 'boolean'
+        ? publish_at ?? now
+        : null;
 
     // 4) Inserir post (USAR supabaseAdmin AQUI)
     const { data: newPost, error: insertError } = await supabaseAdmin
@@ -127,8 +164,20 @@ export async function POST(request: NextRequest) {
         xp_threshold: xp_threshold ?? 0,
         registered_only: registered_only ?? false,
         published: published ?? false,
-        published_at: published ? now : null,
+        published_at,
+        image_url: image_url ?? null,
         author_id: author_id || currentUser.userId,
+        overview: overview ?? '',
+        key_takeaways: key_takeaways ?? [],
+        target_audience: target_audience ?? [],
+        duration_minutes: duration_minutes ?? 0,
+        bonuses: bonuses ?? [],
+        special_requirements: special_requirements ?? [],
+        attachments: attachments ?? [],
+        seo: seo ?? null,
+        google_integrations: google_integrations ?? null,
+        publish_at,
+        expire_at,
         updated_at: now,
       })
       .select()

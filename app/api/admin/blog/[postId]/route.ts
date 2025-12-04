@@ -165,7 +165,27 @@ export async function PUT(
       xp_reward,
       xp_threshold,
       registered_only,
+      image_url,
+      overview,
+      key_takeaways,
+      target_audience,
+      duration_minutes,
+      bonuses,
+      special_requirements,
+      attachments,
+      seo,
+      google_integrations,
+      schedule,
     } = body || {};
+
+    const schedulePublishAt =
+      schedule && typeof schedule.publishAt === 'string'
+        ? schedule.publishAt
+        : null;
+    const scheduleExpireAt =
+      schedule && typeof schedule.expireAt === 'string'
+        ? schedule.expireAt
+        : null;
 
     const updatePayload: Record<string, any> = {};
 
@@ -183,7 +203,9 @@ export async function PUT(
     }
     if (typeof published === 'boolean') {
       updatePayload.published = published;
-      updatePayload.published_at = published ? new Date().toISOString() : null;
+      updatePayload.published_at = published
+        ? schedulePublishAt ?? new Date().toISOString()
+        : null;
     }
     if (typeof reading_time === 'number') {
       updatePayload.reading_time = reading_time;
@@ -197,6 +219,40 @@ export async function PUT(
     if (typeof registered_only === 'boolean') {
       updatePayload.registered_only = registered_only;
     }
+    if (typeof image_url === 'string') {
+      updatePayload.image_url = image_url || null;
+    }
+    if (typeof overview === 'string') {
+      updatePayload.overview = overview;
+    }
+    if (Array.isArray(key_takeaways)) {
+      updatePayload.key_takeaways = key_takeaways;
+    }
+    if (Array.isArray(target_audience)) {
+      updatePayload.target_audience = target_audience;
+    }
+    if (typeof duration_minutes === 'number') {
+      updatePayload.duration_minutes = duration_minutes;
+    }
+    if (Array.isArray(bonuses)) {
+      updatePayload.bonuses = bonuses;
+    }
+    if (Array.isArray(special_requirements)) {
+      updatePayload.special_requirements = special_requirements;
+    }
+    if (Array.isArray(attachments)) {
+      updatePayload.attachments = attachments;
+    }
+    if (seo && typeof seo === 'object') {
+      updatePayload.seo = seo;
+    }
+    if (google_integrations && typeof google_integrations === 'object') {
+      updatePayload.google_integrations = google_integrations;
+    }
+    if (schedule && typeof schedule === 'object') {
+      updatePayload.publish_at = schedulePublishAt;
+      updatePayload.expire_at = scheduleExpireAt;
+    }
 
     updatePayload.updated_at = new Date().toISOString();
 
@@ -205,7 +261,7 @@ export async function PUT(
         {
           success: false,
           error:
-            'No updatable fields provided. (title, excerpt, content, category, published, reading_time, xp_reward, xp_threshold, registered_only)',
+            'No updatable fields provided.',
         },
         { status: 400 },
       );
