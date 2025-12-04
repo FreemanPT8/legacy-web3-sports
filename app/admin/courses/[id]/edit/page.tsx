@@ -534,63 +534,77 @@ export default function EditCoursePage() {
 
                 <div>
                   <Label>Course Image URL (optional)</Label>
-                  <Input
-                    value={course.image_url || ''}
-                    onChange={(e) =>
-                      setCourse((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              image_url:
-                                e.target.value.trim() === ''
-                                  ? null
-                                  : e.target.value,
-                            }
-                          : prev,
-                    )
-                  }
-                    onBlur={(e) => addRecentImage(e.target.value)}
-                    className={imageUrlError ? 'border-red-400' : undefined}
-                  placeholder="https://..."
-                  />
+                  <div className="flex gap-2 items-center mt-1">
+                    <Input
+                      value={course.image_url || ''}
+                      onChange={(e) =>
+                        setCourse((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                image_url:
+                                  e.target.value.trim() === ''
+                                    ? null
+                                    : e.target.value,
+                              }
+                            : prev,
+                        )
+                      }
+                      onBlur={(e) => addRecentImage(e.target.value)}
+                      className={imageUrlError ? 'border-red-400' : undefined}
+                      placeholder="https://..."
+                    />
+                    {course.image_url && isValidUrl(course.image_url) && (
+                      <a
+                        href={course.image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-blue-600 hover:underline whitespace-nowrap"
+                      >
+                        Ver imagem
+                      </a>
+                    )}
+                  </div>
                   {imageUrlError && (
                     <p className="text-[11px] text-red-600 mt-1">
                       {imageUrlError}
                     </p>
                   )}
                   {course.image_url && isValidUrl(course.image_url) && (
-                    <div className="mt-2 text-xs text-gray-500">
-                      <a
-                        href={course.image_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        Ver imagem
-                      </a>
+                    <div className="mt-2 text-xs text-gray-500 space-y-1">
+                      <div>Pré-visualização</div>
+                      <img
+                        src={course.image_url}
+                        alt="Capa do curso"
+                        className="h-28 w-full max-w-xs rounded-md object-cover border border-gray-200"
+                        loading="lazy"
+                      />
                     </div>
                   )}
                   {recentImages.length > 0 && (
-                    <div className="mt-3 space-y-1">
+                    <div className="mt-3 space-y-2">
                       <div className="text-[11px] text-gray-500">
                         Imagens recentes
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {recentImages.map((url) => (
-                          <Button
+                          <button
                             key={url}
                             type="button"
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
                             onClick={() =>
                               setCourse((prev) =>
                                 prev ? { ...prev, image_url: url } : prev,
                               )
                             }
+                            className="w-20 h-14 rounded-md border border-gray-200 bg-white shadow-sm overflow-hidden hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            {url.length > 28 ? `${url.slice(0, 28)}…` : url}
-                          </Button>
+                            <img
+                              src={url}
+                              alt="Recent cover"
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </button>
                         ))}
                       </div>
                     </div>
