@@ -14,7 +14,13 @@ export function useBuilderState() {
 
   const patchState = useCallback(
     (patch: Partial<BuilderState>) => {
-      updateState((prev) => ({ ...prev, ...patch }));
+      updateState(
+        (prev) =>
+          ({
+            ...prev,
+            ...patch,
+          }) as BuilderState,
+      );
     },
     [updateState],
   );

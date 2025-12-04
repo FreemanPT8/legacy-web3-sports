@@ -112,31 +112,31 @@ export const mapBlogToBuilderState = (blog: any): BlogBuilderState => {
     durationMinutes: blog?.duration_minutes || 0,
     bonuses: blog?.bonuses || [],
     specialRequirements: blog?.special_requirements || [],
-  attachments: blog?.attachments || [],
-  seo: blog?.seo || base.seo,
-  googleIntegrations: blog?.google_integrations || base.googleIntegrations,
-  schedule: {
-    publishAt: blog?.publish_at || null,
-    expireAt: blog?.expire_at || null,
-    timezone: 'CET',
-    status: deriveScheduleStatus(blog),
-  },
-  readingTimeMinutes: blog?.reading_time || base.readingTimeMinutes,
-  category: blog?.category || base.category,
-  registeredOnly: Boolean(blog?.registered_only),
+    attachments: blog?.attachments || [],
+    seo: blog?.seo || base.seo,
+    googleIntegrations: blog?.google_integrations || base.googleIntegrations,
+    schedule: {
+      publishAt: blog?.publish_at || null,
+      expireAt: blog?.expire_at || null,
+      timezone: 'CET',
+      status: deriveScheduleStatus(blog),
+    },
+    readingTimeMinutes: blog?.reading_time || base.readingTimeMinutes,
+    category: blog?.category || base.category,
+    registeredOnly: Boolean(blog?.registered_only),
+  };
 };
 
-const deriveScheduleStatus = (entity: {
+function deriveScheduleStatus(entity: {
   published?: boolean;
   publish_at?: string | null;
-}) => {
+}) {
   if (entity?.published) return 'published';
   if (entity?.publish_at) return 'scheduled';
   return 'draft';
-};
-};
+}
 
-const normalizeTranslations = (raw: any): TranslatedField => {
+function normalizeTranslations(raw: any): TranslatedField {
   const normalized = createEmptyTranslations();
   if (!raw || typeof raw !== 'object') return normalized;
   LANGUAGES.forEach((lang) => {
@@ -144,4 +144,4 @@ const normalizeTranslations = (raw: any): TranslatedField => {
       typeof raw[lang.code] === 'string' ? raw[lang.code] : '';
   });
   return normalized;
-};
+}

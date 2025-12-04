@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 import {
   DndContext,
   type DragEndEvent,
@@ -253,7 +260,7 @@ interface TopicCardProps {
     updater: (lesson: LessonState) => LessonState,
   ) => void;
   expandedLessonId: string | null;
-  setExpandedLessonId: (lessonId: string | null) => void;
+  setExpandedLessonId: Dispatch<SetStateAction<string | null>>;
   onPickMedia: (lessonId: string, mode: 'video' | 'attachment') => void;
   dragAttributes?: DraggableAttributes;
   dragListeners?: Record<string, unknown>;
