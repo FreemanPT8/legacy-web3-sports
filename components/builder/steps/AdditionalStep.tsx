@@ -7,6 +7,7 @@ import { Plus, Trash2, ImageIcon, Link2, CalendarClock } from 'lucide-react';
 import { useBuilderState } from '@/hooks/useBuilderState';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { useScheduleCET } from '@/hooks/useScheduleCET';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -507,6 +508,39 @@ function AttachmentsSection({
   focusedAttachment,
   setFocusedAttachment,
 }: AttachmentsSectionProps) {
+  const { toast } = useToast();
+  const openAttachment = useCallback((url: string | null) => {
+    if (!url) return;
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }, []);
+
+  const copyAttachmentUrl = useCallback(
+    async (url: string | null) => {
+      if (!url) return;
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(url);
+          toast({
+            title: 'Link copied',
+            description: 'Attachment URL copied to the clipboard.',
+          });
+        } else {
+          throw new Error('Clipboard unavailable');
+        }
+      } catch (error) {
+        console.error('Failed to copy attachment URL:', error);
+        toast({
+          title: 'Could not copy link',
+          description: 'Please copy the URL manually.',
+          variant: 'destructive',
+        });
+      }
+    },
+    [toast],
+  );
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -525,25 +559,47 @@ function AttachmentsSection({
         {attachments.length === 0 && (
           <p className="text-sm text-gray-500">No attachments yet.</p>
         )}
-        {attachments.map((attachment) => (
-          <div
-            key={attachment.id}
-            className="rounded-xl border border-gray-200 p-4 dark:border-gray-800"
-          >
-            <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-xs">
-                {attachment.asset.type.toUpperCase()}
-              </Badge>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => onRemove(attachment.id)}
-                className="text-gray-500 hover:text-red-600"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+        {attachments.map((attachment) => {
+          const assetUrl = attachment.asset.url ?? null;
+          return (
+            <div
+              key={attachment.id}
+              className="rounded-xl border border-gray-200 p-4 dark:border-gray-800"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Badge variant="outline" className="text-xs">
+                  {attachment.asset.type.toUpperCase()}
+                </Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openAttachment(assetUrl)}
+                    disabled={!assetUrl}
+                  >
+                    Open asset
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyAttachmentUrl(assetUrl)}
+                    disabled={!assetUrl}
+                  >
+                    Copy link
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRemove(attachment.id)}
+                    className="text-gray-500 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             <div className="mt-3 space-y-3">
               <div>
                 <Label>Label</Label>
@@ -592,7 +648,8 @@ function AttachmentsSection({
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );
