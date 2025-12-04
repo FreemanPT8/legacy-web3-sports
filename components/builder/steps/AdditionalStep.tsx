@@ -667,7 +667,7 @@ function BlogMetaSection({
       <CardHeader>
         <CardTitle>Blog meta & access</CardTitle>
         <p className="text-sm text-gray-500">
-          Ajusta leitura estimada, categoria e gating para o artigo.
+          Adjust reading time, category, and gating rules for the article.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
