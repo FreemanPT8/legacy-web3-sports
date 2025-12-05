@@ -44,7 +44,7 @@ function formatStatusLabel(status: HouseStatus): string {
     case 'active':
       return 'Ativa';
     case 'under_construction':
-      return 'Em construÃ§Ã£o';
+      return 'Em construção';
     case 'development':
       return 'Em desenvolvimento';
     default:
@@ -55,12 +55,12 @@ function formatStatusLabel(status: HouseStatus): string {
 function statusBadgeClass(status: HouseStatus): string {
   switch (status) {
     case 'active':
-      return 'inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-0.5 border border-emerald-200';
+      return 'inline-flex items-center rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] px-2.5 py-0.5 border border-emerald-500/40';
     case 'under_construction':
-      return 'inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-[11px] px-2.5 py-0.5 border border-amber-200';
+      return 'inline-flex items-center rounded-full bg-amber-500/10 text-amber-300 text-[11px] px-2.5 py-0.5 border border-amber-500/40';
     case 'development':
     default:
-      return 'inline-flex items-center rounded-full bg-gray-50 text-gray-600 text-[11px] px-2.5 py-0.5 border border-gray-200';
+      return 'inline-flex items-center rounded-full bg-slate-700/60 text-slate-200 text-[11px] px-2.5 py-0.5 border border-slate-500';
   }
 }
 
@@ -102,7 +102,7 @@ export default function PublicHouseProfilePage() {
       } catch (err: any) {
         console.error('Error loading public House:', err);
         setError(
-          err?.message || 'Erro inesperado ao carregar dados da House.'
+          err?.message || 'Erro inesperado ao carregar dados da House.',
         );
       } finally {
         setLoading(false);
@@ -123,12 +123,12 @@ export default function PublicHouseProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-gray-600">
+          <div className="flex items-center gap-2 text-muted-custom">
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span>A carregar House of Sportsâ€¦</span>
+            <span>A carregar House of Sports…</span>
           </div>
         </main>
         <Footer />
@@ -138,19 +138,20 @@ export default function PublicHouseProfilePage() {
 
   if (!house) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-gray-700 mb-4">
-              {error || 'House nÃ£o encontrada ou ainda nÃ£o estÃ¡ disponÃ­vel.'}
+            <p className="text-body mb-4">
+              {error ||
+                'House não encontrada ou ainda não está disponível.'}
             </p>
             <button
               onClick={() => router.push('/sports/houses')}
-              className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-body hover:bg-slate-800"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar Ã s Houses
+              Voltar às Houses
             </button>
           </div>
         </main>
@@ -159,23 +160,23 @@ export default function PublicHouseProfilePage() {
     );
   }
 
-  // House em development sÃ³ visÃ­vel para Admin/Super Admin
+  // House em development só visível para Admin/Super Admin
   if (house.status === 'development' && !isAdmin) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md px-4">
-            <p className="text-gray-700 mb-4">
-              Esta House ainda estÃ¡ em desenvolvimento e nÃ£o tem perfil pÃºblico
-              disponÃ­vel.
+            <p className="text-body mb-4">
+              Esta House ainda está em desenvolvimento e não tem perfil público
+              disponível.
             </p>
             <button
               onClick={() => router.push('/sports/houses')}
-              className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-body hover:bg-slate-800"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar Ã s Houses
+              Voltar às Houses
             </button>
           </div>
         </main>
@@ -185,27 +186,35 @@ export default function PublicHouseProfilePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
       <main className="flex-1">
-        {/* HERO / HEADER DA HOUSE */}
-        <section className="bg-gradient-to-b from-blue-50 to-transparent border-b border-blue-100">
+        {/* HERO / HEADER DA HOUSE - DARK */}
+        <section className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800">
           <div className="max-w-5xl mx-auto px-4 py-8 md:py-10">
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={() => router.push('/sports/houses')}
-                className="inline-flex items-center text-xs text-gray-500 hover:text-gray-700"
+                className="inline-flex items-center text-xs text-muted-custom hover:text-body"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Voltar Ã s Houses
+                Voltar às Houses
               </button>
+              {isAdmin && (
+                <Link
+                  href={`/sports/houses/${house.id}/edit`}
+                  className="text-[11px] text-blue-300 hover:text-blue-200"
+                >
+                  Editar perfil público
+                </Link>
+              )}
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-start gap-4">
                 {/* Avatar da House (imagem se existir) */}
-                <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white border border-blue-100 flex items-center justify-center shadow-sm overflow-hidden">
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-900 border border-slate-600 flex items-center justify-center shadow-sm overflow-hidden">
                   {house.avatar_url && house.avatar_url.trim() !== '' ? (
                     <SafeImage
                       src={house.avatar_url}
@@ -215,7 +224,7 @@ export default function PublicHouseProfilePage() {
                       height={80}
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-blue-600">
+                    <div className="flex flex-col items-center justify-center text-blue-300">
                       <Trophy className="h-8 w-8" />
                       <span className="text-[10px] font-semibold uppercase">
                         {house.sport_code || 'House'}
@@ -225,22 +234,22 @@ export default function PublicHouseProfilePage() {
                 </div>
 
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  <h1 className="text-2xl md:text-3xl font-bold text-heading">
                     {house.name}
                   </h1>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-custom">
                     {house.sport_name && (
-                      <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-2.5 py-0.5">
+                      <span className="inline-flex items-center rounded-full bg-slate-900 border border-slate-600 px-2.5 py-0.5">
                         {house.sport_name}{' '}
                         {house.sport_code && (
-                          <span className="ml-1 text-[10px] uppercase text-gray-400">
+                          <span className="ml-1 text-[10px] uppercase text-slate-400">
                             {house.sport_code}
                           </span>
                         )}
                       </span>
                     )}
                     {house.country_code && (
-                      <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-2.5 py-0.5 text-[11px] uppercase font-mono">
+                      <span className="inline-flex items-center rounded-full bg-slate-900 border border-slate-600 px-2.5 py-0.5 text-[11px] uppercase font-mono">
                         {house.country_code}
                       </span>
                     )}
@@ -249,7 +258,7 @@ export default function PublicHouseProfilePage() {
                     </span>
                   </div>
                   {createdAtFormatted && (
-                    <p className="mt-1 text-[11px] text-gray-400">
+                    <p className="mt-1 text-[11px] text-muted-custom">
                       Criada em {createdAtFormatted}
                     </p>
                   )}
@@ -258,23 +267,23 @@ export default function PublicHouseProfilePage() {
 
               {/* CTA principal */}
               <div className="flex flex-col items-start md:items-end gap-2 text-xs">
-                <p className="text-gray-500 max-w-xs text-left md:text-right">
+                <p className="text-muted-custom max-w-xs text-left md:text-right">
                   Esta House representa a comunidade de{' '}
                   {house.sport_name || 'um desporto'} em{' '}
-                  {house.country_code || 'um paÃ­s'} dentro do ecossistema
+                  {house.country_code || 'um país'} dentro do ecossistema
                   Web3/Apertum.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Link
                     href="/sports/onboarding"
-                    className="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                    className="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500"
                   >
                     Fazer onboarding de desporto
                   </Link>
                   {user && (
                     <Link
                       href="/dashboard"
-                      className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      className="inline-flex items-center rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-xs font-medium text-body hover:bg-slate-800"
                     >
                       Ir para a minha dashboard
                     </Link>
@@ -285,25 +294,25 @@ export default function PublicHouseProfilePage() {
           </div>
         </section>
 
-        {/* CONTEÃšDO PRINCIPAL DA HOUSE */}
+        {/* CONTEÚDO PRINCIPAL DA HOUSE */}
         <section className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-          {/* DescriÃ§Ã£o / visÃ£o da House */}
+          {/* Descrição / visão da House */}
           <div className="grid gap-6 md:grid-cols-[1.7fr,1.3fr]">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-900 mb-2">
+            <div className="rounded-xl border border-custom bg-card-custom p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-heading mb-2">
                 Sobre esta House
               </h2>
 
               {house.description ? (
-                <p className="text-xs text-gray-600 whitespace-pre-line">
+                <p className="text-xs text-body whitespace-pre-line">
                   {house.description}
                 </p>
               ) : (
                 <>
-                  <p className="text-xs text-gray-600 mb-2">
-                    As Houses of Sports sÃ£o comunidades focadas num desporto
-                    especÃ­fico, ligadas ao universo Web3 e Ã  Apertum
-                    Blockchain. O objetivo desta House Ã© juntar atletas,
+                  <p className="text-xs text-body mb-2">
+                    As Houses of Sports são comunidades focadas num desporto
+                    específico, ligadas ao universo Web3 e à Apertum
+                    Blockchain. O objetivo desta House é juntar atletas,
                     treinadores, clubes e entusiastas que queiram explorar
                     novas formas de{' '}
                     <strong>
@@ -311,17 +320,17 @@ export default function PublicHouseProfilePage() {
                     </strong>
                     .
                   </p>
-                  <p className="text-xs text-gray-600 mb-2">
-                    Nesta fase inicial, a House estÃ¡ a definir a sua visÃ£o, a
-                    estrutura de comunidade, as missÃµes e o tipo de conteÃºdo
-                    educativo que vai disponibilizar: desde noÃ§Ãµes base de
-                    blockchain e Web3 atÃ© modelos de participaÃ§Ã£o em comunidade
+                  <p className="text-xs text-body mb-2">
+                    Nesta fase inicial, a House está a definir a sua visão, a
+                    estrutura de comunidade, as missões e o tipo de conteúdo
+                    educativo que vai disponibilizar: desde noções base de
+                    blockchain e Web3 até modelos de participação em comunidade
                     no desporto.
                   </p>
-                  <p className="text-[11px] text-gray-500 mt-2">
-                    Em versÃµes futuras, o Head of House e a equipa vÃ£o poder
-                    editar esta secÃ§Ã£o diretamente no painel de administraÃ§Ã£o,
-                    definindo a identidade visual e a descriÃ§Ã£o oficial da
+                  <p className="text-[11px] text-muted-custom mt-2">
+                    Em versões futuras, o Head of House e a equipa vão poder
+                    editar esta secção diretamente no painel de administração,
+                    definindo a identidade visual e a descrição oficial da
                     House.
                   </p>
                 </>
@@ -330,56 +339,56 @@ export default function PublicHouseProfilePage() {
 
             {/* Head + Moderadores */}
             <div className="space-y-4">
-              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <User className="h-4 w-4" />
+              <div className="rounded-xl border border-custom bg-card-custom p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-heading mb-2 flex items-center gap-2">
+                  <User className="h-4 w-4 text-blue-400" />
                   Head of House
                 </h3>
                 {head ? (
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-heading">
                       {head.full_name || head.username}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {head.username && <>@{head.username} Â· </>}
+                    <p className="text-xs text-muted-custom">
+                      {head.username && <>@{head.username} · </>}
                       {head.role || 'Membro'}
                     </p>
-                    <p className="mt-2 text-[11px] text-gray-500">
-                      O Head of House Ã© responsÃ¡vel por orientar a comunidade,
-                      definir prioridades de conteÃºdo, missÃµes e eventos, sempre
-                      ligado Ã  visÃ£o da SPORTS OFFICES e ao ecossistema da
+                    <p className="mt-2 text-[11px] text-muted-custom">
+                      O Head of House é responsável por orientar a comunidade,
+                      definir prioridades de conteúdo, missões e eventos, sempre
+                      ligado à visão da SPORTS OFFICES e ao ecossistema da
                       Apertum.
                     </p>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500">
-                    Esta House ainda nÃ£o tem Head definido publicamente. Quando
-                    o Head estiver atribuÃ­do, vais poder ver aqui quem lidera a
+                  <p className="text-xs text-muted-custom">
+                    Esta House ainda não tem Head definido publicamente. Quando
+                    o Head estiver atribuído, vais poder ver aqui quem lidera a
                     comunidade deste desporto.
                   </p>
                 )}
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Users className="h-4 w-4" />
+              <div className="rounded-xl border border-custom bg-card-custom p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-heading mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-400" />
                   Moderadores da House
                 </h3>
                 {moderators.length === 0 ? (
-                  <p className="text-xs text-gray-500">
-                    Ainda nÃ£o existem moderadores pÃºblicos para esta House.
-                    Moderadores vÃ£o apoiar o Head na gestÃ£o de missÃµes,
-                    conteÃºdo e comunidade.
+                  <p className="text-xs text-muted-custom">
+                    Ainda não existem moderadores públicos para esta House.
+                    Moderadores vão apoiar o Head na gestão de missões,
+                    conteúdo e comunidade.
                   </p>
                 ) : (
-                  <ul className="space-y-2 text-xs text-gray-700">
-                    {moderators.map((mod) => (
+                  <ul className="space-y-2 text-xs text-body">
+                    {moderators.map(mod => (
                       <li key={mod.id} className="flex flex-col">
-                        <span className="font-medium">
+                        <span className="font-medium text-heading">
                           {mod.full_name || mod.username}
                         </span>
-                        <span className="text-gray-500">
-                          {mod.username && <>@{mod.username} Â· </>}
+                        <span className="text-muted-custom">
+                          {mod.username && <>@{mod.username} · </>}
                           {mod.role || 'Membro'}
                         </span>
                       </li>
@@ -390,52 +399,52 @@ export default function PublicHouseProfilePage() {
             </div>
           </div>
 
-          {/* SecÃ§Ã£o futura para membros / XP / chat */}
-          <div className="rounded-xl border border-dashed border-gray-300 bg_white/60 bg-white p-5 text-xs text-gray-600">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">
+          {/* Secção futura para membros / XP / chat */}
+          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/70 p-5 text-xs text-body">
+            <h2 className="text-sm font-semibold text-heading mb-2">
               O que vem a seguir para esta House?
             </h2>
             <p className="mb-2">
-              Em prÃ³ximos desenvolvimentos, esta pÃ¡gina vai mostrar:
+              Em próximos desenvolvimentos, esta página vai mostrar:
             </p>
             <ul className="list-disc list-inside space-y-1">
               <li>
-                NÃºmero de membros ativos da House e XP coletivo (soma de XP de
+                Número de membros ativos da House e XP coletivo (soma de XP de
                 todos os membros).
               </li>
               <li>
-                Um botÃ£o para entrar no <strong>chat privado da House</strong>{' '}
+                Um botão para entrar no <strong>chat privado da House</strong>{' '}
                 (apenas para membros).
               </li>
               <li>
-                MissÃµes e trilhos de aprendizagem especÃ­ficos deste desporto,
-                com recompensas em XP e, mais tarde, integraÃ§Ã£o on-chain.
+                Missões e trilhos de aprendizagem específicos deste desporto,
+                com recompensas em XP e, mais tarde, integração on-chain.
               </li>
             </ul>
-            <p className="mt-3 text-[11px] text-gray-500">
-              Para jÃ¡, o passo mais importante Ã© garantires que o teu perfil
-              estÃ¡ alinhado com o desporto certo atravÃ©s do onboarding
+            <p className="mt-3 text-[11px] text-muted-custom">
+              Para já, o passo mais importante é garantires que o teu perfil
+              está alinhado com o desporto certo através do onboarding
               personalizado.
             </p>
           </div>
 
           {/* CTA final */}
-          <div className="border-t pt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="border-t border-slate-800 pt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">
-                Queres fazer parte desta visÃ£o para o desporto em Web3?
+              <h3 className="text-sm font-semibold text-heading">
+                Queres fazer parte desta visão para o desporto em Web3?
               </h3>
-              <p className="text-xs text-gray-500 max-w-xl">
+              <p className="text-xs text-muted-custom max-w-xl">
                 A LEGACY existe para ajudar profissionais e entusiastas a
-                navegarem o mundo da blockchain e da comunidade, sem jargÃ£o
-                tÃ©cnico e passo a passo, desporto a desporto.
+                navegarem o mundo da blockchain e da comunidade, sem jargão
+                técnico e passo a passo, desporto a desporto.
               </p>
             </div>
             <Link
               href="/sports/onboarding"
-              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
             >
-              ComeÃ§ar onboarding personalizado
+              Começar onboarding personalizado
             </Link>
           </div>
         </section>
@@ -445,4 +454,3 @@ export default function PublicHouseProfilePage() {
     </div>
   );
 }
-

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,12 +93,12 @@ function formatStatusLabel(status: PublicHouseStatus): string {
 function statusBadgeClass(status: PublicHouseStatus): string {
   switch (status) {
     case 'ACTIVE':
-      return 'inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-0.5 border border-emerald-200';
+      return 'inline-flex items-center rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] px-2.5 py-0.5 border border-emerald-500/40';
     case 'UNDER_CONSTRUCTION':
-      return 'inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-[11px] px-2.5 py-0.5 border border-amber-200';
+      return 'inline-flex items-center rounded-full bg-amber-500/10 text-amber-300 text-[11px] px-2.5 py-0.5 border border-amber-500/40';
     case 'IN_DEVELOPMENT':
     default:
-      return 'inline-flex items-center rounded-full bg-gray-50 text-gray-600 text-[11px] px-2.5 py-0.5 border border-gray-200';
+      return 'inline-flex items-center rounded-full bg-slate-700/60 text-slate-200 text-[11px] px-2.5 py-0.5 border border-slate-500';
   }
 }
 
@@ -143,7 +142,7 @@ export default function EditHousePublicProfilePage() {
     if (!user || !isAdmin) {
       // não tem permissão para editar
       setGeneralError(
-        'Apenas administradores podem editar o perfil público das Houses nesta fase.'
+        'Apenas administradores podem editar o perfil público das Houses nesta fase.',
       );
     }
   }, [authLoading, user, isAdmin]);
@@ -165,24 +164,24 @@ export default function EditHousePublicProfilePage() {
 
         if (!housesRes.ok || !housesJson.success) {
           throw new Error(
-            housesJson.error || 'Erro ao carregar House of Sports.'
+            housesJson.error || 'Erro ao carregar House of Sports.',
           );
         }
 
         const thisHouse =
-          (housesJson.houses || []).find((h) => h.id === houseId) || null;
+          (housesJson.houses || []).find(h => h.id === houseId) || null;
 
         setHouse(thisHouse || null);
 
         // Perfil
         const profileRes = await fetch(
-          `/api/house-profiles/${houseId}?locale=pt`
+          `/api/house-profiles/${houseId}?locale=pt`,
         );
         const profileJson: HouseProfileApiResponse = await profileRes.json();
 
         if (!profileRes.ok || !profileJson.success) {
           setProfileError(
-            profileJson.error || 'Erro ao carregar perfil da House.'
+            profileJson.error || 'Erro ao carregar perfil da House.',
           );
         }
 
@@ -195,7 +194,7 @@ export default function EditHousePublicProfilePage() {
         console.error('Error loading house/profile for edit:', err);
         setGeneralError(
           err?.message ||
-            'Erro inesperado ao carregar dados da House para edição.'
+            'Erro inesperado ao carregar dados da House para edição.',
         );
       } finally {
         setHouseLoading(false);
@@ -255,10 +254,10 @@ export default function EditHousePublicProfilePage() {
   // Estados de loading / sem permissão
   if (authLoading || houseLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-gray-600">
+          <div className="flex items-center gap-2 text-muted-custom">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>A carregar dados da House…</span>
           </div>
@@ -270,17 +269,18 @@ export default function EditHousePublicProfilePage() {
 
   if (!user || !isAdmin) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md px-4">
-            <p className="text-gray-700 mb-4">
+            <p className="text-body mb-4">
               {generalError ||
                 'Não tens permissões para editar o perfil desta House.'}
             </p>
             <Button
               variant="outline"
               onClick={() => router.push('/sports/houses')}
+              className="border-slate-700 text-body hover:bg-slate-900"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar às Houses
@@ -294,16 +294,17 @@ export default function EditHousePublicProfilePage() {
 
   if (!house) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md px-4">
-            <p className="text-gray-700 mb-4">
+            <p className="text-body mb-4">
               {generalError || 'House não encontrada.'}
             </p>
             <Button
               variant="outline"
               onClick={() => router.push('/sports/houses')}
+              className="border-slate-700 text-body hover:bg-slate-900"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar às Houses
@@ -316,14 +317,14 @@ export default function EditHousePublicProfilePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
       <main className="flex-1 py-8">
         <div className="max-w-5xl mx-auto px-4">
           <button
             onClick={() => router.push(`/sports/houses/${house.id}`)}
-            className="mb-4 inline-flex items-center text-xs text-gray-500 hover:text-gray-700"
+            className="mb-4 inline-flex items-center text-xs text-muted-custom hover:text-body"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Voltar ao perfil público
@@ -331,21 +332,24 @@ export default function EditHousePublicProfilePage() {
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
             <div className="flex items-start gap-3">
-              <div className="h-14 w-14 rounded-2xl bg-white border border-blue-100 flex items-center justify-center shadow-sm">
-                <Trophy className="h-7 w-7 text-blue-500" />
+              <div className="h-14 w-14 rounded-2xl bg-slate-900 border border-blue-500/50 flex items-center justify-center shadow-sm">
+                <Trophy className="h-7 w-7 text-blue-400" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+                <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-heading">
                   Editar perfil da House
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted-custom mt-1">
                   Ajusta a imagem, tagline e descrição pública da House de{' '}
-                  <span className="font-semibold">{house.name}</span>.
+                  <span className="font-semibold text-heading">
+                    {house.name}
+                  </span>
+                  .
                 </p>
               </div>
             </div>
 
-            <div className="text-xs text-gray-500 text-right">
+            <div className="text-xs text-muted-custom text-right">
               <div className="font-mono text-[11px] truncate">
                 ID: {house.id}
               </div>
@@ -359,55 +363,61 @@ export default function EditHousePublicProfilePage() {
           </div>
 
           {generalError && (
-            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="mb-4 rounded-md border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-100">
               {generalError}
             </div>
           )}
 
           {profileError && (
-            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-950/40 px-3 py-2 text-sm text-amber-100">
               {profileError}
             </div>
           )}
 
           <div className="grid gap-6 md:grid-cols-[1.6fr,1.4fr]">
             {/* Coluna principal: tagline + descrição */}
-            <Card className="border-blue-100 shadow-sm">
+            <Card className="border-custom bg-card-custom shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Pencil className="h-4 w-4 text-blue-600" />
+                <CardTitle className="flex items-center gap-2 text-heading">
+                  <Pencil className="h-4 w-4 text-blue-400" />
                   Conteúdo público da House
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-custom">
                   Este texto aparece na página pública da House. Por agora está
                   apenas em português.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tagline">Tagline / frase curta</Label>
+                  <Label htmlFor="tagline" className="text-body">
+                    Tagline / frase curta
+                  </Label>
                   <Input
                     id="tagline"
                     placeholder="Ex: Comunidade oficial de escalada em Portugal, focada em Web3."
                     value={tagline}
-                    onChange={(e) => setTagline(e.target.value)}
+                    onChange={e => setTagline(e.target.value)}
+                    className="bg-slate-900 border-slate-700 text-body placeholder:text-slate-500"
                   />
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[11px] text-muted-custom">
                     Uma frase curta que resume a House. Exemplo: “Comunidade
                     oficial de natação em Portugal na Apertum Blockchain”.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descrição pública</Label>
+                  <Label htmlFor="description" className="text-body">
+                    Descrição pública
+                  </Label>
                   <Textarea
                     id="description"
                     rows={8}
                     placeholder="Explica a visão desta House, o tipo de membros que procura, e como se liga ao mundo Web3 e à Apertum."
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={e => setDescription(e.target.value)}
+                    className="bg-slate-900 border-slate-700 text-body placeholder:text-slate-500"
                   />
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[11px] text-muted-custom">
                     Esta descrição vai aparecer na secção “Sobre esta House”.
                     Mais tarde poderás traduzir para outras línguas.
                   </p>
@@ -417,33 +427,36 @@ export default function EditHousePublicProfilePage() {
 
             {/* Coluna lateral: imagem + info de liderança */}
             <div className="space-y-4">
-              <Card className="shadow-sm">
+              <Card className="bg-card-custom border-custom shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 text-heading">
+                    <ImageIcon className="h-4 w-4 text-blue-400" />
                     Imagem / avatar da House
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-muted-custom">
                     Usa uma imagem quadrada (ideal 1:1). No futuro haverá um
                     template visual padrão.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="image_url">URL da imagem</Label>
+                    <Label htmlFor="image_url" className="text-body">
+                      URL da imagem
+                    </Label>
                     <Input
                       id="image_url"
                       placeholder="https://…"
                       value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
+                      onChange={e => setImageUrl(e.target.value)}
+                      className="bg-slate-900 border-slate-700 text-body placeholder:text-slate-500"
                     />
-                    <p className="text-[11px] text-gray-500">
+                    <p className="text-[11px] text-muted-custom">
                       Por agora, cola aqui o URL de uma imagem hospedada
                       externamente (ex: CDN, site oficial, etc.).
                     </p>
                   </div>
 
-                  <div className="border rounded-xl bg-gray-50/70 p-3 flex items-center justify-center min-h-[140px]">
+                  <div className="border border-slate-700 rounded-xl bg-slate-900/70 p-3 flex items-center justify-center min-h-[140px]">
                     {imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -452,7 +465,7 @@ export default function EditHousePublicProfilePage() {
                         className="max-h-32 rounded-lg object-contain"
                       />
                     ) : (
-                      <div className="flex flex-col items-center text-xs text-gray-500">
+                      <div className="flex flex-col items-center text-xs text-muted-custom">
                         <ImageIcon className="h-6 w-6 mb-1" />
                         <span>Pré-visualização da imagem da House</span>
                       </div>
@@ -461,51 +474,53 @@ export default function EditHousePublicProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm">
+              <Card className="bg-card-custom border-custom shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 text-heading">
+                    <User className="h-4 w-4 text-blue-400" />
                     Liderança atual
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-muted-custom">
                     Informação apenas de leitura, vinda da configuração da House.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 text-xs text-gray-700">
+                <CardContent className="space-y-3 text-xs text-body">
                   {house.head ? (
                     <div>
-                      <p className="font-semibold">
+                      <p className="font-semibold text-heading">
                         Head of House:{' '}
                         {house.head.full_name || house.head.username}
                       </p>
-                      <p className="text-gray-500">
-                        {house.head.username && <>@{house.head.username} · </>}
+                      <p className="text-muted-custom">
+                        {house.head.username && (
+                          <>@{house.head.username} · </>
+                        )}
                         {house.head.role || 'Membro'}
                       </p>
                     </div>
                   ) : (
-                    <p className="text-gray-500">
+                    <p className="text-muted-custom">
                       Esta House ainda não tem Head definido.
                     </p>
                   )}
 
-                  <div className="pt-2 border-t">
-                    <p className="flex items-center gap-1 font-medium mb-1">
+                  <div className="pt-2 border-t border-slate-700">
+                    <p className="flex items-center gap-1 font-medium mb-1 text-heading">
                       <Users className="h-3 w-3" />
                       Moderadores
                     </p>
                     {house.moderators.length === 0 ? (
-                      <p className="text-gray-500">
+                      <p className="text-muted-custom">
                         Ainda sem moderadores atribuídos.
                       </p>
                     ) : (
                       <ul className="space-y-1">
-                        {house.moderators.map((mod) => (
+                        {house.moderators.map(mod => (
                           <li key={mod.user_id}>
-                            <span className="font-medium">
+                            <span className="font-medium text-heading">
                               {mod.full_name || mod.username}
                             </span>
-                            <span className="text-gray-500">
+                            <span className="text-muted-custom">
                               {mod.username && <> · @{mod.username}</>}{' '}
                             </span>
                           </li>
@@ -519,7 +534,7 @@ export default function EditHousePublicProfilePage() {
           </div>
 
           <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <p className="text-[11px] text-gray-500 max-w-xl">
+            <p className="text-[11px] text-muted-custom max-w-xl">
               Estas definições afetam apenas a página pública desta House. Em
               futuras versões, poderás gerir aqui também traduções, missões e
               conteúdos destacados.
@@ -529,6 +544,7 @@ export default function EditHousePublicProfilePage() {
                 variant="outline"
                 type="button"
                 onClick={() => router.push(`/sports/houses/${house.id}`)}
+                className="border-slate-700 text-body hover:bg-slate-900"
               >
                 Cancelar
               </Button>

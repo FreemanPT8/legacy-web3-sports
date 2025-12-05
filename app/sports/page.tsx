@@ -91,7 +91,7 @@ export default function SportsPage() {
 
         if (!housesRes.ok || !housesJson.success) {
           throw new Error(
-            housesJson.error || 'Erro ao carregar Houses of Sports.'
+            housesJson.error || 'Erro ao carregar Houses of Sports.',
           );
         }
 
@@ -101,7 +101,7 @@ export default function SportsPage() {
         console.error('Erro ao carregar sports/houses:', err);
         setError(
           err?.message ||
-            'Erro inesperado ao carregar desportos e Houses.'
+            'Erro inesperado ao carregar desportos e Houses.',
         );
       } finally {
         setLoading(false);
@@ -130,18 +130,24 @@ export default function SportsPage() {
     : [];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-page">
       <CryptoTicker />
       <Header />
 
-      <main className="flex-1 bg-white">
-        {/* HERO alinhado com a homepage */}
-        <section className="relative bg-gradient-to-br from-blue-600 via-cyan-600 to-blue-700 text-white py-16 md:py-24">
-          <div className="container mx-auto px-4">
+      <main className="flex-1">
+        {/* HERO – dark, alinhado com /education */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white py-16 md:py-24">
+          {/* halos de luz */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-32 -right-32 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+            <div className="absolute -bottom-40 -left-20 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
+          </div>
+
+          <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-6xl mx-auto grid md:grid-cols-[2fr,1.1fr] gap-10 items-start">
               {/* Texto principal */}
               <div className="space-y-5">
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-blue-100 border border-white/20">
+                <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-50 border border-white/15">
                   Educação Web3 · Comunidades de Desporto
                 </span>
 
@@ -149,7 +155,7 @@ export default function SportsPage() {
                   Desporto, comunidade e Web3 na Apertum Blockchain.
                 </h1>
 
-                <p className="text-sm md:text-base text-blue-50 max-w-xl leading-relaxed">
+                <p className="text-sm md:text-base text-blue-100 max-w-xl leading-relaxed">
                   A LEGACY é o ponto de entrada para profissionais e
                   entusiastas que querem perceber o que a{' '}
                   <strong>blockchain</strong>, a{' '}
@@ -182,7 +188,7 @@ export default function SportsPage() {
                   <Link href="/sports/onboarding">
                     <Button
                       size="lg"
-                      className="bg-white text-blue-700 hover:bg-blue-50"
+                      className="bg-white text-blue-700 hover:bg-gray-100"
                     >
                       Fazer onboarding personalizado
                     </Button>
@@ -191,7 +197,7 @@ export default function SportsPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="border-white text-white hover:bg-white/10"
+                      className="border-blue-200 text-blue-50 hover:bg-white/5"
                     >
                       Explorar Houses of Sports
                     </Button>
@@ -200,13 +206,13 @@ export default function SportsPage() {
               </div>
 
               {/* Card: estado das Houses */}
-              <div className="bg-white/95 text-gray-900 rounded-2xl border border-blue-100 px-5 py-5 shadow-xl shadow-blue-900/20">
+              <div className="bg-card-custom text-heading rounded-2xl border border-custom px-5 py-5 shadow-xl shadow-blue-900/25">
                 <h2 className="text-sm font-semibold mb-3">
                   Estado atual das Houses of Sports
                 </h2>
 
                 {loading ? (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-custom">
                     A carregar dados das Houses…
                   </p>
                 ) : (
@@ -223,7 +229,7 @@ export default function SportsPage() {
                     />
                     {isLegacyTeam && (
                       <RowStatus
-                        colorClass="bg-gray-400"
+                        colorClass="bg-zinc-400"
                         label="Houses em desenvolvimento"
                         value={housesByStatus.IN_DEVELOPMENT.length}
                       />
@@ -231,7 +237,7 @@ export default function SportsPage() {
                   </div>
                 )}
 
-                <p className="mt-4 text-[11px] text-gray-600 leading-relaxed">
+                <p className="mt-4 text-[11px] text-body leading-relaxed">
                   Cada House representa um desporto num país e vai agregando
                   membros, XP e iniciativas. As Houses ativas já estão a ser
                   lideradas por um Head of House e vão ganhar cada vez mais
@@ -241,7 +247,7 @@ export default function SportsPage() {
                 <div className="mt-4 text-right">
                   <Link
                     href="/sports/houses"
-                    className="inline-flex items-center text-[11px] font-medium text-blue-700 hover:text-blue-600"
+                    className="inline-flex items-center text-[11px] font-medium text-blue-500 hover:text-blue-400"
                   >
                     Ver todas as Houses →
                   </Link>
@@ -250,7 +256,7 @@ export default function SportsPage() {
             </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0">
+          <div className="absolute bottom-0 left-0 right-0 opacity-40">
             <svg
               viewBox="0 0 1440 120"
               fill="none"
@@ -258,27 +264,27 @@ export default function SportsPage() {
             >
               <path
                 d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 80C1200 80 1320 70 1380 65L1440 60V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
-                fill="white"
+                fill="#020617"
               />
             </svg>
           </div>
         </section>
 
         {/* Secção visão geral das Houses */}
-        <section className="py-12 bg-white">
+        <section className="py-12">
           <div className="container mx-auto px-4">
             {error && (
-              <div className="max-w-4xl mx-auto mb-6 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="max-w-4xl mx-auto mb-6 rounded-md border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-100">
                 {error}
               </div>
             )}
 
             <div className="max-w-4xl mx-auto space-y-4">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-heading">
                   Houses of Sports – visão geral
                 </h2>
-                <p className="text-sm text-gray-600 max-w-3xl mt-2">
+                <p className="text-sm text-body max-w-3xl mt-2">
                   As Houses of Sports são coletivos de jogadores, treinadores,
                   organizações e entusiastas do mesmo desporto, focados em
                   explorar a Web3 em conjunto. As Houses ativas já estão
@@ -290,26 +296,26 @@ export default function SportsPage() {
               </div>
 
               <div className="flex flex-col md:flex-row gap-6 md:items-end md:justify-between">
-                <div className="text-xs text-gray-700 space-y-1">
+                <div className="text-xs text-body space-y-1">
                   <p>
-                    <span className="font-semibold">
+                    <span className="font-semibold text-heading">
                       {housesByStatus.ACTIVE.length}
                     </span>{' '}
                     Houses ativas
                   </p>
                   <p>
-                    <span className="font-semibold">
+                    <span className="font-semibold text-heading">
                       {housesByStatus.UNDER_CONSTRUCTION.length}
                     </span>{' '}
                     em construção
                   </p>
                   <p>
-                    <span className="font-semibold">
+                    <span className="font-semibold text-heading">
                       {housesByStatus.IN_DEVELOPMENT.length}
                     </span>{' '}
                     em desenvolvimento
                     {!isLegacyTeam && (
-                      <span className="text-[11px] text-gray-400">
+                      <span className="text-[11px] text-muted-custom">
                         {' '}
                         (apenas visíveis à equipa LEGACY)
                       </span>
@@ -317,9 +323,9 @@ export default function SportsPage() {
                   </p>
                 </div>
 
-                <div className="text-xs text-gray-500 max-w-sm">
+                <div className="text-xs text-muted-custom max-w-sm">
                   <p>
-                    Quer aprofundar por desporto, país e estado da House?
+                    Queres aprofundar por desporto, país e estado da House?
                     Explora a lista completa de Houses e usa filtros
                     avançados na página dedicada.
                   </p>
@@ -328,7 +334,7 @@ export default function SportsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                        className="border-blue-600 text-blue-400 hover:bg-blue-950/40"
                       >
                         Ver página completa das Houses
                       </Button>
@@ -341,7 +347,7 @@ export default function SportsPage() {
         </section>
 
         {/* Houses em destaque (primeiras 6 de cada estado) */}
-        <section className="py-12 bg-gray-50">
+        <section className="py-12">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto space-y-10">
               <HousesSection
@@ -368,7 +374,7 @@ export default function SportsPage() {
         </section>
 
         {/* Bloco educativo / chamada para onboarding */}
-        <section className="py-16 bg-blue-600 text-white">
+        <section className="py-16 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 items-center">
               <div>
@@ -389,7 +395,7 @@ export default function SportsPage() {
                 </p>
               </div>
 
-              <div className="bg-white/10 border border-white/20 rounded-2xl p-5 text-xs text-blue-50 space-y-3">
+              <div className="bg-white/5 border border-white/15 rounded-2xl p-5 text-xs text-blue-50 space-y-3">
                 <p>
                   <strong>1.</strong> Escolhe o teu desporto e responde a
                   poucas perguntas sobre o teu papel (atleta, treinador,
@@ -406,7 +412,7 @@ export default function SportsPage() {
 
                 <div className="pt-1">
                   <Link href="/sports/onboarding">
-                    <Button className="bg-white text-blue-700 hover:bg-blue-50 w-full md:w-auto">
+                    <Button className="bg-white text-blue-700 hover:bg-gray-100 w-full md:w-auto">
                       Começar onboarding de desporto
                     </Button>
                   </Link>
@@ -433,11 +439,11 @@ function RowStatus({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="flex items-center gap-2 text-xs text-gray-700">
+      <span className="flex items-center gap-2 text-xs text-body">
         <span className={`h-2 w-2 rounded-full ${colorClass}`} />
         {label}
       </span>
-      <span className="font-semibold text-gray-900 text-xs">{value}</span>
+      <span className="font-semibold text-heading text-xs">{value}</span>
     </div>
   );
 }
@@ -459,23 +465,23 @@ function HousesSection({
     <div>
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 mb-3">
         <div>
-          <h3 className="text-md font-semibold text-gray-900">{title}</h3>
-          <p className="text-xs text-gray-500">{description}</p>
+          <h3 className="text-md font-semibold text-heading">{title}</h3>
+          <p className="text-xs text-muted-custom">{description}</p>
         </div>
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] text-muted-custom">
           {houses.length} {houses.length === 1 ? 'House' : 'Houses'}
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {subset.map((house) => (
+        {subset.map(house => (
           <Link
             key={house.id}
             href={`/sports/houses/${house.id}`}
             className="block"
           >
-            <div className="h-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:border-blue-400 hover:shadow-md transition flex flex-col">
-              <div className="mb-3 h-20 rounded-lg border border-gray-100 overflow-hidden bg-gray-50">
+            <div className="h-full rounded-xl border border-custom bg-card-custom p-4 shadow-sm hover:border-blue-500/70 hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] transition flex flex-col">
+              <div className="mb-3 h-20 rounded-lg border border-custom overflow-hidden bg-slate-900">
                 {house.cover_image_url || house.avatar_url ? (
                   <SafeImage
                     src={house.cover_image_url || house.avatar_url || ''}
@@ -483,13 +489,13 @@ function HousesSection({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="h-full w-full bg-gradient-to-r from-blue-100 via-cyan-100 to-gray-100" />
+                  <div className="h-full w-full bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950" />
                 )}
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3 text-sm font-semibold text-gray-900 min-w-0">
-                  <div className="h-12 w-12 rounded-xl bg-gray-100 flex items-center justify-center text-[12px] font-semibold text-gray-600 overflow-hidden border border-gray-200 shrink-0">
+                <div className="flex items-center gap-3 text-sm font-semibold text-heading min-w-0">
+                  <div className="h-12 w-12 rounded-xl bg-slate-900 flex items-center justify-center text-[12px] font-semibold text-muted-custom overflow-hidden border border-custom shrink-0">
                     {house.avatar_url || house.cover_image_url ? (
                       <SafeImage
                         src={house.avatar_url || house.cover_image_url || ''}
@@ -500,7 +506,7 @@ function HousesSection({
                       <span>
                         {house.name
                           .split(' ')
-                          .map((p) => p[0])
+                          .map(p => p[0])
                           .join('')
                           .slice(0, 2)
                           .toUpperCase()}
@@ -510,21 +516,21 @@ function HousesSection({
                   <span className="truncate">{house.name}</span>
                 </div>
                 {house.country_code && (
-                  <span className="text-[10px] font-mono uppercase bg-gray-100 rounded px-2 py-0.5 text-gray-700">
+                  <span className="text-[10px] font-mono uppercase bg-slate-900 rounded px-2 py-0.5 text-blue-200 border border-slate-700">
                     {house.country_code}
                   </span>
                 )}
               </div>
 
               {house.sport && (
-                <div className="text-[11px] uppercase text-gray-400 mb-1">
+                <div className="text-[11px] uppercase text-muted-custom mb-1">
                   {house.sport.name} · {house.sport.code}
                 </div>
               )}
 
               {house.head ? (
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-gray-600 overflow-hidden border border-gray-200">
+                  <div className="h-7 w-7 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-muted-custom overflow-hidden border border-custom">
                     {house.head.avatar_url ? (
                       <SafeImage
                         src={house.head.avatar_url}
@@ -543,33 +549,33 @@ function HousesSection({
                           '?'
                         )
                           .split(' ')
-                          .map((p) => p[0])
+                          .map(p => p[0])
                           .join('')
                           .slice(0, 2)
                           .toUpperCase()}
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-800 leading-tight">
-                    <div className="font-medium">
+                  <div className="text-xs text-body leading-tight">
+                    <div className="font-medium text-heading">
                       {house.head.full_name ||
                         house.head.username ||
                         'Head of House'}
                     </div>
                     {house.head.username && (
-                      <div className="text-[11px] text-gray-500">
+                      <div className="text-[11px] text-muted-custom">
                         @{house.head.username}
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-gray-500 mb-1">
+                <p className="text-xs text-muted-custom mb-1">
                   Head of House a definir.
                 </p>
               )}
 
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-muted-custom mt-auto">
                 {house.moderators.length > 0
                   ? `${house.moderators.length} moderador(es) já atribuídos.`
                   : 'Sem moderadores definidos ainda.'}
