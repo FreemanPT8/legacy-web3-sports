@@ -131,7 +131,7 @@ export default function EducationPage() {
         </section>
 
         {/* STATS + PROGRESSO PESSOAL */}
-        <section className="py-16">
+        <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto space-y-10">
               {loading ? (
@@ -233,7 +233,7 @@ export default function EducationPage() {
         </section>
 
         {/* CURSOS EM DESTAQUE */}
-        <section className="py-16">
+        <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
@@ -356,7 +356,7 @@ export default function EducationPage() {
         </section>
 
         {/* SISTEMA DE XP */}
-        <section className="py-16">
+        <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
               <div>
@@ -453,7 +453,7 @@ export default function EducationPage() {
         </section>
 
         {/* LEADERBOARD */}
-        <section className="py-16">
+        <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">

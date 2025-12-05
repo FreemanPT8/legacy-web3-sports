@@ -269,7 +269,7 @@ export default function DashboardPage() {
           {/* RESUMO RÁPIDO DE XP / STREAK / RANK */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             {/* XP TOTAL + HOJE + LIMITES */}
-            <Card>
+            <Card className="bg-card border-custom">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-body">
                   {t('dashboard.totalXp')}
@@ -336,7 +336,7 @@ export default function DashboardPage() {
             </Card>
 
             {/* STREAK */}
-            <Card>
+            <Card className="bg-card border-custom">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-body">
                   {t('dashboard.currentStreak')}
@@ -364,7 +364,7 @@ export default function DashboardPage() {
             </Card>
 
             {/* GLOBAL RANK */}
-            <Card>
+            <Card className="bg-card border-custom">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-body">
                   {t('dashboard.globalRank')}
@@ -399,7 +399,7 @@ export default function DashboardPage() {
 
           {/* MISSÕES + FEATURES DESBLOQUEADAS */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <Card>
+            <Card className="bg-card border-custom">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-heading">
                   <Target className="h-5 w-5 text-blue-500" />
@@ -481,7 +481,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-card border-custom">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-heading">
                   <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -574,7 +574,7 @@ export default function DashboardPage() {
           </div>
 
           {/* HISTÓRICO DE XP */}
-          <Card>
+          <Card className="bg-card border-custom">
             <CardHeader>
               <CardTitle className="text-heading">
                 {t('dashboard.recentXpActivity')}
