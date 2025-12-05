@@ -122,12 +122,12 @@ export default function BlogPostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
-            <p className="mt-4 text-slate-300">
+            <p className="mt-4 text-body">
               A carregar artigo...
             </p>
           </div>
@@ -139,20 +139,20 @@ export default function BlogPostPage() {
 
   if (notFound || !post) {
     return (
-      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center px-4 max-w-md">
-            <h1 className="text-2xl font-bold mb-2">
+            <h1 className="text-2xl font-bold mb-2 text-heading">
               Artigo não encontrado
             </h1>
-            <p className="text-slate-300 mb-4 text-sm">
+            <p className="text-body mb-4 text-sm">
               O artigo que procuras não existe, não está publicado ou deixou de
               estar disponível.
             </p>
             <button
               onClick={() => router.push('/blog')}
-              className="inline-flex items-center gap-2 text-sky-400 hover:text-sky-300 text-sm"
+              className="inline-flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300"
             >
               <ArrowLeft className="h-4 w-4" />
               Voltar ao blog
@@ -183,7 +183,7 @@ export default function BlogPostPage() {
   const completedForReader = isCompleted && !isAuthor;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
+    <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
       <main className="flex-1 py-10">
@@ -191,18 +191,21 @@ export default function BlogPostPage() {
           <div className="max-w-4xl mx-auto">
             <button
               onClick={() => router.push('/blog')}
-              className="mb-4 inline-flex items-center text-sm text-slate-300 hover:text-sky-300"
+              className="mb-4 inline-flex items-center text-sm text-muted-custom hover:text-sky-300"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Voltar ao blog
             </button>
 
             {/* Header do artigo */}
-            <Card className="mb-4 border border-slate-800 bg-slate-900/90">
+            <Card className="mb-4 border-custom bg-card">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="border-slate-600 text-slate-100">
+                    <Badge
+                      variant="outline"
+                      className="border-slate-600 text-body"
+                    >
                       {post.category || 'General'}
                     </Badge>
 
@@ -227,11 +230,11 @@ export default function BlogPostPage() {
                   )}
                 </div>
 
-                <CardTitle className="text-3xl text-slate-50">
+                <CardTitle className="text-3xl text-heading">
                   {getTitle(post.title)}
                 </CardTitle>
                 {post.excerpt && (
-                  <p className="text-slate-200 text-base mt-3">
+                  <p className="text-body text-base mt-3">
                     {typeof post.excerpt === 'string'
                       ? post.excerpt
                       : post.excerpt.pt ||
@@ -242,7 +245,7 @@ export default function BlogPostPage() {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap items-center gap-6 text-sm text-slate-300">
+                <div className="flex flex-wrap items-center gap-6 text-sm text-muted-custom">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     <span>{creatorName}</span>
@@ -277,38 +280,40 @@ export default function BlogPostPage() {
             </Card>
 
             {/* Meta info: stats de XP e leitores */}
-            <Card className="mb-6 border border-slate-800 bg-slate-900/80">
-              <CardContent className="py-4 text-sm text-slate-200">
+            <Card className="mb-6 border-custom bg-card">
+              <CardContent className="py-4 text-sm text-body">
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
-                    <span className="block text-[11px] uppercase text-slate-400 mb-1">
+                    <span className="block text-[11px] uppercase text-muted-custom mb-1">
                       Leitores registados
                     </span>
-                    <span className="font-semibold">
+                    <span className="font-semibold text-heading">
                       {registeredReaders}
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[11px] uppercase text-slate-400 mb-1">
+                    <span className="block text-[11px] uppercase text-muted-custom mb-1">
                       XP distribuído
                     </span>
-                    <span className="font-semibold">
+                    <span className="font-semibold text-heading">
                       {totalXpDistributed} XP
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[11px] uppercase text-slate-400 mb-1">
+                    <span className="block text-[11px] uppercase text-muted-custom mb-1">
                       Categoria
                     </span>
-                    <span>{post.category || 'General'}</span>
+                    <span className="text-body">
+                      {post.category || 'General'}
+                    </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Conteúdo + ContentTracker */}
-            <Card className="mb-6 border border-slate-800 bg-slate-950/95">
-              <CardContent className="prose prose-invert prose-headings:text-slate-50 prose-strong:text-slate-50 max-w-none py-8">
+            <Card className="mb-6 border-custom bg-card">
+              <CardContent className="prose prose-invert prose-headings:text-heading prose-strong:text-heading max-w-none py-8">
                 <ContentTracker
                   userId={user?.id ?? null}
                   contentId={post.id}
@@ -333,7 +338,7 @@ export default function BlogPostPage() {
               <Card className="mb-6 bg-emerald-950/60 border border-emerald-700/80">
                 <CardContent className="py-6 text-center">
                   <CheckCircle className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
-                  <h3 className="font-semibold text-lg mb-1 text-emerald-50">
+                  <h3 className="font-semibold text-lg mb-1 text-heading">
                     Artigo concluído!
                   </h3>
                   <p className="text-sm text-emerald-100/90">

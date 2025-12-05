@@ -135,24 +135,24 @@ export default function BlogPage() {
   }, [posts]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
+    <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
       <main className="flex-1 py-10">
         <div className="container mx-auto px-4">
           {/* HERO / HEADER DO BLOG */}
           <section className="max-w-6xl mx-auto mb-10">
-            <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950 px-6 py-8 md:px-10 md:py-10 shadow-[0_0_60px_rgba(56,189,248,0.18)]">
+            <div className="rounded-3xl border-custom bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950 px-6 py-8 md:px-10 md:py-10 shadow-[0_0_60px_rgba(56,189,248,0.18)]">
               <div className="space-y-4 md:space-y-5">
                 <div className="inline-flex items-center rounded-full border border-sky-400/40 bg-slate-900/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-sky-100">
                   Blog · Web3 · Desporto · Apertum
                 </div>
 
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-heading">
                   Artigos que ligam Web3, desporto e a Apertum — sem bullshit.
                 </h1>
 
-                <p className="text-sm md:text-base text-slate-200 max-w-2xl">
+                <p className="text-sm md:text-base text-body max-w-2xl">
                   Aqui encontras explicações diretas sobre blockchain, a Apertum
                   e o impacto real no desporto. Sem hype vazio, sem jargão
                   técnico — apenas contexto, exemplos e caminhos que podes
@@ -160,16 +160,16 @@ export default function BlogPage() {
                 </p>
 
                 {user ? (
-                  <p className="text-[12px] text-sky-100/80">
+                  <p className="text-[12px] text-muted-custom">
                     Estás autenticado como{' '}
-                    <span className="font-semibold">
+                    <span className="font-semibold text-heading">
                       @{user.username ?? 'member'}
                     </span>
                     . Leituras completas dão-te XP e entram para o teu histórico
                     de aprendizagem.
                   </p>
                 ) : (
-                  <p className="text-[12px] text-sky-100/80">
+                  <p className="text-[12px] text-muted-custom">
                     Cria uma conta gratuita para acumular XP ao leres artigos,
                     guardar favoritos e acompanhar o teu progresso dentro do
                     ecossistema LEGACY.
@@ -178,9 +178,9 @@ export default function BlogPage() {
 
                 {/* Stats globais */}
                 <div className="mt-6 grid gap-4 md:grid-cols-3">
-                  <Card className="border-slate-700/80 bg-slate-900/80">
+                  <Card className="border-custom bg-card">
                     <CardContent className="py-4">
-                      <div className="text-[11px] uppercase text-slate-400 mb-1">
+                      <div className="text-[11px] uppercase text-muted-custom mb-1">
                         Artigos publicados
                       </div>
                       <div className="text-2xl font-bold text-sky-400">
@@ -189,9 +189,9 @@ export default function BlogPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="border-emerald-600/50 bg-emerald-950/40">
+                  <Card className="border-custom bg-card">
                     <CardContent className="py-4">
-                      <div className="text-[11px] uppercase text-emerald-200/80 mb-1">
+                      <div className="text-[11px] uppercase text-muted-custom mb-1">
                         XP disponível para ganhar
                       </div>
                       <div className="text-2xl font-bold text-emerald-300 flex items-center gap-1">
@@ -201,9 +201,9 @@ export default function BlogPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="border-indigo-600/50 bg-indigo-950/40">
+                  <Card className="border-custom bg-card">
                     <CardContent className="py-4">
-                      <div className="text-[11px] uppercase text-indigo-200/80 mb-1">
+                      <div className="text-[11px] uppercase text-muted-custom mb-1">
                         Leituras registadas
                       </div>
                       <div className="text-2xl font-bold text-indigo-300">
@@ -221,14 +221,14 @@ export default function BlogPage() {
             <div className="flex justify-center py-16">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500 mx-auto" />
-                <p className="mt-4 text-slate-300">
+                <p className="mt-4 text-body">
                   A carregar artigos...
                 </p>
               </div>
             </div>
           ) : posts.length === 0 ? (
             <div className="text-center py-16 max-w-xl mx-auto">
-              <p className="text-slate-300">
+              <p className="text-body">
                 Ainda não há artigos publicados. Em breve vais ver aqui
                 explicações, análises e frameworks sobre Web3 e desporto.
               </p>
@@ -268,14 +268,17 @@ export default function BlogPage() {
                 return (
                   <Card
                     key={post.id}
-                    className="flex flex-col bg-slate-900/80 border border-slate-800 hover:border-sky-500/70 hover:shadow-[0_0_40px_rgba(56,189,248,0.20)] transition-all cursor-pointer"
+                    className="flex flex-col bg-card border-custom hover:border-sky-500/70 hover:shadow-[0_0_40px_rgba(56,189,248,0.20)] transition-all cursor-pointer"
                     onClick={() => router.push(`/blog/${post.id}`)}
                   >
                     <CardHeader className="space-y-3">
                       {/* Badges topo */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="border-slate-600 text-slate-200">
+                          <Badge
+                            variant="outline"
+                            className="border-slate-600 text-body"
+                          >
                             {post.category || 'General'}
                           </Badge>
 
@@ -296,17 +299,17 @@ export default function BlogPage() {
                       </div>
 
                       {/* Título + excerpt */}
-                      <CardTitle className="text-lg md:text-xl line-clamp-2 text-slate-50">
+                      <CardTitle className="text-lg md:text-xl line-clamp-2 text-heading">
                         {title}
                       </CardTitle>
-                      <p className="text-sm text-slate-300 line-clamp-3">
+                      <p className="text-sm text-body line-clamp-3">
                         {excerpt}
                       </p>
                     </CardHeader>
 
                     <CardContent className="flex-1 flex flex-col justify-between space-y-3 pb-5">
                       {/* Meta info */}
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 mb-1">
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-custom mb-1">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
                           {post.author || 'Admin'}
@@ -328,22 +331,22 @@ export default function BlogPage() {
                       </div>
 
                       {/* Estatísticas de XP */}
-                      <div className="mt-2 text-[11px] text-slate-400 flex flex-wrap gap-3">
+                      <div className="mt-2 text-[11px] text-muted-custom flex flex-wrap gap-3">
                         <span>
                           XP por leitura:{' '}
-                          <span className="font-semibold text-slate-100">
+                          <span className="font-semibold text-heading">
                             {xpReward} XP
                           </span>
                         </span>
                         <span>
                           XP distribuído:{' '}
-                          <span className="font-semibold text-slate-100">
+                          <span className="font-semibold text-heading">
                             {totalXp} XP
                           </span>
                         </span>
                         <span>
                           Leitores registados:{' '}
-                          <span className="font-semibold text-slate-100">
+                          <span className="font-semibold text-heading">
                             {registeredReaders}
                           </span>
                         </span>
