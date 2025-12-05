@@ -17,7 +17,7 @@ import {
   Lock,
   Pin,
   ThumbsUp,
-  Send
+  Send,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -71,6 +71,7 @@ export default function ForumTopicPage() {
     }
 
     fetchTopic();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, params.topicId]);
 
   const fetchTopic = async () => {
@@ -97,14 +98,17 @@ export default function ForumTopicPage() {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/forum/topics/${params.topicId}/reply`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+      const response = await fetch(
+        `/api/forum/topics/${params.topicId}/reply`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({ content: replyContent }),
         },
-        body: JSON.stringify({ content: replyContent }),
-      });
+      );
 
       if (response.ok) {
         setReplyContent('');
@@ -117,7 +121,9 @@ export default function ForumTopicPage() {
   };
 
   const getTimeSince = (date: string) => {
-    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    const seconds = Math.floor(
+      (new Date().getTime() - new Date(date).getTime()) / 1000,
+    );
 
     if (seconds < 60) return 'just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
@@ -134,12 +140,12 @@ export default function ForumTopicPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">{t('forum.loadingTopic')}</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+            <p className="text-body">{t('forum.loadingTopic')}</p>
           </div>
         </main>
         <Footer />
@@ -149,14 +155,18 @@ export default function ForumTopicPage() {
 
   if (!topic) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <Card className="max-w-md">
+          <Card className="max-w-md bg-card border-custom">
             <CardContent className="text-center py-12">
-              <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">{t('forum.topicNotFound')}</h3>
-              <p className="text-gray-600 mb-4">{t('forum.topicNotFoundDesc')}</p>
+              <MessageSquare className="h-16 w-16 text-muted-custom mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-heading">
+                {t('forum.topicNotFound')}
+              </h3>
+              <p className="text-body mb-4">
+                {t('forum.topicNotFoundDesc')}
+              </p>
               <Link href="/forum">
                 <Button>{t('forum.backToForum')}</Button>
               </Link>
@@ -171,10 +181,10 @@ export default function ForumTopicPage() {
   const canReply = userXP >= topic.room.xp_required_post && !topic.locked;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="mb-6">
@@ -186,7 +196,8 @@ export default function ForumTopicPage() {
               </Link>
             </div>
 
-            <Card className="mb-6">
+            {/* Tópico principal */}
+            <Card className="mb-6 bg-card border-custom">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   {topic.pinned && (
@@ -201,12 +212,16 @@ export default function ForumTopicPage() {
                       {t('forum.locked')}
                     </Badge>
                   )}
-                  <Badge variant="outline">{topic.view_count} {t('forum.views')}</Badge>
+                  <Badge variant="outline">
+                    {topic.view_count} {t('forum.views')}
+                  </Badge>
                 </div>
 
-                <h1 className="text-3xl font-bold mb-6">{topic.title}</h1>
+                <h1 className="text-3xl font-bold mb-6 text-heading">
+                  {topic.title}
+                </h1>
 
-                <div className="flex items-start gap-4 mb-6 pb-6 border-b">
+                <div className="flex items-start gap-4 mb-6 pb-6 border-b border-custom">
                   <Avatar className="flex-shrink-0">
                     <AvatarFallback>
                       {topic.author.username.substring(0, 2).toUpperCase()}
@@ -215,48 +230,63 @@ export default function ForumTopicPage() {
 
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold">{topic.author.username}</span>
+                      <span className="font-semibold text-heading">
+                        {topic.author.username}
+                      </span>
                       <Badge variant="outline" className="text-xs">
                         {topic.author.xp_total} XP
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-500 mb-4">{getTimeSince(topic.created_at)}</p>
+                    <p className="text-sm text-muted-custom mb-4">
+                      {getTimeSince(topic.created_at)}
+                    </p>
                     <div className="prose max-w-none">
-                      <p className="text-gray-700 whitespace-pre-wrap">{topic.content}</p>
+                      <p className="text-body whitespace-pre-wrap">
+                        {topic.content}
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center gap-2 text-sm text-body">
                   <MessageSquare className="h-4 w-4" />
-                  <span>{topic.posts.length} {t('forum.replies')}</span>
+                  <span>
+                    {topic.posts.length} {t('forum.replies')}
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Replies */}
             <div className="space-y-4 mb-6">
               {topic.posts.length > 0 ? (
-                topic.posts.map((post, index) => (
-                  <Card key={post.id}>
+                topic.posts.map(post => (
+                  <Card key={post.id} className="bg-card border-custom">
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
                         <Avatar className="flex-shrink-0">
                           <AvatarFallback>
-                            {post.author.username.substring(0, 2).toUpperCase()}
+                            {post.author.username
+                              .substring(0, 2)
+                              .toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
 
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold">{post.author.username}</span>
+                            <span className="font-semibold text-heading">
+                              {post.author.username}
+                            </span>
                             <Badge variant="outline" className="text-xs">
                               {post.author.xp_total} XP
                             </Badge>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-muted-custom">
                               {getTimeSince(post.created_at)}
                             </span>
                           </div>
-                          <p className="text-gray-700 whitespace-pre-wrap mb-3">{post.content}</p>
+                          <p className="text-body whitespace-pre-wrap mb-3">
+                            {post.content}
+                          </p>
                           <div className="flex items-center gap-4">
                             <Button variant="ghost" size="sm">
                               <ThumbsUp className="h-4 w-4 mr-1" />
@@ -269,61 +299,77 @@ export default function ForumTopicPage() {
                   </Card>
                 ))
               ) : (
-                <Card>
+                <Card className="bg-card border-custom">
                   <CardContent className="text-center py-8">
-                    <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 dark:text-gray-300">{t('forum.noReplies')}</p>
+                    <MessageSquare className="h-12 w-12 text-muted-custom mx-auto mb-3" />
+                    <p className="text-body">{t('forum.noReplies')}</p>
                   </CardContent>
                 </Card>
               )}
             </div>
 
+            {/* Caixa de resposta / avisos */}
             {canReply ? (
-              <Card>
+              <Card className="bg-card border-custom">
                 <CardContent className="p-6">
-                  <h3 className="font-semibold text-lg mb-4">{t('forum.postReply')}</h3>
+                  <h3 className="font-semibold text-lg mb-4 text-heading">
+                    {t('forum.postReply')}
+                  </h3>
                   <form onSubmit={handleSubmitReply}>
                     <Textarea
                       value={replyContent}
-                      onChange={(e) => setReplyContent(e.target.value)}
+                      onChange={e => setReplyContent(e.target.value)}
                       placeholder={t('forum.writeReply')}
                       className="min-h-32 mb-4"
                       disabled={submitting}
                     />
                     <div className="flex justify-between items-center">
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        {t('forum.earnXp')}
-                      </p>
+                      <p className="text-sm text-body">{t('forum.earnXp')}</p>
                       <Button
                         type="submit"
                         disabled={!replyContent.trim() || submitting}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
                         <Send className="h-4 w-4 mr-2" />
-                        {submitting ? t('forum.posting') : t('forum.reply')}
+                        {submitting
+                          ? t('forum.posting')
+                          : t('forum.reply')}
                       </Button>
                     </div>
                   </form>
                 </CardContent>
               </Card>
             ) : topic.locked ? (
-              <Card className="border-2 border-gray-300 bg-gray-50">
+              <Card className="border-2 border-gray-500 bg-gray-900/60">
                 <CardContent className="text-center py-8">
-                  <Lock className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <h3 className="font-semibold mb-2">{t('forum.topicLocked')}</h3>
-                  <p className="text-gray-600 dark:text-gray-300">{t('forum.topicLockedDesc')}</p>
+                  <Lock className="h-12 w-12 text-muted-custom mx-auto mb-3" />
+                  <h3 className="font-semibold mb-2 text-heading">
+                    {t('forum.topicLocked')}
+                  </h3>
+                  <p className="text-body">
+                    {t('forum.topicLockedDesc')}
+                  </p>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-2 border-yellow-500 bg-yellow-50">
+              <Card className="border-2 border-yellow-500 bg-yellow-500/10">
                 <CardContent className="text-center py-8">
-                  <Lock className="h-12 w-12 text-yellow-600 mx-auto mb-3" />
-                  <h3 className="font-semibold mb-2">{t('forum.insufficientXp')}</h3>
-                  <p className="text-gray-600 mb-4">
-                    {t('forum.needXpToPost')} <strong>{topic.room.xp_required_post} XP</strong> {t('forum.toPostInForum')}
+                  <Lock className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
+                  <h3 className="font-semibold mb-2 text-heading">
+                    {t('forum.insufficientXp')}
+                  </h3>
+                  <p className="text-body mb-4">
+                    {t('forum.needXpToPost')}{' '}
+                    <strong>{topic.room.xp_required_post} XP</strong>{' '}
+                    {t('forum.toPostInForum')}
                   </p>
-                  <p className="text-gray-600 mb-6">
-                    {t('forum.currentXp')} <strong>{userXP} XP</strong> | {t('forum.needMore')} <strong>{topic.room.xp_required_post - userXP} {t('forum.moreXp')}</strong>
+                  <p className="text-body mb-6">
+                    {t('forum.currentXp')}{' '}
+                    <strong>{userXP} XP</strong> | {t('forum.needMore')}{' '}
+                    <strong>
+                      {topic.room.xp_required_post - userXP}{' '}
+                      {t('forum.moreXp')}
+                    </strong>
                   </p>
                   <Link href="/education/xp">
                     <Button className="bg-yellow-600 hover:bg-yellow-700">

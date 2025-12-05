@@ -5,7 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,7 +22,7 @@ import {
   ArrowLeft,
   Lock,
   Plus,
-  Pin
+  Pin,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -66,6 +71,7 @@ export default function ForumRoomPage() {
     }
 
     fetchRoom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, params.roomId]);
 
   const fetchRoom = async () => {
@@ -94,12 +100,12 @@ export default function ForumRoomPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Loading forum room...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+            <p className="text-body">Loading forum room...</p>
           </div>
         </main>
         <Footer />
@@ -109,14 +115,18 @@ export default function ForumRoomPage() {
 
   if (!room) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <Card className="max-w-md">
+          <Card className="max-w-md bg-card border-custom">
             <CardContent className="text-center py-12">
-              <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Room Not Found</h3>
-              <p className="text-gray-600 mb-4">This forum room doesn't exist.</p>
+              <MessageSquare className="h-16 w-16 text-muted-custom mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-heading">
+                Room Not Found
+              </h3>
+              <p className="text-body mb-4">
+                This forum room doesn't exist.
+              </p>
               <Link href="/forum">
                 <Button>Back to Forum</Button>
               </Link>
@@ -144,7 +154,9 @@ export default function ForumRoomPage() {
   });
 
   const getTimeSince = (date: string) => {
-    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    const seconds = Math.floor(
+      (new Date().getTime() - new Date(date).getTime()) / 1000,
+    );
 
     if (seconds < 60) return 'just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
@@ -155,20 +167,26 @@ export default function ForumRoomPage() {
 
   if (!canRead) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+        <main className="flex-1 py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <Card className="border-2 border-yellow-500 bg-yellow-50">
+              <Card className="border-2 border-yellow-500 bg-yellow-500/10">
                 <CardContent className="text-center py-12">
-                  <Lock className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
-                  <h3 className="text-2xl font-semibold mb-2">Room Locked</h3>
-                  <p className="text-gray-600 mb-4">
-                    You need <strong>{room.xp_required_read} XP</strong> to access this forum room.
+                  <Lock className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+                  <h3 className="text-2xl font-semibold mb-2 text-heading">
+                    Room Locked
+                  </h3>
+                  <p className="text-body mb-4">
+                    You need <strong>{room.xp_required_read} XP</strong> to
+                    access this forum room.
                   </p>
-                  <p className="text-gray-600 mb-6">
-                    Current XP: <strong>{userXP} XP</strong> | Need: <strong>{room.xp_required_read - userXP} more XP</strong>
+                  <p className="text-body mb-6">
+                    Current XP: <strong>{userXP} XP</strong> | Need:{' '}
+                    <strong>
+                      {room.xp_required_read - userXP} more XP
+                    </strong>
                   </p>
                   <Link href="/education/xp">
                     <Button className="bg-yellow-600 hover:bg-yellow-700">
@@ -186,10 +204,10 @@ export default function ForumRoomPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="mb-6">
@@ -201,14 +219,17 @@ export default function ForumRoomPage() {
               </Link>
             </div>
 
-            <Card className="mb-6">
+            {/* Header da Room */}
+            <Card className="mb-6 bg-card border-custom">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="text-4xl">{room.icon}</div>
                     <div>
-                      <CardTitle className="text-3xl">{room.name}</CardTitle>
-                      <p className="text-gray-600 mt-2">{room.description}</p>
+                      <CardTitle className="text-3xl text-heading">
+                        {room.name}
+                      </CardTitle>
+                      <p className="text-body mt-2">{room.description}</p>
                     </div>
                   </div>
                   {canPost ? (
@@ -227,21 +248,28 @@ export default function ForumRoomPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center gap-4 text-sm text-body">
                   <div className="flex items-center gap-1">
                     <MessageSquare className="h-4 w-4" />
                     <span>{room.topics.length} topics</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Eye className="h-4 w-4" />
-                    <span>{room.topics.reduce((acc, t) => acc + t.view_count, 0)} views</span>
+                    <span>
+                      {room.topics.reduce(
+                        (acc, t) => acc + t.view_count,
+                        0,
+                      )}{' '}
+                      views
+                    </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Toolbar de ordenação */}
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Topics</h2>
+              <h2 className="text-xl font-bold text-heading">Topics</h2>
               <div className="flex gap-2">
                 <Button
                   variant={sortBy === 'latest' ? 'default' : 'outline'}
@@ -262,12 +290,17 @@ export default function ForumRoomPage() {
               </div>
             </div>
 
+            {/* Lista de tópicos */}
             {sortedTopics.length === 0 ? (
-              <Card>
+              <Card className="bg-card border-custom">
                 <CardContent className="text-center py-12">
-                  <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No Topics Yet</h3>
-                  <p className="text-gray-600 mb-4">Be the first to start a discussion!</p>
+                  <MessageSquare className="h-16 w-16 text-muted-custom mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2 text-heading">
+                    No Topics Yet
+                  </h3>
+                  <p className="text-body mb-4">
+                    Be the first to start a discussion!
+                  </p>
                   {canPost && (
                     <Link href={`/forum/${room.id}/new-topic`}>
                       <Button className="bg-blue-600 hover:bg-blue-700">
@@ -279,47 +312,55 @@ export default function ForumRoomPage() {
               </Card>
             ) : (
               <div className="space-y-3">
-                {sortedTopics.map((topic) => (
+                {sortedTopics.map(topic => (
                   <Link key={topic.id} href={`/forum/topic/${topic.id}`}>
-                    <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <Card className="bg-card border-custom hover:shadow-lg hover:border-blue-500/60 transition-all cursor-pointer">
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">
                           <Avatar className="flex-shrink-0">
                             <AvatarFallback>
-                              {topic.author.username.substring(0, 2).toUpperCase()}
+                              {topic.author.username
+                                .substring(0, 2)
+                                .toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
                               {topic.pinned && (
-                                <Pin className="h-4 w-4 text-blue-600" />
+                                <Pin className="h-4 w-4 text-blue-500" />
                               )}
                               {topic.locked && (
-                                <Lock className="h-4 w-4 text-gray-400" />
+                                <Lock className="h-4 w-4 text-muted-custom" />
                               )}
-                              <h3 className="font-semibold text-lg truncate">{topic.title}</h3>
+                              <h3 className="font-semibold text-lg truncate text-heading">
+                                {topic.title}
+                              </h3>
                             </div>
 
-                            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+                            <div className="flex items-center gap-4 text-sm text-body">
                               <span>by {topic.author.username}</span>
                               <span>•</span>
                               <span>{getTimeSince(topic.created_at)}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-6 text-sm text-gray-600 flex-shrink-0">
+                          <div className="flex items-center gap-6 text-sm text-body flex-shrink-0">
                             <div className="text-center">
                               <div className="flex items-center gap-1">
                                 <MessageSquare className="h-4 w-4" />
-                                <span className="font-semibold">{topic.reply_count}</span>
+                                <span className="font-semibold">
+                                  {topic.reply_count}
+                                </span>
                               </div>
                               <div className="text-xs">replies</div>
                             </div>
                             <div className="text-center">
                               <div className="flex items-center gap-1">
                                 <Eye className="h-4 w-4" />
-                                <span className="font-semibold">{topic.view_count}</span>
+                                <span className="font-semibold">
+                                  {topic.view_count}
+                                </span>
                               </div>
                               <div className="text-xs">views</div>
                             </div>
@@ -327,8 +368,9 @@ export default function ForumRoomPage() {
                         </div>
 
                         {topic.last_post && (
-                          <div className="mt-3 pt-3 border-t text-xs text-gray-500">
-                            Last reply by {topic.last_post.author.username} • {getTimeSince(topic.last_post.created_at)}
+                          <div className="mt-3 pt-3 border-t border-custom text-xs text-muted-custom">
+                            Last reply by {topic.last_post.author.username} •{' '}
+                            {getTimeSince(topic.last_post.created_at)}
                           </div>
                         )}
                       </CardContent>
