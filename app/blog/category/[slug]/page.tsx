@@ -6,7 +6,13 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Eye, ArrowLeft, Tag } from 'lucide-react';
@@ -26,6 +32,12 @@ interface Article {
   };
 }
 
+interface CategoryApiResponse {
+  success: boolean;
+  articles: Article[];
+  categoryName: string;
+}
+
 export default function BlogCategoryPage() {
   const params = useParams();
   const { language } = useLanguage();
@@ -35,12 +47,13 @@ export default function BlogCategoryPage() {
 
   useEffect(() => {
     fetchArticles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.slug]);
 
   const fetchArticles = async () => {
     try {
       const response = await fetch(`/api/blog/category/${params.slug}`);
-      const data = await response.json();
+      const data: CategoryApiResponse = await response.json();
 
       if (data.success) {
         setArticles(data.articles);
@@ -53,23 +66,26 @@ export default function BlogCategoryPage() {
   };
 
   const getTimeSince = (date: string) => {
-    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    const diff = new Date().getTime() - new Date(date).getTime();
+    const seconds = Math.floor(diff / 1000);
 
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-    return new Date(date).toLocaleDateString();
+    if (seconds < 60) return 'há instantes';
+    if (seconds < 3600) return `há ${Math.floor(seconds / 60)} min`;
+    if (seconds < 86400) return `há ${Math.floor(seconds / 3600)} h`;
+    if (seconds < 604800) return `há ${Math.floor(seconds / 86400)} dias`;
+    return new Date(date).toLocaleDateString('pt-PT');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Loading articles...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4" />
+            <p className="text-slate-300">
+              A carregar artigos...
+            </p>
           </div>
         </main>
         <Footer />
@@ -78,85 +94,137 @@ export default function BlogCategoryPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="mb-6">
               <Link href="/blog">
-                <Button variant="ghost" className="mb-4">
+                <Button
+                  variant="ghost"
+                  className="mb-4 text-slate-200 hover:text-sky-300 hover:bg-slate-900/60"
+                >
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Blog
+                  Voltar ao Blog
                 </Button>
               </Link>
             </div>
 
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Tag className="h-8 w-8 text-blue-600" />
-                <h1 className="text-3xl md:text-4xl font-bold">{categoryName}</h1>
-              </div>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
-                Explore articles about {categoryName.toLowerCase()} and Web3 technology
-              </p>
-            </div>
-
-            <Card className="mb-6 bg-gradient-to-br from-blue-50 to-cyan-50">
-              <CardContent className="p-6">
-                <div className="grid md:grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-3xl font-bold text-blue-600">{articles.length}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Articles</div>
+            {/* Hero da categoria */}
+            <section className="mb-8 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950 px-6 py-6 md:px-10 md:py-8 shadow-[0_0_40px_rgba(56,189,248,0.18)]">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <Tag className="h-7 w-7 text-sky-400" />
+                    <h1 className="text-3xl md:text-4xl font-bold">
+                      {categoryName}
+                    </h1>
                   </div>
-                  <div>
-                    <div className="text-3xl font-bold text-blue-600">
-                      {articles.reduce((acc, a) => acc + a.view_count, 0)}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Total Views</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-blue-600">
-                      {articles.reduce((acc, a) => acc + a.xp_reward, 0)}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Total XP Available</div>
-                  </div>
+                  <p className="text-sm md:text-base text-slate-200 max-w-2xl">
+                    Explora artigos sobre{' '}
+                    <span className="font-semibold lowercase">
+                      {categoryName}
+                    </span>{' '}
+                    e o que a Web3, a Apertum e o ecossistema LEGACY podem
+                    significar para esta área do desporto.
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
 
+                <Card className="border-slate-700/80 bg-slate-900/80 w-full md:w-72">
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-3 gap-4 text-center text-slate-100">
+                      <div>
+                        <div className="text-xl font-bold text-sky-400">
+                          {articles.length}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Artigos
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xl font-bold text-emerald-300">
+                          {articles.reduce(
+                            (acc, a) => acc + a.view_count,
+                            0,
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Visualizações
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xl font-bold text-indigo-300">
+                          {articles.reduce(
+                            (acc, a) => acc + a.xp_reward,
+                            0,
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          XP disponível
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+
+            {/* Lista de artigos */}
             {articles.length === 0 ? (
-              <Card>
+              <Card className="border border-slate-700 bg-slate-900/80">
                 <CardContent className="text-center py-12">
-                  <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No Articles Yet</h3>
-                  <p className="text-gray-600 dark:text-gray-300">Check back soon for new content in this category!</p>
+                  <BookOpen className="h-16 w-16 text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2 text-slate-100">
+                    Ainda não há artigos nesta categoria
+                  </h3>
+                  <p className="text-slate-300 text-sm max-w-md mx-auto">
+                    Volta mais tarde. Esta categoria vai receber conteúdos assim
+                    que houver algo realmente útil para te mostrar.
+                  </p>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {articles.map((article) => {
-                  const title = getMultilingualContent(article.title, language);
-                  const excerpt = getMultilingualContent(article.excerpt, language);
+                  const title = getMultilingualContent(
+                    article.title,
+                    language,
+                  );
+                  const excerpt = getMultilingualContent(
+                    article.excerpt,
+                    language,
+                  );
 
                   return (
                     <Link key={article.id} href={`/blog/${article.id}`}>
-                      <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
+                      <Card className="h-full bg-slate-900/80 border border-slate-800 hover:border-sky-500/70 hover:shadow-[0_0_30px_rgba(56,189,248,0.18)] transition-shadow cursor-pointer">
                         <CardHeader>
                           <div className="flex items-center justify-between mb-2">
-                            <Badge className="bg-blue-600">{article.category}</Badge>
-                            <Badge variant="outline">{article.xp_reward} XP</Badge>
+                            <Badge className="bg-sky-600 text-white">
+                              {article.category}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="border-slate-600 text-slate-100"
+                            >
+                              {article.xp_reward} XP
+                            </Badge>
                           </div>
-                          <CardTitle className="line-clamp-2">{title}</CardTitle>
-                          <CardDescription className="line-clamp-3">{excerpt}</CardDescription>
+                          <CardTitle className="line-clamp-2 text-slate-50">
+                            {title}
+                          </CardTitle>
+                          <CardDescription className="line-clamp-3 text-slate-300">
+                            {excerpt}
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+                          <div className="flex items-center justify-between text-xs text-slate-400">
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4" />
-                                <span>{article.reading_time}m</span>
+                                <span>{article.reading_time} min</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Eye className="h-4 w-4" />
@@ -164,8 +232,9 @@ export default function BlogCategoryPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="mt-3 text-xs text-gray-500">
-                            by {article.author.username} • {getTimeSince(article.created_at)}
+                          <div className="mt-3 text-[11px] text-slate-500">
+                            por @{article.author.username} ·{' '}
+                            {getTimeSince(article.created_at)}
                           </div>
                         </CardContent>
                       </Card>

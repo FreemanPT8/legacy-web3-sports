@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   Calendar,
@@ -22,7 +21,6 @@ import {
   Clock,
   PenSquare,
   Award,
-  BookOpen,
 } from 'lucide-react';
 import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,7 +41,6 @@ type BlogPost = {
   registered_readers_count?: number | null;
   total_xp_given?: number | null;
 
-  // Novos campos vindos da API /api/blog/[id]
   registered_readers?: number | null;
   total_xp_distributed?: number | null;
 
@@ -115,22 +112,22 @@ export default function BlogPostPage() {
 
   const getTitle = (title: MultiLang | string) => {
     if (typeof title === 'string') return title;
-    return title.en || title.pt || title.es || 'Untitled post';
+    return title.pt || title.en || title.es || 'Untitled post';
   };
 
   const getContent = (content: MultiLang | string) => {
     if (typeof content === 'string') return content;
-    return content.en || content.pt || content.es || '';
+    return content.pt || content.en || content.es || '';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
         <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-            <p className="mt-4 text-gray-600 dark:text-gray-300">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
+            <p className="mt-4 text-slate-300">
               A carregar artigo...
             </p>
           </div>
@@ -142,19 +139,20 @@ export default function BlogPostPage() {
 
   if (notFound || !post) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
         <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-          <div className="text-center px-4">
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center px-4 max-w-md">
             <h1 className="text-2xl font-bold mb-2">
               Artigo não encontrado
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              O artigo que procuras não existe ou não está publicado.
+            <p className="text-slate-300 mb-4 text-sm">
+              O artigo que procuras não existe, não está publicado ou deixou de
+              estar disponível.
             </p>
             <button
               onClick={() => router.push('/blog')}
-              className="inline-flex items-center gap-2 text-blue-600 hover:underline"
+              className="inline-flex items-center gap-2 text-sky-400 hover:text-sky-300 text-sm"
             >
               <ArrowLeft className="h-4 w-4" />
               Voltar ao blog
@@ -185,26 +183,26 @@ export default function BlogPostPage() {
   const completedForReader = isCompleted && !isAuthor;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-10">
+      <main className="flex-1 py-10">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <button
               onClick={() => router.push('/blog')}
-              className="mb-4 inline-flex items-center text-sm text-gray-600 dark:text-gray-300 hover:underline"
+              className="mb-4 inline-flex items-center text-sm text-slate-300 hover:text-sky-300"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Voltar ao blog
             </button>
 
             {/* Header do artigo */}
-            <Card className="mb-4">
+            <Card className="mb-4 border border-slate-800 bg-slate-900/90">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="border-slate-600 text-slate-100">
                       {post.category || 'General'}
                     </Badge>
 
@@ -214,7 +212,7 @@ export default function BlogPostPage() {
                         Creator
                       </Badge>
                     ) : completedForReader ? (
-                      <Badge className="bg-green-600 text-white flex items-center gap-1">
+                      <Badge className="bg-emerald-600 text-white flex items-center gap-1">
                         <CheckCircle className="h-3 w-3" />
                         Completed
                       </Badge>
@@ -222,18 +220,18 @@ export default function BlogPostPage() {
                   </div>
 
                   {post.registered_only && (
-                    <span className="flex items-center gap-1 text-xs text-amber-600">
+                    <span className="flex items-center gap-1 text-xs text-amber-400">
                       <Lock className="h-3 w-3" />
                       Apenas membros registados
                     </span>
                   )}
                 </div>
 
-                <CardTitle className="text-3xl">
+                <CardTitle className="text-3xl text-slate-50">
                   {getTitle(post.title)}
                 </CardTitle>
                 {post.excerpt && (
-                  <p className="text-gray-600 text-lg mt-2">
+                  <p className="text-slate-200 text-base mt-3">
                     {typeof post.excerpt === 'string'
                       ? post.excerpt
                       : post.excerpt.pt ||
@@ -244,7 +242,7 @@ export default function BlogPostPage() {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex flex-wrap items-center gap-6 text-sm text-slate-300">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     <span>{creatorName}</span>
@@ -253,9 +251,9 @@ export default function BlogPostPage() {
                     <Calendar className="h-4 w-4" />
                     <span>
                       {post.created_at
-                        ? new Date(
-                            post.created_at,
-                          ).toLocaleDateString()
+                        ? new Date(post.created_at).toLocaleDateString(
+                            'pt-PT',
+                          )
                         : '-'}
                     </span>
                   </div>
@@ -271,7 +269,7 @@ export default function BlogPostPage() {
                       </div>
                     )}
                   <div className="flex items-center gap-2">
-                    <Award className="h-4 w-4 text-blue-600" />
+                    <Award className="h-4 w-4 text-sky-400" />
                     <span>{xpReward} XP por leitura</span>
                   </div>
                 </div>
@@ -279,11 +277,11 @@ export default function BlogPostPage() {
             </Card>
 
             {/* Meta info: stats de XP e leitores */}
-            <Card className="mb-6">
-              <CardContent className="py-4 text-sm text-gray-700 dark:text-gray-300">
+            <Card className="mb-6 border border-slate-800 bg-slate-900/80">
+              <CardContent className="py-4 text-sm text-slate-200">
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                    <span className="block text-[11px] uppercase text-slate-400 mb-1">
                       Leitores registados
                     </span>
                     <span className="font-semibold">
@@ -291,7 +289,7 @@ export default function BlogPostPage() {
                     </span>
                   </div>
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                    <span className="block text-[11px] uppercase text-slate-400 mb-1">
                       XP distribuído
                     </span>
                     <span className="font-semibold">
@@ -299,7 +297,7 @@ export default function BlogPostPage() {
                     </span>
                   </div>
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                    <span className="block text-[11px] uppercase text-slate-400 mb-1">
                       Categoria
                     </span>
                     <span>{post.category || 'General'}</span>
@@ -309,8 +307,8 @@ export default function BlogPostPage() {
             </Card>
 
             {/* Conteúdo + ContentTracker */}
-            <Card className="mb-6">
-              <CardContent className="prose prose-lg max-w-none py-8">
+            <Card className="mb-6 border border-slate-800 bg-slate-950/95">
+              <CardContent className="prose prose-invert prose-headings:text-slate-50 prose-strong:text-slate-50 max-w-none py-8">
                 <ContentTracker
                   userId={user?.id ?? null}
                   contentId={post.id}
@@ -318,7 +316,7 @@ export default function BlogPostPage() {
                   xpReward={xpReward}
                   estimatedMinutes={estimatedMinutes}
                   initialCompleted={completedForReader}
-                  isAuthor={isAuthor}   // <- ESSENCIAL: criador nunca tem tracker
+                  isAuthor={isAuthor} // criador nunca tem tracker
                   onComplete={() => setIsCompleted(true)}
                 >
                   <div
@@ -332,15 +330,15 @@ export default function BlogPostPage() {
 
             {/* Mensagem de conclusão para leitores (nunca para criador) */}
             {completedForReader && (
-              <Card className="mb-6 bg-green-50 border-green-200">
+              <Card className="mb-6 bg-emerald-950/60 border border-emerald-700/80">
                 <CardContent className="py-6 text-center">
-                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
-                  <h3 className="font-semibold text-lg mb-1">
+                  <CheckCircle className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
+                  <h3 className="font-semibold text-lg mb-1 text-emerald-50">
                     Artigo concluído!
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Ganhaste {xpReward} XP por leres este artigo (apenas
-                    da primeira vez).
+                  <p className="text-sm text-emerald-100/90">
+                    Ganhaste {xpReward} XP por leres este artigo (apenas da
+                    primeira vez).
                   </p>
                 </CardContent>
               </Card>
