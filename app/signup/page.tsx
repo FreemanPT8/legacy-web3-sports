@@ -94,8 +94,8 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-950 dark:to-gray-900 p-4">
+      <Card className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center space-x-2">
@@ -108,10 +108,11 @@ export default function SignupPage() {
           <CardTitle className="text-2xl text-center">
             {t('nav.signup')}
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-gray-600 dark:text-gray-300">
             Create your account and start earning XP
           </CardDescription>
         </CardHeader>
+
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -127,6 +128,7 @@ export default function SignupPage() {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="full_name">Full Name *</Label>
               <Input
@@ -140,6 +142,7 @@ export default function SignupPage() {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
@@ -153,6 +156,7 @@ export default function SignupPage() {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="country">Country *</Label>
               <Select
@@ -173,6 +177,7 @@ export default function SignupPage() {
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password *</Label>
               <Input
@@ -186,6 +191,7 @@ export default function SignupPage() {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password *</Label>
               <Input
@@ -203,6 +209,7 @@ export default function SignupPage() {
               />
             </div>
           </CardContent>
+
           <CardFooter className="flex flex-col gap-4">
             <Button
               type="submit"
@@ -213,7 +220,10 @@ export default function SignupPage() {
             </Button>
             <p className="text-sm text-center text-gray-600 dark:text-gray-300">
               Already have an account?{' '}
-              <Link href="/login" className="text-blue-600 hover:underline">
+              <Link
+                href="/login"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
                 {t('nav.login')}
               </Link>
             </p>
