@@ -91,7 +91,7 @@ export default function EducationPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-page">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
       <Header />
 
       <main className="flex-1">
@@ -131,58 +131,58 @@ export default function EducationPage() {
         </section>
 
         {/* STATS + PROGRESSO PESSOAL */}
-        <section className="py-16 bg-background">
+        <section className="py-16 bg-slate-950">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto space-y-10">
               {loading ? (
                 <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-                  <p className="mt-4 text-body">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
+                  <p className="mt-4 text-slate-300">
                     {t('education.loadingStats')}
                   </p>
                 </div>
               ) : (
                 <div className="grid md:grid-cols-4 gap-6 mb-4">
-                  <Card className="text-center border-custom bg-card">
+                  <Card className="text-center border border-slate-800 bg-slate-900/80">
                     <CardContent className="pt-6">
-                      <BookOpen className="h-10 w-10 text-blue-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-heading">
+                      <BookOpen className="h-10 w-10 text-sky-400 mx-auto mb-3" />
+                      <div className="text-3xl font-bold text-slate-50">
                         {stats?.totalCourses || 0}
                       </div>
-                      <div className="text-sm text-body">
+                      <div className="text-sm text-slate-300">
                         {t('education.stats.courses')}
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="text-center border-custom bg-card">
+                  <Card className="text-center border border-slate-800 bg-slate-900/80">
                     <CardContent className="pt-6">
                       <Target className="h-10 w-10 text-cyan-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-heading">
+                      <div className="text-3xl font-bold text-slate-50">
                         {stats?.totalLessons || 0}
                       </div>
-                      <div className="text-sm text-body">
+                      <div className="text-sm text-slate-300">
                         {t('education.stats.lessons')}
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="text-center border-custom bg-card">
+                  <Card className="text-center border border-slate-800 bg-slate-900/80">
                     <CardContent className="pt-6">
                       <Users className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-heading">
+                      <div className="text-3xl font-bold text-slate-50">
                         {stats?.activeUsers || 0}
                       </div>
-                      <div className="text-sm text-body">
+                      <div className="text-sm text-slate-300">
                         {t('education.stats.activeUsers')}
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="text-center border-custom bg-card">
+                  <Card className="text-center border border-slate-800 bg-slate-900/80">
                     <CardContent className="pt-6">
                       <Zap className="h-10 w-10 text-amber-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-heading">
+                      <div className="text-3xl font-bold text-slate-50">
                         {stats?.totalXPDistributed?.toLocaleString() || 0}
                       </div>
-                      <div className="text-sm text-body">
+                      <div className="text-sm text-slate-300">
                         {t('education.stats.xpDistributed')}
                       </div>
                     </CardContent>
@@ -233,14 +233,14 @@ export default function EducationPage() {
         </section>
 
         {/* CURSOS EM DESTAQUE */}
-        <section className="py-16 bg-background">
+        <section className="py-16 bg-slate-950">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-heading">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-50">
                   {t('education.featured.title')}
                 </h2>
-                <p className="text-lg text-body">
+                <p className="text-lg text-slate-300">
                   {t('education.featuredDesc') ||
                     'Start your learning journey with our most popular courses'}
                 </p>
@@ -248,21 +248,20 @@ export default function EducationPage() {
 
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
                 </div>
               ) : topCourses.length === 0 ? (
-                <Card className="border-custom bg-card">
+                <Card className="border border-slate-800 bg-slate-900/80">
                   <CardContent className="text-center py-12">
-                    <BookOpen className="h-16 w-16 text-gray-500 mx-auto mb-4" />
-                    <p className="text-body">
-                      {t('education.noCourses') ||
-                        'No courses available yet'}
+                    <BookOpen className="h-16 w-16 text-slate-500 mx-auto mb-4" />
+                    <p className="text-slate-300">
+                      {t('education.noCourses') || 'No courses available yet'}
                     </p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
-                  {topCourses.slice(0, 3).map(course => {
+                  {topCourses.slice(0, 3).map((course) => {
                     const title = getMultilingualContent(
                       course.title,
                       language,
@@ -289,25 +288,28 @@ export default function EducationPage() {
                     return (
                       <Card
                         key={course.id}
-                        className="border-custom bg-card hover:border-blue-500/70 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)] transition-all"
+                        className="border border-slate-800 bg-slate-900/80 hover:border-sky-500/70 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)] transition-all"
                       >
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
                             {getLevelBadge(course.level)}
-                            <Badge variant="outline" className="border-blue-700/60">
+                            <Badge
+                              variant="outline"
+                              className="border-sky-700/60 text-slate-100"
+                            >
                               {course.xp_required} XP
                             </Badge>
                           </div>
-                          <CardTitle className="text-xl text-heading">
+                          <CardTitle className="text-xl text-slate-50">
                             {title}
                           </CardTitle>
-                          <CardDescription className="line-clamp-2 text-body">
+                          <CardDescription className="line-clamp-2 text-slate-300">
                             {description}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm text-body">
+                            <div className="flex items-center gap-2 text-sm text-slate-300">
                               <BookOpen className="h-4 w-4" />
                               <span>
                                 {modulesArray.length} {t('education.modules')} •{' '}
@@ -325,9 +327,8 @@ export default function EducationPage() {
                               </Button>
                             ) : (
                               <Link href={`/education/courses/${course.id}`}>
-                                <Button className="w-full bg-blue-600 hover:bg-blue-500">
-                                  {t('education.startCourse') ||
-                                    'Start Course'}
+                                <Button className="w-full bg-sky-600 hover:bg-sky-500">
+                                  {t('education.startCourse') || 'Start Course'}
                                 </Button>
                               </Link>
                             )}
@@ -344,7 +345,7 @@ export default function EducationPage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="border-blue-600 text-blue-400 hover:bg-blue-950/40"
+                    className="border-sky-600 text-sky-400 hover:bg-slate-900"
                   >
                     {t('education.viewAll') || t('dashboard.viewAll')}{' '}
                     {t('education.courses')}
@@ -356,24 +357,24 @@ export default function EducationPage() {
         </section>
 
         {/* SISTEMA DE XP */}
-        <section className="py-16 bg-background">
+        <section className="py-16 bg-slate-950">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6 text-heading">
+                <h2 className="text-3xl md:text-4xl font-bold mb-6 text-slate-50">
                   {t('education.xp.title')}
                 </h2>
-                <p className="text-lg text-body mb-6">
+                <p className="text-lg text-slate-300 mb-6">
                   {t('education.xp.description')}
                 </p>
-                <div className="space-y-4">
+                <div className="space-y-4 text-sm">
                   <div className="flex items-start gap-3">
-                    <BookOpen className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
+                    <BookOpen className="h-6 w-6 text-sky-400 flex-shrink-0 mt-1" />
                     <div>
-                      <div className="font-semibold text-heading">
+                      <div className="font-semibold text-slate-100">
                         {t('education.completeLessons')}
                       </div>
-                      <div className="text-sm text-body">
+                      <div className="text-slate-300">
                         {t('education.completeLessonsDesc')}
                       </div>
                     </div>
@@ -381,10 +382,10 @@ export default function EducationPage() {
                   <div className="flex items-start gap-3">
                     <Award className="h-6 w-6 text-amber-400 flex-shrink-0 mt-1" />
                     <div>
-                      <div className="font-semibold text-heading">
+                      <div className="font-semibold text-slate-100">
                         {t('education.readArticles')}
                       </div>
-                      <div className="text-sm text-body">
+                      <div className="text-slate-300">
                         {t('education.readArticlesDesc')}
                       </div>
                     </div>
@@ -392,10 +393,10 @@ export default function EducationPage() {
                   <div className="flex items-start gap-3">
                     <Users className="h-6 w-6 text-emerald-400 flex-shrink-0 mt-1" />
                     <div>
-                      <div className="font-semibold text-heading">
+                      <div className="font-semibold text-slate-100">
                         {t('education.forumParticipation')}
                       </div>
-                      <div className="text-sm text-body">
+                      <div className="text-slate-300">
                         {t('education.forumParticipationDesc')}
                       </div>
                     </div>
@@ -403,10 +404,10 @@ export default function EducationPage() {
                   <div className="flex items-start gap-3">
                     <TrendingUp className="h-6 w-6 text-cyan-400 flex-shrink-0 mt-1" />
                     <div>
-                      <div className="font-semibold text-heading">
+                      <div className="font-semibold text-slate-100">
                         {t('education.dailyStreaks')}
                       </div>
-                      <div className="text-sm text-body">
+                      <div className="text-slate-300">
                         {t('education.dailyStreaksDesc')}
                       </div>
                     </div>
@@ -414,18 +415,22 @@ export default function EducationPage() {
                 </div>
                 <div className="mt-8">
                   <Link href="/education/xp">
-                    <Button size="lg" variant="outline" className="border-slate-600 text-slate-100">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-slate-600 text-slate-100"
+                    >
                       {t('education.learnMoreXP')}
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-2xl border border-blue-900/60">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-2xl border border-slate-800">
                 <h3 className="text-xl font-bold mb-6 text-center text-blue-100">
                   {t('education.xpLevels')}
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-3 text-sm">
                   {[
                     { levelKey: 'newcomer', xp: '0-98 XP' },
                     { levelKey: 'beginner', xp: '99-368 XP' },
@@ -435,15 +440,17 @@ export default function EducationPage() {
                     { levelKey: 'hallOfFame', xp: '3,333-4,999 XP' },
                     { levelKey: 'master', xp: '5,000-9,999 XP' },
                     { levelKey: 'legend', xp: '10,000+ XP' },
-                  ].map((item, idx) => (
+                  ].map((item) => (
                     <div
                       key={item.levelKey}
                       className="bg-slate-900/60 border border-slate-700 rounded-lg px-4 py-3 flex justify-between items-center"
                     >
-                      <span className="font-semibold text-heading">
+                      <span className="font-semibold text-slate-100">
                         {t(`education.level.${item.levelKey}`)}
                       </span>
-                      <span className="text-sm text-blue-200">{item.xp}</span>
+                      <span className="text-sm text-blue-200">
+                        {item.xp}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -453,27 +460,27 @@ export default function EducationPage() {
         </section>
 
         {/* LEADERBOARD */}
-        <section className="py-16 bg-background">
+        <section className="py-16 bg-slate-950">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-heading">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-50">
                   {t('education.leaderboard.title')}
                 </h2>
-                <p className="text-lg text-body">
+                <p className="text-lg text-slate-300">
                   See who's leading the way in Web3 education
                 </p>
               </div>
 
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
                 </div>
               ) : leaderboard.length === 0 ? (
-                <Card className="border-custom bg-card">
+                <Card className="border border-slate-800 bg-slate-900/80">
                   <CardContent className="text-center py-12">
-                    <Trophy className="h-16 w-16 text-gray-500 mx-auto mb-4" />
-                    <p className="text-body">
+                    <Trophy className="h-16 w-16 text-slate-500 mx-auto mb-4" />
+                    <p className="text-slate-300">
                       {t('education.noLeaderboard')}
                     </p>
                   </CardContent>
@@ -484,8 +491,10 @@ export default function EducationPage() {
                     {leaderboard.slice(0, 5).map((learner, index) => (
                       <Card
                         key={learner.id}
-                        className={`border-custom bg-card ${
-                          index < 3 ? 'border-2 border-blue-500/80' : ''
+                        className={`border bg-slate-900/80 ${
+                          index < 3
+                            ? 'border-2 border-sky-500/80'
+                            : 'border-slate-800'
                         }`}
                       >
                         <CardContent className="flex items-center gap-4 p-6">
@@ -494,27 +503,27 @@ export default function EducationPage() {
                               index === 0
                                 ? 'text-amber-400'
                                 : index === 1
-                                ? 'text-gray-300'
+                                ? 'text-slate-200'
                                 : index === 2
                                 ? 'text-orange-400'
-                                : 'text-muted-custom'
+                                : 'text-slate-500'
                             }`}
                           >
                             #{index + 1}
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-lg text-heading">
+                            <div className="font-semibold text-lg text-slate-50">
                               {learner.username}
                             </div>
-                            <div className="text-sm text-body">
+                            <div className="text-sm text-slate-400">
                               {learner.country}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-blue-400">
+                            <div className="text-2xl font-bold text-sky-400">
                               {learner.xp_total}
                             </div>
-                            <div className="text-sm text-body">XP</div>
+                            <div className="text-sm text-slate-300">XP</div>
                           </div>
                         </CardContent>
                       </Card>
@@ -525,7 +534,7 @@ export default function EducationPage() {
                       <Button
                         size="lg"
                         variant="outline"
-                        className="border-blue-600 text-blue-400 hover:bg-blue-950/40"
+                        className="border-sky-600 text-sky-400 hover:bg-slate-900"
                       >
                         View Full Leaderboard
                       </Button>

@@ -89,7 +89,7 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  // 🔹 STREAK (continua a usar /api/streak/update porque pode dar bónus)
+  // 🔹 STREAK
   const updateStreak = useCallback(async () => {
     if (!user) return;
     try {
@@ -129,7 +129,7 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  // 🔹 NOVO: carregar resumo de XP + histórico a partir de /api/me/xp
+  // 🔹 RESUMO DE XP
   const fetchXpSummary = useCallback(async () => {
     if (!user) return;
     const token = getToken();
@@ -160,7 +160,6 @@ export default function DashboardPage() {
       const xpData = data.xp as XPSummary;
       setXpSummary(xpData);
 
-      // Se o streak vier daqui e for maior, sincronizamos o estado local
       if (typeof xpData.streak_count === 'number' && xpData.streak_count > 0) {
         setStreak(xpData.streak_count);
       }
@@ -182,7 +181,7 @@ export default function DashboardPage() {
     }
   }, [user, fetchMissions, updateStreak, fetchGlobalRank, fetchXpSummary]);
 
-  // ------- DERIVADOS DE XP (sempre que possível a partir de xpSummary) -----
+  // ------- DERIVADOS DE XP -----
 
   const xpTotal = useMemo(() => {
     if (xpSummary) return xpSummary.xp_total;
@@ -207,7 +206,6 @@ export default function DashboardPage() {
   const todayXp = useMemo(() => {
     if (xpSummary) return xpSummary.xp_today || 0;
 
-    // fallback: calcula a partir de xpHistory (caso falhe xpSummary)
     if (!xpHistory || xpHistory.length === 0) return 0;
     const now = new Date();
     return xpHistory.reduce((sum, tx) => {
@@ -231,92 +229,93 @@ export default function DashboardPage() {
     [todayXp],
   );
 
+  // ------------- LOADING --------------
+
   if (loading || !user || !mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-page">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
-            A carregar...
-          </p>
-        </div>
+      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
+            <p className="mt-4 text-slate-300">A carregar...</p>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
+  // ------------- PAGE --------------
+
   return (
-    <div className="min-h-screen flex flex-col bg-page">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
       <Header />
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-heading">
-              {t('dashboard.welcomeBack').replace(
-                '{username}',
-                user.username,
-              )}
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-slate-50">
+              {t('dashboard.welcomeBack').replace('{username}', user.username)}
             </h1>
-            <p className="text-body">
+            <p className="text-sm md:text-base text-slate-300">
               {t('dashboard.trackProgress')}
             </p>
 
             {xpError && (
-              <p className="mt-2 text-sm text-red-600">{xpError}</p>
+              <p className="mt-2 text-sm text-red-400">{xpError}</p>
             )}
           </div>
 
           {/* RESUMO RÁPIDO DE XP / STREAK / RANK */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {/* XP TOTAL + HOJE + LIMITES */}
-            <Card className="bg-card border-custom">
+            {/* XP TOTAL */}
+            <Card className="bg-slate-900/80 border border-slate-800">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-body">
+                <CardTitle className="text-sm font-medium text-slate-300">
                   {t('dashboard.totalXp')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3">
-                  <Trophy className="h-10 w-10 text-blue-500" />
+                  <Trophy className="h-10 w-10 text-sky-400" />
                   <div>
-                    <div className="text-3xl font-bold">
+                    <div className="text-3xl font-bold text-slate-50">
                       {xpLoading && !xpSummary ? '...' : xpTotal}
                     </div>
-                    <p className="text-sm text-body">
+                    <p className="text-sm text-slate-400">
                       {t('dashboard.level')} {level}
                     </p>
                   </div>
                 </div>
 
-                {/* Progresso global de nível */}
+                {/* Progresso de nível */}
                 <div className="mt-4">
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-body">
+                    <span className="text-slate-300">
                       {t('dashboard.nextLevel')}
                     </span>
-                    <span className="font-medium">
+                    <span className="font-medium text-slate-100">
                       {xpProgress}/100
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                  <div className="w-full bg-slate-800 rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      className="bg-sky-500 h-2 rounded-full transition-all"
                       style={{ width: `${xpProgress}%` }}
                     />
                   </div>
                 </div>
 
-                {/* 🔥 Bloco de XP diário / limite */}
-                <div className="mt-5 border-t border-custom pt-4">
+                {/* XP diário */}
+                <div className="mt-5 border-t border-slate-800 pt-4">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-body">
-                      XP ganho hoje
-                    </span>
-                    <span className="font-semibold">
+                    <span className="text-slate-300">XP ganho hoje</span>
+                    <span className="font-semibold text-slate-100">
                       {todayXp} / {DAILY_XP_LIMIT}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                  <div className="w-full bg-slate-800 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full transition-all ${
                         todayXp >= DAILY_XP_LIMIT
@@ -326,7 +325,7 @@ export default function DashboardPage() {
                       style={{ width: `${todayLimitProgress}%` }}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-body">
+                  <p className="mt-2 text-xs text-slate-400">
                     {todayXp >= DAILY_XP_LIMIT
                       ? 'Atingiste o limite diário de XP. Podes continuar a estudar, mas sem ganhar mais XP hoje.'
                       : `Ainda podes ganhar até ${remainingTodayXp} XP hoje.`}
@@ -336,9 +335,9 @@ export default function DashboardPage() {
             </Card>
 
             {/* STREAK */}
-            <Card className="bg-card border-custom">
+            <Card className="bg-slate-900/80 border border-slate-800">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-body">
+                <CardTitle className="text-sm font-medium text-slate-300">
                   {t('dashboard.currentStreak')}
                 </CardTitle>
               </CardHeader>
@@ -346,17 +345,19 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <Flame className="h-10 w-10 text-orange-500" />
                   <div>
-                    <div className="text-3xl font-bold">{streak}</div>
-                    <p className="text-sm text-body">
+                    <div className="text-3xl font-bold text-slate-50">
+                      {streak}
+                    </div>
+                    <p className="text-sm text-slate-400">
                       {t('dashboard.days')}
                     </p>
                   </div>
                 </div>
                 <div className="mt-4">
-                  <p className="text-sm text-body">
+                  <p className="text-sm text-slate-300">
                     {t('dashboard.keepLearning')}
                   </p>
-                  <p className="text-xs text-blue-500 mt-1">
+                  <p className="text-xs text-sky-400 mt-1">
                     {t('dashboard.bonusAt7Days')}
                   </p>
                 </div>
@@ -364,24 +365,24 @@ export default function DashboardPage() {
             </Card>
 
             {/* GLOBAL RANK */}
-            <Card className="bg-card border-custom">
+            <Card className="bg-slate-900/80 border border-slate-800">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-body">
+                <CardTitle className="text-sm font-medium text-slate-300">
                   {t('dashboard.globalRank')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3">
-                  <TrendingUp className="h-10 w-10 text-green-500" />
+                  <TrendingUp className="h-10 w-10 text-emerald-400" />
                   <div>
-                    <div className="text-3xl font-bold">
+                    <div className="text-3xl font-bold text-slate-50">
                       {loadingRank
                         ? '...'
                         : globalRank?.rank
                         ? `#${globalRank.rank}`
                         : '-'}
                     </div>
-                    <p className="text-sm text-body">
+                    <p className="text-sm text-slate-400">
                       {globalRank?.rank
                         ? `Among ${globalRank.totalUsers} active learners`
                         : t('dashboard.unranked')}
@@ -389,7 +390,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <p className="text-sm text-body">
+                  <p className="text-sm text-slate-300">
                     {t('dashboard.earnMoreXp')}
                   </p>
                 </div>
@@ -399,37 +400,36 @@ export default function DashboardPage() {
 
           {/* MISSÕES + FEATURES DESBLOQUEADAS */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <Card className="bg-card border-custom">
+            {/* MISSÕES */}
+            <Card className="bg-slate-900/80 border border-slate-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-heading">
-                  <Target className="h-5 w-5 text-blue-500" />
+                <CardTitle className="flex items-center gap-2 text-slate-50">
+                  <Target className="h-5 w-5 text-sky-400" />
                   {t('dashboard.dailyMissions')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {loadingMissions ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-body">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500 mx-auto" />
+                    <p className="mt-2 text-sm text-slate-300">
                       {t('dashboard.loadingMissions')}
                     </p>
                   </div>
                 ) : missions.length === 0 ? (
                   <div className="text-center py-8">
-                    <Target className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-body">
+                    <Target className="h-12 w-12 text-slate-500 mx-auto mb-3" />
+                    <p className="text-slate-300">
                       {t('dashboard.noMissionsToday')}
                     </p>
-                    <p className="text-sm text-muted-custom mt-1">
+                    <p className="text-sm text-slate-500 mt-1">
                       {t('dashboard.checkBackTomorrow')}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {missions.map((mission: any) => {
-                      const missionData = Array.isArray(
-                        mission.user_missions,
-                      )
+                      const missionData = Array.isArray(mission.user_missions)
                         ? mission.user_missions[0]
                         : mission.user_missions;
                       const progress = missionData?.progress || 0;
@@ -437,25 +437,27 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={mission.id}
-                          className={`flex items-center justify-between p-4 rounded-lg border border-custom ${
+                          className={`flex items-center justify-between p-4 rounded-lg border border-slate-800 ${
                             completed
                               ? 'bg-emerald-950/40'
-                              : 'bg-card'
+                              : 'bg-slate-900/80'
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             {completed && (
-                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                             )}
                             <div>
                               <p
                                 className={`font-medium ${
-                                  completed ? 'text-emerald-300' : 'text-heading'
+                                  completed
+                                    ? 'text-emerald-200'
+                                    : 'text-slate-100'
                                 }`}
                               >
                                 {mission.description}
                               </p>
-                              <p className="text-sm text-body">
+                              <p className="text-sm text-slate-400">
                                 {progress}/{mission.target_count}{' '}
                                 {t('dashboard.completed')}
                               </p>
@@ -465,8 +467,8 @@ export default function DashboardPage() {
                             variant={completed ? 'default' : 'outline'}
                             className={
                               completed
-                                ? 'bg-emerald-500 text-emerald-950 border-emerald-400'
-                                : ''
+                                ? 'bg-emerald-400 text-emerald-950 border-emerald-300'
+                                : 'border-slate-600 text-slate-200'
                             }
                           >
                             {completed
@@ -481,88 +483,94 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-custom">
+            {/* FEATURES DESBLOQUEADAS */}
+            <Card className="bg-slate-900/80 border border-slate-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-heading">
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <Award className="h-5 w-5 text-blue-400" />
+                <CardTitle className="flex items-center gap-2 text-slate-50">
+                  <div className="p-2 bg-sky-500/10 rounded-lg">
+                    <Award className="h-5 w-5 text-sky-300" />
                   </div>
                   {t('dashboard.unlockedFeatures')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    <span className="text-body">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                    <span className="text-slate-200">
                       {t('dashboard.basicCourses')}
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {xpTotal >= 99 ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-gray-400 dark:border-gray-600" />
+                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
                     )}
                     <span
                       className={
-                        xpTotal >= 99 ? 'text-body' : 'text-muted-custom'
+                        xpTotal >= 99 ? 'text-slate-200' : 'text-slate-500'
                       }
                     >
                       {t('dashboard.profileEditing')} (99 XP)
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {xpTotal >= 369 ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-gray-400 dark:border-gray-600" />
+                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
                     )}
                     <span
                       className={
-                        xpTotal >= 369 ? 'text-body' : 'text-muted-custom'
+                        xpTotal >= 369 ? 'text-slate-200' : 'text-slate-500'
                       }
                     >
                       {t('dashboard.forumReadAccess')} (369 XP)
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {xpTotal >= 444 ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-gray-400 dark:border-gray-600" />
+                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
                     )}
                     <span
                       className={
-                        xpTotal >= 444 ? 'text-body' : 'text-muted-custom'
+                        xpTotal >= 444 ? 'text-slate-200' : 'text-slate-500'
                       }
                     >
                       {t('dashboard.forumInteract')} (444 XP)
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {xpTotal >= 555 ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-gray-400 dark:border-gray-600" />
+                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
                     )}
                     <span
                       className={
-                        xpTotal >= 555 ? 'text-body' : 'text-muted-custom'
+                        xpTotal >= 555 ? 'text-slate-200' : 'text-slate-500'
                       }
                     >
                       {t('dashboard.forumPostCreate')} (555 XP)
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     {xpTotal >= 3333 ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-gray-400 dark:border-gray-600" />
+                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
                     )}
                     <span
                       className={
-                        xpTotal >= 3333 ? 'text-body' : 'text-muted-custom'
+                        xpTotal >= 3333 ? 'text-slate-200' : 'text-slate-500'
                       }
                     >
                       {t('dashboard.hallOfFame')} (3333 XP)
@@ -574,17 +582,17 @@ export default function DashboardPage() {
           </div>
 
           {/* HISTÓRICO DE XP */}
-          <Card className="bg-card border-custom">
+          <Card className="bg-slate-900/80 border border-slate-800">
             <CardHeader>
-              <CardTitle className="text-heading">
+              <CardTitle className="text-slate-50">
                 {t('dashboard.recentXpActivity')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!xpHistory || xpHistory.length === 0 ? (
                 <div className="text-center py-8">
-                  <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-body">
+                  <Trophy className="h-12 w-12 text-slate-500 mx-auto mb-3" />
+                  <p className="text-slate-300">
                     {t('dashboard.noActivityYet')}
                   </p>
                 </div>
@@ -593,15 +601,17 @@ export default function DashboardPage() {
                   {xpHistory.map((tx: any) => (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-card border border-custom"
+                      className="flex items-center justify-between p-3 rounded-lg bg-slate-900/80 border border-slate-800"
                     >
                       <div>
-                        <p className="font-medium text-heading">{tx.action}</p>
-                        <p className="text-sm text-muted-custom">
+                        <p className="font-medium text-slate-100">
+                          {tx.action}
+                        </p>
+                        <p className="text-sm text-slate-500">
                           {new Date(tx.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <Badge className="bg-blue-600">
+                      <Badge className="bg-sky-500 text-slate-950">
                         +{tx.xp_earned} XP
                       </Badge>
                     </div>
