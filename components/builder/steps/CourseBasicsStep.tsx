@@ -440,7 +440,7 @@ export function CourseBasicsStep() {
           mediaLibrary.closeLibrary();
         }}
         title="Select course cover"
-        description="Choose an image, upload ficheiros ou adiciona URLs externos."
+        description="Choose an image, upload files, or add an external URL."
         allowUrl
       />
     </div>
