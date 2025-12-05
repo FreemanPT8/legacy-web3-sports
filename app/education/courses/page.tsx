@@ -74,15 +74,12 @@ export default function CoursesPage() {
       setLoading(true);
       try {
         const token = getToken();
-        const res = await fetch(
-          '/api/courses?includeModules=true',
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
+        const res = await fetch('/api/courses?includeModules=true', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-        );
+        });
 
         const data = await res.json();
 
@@ -136,16 +133,14 @@ export default function CoursesPage() {
     if (!text) return 'LG';
     const words = text.trim().split(' ');
     if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-    return (
-      (words[0][0] || '') + (words[1][0] || '')
-    ).toUpperCase();
+    return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <Header />
-        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-300">
@@ -159,15 +154,15 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <Header />
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-10">
+      <main className="flex-1 py-10">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             {/* Hero */}
             <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 dark:text-gray-50">
                   {tr('courses.mainTitle', 'Cursos')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
@@ -184,7 +179,7 @@ export default function CoursesPage() {
                       {tr('courses.yourXP', 'O teu XP')}:{' '}
                       <strong>{userXP}</strong>
                     </span>
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-gray-700 dark:text-gray-100 border-gray-300 dark:border-gray-600">
                       {tr('courses.loggedIn', 'Sessão iniciada')}
                     </Badge>
                   </>
@@ -193,18 +188,15 @@ export default function CoursesPage() {
                     onClick={() => router.push('/login')}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {tr(
-                      'auth.login',
-                      'Inicia sessão para ganhar XP',
-                    )}
+                    {tr('auth.login', 'Inicia sessão para ganhar XP')}
                   </Button>
                 )}
               </div>
             </div>
 
             {courses.length === 0 ? (
-              <Card>
-                <CardContent className="py-10 text-center text-gray-500">
+              <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <CardContent className="py-10 text-center text-gray-500 dark:text-gray-300">
                   {tr(
                     'courses.noCourses',
                     'Ainda não há cursos disponíveis. Volta em breve!',
@@ -214,33 +206,24 @@ export default function CoursesPage() {
             ) : (
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {courses.map((course) => {
-                  const title = getMultilingualContent(
-                    course.title,
-                    language,
-                  );
+                  const title = getMultilingualContent(course.title, language);
                   const description = getMultilingualContent(
                     course.description,
                     language,
                   );
 
-                  const modulesArray: Module[] = Array.isArray(
-                    course.modules,
-                  )
+                  const modulesArray: Module[] = Array.isArray(course.modules)
                     ? (course.modules as Module[])
                     : [];
 
-                  const totalModules =
-                    course.total_modules ??
-                    modulesArray.length;
+                  const totalModules = course.total_modules ?? modulesArray.length;
 
                   const totalLessons =
                     course.total_lessons ??
                     modulesArray.reduce(
                       (acc, m) =>
                         acc +
-                        (Array.isArray(m.lessons)
-                          ? m.lessons.length
-                          : 0),
+                        (Array.isArray(m.lessons) ? m.lessons.length : 0),
                       0,
                     );
 
@@ -251,38 +234,32 @@ export default function CoursesPage() {
                       return (
                         acc +
                         m.lessons.reduce(
-                          (accL, l) =>
-                            accL + (l.xp_reward || 0),
+                          (accL, l) => accL + (l.xp_reward || 0),
                           0,
                         )
                       );
                     }, 0);
 
-                  const xpDistributed =
-                    course.xp_distributed_total ?? 0;
+                  const xpDistributed = course.xp_distributed_total ?? 0;
 
                   const xpRequired = course.xp_threshold ?? 0;
                   const isLocked = userXP < xpRequired;
 
-                  const authorName =
-                    course.author_name || 'Admin';
+                  const authorName = course.author_name || 'Admin';
                   const isCourseCreator = !!course.isCreator;
 
-                  const imageUrl =
-                    course.image_url ||
-                    course.thumbnail_url ||
-                    null;
+                  const imageUrl = course.image_url || course.thumbnail_url || null;
 
                   const initials = getInitials(title);
 
                   return (
                     <Card
                       key={course.id}
-                      className="flex flex-col overflow-hidden hover:shadow-md transition-shadow"
+                      className="flex flex-col overflow-hidden hover:shadow-md transition-shadow bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                     >
                       {/* Thumbnail / Placeholder */}
                       {imageUrl ? (
-                        <div className="w-full h-40 bg-gray-200 overflow-hidden">
+                        <div className="w-full h-40 bg-gray-200 dark:bg-gray-800 overflow-hidden">
                           <img
                             src={imageUrl}
                             alt={title}
@@ -308,7 +285,7 @@ export default function CoursesPage() {
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start gap-3">
                           <div>
-                            <CardTitle className="text-lg line-clamp-2 flex items-center gap-2">
+                            <CardTitle className="text-lg line-clamp-2 flex items-center gap-2 text-gray-900 dark:text-gray-50">
                               {title}
                               {isCourseCreator && (
                                 <Badge className="bg-purple-600 text-white flex items-center gap-1">
@@ -318,11 +295,11 @@ export default function CoursesPage() {
                               )}
                             </CardTitle>
                             {description && (
-                              <CardDescription className="mt-1 line-clamp-3">
+                              <CardDescription className="mt-1 line-clamp-3 text-gray-600 dark:text-gray-300">
                                 {description}
                               </CardDescription>
                             )}
-                            <p className="mt-2 text-xs text-gray-500">
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                               {tr('courses.by', 'Criado por')}{' '}
                               <span className="font-semibold">
                                 {authorName}
@@ -334,7 +311,7 @@ export default function CoursesPage() {
                             {xpRequired > 0 && (
                               <Badge
                                 variant="outline"
-                                className="text-xs"
+                                className="text-xs text-gray-700 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                               >
                                 {xpRequired} XP min
                               </Badge>
@@ -366,14 +343,11 @@ export default function CoursesPage() {
                             <Award className="h-4 w-4 text-blue-600" />
                             <span>
                               {totalXP}{' '}
-                              {tr(
-                                'courses.totalXP',
-                                'XP disponível',
-                              )}
+                              {tr('courses.totalXP', 'XP disponível')}
                               {xpDistributed > 0 && (
                                 <>
                                   {' · '}
-                                  <span className="text-[11px] text-gray-500">
+                                  <span className="text-[11px] text-gray-500 dark:text-gray-400">
                                     {xpDistributed} XP já distribuído
                                   </span>
                                 </>
@@ -384,18 +358,15 @@ export default function CoursesPage() {
 
                         <div className="flex items-center justify-between mt-2">
                           {isLocked ? (
-                            <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                            <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700 rounded-full px-3 py-1">
                               <Lock className="h-3 w-3" />
                               <span>
-                                {tr(
-                                  'courses.unlockAt',
-                                  'Desbloqueia aos',
-                                )}{' '}
+                                {tr('courses.unlockAt', 'Desbloqueia aos')}{' '}
                                 <strong>{xpRequired} XP</strong>
                               </span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
+                            <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 rounded-full px-3 py-1">
                               <CheckCircle className="h-3 w-3" />
                               <span>
                                 {tr(
@@ -406,19 +377,14 @@ export default function CoursesPage() {
                             </div>
                           )}
 
-                          <Link
-                            href={`/education/courses/${course.id}`}
-                          >
+                          <Link href={`/education/courses/${course.id}`}>
                             <Button
                               size="sm"
                               className="bg-blue-600 hover:bg-blue-700"
                               disabled={isLocked && !user}
                             >
                               <span className="text-xs">
-                                {tr(
-                                  'courses.viewDetails',
-                                  'Ver curso',
-                                )}
+                                {tr('courses.viewDetails', 'Ver curso')}
                               </span>
                               <ArrowRight className="h-3 w-3 ml-1" />
                             </Button>

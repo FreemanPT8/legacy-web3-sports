@@ -129,7 +129,9 @@ export default function LessonPage() {
           const idx = ordered.findIndex((l) => l.id === fetchedLesson.id);
 
           setPrevLesson(idx > 0 ? ordered[idx - 1] : null);
-          setNextLesson(idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null);
+          setNextLesson(
+            idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null,
+          );
         }
       } catch (err) {
         console.error('Failed to fetch lesson:', err);
@@ -146,11 +148,11 @@ export default function LessonPage() {
     };
 
     if (params.id) fetchLesson();
-  }, [params.id, user?.id]);
+  }, [params.id, user?.id, t]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -167,16 +169,16 @@ export default function LessonPage() {
 
   if (!lesson || !module) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <Card className="max-w-md">
+          <Card className="max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
             <CardContent className="text-center py-12">
-              <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">
+              <BookOpen className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-50">
                 {tr('lessons.notFound', 'Lição não encontrada')}
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
                 {tr(
                   'lessons.notFoundDescription',
                   'Esta lição não existe ou foi removida.',
@@ -201,7 +203,8 @@ export default function LessonPage() {
   const moduleTitle = getMultilingualContent(module.title, language);
 
   const durationMinutes = lesson.estimated_time ?? 10;
-  const creatorName = lesson.author_name || (lesson.author_id ? 'Creator' : 'Admin');
+  const creatorName =
+    lesson.author_name || (lesson.author_id ? 'Creator' : 'Admin');
   const createdAtStr = lesson.created_at
     ? new Date(lesson.created_at).toLocaleDateString()
     : '-';
@@ -214,16 +217,19 @@ export default function LessonPage() {
     : '/education/courses';
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             {/* Back */}
             <div className="mb-6">
               <Link href={backHref}>
-                <Button variant="ghost" className="mb-4">
+                <Button
+                  variant="ghost"
+                  className="mb-4 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   {tr('lessons.backToCourse', 'Voltar ao curso')}
                 </Button>
@@ -231,10 +237,12 @@ export default function LessonPage() {
             </div>
 
             {/* HEADER */}
-            <Card className="mb-4">
+            <Card className="mb-4 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
-                  <Badge variant="outline">{moduleTitle}</Badge>
+                  <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-100">
+                    {moduleTitle}
+                  </Badge>
 
                   {isCreator ? (
                     <Badge className="bg-purple-600 text-white flex items-center gap-1">
@@ -249,10 +257,12 @@ export default function LessonPage() {
                   ) : null}
                 </div>
 
-                <CardTitle className="text-3xl">{title}</CardTitle>
+                <CardTitle className="text-3xl text-gray-900 dark:text-gray-50">
+                  {title}
+                </CardTitle>
 
                 {description && (
-                  <p className="text-gray-600 text-lg mt-2">
+                  <p className="text-gray-600 dark:text-gray-300 text-lg mt-2">
                     {description}
                   </p>
                 )}
@@ -280,26 +290,31 @@ export default function LessonPage() {
             </Card>
 
             {/* META INFO */}
-            <Card className="mb-6">
+            <Card className="mb-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <CardContent className="py-4 text-sm text-gray-700 dark:text-gray-300">
                 <div className="grid gap-3 md:grid-cols-4">
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                    <span className="block text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
                       {tr('lessons.meta.creator', 'Criador')}
                     </span>
-                    <span className="font-semibold">{creatorName}</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      {creatorName}
+                    </span>
                   </div>
 
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 mb-1">
+                    <span className="block text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
                       {tr('lessons.meta.createdAt', 'Criada em')}
                     </span>
                     <span>{createdAtStr}</span>
                   </div>
 
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 mb-1">
-                      {tr('lessons.meta.completedTimes', 'Conclusões')}
+                    <span className="block text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
+                      {tr(
+                        'lessons.meta.completedTimes',
+                        'Conclusões',
+                      )}
                     </span>
                     <span>
                       {completedCount}{' '}
@@ -308,8 +323,11 @@ export default function LessonPage() {
                   </div>
 
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 mb-1">
-                      {tr('lessons.meta.xpDistributed', 'XP distribuído')}
+                    <span className="block text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
+                      {tr(
+                        'lessons.meta.xpDistributed',
+                        'XP distribuído',
+                      )}
                     </span>
                     <span>{totalXpDistributed} XP</span>
                   </div>
@@ -318,8 +336,8 @@ export default function LessonPage() {
             </Card>
 
             {/* CONTENT + TRACKER */}
-            <Card className="mb-6">
-              <CardContent className="prose prose-lg max-w-none py-8">
+            <Card className="mb-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <CardContent className="prose prose-lg max-w-none py-8 prose-headings:text-gray-900 dark:prose-invert">
                 <ContentTracker
                   userId={user?.id ?? null}
                   contentId={lesson.id}
@@ -330,20 +348,22 @@ export default function LessonPage() {
                   isAuthor={isCreator}
                   onComplete={() => setIsCompleted(true)}
                 >
-                  <div dangerouslySetInnerHTML={{ __html: content }} />
+                  <div
+                    dangerouslySetInnerHTML={{ __html: content }}
+                  />
                 </ContentTracker>
               </CardContent>
             </Card>
 
             {/* COMPLETION MESSAGE (ONLY NON-CREATORS) */}
             {isCompleted && !isCreator && (
-              <Card className="mb-6 bg-green-50 border-green-200">
+              <Card className="mb-6 bg-green-50 dark:bg-green-900/40 border-green-200 dark:border-green-700">
                 <CardContent className="py-6 text-center">
-                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
-                  <h3 className="font-semibold text-lg mb-1">
+                  <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-300 mx-auto mb-3" />
+                  <h3 className="font-semibold text-lg mb-1 text-gray-900 dark:text-gray-50">
                     {tr('lessons.completedTitle', 'Lição concluída!')}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-200">
                     {tr(
                       'lessons.completedDescription',
                       'Ganhaste {xp} XP por completar esta lição.',
@@ -360,10 +380,16 @@ export default function LessonPage() {
                   href={`/education/lessons/${prevLesson.id}`}
                   className="flex-1"
                 >
-                  <Button variant="outline" className="w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     {tr('lessons.previous', 'Anterior')}:{' '}
-                    {getMultilingualContent(prevLesson.title, language)}
+                    {getMultilingualContent(
+                      prevLesson.title,
+                      language,
+                    )}
                   </Button>
                 </Link>
               ) : (
@@ -377,7 +403,10 @@ export default function LessonPage() {
                 >
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
                     {tr('lessons.next', 'Seguinte')}:{' '}
-                    {getMultilingualContent(nextLesson.title, language)}
+                    {getMultilingualContent(
+                      nextLesson.title,
+                      language,
+                    )}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
