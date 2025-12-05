@@ -20,7 +20,16 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
-import { Globe, User, LogOut, LayoutDashboard, Trophy, Menu, Bell, Calendar, Shield } from 'lucide-react';
+import {
+  Globe,
+  User,
+  LogOut,
+  LayoutDashboard,
+  Trophy,
+  Menu,
+  Bell,
+  Shield,
+} from 'lucide-react';
 import { useState, memo, useEffect } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -35,7 +44,9 @@ export const Header = memo(function Header() {
 
     const fetchUnreadCount = async () => {
       try {
-        const response = await fetch(`/api/notifications?userId=${user.id}&unreadOnly=true`);
+        const response = await fetch(
+          `/api/notifications?userId=${user.id}&unreadOnly=true`,
+        );
         const data = await response.json();
         if (data.success) {
           setUnreadCount(data.unreadCount || 0);
@@ -51,12 +62,13 @@ export const Header = memo(function Header() {
   }, [user]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-800 bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:bg-gray-950/60">
       <div className="container flex h-16 items-center justify-between">
+        {/* LOGO + NAV DESKTOP */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center space-x-2">
-            <Trophy className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            <Trophy className="h-8 w-8 text-sky-400" />
+            <span className="text-2xl font-bold bg-gradient-to-r from-sky-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
               LEGACY
             </span>
           </Link>
@@ -65,43 +77,56 @@ export const Header = memo(function Header() {
             <NavigationMenuList>
               <NavigationMenuItem>
                 <Link href="/" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white">
                     {t('nav.home')}
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
 
+              {/* EDUCATION */}
               <NavigationMenuItem>
-                <Link href="/education" legacyBehavior passHref>
-                  <NavigationMenuTrigger>{t('nav.education')}</NavigationMenuTrigger>
-                </Link>
-                <NavigationMenuContent>
-                  <ul className="grid w-[200px] gap-3 p-4">
+                <NavigationMenuTrigger className="text-gray-200 bg-transparent hover:bg-gray-900 hover:text-white">
+                  {t('nav.education')}
+                </NavigationMenuTrigger>
+                <NavigationMenuContent className="bg-gray-950 border border-gray-800">
+                  <ul className="grid w-[220px] gap-3 p-4">
                     <li>
                       <Link href="/education" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-100 bg-blue-50">
-                          <div className="text-sm font-medium">{t('nav.overview')}</div>
+                        <NavigationMenuLink className="block select-none space-y-1 rounded-md border border-slate-800 bg-gradient-to-r from-slate-950 to-slate-900 p-3 leading-none no-underline outline-none transition-colors hover:border-sky-500 hover:bg-slate-900">
+                          <div className="text-sm font-medium text-sky-100">
+                            {t('nav.overview')}
+                          </div>
                         </NavigationMenuLink>
                       </Link>
                     </li>
                     <li>
                       <Link href="/education/courses" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-100">
-                          <div className="text-sm font-medium">{t('nav.courses')}</div>
+                        <NavigationMenuLink className="block select-none space-y-1 rounded-md bg-gray-900 p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-800">
+                          <div className="text-sm font-medium text-gray-100">
+                            {t('nav.courses')}
+                          </div>
                         </NavigationMenuLink>
                       </Link>
                     </li>
                     <li>
                       <Link href="/education/xp" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-100">
-                          <div className="text-sm font-medium">{t('nav.xp')}</div>
+                        <NavigationMenuLink className="block select-none space-y-1 rounded-md bg-gray-900 p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-800">
+                          <div className="text-sm font-medium text-gray-100">
+                            {t('nav.xp')}
+                          </div>
                         </NavigationMenuLink>
                       </Link>
                     </li>
                     <li>
-                      <Link href="/education/leaderboard" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-100">
-                          <div className="text-sm font-medium">{t('nav.leaderboard')}</div>
+                      <Link
+                        href="/education/leaderboard"
+                        legacyBehavior
+                        passHref
+                      >
+                        <NavigationMenuLink className="block select-none space-y-1 rounded-md bg-gray-900 p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-800">
+                          <div className="text-sm font-medium text-gray-100">
+                            {t('nav.leaderboard')}
+                          </div>
                         </NavigationMenuLink>
                       </Link>
                     </li>
@@ -109,30 +134,37 @@ export const Header = memo(function Header() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
+              {/* SPORTS */}
               <NavigationMenuItem>
-                <Link href="/sports" legacyBehavior passHref>
-                  <NavigationMenuTrigger>{t('nav.sports')}</NavigationMenuTrigger>
-                </Link>
-                <NavigationMenuContent>
-                  <ul className="grid w-[200px] gap-3 p-4">
+                <NavigationMenuTrigger className="text-gray-200 bg-transparent hover:bg-gray-900 hover:text-white">
+                  {t('nav.sports')}
+                </NavigationMenuTrigger>
+                <NavigationMenuContent className="bg-gray-950 border border-gray-800">
+                  <ul className="grid w-[220px] gap-3 p-4">
                     <li>
                       <Link href="/sports" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-100 bg-blue-50">
-                          <div className="text-sm font-medium">{t('nav.overview')}</div>
+                        <NavigationMenuLink className="block select-none space-y-1 rounded-md border border-slate-800 bg-gradient-to-r from-slate-950 to-slate-900 p-3 leading-none no-underline outline-none transition-colors hover:border-sky-500 hover:bg-slate-900">
+                          <div className="text-sm font-medium text-sky-100">
+                            {t('nav.overview')}
+                          </div>
                         </NavigationMenuLink>
                       </Link>
                     </li>
                     <li>
                       <Link href="/sports/houses" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-100">
-                          <div className="text-sm font-medium">{t('nav.houses')}</div>
+                        <NavigationMenuLink className="block select-none space-y-1 rounded-md bg-gray-900 p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-800">
+                          <div className="text-sm font-medium text-gray-100">
+                            {t('nav.houses')}
+                          </div>
                         </NavigationMenuLink>
                       </Link>
                     </li>
                     <li>
                       <Link href="/sports/onboarding" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-100">
-                          <div className="text-sm font-medium">{t('nav.onboarding')}</div>
+                        <NavigationMenuLink className="block select-none space-y-1 rounded-md bg-gray-900 p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-800">
+                          <div className="text-sm font-medium text-gray-100">
+                            {t('nav.onboarding')}
+                          </div>
                         </NavigationMenuLink>
                       </Link>
                     </li>
@@ -140,36 +172,40 @@ export const Header = memo(function Header() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
+              {/* BLOG */}
               <NavigationMenuItem>
                 <Link href="/blog" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white">
                     {t('nav.blog')}
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
 
+              {/* ABOUT */}
               <NavigationMenuItem>
                 <Link href="/about" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white">
                     {t('nav.about')}
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
 
+              {/* EVENTS (só se user) */}
               {user && (
                 <NavigationMenuItem>
                   <Link href="/events" legacyBehavior passHref>
-                    <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                    <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white">
                       {t('nav.events')}
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
               )}
 
+              {/* FORUM (XP >= 369) */}
               {user && user.xp_total >= 369 && (
                 <NavigationMenuItem>
                   <Link href="/forum" legacyBehavior passHref>
-                    <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                    <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white">
                       {t('nav.forum')}
                     </NavigationMenuLink>
                   </Link>
@@ -179,20 +215,22 @@ export const Header = memo(function Header() {
           </NavigationMenu>
         </div>
 
+        {/* LADO DIREITO: LANGUAGE + USER + MOBILE MENU */}
         <div className="flex items-center gap-2">
+          {/* LANG */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-gray-200">
                 <Globe className="h-4 w-4 mr-2" />
                 {LANGUAGES[language]}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-gray-950 border border-gray-800">
               {Object.entries(LANGUAGES).map(([code, name]) => (
                 <DropdownMenuItem
                   key={code}
                   onClick={() => setLanguage(code as Language)}
-                  className={language === code ? 'bg-gray-100' : ''}
+                  className={language === code ? 'bg-gray-900 text-white' : 'text-gray-200'}
                 >
                   {name}
                 </DropdownMenuItem>
@@ -200,9 +238,15 @@ export const Header = memo(function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* NOTIFICAÇÕES */}
           {user && (
             <Link href="/notifications" className="relative">
-              <Button variant="ghost" size="sm" className="w-9 px-0" aria-label="Notifications">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-9 px-0 text-gray-200"
+                aria-label="Notifications"
+              >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
@@ -213,31 +257,41 @@ export const Header = memo(function Header() {
             </Link>
           )}
 
+          {/* USER DROPDOWN / LOGIN */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-gray-200"
+                >
                   <User className="h-4 w-4" />
                   <span className="hidden md:inline">{user.username}</span>
-                  <span className="text-xs text-blue-600 font-semibold">{user.xp_total} XP</span>
+                  <span className="text-xs text-sky-400 font-semibold">
+                    {user.xp_total} XP
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent
+                align="end"
+                className="w-52 bg-gray-950 border border-gray-800"
+              >
                 <Link href="/profile">
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem className="cursor-pointer text-gray-200 hover:bg-gray-900">
                     <User className="mr-2 h-4 w-4" />
                     {t('nav.profile')}
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/dashboard">
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem className="cursor-pointer text-gray-200 hover:bg-gray-900">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     {t('nav.dashboard')}
                   </DropdownMenuItem>
                 </Link>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-gray-800" />
                 <Link href="/notifications">
-                  <DropdownMenuItem className="cursor-pointer flex items-center justify-between">
+                  <DropdownMenuItem className="cursor-pointer flex items-center justify-between text-gray-200 hover:bg-gray-900">
                     <div className="flex items-center">
                       <Bell className="mr-2 h-4 w-4" />
                       Notifications
@@ -251,17 +305,20 @@ export const Header = memo(function Header() {
                 </Link>
                 {(user.role === 'Super Admin' || user.role === 'Admin') && (
                   <>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="bg-gray-800" />
                     <Link href="/admin">
-                      <DropdownMenuItem className="cursor-pointer bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 font-semibold hover:from-blue-100 hover:to-cyan-100">
+                      <DropdownMenuItem className="cursor-pointer bg-gradient-to-r from-slate-900 to-slate-800 text-sky-300 font-semibold hover:from-slate-800 hover:to-slate-700">
                         <Shield className="mr-2 h-4 w-4" />
                         {t('nav.admin')}
                       </DropdownMenuItem>
                     </Link>
                   </>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="cursor-pointer">
+                <DropdownMenuSeparator className="bg-gray-800" />
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="cursor-pointer text-gray-200 hover:bg-gray-900"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   {t('nav.logout')}
                 </DropdownMenuItem>
@@ -270,85 +327,159 @@ export const Header = memo(function Header() {
           ) : (
             <div className="hidden md:flex gap-2">
               <Link href="/login">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-gray-200">
                   {t('nav.login')}
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Button
+                  size="sm"
+                  className="bg-sky-500 hover:bg-sky-600 text-slate-950"
+                >
                   {t('nav.signup')}
                 </Button>
               </Link>
             </div>
           )}
 
+          {/* MOBILE MENU */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="lg:hidden">
+              <Button variant="ghost" size="sm" className="lg:hidden text-gray-200">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px]">
+            <SheetContent
+              side="right"
+              className="w-[300px] bg-gray-950 text-gray-100 border-l border-gray-800"
+            >
               <nav className="flex flex-col gap-4 mt-8">
-                <Link href="/" onClick={() => setMobileOpen(false)} className="text-lg font-medium">
+                <Link
+                  href="/"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-lg font-medium"
+                >
                   {t('nav.home')}
                 </Link>
-                <div className="border-t pt-2">
-                  <div className="text-sm font-semibold text-gray-500 mb-2">{t('nav.education')}</div>
-                  <Link href="/education" onClick={() => setMobileOpen(false)} className="text-lg pl-4 block mb-2">
+
+                <div className="border-t border-gray-800 pt-2">
+                  <div className="text-sm font-semibold text-gray-400 mb-2">
+                    {t('nav.education')}
+                  </div>
+                  <Link
+                    href="/education"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg pl-4 block mb-2"
+                  >
                     {t('nav.overview')}
                   </Link>
-                  <Link href="/education/courses" onClick={() => setMobileOpen(false)} className="text-lg pl-4 block mb-2">
+                  <Link
+                    href="/education/courses"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg pl-4 block mb-2"
+                  >
                     {t('nav.courses')}
                   </Link>
-                  <Link href="/education/xp" onClick={() => setMobileOpen(false)} className="text-lg pl-4 block mb-2">
+                  <Link
+                    href="/education/xp"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg pl-4 block mb-2"
+                  >
                     {t('nav.xp')}
                   </Link>
-                  <Link href="/education/leaderboard" onClick={() => setMobileOpen(false)} className="text-lg pl-4 block">
+                  <Link
+                    href="/education/leaderboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg pl-4 block"
+                  >
                     {t('nav.leaderboard')}
                   </Link>
                 </div>
-                <div className="border-t pt-2">
-                  <div className="text-sm font-semibold text-gray-500 mb-2">{t('nav.sports')}</div>
-                  <Link href="/sports" onClick={() => setMobileOpen(false)} className="text-lg pl-4 block mb-2">
+
+                <div className="border-t border-gray-800 pt-2">
+                  <div className="text-sm font-semibold text-gray-400 mb-2">
+                    {t('nav.sports')}
+                  </div>
+                  <Link
+                    href="/sports"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg pl-4 block mb-2"
+                  >
                     {t('nav.overview')}
                   </Link>
-                  <Link href="/sports/houses" onClick={() => setMobileOpen(false)} className="text-lg pl-4 block mb-2">
+                  <Link
+                    href="/sports/houses"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg pl-4 block mb-2"
+                  >
                     {t('nav.houses')}
                   </Link>
-                  <Link href="/sports/onboarding" onClick={() => setMobileOpen(false)} className="text-lg pl-4 block">
+                  <Link
+                    href="/sports/onboarding"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg pl-4 block"
+                  >
                     {t('nav.onboarding')}
                   </Link>
                 </div>
-                <Link href="/blog" onClick={() => setMobileOpen(false)} className="text-lg">
+
+                <Link
+                  href="/blog"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-lg"
+                >
                   {t('nav.blog')}
                 </Link>
-                <Link href="/about" onClick={() => setMobileOpen(false)} className="text-lg">
+                <Link
+                  href="/about"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-lg"
+                >
                   {t('nav.about')}
                 </Link>
-                <Link href="/events" onClick={() => setMobileOpen(false)} className="text-lg">
+                <Link
+                  href="/events"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-lg"
+                >
                   {t('nav.events')}
                 </Link>
                 {user && user.xp_total >= 369 && (
-                  <Link href="/forum" onClick={() => setMobileOpen(false)} className="text-lg">
+                  <Link
+                    href="/forum"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg"
+                  >
                     {t('nav.forum')}
                   </Link>
                 )}
 
                 {user && (
-                  <div className="border-t pt-4 mt-4">
-                    <div className="text-sm font-semibold text-gray-500 mb-2">
+                  <div className="border-t border-gray-800 pt-4 mt-4">
+                    <div className="text-sm font-semibold text-gray-400 mb-2">
                       {user.username} ({user.xp_total} XP)
                     </div>
-                    <Link href="/profile" onClick={() => setMobileOpen(false)} className="text-lg block mb-2">
+                    <Link
+                      href="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="text-lg block mb-2"
+                    >
                       <User className="inline mr-2 h-4 w-4" />
                       {t('nav.profile')}
                     </Link>
-                    <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="text-lg block mb-2">
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setMobileOpen(false)}
+                      className="text-lg block mb-2"
+                    >
                       <LayoutDashboard className="inline mr-2 h-4 w-4" />
                       {t('nav.dashboard')}
                     </Link>
-                    <Link href="/notifications" onClick={() => setMobileOpen(false)} className="text-lg block mb-2 flex items-center justify-between">
+                    <Link
+                      href="/notifications"
+                      onClick={() => setMobileOpen(false)}
+                      className="text-lg block mb-2 flex items-center justify-between"
+                    >
                       <div>
                         <Bell className="inline mr-2 h-4 w-4" />
                         Notifications
@@ -360,12 +491,23 @@ export const Header = memo(function Header() {
                       )}
                     </Link>
                     {(user.role === 'Super Admin' || user.role === 'Admin') && (
-                      <Link href="/admin" onClick={() => setMobileOpen(false)} className="text-lg block mb-2 text-blue-600 font-semibold">
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileOpen(false)}
+                        className="text-lg block mb-2 text-sky-400 font-semibold"
+                      >
                         <LayoutDashboard className="inline mr-2 h-4 w-4" />
                         Admin
                       </Link>
                     )}
-                    <Button onClick={() => { logout(); setMobileOpen(false); }} variant="outline" className="w-full mt-2">
+                    <Button
+                      onClick={() => {
+                        logout();
+                        setMobileOpen(false);
+                      }}
+                      variant="outline"
+                      className="w-full border-gray-700 text-gray-200 hover:bg-gray-900"
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       {t('nav.logout')}
                     </Button>
@@ -374,13 +516,22 @@ export const Header = memo(function Header() {
 
                 {!user && (
                   <div className="flex flex-col gap-2 mt-4">
-                    <Link href="/login" onClick={() => setMobileOpen(false)}>
-                      <Button variant="outline" className="w-full">
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <Button
+                        variant="outline"
+                        className="w-full border-gray-700 text-gray-200 hover:bg-gray-900"
+                      >
                         {t('nav.login')}
                       </Button>
                     </Link>
-                    <Link href="/signup" onClick={() => setMobileOpen(false)}>
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    <Link
+                      href="/signup"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <Button className="w-full bg-sky-500 hover:bg-sky-600 text-slate-950">
                         {t('nav.signup')}
                       </Button>
                     </Link>
