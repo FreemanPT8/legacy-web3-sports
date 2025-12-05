@@ -18,68 +18,83 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'legacy-theme';
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  const [theme, internalSetTheme] = useState<Theme>('dark');
 
-  const applyThemeToDocument = useCallback((next: Theme) => {
+  /**
+   * Aplica/remover a classe .dark no <html>
+   */
+  const applyThemeToDocument = useCallback((nextTheme: Theme) => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
-    if (next === 'dark') {
+    if (nextTheme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
   }, []);
 
-  // Carregar tema inicial (localStorage ou preferência do sistema)
+  /**
+   * Na montagem:
+   * - tenta ler o tema do localStorage
+   * - se não existir, força 'dark'
+   */
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     try {
-      const stored = window.localStorage.getItem(
-        THEME_STORAGE_KEY,
-      ) as Theme | null;
-
-      let initialTheme: Theme = 'light';
-
+      const stored = window.localStorage.getItem('theme') as Theme | null;
       if (stored === 'light' || stored === 'dark') {
-        initialTheme = stored;
-      } else {
-        const prefersDark = window.matchMedia?.(
-          '(prefers-color-scheme: dark)',
-        ).matches;
-        initialTheme = prefersDark ? 'dark' : 'light';
+        internalSetTheme(stored);
+        applyThemeToDocument(stored);
+        return;
       }
-
-      setThemeState(initialTheme);
-      applyThemeToDocument(initialTheme);
-    } catch (error) {
-      // Se algo falhar, fica em light
-      setThemeState('light');
-      applyThemeToDocument('light');
+    } catch {
+      // ignora erros de acesso ao localStorage
     }
+
+    internalSetTheme('dark');
+    applyThemeToDocument('dark');
   }, [applyThemeToDocument]);
 
+  /**
+   * Setter exposto no contexto (recebe só 'light' | 'dark')
+   */
   const setTheme = useCallback(
     (next: Theme) => {
-      setThemeState(next);
+      internalSetTheme(next);
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(THEME_STORAGE_KEY, next);
+        window.localStorage.setItem('theme', next);
       }
       applyThemeToDocument(next);
     },
     [applyThemeToDocument],
   );
 
+  /**
+   * Toggle clássico (aqui podemos usar a função prev => ...)
+   * sem chocar com o tipo exposto no contexto.
+   */
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  }, [setTheme]);
+    internalSetTheme(prev => {
+      const next: Theme = prev === 'dark' ? 'light' : 'dark';
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('theme', next);
+      }
+      applyThemeToDocument(next);
+      return next;
+    });
+  }, [applyThemeToDocument]);
+
+  const value: ThemeContextType = {
+    theme,
+    toggleTheme,
+    setTheme,
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
