@@ -245,7 +245,7 @@ function getValidationTexts(lang: string) {
         'Escolheste "Outro papel". Especifica o teu papel no desporto.',
       submitSuccessTitle: 'Candidatura enviada!',
       submitSuccessDesc:
-        'Um responsável de uma House ou da equipa LEGACY vai contactar-te em 24-48 horas pelo método de contacto que escolheste.',
+        'Alguém do LEGACY ou de uma House compatível vai contactar-te em 24-48 horas, pelo método de contacto que escolheste.',
       submitFailedTitle: 'Falha ao enviar a candidatura',
       submitFailedFallback: 'Tenta novamente, por favor.',
       networkErrorTitle: 'Erro de rede',
@@ -266,7 +266,7 @@ function getValidationTexts(lang: string) {
         'Has elegido "Otro papel". Especifica tu papel en el deporte.',
       submitSuccessTitle: '¡Solicitud enviada!',
       submitSuccessDesc:
-        'Un responsable de una House o del equipo LEGACY te contactará en 24-48 horas por tu método de contacto preferido.',
+        'Alguien del equipo LEGACY o de una House compatible te contactará en 24-48 horas por tu método de contacto preferido.',
       submitFailedTitle: 'Error al enviar la solicitud',
       submitFailedFallback: 'Vuelve a intentarlo, por favor.',
       networkErrorTitle: 'Error de red',
@@ -297,7 +297,7 @@ function getValidationTexts(lang: string) {
 export default function OnboardingPage() {
   const { toast } = useToast();
   const { language, t } = useLanguage();
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -343,6 +343,18 @@ export default function OnboardingPage() {
     'DeFi for Athletes',
     'Sports Metaverse',
   ];
+
+  const L = normalizeLang(language);
+
+  // Prefill de email se o utilizador já estiver autenticado
+  useEffect(() => {
+    if (authUser?.email && !formData.email) {
+      setFormData((prev) => ({
+        ...prev,
+        email: authUser.email || prev.email,
+      }));
+    }
+  }, [authUser, formData.email]);
 
   // Buscar desportos da API sempre que a language muda
   useEffect(() => {
@@ -452,9 +464,8 @@ export default function OnboardingPage() {
       payload.profile_type = isNonSports ? 'GENERAL' : 'SPORTS';
 
       // se o utilizador estiver autenticado, ligar submissão ao user_id
-      const { user } = useAuth();
-      if (user?.id) {
-        payload.user_id = user.id;
+      if (authUser?.id) {
+        payload.user_id = authUser.id;
       }
 
       // Se for perfil GERAL, ignoramos tudo o que seja desporto/organização
@@ -540,15 +551,14 @@ export default function OnboardingPage() {
   };
 
   const sportRoleOptions = getSportRolesForLanguage(language);
-  const L = normalizeLang(language);
 
   return (
     <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
-      <main className="flex-1 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <main className="flex-1 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
         {/* HERO alinhado com /sports e /sports/houses */}
-        <section className="border-b border-slate-800 relative overflow-hidden">
+        <section className="border-b border-slate-900 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
             <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
@@ -558,7 +568,7 @@ export default function OnboardingPage() {
             <div className="grid md:grid-cols-[2fr,1.2fr] gap-8 items-center">
               <div>
                 <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-                  LEGACY Onboarding — Sports & Blockchain
+                  LEGACY Onboarding — Sports & Web3
                 </span>
 
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
@@ -566,16 +576,18 @@ export default function OnboardingPage() {
                 </h1>
 
                 <p className="mt-3 text-sm md:text-base text-blue-100 max-w-xl">
-                  Diz-nos quem és, de onde vens e o que procuras. Seja como
-                  profissional do desporto ou como pessoa que quer dominar
-                  Blockchain, Web3 e a Apertum, este formulário é a porta de
-                  entrada para conteúdos privados e Houses of Sports.
+                  Em <strong>/sports</strong> ficaste com o contexto. Em{' '}
+                  <strong>Houses of Sports</strong> viste onde a comunidade está
+                  a nascer. Aqui, dizes quem és, de onde vens e o que procuras.
+                  É o passo que liga a tua realidade à educação séria em
+                  Blockchain, Web3 e à Apertum.
                 </p>
 
                 <p className="mt-3 text-xs text-blue-200/80 max-w-xl">
-                  A informação que partilhas aqui vai ajudar a equipa LEGACY e
-                  as Houses a perceber como podem apoiar-te melhor — sem spam,
-                  sem marketing barato, sem promessas vazias.
+                  Não interessa se és atleta, treinador, staff, empreendedor ou
+                  apenas alguém que quer entender este novo mundo sem cair em
+                  modas vazias. O objetivo é simples: dar-te um primeiro mapa,
+                  em vez de te atirar para um mar de termos técnicos sem rumo.
                 </p>
               </div>
 
@@ -587,24 +599,25 @@ export default function OnboardingPage() {
                 <ol className="space-y-2 list-decimal list-inside">
                   <li>
                     A tua candidatura entra numa fila interna ligada ao teu
-                    país, desporto (se aplicável) e tipo de perfil.
+                    país, desporto (se fizer sentido) e tipo de perfil.
                   </li>
                   <li>
-                    Um responsável de uma House ou da equipa LEGACY revê a tua
-                    informação.
+                    Alguém da equipa LEGACY ou de uma House revê a tua
+                    informação com calma.
                   </li>
                   <li>
                     Vais receber contacto por email ou Telegram em 24-48 horas
                     com os próximos passos.
                   </li>
                   <li>
-                    Se fizer sentido, vais ser encaminhado para Houses, cursos
-                    e conteúdos privados específicos para ti.
+                    Se fizer sentido, vais ser encaminhado para Houses, cursos e
+                    conteúdos privados alinhados com o teu momento.
                   </li>
                 </ol>
                 <p className="mt-3 text-[11px] text-muted-custom">
-                  Tudo o que escreves aqui é tratado com respeito. Não estamos a
-                  vender nada, estamos a construir algo para os próximos anos.
+                  Tudo o que escreves aqui é tratado com respeito. O foco é
+                  educação e clareza — não hype, não promessas rápidas, não
+                  “ficar rico em 30 dias”.
                 </p>
               </div>
             </div>
@@ -633,9 +646,9 @@ export default function OnboardingPage() {
                   </CardTitle>
                   <CardDescription className="text-blue-200/80">
                     Escolhe se vens pelo lado do desporto ou apenas para
-                    aprender Blockchain, Web3 e Apertum. Isto muda o tipo de
-                    perguntas que te fazemos e o painel interno onde vais
-                    aparecer.
+                    aprender Blockchain, Web3 e Apertum. Isto ajusta o tipo de
+                    perguntas que te fazemos e o contexto interno onde a tua
+                    candidatura aparece.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -672,7 +685,8 @@ export default function OnboardingPage() {
                       </span>
                       <span className="block text-[11px] text-emerald-100/90">
                         Ex: profissional de outra área, empreendedor, curioso
-                        por Web3, tech ou finanças.
+                        por Web3, tecnologia ou finanças que quer base sólida
+                        antes de arriscar.
                       </span>
                     </button>
                   </div>
@@ -1145,11 +1159,11 @@ export default function OnboardingPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Thank you for your application!</DialogTitle>
+            <DialogTitle>Obrigado pela tua candidatura!</DialogTitle>
             <DialogDescription>
-              While you wait for the LEGACY team to contact you, register with
-              the same email and start exploring exclusive content that is not
-              visible to unregistered users.
+              Enquanto esperas pelo contacto da equipa LEGACY, podes registar-te
+              com o mesmo email e começar a explorar conteúdos que não estão
+              visíveis para visitantes anónimos.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4 flex flex-col gap-3">
@@ -1157,14 +1171,14 @@ export default function OnboardingPage() {
               className="w-full bg-black text-white hover:bg-gray-900"
               onClick={handleGoToSignup}
             >
-              Register
+              Registar-me com este email
             </Button>
             <Button
               variant="outline"
               className="w-full"
               onClick={() => setShowPostSubmitDialog(false)}
             >
-              Explore without account
+              Explorar primeiro, criar conta depois
             </Button>
           </div>
         </DialogContent>

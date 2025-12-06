@@ -124,58 +124,77 @@ export default function SportsPage() {
 
   const visibleInDevelopment = isLegacyTeam ? housesByStatus.IN_DEVELOPMENT : [];
 
+  const totalSports = sports.length;
+  const totalHouses =
+    housesByStatus.ACTIVE.length +
+    housesByStatus.UNDER_CONSTRUCTION.length +
+    housesByStatus.IN_DEVELOPMENT.length;
+
   return (
     <div className="min-h-screen flex flex-col bg-page">
       <CryptoTicker />
       <Header />
 
       <main className="flex-1">
-        {/* HERO */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white py-16 md:py-24">
-          {/* halos */}
+        {/* HERO CINEMÁTICO · PORTAL LEGACY SPORTS */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white py-16 md:py-24 border-b border-slate-900/80">
+          {/* halos / luzes */}
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-32 -right-32 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-            <div className="absolute -bottom-40 -left-20 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
+            <div className="absolute -top-40 -right-20 h-80 w-80 rounded-full bg-cyan-500/20 blur-3xl" />
+            <div className="absolute -bottom-56 -left-24 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/90 to-transparent" />
           </div>
 
           <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-6xl mx-auto grid md:grid-cols-[2fr,1.1fr] gap-10 items-start">
-              {/* Texto principal */}
-              <div className="space-y-5">
-                <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-50 border border-white/15">
-                  Educação Web3 · Comunidades de Desporto
+            <div className="max-w-6xl mx-auto grid md:grid-cols-[2.1fr,1.1fr] gap-10 items-start">
+              {/* Bloco principal de narrativa */}
+              <div className="space-y-6">
+                <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-[11px] font-semibold text-blue-50 border border-white/15 tracking-wide uppercase">
+                  Portal LEGACY · Desporto, Blockchain & Web3 na Apertum
                 </span>
 
-                <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-                  Desporto, comunidade e Web3 na Apertum Blockchain.
+                <h1 className="text-3xl md:text-4xl font-bold leading-tight tracking-tight">
+                  O ponto de entrada para o desporto na{' '}
+                  <span className="text-cyan-300">Apertum Blockchain</span>.
                 </h1>
 
                 <p className="text-sm md:text-base text-blue-100 max-w-xl leading-relaxed">
-                  A LEGACY é o ponto de entrada para profissionais e entusiastas
-                  que querem perceber o que a{' '}
-                  <strong>blockchain</strong>, a{' '}
-                  <strong>Apertum Blockchain</strong> e a{' '}
-                  <strong>Web3</strong> podem trazer ao desporto na próxima
-                  década: comunidades mais fortes, reputação digital, XP
-                  partilhado e novas formas de reconhecer contributos reais.
+                  O LEGACY não é mais um curso solto. É um{' '}
+                  <strong>portal educativo</strong> que mostra, passo a passo,
+                  como a tecnologia Blockchain, a Web3 e a{' '}
+                  <strong>Apertum</strong> podem mudar a forma como o desporto
+                  organiza comunidades, reputação e oportunidades reais — dentro
+                  e fora de campo.
+                </p>
+
+                <p className="text-xs md:text-sm text-blue-100/90 max-w-xl leading-relaxed">
+                  Se vens do <strong>desporto</strong>, há uma House à tua
+                  espera. Se não vens, mas queres compreender o que vai moldar a
+                  próxima década de{' '}
+                  <strong>finanças, dados e confiança digital</strong>, o
+                  caminho também passa por aqui. O objetivo é simples: aprender
+                  primeiro, agir depois — com alguém ao teu lado nos primeiros
+                  passos.
                 </p>
 
                 {user ? (
-                  <p className="text-xs text-blue-100/90 max-w-xl">
+                  <p className="text-[11px] text-blue-200/90 max-w-xl">
                     Estás autenticado como{' '}
                     <span className="font-semibold">
                       @{user.username ?? 'member'}
                     </span>
-                    . Faz o onboarding personalizado, descobre as Houses mais
-                    alinhadas com o teu desporto e começa a acumular XP na tua
-                    jornada Web3.
+                    . A partir daqui podes{' '}
+                    <strong>explorar as Houses</strong>, escolher o teu
+                    desporto e avançar para um{' '}
+                    <strong>onboarding personalizado</strong> dentro do
+                    ecossistema LEGACY.
                   </p>
                 ) : (
-                  <p className="text-xs text-blue-100/90 max-w-xl">
-                    Cria uma conta gratuita para fazer o{' '}
-                    <strong>onboarding personalizado</strong>, aprender sobre
-                    blockchain, Web3 e comunidades de desporto, e juntar-te às
-                    Houses oficiais de cada disciplina.
+                  <p className="text-[11px] text-blue-200/90 max-w-xl">
+                    Ainda não tens conta? Podes{' '}
+                    <strong>explorar tudo o que é público</strong> e, quando
+                    fizer sentido, criar uma conta gratuita para guardar o teu
+                    progresso, acumular XP e aceder a conteúdos reservados.
                   </p>
                 )}
 
@@ -183,7 +202,7 @@ export default function SportsPage() {
                   <Link href="/sports/onboarding">
                     <Button
                       size="lg"
-                      className="bg-white text-blue-700 hover:bg-gray-100"
+                      className="bg-white text-slate-950 hover:bg-slate-100"
                     >
                       Fazer onboarding personalizado
                     </Button>
@@ -192,66 +211,103 @@ export default function SportsPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="border-blue-200 text-blue-50 hover:bg-white/5"
+                      className="border-cyan-400/70 text-blue-50 hover:bg-cyan-500/10"
                     >
                       Explorar Houses of Sports
                     </Button>
                   </Link>
                 </div>
+
+                {/* Linha do tempo do funil narrativo */}
+                <div className="pt-5 border-t border-white/5">
+                  <p className="text-[11px] uppercase tracking-wide text-blue-200/80 mb-2">
+                    O caminho dentro do LEGACY
+                  </p>
+                  <div className="flex flex-col md:flex-row gap-3 text-[11px] text-blue-100/90">
+                    <FunilStep
+                      index={1}
+                      label="Descobres o portal LEGACY Sports"
+                      detail="Percebes, sem jargão técnico, o que o LEGACY oferece para o desporto e para quem quer aprender Web3 com método."
+                    />
+                    <FunilStep
+                      index={2}
+                      label="Exploras as Houses e o teu desporto"
+                      detail="Vês que desportos já têm comunidade a nascer, por país, estado da House e liderança."
+                    />
+                    <FunilStep
+                      index={3}
+                      label="Fazes o onboarding personalizado"
+                      detail="Partilhas o teu contexto e recebes um trajeto alinhado com o teu perfil e objetivos."
+                    />
+                    <FunilStep
+                      index={4}
+                      label="Avanças para conteúdos e comunidades"
+                      detail="No futuro, cada House terá ferramentas próprias, missões e XP visível."
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* Card: estado das Houses */}
-              <div className="bg-card-custom text-heading rounded-2xl border border-custom px-5 py-5 shadow-xl shadow-blue-900/25">
-                <h2 className="text-sm font-semibold mb-3">
-                  Estado atual das Houses of Sports
+              {/* Card: snapshot cinématico do estado das Houses */}
+              <div className="bg-card-custom/95 text-heading rounded-2xl border border-cyan-500/30 px-5 py-5 shadow-[0_0_40px_rgba(34,211,238,0.22)] backdrop-blur">
+                <h2 className="text-sm font-semibold mb-4 text-blue-50">
+                  Snapshot do ecossistema LEGACY Sports
                 </h2>
 
                 {loading ? (
                   <p className="text-xs text-muted-custom">
-                    A carregar dados das Houses…
+                    A carregar desportos e Houses…
                   </p>
                 ) : (
-                  <div className="space-y-3 text-xs">
-                    <RowStatus
-                      colorClass="bg-emerald-500"
-                      label="Houses ativas"
-                      value={housesByStatus.ACTIVE.length}
-                    />
-                    <RowStatus
-                      colorClass="bg-amber-400"
-                      label="Houses em construção"
-                      value={housesByStatus.UNDER_CONSTRUCTION.length}
-                    />
-                    {isLegacyTeam && (
+                  <>
+                    <div className="space-y-3 text-xs">
                       <RowStatus
-                        colorClass="bg-zinc-400"
-                        label="Houses em desenvolvimento"
-                        value={housesByStatus.IN_DEVELOPMENT.length}
+                        colorClass="bg-cyan-400"
+                        label="Desportos mapeados"
+                        value={totalSports}
                       />
-                    )}
-                  </div>
-                )}
+                      <RowStatus
+                        colorClass="bg-emerald-400"
+                        label="Houses ativas"
+                        value={housesByStatus.ACTIVE.length}
+                      />
+                      <RowStatus
+                        colorClass="bg-amber-400"
+                        label="Houses em construção"
+                        value={housesByStatus.UNDER_CONSTRUCTION.length}
+                      />
+                      {isLegacyTeam && (
+                        <RowStatus
+                          colorClass="bg-slate-400"
+                          label="Houses em desenvolvimento"
+                          value={housesByStatus.IN_DEVELOPMENT.length}
+                        />
+                      )}
+                    </div>
 
-                <p className="mt-4 text-[11px] text-body leading-relaxed">
-                  Cada House representa um desporto num país e vai agregando
-                  membros, XP e iniciativas. As Houses ativas já estão a ser
-                  lideradas por um Head of House e vão ganhar cada vez mais
-                  funções on-chain.
-                </p>
+                    <p className="mt-4 text-[11px] text-body leading-relaxed">
+                      Cada House representa um desporto num país. No início
+                      vale mais educação, clareza e estrutura do que promessas
+                      vazias. O LEGACY existe precisamente para isso: tornar
+                      esta transição mais segura e consciente.
+                    </p>
+                  </>
+                )}
 
                 <div className="mt-4 text-right">
                   <Link
                     href="/sports/houses"
-                    className="inline-flex items-center text-[11px] font-medium text-blue-500 hover:text-blue-400"
+                    className="inline-flex items-center text-[11px] font-medium text-cyan-300 hover:text-cyan-200"
                   >
-                    Ver todas as Houses →
+                    Ver mapa completo das Houses →
                   </Link>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 opacity-40">
+          {/* onda inferior */}
+          <div className="absolute bottom-0 left-0 right-0 opacity-50">
             <svg
               viewBox="0 0 1440 120"
               fill="none"
@@ -265,8 +321,74 @@ export default function SportsPage() {
           </div>
         </section>
 
-        {/* Secção visão geral das Houses */}
-        <section className="py-12">
+        {/* SECÇÃO: PORQUE É QUE ESTA TECNOLOGIA IMPORTA */}
+        <section className="py-10 md:py-14 bg-slate-950">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto grid md:grid-cols-[1.7fr,1.3fr] gap-8 items-start">
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold text-heading">
+                  Porque é que Blockchain e Web3 interessam ao desporto (e não só).
+                </h2>
+                <p className="text-sm text-body leading-relaxed">
+                  O ruído à volta de cripto, NFTs e Web3 fez muitas pessoas
+                  afastarem-se. O foco do LEGACY vai noutra direção:{' '}
+                  <strong>educação sólida</strong>, linguagem simples e decisões
+                  conscientes. Nada de modas cegas.
+                </p>
+                <p className="text-sm text-body leading-relaxed">
+                  Na prática, a tecnologia abre portas para{' '}
+                  <strong>registos imutáveis</strong> (resultados, carreiras,
+                  contributos), novas formas de{' '}
+                  <strong>recompensar quem entrega valor</strong> e comunidades
+                  que se organizam com mais transparência. Se fores atleta,
+                  treinador, dirigente, criador de conteúdo ou curioso por esta
+                  nova economia, convém perceber bem o que está em jogo.
+                </p>
+                <p className="text-xs text-muted-custom leading-relaxed">
+                  A Apertum Blockchain é a rede onde tudo isto acontece. O
+                  LEGACY existe para te ajudar a navegar este ecossistema sem te
+                  perderes, sem pressa e sem drama. Primeiro aprendes. Depois
+                  decides quanto queres envolver-te.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-5 text-xs text-body shadow-lg space-y-3">
+                <p className="text-[11px] uppercase tracking-wide text-blue-200/80">
+                  O que ganhas ao entrar pelo LEGACY
+                </p>
+                <ul className="space-y-2 list-disc list-inside">
+                  <li>
+                    Entendes os{' '}
+                    <strong>conceitos essenciais de Blockchain e Web3</strong>{' '}
+                    sem linguagem de programador.
+                  </li>
+                  <li>
+                    Começas ligado ao teu{' '}
+                    <strong>contexto real</strong> (desporto ou não), em vez de
+                    andar atrás de promessas fáceis.
+                  </li>
+                  <li>
+                    Constróis um <strong>percurso educativo</strong> com XP,
+                    Houses e comunidades que valorizam entrega e não apenas
+                    opinião.
+                  </li>
+                  <li>
+                    Tens sempre a opção de{' '}
+                    <strong>observar primeiro e agir depois</strong>, sem
+                    pressão e no teu ritmo.
+                  </li>
+                </ul>
+                <p className="text-[11px] text-muted-custom">
+                  Se sentes que o mundo está a mudar depressa demais, o LEGACY
+                  é um sítio para abrandar, compreender e decidir com cabeça.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* HOUSES – VISÃO GERAL E LISTAS */}
+        <section className="py-12 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
           <div className="container mx-auto px-4">
             {error && (
               <div className="max-w-4xl mx-auto mb-6 rounded-md border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-100">
@@ -274,19 +396,18 @@ export default function SportsPage() {
               </div>
             )}
 
-            <div className="max-w-4xl mx-auto space-y-4">
+            <div className="max-w-5xl mx-auto space-y-6 mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-heading">
-                  Houses of Sports – visão geral
+                  Houses of Sports – comunidades por desporto e país.
                 </h2>
-                <p className="text-sm text-body max-w-3xl mt-2">
-                  As Houses of Sports são coletivos de jogadores, treinadores,
-                  organizações e entusiastas do mesmo desporto, focados em
-                  explorar a Web3 em conjunto. As Houses ativas já estão abertas
-                  a membros; as Houses em construção estão a preparar conteúdos,
-                  missões e estrutura; e as Houses em desenvolvimento
-                  representam as próximas ondas de desportos a entrar no
-                  ecossistema.
+                <p className="text-sm text-body max-w-3xl mt-2 leading-relaxed">
+                  As Houses of Sports são grupos focados num desporto específico
+                  num país concreto. No início, funcionam como{' '}
+                  <strong>núcleos de aprendizagem e organização</strong> dentro
+                  do ecossistema LEGACY e da Apertum. Com o tempo, vão ganhar
+                  missões, XP visível, ferramentas internas e ligações mais
+                  profundas ao mundo on-chain.
                 </p>
               </div>
 
@@ -312,7 +433,7 @@ export default function SportsPage() {
                     {!isLegacyTeam && (
                       <span className="text-[11px] text-muted-custom">
                         {' '}
-                        (apenas visíveis à equipa LEGACY)
+                        (estado interno da equipa LEGACY)
                       </span>
                     )}
                   </p>
@@ -320,45 +441,50 @@ export default function SportsPage() {
 
                 <div className="text-xs text-muted-custom max-w-sm">
                   <p>
-                    Queres aprofundar por desporto, país e estado da House?
-                    Explora a lista completa de Houses e usa filtros avançados
-                    na página dedicada.
+                    Se representas um desporto, uma equipa ou uma comunidade
+                    séria, a tua House pode nascer aqui. O primeiro passo é
+                    sempre o mesmo:{' '}
+                    <strong>onboarding personalizado dentro do LEGACY</strong>.
                   </p>
-                  <div className="mt-3">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <Link href="/sports/houses">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-blue-600 text-blue-400 hover:bg-blue-950/40"
+                        className="border-blue-600 text-blue-300 hover:bg-blue-950/40"
                       >
-                        Ver página completa das Houses
+                        Ver mapa de Houses
+                      </Button>
+                    </Link>
+                    <Link href="/sports/onboarding">
+                      <Button
+                        size="sm"
+                        className="bg-white text-slate-950 hover:bg-slate-100"
+                      >
+                        Começar onboarding
                       </Button>
                     </Link>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* Houses em destaque */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
+            {/* Houses em destaque */}
             <div className="max-w-6xl mx-auto space-y-10">
               <HousesSection
                 title="Houses ativas"
-                description="Comunidades de desporto que já estão a funcionar e a receber membros."
+                description="Comunidades que já estão a receber membros e a organizar a sua base educativa."
                 houses={housesByStatus.ACTIVE}
               />
               <HousesSection
                 title="Houses em construção"
-                description="Casas que já têm liderança definida e estão a preparar missões, conteúdos e eventos."
+                description="Casas que já têm liderança definida e estão a preparar a estrutura para abrir portas."
                 houses={housesByStatus.UNDER_CONSTRUCTION}
               />
               {isLegacyTeam && (
                 <HousesSection
-                  title="Houses em desenvolvimento"
-                  description="Ideias de Houses que estão a ganhar forma. É o pipeline para as próximas comunidades a lançar."
+                  title="Houses em desenvolvimento (equipa interna)"
+                  description="Desportos e países que estão na fila para ganhar uma House. Pipeline estratégico do LEGACY Sports."
                   houses={visibleInDevelopment}
                 />
               )}
@@ -366,49 +492,38 @@ export default function SportsPage() {
           </div>
         </section>
 
-        {/* Bloco educativo / chamada para onboarding */}
-        <section className="py-16 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+        {/* BLOCO FINAL · CHAMADA PARA ONBOARDING */}
+        <section className="py-14 bg-gradient-to-b from-slate-900 via-slate-950 to-black border-t border-slate-800">
           <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 items-center">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                  Para quem é o LEGACY?
-                </h2>
-                <p className="text-sm md:text-base text-blue-100 mb-3 leading-relaxed">
-                  Para treinadores, atletas, dirigentes, criadores de conteúdo e
-                  entusiastas que querem entender, sem jargão técnico, como a
-                  Web3 e a Apertum Blockchain podem impactar o desporto na
-                  próxima década: desde reputação digital até recompensas
-                  partilhadas dentro de comunidades.
-                </p>
-                <p className="text-sm text-blue-100 leading-relaxed">
-                  O onboarding é personalizado por desporto: escolhes a tua
-                  disciplina, explicas o teu contexto e recebemos-te nas Houses
-                  e conteúdos mais adequados ao teu perfil.
-                </p>
-              </div>
-
-              <div className="bg-white/5 border border-white/15 rounded-2xl p-5 text-xs text-blue-50 space-y-3">
-                <p>
-                  <strong>1.</strong> Escolhe o teu desporto e responde a poucas
-                  perguntas sobre o teu papel (atleta, treinador, organização,
-                  etc.).
-                </p>
-                <p>
-                  <strong>2.</strong> Recebe uma sugestão de House of Sports e
-                  um trajeto de conteúdos Web3 alinhado com os teus objetivos.
-                </p>
-                <p>
-                  <strong>3.</strong> Começa a acumular XP à medida que
-                  completas missões, cursos e participas na comunidade.
-                </p>
-                <div className="pt-1">
-                  <Link href="/sports/onboarding">
-                    <Button className="bg-white text-blue-700 hover:bg-gray-100 w-full md:w-auto">
-                      Começar onboarding de desporto
-                    </Button>
-                  </Link>
-                </div>
+            <div className="max-w-4xl mx-auto text-center space-y-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-heading">
+                Se sentes que isto pode ser importante para o teu futuro, começa
+                pelo primeiro passo.
+              </h2>
+              <p className="text-sm md:text-base text-body max-w-2xl mx-auto leading-relaxed">
+                Não precisas de “perceber tudo” hoje. Precisas de um contexto
+                adulto, de uma estrutura séria e de pessoas que saibam do que
+                falam. O LEGACY foi desenhado exatamente para isso. O teu
+                onboarding marca o início dessa jornada.
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center pt-2">
+                <Link href="/sports/onboarding">
+                  <Button
+                    size="lg"
+                    className="bg-blue-600 hover:bg-blue-500 text-white"
+                  >
+                    Fazer onboarding personalizado
+                  </Button>
+                </Link>
+                <Link href="/education">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-slate-600 text-blue-100 hover:bg-slate-900"
+                  >
+                    Ver a Academy do LEGACY
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -416,6 +531,28 @@ export default function SportsPage() {
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+function FunilStep({
+  index,
+  label,
+  detail,
+}: {
+  index: number;
+  label: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex-1 min-w-[180px]">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="h-5 w-5 rounded-full border border-cyan-400 text-[11px] flex items-center justify-center text-cyan-200">
+          {index}
+        </span>
+        <span className="font-semibold text-blue-100">{label}</span>
+      </div>
+      <p className="text-[11px] text-blue-200/90">{detail}</p>
     </div>
   );
 }
@@ -466,112 +603,106 @@ function HousesSection({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {subset.map((house) => (
-          <Link
-            key={house.id}
-            href={`/sports/houses/${house.id}`}
-            className="block"
-          >
-            <div className="h-full rounded-xl border border-custom bg-card-custom p-4 shadow-sm hover:border-blue-500/70 hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] transition flex flex-col">
-              <div className="mb-3 h-20 rounded-lg border border-custom overflow-hidden bg-slate-900">
-                {house.cover_image_url || house.avatar_url ? (
-                  <SafeImage
-                    src={house.cover_image_url || house.avatar_url || ''}
-                    alt={house.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950" />
-                )}
-              </div>
+        {subset.map((house) => {
+          const headUsername = house.head?.username
+            ? `@${house.head.username}`
+            : null;
 
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3 text-sm font-semibold text-heading min-w-0">
-                  <div className="h-12 w-12 rounded-xl bg-slate-900 flex items-center justify-center text-[12px] font-semibold text-muted-custom overflow-hidden border border-custom shrink-0">
-                    {house.avatar_url || house.cover_image_url ? (
-                      <SafeImage
-                        src={house.avatar_url || house.cover_image_url || ''}
-                        alt={house.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span>
-                        {house.name
-                          .split(' ')
-                          .map((p) => p[0])
-                          .join('')
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <span className="truncate">{house.name}</span>
+          const headInitialsSource =
+            house.head?.username || house.head?.full_name || house.name;
+
+          const initials = headInitialsSource
+            .split(' ')
+            .map((p) => p[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase();
+
+          return (
+            <Link
+              key={house.id}
+              href={`/sports/houses/${house.id}`}
+              className="block"
+            >
+              <div className="h-full rounded-xl border border-custom bg-card-custom/95 p-4 shadow-sm hover:border-cyan-400/80 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)] transition flex flex-col">
+                <div className="mb-3 h-20 rounded-lg border border-custom overflow-hidden bg-slate-900">
+                  {house.cover_image_url || house.avatar_url ? (
+                    <SafeImage
+                      src={house.cover_image_url || house.avatar_url || ''}
+                      alt={house.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950" />
+                  )}
                 </div>
 
-                {house.country_code && (
-                  <span className="text-[10px] font-mono uppercase bg-slate-900 rounded px-2 py-0.5 text-blue-200 border border-slate-700">
-                    {house.country_code}
-                  </span>
-                )}
-              </div>
-
-              {house.sport && (
-                <div className="text-[11px] uppercase text-muted-custom mb-1">
-                  {house.sport.name} · {house.sport.code}
-                </div>
-              )}
-
-              {house.head ? (
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="h-7 w-7 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-muted-custom overflow-hidden border border-custom">
-                    {house.head.avatar_url ? (
-                      <SafeImage
-                        src={house.head.avatar_url}
-                        alt={
-                          house.head.full_name ||
-                          house.head.username ||
-                          'Head of House'
-                        }
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span>
-                        {(house.head.full_name || house.head.username || '?')
-                          .split(' ')
-                          .map((p) => p[0])
-                          .join('')
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-body leading-tight">
-                    <div className="font-medium text-heading">
-                      {house.head.full_name ||
-                        house.head.username ||
-                        'Head of House'}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3 text-sm font-semibold text-heading min-w-0">
+                    <div className="h-12 w-12 rounded-xl bg-slate-900 flex items-center justify-center text-[12px] font-semibold text-muted-custom overflow-hidden border border-custom shrink-0">
+                      {house.avatar_url || house.cover_image_url ? (
+                        <SafeImage
+                          src={house.avatar_url || house.cover_image_url || ''}
+                          alt={house.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span>{initials}</span>
+                      )}
                     </div>
-                    {house.head.username && (
-                      <div className="text-[11px] text-muted-custom">
-                        @{house.head.username}
-                      </div>
-                    )}
+                    <span className="truncate">{house.name}</span>
                   </div>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-custom mb-1">
-                  Head of House a definir.
-                </p>
-              )}
 
-              <p className="text-[11px] text-muted-custom mt-auto">
-                {house.moderators.length > 0
-                  ? `${house.moderators.length} moderador(es) já atribuídos.`
-                  : 'Sem moderadores definidos ainda.'}
-              </p>
-            </div>
-          </Link>
-        ))}
+                  {house.country_code && (
+                    <span className="text-[10px] font-mono uppercase bg-slate-900 rounded px-2 py-0.5 text-blue-200 border border-slate-700">
+                      {house.country_code}
+                    </span>
+                  )}
+                </div>
+
+                {house.sport && (
+                  <div className="text-[11px] uppercase text-muted-custom mb-1">
+                    {house.sport.name} · {house.sport.code}
+                  </div>
+                )}
+
+                {headUsername ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-7 w-7 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-muted-custom overflow-hidden border border-custom">
+                      {house.head?.avatar_url ? (
+                        <SafeImage
+                          src={house.head.avatar_url}
+                          alt={headUsername}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span>{initials}</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-body leading-tight">
+                      <div className="font-medium text-heading">
+                        Head of House
+                      </div>
+                      <div className="text-[11px] text-muted-custom">
+                        {headUsername}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-custom mb-1">
+                    Head of House a definir (username em breve).
+                  </p>
+                )}
+
+                <p className="text-[11px] text-muted-custom mt-auto">
+                  {house.moderators.length > 0
+                    ? `${house.moderators.length} moderador(es) já atribuídos.`
+                    : 'Sem moderadores definidos ainda.'}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

@@ -42,18 +42,84 @@ function mapCountryToCode(country: string | null | undefined): string | null {
 }
 
 /**
- * Extrair IP “real” da request (útil para spam / segurança).
- * Tenta: request.ip → X-Forwarded-For[0] → null
+ * Normaliza uma string em formato TAG (maíusculas, underscores)
  */
-function getClientIp(req: NextRequest): string | null {
-  // Next.js normalmente preenche request.ip atrás de um proxy
-  if (req.ip) return req.ip;
+function toTagBase(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^A-Z0-9_]/g, '');
+}
 
-  const fwd = req.headers.get('x-forwarded-for');
-  if (!fwd) return null;
+/**
+ * Classifica nível de Web3 com base numa frase livre
+ */
+function inferWeb3LevelTag(source: string | null | undefined): string | null {
+  if (!source) return null;
+  const txt = source.toLowerCase();
 
-  const first = fwd.split(',')[0]?.trim();
-  return first || null;
+  const beginnerPatterns = [
+    'nenhuma experiência',
+    'nenhuma experiencia',
+    'nenhuma',
+    'no experience',
+    'zero',
+    'iniciante',
+    'beginner',
+  ];
+  if (beginnerPatterns.some((p) => txt.includes(p))) {
+    return 'WEB3_BEGINNER';
+  }
+
+  const intermediatePatterns = [
+    'alguma experiência',
+    'alguma experiencia',
+    'intermédio',
+    'intermedio',
+    'some experience',
+    'medium',
+    'intermediate',
+  ];
+  if (intermediatePatterns.some((p) => txt.includes(p))) {
+    return 'WEB3_INTERMEDIATE';
+  }
+
+  const advancedPatterns = [
+    'muita experiência',
+    'muita experiencia',
+    'experiente',
+    'avançado',
+    'avancado',
+    'advanced',
+    'expert',
+    'profissional',
+    'professional',
+    'pro',
+  ];
+  if (advancedPatterns.some((p) => txt.includes(p))) {
+    return 'WEB3_ADVANCED';
+  }
+
+  return null;
+}
+
+/**
+ * Heurística simples para detetar se alguém é "não-desporto mas Web3"
+ * quando não envia desporto mas fala muito de Web3 / Apertum / blockchain
+ */
+function inferNonSportFromMessage(
+  sportsCategory: string | null,
+  message: string | null
+): boolean {
+  if (sportsCategory && sportsCategory.trim() !== '') return false;
+  if (!message) return false;
+
+  const txt = message.toLowerCase();
+  const keywords = ['blockchain', 'web3', 'apertum', 'dao1', 'crypto', 'cripto', 'defi'];
+
+  return keywords.some((k) => txt.includes(k));
 }
 
 /**
@@ -138,11 +204,7 @@ async function autoAssignToHouseHead(
 
 export async function POST(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
-
     const body = await request.json();
-
     const {
       email,
       phone,
@@ -154,21 +216,17 @@ export async function POST(request: NextRequest) {
       organization,
       web3_experience,
       interests,
+      message,
 
-      // novos campos ligados ao modo “não-desporto”
+      // novos campos opcionais vindos do frontend (quando existirem)
       is_non_sport,
       web3_type,
-
-      // UTMs opcionais vindas do body (ou query string)
-      utm_source: utmSourceBody,
-      utm_medium: utmMediumBody,
-      utm_campaign: utmCampaignBody,
-
-      // referral (quem trouxe esta pessoa)
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      utm_term,
       referrer_user_id,
-
-      // mensagem original
-      message,
     } = body;
 
     // validações básicas
@@ -192,8 +250,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ---- flag de perfil não ligado ao desporto ----
-    const isNonSport: boolean = !!is_non_sport;
+    const interestsArray: string[] = Array.isArray(interests) ? interests : [];
 
     // ---- desporto / código ----
     let sportsCategoryValue: string | null =
@@ -201,63 +258,15 @@ export async function POST(request: NextRequest) {
         ? sports_category.trim()
         : null;
 
-    // se for perfil não-desporto, limpamos o desporto
-    if (isNonSport) {
-      sportsCategoryValue = null;
-    }
-
     let sportsCategoryCode: string | null = null;
 
-    if (!isNonSport && sportsCategoryValue && !sportsCategoryValue.includes(' ')) {
+    if (sportsCategoryValue && !sportsCategoryValue.includes(' ')) {
       // sem espaços → tratamos como código (ex: CLIMBING)
       sportsCategoryCode = sportsCategoryValue;
     }
 
     // ---- country_code ISO a partir do nome ----
     const countryCode = mapCountryToCode(country);
-
-    // ---- normalizar web3_type para o CHECK da tabela ----
-    const rawWeb3Type =
-      typeof web3_type === 'string' ? web3_type.trim().toUpperCase() : null;
-
-    const allowedWeb3Types = [
-      'PROFESSIONAL_WEB3_LEARNING',
-      'WEB3_ENTHUSIAST',
-    ] as const;
-
-    const web3TypeNormalized = allowedWeb3Types.includes(
-      rawWeb3Type as (typeof allowedWeb3Types)[number]
-    )
-      ? (rawWeb3Type as (typeof allowedWeb3Types)[number])
-      : null;
-
-    // ---- UTMs: body tem prioridade, query string é fallback ----
-    const utmSource =
-      (typeof utmSourceBody === 'string' && utmSourceBody.trim() !== ''
-        ? utmSourceBody.trim()
-        : null) ||
-      searchParams.get('utm_source');
-
-    const utmMedium =
-      (typeof utmMediumBody === 'string' && utmMediumBody.trim() !== ''
-        ? utmMediumBody.trim()
-        : null) ||
-      searchParams.get('utm_medium');
-
-    const utmCampaign =
-      (typeof utmCampaignBody === 'string' && utmCampaignBody.trim() !== ''
-        ? utmCampaignBody.trim()
-        : null) ||
-      searchParams.get('utm_campaign');
-
-    // ---- referrer_user_id (quem fez o convite) ----
-    const referrerUserId =
-      typeof referrer_user_id === 'string' && referrer_user_id.trim() !== ''
-        ? referrer_user_id.trim()
-        : null;
-
-    // ---- IP de origem ----
-    const createdByIp = getClientIp(request);
 
     // ---- tentar ligar a uma conta existente pelo email ----
     let linkedUserId: string | null = null;
@@ -279,38 +288,97 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ---- interesses: normalizar + enriquecer com tags internas ----
-    const baseInterests: string[] = Array.isArray(interests)
-      ? interests
-      : [];
+    // ---- heurística para perfis não-desporto / Web3-only ----
+    let isNonSport: boolean =
+      typeof is_non_sport === 'boolean' ? is_non_sport : false;
 
-    const interestSet = new Set<string>();
-
-    for (const raw of baseInterests) {
-      if (!raw) continue;
-      const trimmed = String(raw).trim();
-      if (!trimmed) continue;
-      interestSet.add(trimmed);
+    if (!isNonSport) {
+      isNonSport = inferNonSportFromMessage(sportsCategoryValue, message);
     }
 
-    // Tag genérica: perfil ligado ao desporto ou não
+    let finalWeb3Type: 'PROFESSIONAL_WEB3_LEARNING' | 'WEB3_ENTHUSIAST' | null =
+      null;
+
+    if (typeof web3_type === 'string' && web3_type.trim() !== '') {
+      const normalized = web3_type.trim().toUpperCase();
+      if (
+        normalized === 'PROFESSIONAL_WEB3_LEARNING' ||
+        normalized === 'WEB3_ENTHUSIAST'
+      ) {
+        finalWeb3Type = normalized;
+      }
+    }
+
+    if (isNonSport && !finalWeb3Type) {
+      const baseText = `${web3_experience || ''} ${message || ''}`.toLowerCase();
+      if (
+        baseText.includes('profissional') ||
+        baseText.includes('professional') ||
+        baseText.includes('consultor') ||
+        baseText.includes('agency') ||
+        baseText.includes('agência') ||
+        baseText.includes('empresa') ||
+        baseText.includes('company')
+      ) {
+        finalWeb3Type = 'PROFESSIONAL_WEB3_LEARNING';
+      } else {
+        finalWeb3Type = 'WEB3_ENTHUSIAST';
+      }
+    }
+
+    // ---- IP de origem (se disponível) ----
+    const ipFromHeader =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null;
+    const createdByIp = ipFromHeader || (request as any).ip || null;
+
+    // ---- auto-interesses (tags internas) ----
+    const autoInterests = new Set<string>();
+
+    // Tag geral de onboarding
+    autoInterests.add('ONBOARDING');
+
+    if (sportsCategoryValue) {
+      autoInterests.add('SPORTS_ONBOARDING');
+    }
     if (isNonSport) {
-      interestSet.add('PROFILE_TYPE_WEB3_ONLY');
+      autoInterests.add('NON_SPORT_WEB3');
+    }
+
+    const sportTagBase =
+      toTagBase(sportsCategoryCode || sportsCategoryValue) || null;
+    if (sportTagBase) {
+      autoInterests.add(`SPORT_${sportTagBase}`);
+    }
+
+    if (countryCode) {
+      autoInterests.add(`COUNTRY_${countryCode}`);
+    }
+
+    if (linkedUserId) {
+      autoInterests.add('HAS_LEGACY_ACCOUNT');
     } else {
-      interestSet.add('PROFILE_TYPE_SPORTS');
+      autoInterests.add('NO_LEGACY_ACCOUNT');
     }
 
-    // Tags específicas do sub-tipo Web3
-    if (isNonSport && web3TypeNormalized) {
-      if (web3TypeNormalized === 'PROFESSIONAL_WEB3_LEARNING') {
-        interestSet.add('WEB3_PRO_PATH');
-      }
-      if (web3TypeNormalized === 'WEB3_ENTHUSIAST') {
-        interestSet.add('WEB3_ENTHUSIAST_PATH');
-      }
+    const web3LevelTag = inferWeb3LevelTag(web3_experience || message);
+    if (web3LevelTag) {
+      autoInterests.add(web3LevelTag);
     }
 
-    const interestsArray = Array.from(interestSet);
+    // se tivermos subtipo Web3
+    if (finalWeb3Type === 'PROFESSIONAL_WEB3_LEARNING') {
+      autoInterests.add('WEB3_PRO_LEARNING');
+    } else if (finalWeb3Type === 'WEB3_ENTHUSIAST') {
+      autoInterests.add('WEB3_ENTHUSIAST_PROFILE');
+    }
+
+    // merge interesses enviados + automáticos (sem duplicados)
+    const finalInterests = Array.from(
+      new Set<string>([
+        ...interestsArray.filter((i) => typeof i === 'string'),
+        ...Array.from(autoInterests),
+      ])
+    );
 
     // 1) inserir submissão
     const { data, error } = await supabaseAdmin
@@ -322,32 +390,28 @@ export async function POST(request: NextRequest) {
         full_name,
         country,
         country_code: countryCode,
-
-        // desporto (só se não for perfil “non-sport”)
         sports_category: sportsCategoryValue,
         sports_category_code: sportsCategoryCode,
-        sports_role: isNonSport ? null : sports_role || null,
-        organization: isNonSport ? null : organization || null,
-
+        sports_role: sports_role || null,
+        organization: organization || null,
         web3_experience: web3_experience || null,
-        web3_type: web3TypeNormalized,
-        is_non_sport: isNonSport,
-
-        interests: interestsArray,
+        interests: finalInterests,
         message,
+        user_id: linkedUserId, // <-- ligação direta à conta LEGACY (se existir)
 
-        user_id: linkedUserId, // ligação direta à conta LEGACY (se existir)
-
-        // tracking & contexto
+        // novos campos
+        is_non_sport: isNonSport,
+        web3_type: finalWeb3Type,
         created_by_ip: createdByIp,
-        utm_source: utmSource || null,
-        utm_medium: utmMedium || null,
-        utm_campaign: utmCampaign || null,
-        referrer_user_id: referrerUserId,
-
+        utm_source: utm_source || null,
+        utm_medium: utm_medium || null,
+        utm_campaign: utm_campaign || null,
+        utm_content: utm_content || null,
+        utm_term: utm_term || null,
+        referrer_user_id: referrer_user_id || null,
         // status usa o default 'PENDING_RESPONSE'
       })
-      .select('id, sports_category_code, country, country_code, user_id, is_non_sport')
+      .select('id, sports_category_code, country, country_code, user_id')
       .single();
 
     if (error) {
@@ -364,17 +428,14 @@ export async function POST(request: NextRequest) {
       country: string | null;
       country_code: string | null;
       user_id: string | null;
-      is_non_sport: boolean | null;
     };
 
-    // 2) tentar auto-atribuir ao Head of House (apenas perfis ligados ao desporto)
-    if (!inserted.is_non_sport) {
-      await autoAssignToHouseHead(
-        inserted.id,
-        inserted.sports_category_code,
-        inserted.country_code || mapCountryToCode(inserted.country)
-      );
-    }
+    // 2) tentar auto-atribuir ao Head of House (não falha a request se não conseguir)
+    await autoAssignToHouseHead(
+      inserted.id,
+      inserted.sports_category_code,
+      inserted.country_code || mapCountryToCode(inserted.country)
+    );
 
     return NextResponse.json({ success: true, submission: inserted });
   } catch (error) {
