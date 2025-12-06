@@ -142,43 +142,49 @@ export default function HousesPage() {
                   <strong>país concreto</strong>. No início, funcionam como
                   núcleos de aprendizagem e organização dentro do ecossistema
                   LEGACY e da <strong>Apertum Blockchain</strong>. Com o tempo,
-                  vão ganhar missões, XP visível, ferramentas internas e mais
-                  ligação ao mundo on-chain.
+                  algumas vão acabar por se destacar das demais devido às
+                  iniciativas dos seus membros ou da própria liderança da Casa.
+                  Em Web3 a comunidade tem um peso significativo, mas nem todas
+                  as comunidades existem para deixar a sua marca.
                 </p>
 
                 <p className="text-xs md:text-sm text-blue-200/90 max-w-3xl leading-relaxed">
                   Se pertences a este mundo, há lugar para ti. E se não
                   pertences, mas queres aprender Web3 com cabeça, também. A
                   lógica é simples: primeiro criamos contexto e educação séria,
-                  depois abrimos espaço para participação, reputação e
-                  governação dentro das Houses que fizerem sentido.
+                  depois abrimos espaço para participação e reputação dentro das
+                  Houses que fizerem sentido — sem pressa e sem promessas vazias.
                 </p>
               </div>
 
               <div className="grid md:grid-cols-[1.3fr,1.1fr] gap-8 items-start">
                 <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 to-slate-900 p-5 text-xs text-body shadow-lg space-y-3">
                   <p className="text-[11px] uppercase tracking-wide text-blue-200/80">
-                    Como esta página se liga ao funil LEGACY
+                    Como esta página se liga ao teu caminho
                   </p>
                   <ul className="space-y-2 list-disc list-inside">
                     <li>
-                      Em <strong>/sports</strong> percebes o contexto geral do
-                      LEGACY, do desporto e da Apertum.
+                      Na página de entrada do LEGACY para o desporto ficaste com
+                      o contexto geral: o que é o portal, porque é que a
+                      Apertum importa e como a tecnologia pode servir o teu
+                      futuro.
                     </li>
                     <li>
-                      Aqui, em <strong>Houses of Sports</strong>, vês{' '}
-                      <strong>onde já existem comunidades</strong> a nascer – por
-                      desporto, país e estado.
+                      Aqui vês <strong>onde já existem comunidades a nascer</strong> – por
+                      desporto, país e estado das Houses (ativas, em construção
+                      ou em desenvolvimento).
                     </li>
                     <li>
-                      A seguir, no <strong>onboarding</strong>, mostras quem és
-                      e o que procuras. É aí que a equipa te consegue orientar.
+                      No passo seguinte, através de um{' '}
+                      <strong>formulário simples de onboarding</strong>, mostras
+                      quem és e o que procuras. É aí que a equipa te consegue
+                      orientar com mais precisão.
                     </li>
                   </ul>
                   <p className="text-[11px] text-muted-custom">
-                    Não precisas de “entrar em tudo”. Basta perceberes onde faz
-                    sentido colocar a tua energia – como membro, como líder ou
-                    simplesmente como alguém que quer aprender com estrutura.
+                    Não precisas de “entrar em tudo”. A ideia é perceber onde
+                    faz sentido colocar a tua energia – como membro, como líder
+                    ou simplesmente como alguém que quer aprender com estrutura.
                   </p>
                 </div>
 
@@ -213,7 +219,7 @@ export default function HousesPage() {
                         size="sm"
                         className="bg-white text-slate-950 hover:bg-slate-100"
                       >
-                        Quero fazer onboarding primeiro
+                        Preencher formulário para onboarding personalizado
                       </Button>
                     </Link>
                     <Link href="/sports">
@@ -293,7 +299,7 @@ export default function HousesPage() {
                     size="lg"
                     className="bg-blue-600 hover:bg-blue-500 text-white"
                   >
-                    Fazer onboarding personalizado
+                    Preencher formulário para onboarding personalizado
                   </Button>
                 </Link>
               </div>
@@ -347,8 +353,7 @@ function HousesSection({
             ? `@${house.head.username}`
             : null;
 
-          const initialsSource =
-            house.head?.username || house.name || 'H';
+          const initialsSource = house.head?.username || house.name || 'H';
 
           const initials = initialsSource
             .split(' ')
@@ -360,7 +365,7 @@ function HousesSection({
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
               <div className="h-full rounded-xl border border-custom bg-card-custom/95 p-4 shadow-sm hover:border-cyan-400/80 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)] transition flex flex-col">
-              {/* Cover */}
+                {/* Cover */}
                 <div className="mb-3 h-20 rounded-lg border border-custom overflow-hidden bg-slate-900">
                   {house.cover_image_url || house.avatar_url ? (
                     <SafeImage

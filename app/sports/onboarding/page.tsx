@@ -243,10 +243,10 @@ function getValidationTexts(lang: string) {
       otherRoleTitle: 'Especifica o teu papel',
       otherRoleDesc:
         'Escolheste "Outro papel". Especifica o teu papel no desporto.',
-      submitSuccessTitle: 'Candidatura enviada!',
+      submitSuccessTitle: 'Pedido de onboarding enviado!',
       submitSuccessDesc:
-        'Alguém do LEGACY ou de uma House compatível vai contactar-te em 24-48 horas, pelo método de contacto que escolheste.',
-      submitFailedTitle: 'Falha ao enviar a candidatura',
+        'Alguém do LEGACY ou de uma House compatível vai contactar-te em 24-48 horas, usando o método de contacto que escolheste.',
+      submitFailedTitle: 'Falha ao enviar o pedido',
       submitFailedFallback: 'Tenta novamente, por favor.',
       networkErrorTitle: 'Erro de rede',
       networkErrorDesc: 'Verifica a tua ligação e tenta novamente.',
@@ -264,7 +264,7 @@ function getValidationTexts(lang: string) {
       otherRoleTitle: 'Especifica tu papel',
       otherRoleDesc:
         'Has elegido "Otro papel". Especifica tu papel en el deporte.',
-      submitSuccessTitle: '¡Solicitud enviada!',
+      submitSuccessTitle: 'Solicitud de onboarding enviada',
       submitSuccessDesc:
         'Alguien del equipo LEGACY o de una House compatible te contactará en 24-48 horas por tu método de contacto preferido.',
       submitFailedTitle: 'Error al enviar la solicitud',
@@ -284,9 +284,9 @@ function getValidationTexts(lang: string) {
     otherRoleTitle: 'Please specify your role',
     otherRoleDesc:
       'You selected "Other role". Please specify your role in sports.',
-    submitSuccessTitle: 'Application submitted!',
+    submitSuccessTitle: 'Onboarding request submitted!',
     submitSuccessDesc:
-      'A House admin or the LEGACY team will contact you within 24-48 hours via your preferred contact method.',
+      'A LEGACY team member or a compatible House will contact you within 24-48 hours via your preferred contact method.',
     submitFailedTitle: 'Submission failed',
     submitFailedFallback: 'Please try again',
     networkErrorTitle: 'Network error',
@@ -576,18 +576,19 @@ export default function OnboardingPage() {
                 </h1>
 
                 <p className="mt-3 text-sm md:text-base text-blue-100 max-w-xl">
-                  Em <strong>/sports</strong> ficaste com o contexto. Em{' '}
-                  <strong>Houses of Sports</strong> viste onde a comunidade está
-                  a nascer. Aqui, dizes quem és, de onde vens e o que procuras.
-                  É o passo que liga a tua realidade à educação séria em
-                  Blockchain, Web3 e à Apertum.
+                  Na área de Sports do LEGACY ficaste com o contexto geral. Nas
+                  Houses of Sports viste onde a comunidade está a nascer. Aqui,
+                  pedes ajuda para dar os primeiros passos: dizes quem és, de
+                  onde vens e o que procuras. É o passo que liga a tua realidade
+                  à educação séria em Blockchain, Web3 e à Apertum.
                 </p>
 
                 <p className="mt-3 text-xs text-blue-200/80 max-w-xl">
                   Não interessa se és atleta, treinador, staff, empreendedor ou
-                  apenas alguém que quer entender este novo mundo sem cair em
-                  modas vazias. O objetivo é simples: dar-te um primeiro mapa,
-                  em vez de te atirar para um mar de termos técnicos sem rumo.
+                  apenas alguém que quer entender este novo mundo sem seguir
+                  modas cegas. O objetivo é simples: educar primeiro, decidir
+                  depois — com alguém ao teu lado nos primeiros passos em vez
+                  de te atirar para um mar de termos técnicos sem rumo.
                 </p>
               </div>
 
@@ -598,8 +599,8 @@ export default function OnboardingPage() {
                 </h2>
                 <ol className="space-y-2 list-decimal list-inside">
                   <li>
-                    A tua candidatura entra numa fila interna ligada ao teu
-                    país, desporto (se fizer sentido) e tipo de perfil.
+                    O teu pedido de onboarding entra numa fila interna ligada ao
+                    teu país, desporto (se fizer sentido) e tipo de perfil.
                   </li>
                   <li>
                     Alguém da equipa LEGACY ou de uma House revê a tua
@@ -647,8 +648,8 @@ export default function OnboardingPage() {
                   <CardDescription className="text-blue-200/80">
                     Escolhe se vens pelo lado do desporto ou apenas para
                     aprender Blockchain, Web3 e Apertum. Isto ajusta o tipo de
-                    perguntas que te fazemos e o contexto interno onde a tua
-                    candidatura aparece.
+                    perguntas que te fazemos e o contexto interno onde o teu
+                    pedido de onboarding aparece.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -771,7 +772,7 @@ export default function OnboardingPage() {
                       </Label>
                       <Input
                         id="full_name"
-                        placeholder="Nome completo"
+                        placeholder="Primeiro e último nome"
                         value={formData.full_name}
                         onChange={(e) =>
                           setFormData({
@@ -1013,9 +1014,10 @@ export default function OnboardingPage() {
                     <CardContent>
                       <p className="text-xs text-muted-custom">
                         Como escolheste o modo geral (sem ligação a desporto),
-                        vamos ignorar desporto, papel e organização nesta
-                        candidatura. O foco será apenas o teu contexto, país e
-                        objetivos em relação a Blockchain, Web3 e Apertum.
+                        vamos ignorar desporto, papel e organização neste
+                        pedido de onboarding. O foco será apenas o teu
+                        contexto, país e objetivos em relação a Blockchain,
+                        Web3 e Apertum.
                       </p>
                     </CardContent>
                   )}
@@ -1159,7 +1161,7 @@ export default function OnboardingPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Obrigado pela tua candidatura!</DialogTitle>
+            <DialogTitle>Obrigado pelo teu pedido de onboarding!</DialogTitle>
             <DialogDescription>
               Enquanto esperas pelo contacto da equipa LEGACY, podes registar-te
               com o mesmo email e começar a explorar conteúdos que não estão

@@ -89,7 +89,7 @@ export default function SportsPage() {
 
         if (!housesRes.ok || !housesJson.success) {
           throw new Error(
-            housesJson.error || 'Erro ao carregar Houses of Sports.',
+            housesJson.error || 'Erro ao carregar Houses of Sports.'
           );
         }
 
@@ -98,7 +98,7 @@ export default function SportsPage() {
       } catch (err: any) {
         console.error('Erro ao carregar sports/houses:', err);
         setError(
-          err?.message || 'Erro inesperado ao carregar desportos e Houses.',
+          err?.message || 'Erro inesperado ao carregar desportos e Houses.'
         );
       } finally {
         setLoading(false);
@@ -169,8 +169,8 @@ export default function SportsPage() {
 
                 <p className="text-xs md:text-sm text-blue-100/90 max-w-xl leading-relaxed">
                   Se vens do <strong>desporto</strong>, há uma House à tua
-                  espera. Se não vens, mas queres compreender o que vai moldar a
-                  próxima década de{' '}
+                  espera. E se não vens, mas queres compreender o que vai
+                  moldar a próxima década de{' '}
                   <strong>finanças, dados e confiança digital</strong>, o
                   caminho também passa por aqui. O objetivo é simples: aprender
                   primeiro, agir depois — com alguém ao teu lado nos primeiros
@@ -204,7 +204,7 @@ export default function SportsPage() {
                       size="lg"
                       className="bg-white text-slate-950 hover:bg-slate-100"
                     >
-                      Fazer onboarding personalizado
+                      Preencher formulário para onboarding personalizado
                     </Button>
                   </Link>
                   <Link href="/sports/houses">
@@ -226,23 +226,23 @@ export default function SportsPage() {
                   <div className="flex flex-col md:flex-row gap-3 text-[11px] text-blue-100/90">
                     <FunilStep
                       index={1}
-                      label="Descobres o portal LEGACY Sports"
-                      detail="Percebes, sem jargão técnico, o que o LEGACY oferece para o desporto e para quem quer aprender Web3 com método."
+                      label="Descobres o portal LEGACY"
+                      detail="Chegas aqui através de conteúdos públicos em redes sociais ou porque alguém considerou importante que tivesses acesso a esta informação."
                     />
                     <FunilStep
                       index={2}
-                      label="Exploras as Houses e o teu desporto"
-                      detail="Vês que desportos já têm comunidade a nascer, por país, estado da House e liderança."
+                      label="Preenches o formulário de onboarding personalizado"
+                      detail="Percebes que isto pode ser para ti, respondes a um formulário simples e alguém fica com base suficiente para te acompanhar nos primeiros passos."
                     />
                     <FunilStep
                       index={3}
-                      label="Fazes o onboarding personalizado"
-                      detail="Partilhas o teu contexto e recebes um trajeto alinhado com o teu perfil e objetivos."
+                      label="Avanças para conteúdos privados e começas a acumular XP"
+                      detail="Dentro do LEGACY valorizamos a educação e o envolvimento. Cada lição, módulo, curso ou artigo que consomes soma XP à tua conta."
                     />
                     <FunilStep
                       index={4}
-                      label="Avanças para conteúdos e comunidades"
-                      detail="No futuro, cada House terá ferramentas próprias, missões e XP visível."
+                      label="Vês quem mais se educa no Leaderboard"
+                      detail="Existe um Leaderboard onde se destacam usernames de pessoas que levam este processo a sério. A questão é simples: será que o teu username vai aparecer lá em breve?"
                     />
                   </div>
                 </div>
@@ -286,8 +286,8 @@ export default function SportsPage() {
                     </div>
 
                     <p className="mt-4 text-[11px] text-body leading-relaxed">
-                      Cada House representa um desporto num país. No início
-                      vale mais educação, clareza e estrutura do que promessas
+                      Cada House representa um desporto num país. No início vale
+                      mais educação, clareza e estrutura do que promessas
                       vazias. O LEGACY existe precisamente para isso: tornar
                       esta transição mais segura e consciente.
                     </p>
@@ -327,7 +327,8 @@ export default function SportsPage() {
             <div className="max-w-5xl mx-auto grid md:grid-cols-[1.7fr,1.3fr] gap-8 items-start">
               <div className="space-y-3">
                 <h2 className="text-2xl font-bold text-heading">
-                  Porque é que Blockchain e Web3 interessam ao desporto (e não só).
+                  Porque é que Blockchain e Web3 interessam ao desporto (e não
+                  só).
                 </h2>
                 <p className="text-sm text-body leading-relaxed">
                   O ruído à volta de cripto, NFTs e Web3 fez muitas pessoas
@@ -405,9 +406,11 @@ export default function SportsPage() {
                   As Houses of Sports são grupos focados num desporto específico
                   num país concreto. No início, funcionam como{' '}
                   <strong>núcleos de aprendizagem e organização</strong> dentro
-                  do ecossistema LEGACY e da Apertum. Com o tempo, vão ganhar
-                  missões, XP visível, ferramentas internas e ligações mais
-                  profundas ao mundo on-chain.
+                  do ecossistema LEGACY e da Apertum. Com o tempo, algumas vão
+                  acabar por se destacar das demais devido às iniciativas dos
+                  seus membros ou da própria liderança da Casa. Em Web3 a
+                  comunidade tem um peso significativo, mas nem todas as
+                  comunidades existem para deixar a sua marca.
                 </p>
               </div>
 
@@ -461,7 +464,7 @@ export default function SportsPage() {
                         size="sm"
                         className="bg-white text-slate-950 hover:bg-slate-100"
                       >
-                        Começar onboarding
+                        Preencher formulário de onboarding
                       </Button>
                     </Link>
                   </div>
@@ -512,7 +515,7 @@ export default function SportsPage() {
                     size="lg"
                     className="bg-blue-600 hover:bg-blue-500 text-white"
                   >
-                    Fazer onboarding personalizado
+                    Preencher formulário para onboarding personalizado
                   </Button>
                 </Link>
                 <Link href="/education">
