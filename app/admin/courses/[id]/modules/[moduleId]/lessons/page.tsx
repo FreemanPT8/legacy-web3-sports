@@ -23,6 +23,7 @@ import {
   Trash2,
   LayoutTemplate,
   Eye,
+  Lock,
 } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
@@ -50,7 +51,6 @@ type Lesson = {
   estimated_time: number;
   image_url?: string | null;
   file_url?: string | null;
-  // published?: boolean; // ⚠ quando existir na BD
   _isNew?: boolean;
 };
 
@@ -66,6 +66,14 @@ type Course = {
   is_completed?: boolean | null;
   xp_total_distributed?: number;
   xp_creator_distributed?: number;
+};
+
+type PermissionsResponse = {
+  success: boolean;
+  permissions?: {
+    canManageCourses?: boolean;
+  };
+  error?: string;
 };
 
 export default function ModuleLessonsPage() {
@@ -89,7 +97,12 @@ export default function ModuleLessonsPage() {
     'desktop',
   );
   const [recentImages, setRecentImages] = useState<string[]>([]);
+
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [canManageCourses, setCanManageCourses] = useState(false);
+
   const RECENT_IMAGES_KEY = 'lessons_recent_images';
+
   const isValidUrl = (value: string) => {
     if (!value.trim()) return true;
     try {
@@ -100,7 +113,60 @@ export default function ModuleLessonsPage() {
     }
   };
 
-  // Cache simples de imagens recentes (localStorage)
+  const isAdmin =
+    user && (user.role === 'Super Admin' || user.role === 'Admin');
+
+  // Proteção básica por role
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (!isAdmin) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, isAdmin, router]);
+
+  // Carregar permissões finas (canManageCourses)
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (user.role === 'Super Admin') {
+      setCanManageCourses(true);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const fetchPermissions = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/admin/permissions', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data: PermissionsResponse = await res.json();
+
+        if (!res.ok || !data.success) {
+          setCanManageCourses(false);
+        } else {
+          setCanManageCourses(Boolean(data.permissions?.canManageCourses));
+        }
+      } catch (error) {
+        console.error('Unexpected error fetching permissions:', error);
+        setCanManageCourses(false);
+      } finally {
+        setPermissionsLoaded(true);
+      }
+    };
+
+    fetchPermissions();
+  }, [user, loading, getToken]);
+
+  // Cache de imagens recentes (localStorage)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -135,21 +201,6 @@ export default function ModuleLessonsPage() {
     );
     persistRecentImages(next);
   };
-
-  const isAdmin =
-    user && (user.role === 'Super Admin' || user.role === 'Admin');
-
-  // Proteção básica
-  useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    if (!isAdmin) {
-      router.push('/dashboard');
-    }
-  }, [user, loading, isAdmin, router]);
 
   // Carregar curso, módulo e lições
   useEffect(() => {
@@ -234,7 +285,6 @@ export default function ModuleLessonsPage() {
                   estimated_time: l.estimated_time ?? 10,
                   image_url: l.image_url ?? null,
                   file_url: l.file_url ?? null,
-                  // published: l.published ?? false,
                 }))
             : [];
 
@@ -268,6 +318,7 @@ export default function ModuleLessonsPage() {
     lang: LangCode,
     value: string,
   ) {
+    if (!canManageCourses) return;
     setLessons((prev) =>
       prev.map((l, i) => {
         if (i !== index) return l;
@@ -291,6 +342,7 @@ export default function ModuleLessonsPage() {
       | 'file_url',
     value: any,
   ) {
+    if (!canManageCourses) return;
     setLessons((prev) =>
       prev.map((l, i) =>
         i === index
@@ -304,6 +356,15 @@ export default function ModuleLessonsPage() {
   }
 
   const handleAddLesson = () => {
+    if (!canManageCourses) {
+      toast({
+        title: 'No permission',
+        description: 'You do not have permission to create or edit lessons.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLessons((prev) => {
       const nextOrder =
         prev.length > 0
@@ -334,6 +395,15 @@ export default function ModuleLessonsPage() {
   };
 
   const handleDeleteLesson = async (lesson: Lesson, index: number) => {
+    if (!canManageCourses) {
+      toast({
+        title: 'No permission',
+        description: 'You do not have permission to delete lessons.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!lesson.id) {
       setLessons((prev) => prev.filter((_, i) => i !== index));
       return;
@@ -397,6 +467,15 @@ export default function ModuleLessonsPage() {
   };
 
   const handleSaveLesson = async (lesson: Lesson, index: number) => {
+    if (!canManageCourses) {
+      toast({
+        title: 'No permission',
+        description: 'You do not have permission to save lessons.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const token = getToken();
 
     const title = lesson.title || {};
@@ -532,18 +611,22 @@ export default function ModuleLessonsPage() {
                 Manage Lessons
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Course:{' '}
+                Course{' '}
                 <span className="font-semibold">
                   {courseTitle || 'Untitled course'}
                 </span>
                 {' · '}
-                Module:{' '}
+                Module{' '}
                 <span className="font-semibold">
                   {moduleTitle || 'Untitled module'}
                 </span>
               </p>
               <div className="flex flex-wrap gap-2 mt-2 text-xs">
-                <Badge className={course.is_completed ? 'bg-green-600' : 'bg-yellow-600'}>
+                <Badge
+                  className={
+                    course.is_completed ? 'bg-green-600' : 'bg-yellow-600'
+                  }
+                >
                   {course.is_completed ? 'Completed' : 'Ongoing process'}
                 </Badge>
                 {typeof course.xp_total_distributed === 'number' && (
@@ -557,7 +640,15 @@ export default function ModuleLessonsPage() {
                   </Badge>
                 )}
                 {course.author_name && (
-                  <Badge variant="secondary">Creator: {course.author_name}</Badge>
+                  <Badge variant="secondary">
+                    Creator: {course.author_name}
+                  </Badge>
+                )}
+                {permissionsLoaded && !canManageCourses && (
+                  <span className="flex items-center gap-1 text-[11px] text-amber-700">
+                    <Lock className="h-3 w-3" />
+                    View only – no permission to edit lessons
+                  </span>
                 )}
               </div>
             </div>
@@ -580,7 +671,7 @@ export default function ModuleLessonsPage() {
                   Mobile
                 </Button>
               </div>
-              <Button onClick={handleAddLesson}>
+              <Button onClick={handleAddLesson} disabled={!canManageCourses}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Lesson
               </Button>
@@ -612,7 +703,9 @@ export default function ModuleLessonsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">SEO & legibilidade (ajuda rápida)</CardTitle>
+              <CardTitle className="text-sm">
+                SEO & legibilidade (ajuda rápida)
+              </CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-gray-700 dark:text-gray-200 space-y-2">
               <div className="grid md:grid-cols-3 gap-3 text-xs">
@@ -631,7 +724,9 @@ export default function ModuleLessonsPage() {
               </div>
               <ul className="list-disc list-inside space-y-1 text-xs">
                 <li>Usa a palavra-chave no título e no primeiro parágrafo.</li>
-                <li>Inclui 1 link interno para um curso/módulo/lesson relacionado.</li>
+                <li>
+                  Inclui 1 link interno para um curso/módulo/lesson relacionado.
+                </li>
                 <li>Mantém XP/threshold coerente com a duração e dificuldade.</li>
               </ul>
               <p className="text-[11px] text-gray-500">
@@ -650,12 +745,18 @@ export default function ModuleLessonsPage() {
           ) : (
             <div className="space-y-4">
               {lessons.map((lesson, index) => {
-                const title = getMultilingualContent(lesson.title, currentLanguage);
+                const title = getMultilingualContent(
+                  lesson.title,
+                  currentLanguage,
+                );
                 const description = getMultilingualContent(
                   lesson.description,
                   currentLanguage,
                 );
-                const content = getMultilingualContent(lesson.content, currentLanguage);
+                const content = getMultilingualContent(
+                  lesson.content,
+                  currentLanguage,
+                );
 
                 const savingThis = savingLessonId === (lesson.id || 'new');
                 const titleLength = (title || '').length;
@@ -672,26 +773,41 @@ export default function ModuleLessonsPage() {
                     : 'text-base leading-relaxed';
 
                 return (
-                  <Card key={lesson.id || `new-${index}`} className="border-blue-100">
+                  <Card
+                    key={lesson.id || `new-${index}`}
+                    className="border-blue-100"
+                  >
                     <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline">Lesson {lesson.order || index + 1}</Badge>
-                          {lesson._isNew && <Badge className="bg-yellow-600">New</Badge>}
+                          <Badge variant="outline">
+                            Lesson {lesson.order || index + 1}
+                          </Badge>
+                          {lesson._isNew && (
+                            <Badge className="bg-yellow-600">New</Badge>
+                          )}
                         </div>
                         <Input
                           value={title}
                           onChange={(e) =>
-                            updateLessonMLField(index, 'title', currentLanguage, e.target.value)
+                            updateLessonMLField(
+                              index,
+                              'title',
+                              currentLanguage,
+                              e.target.value,
+                            )
                           }
                           placeholder={`Lesson title (${currentLangLabel})`}
                           className="text-sm font-semibold"
+                          disabled={!canManageCourses}
                         />
                         <div className="text-[11px] text-gray-500 mt-1">
-                          {titleLength} chars / description {descriptionLength} chars
+                          {titleLength} chars / description {descriptionLength}{' '}
+                          chars
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          {lesson.estimated_time || 0} minutes - XP: {lesson.xp_reward || 0}
+                          {lesson.estimated_time || 0} minutes - XP:{' '}
+                          {lesson.xp_reward || 0}
                         </p>
                       </div>
                       <div className="flex flex-col gap-2 w-full md:w-40">
@@ -707,6 +823,7 @@ export default function ModuleLessonsPage() {
                             )
                           }
                           className="h-8 text-xs"
+                          disabled={!canManageCourses}
                         />
                       </div>
                     </CardHeader>
@@ -728,6 +845,7 @@ export default function ModuleLessonsPage() {
                             }
                             rows={3}
                             className="text-xs mt-1"
+                            disabled={!canManageCourses}
                           />
                         </div>
                         <div>
@@ -747,6 +865,7 @@ export default function ModuleLessonsPage() {
                             rows={6}
                             className="text-xs mt-1 font-mono"
                             placeholder="<p>HTML for this lesson...</p>"
+                            disabled={!canManageCourses}
                           />
                         </div>
                       </div>
@@ -757,14 +876,18 @@ export default function ModuleLessonsPage() {
                         <div className="flex items-center justify-between text-xs text-gray-500">
                           <span>Preview ({previewMode})</span>
                           <span>
-                            {previewMode === 'mobile' ? 'Mobile width' : 'Desktop width'}
+                            {previewMode === 'mobile'
+                              ? 'Mobile width'
+                              : 'Desktop width'}
                           </span>
                         </div>
                         <div className="space-y-1">
                           <p className="text-sm font-semibold">
                             {title || 'Untitled lesson'}
                           </p>
-                          <p className={`text-gray-700 dark:text-gray-200 ${previewText}`}>
+                          <p
+                            className={`text-gray-700 dark:text-gray-200 ${previewText}`}
+                          >
                             {description || 'No description yet.'}
                           </p>
                         </div>
@@ -786,6 +909,7 @@ export default function ModuleLessonsPage() {
                               )
                             }
                             className="mt-1"
+                            disabled={!canManageCourses}
                           />
                         </div>
                         <div>
@@ -803,6 +927,7 @@ export default function ModuleLessonsPage() {
                               )
                             }
                             className="mt-1"
+                            disabled={!canManageCourses}
                           />
                         </div>
                         <div>
@@ -820,6 +945,7 @@ export default function ModuleLessonsPage() {
                               )
                             }
                             className="mt-1"
+                            disabled={!canManageCourses}
                           />
                         </div>
                         <div>
@@ -835,7 +961,10 @@ export default function ModuleLessonsPage() {
                               )
                             }
                             placeholder="https://..."
-                            className={`mt-1 ${fileUrlInvalid ? 'border-red-400' : ''}`}
+                            className={`mt-1 ${
+                              fileUrlInvalid ? 'border-red-400' : ''
+                            }`}
+                            disabled={!canManageCourses}
                           />
                           {fileUrlInvalid && (
                             <p className="text-[11px] text-red-600 mt-1">
@@ -859,8 +988,11 @@ export default function ModuleLessonsPage() {
                               )
                             }
                             placeholder="https://..."
-                            className={`mt-1 ${imageUrlInvalid ? 'border-red-400' : ''}`}
+                            className={`mt-1 ${
+                              imageUrlInvalid ? 'border-red-400' : ''
+                            }`}
                             onBlur={() => addRecentImage(lesson.image_url || '')}
+                            disabled={!canManageCourses}
                           />
                           {imageUrlInvalid && (
                             <p className="text-[11px] text-red-600 mt-1">
@@ -879,8 +1011,10 @@ export default function ModuleLessonsPage() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() =>
+                                    canManageCourses &&
                                     updateLessonField(index, 'image_url', url)
                                   }
+                                  disabled={!canManageCourses}
                                 >
                                   Usar imagem recente
                                 </Button>
@@ -889,13 +1023,16 @@ export default function ModuleLessonsPage() {
                           )}
                           {lesson.image_url && !imageUrlInvalid && (
                             <div className="mt-2 border rounded-md p-2 bg-white">
-                              <div className="text-[11px] text-gray-500 mb-1">Preview</div>
+                              <div className="text-[11px] text-gray-500 mb-1">
+                                Preview
+                              </div>
                               <img
                                 src={lesson.image_url}
                                 alt="Lesson cover preview"
                                 className="w-full h-32 object-cover rounded"
                                 onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                  (e.currentTarget as HTMLImageElement).style.display =
+                                    'none';
                                 }}
                               />
                             </div>
@@ -921,10 +1058,20 @@ export default function ModuleLessonsPage() {
                                 });
                                 return;
                               }
+                              if (!canManageCourses) {
+                                toast({
+                                  title: 'No permission',
+                                  description:
+                                    'You do not have permission to edit lessons.',
+                                  variant: 'destructive',
+                                });
+                                return;
+                              }
                               router.push(
                                 `/admin/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}`,
                               );
                             }}
+                            disabled={!canManageCourses}
                           >
                             <LayoutTemplate className="h-4 w-4 mr-1" />
                             Open editor
@@ -957,6 +1104,7 @@ export default function ModuleLessonsPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleDeleteLesson(lesson, index)}
+                            disabled={!canManageCourses}
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
                             Delete
@@ -964,7 +1112,7 @@ export default function ModuleLessonsPage() {
                           <Button
                             size="sm"
                             onClick={() => handleSaveLesson(lesson, index)}
-                            disabled={!!savingLessonId}
+                            disabled={!!savingLessonId || !canManageCourses}
                             className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             <Save className="h-4 w-4 mr-1" />
@@ -983,5 +1131,3 @@ export default function ModuleLessonsPage() {
     </div>
   );
 }
-
-

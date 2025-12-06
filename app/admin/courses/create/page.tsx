@@ -1,3 +1,4 @@
+// app/admin/courses/create/page.tsx
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -38,6 +39,7 @@ export default function CreateCoursePage() {
   const [canManageCourses, setCanManageCourses] = useState(false);
   const [initialState, setInitialState] =
     useState<CourseBuilderState | null>(null);
+
   const entityType: 'course' = 'course';
   const draftEntityId = 'new-course-legacy-builder';
 
@@ -233,7 +235,7 @@ export default function CreateCoursePage() {
         await clearDraft();
         toast({
           title: 'Course created',
-          description: 'Continue configurating details or add modules.',
+          description: 'Continue konfigurating details or add modules.',
         });
 
         router.push(`/admin/courses/${data.course.id}/edit`);

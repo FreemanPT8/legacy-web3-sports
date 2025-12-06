@@ -22,6 +22,8 @@ import {
   ADMIN_TOGGLABLE_PERMISSIONS,
   PERMISSION_LABELS,
 } from '@/lib/permissions';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 
 type UserRole = 'Super Admin' | 'Admin' | 'Member';
 
@@ -487,7 +489,8 @@ export default function AdminUsersPage() {
     if (selectedUserRole !== 'Admin') {
       toast({
         title: 'Not allowed',
-        description: 'Extra admin permissions can only be set for Admin users.',
+        description:
+          'Extra admin permissions can only be set for Admin users.',
         variant: 'destructive',
       });
       return;
@@ -651,7 +654,9 @@ export default function AdminUsersPage() {
     }
 
     const confirmation = window.prompt(
-      `Type "delete" to permanently remove user "${username || userId}". This action cannot be undone.`,
+      `Type "delete" to permanently remove user "${
+        username || userId
+      }". This action cannot be undone.`,
     );
 
     if (confirmation !== 'delete') {
@@ -716,7 +721,7 @@ export default function AdminUsersPage() {
     if (role === 'Admin') {
       return {
         variant: 'outline' as const,
-        className: 'border-blue-500 text-blue-600',
+        className: 'border-blue-500 text-blue-400',
       };
     }
     return { variant: 'secondary' as const, className: '' };
@@ -741,9 +746,10 @@ export default function AdminUsersPage() {
   };
 
   const renderSortIcon = (key: SortKey) => {
-    if (sortKey !== key) return <span className="ml-1 text-xs text-gray-400">↕</span>;
+    if (sortKey !== key)
+      return <span className="ml-1 text-xs text-gray-400">↕</span>;
     return (
-      <span className="ml-1 text-xs text-gray-600">
+      <span className="ml-1 text-xs text-gray-200">
         {sortDirection === 'asc' ? '↑' : '↓'}
       </span>
     );
@@ -758,419 +764,656 @@ export default function AdminUsersPage() {
 
   if (loading || !permissionsLoaded) {
     return (
-      <div className="py-8">
-        <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+      <div className="min-h-screen flex flex-col bg-page">
+        <Header />
+        <main className="flex-1 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+          <div className="max-w-5xl mx-auto px-4 py-10">
+            <p className="text-sm text-blue-100/90">A carregar utilizadores…</p>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="container mx-auto px-4">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6">
-          Admin — User Management
-        </h1>
+    <div className="min-h-screen flex flex-col bg-page">
+      <Header />
 
-        {/* STAT CARDS */}
-        <div className="grid gap-4 md:grid-cols-6 mb-6">
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">
-                {userStats ? userStats.total : statsLocal.total}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium">Super Admins</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-red-600">
-                {userStats ? userStats.superAdmins : statsLocal.superAdmins}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium">Admins</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-gray-700">
-                {userStats ? userStats.admins : statsLocal.admins}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium">Members</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-blue-600">
-                {userStats ? userStats.members : statsLocal.members}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium">Novos 24h</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-green-600">
-                {userStats ? userStats.new24h : 0}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium">Novos 30d</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-green-600">
-                {userStats ? userStats.new30d : 0}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <main className="flex-1 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+        {/* HERO */}
+        <section className="border-b border-slate-900 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+            <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+          </div>
 
-        {/* USER MANAGEMENT */}
-        <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Filtros avançados por role, país, desporto, último login e último XP.
+          <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-10">
+            <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+              LEGACY Admin — Users
+            </span>
+
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+              User Management
+            </h1>
+            <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
+              Gestão centralizada de roles, permissões e filtros de utilizadores
+              por país, desporto, atividade recente e XP. A sala de controlo
+              da comunidade LEGACY.
             </p>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4 mb-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="Search by username, name or email..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="max-w-md"
-                  />
-                  <Button variant="outline" onClick={() => setSearch('')} disabled={!search}>
-                    Clear
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="secondary" onClick={() => setShowFilters((p) => !p)}>
-                    {showFilters ? 'Esconder filtros' : 'Procurar por filtros'}
-                  </Button>
-                </div>
-              </div>
+          </div>
+        </section>
 
-              {showFilters && (
-                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
-                  <div className="flex flex-wrap gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Last login:</span>
-                      <Select
-                        value={lastLoginFilter}
-                        onValueChange={(v) => setLastLoginFilter(v as typeof lastLoginFilter)}
+        {/* CONTEÚDO */}
+        <section className="py-8 md:py-10">
+          <div className="max-w-6xl mx-auto px-4 space-y-6">
+            {/* STAT CARDS */}
+            <div className="grid gap-4 md:grid-cols-6 mb-4">
+              <Card className="bg-card-custom border-custom">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium text-heading">
+                    Total Users
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 text-heading">
+                  <div className="text-2xl font-bold">
+                    {userStats ? userStats.total : statsLocal.total}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card-custom border-custom">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium text-heading">
+                    Super Admins
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-bold text-red-400">
+                    {userStats ? userStats.superAdmins : statsLocal.superAdmins}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card-custom border-custom">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium text-heading">
+                    Admins
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-bold text-body">
+                    {userStats ? userStats.admins : statsLocal.admins}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card-custom border-custom">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium text-heading">
+                    Members
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-bold text-blue-400">
+                    {userStats ? userStats.members : statsLocal.members}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card-custom border-custom">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium text-heading">
+                    Novos 24h
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-bold text-emerald-400">
+                    {userStats ? userStats.new24h : 0}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card-custom border-custom">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium text-heading">
+                    Novos 30d
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-bold text-emerald-400">
+                    {userStats ? userStats.new30d : 0}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* USER MANAGEMENT */}
+            <Card className="bg-card-custom border-custom">
+              <CardHeader>
+                <CardTitle className="text-heading">User Management</CardTitle>
+                <p className="text-sm text-muted-custom">
+                  Filtros avançados por role, país, desporto, último login e
+                  último XP.
+                </p>
+              </CardHeader>
+              <CardContent className="text-body">
+                <div className="flex flex-col gap-4 mb-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        placeholder="Search by username, name or email..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="max-w-md"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => setSearch('')}
+                        disabled={!search}
                       >
-                        <SelectTrigger className="w-[150px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="any">Any</SelectItem>
-                          <SelectItem value="last7d">Últimos 7 dias</SelectItem>
-                          <SelectItem value="last30d">Últimos 30 dias</SelectItem>
-                          <SelectItem value="never">Nunca</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        Clear
+                      </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Último XP:</span>
-                      <Select
-                        value={lastXpFilter}
-                        onValueChange={(v) => setLastXpFilter(v as typeof lastXpFilter)}
+                      <Button
+                        variant="secondary"
+                        onClick={() => setShowFilters((p) => !p)}
                       >
-                        <SelectTrigger className="w-[150px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="any">Any</SelectItem>
-                          <SelectItem value="last7d">Últimos 7 dias</SelectItem>
-                          <SelectItem value="last30d">Últimos 30 dias</SelectItem>
-                          <SelectItem value="never">Nunca</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        {showFilters
+                          ? 'Esconder filtros'
+                          : 'Procurar por filtros'}
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-3 gap-3">
-                    <div>
-                      <p className="text-xs font-semibold mb-2">Roles</p>
-                      <div className="flex flex-wrap gap-2">
-                        {(['Super Admin', 'Admin', 'Member'] as UserRole[]).map((r) => (
-                          <Button
-                            key={r}
-                            size="sm"
-                            variant={roleFilters.includes(r) ? 'secondary' : 'outline'}
-                            onClick={() =>
-                              setRoleFilters((prev) =>
-                                prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
+                  {showFilters && (
+                    <div className="space-y-4 border-custom rounded-lg p-4 bg-card-custom/80">
+                      <div className="flex flex-wrap gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-custom">
+                            Last login:
+                          </span>
+                          <Select
+                            value={lastLoginFilter}
+                            onValueChange={(v) =>
+                              setLastLoginFilter(
+                                v as typeof lastLoginFilter,
                               )
                             }
                           >
-                            {r}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold mb-2">País</p>
-                      <div className="flex flex-wrap gap-2">
-                        {countryOptions.map((c) => (
-                          <Button
-                            key={c}
-                            size="sm"
-                            variant={countryFilters.includes(c) ? 'secondary' : 'outline'}
-                            onClick={() => setCountryFilters((prev) => toggleArrayFilter(prev, c))}
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any</SelectItem>
+                              <SelectItem value="last7d">
+                                Últimos 7 dias
+                              </SelectItem>
+                              <SelectItem value="last30d">
+                                Últimos 30 dias
+                              </SelectItem>
+                              <SelectItem value="never">Nunca</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-custom">
+                            Último XP:
+                          </span>
+                          <Select
+                            value={lastXpFilter}
+                            onValueChange={(v) =>
+                              setLastXpFilter(v as typeof lastXpFilter)
+                            }
                           >
-                            {c}
-                          </Button>
-                        ))}
-                        {countryOptions.length === 0 && (
-                          <span className="text-xs text-gray-400">Sem dados</span>
-                        )}
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any</SelectItem>
+                              <SelectItem value="last7d">
+                                Últimos 7 dias
+                              </SelectItem>
+                              <SelectItem value="last30d">
+                                Últimos 30 dias
+                              </SelectItem>
+                              <SelectItem value="never">Nunca</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <p className="text-xs font-semibold mb-2">Desporto</p>
-                      <div className="flex flex-wrap gap-2">
-                        {sportOptions.map((s) => (
-                          <Button
-                            key={s}
-                            size="sm"
-                            variant={sportFilters.includes(s) ? 'secondary' : 'outline'}
-                            onClick={() => setSportFilters((prev) => toggleArrayFilter(prev, s))}
-                          >
-                            {s}
-                          </Button>
-                        ))}
-                        {sportOptions.length === 0 && (
-                          <span className="text-xs text-gray-400">Sem dados</span>
-                        )}
+                      <div className="grid md:grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-xs font-semibold mb-2 text-heading">
+                            Roles
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {(
+                              ['Super Admin', 'Admin', 'Member'] as UserRole[]
+                            ).map((r) => (
+                              <Button
+                                key={r}
+                                size="sm"
+                                variant={
+                                  roleFilters.includes(r)
+                                    ? 'secondary'
+                                    : 'outline'
+                                }
+                                onClick={() =>
+                                  setRoleFilters((prev) =>
+                                    prev.includes(r)
+                                      ? prev.filter((x) => x !== r)
+                                      : [...prev, r],
+                                  )
+                                }
+                              >
+                                {r}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-semibold mb-2 text-heading">
+                            País
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {countryOptions.map((c) => (
+                              <Button
+                                key={c}
+                                size="sm"
+                                variant={
+                                  countryFilters.includes(c)
+                                    ? 'secondary'
+                                    : 'outline'
+                                }
+                                onClick={() =>
+                                  setCountryFilters((prev) =>
+                                    toggleArrayFilter(prev, c),
+                                  )
+                                }
+                              >
+                                {c}
+                              </Button>
+                            ))}
+                            {countryOptions.length === 0 && (
+                              <span className="text-xs text-muted-custom">
+                                Sem dados
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-semibold mb-2 text-heading">
+                            Desporto
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {sportOptions.map((s) => (
+                              <Button
+                                key={s}
+                                size="sm"
+                                variant={
+                                  sportFilters.includes(s)
+                                    ? 'secondary'
+                                    : 'outline'
+                                }
+                                onClick={() =>
+                                  setSportFilters((prev) =>
+                                    toggleArrayFilter(prev, s),
+                                  )
+                                }
+                              >
+                                {s}
+                              </Button>
+                            ))}
+                            {sportOptions.length === 0 && (
+                              <span className="text-xs text-muted-custom">
+                                Sem dados
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            <div className="overflow-x-auto border rounded-lg bg-white dark:bg-gray-900">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('username')}>
-                      <span className="inline-flex items-center">Username{renderSortIcon('username')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('full_name')}>
-                      <span className="inline-flex items-center">Name{renderSortIcon('full_name')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('email')}>
-                      <span className="inline-flex items-center">Email{renderSortIcon('email')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('role')}>
-                      <span className="inline-flex items-center">Role{renderSortIcon('role')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('country')}>
-                      <span className="inline-flex items-center">Country{renderSortIcon('country')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('xp_total')}>
-                      <span className="inline-flex items-center">XP{renderSortIcon('xp_total')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('created_at')}>
-                      <span className="inline-flex items-center">Created{renderSortIcon('created_at')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('last_login')}>
-                      <span className="inline-flex items-center">Last login{renderSortIcon('last_login')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold cursor-pointer select-none" onClick={() => handleSort('last_xp_at')}>
-                      <span className="inline-flex items-center">Last XP{renderSortIcon('last_xp_at')}</span>
-                    </th>
-                    <th className="px-4 py-2 text-left font-semibold">Change Role</th>
-                    <th className="px-4 py-2 text-left font-semibold">Permissions</th>
-                    <th className="px-4 py-2 text-left font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {isLoadingUsers && (
-                    <tr>
-                      <td colSpan={12} className="px-4 py-6 text-center text-gray-500">
-                        Loading users...
-                      </td>
-                    </tr>
-                  )}
-
-                  {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
-                    <tr>
-                      <td colSpan={12} className="px-4 py-6 text-center text-gray-500">
-                        No users found.
-                      </td>
-                    </tr>
-                  )}
-
-                  {!isLoadingUsers &&
-                    filteredAndSortedUsers.map((u) => (
-                      <tr key={u.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 font-medium">
-                          {u.username || <span className="text-gray-400">-</span>}
-                          {user?.id === u.id && (
-                            <span className="ml-1 text-[10px] text-blue-500">(you)</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2">{u.full_name || <span className="text-gray-400">-</span>}</td>
-                        <td className="px-4 py-2">{u.email || <span className="text-gray-400">-</span>}</td>
-                        <td className="px-4 py-2">
-                          {(() => {
-                            const { variant, className } = getRoleBadgeStyle(u.role);
-                            return (
-                              <Badge variant={variant} className={className}>
-                                {u.role}
-                              </Badge>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-4 py-2">{u.country || <span className="text-gray-400">-</span>}</td>
-                        <td className="px-4 py-2">{u.xp_total ?? 0}</td>
-                        <td className="px-4 py-2">{u.created_at ? formatDate(u.created_at) : '-'}</td>
-                        <td className="px-4 py-2 text-xs">{u.last_login ? formatDate(u.last_login) : '—'}</td>
-                        <td className="px-4 py-2 text-xs">{u.last_xp_at ? formatDate(u.last_xp_at) : '—'}</td>
-                        <td className="px-4 py-2">
-                          {canEditUsers ? (
-                            <Select
-                              disabled={updatingUserId === u.id}
-                              value={
-                                (['Super Admin', 'Admin', 'Member'].includes(u.role as UserRole)
-                                  ? u.role
-                                  : 'Member') as UserRole
-                              }
-                              onValueChange={(value) =>
-                                handleChangeRole(u.id, value as UserRole, u.role)
-                              }
-                            >
-                              <SelectTrigger className="w-[140px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Member">Member</SelectItem>
-                                <SelectItem value="Admin">Admin</SelectItem>
-                                <SelectItem value="Super Admin">Super Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <span className="text-xs text-gray-400">View only</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2">
-                          <Button variant="outline" size="sm" onClick={() => handleOpenUserPermissions(u)}>
-                            View / Edit
-                          </Button>
-                        </td>
-                        <td className="px-4 py-2">
-                          {canEditUsers && isSuperAdmin ? (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              disabled={deletingUserId === u.id}
-                              onClick={() => handleDeleteUser(u.id, u.username)}
-                            >
-                              {deletingUserId === u.id ? 'Deleting...' : 'Delete'}
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
-                          )}
-                        </td>
+                <div className="overflow-x-auto rounded-lg border-custom bg-card-custom">
+                  <table className="min-w-full divide-y divide-slate-800 text-sm">
+                    <thead className="bg-slate-900/70">
+                      <tr>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('username')}
+                        >
+                          <span className="inline-flex items-center">
+                            Username{renderSortIcon('username')}
+                          </span>
+                        </th>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('full_name')}
+                        >
+                          <span className="inline-flex items-center">
+                            Name{renderSortIcon('full_name')}
+                          </span>
+                        </th>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('email')}
+                        >
+                          <span className="inline-flex items-center">
+                            Email{renderSortIcon('email')}
+                          </span>
+                        </th>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('role')}
+                        >
+                          <span className="inline-flex items-center">
+                            Role{renderSortIcon('role')}
+                          </span>
+                        </th>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('country')}
+                        >
+                          <span className="inline-flex items-center">
+                            Country{renderSortIcon('country')}
+                          </span>
+                        </th>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('xp_total')}
+                        >
+                          <span className="inline-flex items-center">
+                            XP{renderSortIcon('xp_total')}
+                          </span>
+                        </th>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('created_at')}
+                        >
+                          <span className="inline-flex items-center">
+                            Created{renderSortIcon('created_at')}
+                          </span>
+                        </th>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('last_login')}
+                        >
+                          <span className="inline-flex items-center">
+                            Last login{renderSortIcon('last_login')}
+                          </span>
+                        </th>
+                        <th
+                          className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                          onClick={() => handleSort('last_xp_at')}
+                        >
+                          <span className="inline-flex items-center">
+                            Last XP{renderSortIcon('last_xp_at')}
+                          </span>
+                        </th>
+                        <th className="px-4 py-2 text-left font-semibold text-heading">
+                          Change Role
+                        </th>
+                        <th className="px-4 py-2 text-left font-semibold text-heading">
+                          Permissions
+                        </th>
+                        <th className="px-4 py-2 text-left font-semibold text-heading">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {isLoadingUsers && (
+                        <tr>
+                          <td
+                            colSpan={12}
+                            className="px-4 py-6 text-center text-muted-custom"
+                          >
+                            Loading users...
+                          </td>
+                        </tr>
+                      )}
 
-            {selectedUser && (
-              <div className="mt-6 border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h2 className="text-lg font-semibold">
-                      Permissions for {selectedUser.username || selectedUser.email || 'user'}
-                    </h2>
-                    <p className="text-xs text-gray-500">
-                      Role: <span className="font-medium">{selectedUserRole || selectedUser.role}</span>
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedUser(null);
-                        setSelectedUserRole(null);
-                        setSelectedUserPermissions({});
-                      }}
-                    >
-                      Close
-                    </Button>
-                    {permissionsEditable && canEditUsers && isSuperAdmin && (
-                      <Button
-                        size="sm"
-                        onClick={handleSaveUserPermissions}
-                        disabled={savingUserPermissions || loadingUserPermissions}
-                      >
-                        {savingUserPermissions ? 'Saving...' : 'Save'}
-                      </Button>
-                    )}
-                  </div>
+                      {!isLoadingUsers &&
+                        filteredAndSortedUsers.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={12}
+                              className="px-4 py-6 text-center text-muted-custom"
+                            >
+                              No users found.
+                            </td>
+                          </tr>
+                        )}
+
+                      {!isLoadingUsers &&
+                        filteredAndSortedUsers.map((u) => (
+                          <tr
+                            key={u.id}
+                            className="hover:bg-slate-900/40 transition-colors"
+                          >
+                            <td className="px-4 py-2 font-medium text-heading">
+                              {u.username || (
+                                <span className="text-muted-custom">-</span>
+                              )}
+                              {user?.id === u.id && (
+                                <span className="ml-1 text-[10px] text-blue-400">
+                                  (you)
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2">
+                              {u.full_name || (
+                                <span className="text-muted-custom">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2">
+                              {u.email || (
+                                <span className="text-muted-custom">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2">
+                              {(() => {
+                                const { variant, className } =
+                                  getRoleBadgeStyle(u.role);
+                                return (
+                                  <Badge variant={variant} className={className}>
+                                    {u.role}
+                                  </Badge>
+                                );
+                              })()}
+                            </td>
+                            <td className="px-4 py-2">
+                              {u.country || (
+                                <span className="text-muted-custom">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2">{u.xp_total ?? 0}</td>
+                            <td className="px-4 py-2">
+                              {u.created_at ? formatDate(u.created_at) : '-'}
+                            </td>
+                            <td className="px-4 py-2 text-xs">
+                              {u.last_login ? formatDate(u.last_login) : '—'}
+                            </td>
+                            <td className="px-4 py-2 text-xs">
+                              {u.last_xp_at ? formatDate(u.last_xp_at) : '—'}
+                            </td>
+                            <td className="px-4 py-2">
+                              {canEditUsers ? (
+                                <Select
+                                  disabled={updatingUserId === u.id}
+                                  value={
+                                    (['Super Admin', 'Admin', 'Member'].includes(
+                                      u.role as UserRole,
+                                    )
+                                      ? u.role
+                                      : 'Member') as UserRole
+                                  }
+                                  onValueChange={(value) =>
+                                    handleChangeRole(
+                                      u.id,
+                                      value as UserRole,
+                                      u.role,
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger className="w-[140px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Member">
+                                      Member
+                                    </SelectItem>
+                                    <SelectItem value="Admin">Admin</SelectItem>
+                                    <SelectItem value="Super Admin">
+                                      Super Admin
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span className="text-xs text-muted-custom">
+                                  View only
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenUserPermissions(u)}
+                              >
+                                View / Edit
+                              </Button>
+                            </td>
+                            <td className="px-4 py-2">
+                              {canEditUsers && isSuperAdmin ? (
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  disabled={deletingUserId === u.id}
+                                  onClick={() =>
+                                    handleDeleteUser(u.id, u.username)
+                                  }
+                                >
+                                  {deletingUserId === u.id
+                                    ? 'Deleting...'
+                                    : 'Delete'}
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-custom">
+                                  -
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
                 </div>
 
-                {loadingUserPermissions ? (
-                  <p className="text-sm text-gray-500">Loading permissions...</p>
-                ) : (
-                  <>
-                    {selectedUserRole === 'Super Admin' && (
-                      <p className="text-sm text-gray-500 mb-2">
-                        Super Admin already has all permissions. Extra overrides are not needed.
-                      </p>
-                    )}
-                    {selectedUserRole === 'Member' && (
-                      <p className="text-sm text-gray-500 mb-2">
-                        Members cannot have admin permissions. Change the role to <strong>Admin</strong> if you want to grant admin-level permissions.
-                      </p>
-                    )}
-                    {selectedUserRole === 'Admin' && (
-                      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-                        {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
-                          <label key={key} className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                              checked={!!selectedUserPermissions[key]}
-                              disabled={
-                                !permissionsEditable ||
-                                !canEditUsers ||
-                                !isSuperAdmin ||
-                                savingUserPermissions
-                              }
-                              onCheckedChange={(checked) => handleTogglePermission(key, Boolean(checked))}
-                            />
-                            <span>{PERMISSION_LABELS[key]}</span>
-                          </label>
-                        ))}
+                {selectedUser && (
+                  <div className="mt-6 border-t border-slate-800 pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h2 className="text-lg font-semibold text-heading">
+                          Permissions for{' '}
+                          {selectedUser.username ||
+                            selectedUser.email ||
+                            'user'}
+                        </h2>
+                        <p className="text-xs text-muted-custom">
+                          Role:{' '}
+                          <span className="font-medium">
+                            {selectedUserRole || selectedUser.role}
+                          </span>
+                        </p>
                       </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(null);
+                            setSelectedUserRole(null);
+                            setSelectedUserPermissions({});
+                          }}
+                        >
+                          Close
+                        </Button>
+                        {permissionsEditable &&
+                          canEditUsers &&
+                          isSuperAdmin && (
+                            <Button
+                              size="sm"
+                              onClick={handleSaveUserPermissions}
+                              disabled={
+                                savingUserPermissions || loadingUserPermissions
+                              }
+                            >
+                              {savingUserPermissions ? 'Saving...' : 'Save'}
+                            </Button>
+                          )}
+                      </div>
+                    </div>
+
+                    {loadingUserPermissions ? (
+                      <p className="text-sm text-muted-custom">
+                        Loading permissions...
+                      </p>
+                    ) : (
+                      <>
+                        {selectedUserRole === 'Super Admin' && (
+                          <p className="text-sm text-muted-custom mb-2">
+                            Super Admin already has all permissions. Extra
+                            overrides are not needed.
+                          </p>
+                        )}
+                        {selectedUserRole === 'Member' && (
+                          <p className="text-sm text-muted-custom mb-2">
+                            Members cannot have admin permissions. Change the
+                            role to <strong>Admin</strong> if you want to grant
+                            admin-level permissions.
+                          </p>
+                        )}
+                        {selectedUserRole === 'Admin' && (
+                          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                            {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
+                              <label
+                                key={key}
+                                className="flex items-center gap-2 text-sm"
+                              >
+                                <Checkbox
+                                  checked={!!selectedUserPermissions[key]}
+                                  disabled={
+                                    !permissionsEditable ||
+                                    !canEditUsers ||
+                                    !isSuperAdmin ||
+                                    savingUserPermissions
+                                  }
+                                  onCheckedChange={(checked) =>
+                                    handleTogglePermission(
+                                      key,
+                                      Boolean(checked),
+                                    )
+                                  }
+                                />
+                                <span>{PERMISSION_LABELS[key]}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
-                  </>
+                  </div>
                 )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
     </div>
   );
 }

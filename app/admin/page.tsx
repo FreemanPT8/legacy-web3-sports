@@ -3,7 +3,13 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Users,
@@ -19,6 +25,8 @@ import {
 import { UserGrowthChart } from '@/components/admin/charts/UserGrowthChart';
 import { CourseEngagementChart } from '@/components/admin/charts/CourseEngagementChart';
 import { EngagementChart } from '@/components/admin/charts/EngagementChart';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 
 type AdminStats = {
   // legacy flat (compat)
@@ -84,9 +92,11 @@ type AdminStats = {
 
 function StatTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border p-3 bg-white">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-2xl font-semibold">{(value ?? 0).toLocaleString('pt-PT')}</p>
+    <div className="rounded-lg border-custom bg-card-custom p-3">
+      <p className="text-xs text-muted-custom">{label}</p>
+      <p className="text-2xl font-semibold text-heading">
+        {(value ?? 0).toLocaleString('pt-PT')}
+      </p>
     </div>
   );
 }
@@ -99,20 +109,30 @@ function TopList({
   items: { id: string; title: any; views: number }[];
 }) {
   return (
-    <Card className="border-dashed">
+    <Card className="border-custom border-dashed bg-card-custom">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">{title}</CardTitle>
+        <CardTitle className="text-sm text-heading">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 text-sm">
+      <CardContent className="space-y-2 text-sm text-body">
         {items && items.length > 0 ? (
           items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3">
-              <span className="truncate">{(item.title as any)?.pt ?? (item.title as any)?.en ?? item.title ?? '—'}</span>
-              <span className="font-semibold">{(item.views ?? 0).toLocaleString('pt-PT')}</span>
+            <div
+              key={item.id}
+              className="flex items-center justify-between gap-3"
+            >
+              <span className="truncate">
+                {(item.title as any)?.pt ??
+                  (item.title as any)?.en ??
+                  item.title ??
+                  '—'}
+              </span>
+              <span className="font-semibold">
+                {(item.views ?? 0).toLocaleString('pt-PT')}
+              </span>
             </div>
           ))
         ) : (
-          <p className="text-xs text-gray-500">Sem dados</p>
+          <p className="text-xs text-muted-custom">Sem dados</p>
         )}
       </CardContent>
     </Card>
@@ -198,9 +218,7 @@ export default function AdminDashboardPage() {
 
       if (!resAdv.ok || !dataAdv.success) {
         console.warn('Advanced stats unavailable:', dataAdv.error);
-        setAdvancedError(
-          dataAdv.error || 'Failed to load advanced insights',
-        );
+        setAdvancedError(dataAdv.error || 'Failed to load advanced insights');
       } else {
         setAdvanced(dataAdv.data as AdvancedStats);
       }
@@ -229,7 +247,10 @@ export default function AdminDashboardPage() {
       total: stats?.totalUsers ?? 0,
       superAdmins: stats?.totalSuperAdmins ?? 0,
       admins: stats?.totalAdmins ?? 0,
-      members: (stats?.totalUsers ?? 0) - (stats?.totalAdmins ?? 0) - (stats?.totalSuperAdmins ?? 0),
+      members:
+        (stats?.totalUsers ?? 0) -
+        (stats?.totalAdmins ?? 0) -
+        (stats?.totalSuperAdmins ?? 0),
       new24h: 0,
       new30d: 0,
     };
@@ -314,296 +335,450 @@ export default function AdminDashboardPage() {
     typeof n === 'number' ? n.toLocaleString('pt-PT') : '0';
 
   return (
-    <div className="space-y-10">
-      {/* TÍTULO */}
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-1">Admin Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Realtime analytics & management tools for the entire Legacy platform.
-        </p>
+    <div className="min-h-screen flex flex-col bg-page">
+      <Header />
 
-        {statsError && (
-          <p className="mt-2 text-sm text-red-600">{statsError}</p>
-        )}
-      </div>
+      <main className="flex-1 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+        {/* HERO */}
+        <section className="border-b border-slate-900 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+            <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+          </div>
 
-      {/* USERS */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" />
-            Users
-          </CardTitle>
-          <CardDescription>User base and recent signups.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-4 gap-4">
-          <div className="rounded-lg border p-3 bg-white">
-            <p className="text-xs text-gray-500">Total</p>
-            <p className="text-3xl font-bold">{loadingStats ? '...' : formatNumber(safeStats.users.total)}</p>
-            <p className="text-xs text-gray-500 mt-1">
-              Super Admin: {formatNumber(safeStats.users.superAdmins)} | Admin:{' '}
-              {formatNumber(safeStats.users.admins)} | Members:{' '}
-              {formatNumber(safeStats.users.members)}
+          <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-10">
+            <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+              LEGACY Admin — Overview
+            </span>
+
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+              Admin Dashboard
+            </h1>
+            <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
+              Visão rápida sobre utilizadores, cursos, blog, onboarding e Houses
+              of Sports. Um painel para perceber se o LEGACY está a crescer de
+              forma saudável ou se algo precisa da tua atenção.
             </p>
-          </div>
-          <div className="rounded-lg border p-3 bg-white">
-            <p className="text-xs text-gray-500">Novos (24h)</p>
-            <p className="text-3xl font-bold">{formatNumber(safeStats.users.new24h)}</p>
-            <p className="text-xs text-gray-500 mt-1">Últimas 24 horas</p>
-          </div>
-          <div className="rounded-lg border p-3 bg-white">
-            <p className="text-xs text-gray-500">Novos (30d)</p>
-            <p className="text-3xl font-bold">{formatNumber(safeStats.users.new30d)}</p>
-            <p className="text-xs text-gray-500 mt-1">Últimos 30 dias</p>
-          </div>
-          <div className="rounded-lg border p-3 bg-white">
-            <p className="text-xs text-gray-500">XP Total (todas ações)</p>
-            <p className="text-xl font-semibold">
-              {formatNumber(safeStats.courses.xp.allActions.total)}
-            </p>
-            <p className="text-[11px] text-gray-500">
-              24h: {formatNumber(safeStats.courses.xp.allActions.last24h)} | 30d:{' '}
-              {formatNumber(safeStats.courses.xp.allActions.last30d)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* COURSES / MODULES / LESSONS */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-green-600" />
-            Active Courses
-          </CardTitle>
-          <CardDescription>Courses, modules, lessons and XP distribution.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-4 gap-4">
-            <StatTile label="Courses (published)" value={safeStats.courses.activeCourses} />
-            <StatTile label="Total Courses" value={safeStats.courses.totalCourses} />
-            <StatTile label="Modules" value={safeStats.courses.totalModules} />
-            <StatTile label="Lessons" value={safeStats.courses.totalLessons} />
-          </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card className="border-dashed">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-emerald-600" />
-                  XP Distribuído (Total)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div>Cursos: {formatNumber(safeStats.courses.xp.totalCourses)}</div>
-                <div>Módulos: {formatNumber(safeStats.courses.xp.totalModules)}</div>
-                <div>Lições: {formatNumber(safeStats.courses.xp.totalLessons)}</div>
-              </CardContent>
-            </Card>
-            <Card className="border-dashed">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-600" />
-                  XP (Últimas 24h)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div>Cursos: {formatNumber(safeStats.courses.xp.last24h.courses)}</div>
-                <div>Módulos: {formatNumber(safeStats.courses.xp.last24h.modules)}</div>
-                <div>Lições: {formatNumber(safeStats.courses.xp.last24h.lessons)}</div>
-              </CardContent>
-            </Card>
-            <Card className="border-dashed">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-purple-600" />
-                  XP (Últimos 30d)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div>Cursos: {formatNumber(safeStats.courses.xp.last30d.courses)}</div>
-                <div>Módulos: {formatNumber(safeStats.courses.xp.last30d.modules)}</div>
-                <div>Lições: {formatNumber(safeStats.courses.xp.last30d.lessons)}</div>
-              </CardContent>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* BLOG */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-purple-600" />
-            Blog Posts
-          </CardTitle>
-          <CardDescription>Publicados, XP distribuído e visualizações.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-4 gap-4">
-            <StatTile label="Publicados" value={safeStats.blog.totalPosts} />
-            <StatTile label="XP total (blog)" value={safeStats.blog.xp.total} />
-            <StatTile label="XP 24h" value={safeStats.blog.xp.last24h} />
-            <StatTile label="XP 30d" value={safeStats.blog.xp.last30d} />
-          </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card className="border-dashed">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-slate-600" />
-                  Visualizações
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
-                <div>Total: {formatNumber(safeStats.blog.views.total)}</div>
-                <div>Users com login: {formatNumber(safeStats.blog.views.logged)}</div>
-              </CardContent>
-            </Card>
-            <TopList
-              title="Top 7 dias"
-              items={safeStats.blog.topPosts.last7d}
-            />
-            <TopList
-              title="Top 30 dias"
-              items={safeStats.blog.topPosts.last30d}
-            />
-          </div>
-          <TopList title="Top 365 dias" items={safeStats.blog.topPosts.last365d} />
-        </CardContent>
-      </Card>
-
-      {/* ONBOARDING */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-orange-500" />
-            Pending Onboarding
-          </CardTitle>
-          <CardDescription>Estados e responsáveis.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-3 gap-4">
-            <StatTile label="Pendentes (total)" value={safeStats.onboarding.pendingTotal} />
-            <StatTile label="Por abrir" value={safeStats.onboarding.pendingPorAbrir} />
-            <StatTile label="Estados distintos" value={onboardingStatusEntries.length} />
-          </div>
-          {onboardingStatusEntries.length > 0 && (
-            <div className="grid md:grid-cols-3 gap-3 text-xs">
-              {onboardingStatusEntries.map(([status, count]) => (
-                <div key={status} className="rounded border p-3 bg-white">
-                  <div className="font-semibold">{status}</div>
-                  <div className="text-sm">{count}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          {Object.keys(safeStats.onboarding.byResponsible || {}).length > 0 && (
-            <div className="space-y-2 text-xs">
-              <div className="font-semibold">Responsáveis (by user_id)</div>
-              <div className="grid md:grid-cols-4 gap-2">
-                {Object.entries(safeStats.onboarding.byResponsible).map(([uid, count]) => (
-                  <div key={uid} className="rounded border p-2 bg-white">
-                    <div className="text-[11px] text-gray-500 break-all">{uid}</div>
-                    <div className="text-sm font-semibold">{count}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* HOUSES */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-amber-600" />
-            Houses of Sports
-          </CardTitle>
-          <CardDescription>Status overview.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-4 gap-4">
-          <StatTile label="Total" value={safeStats.houses.total} />
-          <StatTile label="Active" value={safeStats.houses.active} />
-          <StatTile label="Building" value={safeStats.houses.building} />
-          <StatTile label="Developing" value={safeStats.houses.developing} />
-        </CardContent>
-      </Card>
-
-      {/* BOTÃO + INSIGHTS AVANÇADOS */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            Advanced Insights
-          </h2>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAdvanced((prev) => !prev)}
-          >
-            {showAdvanced ? 'Esconder insights' : 'Mostrar insights'}
-          </Button>
-        </div>
-
-        {showAdvanced && (
-          <div className="space-y-8">
-            {advancedError && (
-              <p className="text-sm text-red-600">{advancedError}</p>
+            {statsError && (
+              <p className="mt-3 text-xs text-red-400">{statsError}</p>
             )}
-
-            {/* User Growth */}
-            <Card>
-              <CardHeader>
-                <CardTitle>User Growth (Monthly)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loadingAdvanced && !advanced ? (
-                  <p className="text-sm text-gray-500">A carregar...</p>
-                ) : (
-                  <UserGrowthChart
-                    data={
-                      userGrowthData.length
-                        ? userGrowthData
-                        : [
-                            { date: 'M-1', count: 0 },
-                            { date: 'M-2', count: 0 },
-                          ]
-                    }
-                  />
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Course Engagement */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Course Engagement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loadingAdvanced && !advanced ? (
-                  <p className="text-sm text-gray-500">A carregar...</p>
-                ) : (
-                  <CourseEngagementChart data={courseEngagementData} />
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Weekly Engagement */}
-            <Card>
-              <CardHeader>
-                <CardTitle>User Activity (Weekly)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loadingAdvanced && !advanced ? (
-                  <p className="text-sm text-gray-500">A carregar...</p>
-                ) : (
-                  <EngagementChart data={weeklyEngagementData} />
-                )}
-              </CardContent>
-            </Card>
           </div>
-        )}
-      </div>
+        </section>
+
+        {/* CONTEÚDO PRINCIPAL */}
+        <section className="py-8 md:py-10">
+          <div className="max-w-6xl mx-auto px-4 space-y-8">
+            {/* USERS */}
+            <Card className="bg-card-custom border-custom">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-heading">
+                  <Users className="h-5 w-5 text-blue-400" />
+                  Users
+                </CardTitle>
+                <CardDescription className="text-muted-custom">
+                  Base de utilizadores e registos recentes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-4 gap-4 text-body">
+                <div className="rounded-lg border-custom bg-card-custom p-3">
+                  <p className="text-xs text-muted-custom">Total</p>
+                  <p className="text-3xl font-bold text-heading">
+                    {loadingStats ? '...' : formatNumber(safeStats.users.total)}
+                  </p>
+                  <p className="text-xs text-muted-custom mt-1">
+                    Super Admin: {formatNumber(safeStats.users.superAdmins)} |{' '}
+                    Admin: {formatNumber(safeStats.users.admins)} | Members:{' '}
+                    {formatNumber(safeStats.users.members)}
+                  </p>
+                </div>
+                <div className="rounded-lg border-custom bg-card-custom p-3">
+                  <p className="text-xs text-muted-custom">Novos (24h)</p>
+                  <p className="text-3xl font-bold text-heading">
+                    {formatNumber(safeStats.users.new24h)}
+                  </p>
+                  <p className="text-xs text-muted-custom mt-1">
+                    Últimas 24 horas
+                  </p>
+                </div>
+                <div className="rounded-lg border-custom bg-card-custom p-3">
+                  <p className="text-xs text-muted-custom">Novos (30d)</p>
+                  <p className="text-3xl font-bold text-heading">
+                    {formatNumber(safeStats.users.new30d)}
+                  </p>
+                  <p className="text-xs text-muted-custom mt-1">
+                    Últimos 30 dias
+                  </p>
+                </div>
+                <div className="rounded-lg border-custom bg-card-custom p-3">
+                  <p className="text-xs text-muted-custom">
+                    XP Total (todas ações)
+                  </p>
+                  <p className="text-xl font-semibold text-heading">
+                    {formatNumber(safeStats.courses.xp.allActions.total)}
+                  </p>
+                  <p className="text-[11px] text-muted-custom">
+                    24h:{' '}
+                    {formatNumber(
+                      safeStats.courses.xp.allActions.last24h,
+                    )}{' '}
+                    | 30d:{' '}
+                    {formatNumber(safeStats.courses.xp.allActions.last30d)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* COURSES / MODULES / LESSONS */}
+            <Card className="bg-card-custom border-custom">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-heading">
+                  <BookOpen className="h-5 w-5 text-emerald-400" />
+                  Active Courses
+                </CardTitle>
+                <CardDescription className="text-muted-custom">
+                  Cursos, módulos, lições e distribuição de XP.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-body">
+                <div className="grid md:grid-cols-4 gap-4">
+                  <StatTile
+                    label="Courses (published)"
+                    value={safeStats.courses.activeCourses}
+                  />
+                  <StatTile
+                    label="Total Courses"
+                    value={safeStats.courses.totalCourses}
+                  />
+                  <StatTile
+                    label="Modules"
+                    value={safeStats.courses.totalModules}
+                  />
+                  <StatTile
+                    label="Lessons"
+                    value={safeStats.courses.totalLessons}
+                  />
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <Card className="border-custom border-dashed bg-card-custom">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2 text-heading">
+                        <Activity className="h-4 w-4 text-emerald-400" />
+                        XP Distribuído (Total)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm text-body">
+                      <div>
+                        Cursos:{' '}
+                        {formatNumber(safeStats.courses.xp.totalCourses)}
+                      </div>
+                      <div>
+                        Módulos:{' '}
+                        {formatNumber(safeStats.courses.xp.totalModules)}
+                      </div>
+                      <div>
+                        Lições:{' '}
+                        {formatNumber(safeStats.courses.xp.totalLessons)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-custom border-dashed bg-card-custom">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2 text-heading">
+                        <TrendingUp className="h-4 w-4 text-blue-400" />
+                        XP (Últimas 24h)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm text-body">
+                      <div>
+                        Cursos:{' '}
+                        {formatNumber(safeStats.courses.xp.last24h.courses)}
+                      </div>
+                      <div>
+                        Módulos:{' '}
+                        {formatNumber(safeStats.courses.xp.last24h.modules)}
+                      </div>
+                      <div>
+                        Lições:{' '}
+                        {formatNumber(safeStats.courses.xp.last24h.lessons)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-custom border-dashed bg-card-custom">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2 text-heading">
+                        <BarChart3 className="h-4 w-4 text-purple-400" />
+                        XP (Últimos 30d)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm text-body">
+                      <div>
+                        Cursos:{' '}
+                        {formatNumber(safeStats.courses.xp.last30d.courses)}
+                      </div>
+                      <div>
+                        Módulos:{' '}
+                        {formatNumber(safeStats.courses.xp.last30d.modules)}
+                      </div>
+                      <div>
+                        Lições:{' '}
+                        {formatNumber(safeStats.courses.xp.last30d.lessons)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* BLOG */}
+            <Card className="bg-card-custom border-custom">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-heading">
+                  <FileText className="h-5 w-5 text-purple-400" />
+                  Blog Posts
+                </CardTitle>
+                <CardDescription className="text-muted-custom">
+                  Publicados, XP distribuído e visualizações.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-body">
+                <div className="grid md:grid-cols-4 gap-4">
+                  <StatTile
+                    label="Publicados"
+                    value={safeStats.blog.totalPosts}
+                  />
+                  <StatTile
+                    label="XP total (blog)"
+                    value={safeStats.blog.xp.total}
+                  />
+                  <StatTile
+                    label="XP 24h"
+                    value={safeStats.blog.xp.last24h}
+                  />
+                  <StatTile
+                    label="XP 30d"
+                    value={safeStats.blog.xp.last30d}
+                  />
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <Card className="border-custom border-dashed bg-card-custom">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2 text-heading">
+                        <Eye className="h-4 w-4 text-slate-300" />
+                        Visualizações
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1 text-sm text-body">
+                      <div>
+                        Total:{' '}
+                        {formatNumber(safeStats.blog.views.total)}
+                      </div>
+                      <div>
+                        Users com login:{' '}
+                        {formatNumber(safeStats.blog.views.logged)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <TopList
+                    title="Top 7 dias"
+                    items={safeStats.blog.topPosts.last7d}
+                  />
+                  <TopList
+                    title="Top 30 dias"
+                    items={safeStats.blog.topPosts.last30d}
+                  />
+                </div>
+                <TopList
+                  title="Top 365 dias"
+                  items={safeStats.blog.topPosts.last365d}
+                />
+              </CardContent>
+            </Card>
+
+            {/* ONBOARDING */}
+            <Card className="bg-card-custom border-custom">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-heading">
+                  <Mail className="h-5 w-5 text-orange-400" />
+                  Pending Onboarding
+                </CardTitle>
+                <CardDescription className="text-muted-custom">
+                  Estados e responsáveis.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-body">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <StatTile
+                    label="Pendentes (total)"
+                    value={safeStats.onboarding.pendingTotal}
+                  />
+                  <StatTile
+                    label="Por abrir"
+                    value={safeStats.onboarding.pendingPorAbrir}
+                  />
+                  <StatTile
+                    label="Estados distintos"
+                    value={onboardingStatusEntries.length}
+                  />
+                </div>
+                {onboardingStatusEntries.length > 0 && (
+                  <div className="grid md:grid-cols-3 gap-3 text-xs">
+                    {onboardingStatusEntries.map(([status, count]) => (
+                      <div
+                        key={status}
+                        className="rounded border-custom bg-card-custom p-3"
+                      >
+                        <div className="font-semibold text-heading">
+                          {status}
+                        </div>
+                        <div className="text-sm text-body">{count}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {Object.keys(safeStats.onboarding.byResponsible || {}).length >
+                  0 && (
+                  <div className="space-y-2 text-xs">
+                    <div className="font-semibold text-heading">
+                      Responsáveis (by user_id)
+                    </div>
+                    <div className="grid md:grid-cols-4 gap-2">
+                      {Object.entries(safeStats.onboarding.byResponsible).map(
+                        ([uid, count]) => (
+                          <div
+                            key={uid}
+                            className="rounded border-custom bg-card-custom p-2"
+                          >
+                            <div className="text-[11px] text-muted-custom break-all">
+                              {uid}
+                            </div>
+                            <div className="text-sm font-semibold text-body">
+                              {count}
+                            </div>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* HOUSES */}
+            <Card className="bg-card-custom border-custom">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-heading">
+                  <Building2 className="h-5 w-5 text-amber-400" />
+                  Houses of Sports
+                </CardTitle>
+                <CardDescription className="text-muted-custom">
+                  Visão geral de estado.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-4 gap-4 text-body">
+                <StatTile label="Total" value={safeStats.houses.total} />
+                <StatTile label="Active" value={safeStats.houses.active} />
+                <StatTile label="Building" value={safeStats.houses.building} />
+                <StatTile
+                  label="Developing"
+                  value={safeStats.houses.developing}
+                />
+              </CardContent>
+            </Card>
+
+            {/* BOTÃO + INSIGHTS AVANÇADOS */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold flex items-center gap-2 text-heading">
+                  Advanced Insights
+                </h2>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-500/60 text-blue-100 hover:bg-blue-950/40"
+                  onClick={() => setShowAdvanced((prev) => !prev)}
+                >
+                  {showAdvanced ? 'Esconder insights' : 'Mostrar insights'}
+                </Button>
+              </div>
+
+              {showAdvanced && (
+                <div className="space-y-8">
+                  {advancedError && (
+                    <p className="text-sm text-red-400">{advancedError}</p>
+                  )}
+
+                  {/* User Growth */}
+                  <Card className="bg-card-custom border-custom">
+                    <CardHeader>
+                      <CardTitle className="text-heading">
+                        User Growth (Monthly)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-body">
+                      {loadingAdvanced && !advanced ? (
+                        <p className="text-sm text-muted-custom">
+                          A carregar...
+                        </p>
+                      ) : (
+                        <UserGrowthChart
+                          data={
+                            userGrowthData.length
+                              ? userGrowthData
+                              : [
+                                  { date: 'M-1', count: 0 },
+                                  { date: 'M-2', count: 0 },
+                                ]
+                          }
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Course Engagement */}
+                  <Card className="bg-card-custom border-custom">
+                    <CardHeader>
+                      <CardTitle className="text-heading">
+                        Course Engagement
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-body">
+                      {loadingAdvanced && !advanced ? (
+                        <p className="text-sm text-muted-custom">
+                          A carregar...
+                        </p>
+                      ) : (
+                        <CourseEngagementChart data={courseEngagementData} />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Weekly Engagement */}
+                  <Card className="bg-card-custom border-custom">
+                    <CardHeader>
+                      <CardTitle className="text-heading">
+                        User Activity (Weekly)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-body">
+                      {loadingAdvanced && !advanced ? (
+                        <p className="text-sm text-muted-custom">
+                          A carregar...
+                        </p>
+                      ) : (
+                        <EngagementChart data={weeklyEngagementData} />
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
     </div>
   );
 }

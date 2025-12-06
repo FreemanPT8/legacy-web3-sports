@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -21,12 +20,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
-import { ArrowLeft, Save, Eye } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
 
 import {
   BlockEditor,
   type BlocksByLanguage,
-  type LangCode,
+  type LangCode as BlockLangCode,
   serializeBlocksByLanguage,
 } from '@/components/admin/content/BlockEditor';
 
@@ -68,6 +67,14 @@ type Course = {
   title: MultiLang | any;
 };
 
+type PermissionsResponse = {
+  success: boolean;
+  permissions?: {
+    canManageCourses?: boolean;
+  };
+  error?: string;
+};
+
 function generateBlockId(prefix: string = 'blk') {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -91,13 +98,16 @@ export default function LessonAdvancedEditorPage() {
   const [currentLanguage, setCurrentLanguage] =
     useState<LangCodeUnion>('en');
 
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [canManageCourses, setCanManageCourses] = useState(false);
 
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
 
-  // Proteção básica
+  // Proteção base (role)
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -109,16 +119,53 @@ export default function LessonAdvancedEditorPage() {
     }
   }, [user, loading, isAdmin, router]);
 
+  // Carregar permissões finas
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (user.role === 'Super Admin') {
+      setCanManageCourses(true);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const fetchPermissions = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/admin/permissions', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const data: PermissionsResponse = await res.json();
+
+        if (!res.ok || !data.success) {
+          setCanManageCourses(false);
+        } else {
+          setCanManageCourses(Boolean(data.permissions?.canManageCourses));
+        }
+      } catch (error) {
+        console.error('Unexpected error fetching permissions:', error);
+        setCanManageCourses(false);
+      } finally {
+        setPermissionsLoaded(true);
+      }
+    };
+
+    fetchPermissions();
+  }, [user, loading, getToken]);
+
   // Carregar curso + módulo + lição
   useEffect(() => {
     const fetchData = async () => {
-      if (!user || !isAdmin) return;
-      setLoadingData(true);
+      if (!user || !isAdmin || !canManageCourses) return;
 
+      setLoadingData(true);
       try {
         const token = getToken();
 
-        // 1) Curso e módulos (como na página de overview)
+        // 1) Curso e módulos
         const resCourse = await fetch(`/api/admin/courses/${courseId}`, {
           headers: {
             'Content-Type': 'application/json',
@@ -158,7 +205,7 @@ export default function LessonAdvancedEditorPage() {
           }
         }
 
-        // 2) Lição específica: reutilizamos o endpoint de lista e filtramos
+        // 2) Lição específica
         const resLessons = await fetch(
           `/api/admin/courses/${courseId}/modules/${moduleId}/lessons`,
           {
@@ -235,7 +282,7 @@ export default function LessonAdvancedEditorPage() {
 
             setLesson(normalized);
 
-            // Inicializar BlockEditor: um bloco HTML por língua
+            // Inicializar BlockEditor
             const initialBlocks: BlocksByLanguage = {};
             LANGUAGES.forEach(({ code }) => {
               const html = safeContent[code] || '';
@@ -267,10 +314,19 @@ export default function LessonAdvancedEditorPage() {
       }
     };
 
-    if (isAdmin) {
+    if (isAdmin && canManageCourses) {
       fetchData();
     }
-  }, [courseId, moduleId, lessonId, getToken, isAdmin, user, toast]);
+  }, [
+    courseId,
+    moduleId,
+    lessonId,
+    getToken,
+    isAdmin,
+    user,
+    toast,
+    canManageCourses,
+  ]);
 
   const currentLangLabel =
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
@@ -310,8 +366,15 @@ export default function LessonAdvancedEditorPage() {
 
   const handleSave = async () => {
     if (!lesson) return;
+    if (!canManageCourses) {
+      toast({
+        title: 'No permission',
+        description: 'You do not have permission to edit lessons.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    // pelo menos um título
     const hasAnyTitle = LANGUAGES.some((l) => {
       const v = lesson.title[l.code];
       return typeof v === 'string' && v.trim().length > 0;
@@ -370,9 +433,6 @@ export default function LessonAdvancedEditorPage() {
         title: 'Lesson saved',
         description: 'Lesson updated successfully.',
       });
-
-      // refrescar dados com o que veio da API, se quiseres
-      // por simplicidade, só limpamos o estado de loading
     } catch (err) {
       console.error('Error saving lesson:', err);
       toast({
@@ -385,7 +445,13 @@ export default function LessonAdvancedEditorPage() {
     setSaving(false);
   };
 
-  if (loading || !user || !isAdmin || loadingData) {
+  if (
+    loading ||
+    !user ||
+    !isAdmin ||
+    !permissionsLoaded ||
+    loadingData
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -394,6 +460,34 @@ export default function LessonAdvancedEditorPage() {
             Loading lesson...
           </p>
         </div>
+      </div>
+    );
+  }
+
+  if (!canManageCourses) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">No permission</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              You do not have permission to edit lessons. You can still
+              preview this lesson as a student from the lessons list.
+            </p>
+            <Button
+              onClick={() =>
+                router.push(
+                  `/admin/courses/${courseId}/modules/${moduleId}/lessons`,
+                )
+              }
+            >
+              Back to Lessons
+            </Button>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -447,17 +541,17 @@ export default function LessonAdvancedEditorPage() {
                   Edit Lesson
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Course:{' '}
+                  Course{' '}
                   <span className="font-semibold">
                     {courseTitle || 'Untitled course'}
                   </span>
                   {' · '}
-                  Module:{' '}
+                  Module{' '}
                   <span className="font-semibold">
                     {moduleTitle || 'Untitled module'}
                   </span>
                   {' · '}
-                  Lesson order:{' '}
+                  Lesson order{' '}
                   <span className="font-semibold">{lesson.order}</span>
                 </p>
               </div>
@@ -558,7 +652,7 @@ export default function LessonAdvancedEditorPage() {
                       <BlockEditor
                         value={blocksByLanguage}
                         onChange={setBlocksByLanguage}
-                        initialLanguage={currentLanguage}
+                        initialLanguage={currentLanguage as BlockLangCode}
                         className="mt-2"
                       />
                     </div>

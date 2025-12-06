@@ -4,13 +4,23 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Plus, Eye, Edit, Trash2, Lock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { SafeImage } from '@/app/components/SafeImage';
+
+import {
+  BookOpen,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Lock,
+} from 'lucide-react';
 
 type Course = {
   id: string;
@@ -36,11 +46,12 @@ type PermissionsResponse = {
   };
 };
 
-// Helpers para texto seguro
+// Helpers para título/descrição seguros
 function getCourseTitle(course: Course): string {
   const raw = course.title;
   if (!raw) return 'Untitled course';
   if (typeof raw === 'string') return raw || 'Untitled course';
+
   if (typeof raw === 'object') {
     const obj = raw as Record<string, string | undefined>;
     const candidates = [obj.en, obj.pt, obj.es, obj.fr, obj.it, obj.de];
@@ -49,6 +60,7 @@ function getCourseTitle(course: Course): string {
     );
     return found || 'Untitled course';
   }
+
   return 'Untitled course';
 }
 
@@ -56,6 +68,7 @@ function getCourseDescription(course: Course): string {
   const raw = course.description;
   if (!raw) return 'No description';
   if (typeof raw === 'string') return raw || 'No description';
+
   if (typeof raw === 'object') {
     const obj = raw as Record<string, string | undefined>;
     const candidates = [obj.en, obj.pt, obj.es, obj.fr, obj.it, obj.de];
@@ -64,6 +77,7 @@ function getCourseDescription(course: Course): string {
     );
     return found || 'No description';
   }
+
   return 'No description';
 }
 
@@ -78,18 +92,20 @@ export default function CoursesManagementPage() {
   const [canManageCourses, setCanManageCourses] = useState(false);
 
   const isSuperAdmin = user?.role === 'Super Admin';
+  const isAdmin =
+    user && (user.role === 'Super Admin' || user.role === 'Admin');
 
-  // Proteção básica
+  // Proteção básica por role
   useEffect(() => {
     if (loading) return;
     if (!user) {
       router.push('/login');
       return;
     }
-    if (user.role !== 'Super Admin' && user.role !== 'Admin') {
+    if (!isAdmin) {
       router.push('/dashboard');
     }
-  }, [user, loading, router]);
+  }, [user, loading, isAdmin, router]);
 
   // Buscar permissões finas
   useEffect(() => {
@@ -138,12 +154,15 @@ export default function CoursesManagementPage() {
       setLoadingData(true);
       try {
         const token = getToken();
-        const response = await fetch('/api/admin/courses?includeModules=true', {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        const response = await fetch(
+          '/api/admin/courses?includeModules=true',
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
           },
-        });
+        );
 
         const data = await response.json();
         if (response.ok && data.success) {
@@ -168,10 +187,10 @@ export default function CoursesManagementPage() {
       }
     };
 
-    if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
+    if (isAdmin) {
       fetchCourses();
     }
-  }, [user, getToken, toast]);
+  }, [isAdmin, getToken, toast]);
 
   // Apagar curso
   const handleDeleteCourse = async (course: Course) => {
@@ -242,14 +261,16 @@ export default function CoursesManagementPage() {
   if (
     loading ||
     !user ||
-    (user.role !== 'Super Admin' && user.role !== 'Admin') ||
+    !isAdmin ||
     !permissionsLoaded
   ) {
     return (
-      <div className="py-8">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-4 text-gray-600 dark:text-gray-300">
+            Loading...
+          </p>
         </div>
       </div>
     );
@@ -276,40 +297,40 @@ export default function CoursesManagementPage() {
   return (
     <div className="space-y-6">
       <div className="container mx-auto px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <div className="flex justify-between items-center gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  Course Management
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Create, edit, and manage courses, modules, and lessons.
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="flex justify-between items-start gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-1">
+                Admin — Course Management
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                Create, edit, and manage courses, modules, and lessons.
+              </p>
+              {!canManageCourses && (
+                <p className="mt-2 text-sm text-amber-700 flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  You can view courses, but you don&apos;t have
+                  permission to create or edit them.
                 </p>
-                {!canManageCourses && (
-                  <p className="mt-2 text-sm text-amber-700 flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    You can view courses, but you don&apos;t have permission
-                    to create or edit them.
-                  </p>
-                )}
-              </div>
-              <Link
-                href={canManageCourses ? '/admin/courses/create' : '#'}
-                aria-disabled={!canManageCourses}
-              >
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={!canManageCourses}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Course
-                </Button>
-              </Link>
+              )}
             </div>
+            <Link
+              href={canManageCourses ? '/admin/courses/create' : '#'}
+              aria-disabled={!canManageCourses}
+            >
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={!canManageCourses}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Course
+              </Button>
+            </Link>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          {/* Stats */}
+          <div className="grid gap-4 md:grid-cols-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -346,6 +367,7 @@ export default function CoursesManagementPage() {
                 </div>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -363,10 +385,11 @@ export default function CoursesManagementPage() {
             </Card>
           </div>
 
+          {/* Courses list */}
           {loadingData ? (
             <Card>
               <CardContent className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
                 <p className="mt-4 text-gray-600 dark:text-gray-300">
                   Loading courses...
                 </p>
@@ -376,9 +399,11 @@ export default function CoursesManagementPage() {
             <Card>
               <CardContent className="text-center py-12">
                 <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No courses yet</h3>
+                <h3 className="text-xl font-semibold mb-2">
+                  No courses yet
+                </h3>
                 <p className="text-gray-600 mb-6">
-                  Create your first course to get started
+                  Create your first course to get started.
                 </p>
                 <Link
                   href={canManageCourses ? '/admin/courses/create' : '#'}
@@ -405,12 +430,16 @@ export default function CoursesManagementPage() {
                 const xpCreator = course.xp_creator_distributed ?? 0;
                 const modulesCount = (course.modules || []).length;
                 const lessonsCount = (course.modules || []).reduce(
-                  (acc: number, m: any) => acc + ((m.lessons || []).length || 0),
+                  (acc: number, m: any) =>
+                    acc + ((m.lessons || []).length || 0),
                   0,
                 );
 
                 return (
-                    <Card key={course.id} className="hover:shadow-lg transition-shadow">
+                  <Card
+                    key={course.id}
+                    className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-900"
+                  >
                     <CardHeader>
                       {course.image_url && (
                         <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 overflow-hidden">
@@ -428,7 +457,10 @@ export default function CoursesManagementPage() {
                           <CardTitle className="text-lg flex items-center gap-2">
                             {title}
                             {isCreator && (
-                              <Badge variant="outline" className="border-blue-500 text-blue-600">
+                              <Badge
+                                variant="outline"
+                                className="border-blue-500 text-blue-600"
+                              >
                                 Creator
                               </Badge>
                             )}
@@ -439,13 +471,17 @@ export default function CoursesManagementPage() {
                             </p>
                           )}
                         </div>
-                        <Badge className={isPublished ? 'bg-green-600' : 'bg-yellow-600'}>
+                        <Badge
+                          className={
+                            isPublished ? 'bg-green-600' : 'bg-yellow-600'
+                          }
+                        >
                           {isPublished ? 'Published' : 'Draft'}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
                         {description}
                       </p>
                       <div className="text-sm text-gray-500 mb-4">
@@ -459,7 +495,10 @@ export default function CoursesManagementPage() {
                           {modulesCount} modules · {lessonsCount} lessons
                         </Badge>
                         {isCreator && (
-                          <Badge variant="outline" className="border-blue-500 text-blue-600">
+                          <Badge
+                            variant="outline"
+                            className="border-blue-500 text-blue-600"
+                          >
                             Creator share: {xpCreator} XP
                           </Badge>
                         )}
@@ -470,7 +509,9 @@ export default function CoursesManagementPage() {
                           variant="outline"
                           className="flex-1"
                           onClick={() =>
-                            router.push(`/admin/courses/${course.id}/modules`)
+                            router.push(
+                              `/admin/courses/${course.id}/modules`,
+                            )
                           }
                         >
                           <Eye className="h-4 w-4 mr-1" />
@@ -480,9 +521,16 @@ export default function CoursesManagementPage() {
                           size="sm"
                           variant="outline"
                           className="flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
-                          disabled={!canManageCourses || (!isSuperAdmin && !isCreator)}
+                          disabled={
+                            !canManageCourses ||
+                            (!isSuperAdmin && !isCreator)
+                          }
                           onClick={() => {
-                            if (!canManageCourses || (!isSuperAdmin && !isCreator)) return;
+                            if (
+                              !canManageCourses ||
+                              (!isSuperAdmin && !isCreator)
+                            )
+                              return;
                             router.push(`/admin/courses/${course.id}/edit`);
                           }}
                         >

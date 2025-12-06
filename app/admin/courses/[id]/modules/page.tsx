@@ -1,11 +1,10 @@
+// app/admin/courses/[id]/modules/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,6 +27,7 @@ import {
   Save,
   Trash2,
   Image as ImageIcon,
+  Lock,
 } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
@@ -67,6 +67,14 @@ type Course = {
   level?: string | null;
 };
 
+type PermissionsResponse = {
+  success: boolean;
+  permissions?: {
+    canManageCourses?: boolean;
+  };
+  error?: string;
+};
+
 export default function CourseModulesPage() {
   const params = useParams();
   const router = useRouter();
@@ -82,11 +90,13 @@ export default function CourseModulesPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const isAdmin =
-    user &&
-    (user.role === 'Super Admin' || user.role === 'Admin');
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [canManageCourses, setCanManageCourses] = useState(false);
 
-  // Proteção básica
+  const isAdmin =
+    user && (user.role === 'Super Admin' || user.role === 'Admin');
+
+  // Proteção básica por role
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -98,31 +108,61 @@ export default function CourseModulesPage() {
     }
   }, [user, loading, isAdmin, router]);
 
+  // Carregar permissões finas
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (user.role === 'Super Admin') {
+      setCanManageCourses(true);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const fetchPermissions = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/admin/permissions', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const data: PermissionsResponse = await res.json();
+        if (!res.ok || !data.success) {
+          setCanManageCourses(false);
+        } else {
+          setCanManageCourses(Boolean(data.permissions?.canManageCourses));
+        }
+      } catch (error) {
+        console.error('Unexpected error fetching permissions:', error);
+        setCanManageCourses(false);
+      } finally {
+        setPermissionsLoaded(true);
+      }
+    };
+
+    fetchPermissions();
+  }, [user, loading, getToken]);
+
   // Carregar curso + módulos
   useEffect(() => {
     const fetchCourse = async () => {
       setLoadingData(true);
       try {
         const token = getToken();
-        const res = await fetch(
-          `/api/admin/courses/${courseId}`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token
-                ? { Authorization: `Bearer ${token}` }
-                : {}),
-            },
+        const res = await fetch(`/api/admin/courses/${courseId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-        );
+        });
 
         const data = await res.json();
         if (!res.ok || !data.success) {
           console.error('Failed to load course:', data);
           toast({
             title: 'Error loading course',
-            description:
-              data.error || 'Failed to load course data.',
+            description: data.error || 'Failed to load course data.',
             variant: 'destructive',
           });
           setCourse(null);
@@ -134,9 +174,7 @@ export default function CourseModulesPage() {
           const mods: Module[] = Array.isArray(c.modules)
             ? c.modules
                 .slice()
-                .sort(
-                  (a, b) => (a.order || 0) - (b.order || 0),
-                )
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((m) => ({
                   id: m.id,
                   order: m.order ?? 0,
@@ -180,14 +218,13 @@ export default function CourseModulesPage() {
     lang: LangCode,
     value: string,
   ) {
+    if (!canManageCourses) return;
     setModules((prev) =>
       prev.map((m, i) => {
         if (i !== index) return m;
         const raw = m.title || {};
         const obj =
-          typeof raw === 'object' && raw !== null
-            ? { ...raw }
-            : {};
+          typeof raw === 'object' && raw !== null ? { ...raw } : {};
         (obj as any)[lang] = value;
         return { ...m, title: obj };
       }),
@@ -199,14 +236,13 @@ export default function CourseModulesPage() {
     lang: LangCode,
     value: string,
   ) {
+    if (!canManageCourses) return;
     setModules((prev) =>
       prev.map((m, i) => {
         if (i !== index) return m;
         const raw = m.description || {};
         const obj =
-          typeof raw === 'object' && raw !== null
-            ? { ...raw }
-            : {};
+          typeof raw === 'object' && raw !== null ? { ...raw } : {};
         (obj as any)[lang] = value;
         return { ...m, description: obj };
       }),
@@ -224,6 +260,7 @@ export default function CourseModulesPage() {
       | 'is_completed',
     value: any,
   ) {
+    if (!canManageCourses) return;
     setModules((prev) =>
       prev.map((m, i) =>
         i === index
@@ -237,6 +274,15 @@ export default function CourseModulesPage() {
   }
 
   const handleAddModule = () => {
+    if (!canManageCourses) {
+      toast({
+        title: 'No permission',
+        description: 'You do not have permission to create or edit modules.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setModules((prev) => {
       const nextOrder =
         prev.length > 0
@@ -266,6 +312,15 @@ export default function CourseModulesPage() {
   };
 
   const handleDeleteModule = async (module: Module, index: number) => {
+    if (!canManageCourses) {
+      toast({
+        title: 'No permission',
+        description: 'You do not have permission to delete modules.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!module.id) {
       setModules((prev) => prev.filter((_, i) => i !== index));
       return;
@@ -300,9 +355,7 @@ export default function CourseModulesPage() {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            ...(token
-              ? { Authorization: `Bearer ${token}` }
-              : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         },
       );
@@ -311,8 +364,7 @@ export default function CourseModulesPage() {
       if (!res.ok || !data.success) {
         toast({
           title: 'Error deleting module',
-          description:
-            data.error || 'Failed to delete module.',
+          description: data.error || 'Failed to delete module.',
           variant: 'destructive',
         });
         return;
@@ -320,33 +372,36 @@ export default function CourseModulesPage() {
 
       toast({
         title: 'Module deleted',
-        description:
-          'The module was deleted successfully.',
+        description: 'The module was deleted successfully.',
       });
 
-      setModules((prev) =>
-        prev.filter((_, i) => i !== index),
-      );
+      setModules((prev) => prev.filter((_, i) => i !== index));
     } catch (err) {
       console.error('Error deleting module:', err);
       toast({
         title: 'Network error',
-        description:
-          'Could not delete module. Please try again.',
+        description: 'Could not delete module. Please try again.',
         variant: 'destructive',
       });
     }
   };
 
   const handleSaveModule = async (module: Module, index: number) => {
+    if (!canManageCourses) {
+      toast({
+        title: 'No permission',
+        description: 'You do not have permission to save modules.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const token = getToken();
 
     const title = module.title || {};
     const hasAnyTitle = LANGUAGES.some((lang) => {
       const v = (title as any)[lang.code];
-      return (
-        typeof v === 'string' && v.trim().length > 0
-      );
+      return typeof v === 'string' && v.trim().length > 0;
     });
 
     if (!hasAnyTitle) {
@@ -374,19 +429,14 @@ export default function CourseModulesPage() {
 
       let res: Response;
       if (!module.id) {
-        res = await fetch(
-          `/api/admin/courses/${courseId}/modules`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token
-                ? { Authorization: `Bearer ${token}` }
-                : {}),
-            },
-            body: JSON.stringify(payload),
+        res = await fetch(`/api/admin/courses/${courseId}/modules`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-        );
+          body: JSON.stringify(payload),
+        });
       } else {
         res = await fetch(
           `/api/admin/courses/${courseId}/modules/${module.id}`,
@@ -394,9 +444,7 @@ export default function CourseModulesPage() {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              ...(token
-                ? { Authorization: `Bearer ${token}` }
-                : {}),
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
             body: JSON.stringify(payload),
           },
@@ -407,8 +455,7 @@ export default function CourseModulesPage() {
       if (!res.ok || !data.success) {
         toast({
           title: 'Error saving module',
-          description:
-            data.error || 'Failed to save module.',
+          description: data.error || 'Failed to save module.',
           variant: 'destructive',
         });
         setSaving(false);
@@ -419,8 +466,7 @@ export default function CourseModulesPage() {
 
       toast({
         title: 'Module saved',
-        description:
-          'Module data was saved successfully.',
+        description: 'Module data was saved successfully.',
       });
 
       setModules((prev) =>
@@ -437,17 +483,22 @@ export default function CourseModulesPage() {
       console.error('Error saving module:', err);
       toast({
         title: 'Network error',
-        description:
-          'Could not save module. Please try again.',
+        description: 'Could not save module. Please try again.',
         variant: 'destructive',
       });
     }
     setSaving(false);
   };
 
-  if (loading || !user || !isAdmin || loadingData) {
+  if (
+    loading ||
+    !user ||
+    !isAdmin ||
+    !permissionsLoaded ||
+    loadingData
+  ) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">
@@ -460,14 +511,10 @@ export default function CourseModulesPage() {
 
   if (!course) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            Course not found.
-          </p>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <p className="text-gray-600 dark:text-gray-300">
+          Course not found.
+        </p>
       </div>
     );
   }
@@ -478,381 +525,349 @@ export default function CourseModulesPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto space-y-6">
-            {/* Top bar */}
-            <div className="flex justify-between items-center gap-4">
-              <div>
-                <Link href="/admin/courses">
-                  <Button
-                    variant="ghost"
-                    className="mb-2"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Courses
-                  </Button>
-                </Link>
-                <h1 className="text-2xl md:text-3xl font-bold mb-1">
-                  Manage Modules
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Course:{' '}
-                  <span className="font-semibold">
-                    {courseTitle || 'Untitled course'}
-                  </span>
-                </p>
-              </div>
-              <Button onClick={handleAddModule}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Module
-              </Button>
-            </div>
-
-            {/* Selector de língua */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">
-                  Language for titles & descriptions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {LANGUAGES.map((lang) => (
-                    <Badge
-                      key={lang.code}
-                      variant={
-                        currentLanguage === lang.code
-                          ? 'default'
-                          : 'outline'
-                      }
-                      className="cursor-pointer"
-                      onClick={() =>
-                        setCurrentLanguage(
-                          lang.code as LangCode,
-                        )
-                      }
-                    >
-                      {lang.name}
-                    </Badge>
-                  ))}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Top bar */}
+          <div className="flex justify-between items-center gap-4">
+            <div>
+              <Link href="/admin/courses">
+                <Button variant="ghost" className="mb-2">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Courses
+                </Button>
+              </Link>
+              <h1 className="text-2xl md:text-3xl font-bold mb-1">
+                Manage Modules
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Course:{' '}
+                <span className="font-semibold">
+                  {courseTitle || 'Untitled course'}
+                </span>
+              </p>
+              {permissionsLoaded && !canManageCourses && (
+                <div className="flex items-center gap-1 text-[11px] text-amber-700 mt-1">
+                  <Lock className="h-3 w-3" />
+                  View only – you don&apos;t have permission to edit modules
                 </div>
+              )}
+            </div>
+            <Button onClick={handleAddModule} disabled={!canManageCourses}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Module
+            </Button>
+          </div>
+
+          {/* Selector de língua */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">
+                Language for titles & descriptions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGES.map((lang) => (
+                  <Badge
+                    key={lang.code}
+                    variant={
+                      currentLanguage === lang.code ? 'default' : 'outline'
+                    }
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setCurrentLanguage(lang.code as LangCode)
+                    }
+                  >
+                    {lang.name}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lista de módulos */}
+          {modules.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center text-gray-500">
+                No modules yet. Click &quot;Add Module&quot; to create the first
+                one.
               </CardContent>
             </Card>
+          ) : (
+            <div className="space-y-4">
+              {modules.map((module, index) => {
+                const title = getMultilingualContent(
+                  module.title,
+                  currentLanguage,
+                );
+                const description = getMultilingualContent(
+                  module.description,
+                  currentLanguage,
+                );
 
-            {/* Lista de módulos */}
-            {modules.length === 0 ? (
-              <Card>
-                <CardContent className="py-10 text-center text-gray-500">
-                  No modules yet. Click &quot;Add Module&quot; to
-                  create the first one.
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {modules.map((module, index) => {
-                  const title = getMultilingualContent(
-                    module.title,
-                    currentLanguage,
-                  );
-                  const description =
-                    getMultilingualContent(
-                      module.description,
-                      currentLanguage,
-                    );
+                const lessonsCount = Array.isArray(module.lessons)
+                  ? module.lessons.length
+                  : 0;
 
-                  const lessonsCount = Array.isArray(
-                    module.lessons,
-                  )
-                    ? module.lessons.length
-                    : 0;
-
-                  return (
-                    <Card
-                      key={module.id || `new-${index}`}
-                      className="border-blue-100"
-                    >
-                      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline">
-                              Module {module.order || index + 1}
+                return (
+                  <Card
+                    key={module.id || `new-${index}`}
+                    className="border-blue-100 bg-white dark:bg-gray-900"
+                  >
+                    <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline">
+                            Module {module.order || index + 1}
+                          </Badge>
+                          <Badge
+                            className={
+                              module.published
+                                ? 'bg-green-600'
+                                : 'bg-yellow-600'
+                            }
+                          >
+                            {module.published ? 'Published' : 'Draft'}
+                          </Badge>
+                          {module.is_completed && (
+                            <Badge className="bg-blue-600">
+                              Completed (XP active)
                             </Badge>
-                            <Badge
-                              className={
-                                module.published
-                                  ? 'bg-green-600'
-                                  : 'bg-yellow-600'
-                              }
-                            >
-                              {module.published
-                                ? 'Published'
-                                : 'Draft'}
-                            </Badge>
-                            {module.is_completed && (
-                              <Badge className="bg-blue-600">
-                                Completed (XP active)
-                              </Badge>
-                            )}
-                            {module._isNew && (
-                              <Badge className="bg-yellow-600">
-                                New
-                              </Badge>
-                            )}
-                          </div>
+                          )}
+                          {module._isNew && (
+                            <Badge className="bg-yellow-600">New</Badge>
+                          )}
+                        </div>
+                        <Input
+                          value={title}
+                          onChange={(e) =>
+                            updateModuleTitle(
+                              index,
+                              currentLanguage,
+                              e.target.value,
+                            )
+                          }
+                          placeholder={`Module title (${currentLangLabel})`}
+                          className="text-sm font-semibold"
+                          disabled={!canManageCourses}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          {lessonsCount} lessons in this module
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 w-full md:w-56">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Order</Label>
                           <Input
-                            value={title}
+                            type="number"
+                            value={module.order}
                             onChange={(e) =>
-                              updateModuleTitle(
+                              updateModuleField(
                                 index,
-                                currentLanguage,
-                                e.target.value,
+                                'order',
+                                parseInt(e.target.value) || 0,
                               )
                             }
-                            placeholder={`Module title (${currentLangLabel})`}
-                            className="text-sm font-semibold"
+                            className="h-8 text-xs"
+                            disabled={!canManageCourses}
                           />
-                          <p className="text-xs text-gray-500 mt-1">
-                            {lessonsCount} lessons in this module
-                          </p>
                         </div>
-                        <div className="flex flex-col gap-2 w-full md:w-56">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs">
-                              Order
-                            </Label>
-                            <Input
-                              type="number"
-                              value={module.order}
-                              onChange={(e) =>
-                                updateModuleField(
-                                  index,
-                                  'order',
-                                  parseInt(e.target.value) ||
-                                    0,
-                                )
-                              }
-                              className="h-8 text-xs"
-                            />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (module.image_url) {
+                              window.open(module.image_url, '_blank');
+                            }
+                          }}
+                        >
+                          <ImageIcon className="h-4 w-4 mr-1" />
+                          Image
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="text-xs">
+                          Description ({currentLangLabel})
+                        </Label>
+                        <Textarea
+                          value={description}
+                          onChange={(e) =>
+                            updateModuleDescription(
+                              index,
+                              currentLanguage,
+                              e.target.value,
+                            )
+                          }
+                          rows={2}
+                          className="text-xs mt-1"
+                          disabled={!canManageCourses}
+                        />
+                      </div>
+
+                      <div className="grid md:grid-cols-4 gap-4">
+                        <div>
+                          <Label className="text-xs">
+                            XP threshold (min XP to unlock module)
+                          </Label>
+                          <Input
+                            type="number"
+                            value={module.xp_threshold}
+                            onChange={(e) =>
+                              updateModuleField(
+                                index,
+                                'xp_threshold',
+                                parseInt(e.target.value) || 0,
+                              )
+                            }
+                            className="mt-1"
+                            disabled={!canManageCourses}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">
+                            XP reward (extra XP when module completed)
+                          </Label>
+                          <Input
+                            type="number"
+                            value={module.xp_reward}
+                            onChange={(e) =>
+                              updateModuleField(
+                                index,
+                                'xp_reward',
+                                parseInt(e.target.value) || 0,
+                              )
+                            }
+                            className="mt-1"
+                            disabled={!canManageCourses}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Module image URL</Label>
+                          <Input
+                            type="text"
+                            value={module.image_url || ''}
+                            onChange={(e) =>
+                              updateModuleField(
+                                index,
+                                'image_url',
+                                e.target.value || null,
+                              )
+                            }
+                            placeholder="https://..."
+                            className="mt-1"
+                            disabled={!canManageCourses}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Status</Label>
+                          <div className="mt-1 space-y-1 text-xs">
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={!!module.published}
+                                onCheckedChange={(checked) =>
+                                  updateModuleField(
+                                    index,
+                                    'published',
+                                    checked,
+                                  )
+                                }
+                                disabled={!canManageCourses}
+                              />
+                              <span>
+                                {module.published ? 'Published' : 'Draft'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={!!module.is_completed}
+                                onCheckedChange={(checked) =>
+                                  updateModuleField(
+                                    index,
+                                    'is_completed',
+                                    checked,
+                                  )
+                                }
+                                disabled={!canManageCourses}
+                              />
+                              <span>
+                                {module.is_completed
+                                  ? 'Completed (XP active)'
+                                  : 'Not completed'}
+                              </span>
+                            </div>
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-gray-500">
+                        Marking a module as completed with a positive XP reward
+                        will automatically grant that XP to all users who have
+                        already finished all lessons in this module (once).
+                      </div>
+
+                      <div className="flex justify-between gap-2 pt-2 border-t">
+                        <div className="text-xs text-gray-500">
+                          {lessonsCount === 0
+                            ? 'No lessons yet.'
+                            : `${lessonsCount} lesson${
+                                lessonsCount === 1 ? '' : 's'
+                              } in this module.`}
+                        </div>
+                        <div className="flex flex-wrap gap-2 justify-end">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              if (module.image_url) {
-                                window.open(
-                                  module.image_url,
-                                  '_blank',
-                                );
+                              if (!module.id) {
+                                toast({
+                                  title: 'Save module first',
+                                  description:
+                                    'You need to save the module before managing lessons.',
+                                });
+                                return;
                               }
+                              router.push(
+                                `/admin/courses/${courseId}/modules/${module.id}/lessons`,
+                              );
                             }}
                           >
-                            <ImageIcon className="h-4 w-4 mr-1" />
-                            Image
+                            Manage lessons
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleDeleteModule(module, index)
+                            }
+                            disabled={!canManageCourses}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              handleSaveModule(module, index)
+                            }
+                            disabled={saving || !canManageCourses}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            {saving ? 'Saving...' : 'Save module'}
                           </Button>
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div>
-                          <Label className="text-xs">
-                            Description ({currentLangLabel})
-                          </Label>
-                          <Textarea
-                            value={description}
-                            onChange={(e) =>
-                              updateModuleDescription(
-                                index,
-                                currentLanguage,
-                                e.target.value,
-                              )
-                            }
-                            rows={2}
-                            className="text-xs mt-1"
-                          />
-                        </div>
-
-                        <div className="grid md:grid-cols-4 gap-4">
-                          <div>
-                            <Label className="text-xs">
-                              XP threshold (min XP to unlock
-                              module)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={module.xp_threshold}
-                              onChange={(e) =>
-                                updateModuleField(
-                                  index,
-                                  'xp_threshold',
-                                  parseInt(e.target.value) ||
-                                    0,
-                                )
-                              }
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">
-                              XP reward (extra XP when module
-                              completed)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={module.xp_reward}
-                              onChange={(e) =>
-                                updateModuleField(
-                                  index,
-                                  'xp_reward',
-                                  parseInt(e.target.value) ||
-                                    0,
-                                )
-                              }
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">
-                              Module image URL
-                            </Label>
-                            <Input
-                              type="text"
-                              value={module.image_url || ''}
-                              onChange={(e) =>
-                                updateModuleField(
-                                  index,
-                                  'image_url',
-                                  e.target.value || null,
-                                )
-                              }
-                              placeholder="https://..."
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">
-                              Status
-                            </Label>
-                            <div className="mt-1 space-y-1 text-xs">
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  checked={!!module.published}
-                                  onCheckedChange={(checked) =>
-                                    updateModuleField(
-                                      index,
-                                      'published',
-                                      checked,
-                                    )
-                                  }
-                                />
-                                <span>
-                                  {module.published
-                                    ? 'Published'
-                                    : 'Draft'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  checked={!!module.is_completed}
-                                  onCheckedChange={(checked) =>
-                                    updateModuleField(
-                                      index,
-                                      'is_completed',
-                                      checked,
-                                    )
-                                  }
-                                />
-                                <span>
-                                  {module.is_completed
-                                    ? 'Completed (XP active)'
-                                    : 'Not completed'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-gray-500">
-                          Marking a module as completed with a
-                          positive XP reward will automatically
-                          grant that XP to all users who have
-                          already finished all lessons in this
-                          module (once).
-                        </div>
-
-                        <div className="flex justify-between gap-2 pt-2 border-t">
-                          <div className="text-xs text-gray-500">
-                            {lessonsCount === 0
-                              ? 'No lessons yet.'
-                              : `${lessonsCount} lesson${
-                                  lessonsCount === 1 ? '' : 's'
-                                } in this module.`}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                if (!module.id) {
-                                  toast({
-                                    title:
-                                      'Save module first',
-                                    description:
-                                      'You need to save the module before managing lessons.',
-                                  });
-                                  return;
-                                }
-                                router.push(
-                                  `/admin/courses/${courseId}/modules/${module.id}/lessons`,
-                                );
-                              }}
-                            >
-                              Manage lessons
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleDeleteModule(
-                                  module,
-                                  index,
-                                )
-                              }
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                handleSaveModule(
-                                  module,
-                                  index,
-                                )
-                              }
-                              disabled={saving}
-                              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              <Save className="h-4 w-4 mr-1" />
-                              {saving
-                                ? 'Saving...'
-                                : 'Save module'}
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }

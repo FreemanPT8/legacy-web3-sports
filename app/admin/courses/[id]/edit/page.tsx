@@ -28,7 +28,6 @@ type CourseApiResponse = {
   error?: string;
 };
 
-
 export default function EditCoursePage() {
   const params = useParams();
   const router = useRouter();
@@ -57,6 +56,7 @@ export default function EditCoursePage() {
     };
   }, [getToken]);
 
+  // Gate básico por role
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -68,6 +68,7 @@ export default function EditCoursePage() {
     }
   }, [user, loading, router]);
 
+  // Permissões finas (canManageCourses)
   useEffect(() => {
     if (loading || !user) return;
 
@@ -103,8 +104,10 @@ export default function EditCoursePage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
+  // Carregar curso + estado do builder (e tentar recuperar draft)
   useEffect(() => {
     if (!user || !courseId) return;
+
     const fetchCourse = async () => {
       setLoadingCourse(true);
       try {
@@ -119,9 +122,10 @@ export default function EditCoursePage() {
             description: data.error || 'Failed to load course.',
             variant: 'destructive',
           });
-          router.push('/admin/courses');
+            router.push('/admin/courses');
           return;
         }
+
         let nextState = mapCourseToBuilderState(data.course);
 
         try {
@@ -297,9 +301,7 @@ export default function EditCoursePage() {
         (value) => typeof value === 'string' && value.trim().length > 0,
       );
 
-      if (!hasAnyTitle) {
-        return;
-      }
+      if (!hasAnyTitle) return;
 
       await saveDraft(state);
     },
@@ -312,6 +314,7 @@ export default function EditCoursePage() {
     window.open(href, '_blank');
   }, []);
 
+  // Loading / gates
   if (
     loading ||
     !user ||
