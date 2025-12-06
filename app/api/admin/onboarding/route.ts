@@ -1,3 +1,4 @@
+// app/api/admin/onboarding/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
@@ -11,6 +12,8 @@ type OnboardingStatus =
   | 'ONBOARDING_DAO1'
   | 'ONBOARDING_TELEGRAM';
 
+type Web3Type = 'PROFESSIONAL_WEB3_LEARNING' | 'WEB3_ENTHUSIAST' | null;
+
 interface OnboardingSubmissionRow {
   id: string;
   created_at: string | null;
@@ -23,13 +26,22 @@ interface OnboardingSubmissionRow {
   status: OnboardingStatus | null;
   sequence_number: number | null;
   assigned_to_user_id: string | null;
-  user_id: string | null; // <- NOVO
+  user_id: string | null;
   phone: string | null;
   telegram: string | null;
   organization: string | null;
   web3_experience: string | null;
   interests: string[] | null;
   message: string | null;
+
+  // novos campos de tracking / perfil
+  is_non_sport: boolean | null;
+  web3_type: Web3Type;
+  created_by_ip: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  referrer_user_id: string | null;
 }
 
 interface AssignedUserRow {
@@ -54,13 +66,22 @@ interface OnboardingSubmissionDTO {
   assigned_to_user_id: string | null;
   assigned_to_username: string | null;
   assigned_to_full_name: string | null;
-  user_id: string | null; // <- NOVO
+  user_id: string | null;
   phone: string | null;
   telegram: string | null;
   organization: string | null;
   web3_experience: string | null;
   interests: string[] | null;
   message: string | null;
+
+  // novos campos de tracking / perfil
+  is_non_sport: boolean | null;
+  web3_type: Web3Type;
+  created_by_ip: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  referrer_user_id: string | null;
 }
 
 interface GetResponseBody {
@@ -135,7 +156,14 @@ export async function GET(request: NextRequest) {
         organization,
         web3_experience,
         interests,
-        message
+        message,
+        is_non_sport,
+        web3_type,
+        created_by_ip,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        referrer_user_id
       `
       )
       .order('created_at', { ascending: false });
@@ -278,6 +306,14 @@ export async function GET(request: NextRequest) {
           web3_experience: row.web3_experience ?? null,
           interests: row.interests ?? null,
           message: row.message ?? null,
+
+          is_non_sport: row.is_non_sport ?? null,
+          web3_type: (row.web3_type as Web3Type) ?? null,
+          created_by_ip: row.created_by_ip ?? null,
+          utm_source: row.utm_source ?? null,
+          utm_medium: row.utm_medium ?? null,
+          utm_campaign: row.utm_campaign ?? null,
+          referrer_user_id: row.referrer_user_id ?? null,
         };
       }
     );
