@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   Card,
   CardContent,
@@ -16,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
@@ -112,15 +112,14 @@ export default function EditHousePublicProfilePage() {
 
   const [house, setHouse] = useState<House | null>(null);
   const [houseLoading, setHouseLoading] = useState(true);
-
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const [imageUrl, setImageUrl] = useState('');
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
-  const [saving, setSaving] = useState(false);
 
+  const [saving, setSaving] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   const isAdmin =
@@ -135,12 +134,11 @@ export default function EditHousePublicProfilePage() {
     }
   }, [house?.created_at]);
 
-  // 1) Proteção básica (apenas Admin / Super Admin por agora)
+  // 1) Proteção básica (apenas Admin / Super Admin)
   useEffect(() => {
     if (authLoading) return;
 
     if (!user || !isAdmin) {
-      // não tem permissão para editar
       setGeneralError(
         'Apenas administradores podem editar o perfil público das Houses nesta fase.',
       );
@@ -169,7 +167,7 @@ export default function EditHousePublicProfilePage() {
         }
 
         const thisHouse =
-          (housesJson.houses || []).find(h => h.id === houseId) || null;
+          (housesJson.houses || []).find((h) => h.id === houseId) || null;
 
         setHouse(thisHouse || null);
 
@@ -214,9 +212,7 @@ export default function EditHousePublicProfilePage() {
     try {
       const res = await fetch(`/api/house-profiles/${houseId}?locale=pt`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image_url: imageUrl || null,
           tagline,
@@ -274,8 +270,7 @@ export default function EditHousePublicProfilePage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md px-4">
             <p className="text-body mb-4">
-              {generalError ||
-                'Não tens permissões para editar o perfil desta House.'}
+              {generalError || 'Não tens permissões para editar o perfil desta House.'}
             </p>
             <Button
               variant="outline"
@@ -353,9 +348,7 @@ export default function EditHousePublicProfilePage() {
               <div className="font-mono text-[11px] truncate">
                 ID: {house.id}
               </div>
-              {createdAtFormatted && (
-                <div>Criada em: {createdAtFormatted}</div>
-              )}
+              {createdAtFormatted && <div>Criada em: {createdAtFormatted}</div>}
               <div className={statusBadgeClass(house.status) + ' mt-1'}>
                 {formatStatusLabel(house.status)}
               </div>
@@ -387,6 +380,7 @@ export default function EditHousePublicProfilePage() {
                   apenas em português.
                 </CardDescription>
               </CardHeader>
+
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="tagline" className="text-body">
@@ -396,7 +390,7 @@ export default function EditHousePublicProfilePage() {
                     id="tagline"
                     placeholder="Ex: Comunidade oficial de escalada em Portugal, focada em Web3."
                     value={tagline}
-                    onChange={e => setTagline(e.target.value)}
+                    onChange={(e) => setTagline(e.target.value)}
                     className="bg-slate-900 border-slate-700 text-body placeholder:text-slate-500"
                   />
                   <p className="text-[11px] text-muted-custom">
@@ -414,7 +408,7 @@ export default function EditHousePublicProfilePage() {
                     rows={8}
                     placeholder="Explica a visão desta House, o tipo de membros que procura, e como se liga ao mundo Web3 e à Apertum."
                     value={description}
-                    onChange={e => setDescription(e.target.value)}
+                    onChange={(e) => setDescription(e.target.value)}
                     className="bg-slate-900 border-slate-700 text-body placeholder:text-slate-500"
                   />
                   <p className="text-[11px] text-muted-custom">
@@ -438,6 +432,7 @@ export default function EditHousePublicProfilePage() {
                     template visual padrão.
                   </CardDescription>
                 </CardHeader>
+
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="image_url" className="text-body">
@@ -447,7 +442,7 @@ export default function EditHousePublicProfilePage() {
                       id="image_url"
                       placeholder="https://…"
                       value={imageUrl}
-                      onChange={e => setImageUrl(e.target.value)}
+                      onChange={(e) => setImageUrl(e.target.value)}
                       className="bg-slate-900 border-slate-700 text-body placeholder:text-slate-500"
                     />
                     <p className="text-[11px] text-muted-custom">
@@ -481,9 +476,11 @@ export default function EditHousePublicProfilePage() {
                     Liderança atual
                   </CardTitle>
                   <CardDescription className="text-muted-custom">
-                    Informação apenas de leitura, vinda da configuração da House.
+                    Informação apenas de leitura, vinda da configuração da
+                    House.
                   </CardDescription>
                 </CardHeader>
+
                 <CardContent className="space-y-3 text-xs text-body">
                   {house.head ? (
                     <div>
@@ -515,13 +512,13 @@ export default function EditHousePublicProfilePage() {
                       </p>
                     ) : (
                       <ul className="space-y-1">
-                        {house.moderators.map(mod => (
+                        {house.moderators.map((mod) => (
                           <li key={mod.user_id}>
                             <span className="font-medium text-heading">
                               {mod.full_name || mod.username}
                             </span>
                             <span className="text-muted-custom">
-                              {mod.username && <> · @{mod.username}</>}{' '}
+                              {mod.username && <> · @{mod.username}</>}
                             </span>
                           </li>
                         ))}
@@ -553,7 +550,9 @@ export default function EditHousePublicProfilePage() {
                 onClick={handleSave}
                 disabled={saving || profileLoading}
               >
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {saving && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
                 Guardar perfil
               </Button>
             </div>

@@ -42,6 +42,21 @@ function mapCountryToCode(country: string | null | undefined): string | null {
 }
 
 /**
+ * Extrair IP “real” da request (útil para spam / segurança).
+ * Tenta: request.ip → X-Forwarded-For[0] → null
+ */
+function getClientIp(req: NextRequest): string | null {
+  // Next.js normalmente preenche request.ip atrás de um proxy
+  if (req.ip) return req.ip;
+
+  const fwd = req.headers.get('x-forwarded-for');
+  if (!fwd) return null;
+
+  const first = fwd.split(',')[0]?.trim();
+  return first || null;
+}
+
+/**
  * Tenta encontrar o Head of House para (sportCode, countryCode)
  * e, se encontrar, atualiza o onboarding_submissions.assigned_to_user_id
  */
@@ -123,7 +138,11 @@ async function autoAssignToHouseHead(
 
 export async function POST(request: NextRequest) {
   try {
+    const url = new URL(request.url);
+    const searchParams = url.searchParams;
+
     const body = await request.json();
+
     const {
       email,
       phone,
@@ -135,6 +154,20 @@ export async function POST(request: NextRequest) {
       organization,
       web3_experience,
       interests,
+
+      // novos campos ligados ao modo “não-desporto”
+      is_non_sport,
+      web3_type,
+
+      // UTMs opcionais vindas do body (ou query string)
+      utm_source: utmSourceBody,
+      utm_medium: utmMediumBody,
+      utm_campaign: utmCampaignBody,
+
+      // referral (quem trouxe esta pessoa)
+      referrer_user_id,
+
+      // mensagem original
       message,
     } = body;
 
@@ -159,9 +192,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const interestsArray: string[] = Array.isArray(interests)
-      ? interests
-      : [];
+    // ---- flag de perfil não ligado ao desporto ----
+    const isNonSport: boolean = !!is_non_sport;
 
     // ---- desporto / código ----
     let sportsCategoryValue: string | null =
@@ -169,15 +201,63 @@ export async function POST(request: NextRequest) {
         ? sports_category.trim()
         : null;
 
+    // se for perfil não-desporto, limpamos o desporto
+    if (isNonSport) {
+      sportsCategoryValue = null;
+    }
+
     let sportsCategoryCode: string | null = null;
 
-    if (sportsCategoryValue && !sportsCategoryValue.includes(' ')) {
+    if (!isNonSport && sportsCategoryValue && !sportsCategoryValue.includes(' ')) {
       // sem espaços → tratamos como código (ex: CLIMBING)
       sportsCategoryCode = sportsCategoryValue;
     }
 
     // ---- country_code ISO a partir do nome ----
     const countryCode = mapCountryToCode(country);
+
+    // ---- normalizar web3_type para o CHECK da tabela ----
+    const rawWeb3Type =
+      typeof web3_type === 'string' ? web3_type.trim().toUpperCase() : null;
+
+    const allowedWeb3Types = [
+      'PROFESSIONAL_WEB3_LEARNING',
+      'WEB3_ENTHUSIAST',
+    ] as const;
+
+    const web3TypeNormalized = allowedWeb3Types.includes(
+      rawWeb3Type as (typeof allowedWeb3Types)[number]
+    )
+      ? (rawWeb3Type as (typeof allowedWeb3Types)[number])
+      : null;
+
+    // ---- UTMs: body tem prioridade, query string é fallback ----
+    const utmSource =
+      (typeof utmSourceBody === 'string' && utmSourceBody.trim() !== ''
+        ? utmSourceBody.trim()
+        : null) ||
+      searchParams.get('utm_source');
+
+    const utmMedium =
+      (typeof utmMediumBody === 'string' && utmMediumBody.trim() !== ''
+        ? utmMediumBody.trim()
+        : null) ||
+      searchParams.get('utm_medium');
+
+    const utmCampaign =
+      (typeof utmCampaignBody === 'string' && utmCampaignBody.trim() !== ''
+        ? utmCampaignBody.trim()
+        : null) ||
+      searchParams.get('utm_campaign');
+
+    // ---- referrer_user_id (quem fez o convite) ----
+    const referrerUserId =
+      typeof referrer_user_id === 'string' && referrer_user_id.trim() !== ''
+        ? referrer_user_id.trim()
+        : null;
+
+    // ---- IP de origem ----
+    const createdByIp = getClientIp(request);
 
     // ---- tentar ligar a uma conta existente pelo email ----
     let linkedUserId: string | null = null;
@@ -199,6 +279,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ---- interesses: normalizar + enriquecer com tags internas ----
+    const baseInterests: string[] = Array.isArray(interests)
+      ? interests
+      : [];
+
+    const interestSet = new Set<string>();
+
+    for (const raw of baseInterests) {
+      if (!raw) continue;
+      const trimmed = String(raw).trim();
+      if (!trimmed) continue;
+      interestSet.add(trimmed);
+    }
+
+    // Tag genérica: perfil ligado ao desporto ou não
+    if (isNonSport) {
+      interestSet.add('PROFILE_TYPE_WEB3_ONLY');
+    } else {
+      interestSet.add('PROFILE_TYPE_SPORTS');
+    }
+
+    // Tags específicas do sub-tipo Web3
+    if (isNonSport && web3TypeNormalized) {
+      if (web3TypeNormalized === 'PROFESSIONAL_WEB3_LEARNING') {
+        interestSet.add('WEB3_PRO_PATH');
+      }
+      if (web3TypeNormalized === 'WEB3_ENTHUSIAST') {
+        interestSet.add('WEB3_ENTHUSIAST_PATH');
+      }
+    }
+
+    const interestsArray = Array.from(interestSet);
+
     // 1) inserir submissão
     const { data, error } = await supabaseAdmin
       .from('onboarding_submissions')
@@ -209,17 +322,32 @@ export async function POST(request: NextRequest) {
         full_name,
         country,
         country_code: countryCode,
+
+        // desporto (só se não for perfil “non-sport”)
         sports_category: sportsCategoryValue,
         sports_category_code: sportsCategoryCode,
-        sports_role: sports_role || null,
-        organization: organization || null,
+        sports_role: isNonSport ? null : sports_role || null,
+        organization: isNonSport ? null : organization || null,
+
         web3_experience: web3_experience || null,
+        web3_type: web3TypeNormalized,
+        is_non_sport: isNonSport,
+
         interests: interestsArray,
         message,
-        user_id: linkedUserId, // <-- ligação direta à conta LEGACY (se existir)
+
+        user_id: linkedUserId, // ligação direta à conta LEGACY (se existir)
+
+        // tracking & contexto
+        created_by_ip: createdByIp,
+        utm_source: utmSource || null,
+        utm_medium: utmMedium || null,
+        utm_campaign: utmCampaign || null,
+        referrer_user_id: referrerUserId,
+
         // status usa o default 'PENDING_RESPONSE'
       })
-      .select('id, sports_category_code, country, country_code, user_id')
+      .select('id, sports_category_code, country, country_code, user_id, is_non_sport')
       .single();
 
     if (error) {
@@ -236,14 +364,17 @@ export async function POST(request: NextRequest) {
       country: string | null;
       country_code: string | null;
       user_id: string | null;
+      is_non_sport: boolean | null;
     };
 
-    // 2) tentar auto-atribuir ao Head of House (não falha a request se não conseguir)
-    await autoAssignToHouseHead(
-      inserted.id,
-      inserted.sports_category_code,
-      inserted.country_code || mapCountryToCode(inserted.country)
-    );
+    // 2) tentar auto-atribuir ao Head of House (apenas perfis ligados ao desporto)
+    if (!inserted.is_non_sport) {
+      await autoAssignToHouseHead(
+        inserted.id,
+        inserted.sports_category_code,
+        inserted.country_code || mapCountryToCode(inserted.country)
+      );
+    }
 
     return NextResponse.json({ success: true, submission: inserted });
   } catch (error) {

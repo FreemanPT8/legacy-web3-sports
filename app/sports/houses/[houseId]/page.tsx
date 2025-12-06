@@ -74,7 +74,6 @@ export default function PublicHouseProfilePage() {
   const [house, setHouse] = useState<HousePublic | null>(null);
   const [head, setHead] = useState<PublicUser | null>(null);
   const [moderators, setModerators] = useState<PublicUser[]>([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -143,8 +142,7 @@ export default function PublicHouseProfilePage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-body mb-4">
-              {error ||
-                'House não encontrada ou ainda não está disponível.'}
+              {error || 'House não encontrada ou ainda não está disponível.'}
             </p>
             <button
               onClick={() => router.push('/sports/houses')}
@@ -190,7 +188,7 @@ export default function PublicHouseProfilePage() {
       <Header />
 
       <main className="flex-1">
-        {/* HERO / HEADER DA HOUSE - DARK */}
+        {/* HERO / HEADER DA HOUSE */}
         <section className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800">
           <div className="max-w-5xl mx-auto px-4 py-8 md:py-10">
             <div className="flex items-center justify-between mb-4">
@@ -201,6 +199,7 @@ export default function PublicHouseProfilePage() {
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Voltar às Houses
               </button>
+
               {isAdmin && (
                 <Link
                   href={`/sports/houses/${house.id}/edit`}
@@ -213,7 +212,7 @@ export default function PublicHouseProfilePage() {
 
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-start gap-4">
-                {/* Avatar da House (imagem se existir) */}
+                {/* Avatar da House */}
                 <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-900 border border-slate-600 flex items-center justify-center shadow-sm overflow-hidden">
                   {house.avatar_url && house.avatar_url.trim() !== '' ? (
                     <SafeImage
@@ -237,6 +236,7 @@ export default function PublicHouseProfilePage() {
                   <h1 className="text-2xl md:text-3xl font-bold text-heading">
                     {house.name}
                   </h1>
+
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-custom">
                     {house.sport_name && (
                       <span className="inline-flex items-center rounded-full bg-slate-900 border border-slate-600 px-2.5 py-0.5">
@@ -248,15 +248,18 @@ export default function PublicHouseProfilePage() {
                         )}
                       </span>
                     )}
+
                     {house.country_code && (
                       <span className="inline-flex items-center rounded-full bg-slate-900 border border-slate-600 px-2.5 py-0.5 text-[11px] uppercase font-mono">
                         {house.country_code}
                       </span>
                     )}
+
                     <span className={statusBadgeClass(house.status)}>
                       {formatStatusLabel(house.status)}
                     </span>
                   </div>
+
                   {createdAtFormatted && (
                     <p className="mt-1 text-[11px] text-muted-custom">
                       Criada em {createdAtFormatted}
@@ -294,7 +297,7 @@ export default function PublicHouseProfilePage() {
           </div>
         </section>
 
-        {/* CONTEÚDO PRINCIPAL DA HOUSE */}
+        {/* CONTEÚDO PRINCIPAL */}
         <section className="max-w-5xl mx-auto px-4 py-8 space-y-8">
           {/* Descrição / visão da House */}
           <div className="grid gap-6 md:grid-cols-[1.7fr,1.3fr]">
@@ -302,7 +305,6 @@ export default function PublicHouseProfilePage() {
               <h2 className="text-sm font-semibold text-heading mb-2">
                 Sobre esta House
               </h2>
-
               {house.description ? (
                 <p className="text-xs text-body whitespace-pre-line">
                   {house.description}
@@ -311,10 +313,9 @@ export default function PublicHouseProfilePage() {
                 <>
                   <p className="text-xs text-body mb-2">
                     As Houses of Sports são comunidades focadas num desporto
-                    específico, ligadas ao universo Web3 e à Apertum
-                    Blockchain. O objetivo desta House é juntar atletas,
-                    treinadores, clubes e entusiastas que queiram explorar
-                    novas formas de{' '}
+                    específico, ligadas ao universo Web3 e à Apertum Blockchain.
+                    O objetivo desta House é juntar atletas, treinadores, clubes
+                    e entusiastas que queiram explorar novas formas de{' '}
                     <strong>
                       comunidade, incentivos e recompensas on-chain
                     </strong>
@@ -344,6 +345,7 @@ export default function PublicHouseProfilePage() {
                   <User className="h-4 w-4 text-blue-400" />
                   Head of House
                 </h3>
+
                 {head ? (
                   <div>
                     <p className="text-sm font-medium text-heading">
@@ -374,6 +376,7 @@ export default function PublicHouseProfilePage() {
                   <Users className="h-4 w-4 text-blue-400" />
                   Moderadores da House
                 </h3>
+
                 {moderators.length === 0 ? (
                   <p className="text-xs text-muted-custom">
                     Ainda não existem moderadores públicos para esta House.
@@ -382,7 +385,7 @@ export default function PublicHouseProfilePage() {
                   </p>
                 ) : (
                   <ul className="space-y-2 text-xs text-body">
-                    {moderators.map(mod => (
+                    {moderators.map((mod) => (
                       <li key={mod.id} className="flex flex-col">
                         <span className="font-medium text-heading">
                           {mod.full_name || mod.username}
@@ -404,9 +407,7 @@ export default function PublicHouseProfilePage() {
             <h2 className="text-sm font-semibold text-heading mb-2">
               O que vem a seguir para esta House?
             </h2>
-            <p className="mb-2">
-              Em próximos desenvolvimentos, esta página vai mostrar:
-            </p>
+            <p className="mb-2">Em próximos desenvolvimentos, esta página vai mostrar:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>
                 Número de membros ativos da House e XP coletivo (soma de XP de

@@ -13,6 +13,8 @@ type OnboardingStatus =
   | 'ONBOARDING_DAO1'
   | 'ONBOARDING_TELEGRAM';
 
+type Web3Type = 'PROFESSIONAL_WEB3_LEARNING' | 'WEB3_ENTHUSIAST' | null;
+
 interface OnboardingSubmission {
   id: string;
   sequence_number: number | null;
@@ -34,6 +36,15 @@ interface OnboardingSubmission {
   web3_experience: string | null;
   interests: string[] | null;
   message: string | null;
+
+  // novos campos
+  is_non_sport: boolean | null;
+  web3_type: Web3Type;
+  created_by_ip: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  referrer_user_id: string | null;
 }
 
 interface ApiListResponse {
@@ -147,6 +158,24 @@ function accountBadgeClass(hasAccount: boolean): string {
   return 'inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-[11px] px-2.5 py-0.5 border border-gray-200';
 }
 
+function profileTypeLabel(s: OnboardingSubmission): string {
+  if (s.is_non_sport) return 'Só Web3 / Apertum';
+  return 'Ligado ao desporto';
+}
+
+function profileTypeBadgeClass(isNonSport: boolean | null): string {
+  if (isNonSport) {
+    return 'inline-flex items-center rounded-full bg-purple-50 text-purple-700 text-[11px] px-2.5 py-0.5 border border-purple-200';
+  }
+  return 'inline-flex items-center rounded-full bg-sky-50 text-sky-700 text-[11px] px-2.5 py-0.5 border border-sky-200';
+}
+
+function web3TypeLabel(type: Web3Type): string {
+  if (type === 'PROFESSIONAL_WEB3_LEARNING') return 'Profissional Web3 (aprendizagem séria)';
+  if (type === 'WEB3_ENTHUSIAST') return 'Entusiasta Web3';
+  return '—';
+}
+
 export default function AdminOnboardingPage() {
   const { user, getToken } = useAuth();
 
@@ -163,6 +192,14 @@ export default function AdminOnboardingPage() {
   );
   const [sportFilter, setSportFilter] = useState<string | 'ALL' | undefined>('ALL');
   const [responsibleFilter, setResponsibleFilter] = useState<'ALL' | 'MINE'>('ALL');
+
+  // novos filtros
+  const [profileTypeFilter, setProfileTypeFilter] = useState<
+    'ALL' | 'SPORT' | 'WEB3_ONLY'
+  >('ALL');
+  const [web3TypeFilter, setWeb3TypeFilter] = useState<
+    'ALL' | 'PROFESSIONAL' | 'ENTHUSIAST'
+  >('ALL');
 
   const [selected, setSelected] = useState<OnboardingSubmission | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -457,6 +494,24 @@ export default function AdminOnboardingPage() {
       list = list.filter((s) => !s.user_id);
     }
 
+    // filtro por tipo de perfil (sports vs só Web3)
+    if (profileTypeFilter === 'SPORT') {
+      list = list.filter((s) => !s.is_non_sport); // null/false contam como sports (backward compatible)
+    } else if (profileTypeFilter === 'WEB3_ONLY') {
+      list = list.filter((s) => s.is_non_sport === true);
+    }
+
+    // filtro por subtipo Web3 (aplica-se sobretudo a perfis só Web3)
+    if (web3TypeFilter === 'PROFESSIONAL') {
+      list = list.filter(
+        (s) => s.is_non_sport === true && s.web3_type === 'PROFESSIONAL_WEB3_LEARNING',
+      );
+    } else if (web3TypeFilter === 'ENTHUSIAST') {
+      list = list.filter(
+        (s) => s.is_non_sport === true && s.web3_type === 'WEB3_ENTHUSIAST',
+      );
+    }
+
     list.sort((a, b) => {
       const aSeq = a.sequence_number ?? 0;
       const bSeq = b.sequence_number ?? 0;
@@ -471,6 +526,8 @@ export default function AdminOnboardingPage() {
     sportFilter,
     responsibleFilter,
     accountFilter,
+    profileTypeFilter,
+    web3TypeFilter,
     user,
   ]);
 
@@ -492,6 +549,16 @@ export default function AdminOnboardingPage() {
   ).length;
   const withAccount = submissions.filter((s) => !!s.user_id).length;
   const withoutAccount = totalSubmissions - withAccount;
+
+  const nonSportCount = submissions.filter((s) => s.is_non_sport === true).length;
+  const sportCount = totalSubmissions - nonSportCount;
+
+  const professionalWeb3Count = submissions.filter(
+    (s) => s.is_non_sport === true && s.web3_type === 'PROFESSIONAL_WEB3_LEARNING',
+  ).length;
+  const enthusiastWeb3Count = submissions.filter(
+    (s) => s.is_non_sport === true && s.web3_type === 'WEB3_ENTHUSIAST',
+  ).length;
 
   const responsibleCounts = submissions.reduce(
     (acc: Record<string, { name: string; count: number }>, s) => {
@@ -553,7 +620,7 @@ export default function AdminOnboardingPage() {
       }
 
       setSubmissions((prev) =>
-        prev.map((s) => (s.id === selected.id ? { ...s, status: newStatus } : s))
+        prev.map((s) => (s.id === selected.id ? { ...s, status: newStatus } : s)),
       );
       setSelected((prev) => (prev ? { ...prev, status: newStatus } : prev));
 
@@ -601,8 +668,8 @@ export default function AdminOnboardingPage() {
                 assigned_to_full_name: (user as any).full_name || null,
                 assigned_to_username: (user as any).username || null,
               }
-            : s
-        )
+            : s,
+        ),
       );
       setSelected((prev) =>
         prev
@@ -612,7 +679,7 @@ export default function AdminOnboardingPage() {
               assigned_to_full_name: (user as any).full_name || null,
               assigned_to_username: (user as any).username || null,
             }
-          : prev
+          : prev,
       );
     } finally {
       setUpdatingAssignee(false);
@@ -660,8 +727,8 @@ export default function AdminOnboardingPage() {
                 assigned_to_full_name: selectedUser ? selectedUser.full_name : null,
                 assigned_to_username: selectedUser ? selectedUser.username : null,
               }
-            : s
-        )
+            : s,
+        ),
       );
 
       setSelected((prev) =>
@@ -672,7 +739,7 @@ export default function AdminOnboardingPage() {
               assigned_to_full_name: selectedUser ? selectedUser.full_name : null,
               assigned_to_username: selectedUser ? selectedUser.username : null,
             }
-          : prev
+          : prev,
       );
     } finally {
       setUpdatingAssignee(false);
@@ -690,8 +757,8 @@ export default function AdminOnboardingPage() {
               </h1>
               <p className="text-sm text-gray-600 max-w-xl">
                 Caixa de entrada de formulários de onboarding. Aqui consegues
-                ver o estado, desporto, país, conta criada e responsável por
-                cada submissão.
+                ver o estado, desporto / perfil, país, conta criada e responsável
+                por cada submissão.
               </p>
             </div>
 
@@ -710,6 +777,9 @@ export default function AdminOnboardingPage() {
             <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
               <div className="text-xs text-gray-500">Total submissions</div>
               <div className="text-2xl font-bold">{totalSubmissions}</div>
+              <div className="text-[11px] text-gray-400 mt-1">
+                {sportCount} ligados ao desporto · {nonSportCount} só Web3/Apertum
+              </div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
               <div className="text-xs text-gray-500">Pending</div>
@@ -720,12 +790,13 @@ export default function AdminOnboardingPage() {
               <div className="text-2xl font-bold text-green-600">{doneCount}</div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-              <div className="text-xs text-gray-500">With account</div>
+              <div className="text-xs text-gray-500">Contas & Web3</div>
               <div className="text-2xl font-bold">
                 {withAccount}/{totalSubmissions}
               </div>
               <div className="text-[11px] text-gray-500">
-                {withoutAccount} sem conta
+                {withoutAccount} sem conta · Prof Web3: {professionalWeb3Count} ·
+                Entusiastas: {enthusiastWeb3Count}
               </div>
             </div>
           </section>
@@ -768,7 +839,7 @@ export default function AdminOnboardingPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-5 gap-3">
+            <div className="grid md:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-700">Pesquisa</label>
                 <input
@@ -814,7 +885,9 @@ export default function AdminOnboardingPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">Desporto</label>
+                <label className="text-xs font-medium text-gray-700">
+                  Desporto / Código
+                </label>
                 <select
                   value={sportFilter ?? 'ALL'}
                   onChange={(e) => setSportFilter((e.target.value as string) || 'ALL')}
@@ -843,6 +916,42 @@ export default function AdminOnboardingPage() {
                   &quot;Só as minhas&quot; mostra submissões onde és o responsável
                   atribuído.
                 </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">Tipo de perfil</label>
+                <select
+                  value={profileTypeFilter}
+                  onChange={(e) =>
+                    setProfileTypeFilter(
+                      e.target.value as 'ALL' | 'SPORT' | 'WEB3_ONLY',
+                    )
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="ALL">Todos</option>
+                  <option value="SPORT">Ligados ao desporto</option>
+                  <option value="WEB3_ONLY">Só Web3 / Apertum</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">
+                  Tipo Web3 (para perfis só Web3)
+                </label>
+                <select
+                  value={web3TypeFilter}
+                  onChange={(e) =>
+                    setWeb3TypeFilter(
+                      e.target.value as 'ALL' | 'PROFESSIONAL' | 'ENTHUSIAST',
+                    )
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="ALL">Todos</option>
+                  <option value="PROFESSIONAL">Profissional Web3</option>
+                  <option value="ENTHUSIAST">Entusiasta Web3</option>
+                </select>
               </div>
             </div>
           </section>
@@ -882,7 +991,7 @@ export default function AdminOnboardingPage() {
                       <th className="py-2 pr-3">Nome</th>
                       <th className="py-2 pr-3">Email</th>
                       <th className="py-2 pr-3">País</th>
-                      <th className="py-2 pr-3">Desporto</th>
+                      <th className="py-2 pr-3">Desporto / Perfil</th>
                       <th className="py-2 pr-3">Estado</th>
                       <th className="py-2 pr-3">Conta</th>
                       <th className="py-2 pr-3">Responsável</th>
@@ -892,6 +1001,7 @@ export default function AdminOnboardingPage() {
                   <tbody>
                     {filteredSubmissions.map((s) => {
                       const hasAccount = !!s.user_id;
+                      const isNonSport = s.is_non_sport === true;
                       return (
                         <tr
                           key={s.id}
@@ -907,7 +1017,7 @@ export default function AdminOnboardingPage() {
                             <div className="text-xs font-medium text-gray-900">
                               {s.full_name || '—'}
                             </div>
-                            {s.sports_role && (
+                            {s.sports_role && !isNonSport && (
                               <div className="text-[11px] text-gray-400">
                                 {s.sports_role}
                               </div>
@@ -920,7 +1030,15 @@ export default function AdminOnboardingPage() {
                             {s.country || '—'}
                           </td>
                           <td className="py-2 pr-3 text-xs text-gray-700">
-                            {s.sports_category_code || s.sports_category || '—'}
+                            {isNonSport ? (
+                              <span className={profileTypeBadgeClass(true)}>
+                                Só Web3 / Apertum
+                              </span>
+                            ) : (
+                              <>
+                                {s.sports_category_code || s.sports_category || '—'}
+                              </>
+                            )}
                           </td>
                           <td className="py-2 pr-3">
                             <span className={statusBadgeClass(s.status)}>
@@ -977,6 +1095,12 @@ export default function AdminOnboardingPage() {
                       </span>
                     </div>
                     <div>
+                      <span className="font-medium text-gray-700">Perfil: </span>
+                      <span className={profileTypeBadgeClass(selected.is_non_sport)}>
+                        {profileTypeLabel(selected)}
+                      </span>
+                    </div>
+                    <div>
                       <span className="font-medium text-gray-700">Responsável: </span>
                       <span className="text-gray-800">
                         {selected.assigned_to_full_name ||
@@ -1012,27 +1136,37 @@ export default function AdminOnboardingPage() {
                     </div>
                     <p>
                       <span className="font-medium">Desporto:</span>{' '}
-                      {selected.sports_category_code ||
-                        selected.sports_category ||
-                        '—'}
+                      {selected.is_non_sport
+                        ? '— (perfil só Web3 / Apertum)'
+                        : selected.sports_category_code ||
+                          selected.sports_category ||
+                          '—'}
                     </p>
                     <p>
                       <span className="font-medium">Papel no desporto:</span>{' '}
-                      {selected.sports_role || '—'}
+                      {selected.is_non_sport ? '—' : selected.sports_role || '—'}
                     </p>
                     <p>
                       <span className="font-medium">Organização / Clube:</span>{' '}
-                      {selected.organization || '—'}
+                      {selected.is_non_sport ? '—' : selected.organization || '—'}
                     </p>
                   </div>
 
                   <div className="space-y-1">
                     <div className="text-[11px] font-semibold text-gray-700">
-                      Web3 & Interesses
+                      Web3, Perfil & Interesses
                     </div>
                     <p>
                       <span className="font-medium">Experiência Web3:</span>{' '}
                       {selected.web3_experience || '—'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Tipo de perfil:</span>{' '}
+                      {profileTypeLabel(selected)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Subtipo Web3:</span>{' '}
+                      {web3TypeLabel(selected.web3_type)}
                     </p>
                     <p>
                       <span className="font-medium">Áreas de interesse:</span>{' '}
@@ -1050,6 +1184,25 @@ export default function AdminOnboardingPage() {
                   <div className="rounded-md border border-gray-200 bg-white p-3 text-gray-800 whitespace-pre-wrap">
                     {selected.message || '—'}
                   </div>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3 space-y-1 text-xs">
+                  <div className="text-[11px] font-semibold text-gray-700">
+                    Origem & tracking
+                  </div>
+                  <p>
+                    <span className="font-medium">IP:</span>{' '}
+                    {selected.created_by_ip || '—'}
+                  </p>
+                  <p>
+                    <span className="font-medium">UTM:</span>{' '}
+                    {selected.utm_source || '—'} / {selected.utm_medium || '—'} /{' '}
+                    {selected.utm_campaign || '—'}
+                  </p>
+                  <p>
+                    <span className="font-medium">Referrer user ID:</span>{' '}
+                    {selected.referrer_user_id || '—'}
+                  </p>
                 </div>
 
                 <div className="border-t border-gray-200 pt-3 space-y-3 text-xs">
@@ -1221,7 +1374,9 @@ export default function AdminOnboardingPage() {
                       <select
                         className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-[11px] shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         value={selected.status || 'PENDING_RESPONSE'}
-                        onChange={(e) => handleChangeStatus(e.target.value as OnboardingStatus)}
+                        onChange={(e) =>
+                          handleChangeStatus(e.target.value as OnboardingStatus)
+                        }
                         disabled={!canEditStatus || updatingStatus}
                       >
                         {STATUS_ORDER.map((st) => (

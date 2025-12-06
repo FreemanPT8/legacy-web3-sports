@@ -81,7 +81,8 @@ export default function HousesOfSportsPage() {
   const [sportFilter, setSportFilter] = useState<string>('ALL');
   const [countryFilter, setCountryFilter] = useState<string>('ALL');
 
-  const isAdmin = user && (user.role === 'Super Admin' || user.role === 'Admin');
+  const isAdmin =
+    user && (user.role === 'Super Admin' || user.role === 'Admin');
 
   useEffect(() => {
     const q = searchParams.get('q') ?? '';
@@ -93,7 +94,11 @@ export default function HousesOfSportsPage() {
 
     if (statusParam) {
       const upper = statusParam.toUpperCase();
-      if (upper === 'ACTIVE' || upper === 'UNDER_CONSTRUCTION' || upper === 'IN_DEVELOPMENT') {
+      if (
+        upper === 'ACTIVE' ||
+        upper === 'UNDER_CONSTRUCTION' ||
+        upper === 'IN_DEVELOPMENT'
+      ) {
         setStatusFilter(upper as PublicHouseStatus);
       } else {
         setStatusFilter('ALL');
@@ -146,53 +151,75 @@ export default function HousesOfSportsPage() {
     const fetchHouses = async () => {
       setLoading(true);
       setError(null);
+
       try {
         const res = await fetch('/api/sports/houses?locale=pt');
         const json: HousesApiResponse = await res.json();
+
         if (!res.ok || !json.success) {
           throw new Error(json.error || 'Erro ao carregar Houses of Sports.');
         }
+
         setHouses(json.houses || []);
       } catch (err: any) {
         console.error('Error fetching public Houses:', err);
-        setError(err?.message || 'Erro inesperado ao carregar Houses of Sports.');
+        setError(
+          err?.message || 'Erro inesperado ao carregar Houses of Sports.',
+        );
       } finally {
         setLoading(false);
       }
     };
+
     fetchHouses();
   }, []);
 
   const sportOptions = useMemo(() => {
     const map = new Map<string, string>();
+
     for (const h of houses) {
       if (h.sport && !map.has(h.sport.id)) {
         map.set(h.sport.id, h.sport.name);
       }
     }
+
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [houses]);
 
   const countryOptions = useMemo(() => {
     const set = new Set<string>();
+
     for (const h of houses) {
       if (h.country_code) set.add(h.country_code.toUpperCase());
     }
+
     return Array.from(set).sort();
   }, [houses]);
 
   const filtered = useMemo(() => {
     let list = [...houses];
 
-    if (statusFilter !== 'ALL') list = list.filter(h => h.status === statusFilter);
-    if (sportFilter !== 'ALL') list = list.filter(h => h.sport && h.sport.id === sportFilter);
-    if (countryFilter !== 'ALL')
-      list = list.filter(h => (h.country_code || '').toUpperCase() === countryFilter);
+    if (statusFilter !== 'ALL') {
+      list = list.filter((h) => h.status === statusFilter);
+    }
+
+    if (sportFilter !== 'ALL') {
+      list = list.filter((h) => h.sport && h.sport.id === sportFilter);
+    }
+
+    if (countryFilter !== 'ALL') {
+      list = list.filter(
+        (h) => (h.country_code || '').toUpperCase() === countryFilter,
+      );
+    }
 
     if (search.trim()) {
       const term = search.trim().toLowerCase();
-      list = list.filter(h => {
-        const headName = `${h.head?.full_name || ''} ${h.head?.username || ''}`;
+
+      list = list.filter((h) => {
+        const headName = `${h.head?.full_name || ''} ${
+          h.head?.username || ''
+        }`;
         return (
           h.name.toLowerCase().includes(term) ||
           (h.sport?.name || '').toLowerCase().includes(term) ||
@@ -250,9 +277,11 @@ export default function HousesOfSportsPage() {
                 <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
                   Houses of Sports — Comunidades por desporto
                 </span>
+
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-heading">
                   As Houses oficiais de cada desporto.
                 </h1>
+
                 <p className="mt-3 text-sm md:text-base text-blue-100 max-w-xl">
                   Cada House of Sports representa a comunidade oficial de{' '}
                   <strong>um desporto num país</strong>. É aqui que Heads of
@@ -260,16 +289,18 @@ export default function HousesOfSportsPage() {
                   explorar a Apertum Blockchain e construir o futuro do desporto
                   em comunidade.
                 </p>
+
                 <p className="mt-4 text-xs text-blue-200/80 max-w-lg">
-                  As Houses ativas vão ter missões, XP, conteúdo exclusivo e um chat
-                  privado para membros. As Houses em construção estão a montar as
-                  bases da comunidade. As em desenvolvimento ainda estão a ganhar
-                  forma nos bastidores.
+                  As Houses ativas vão ter missões, XP, conteúdo exclusivo e um
+                  chat privado para membros. As Houses em construção estão a
+                  montar as bases da comunidade. As em desenvolvimento ainda
+                  estão a ganhar forma nos bastidores.
                 </p>
+
                 <div className="mt-5 flex flex-wrap gap-3">
                   <Link
                     href="/sports"
-                    className="inline-flex items-center rounded-lg bg-white text-slate-900 px-4 py-2 text-sm font-medium hover:bg-gray-100"
+                    className="inline-flex items-center rounded-lg bg-white text-slate-900 px-4 py-2 text-sm font-medium hover:bg.gray-100"
                   >
                     Voltar a Desportos Web3
                   </Link>
@@ -286,14 +317,18 @@ export default function HousesOfSportsPage() {
                 <h2 className="text-sm font-semibold text-heading mb-2">
                   Snapshot das Houses
                 </h2>
+
                 <div className="space-y-3 text-xs text-body">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
                       Houses ativas
                     </span>
-                    <span className="font-semibold text-heading">{totalActive}</span>
+                    <span className="font-semibold text-heading">
+                      {totalActive}
+                    </span>
                   </div>
+
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-amber-400" />
@@ -303,6 +338,7 @@ export default function HousesOfSportsPage() {
                       {totalUnderConstruction}
                     </span>
                   </div>
+
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-slate-400" />
@@ -313,9 +349,11 @@ export default function HousesOfSportsPage() {
                     </span>
                   </div>
                 </div>
+
                 <div className="mt-4 border-t border-slate-700/70 pt-3 text-[11px] text-muted-custom">
-                  Se representas um desporto, podes liderar a tua própria House. O
-                  primeiro passo é fazer o onboarding personalizado de desporto.
+                  Se representas um desporto, podes liderar a tua própria House.
+                  O primeiro passo é fazer o onboarding personalizado de
+                  desporto.
                 </div>
               </div>
             </div>
@@ -340,7 +378,7 @@ export default function HousesOfSportsPage() {
                 type="text"
                 placeholder="Pesquisar por desporto, país, Head."
                 value={search}
-                onChange={e => {
+                onChange={(e) => {
                   const value = e.target.value;
                   setSearch(value);
                   updateQueryString({ q: value });
@@ -356,7 +394,7 @@ export default function HousesOfSportsPage() {
 
               <select
                 value={statusFilter}
-                onChange={e => {
+                onChange={(e) => {
                   const value = e.target.value as StatusFilter;
                   setStatusFilter(value);
                   updateQueryString({ status: value });
@@ -371,7 +409,7 @@ export default function HousesOfSportsPage() {
 
               <select
                 value={sportFilter}
-                onChange={e => {
+                onChange={(e) => {
                   const value = e.target.value;
                   setSportFilter(value);
                   updateQueryString({ sport: value });
@@ -379,7 +417,7 @@ export default function HousesOfSportsPage() {
                 className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-body shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="ALL">Todos os desportos</option>
-                {sportOptions.map(s => (
+                {sportOptions.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -388,7 +426,7 @@ export default function HousesOfSportsPage() {
 
               <select
                 value={countryFilter}
-                onChange={e => {
+                onChange={(e) => {
                   const value = e.target.value;
                   setCountryFilter(value);
                   updateQueryString({ country: value });
@@ -396,7 +434,7 @@ export default function HousesOfSportsPage() {
                 className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-body shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="ALL">Todos os países</option>
-                {countryOptions.map(code => (
+                {countryOptions.map((code) => (
                   <option key={code} value={code}>
                     {code}
                   </option>
@@ -434,7 +472,6 @@ export default function HousesOfSportsPage() {
                 clickable
                 emptyMessage="Ainda não existem Houses ativas. Em breve algumas Houses vão abrir as portas para membros."
               />
-
               <HousesSection
                 title="Houses em construção"
                 description="Casas que já têm Head of House e/ou moderadores a preparar a comunidade."
@@ -442,7 +479,6 @@ export default function HousesOfSportsPage() {
                 clickable
                 emptyMessage="Ainda não existem Houses em construção."
               />
-
               {isAdmin && (
                 <HousesSection
                   title="Houses em desenvolvimento (visível só para equipa)"
@@ -544,7 +580,7 @@ function HousesSection({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {houses.map(house => {
+        {houses.map((house) => {
           const card = (
             <div className="h-full rounded-xl border border-custom bg-card-custom p-4 shadow-sm hover:border-blue-500/70 hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] transition flex flex-col">
               <div className="flex items-start justify-between gap-3 mb-2">
@@ -561,6 +597,7 @@ function HousesSection({
                     )}
                   </div>
                 </div>
+
                 {house.country_code && (
                   <span className="text-[10px] font-mono uppercase bg-slate-900 rounded px-2 py-0.5 text-blue-200 border border-slate-700">
                     {house.country_code}

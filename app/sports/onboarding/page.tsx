@@ -27,7 +27,14 @@ import { useToast } from '@/hooks/use-toast';
 import { COUNTRIES, HOUSES_OF_SPORTS, SPORTS_ROLES } from '@/lib/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mail, MessageSquare, User, Trophy, Lightbulb } from 'lucide-react';
+import {
+  Mail,
+  MessageSquare,
+  User,
+  Trophy,
+  Lightbulb,
+  Shield,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -117,36 +124,76 @@ function getLoadingSportsLabel(lang: string): string {
   }
 }
 
-// Normalizar SPORTS_ROLES para { value, label } e evitar [object Object] / value=""
+// Texto para o modo: ligado a desporto vs geral
+function getProfileModeTitle(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'Como queres usar o LEGACY?';
+    case 'es':
+      return '¿Cómo quieres usar LEGACY?';
+    default:
+      return 'How do you want to use LEGACY?';
+  }
+}
+
+function getProfileModeSportsLabel(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'Estou ligado a um desporto';
+    case 'es':
+      return 'Estoy vinculado a un deporte';
+    default:
+      return 'I am connected to a sport';
+  }
+}
+
+function getProfileModeGeneralLabel(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'Quero apenas aprender Blockchain / Web3 / Apertum';
+    case 'es':
+      return 'Solo quiero aprender Blockchain / Web3 / Apertum';
+    default:
+      return 'I just want to learn Blockchain / Web3 / Apertum';
+  }
+}
+
+function getProfileModeHint(lang: string): string {
+  const L = normalizeLang(lang);
+  switch (L) {
+    case 'pt':
+      return 'Se escolheres a segunda opção, vamos ignorar o desporto, papel e organização. O foco será apenas a tua jornada em Blockchain, Web3 e Apertum.';
+    case 'es':
+      return 'Si eliges la segunda opción, ignoraremos deporte, rol y organización. El foco será solo tu recorrido en Blockchain, Web3 y Apertum.';
+    default:
+      return 'If you choose the second option, sport, role and organisation will be ignored. The focus will be only your journey in Blockchain, Web3 and Apertum.';
+  }
+}
+
+// Normalizar SPORTS_ROLES para { value, label } (sem [object Object])
 function getSportRolesForLanguage(language: string): SportRoleOption[] {
   const rawRoles: any[] =
     (SPORTS_ROLES as any)[language] || (SPORTS_ROLES as any).en || [];
 
   return rawRoles
     .map((role: any): SportRoleOption => {
-      // Caso simples: já é string
       if (typeof role === 'string') {
         return { value: role, label: role };
       }
 
-      // Caso seja objeto
       if (role && typeof role === 'object') {
         const langKey = language;
 
         let label: string | undefined;
 
-        // Tentativas de encontrar label
         if (typeof role.label === 'string') {
           label = role.label;
-        } else if (
-          role.label &&
-          typeof role.label[langKey] === 'string'
-        ) {
+        } else if (role.label && typeof role.label[langKey] === 'string') {
           label = role.label[langKey];
-        } else if (
-          role.i18n &&
-          typeof role.i18n[langKey] === 'string'
-        ) {
+        } else if (role.i18n && typeof role.i18n[langKey] === 'string') {
           label = role.i18n[langKey];
         } else if (typeof role.name === 'string') {
           label = role.name;
@@ -161,15 +208,12 @@ function getSportRolesForLanguage(language: string): SportRoleOption[] {
         return { value, label: finalLabel };
       }
 
-      // Fallback bruto
       return { value: String(role ?? ''), label: String(role ?? '') };
     })
-    // Garantir que nunca temos value vazio (Radix não gosta de "")
     .filter((r) => r.value.trim() !== '');
 }
 
-// Formatar label de desporto: usa name se for diferente do code;
-// caso contrário, converte o code em “Title Case”.
+// Formatar label de desporto
 function formatSportLabel(sport: SportOption): string {
   if (sport.name && sport.name.toLowerCase() !== sport.code.toLowerCase()) {
     return sport.name;
@@ -180,7 +224,7 @@ function formatSportLabel(sport: SportOption): string {
     .split(' ')
     .filter(Boolean)
     .map(
-      (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+      (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase(),
     )
     .join(' ');
 }
@@ -201,7 +245,7 @@ function getValidationTexts(lang: string) {
         'Escolheste "Outro papel". Especifica o teu papel no desporto.',
       submitSuccessTitle: 'Candidatura enviada!',
       submitSuccessDesc:
-        'Um responsável de uma House vai contactar-te em 24-48 horas pelo método de contacto que escolheste.',
+        'Um responsável de uma House ou da equipa LEGACY vai contactar-te em 24-48 horas pelo método de contacto que escolheste.',
       submitFailedTitle: 'Falha ao enviar a candidatura',
       submitFailedFallback: 'Tenta novamente, por favor.',
       networkErrorTitle: 'Erro de rede',
@@ -222,7 +266,7 @@ function getValidationTexts(lang: string) {
         'Has elegido "Otro papel". Especifica tu papel en el deporte.',
       submitSuccessTitle: '¡Solicitud enviada!',
       submitSuccessDesc:
-        'Un responsable de una House te contactará en 24-48 horas por tu método de contacto preferido.',
+        'Un responsable de una House o del equipo LEGACY te contactará en 24-48 horas por tu método de contacto preferido.',
       submitFailedTitle: 'Error al enviar la solicitud',
       submitFailedFallback: 'Vuelve a intentarlo, por favor.',
       networkErrorTitle: 'Error de red',
@@ -230,7 +274,6 @@ function getValidationTexts(lang: string) {
     };
   }
 
-  // EN (default)
   return {
     missingRequiredTitle: 'Missing required fields',
     missingRequiredDesc: 'Please fill in all required fields',
@@ -243,7 +286,7 @@ function getValidationTexts(lang: string) {
       'You selected "Other role". Please specify your role in sports.',
     submitSuccessTitle: 'Application submitted!',
     submitSuccessDesc:
-      'A House admin will contact you within 24-48 hours via your preferred contact method.',
+      'A House admin or the LEGACY team will contact you within 24-48 hours via your preferred contact method.',
     submitFailedTitle: 'Submission failed',
     submitFailedFallback: 'Please try again',
     networkErrorTitle: 'Network error',
@@ -267,6 +310,9 @@ export default function OnboardingPage() {
   const [otherSport, setOtherSport] = useState(false);
   const [otherRole, setOtherRole] = useState(false);
 
+  // modo: ligado a desporto vs perfil geral
+  const [isNonSports, setIsNonSports] = useState(false);
+
   // diálogo pós-submissão
   const [showPostSubmitDialog, setShowPostSubmitDialog] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
@@ -277,7 +323,7 @@ export default function OnboardingPage() {
     telegram: '',
     full_name: '',
     country: '',
-    sports_category: '', // aqui guardamos o "code" do desporto
+    sports_category: '',
     sports_category_other: '',
     sports_role: '',
     sports_role_other: '',
@@ -369,28 +415,31 @@ export default function OnboardingPage() {
       return;
     }
 
-    if (
-      formData.sports_category === 'other_sport' &&
-      !formData.sports_category_other.trim()
-    ) {
-      toast({
-        title: v.otherSportTitle,
-        description: v.otherSportDesc,
-        variant: 'destructive',
-      });
-      return;
-    }
+    // Só validamos desporto/papel se o utilizador estiver no modo "desporto"
+    if (!isNonSports) {
+      if (
+        formData.sports_category === 'other_sport' &&
+        !formData.sports_category_other.trim()
+      ) {
+        toast({
+          title: v.otherSportTitle,
+          description: v.otherSportDesc,
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    if (
-      formData.sports_role === 'other_role' &&
-      !formData.sports_role_other.trim()
-    ) {
-      toast({
-        title: v.otherRoleTitle,
-        description: v.otherRoleDesc,
-        variant: 'destructive',
-      });
-      return;
+      if (
+        formData.sports_role === 'other_role' &&
+        !formData.sports_role_other.trim()
+      ) {
+        toast({
+          title: v.otherRoleTitle,
+          description: v.otherRoleDesc,
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setLoading(true);
@@ -398,25 +447,37 @@ export default function OnboardingPage() {
     try {
       const payload: any = { ...formData };
 
+      // Flag de perfil
+      payload.is_non_sports = isNonSports;
+      payload.profile_type = isNonSports ? 'GENERAL' : 'SPORTS';
+
       // se o utilizador estiver autenticado, ligar submissão ao user_id
+      const { user } = useAuth();
       if (user?.id) {
         payload.user_id = user.id;
       }
 
-      // Tratar “Outro desporto” + sports_category_code
-      if (payload.sports_category === 'other_sport') {
-        payload.sports_category = payload.sports_category_other.trim();
+      // Se for perfil GERAL, ignoramos tudo o que seja desporto/organização
+      if (isNonSports) {
+        payload.sports_category = null;
         payload.sports_category_code = null;
-      } else if (payload.sports_category) {
-        // aqui assumimos que sports_category guarda o code
-        payload.sports_category_code = payload.sports_category;
+        payload.sports_role = null;
+        payload.organization = null;
       } else {
-        payload.sports_category_code = null;
-      }
+        // Tratar “Outro desporto” + sports_category_code
+        if (payload.sports_category === 'other_sport') {
+          payload.sports_category = payload.sports_category_other.trim();
+          payload.sports_category_code = null;
+        } else if (payload.sports_category) {
+          payload.sports_category_code = payload.sports_category;
+        } else {
+          payload.sports_category_code = null;
+        }
 
-      // Tratar “Outro papel”
-      if (payload.sports_role === 'other_role') {
-        payload.sports_role = payload.sports_role_other.trim();
+        // Tratar “Outro papel”
+        if (payload.sports_role === 'other_role') {
+          payload.sports_role = payload.sports_role_other.trim();
+        }
       }
 
       delete payload.sports_category_other;
@@ -436,7 +497,6 @@ export default function OnboardingPage() {
           description: v.submitSuccessDesc,
         });
 
-        // guardar email submetido para usar no popup
         setSubmittedEmail(formData.email);
 
         setFormData({
@@ -456,8 +516,8 @@ export default function OnboardingPage() {
         });
         setOtherSport(false);
         setOtherRole(false);
+        setIsNonSports(false);
 
-        // abrir popup de registo
         setShowPostSubmitDialog(true);
       } else {
         toast({
@@ -468,9 +528,10 @@ export default function OnboardingPage() {
       }
     } catch (error) {
       console.error('Onboarding submit error:', error);
+      const vTexts = getValidationTexts(language);
       toast({
-        title: v.networkErrorTitle,
-        description: v.networkErrorDesc,
+        title: vTexts.networkErrorTitle,
+        description: vTexts.networkErrorDesc,
         variant: 'destructive',
       });
     }
@@ -479,493 +540,600 @@ export default function OnboardingPage() {
   };
 
   const sportRoleOptions = getSportRolesForLanguage(language);
+  const L = normalizeLang(language);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                {t('onboarding.title')}
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
-                {t('onboarding.subtitle')}
-              </p>
+      <main className="flex-1 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+        {/* HERO alinhado com /sports e /sports/houses */}
+        <section className="border-b border-slate-800 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+            <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+          </div>
+
+          <div className="relative z-10 max-w-5xl mx-auto px-4 py-10 md:py-14">
+            <div className="grid md:grid-cols-[2fr,1.2fr] gap-8 items-center">
+              <div>
+                <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+                  LEGACY Onboarding — Sports & Blockchain
+                </span>
+
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+                  Onboarding personalizado para a tua jornada no LEGACY.
+                </h1>
+
+                <p className="mt-3 text-sm md:text-base text-blue-100 max-w-xl">
+                  Diz-nos quem és, de onde vens e o que procuras. Seja como
+                  profissional do desporto ou como pessoa que quer dominar
+                  Blockchain, Web3 e a Apertum, este formulário é a porta de
+                  entrada para conteúdos privados e Houses of Sports.
+                </p>
+
+                <p className="mt-3 text-xs text-blue-200/80 max-w-xl">
+                  A informação que partilhas aqui vai ajudar a equipa LEGACY e
+                  as Houses a perceber como podem apoiar-te melhor — sem spam,
+                  sem marketing barato, sem promessas vazias.
+                </p>
+              </div>
+
+              <div className="bg-card-custom border border-custom rounded-2xl p-5 text-xs text-body shadow-lg">
+                <h2 className="text-sm font-semibold text-heading mb-2 flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-blue-400" />
+                  O que acontece depois do envio?
+                </h2>
+                <ol className="space-y-2 list-decimal list-inside">
+                  <li>
+                    A tua candidatura entra numa fila interna ligada ao teu
+                    país, desporto (se aplicável) e tipo de perfil.
+                  </li>
+                  <li>
+                    Um responsável de uma House ou da equipa LEGACY revê a tua
+                    informação.
+                  </li>
+                  <li>
+                    Vais receber contacto por email ou Telegram em 24-48 horas
+                    com os próximos passos.
+                  </li>
+                  <li>
+                    Se fizer sentido, vais ser encaminhado para Houses, cursos
+                    e conteúdos privados específicos para ti.
+                  </li>
+                </ol>
+                <p className="mt-3 text-[11px] text-muted-custom">
+                  Tudo o que escreves aqui é tratado com respeito. Não estamos a
+                  vender nada, estamos a construir algo para os próximos anos.
+                </p>
+              </div>
             </div>
+          </div>
+        </section>
 
-            <Card className="mb-8 bg-gradient-to-br from-blue-50 to-cyan-50">
-              <CardHeader>
-                <CardTitle>{t('onboarding.howItWorks')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
-                      1
-                    </div>
-                    <p className="text-sm font-semibold mb-1">
-                      {t('onboarding.fillForm')}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">
-                      {t('onboarding.fillFormDesc')}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
-                      2
-                    </div>
-                    <p className="text-sm font-semibold mb-1">
-                      {t('onboarding.adminReview')}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">
-                      {t('onboarding.adminReviewDesc')}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
-                      3
-                    </div>
-                    <p className="text-sm font-semibold mb-1">
-                      {t('onboarding.emailContact')}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">
-                      {t('onboarding.emailContactDesc')}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto mb-2 font-bold">
-                      4
-                    </div>
-                    <p className="text-sm font-semibold mb-1">
-                      {t('onboarding.zoomMeeting')}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">
-                      {t('onboarding.zoomMeetingDesc')}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {/* FORMULÁRIO */}
+        <section className="py-10">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              {/* Step indicator visual mais discreto */}
+              <div className="mb-6 flex flex-wrap items-center gap-2 text-[11px] text-blue-100/80">
+                <span className="font-semibold uppercase tracking-wide">
+                  {t('onboarding.title')}
+                </span>
+                <span className="h-[1px] w-6 bg-blue-500/60" />
+                <span>{t('onboarding.subtitle')}</span>
+              </div>
 
-            <form onSubmit={handleSubmit}>
-              {/* Step 1 - Contactos */}
-              <Card className="mb-6">
+              {/* Como queres usar o LEGACY? */}
+              <Card className="mb-6 bg-slate-950/70 border border-slate-800 text-blue-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-blue-600" />
-                    {t('onboarding.step1')}
+                    <Shield className="h-5 w-5 text-blue-400" />
+                    {getProfileModeTitle(language)}
                   </CardTitle>
-                  <CardDescription>
-                    {t('onboarding.howReach')} {t('onboarding.atLeastOne')}
+                  <CardDescription className="text-blue-200/80">
+                    Escolhe se vens pelo lado do desporto ou apenas para
+                    aprender Blockchain, Web3 e Apertum. Isto muda o tipo de
+                    perguntas que te fazemos e o painel interno onde vais
+                    aparecer.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t('onboarding.email')} *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      required
-                    />
+                <CardContent>
+                  <div className="flex flex-col md:flex-row gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsNonSports(false)}
+                      className={`flex-1 rounded-lg border px-3 py-3 text-left text-sm transition ${
+                        !isNonSports
+                          ? 'border-blue-500 bg-blue-950/60 text-blue-50 shadow-[0_0_18px_rgba(59,130,246,0.35)]'
+                          : 'border-slate-700 bg-slate-950 text-blue-100 hover:border-blue-500/60'
+                      }`}
+                    >
+                      <span className="block font-semibold mb-1">
+                        {getProfileModeSportsLabel(language)}
+                      </span>
+                      <span className="block text-[11px] text-blue-200/80">
+                        Ex: atleta, treinador, clube, dirigente, criador de
+                        conteúdo, staff técnico.
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsNonSports(true)}
+                      className={`flex-1 rounded-lg border px-3 py-3 text-left text-sm transition ${
+                        isNonSports
+                          ? 'border-emerald-500 bg-emerald-950/60 text-emerald-50 shadow-[0_0_18px_rgba(16,185,129,0.35)]'
+                          : 'border-slate-700 bg-slate-950 text-blue-100 hover:border-emerald-500/60'
+                      }`}
+                    >
+                      <span className="block font-semibold mb-1">
+                        {getProfileModeGeneralLabel(language)}
+                      </span>
+                      <span className="block text-[11px] text-emerald-100/90">
+                        Ex: profissional de outra área, empreendedor, curioso
+                        por Web3, tech ou finanças.
+                      </span>
+                    </button>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-4">
+
+                  <p className="mt-3 text-[11px] text-blue-200/80">
+                    {getProfileModeHint(language)}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <form onSubmit={handleSubmit}>
+                {/* Step 1 - Contactos */}
+                <Card className="mb-6 bg-card-custom border-custom">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Mail className="h-5 w-5 text-blue-600" />
+                      {t('onboarding.step1')}
+                    </CardTitle>
+                    <CardDescription>
+                      {t('onboarding.howReach')} {t('onboarding.atLeastOne')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">{t('onboarding.phone')}</Label>
+                      <Label htmlFor="email">{t('onboarding.email')} *</Label>
                       <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+1234567890"
-                        value={formData.phone}
+                        id="email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={formData.email}
                         onChange={(e) =>
-                          setFormData({ ...formData, phone: e.target.value })
+                          setFormData({ ...formData, email: e.target.value })
                         }
+                        required
                       />
                     </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">{t('onboarding.phone')}</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="+3519XXXXXXXX"
+                          value={formData.phone}
+                          onChange={(e) =>
+                            setFormData({ ...formData, phone: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="telegram">
+                          {t('onboarding.telegram')}
+                        </Label>
+                        <Input
+                          id="telegram"
+                          placeholder="@teuusername"
+                          value={formData.telegram}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              telegram: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Step 2 - Dados pessoais básicos */}
+                <Card className="mb-6 bg-card-custom border-custom">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-blue-600" />
+                      {t('onboarding.step2')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="telegram">
-                        {t('onboarding.telegram')}
+                      <Label htmlFor="full_name">
+                        {t('onboarding.fullName')} *
                       </Label>
                       <Input
-                        id="telegram"
-                        placeholder="@yourusername"
-                        value={formData.telegram}
+                        id="full_name"
+                        placeholder="Nome completo"
+                        value={formData.full_name}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            telegram: e.target.value,
+                            full_name: e.target.value,
                           })
                         }
+                        required
                       />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Step 2 - Dados pessoais básicos */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-blue-600" />
-                    {t('onboarding.step2')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">
-                      {t('onboarding.fullName')} *
-                    </Label>
-                    <Input
-                      id="full_name"
-                      placeholder="John Doe"
-                      value={formData.full_name}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          full_name: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">
-                      {t('onboarding.country')} *
-                    </Label>
-                    <Select
-                      value={formData.country}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, country: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('onboarding.selectCountry')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        {COUNTRIES.map((country) => (
-                          <SelectItem key={country} value={country}>
-                            {country}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Step 3 - Desporto + Role */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-blue-600" />
-                    {t('onboarding.step3')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Desporto */}
-                  <div className="space-y-2">
-                    <Label htmlFor="sports_category">
-                      {t('onboarding.sportInterest')}
-                    </Label>
-                    <Select
-                      value={formData.sports_category}
-                      onValueChange={(value) => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          sports_category: value,
-                        }));
-                        const isOther = value === 'other_sport';
-                        setOtherSport(isOther);
-                        if (!isOther) {
-                          setFormData((prev) => ({
-                            ...prev,
-                            sports_category_other: '',
-                          }));
+                    <div className="space-y-2">
+                      <Label htmlFor="country">
+                        {t('onboarding.country')} *
+                      </Label>
+                      <Select
+                        value={formData.country}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, country: value })
                         }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('onboarding.selectSport')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sportsLoading && (
-                          <SelectItem value="loading" disabled>
-                            {getLoadingSportsLabel(language)}
-                          </SelectItem>
-                        )}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={t('onboarding.selectCountry')}
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[200px]">
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                        {!sportsLoading && sports.length > 0 && (
-                          <>
-                            {sports.map((sport) => (
-                              <SelectItem key={sport.code} value={sport.code}>
-                                {formatSportLabel(sport)}
+                {/* Step 3 - Desporto + Role (só se NÃO for perfil geral) */}
+                <Card className="mb-6 bg-card-custom border-custom">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-blue-600" />
+                      {!isNonSports
+                        ? t('onboarding.step3')
+                        : L === 'pt'
+                        ? 'Contexto profissional (sem ligação ao desporto)'
+                        : L === 'es'
+                        ? 'Contexto profesional (sin relación con el deporte)'
+                        : 'Professional context (non-sports)'}
+                    </CardTitle>
+                    {!isNonSports && (
+                      <CardDescription>
+                        {t('onboarding.sportInterest')}
+                      </CardDescription>
+                    )}
+                    {isNonSports && (
+                      <CardDescription>
+                        {L === 'pt'
+                          ? 'Se não estás ligado a um desporto em específico, podes ignorar esta secção. Vamos focar apenas na tua jornada Web3.'
+                          : L === 'es'
+                          ? 'Si no estás vinculado a un deporte concreto, puedes ignorar esta sección. Nos centraremos solo en tu recorrido Web3.'
+                          : 'If you are not connected to a specific sport, you can ignore this section. We will focus only on your Web3 journey.'}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+
+                  {!isNonSports ? (
+                    <CardContent className="space-y-4">
+                      {/* Desporto */}
+                      <div className="space-y-2">
+                        <Label htmlFor="sports_category">
+                          {t('onboarding.sportInterest')}
+                        </Label>
+                        <Select
+                          value={formData.sports_category}
+                          onValueChange={(value) => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              sports_category: value,
+                            }));
+                            const isOther = value === 'other_sport';
+                            setOtherSport(isOther);
+                            if (!isOther) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                sports_category_other: '',
+                              }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={t('onboarding.selectSport')}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sportsLoading && (
+                              <SelectItem value="loading" disabled>
+                                {getLoadingSportsLabel(language)}
+                              </SelectItem>
+                            )}
+
+                            {!sportsLoading && sports.length > 0 && (
+                              <>
+                                {sports.map((sport) => (
+                                  <SelectItem
+                                    key={sport.code}
+                                    value={sport.code}
+                                  >
+                                    {formatSportLabel(sport)}
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+
+                            {!sportsLoading && sports.length === 0 && (
+                              <>
+                                {HOUSES_OF_SPORTS[language].map(
+                                  (sportLabel: any, index: number) => (
+                                    <SelectItem
+                                      key={String(sportLabel)}
+                                      value={String(HOUSES_OF_SPORTS.en[index])}
+                                    >
+                                      {String(sportLabel)}
+                                    </SelectItem>
+                                  ),
+                                )}
+                              </>
+                            )}
+
+                            <SelectItem value="other_sport">
+                              {getOtherSportOptionLabel(language)}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {otherSport && (
+                        <div className="space-y-2">
+                          <Label htmlFor="sports_category_other">
+                            {getOtherSportPlaceholder(language)}
+                          </Label>
+                          <Input
+                            id="sports_category_other"
+                            placeholder={getOtherSportPlaceholder(language)}
+                            value={formData.sports_category_other}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                sports_category_other: e.target.value,
+                              }))
+                            }
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {/* Persona / Role */}
+                      <div className="space-y-2">
+                        <Label htmlFor="sports_role">
+                          {t('onboarding.yourRole')}
+                        </Label>
+                        <Select
+                          value={formData.sports_role}
+                          onValueChange={(value) => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              sports_role: value,
+                            }));
+                            const isOther = value === 'other_role';
+                            setOtherRole(isOther);
+                            if (!isOther) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                sports_role_other: '',
+                              }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={t('onboarding.selectRole')}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sportRoleOptions.map((role) => (
+                              <SelectItem key={role.value} value={role.value}>
+                                {role.label}
                               </SelectItem>
                             ))}
-                          </>
-                        )}
 
-                        {/* Fallback para o caso da API falhar: usa HOUSES_OF_SPORTS antiga */}
-                        {!sportsLoading && sports.length === 0 && (
-                          <>
-                            {HOUSES_OF_SPORTS[language].map(
-                              (sportLabel: any, index: number) => (
-                                <SelectItem
-                                  key={String(sportLabel)}
-                                  value={String(HOUSES_OF_SPORTS.en[index])}
-                                >
-                                  {String(sportLabel)}
-                                </SelectItem>
-                              )
-                            )}
-                          </>
-                        )}
+                            <SelectItem value="other_role">
+                              {getOtherRoleOptionLabel(language)}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                        {/* Opção "Outro desporto" */}
-                        <SelectItem value="other_sport">
-                          {getOtherSportOptionLabel(language)}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Campo extra quando escolhe "Outro desporto" */}
-                  {otherSport && (
-                    <div className="space-y-2">
-                      <Label htmlFor="sports_category_other">
-                        {getOtherSportPlaceholder(language)}
-                      </Label>
-                      <Input
-                        id="sports_category_other"
-                        placeholder={getOtherSportPlaceholder(language)}
-                        value={formData.sports_category_other}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            sports_category_other: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </div>
-                  )}
-
-                  {/* Persona / Role */}
-                  <div className="space-y-2">
-                    <Label htmlFor="sports_role">
-                      {t('onboarding.yourRole')}
-                    </Label>
-                    <Select
-                      value={formData.sports_role}
-                      onValueChange={(value) => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          sports_role: value,
-                        }));
-                        const isOther = value === 'other_role';
-                        setOtherRole(isOther);
-                        if (!isOther) {
-                          setFormData((prev) => ({
-                            ...prev,
-                            sports_role_other: '',
-                          }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('onboarding.selectRole')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sportRoleOptions.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>
-                            {role.label}
-                          </SelectItem>
-                        ))}
-
-                        {/* Opção "Outro papel" */}
-                        <SelectItem value="other_role">
-                          {getOtherRoleOptionLabel(language)}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Campo extra quando escolhe "Outro papel" */}
-                  {otherRole && (
-                    <div className="space-y-2">
-                      <Label htmlFor="sports_role_other">
-                        {getOtherRolePlaceholder(language)}
-                      </Label>
-                      <Input
-                        id="sports_role_other"
-                        placeholder={getOtherRolePlaceholder(language)}
-                        value={formData.sports_role_other}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            sports_role_other: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="organization">
-                      {t('onboarding.organization')}
-                    </Label>
-                    <Input
-                      id="organization"
-                      placeholder={t('onboarding.organizationPlaceholder')}
-                      value={formData.organization}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          organization: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Step 4 - Web3 + interesses */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5 text-blue-600" />
-                    {t('onboarding.step4')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="web3_experience">
-                      {t('onboarding.web3Experience')}
-                    </Label>
-                    <Select
-                      value={formData.web3_experience}
-                      onValueChange={(value) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          web3_experience: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('onboarding.selectExperience')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">
-                          {t('onboarding.experienceNone')}
-                        </SelectItem>
-                        <SelectItem value="beginner">
-                          {t('onboarding.experienceBeginner')}
-                        </SelectItem>
-                        <SelectItem value="intermediate">
-                          {t('onboarding.experienceIntermediate')}
-                        </SelectItem>
-                        <SelectItem value="advanced">
-                          {t('onboarding.experienceAdvanced')}
-                        </SelectItem>
-                        <SelectItem value="expert">
-                          {t('onboarding.experienceExpert')}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t('onboarding.areasOfInterest')}</Label>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {interests.map((interest) => (
-                        <div
-                          key={interest}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            id={interest}
-                            checked={formData.interests.includes(interest)}
-                            onCheckedChange={() =>
-                              handleInterestToggle(interest)
+                      {otherRole && (
+                        <div className="space-y-2">
+                          <Label htmlFor="sports_role_other">
+                            {getOtherRolePlaceholder(language)}
+                          </Label>
+                          <Input
+                            id="sports_role_other"
+                            placeholder={getOtherRolePlaceholder(language)}
+                            value={formData.sports_role_other}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                sports_role_other: e.target.value,
+                              }))
                             }
+                            required
                           />
-                          <label
-                            htmlFor={interest}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {interest}
-                          </label>
                         </div>
-                      ))}
+                      )}
+
+                      <div className="space-y-2">
+                        <Label htmlFor="organization">
+                          {t('onboarding.organization')}
+                        </Label>
+                        <Input
+                          id="organization"
+                          placeholder={t(
+                            'onboarding.organizationPlaceholder',
+                          )}
+                          value={formData.organization}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              organization: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  ) : (
+                    <CardContent>
+                      <p className="text-xs text-muted-custom">
+                        Como escolheste o modo geral (sem ligação a desporto),
+                        vamos ignorar desporto, papel e organização nesta
+                        candidatura. O foco será apenas o teu contexto, país e
+                        objetivos em relação a Blockchain, Web3 e Apertum.
+                      </p>
+                    </CardContent>
+                  )}
+                </Card>
+
+                {/* Step 4 - Web3 + interesses */}
+                <Card className="mb-6 bg-card-custom border-custom">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5 text-blue-600" />
+                      {t('onboarding.step4')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="web3_experience">
+                        {t('onboarding.web3Experience')}
+                      </Label>
+                      <Select
+                        value={formData.web3_experience}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            web3_experience: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={t('onboarding.selectExperience')}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            {t('onboarding.experienceNone')}
+                          </SelectItem>
+                          <SelectItem value="beginner">
+                            {t('onboarding.experienceBeginner')}
+                          </SelectItem>
+                          <SelectItem value="intermediate">
+                            {t('onboarding.experienceIntermediate')}
+                          </SelectItem>
+                          <SelectItem value="advanced">
+                            {t('onboarding.experienceAdvanced')}
+                          </SelectItem>
+                          <SelectItem value="expert">
+                            {t('onboarding.experienceExpert')}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    {!isNonSports && (
+                      <div className="space-y-2">
+                        <Label>{t('onboarding.areasOfInterest')}</Label>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          {interests.map((interest) => (
+                            <div
+                              key={interest}
+                              className="flex items-center space-x-2"
+                            >
+                              <Checkbox
+                                id={interest}
+                                checked={formData.interests.includes(interest)}
+                                onCheckedChange={() =>
+                                  handleInterestToggle(interest)
+                                }
+                              />
+                              <label
+                                htmlFor={interest}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {interest}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-              {/* Step 5 - Mensagem */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-blue-600" />
-                    {t('onboarding.step5')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Label htmlFor="message">
-                      {t('onboarding.yourMessage')} * (8-8888{' '}
-                      {t('onboarding.characters')})
-                    </Label>
-                    <Textarea
-                      id="message"
-                      rows={6}
-                      placeholder={t('onboarding.messagePlaceholder')}
-                      value={formData.message}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          message: e.target.value,
-                        }))
-                      }
-                      required
-                      minLength={8}
-                      maxLength={8888}
-                    />
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {formData.message.length}/8888{' '}
-                      {t('onboarding.characters')}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* Step 5 - Mensagem */}
+                <Card className="mb-6 bg-card-custom border-custom">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-blue-600" />
+                      {t('onboarding.step5')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Label htmlFor="message">
+                        {t('onboarding.yourMessage')} * (8-8888{' '}
+                        {t('onboarding.characters')})
+                      </Label>
+                      <Textarea
+                        id="message"
+                        rows={6}
+                        placeholder={t('onboarding.messagePlaceholder')}
+                        value={formData.message}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            message: e.target.value,
+                          }))
+                        }
+                        required
+                        minLength={8}
+                        maxLength={8888}
+                      />
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {formData.message.length}/8888{' '}
+                        {t('onboarding.characters')}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={loading}
-              >
-                {loading
-                  ? t('onboarding.submitting')
-                  : t('onboarding.submitBtn')}
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={loading}
+                >
+                  {loading
+                    ? t('onboarding.submitting')
+                    : t('onboarding.submitBtn')}
+                </Button>
+              </form>
+            </div>
           </div>
-        </div>
+        </section>
       </main>
 
       <Footer />
