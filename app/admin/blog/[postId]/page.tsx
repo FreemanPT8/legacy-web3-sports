@@ -1,4 +1,3 @@
-// app/admin/blog/[postId]/page.tsx
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -14,8 +13,6 @@ import {
   mapBlogToBuilderState,
 } from '@/lib/blog-builder';
 import { BlogBuilderWorkspace } from '@/components/builder/BlogBuilderWorkspace';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 type PermissionsResponse = {
   success: boolean;
@@ -299,7 +296,6 @@ export default function EditBlogPostPage() {
     window.open(`/blog/${slug}`, '_blank');
   }, []);
 
-  // ESTADO: loading global / sem user / permissões ainda não carregadas
   if (
     loading ||
     !user ||
@@ -307,56 +303,47 @@ export default function EditBlogPostPage() {
     !permissionsLoaded
   ) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-sm text-muted-custom">A carregar post…</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // ESTADO: sem permissão para gerir blog
   if (!canManageBlog) {
     return (
-      <div className="max-w-xl mx-auto">
-        <Card className="bg-card-custom border-custom">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-heading">
-              <Lock className="h-4 w-4 text-amber-500" />
-              No permission
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-body mb-4">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+        <main className="flex-1 py-8 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">No permission</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
               You don&apos;t have permission to edit blog posts. Please contact a
               Super Admin if you think this is a mistake.
             </p>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/admin/blog')}
-            >
-              Voltar ao Blog Admin
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </main>
       </div>
     );
   }
 
-  // ESTADO: a carregar o post ou ainda sem state pronto
   if (loadingPost || !builderState) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-sm text-muted-custom">Loading post...</p>
-        </div>
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-300">
+              Loading post...
+            </p>
+          </div>
+        </main>
       </div>
     );
   }
 
-  // ESTADO: tudo OK → render do Builder
   return (
     <BuilderProvider initialState={builderState}>
       <BlogBuilderWorkspace
