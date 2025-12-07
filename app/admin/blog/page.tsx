@@ -20,7 +20,6 @@ import {
   Trash2,
   Calendar,
   User,
-  Lock,
   Loader2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -125,7 +124,7 @@ export default function AdminBlogPage() {
         const res = await fetch('/api/admin/permissions', {
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {},
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
