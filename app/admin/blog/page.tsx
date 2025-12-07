@@ -1,6 +1,7 @@
+// app/admin/blog/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,20 @@ import {
   Calendar,
   User,
   Lock,
+  Flame,
+  BarChart3,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { SafeImage } from '@/app/components/SafeImage';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type BlogPost = {
   id: string;
@@ -230,9 +241,10 @@ export default function BlogManagementPage() {
     !permissionsLoaded
   ) {
     return (
-      <div className="py-8">
-        <div className="text-center text-gray-600 dark:text-gray-300">
-          Loading...
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-4 text-sm text-muted-custom">A carregar posts…</p>
         </div>
       </div>
     );
@@ -266,53 +278,78 @@ export default function BlogManagementPage() {
     )
     .slice(0, 3);
 
-  const filteredPosts = posts
-    .filter((p) => {
-      const st = p.status || (p.published ? 'published' : 'draft');
-      if (statusFilter !== 'all' && st !== statusFilter) return false;
-      if (
-        categoryFilter.trim() &&
-        !(p.category || '').toLowerCase().includes(categoryFilter.toLowerCase())
-      )
-        return false;
-      if (
-        authorFilter.trim() &&
-        !(p.author_name || p.author || '')
-          .toLowerCase()
-          .includes(authorFilter.toLowerCase())
-      )
-        return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'views') return (b.views || 0) - (a.views || 0);
-      if (sortBy === 'xp')
-        return (
-          (b.xp_total_distributed || 0) - (a.xp_total_distributed || 0)
-        );
-      // recent
-      const da = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const db = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return db - da;
-    });
+  const filteredPosts = useMemo(
+    () =>
+      posts
+        .filter((p) => {
+          const st = p.status || (p.published ? 'published' : 'draft');
+          if (statusFilter !== 'all' && st !== statusFilter) return false;
+          if (
+            categoryFilter.trim() &&
+            !(p.category || '')
+              .toLowerCase()
+              .includes(categoryFilter.toLowerCase())
+          )
+            return false;
+          if (
+            authorFilter.trim() &&
+            !(p.author_name || p.author || '')
+              .toLowerCase()
+              .includes(authorFilter.toLowerCase())
+          )
+            return false;
+          return true;
+        })
+        .sort((a, b) => {
+          if (sortBy === 'views') return (b.views || 0) - (a.views || 0);
+          if (sortBy === 'xp')
+            return (
+              (b.xp_total_distributed || 0) -
+              (a.xp_total_distributed || 0)
+            );
+          // recent
+          const da = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const db = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return db - da;
+        }),
+    [posts, statusFilter, categoryFilter, authorFilter, sortBy],
+  );
+
+  const formatNumber = (n: number | undefined | null) =>
+    typeof n === 'number' ? n.toLocaleString('pt-PT') : '0';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex justify-between items-start gap-4">
-            <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold">Blog Management</h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                Create and manage blog posts with real metrics (XP, views, author).
+    <div className="space-y-8">
+      {/* HERO / HEADER */}
+      <section className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-5 py-6 md:px-7 md:py-7">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2 max-w-2xl">
+            <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 border border-white/10">
+              LEGACY Admin — Blog
+            </span>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+              Blog Management
+            </h1>
+            <p className="text-sm md:text-[15px] text-blue-100/90">
+              Gestão centralizada dos artigos do Legacy: estado, XP distribuído,
+              visualizações, autor e contexto. A base de conhecimento que
+              acompanha o crescimento da comunidade.
+            </p>
+            {!canManageBlog && (
+              <p className="mt-1 text-xs text-amber-300 flex items-center gap-2">
+                <Lock className="h-3 w-3" />
+                Podes ver os posts, mas não tens permissão para os criar ou
+                editar.
               </p>
-              {!canManageBlog && (
-                <p className="mt-1 text-sm text-amber-700 flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  You can view posts, but you don&apos;t have permission to create or edit them.
-                </p>
-              )}
-            </div>
+            )}
+          </div>
+
+          <div className="flex-shrink-0">
             <Button
               className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
               disabled={!canManageBlog}
@@ -325,244 +362,281 @@ export default function BlogManagementPage() {
               New Post
             </Button>
           </div>
+        </div>
+      </section>
 
-          <div className="grid md:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Total Posts
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{posts.length}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Published
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">
-                  {publishedPosts.length}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Draft
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-yellow-600">
-                  {draftPosts.length}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  XP Distributed (total)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-600">
-                  {xpTotalAll}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Views (total)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-purple-600">
-                  {totalViewsAll}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {posts.length > 0 && (
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Top Posts by Views
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {topByViews.length === 0 ? (
-                    <p className="text-sm text-gray-500">No views yet.</p>
-                  ) : (
-                    topByViews.map((p, idx) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between text-sm border rounded-md px-3 py-2 bg-white dark:bg-gray-900"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">#{idx + 1}</Badge>
-                          <span className="font-semibold truncate max-w-[180px]">
-                            {resolveLocalizedText(p.title) || 'Untitled'}
-                          </span>
-                        </div>
-                        <div className="text-gray-600">{p.views || 0} views</div>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Top Posts by XP
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {topByXP.length === 0 ? (
-                    <p className="text-sm text-gray-500">No XP distributed yet.</p>
-                  ) : (
-                    topByXP.map((p, idx) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between text-sm border rounded-md px-3 py-2 bg-white dark:bg-gray-900"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">#{idx + 1}</Badge>
-                          <span className="font-semibold truncate max-w-[180px]">
-                            {resolveLocalizedText(p.title) || 'Untitled'}
-                          </span>
-                        </div>
-                        <div className="text-gray-600">
-                          {p.xp_total_distributed || 0} XP
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
+      {/* STATS */}
+      <section className="grid gap-4 md:grid-cols-5">
+        <Card className="bg-card-custom border-custom">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-custom">
+              Total Posts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-heading">
+              {posts.length}
             </div>
-          )}
+          </CardContent>
+        </Card>
 
-          {/* Filtros */}
-          <Card>
-            <CardContent className="pt-6 grid md:grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Status</p>
-                <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  value={statusFilter}
-                  onChange={(e) =>
-                    setStatusFilter(e.target.value as 'all' | 'published' | 'draft')
-                  }
-                >
-                  <option value="all">All</option>
-                  <option value="published">Published</option>
-                  <option value="draft">Draft</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Category</p>
-                <input
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  placeholder="e.g. News"
-                />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Author</p>
-                <input
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  value={authorFilter}
-                  onChange={(e) => setAuthorFilter(e.target.value)}
-                  placeholder="name or username"
-                />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Order by</p>
-                <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  value={sortBy}
-                  onChange={(e) =>
-                    setSortBy(e.target.value as 'recent' | 'views' | 'xp')
-                  }
-                >
-                  <option value="recent">Most recent</option>
-                  <option value="views">Views</option>
-                  <option value="xp">XP distributed</option>
-                </select>
-              </div>
+        <Card className="bg-card-custom border-custom">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-custom">
+              Published
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-emerald-400">
+              {publishedPosts.length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card-custom border-custom">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-custom">
+              Draft
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-amber-400">
+              {draftPosts.length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card-custom border-custom">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-custom flex items-center gap-1.5">
+              <Flame className="h-3.5 w-3.5 text-orange-400" />
+              XP Distributed
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold text-blue-400">
+              {formatNumber(xpTotalAll)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card-custom border-custom">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-custom flex items-center gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5 text-purple-400" />
+              Views (total)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold text-purple-300">
+              {formatNumber(totalViewsAll)}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* TOP LISTS */}
+      {posts.length > 0 && (
+        <section className="grid md:grid-cols-2 gap-4">
+          <Card className="bg-card-custom border-custom">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-heading">
+                Top Posts by Views
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-body">
+              {topByViews.length === 0 ? (
+                <p className="text-sm text-muted-custom">Ainda sem views.</p>
+              ) : (
+                topByViews.map((p, idx) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between text-sm border-custom bg-slate-950/60 rounded-md px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge variant="outline">#{idx + 1}</Badge>
+                      <span className="font-semibold truncate max-w-[200px]">
+                        {resolveLocalizedText(p.title) || 'Untitled'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-custom">
+                      {formatNumber(p.views || 0)} views
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
 
-          {loadingData ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-                <p className="mt-4 text-gray-600 dark:text-gray-300">
-                  Loading posts...
+          <Card className="bg-card-custom border-custom">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-heading">
+                Top Posts by XP
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-body">
+              {topByXP.length === 0 ? (
+                <p className="text-sm text-muted-custom">
+                  Ainda não foi distribuído XP por posts.
                 </p>
-              </CardContent>
-            </Card>
-          ) : filteredPosts.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">
-                  No blog posts yet
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Create your first blog post to get started
-                </p>
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={!canManageBlog}
-                  onClick={() => {
-                    if (!canManageBlog) return;
-                    router.push('/admin/blog/create');
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Post
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>All Posts ({filteredPosts.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {filteredPosts.map((post) => {
-                    const title =
-                      resolveLocalizedText(post.title) || 'Untitled post';
-                    const excerpt =
-                      resolveLocalizedText(post.excerpt) || 'No excerpt';
-                    const views = post.views ?? 0;
-                    const statusLabel =
-                      post.status || (post.published ? 'published' : 'draft');
-                    const isCreator = user && post.author_id === user.id;
-                    const xpTotal = post.xp_total_distributed || 0;
-                    const xpCreator = post.xp_creator_distributed || 0;
-                    return (
-                      <div
-                        key={post.id}
-                        className="p-4 rounded-lg border bg-white dark:bg-gray-900 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-3">
-                            {post.image_url && post.image_url.trim() !== '' && (
-                              <div className="w-28 h-20 flex-shrink-0 overflow-hidden rounded-md border bg-gray-50">
+              ) : (
+                topByXP.map((p, idx) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between text-sm border-custom bg-slate-950/60 rounded-md px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge variant="outline">#{idx + 1}</Badge>
+                      <span className="font-semibold truncate max-w-[200px]">
+                        {resolveLocalizedText(p.title) || 'Untitled'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-custom">
+                      {formatNumber(p.xp_total_distributed || 0)} XP
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      {/* FILTROS */}
+      <section>
+        <Card className="bg-card-custom border-custom">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-heading">
+              Filtros & Ordenação
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2 grid md:grid-cols-4 gap-4 text-body">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-custom">Status</p>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) =>
+                  setStatusFilter(v as 'all' | 'published' | 'draft')
+                }
+              >
+                <SelectTrigger className="w-full bg-slate-950/60 border-custom">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs text-muted-custom">Category</p>
+              <Input
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                placeholder="e.g. News"
+                className="bg-slate-950/60 border-custom"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs text-muted-custom">Author</p>
+              <Input
+                value={authorFilter}
+                onChange={(e) => setAuthorFilter(e.target.value)}
+                placeholder="name or username"
+                className="bg-slate-950/60 border-custom"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs text-muted-custom">Order by</p>
+              <Select
+                value={sortBy}
+                onValueChange={(v) =>
+                  setSortBy(v as 'recent' | 'views' | 'xp')
+                }
+              >
+                <SelectTrigger className="w-full bg-slate-950/60 border-custom">
+                  <SelectValue placeholder="Most recent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most recent</SelectItem>
+                  <SelectItem value="views">Views</SelectItem>
+                  <SelectItem value="xp">XP distributed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* LISTA DE POSTS */}
+      <section>
+        {loadingData ? (
+          <Card className="bg-card-custom border-custom">
+            <CardContent className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+              <p className="mt-4 text-sm text-muted-custom">
+                Loading posts...
+              </p>
+            </CardContent>
+          </Card>
+        ) : filteredPosts.length === 0 ? (
+          <Card className="bg-card-custom border-custom">
+            <CardContent className="text-center py-12">
+              <FileText className="h-16 w-16 text-slate-700 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-heading">
+                No blog posts yet
+              </h3>
+              <p className="text-sm text-muted-custom mb-6">
+                Cria o primeiro artigo para começar a construir o arquivo do
+                Legacy.
+              </p>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={!canManageBlog}
+                onClick={() => {
+                  if (!canManageBlog) return;
+                  router.push('/admin/blog/create');
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Post
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-card-custom border-custom">
+            <CardHeader>
+              <CardTitle className="text-heading">
+                All Posts ({filteredPosts.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredPosts.map((post) => {
+                  const title =
+                    resolveLocalizedText(post.title) || 'Untitled post';
+                  const excerpt =
+                    resolveLocalizedText(post.excerpt) || 'No excerpt';
+                  const views = post.views ?? 0;
+                  const statusLabel =
+                    post.status || (post.published ? 'published' : 'draft');
+                  const isCreator = user && post.author_id === user.id;
+                  const xpTotal = post.xp_total_distributed || 0;
+                  const xpCreator = post.xp_creator_distributed || 0;
+                  return (
+                    <div
+                      key={post.id}
+                      className="p-4 rounded-lg border-custom bg-slate-950/70 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start gap-3">
+                          {post.image_url &&
+                            post.image_url.trim() !== '' && (
+                              <div className="w-28 h-20 flex-shrink-0 overflow-hidden rounded-md border-custom bg-slate-900">
                                 <SafeImage
                                   src={post.image_url ?? ''}
                                   alt={title}
@@ -572,96 +646,114 @@ export default function BlogManagementPage() {
                                 />
                               </div>
                             )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <Badge
-                                  className={
-                                    statusLabel === 'published'
-                                      ? 'bg-green-600'
-                                      : 'bg-yellow-600'
-                                  }
-                                >
-                                  {statusLabel}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <Badge
+                                className={
+                                  statusLabel === 'published'
+                                    ? 'bg-emerald-500'
+                                    : 'bg-amber-500'
+                                }
+                              >
+                                {statusLabel}
+                              </Badge>
+                              {post.category && (
+                                <Badge variant="outline">
+                                  {post.category}
                                 </Badge>
-                                {post.category && (
-                                  <Badge variant="outline">{post.category}</Badge>
-                                )}
-                                {isCreator && (
-                                  <Badge variant="outline">Creator</Badge>
-                                )}
-                                {xpTotal > 0 && (
-                                  <Badge variant="outline" className="gap-1">
-                                    XP: {xpTotal}
-                                  </Badge>
-                                )}
-                                {xpCreator > 0 && (
-                                  <Badge variant="outline" className="gap-1">
-                                    Creator XP: {xpCreator}
-                                  </Badge>
-                                )}
-                              </div>
-                              <h3 className="text-lg font-semibold truncate">
-                                {title}
-                              </h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
-                                {excerpt}
-                              </p>
-                              <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                                <span className="flex items-center gap-1">
-                                  <User className="h-3 w-3" />
-                                  {post.author_name || post.author || 'Admin'}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {post.created_at
-                                    ? new Date(post.created_at).toLocaleDateString()
-                                    : '-'}
-                                </span>
-                                {views > 0 && <span>{views} views</span>}
-                              </div>
+                              )}
+                              {isCreator && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-blue-500 text-blue-400"
+                                >
+                                  Creator
+                                </Badge>
+                              )}
+                              {xpTotal > 0 && (
+                                <Badge variant="outline" className="gap-1">
+                                  XP: {xpTotal}
+                                </Badge>
+                              )}
+                              {xpCreator > 0 && (
+                                <Badge variant="outline" className="gap-1">
+                                  Creator XP: {xpCreator}
+                                </Badge>
+                              )}
+                              {post.registered_only && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-purple-500 text-purple-300"
+                                >
+                                  Members only
+                                </Badge>
+                              )}
+                            </div>
+                            <h3 className="text-lg font-semibold truncate text-heading">
+                              {title}
+                            </h3>
+                            <p className="text-sm text-body line-clamp-2 mb-2">
+                              {excerpt}
+                            </p>
+                            <div className="flex items-center gap-3 text-[11px] text-muted-custom flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {post.author_name || post.author || 'Admin'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {post.created_at
+                                  ? new Date(
+                                      post.created_at,
+                                    ).toLocaleDateString()
+                                  : '-'}
+                              </span>
+                              {views > 0 && (
+                                <span>{formatNumber(views)} views</span>
+                              )}
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => router.push(`/blog/${post.id}`)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="disabled:opacity-60 disabled:cursor-not-allowed"
-                            disabled={!canManageBlog}
-                            onClick={() =>
-                              router.push(`/admin/blog/${post.id}`)
-                            }
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="disabled:opacity-60 disabled:cursor-not-allowed"
-                            disabled={!canManageBlog || !isSuperAdmin}
-                            onClick={() => handleDelete(post.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
+                      <div className="flex gap-2 md:ml-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => router.push(`/blog/${post.id}`)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={!canManageBlog}
+                          onClick={() =>
+                            router.push(`/admin/blog/${post.id}`)
+                          }
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={!canManageBlog || !isSuperAdmin}
+                          onClick={() => handleDelete(post.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </section>
     </div>
   );
 }
