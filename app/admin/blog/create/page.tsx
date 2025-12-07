@@ -13,6 +13,13 @@ import {
   createEmptyBlogState,
   buildBlogRequestPayload,
 } from '@/lib/blog-builder';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from '@/components/ui/card';
 
 type PermissionsResponse = {
   success: boolean;
@@ -50,6 +57,7 @@ export default function CreateBlogPostPage() {
     };
   }, [getToken]);
 
+  // Guard básico de acesso
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -61,6 +69,7 @@ export default function CreateBlogPostPage() {
     }
   }, [user, loading, router]);
 
+  // Permissões para gerir blog
   useEffect(() => {
     if (loading || !user) return;
 
@@ -96,6 +105,7 @@ export default function CreateBlogPostPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
+  // Restaurar draft do builder
   useEffect(() => {
     if (!permissionsLoaded || !canManageBlog || initialState || !user) {
       return;
@@ -257,62 +267,120 @@ export default function CreateBlogPostPage() {
     [user, canManageBlog, saving, saveDraft],
   );
 
-  if (
-    loading ||
-    !user ||
-    (user.role !== 'Super Admin' && user.role !== 'Admin') ||
-    !permissionsLoaded
-  ) {
+  // Loader alinhado com estilo B (/admin/users)
+  if (loading || !permissionsLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
-        </div>
+      <div className="w-full">
+        <p className="text-sm text-blue-100/90">
+          A carregar editor do blog…
+        </p>
       </div>
     );
   }
 
   if (!canManageBlog) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
-        <main className="flex-1 py-8 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto px-4">
-            <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">No permission</h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              You don&apos;t have permission to manage blog posts. Please contact a
-              Super Admin if you think this is a mistake.
+      <div className="w-full space-y-8">
+        <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+            <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+          </div>
+
+          <div className="relative z-10 max-w-5xl">
+            <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+              LEGACY Admin — Blog
+            </span>
+
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+              Create Blog Post
+            </h1>
+            <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
+              Não tens permissões para criar ou gerir artigos do blog. Fala com
+              um Super Admin se achas que isto não faz sentido.
             </p>
           </div>
-        </main>
+        </section>
+
+        <section className="pb-2">
+          <div className="max-w-6xl mx-auto">
+            <Card className="bg-card-custom border-custom">
+              <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
+                <Lock className="h-10 w-10 text-amber-500" />
+                <p className="text-sm text-muted-custom">
+                  You don&apos;t have permission to manage blog posts.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       </div>
     );
   }
 
   if (!initialState) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
-            Preparing builder...
-          </p>
-        </div>
+      <div className="w-full">
+        <p className="text-sm text-blue-100/90">
+          A preparar o Legacy Builder do blog…
+        </p>
       </div>
     );
   }
 
+  // Layout B aplicado: HERO + CARD com o Builder dentro
   return (
-    <BuilderProvider initialState={initialState}>
-      <BlogBuilderWorkspace
-        saving={saving}
-        onSubmit={handleSave}
-        onAutosave={handleAutosave}
-        metadata={{
-          authorName: user?.username || user?.email || null,
-        }}
-      />
-    </BuilderProvider>
+    <div className="w-full space-y-8">
+      {/* HERO */}
+      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 max-w-5xl">
+          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+            LEGACY Admin — Blog
+          </span>
+
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+            Create Blog Post
+          </h1>
+          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
+            Cria um novo artigo para o Legacy Blog: título, estrutura, XP,
+            visibilidade e preview — tudo integrado no Legacy Builder.
+          </p>
+        </div>
+      </section>
+
+      {/* CONTEÚDO */}
+      <section className="pb-2">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Card className="bg-card-custom border-custom shadow-lg shadow-purple-950/40">
+            <CardHeader>
+              <CardTitle className="text-heading">
+                New article
+              </CardTitle>
+              <CardDescription className="text-muted-custom">
+                Define o idioma principal, prepara o conteúdo base, ajusta o XP
+                e escolhe a visibilidade antes de publicar.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-body">
+              <BuilderProvider initialState={initialState}>
+                <BlogBuilderWorkspace
+                  saving={saving}
+                  onSubmit={handleSave}
+                  onAutosave={handleAutosave}
+                  metadata={{
+                    authorName: user?.username || user?.email || null,
+                  }}
+                />
+              </BuilderProvider>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    </div>
   );
 }
