@@ -54,7 +54,7 @@ function getCourseTitle(course: Course): string {
 
   if (typeof raw === 'object') {
     const obj = raw as Record<string, string | undefined>;
-    const candidates = [obj.en, obj.pt, obj.es, obj.fr, obj.it, obj.de];
+    const candidates = [obj.pt, obj.en, obj.es, obj.fr, obj.it, obj.de];
     const found = candidates.find(
       (v) => typeof v === 'string' && v.trim().length > 0,
     );
@@ -71,7 +71,7 @@ function getCourseDescription(course: Course): string {
 
   if (typeof raw === 'object') {
     const obj = raw as Record<string, string | undefined>;
-    const candidates = [obj.en, obj.pt, obj.es, obj.fr, obj.it, obj.de];
+    const candidates = [obj.pt, obj.en, obj.es, obj.fr, obj.it, obj.de];
     const found = candidates.find(
       (v) => typeof v === 'string' && v.trim().length > 0,
     );
@@ -93,7 +93,7 @@ export default function CoursesManagementPage() {
 
   const isSuperAdmin = user?.role === 'Super Admin';
   const isAdmin =
-    user && (user.role === 'Super Admin' || user.role === 'Admin');
+    !!user && (user.role === 'Super Admin' || user.role === 'Admin');
 
   // Proteção básica por role
   useEffect(() => {
@@ -258,20 +258,10 @@ export default function CoursesManagementPage() {
     }
   };
 
-  if (
-    loading ||
-    !user ||
-    !isAdmin ||
-    !permissionsLoaded
-  ) {
+  if (loading || !user || !isAdmin || !permissionsLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
-            Loading...
-          </p>
-        </div>
+      <div className="w-full">
+        <p className="text-sm text-blue-100/90">A carregar cursos…</p>
       </div>
     );
   }
@@ -295,25 +285,51 @@ export default function CoursesManagementPage() {
   const levelLabel = (course: Course) => course.level || 'Beginner';
 
   return (
-    <div className="space-y-6">
-      <div className="container mx-auto px-4">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="flex justify-between items-start gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-1">
-                Admin — Course Management
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                Create, edit, and manage courses, modules, and lessons.
+    <div className="w-full space-y-8">
+      {/* HERO - consistente com /admin e /admin/users */}
+      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 max-w-5xl">
+          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+            LEGACY Admin — Courses
+          </span>
+
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+            Course Management
+          </h1>
+          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
+            Cria, organiza e afina cursos, módulos e lições. Aqui
+            controlas o motor educativo do LEGACY — o que existe,
+            o que está publicado e o que ainda está em draft.
+          </p>
+
+          {!canManageCourses && (
+            <p className="mt-3 text-xs text-amber-300 flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              Podes ver os cursos, mas não tens permissão para
+              criar ou editar conteúdo.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* CONTEÚDO PRINCIPAL */}
+      <section className="pb-2">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* HEADER + BOTÃO */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-heading">
+                Cursos, módulos e lições
+              </h2>
+              <p className="text-sm text-muted-custom">
+                Visão geral rápida do portefólio de cursos e da
+                estrutura de módulos/lessons.
               </p>
-              {!canManageCourses && (
-                <p className="mt-2 text-sm text-amber-700 flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  You can view courses, but you don&apos;t have
-                  permission to create or edit them.
-                </p>
-              )}
             </div>
             <Link
               href={canManageCourses ? '/admin/courses/create' : '#'}
@@ -329,81 +345,84 @@ export default function CoursesManagementPage() {
             </Link>
           </div>
 
-          {/* Stats */}
+          {/* STATS */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card>
+            <Card className="bg-card-custom border-custom">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                <CardTitle className="text-sm font-medium text-heading">
                   Total Courses
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{courses.length}</div>
+                <div className="text-3xl font-bold text-heading">
+                  {courses.length}
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-card-custom border-custom">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                <CardTitle className="text-sm font-medium text-heading">
                   Published
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-emerald-400">
                   {publishedCourses.length}
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-card-custom border-custom">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                <CardTitle className="text-sm font-medium text-heading">
                   Draft
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-yellow-600">
+                <div className="text-3xl font-bold text-amber-400">
                   {draftCourses.length}
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-card-custom border-custom">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                <CardTitle className="text-sm font-medium text-heading">
                   Modules / Lessons
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-semibold text-blue-700">
+                <div className="text-lg font-semibold text-heading">
                   {totalModules} modules
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">
+                <div className="text-sm text-muted-custom">
                   {totalLessons} lessons
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Courses list */}
+          {/* LISTA DE CURSOS */}
           {loadingData ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-                <p className="mt-4 text-gray-600 dark:text-gray-300">
+            <Card className="bg-card-custom border-custom">
+              <CardContent className="text-center py-12 text-body">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+                <p className="mt-4 text-sm text-muted-custom">
                   Loading courses...
                 </p>
               </CardContent>
             </Card>
           ) : courses.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">
+            <Card className="bg-card-custom border-custom">
+              <CardContent className="text-center py-12 text-body">
+                <BookOpen className="h-16 w-16 text-muted-custom mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2 text-heading">
                   No courses yet
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Create your first course to get started.
+                <p className="text-sm text-muted-custom mb-6">
+                  Cria o teu primeiro curso para começar a construir o
+                  legado educativo.
                 </p>
                 <Link
                   href={canManageCourses ? '/admin/courses/create' : '#'}
@@ -438,11 +457,11 @@ export default function CoursesManagementPage() {
                 return (
                   <Card
                     key={course.id}
-                    className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-900"
+                    className="hover:shadow-lg hover:shadow-slate-950/40 transition-shadow bg-card-custom border-custom text-body"
                   >
                     <CardHeader>
                       {course.image_url && (
-                        <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 overflow-hidden">
+                        <div className="w-full h-40 rounded-lg mb-4 overflow-hidden bg-slate-900/60">
                           <SafeImage
                             src={course.image_url}
                             alt={title}
@@ -454,26 +473,26 @@ export default function CoursesManagementPage() {
                       )}
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1">
-                          <CardTitle className="text-lg flex items-center gap-2">
+                          <CardTitle className="text-lg flex items-center gap-2 text-heading">
                             {title}
                             {isCreator && (
                               <Badge
                                 variant="outline"
-                                className="border-blue-500 text-blue-600"
+                                className="border-blue-500 text-blue-400"
                               >
                                 Creator
                               </Badge>
                             )}
                           </CardTitle>
                           {course.author_name && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-custom">
                               By {course.author_name}
                             </p>
                           )}
                         </div>
                         <Badge
                           className={
-                            isPublished ? 'bg-green-600' : 'bg-yellow-600'
+                            isPublished ? 'bg-emerald-600' : 'bg-amber-500'
                           }
                         >
                           {isPublished ? 'Published' : 'Draft'}
@@ -481,23 +500,23 @@ export default function CoursesManagementPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+                      <p className="text-sm text-muted-custom mb-4 line-clamp-2">
                         {description}
                       </p>
-                      <div className="text-sm text-gray-500 mb-4">
+                      <div className="text-sm text-muted-custom mb-4">
                         Level: {levelLabel(course)}
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs mb-4">
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="border-custom">
                           {xpTotal} XP distributed
                         </Badge>
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="border-custom">
                           {modulesCount} modules · {lessonsCount} lessons
                         </Badge>
                         {isCreator && (
                           <Badge
                             variant="outline"
-                            className="border-blue-500 text-blue-600"
+                            className="border-blue-500 text-blue-400"
                           >
                             Creator share: {xpCreator} XP
                           </Badge>
@@ -554,7 +573,7 @@ export default function CoursesManagementPage() {
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

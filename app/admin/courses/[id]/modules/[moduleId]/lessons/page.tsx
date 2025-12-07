@@ -576,7 +576,7 @@ export default function ModuleLessonsPage() {
 
   if (loading || !user || !isAdmin || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">
@@ -589,7 +589,7 @@ export default function ModuleLessonsPage() {
 
   if (!course || !module) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <p className="text-gray-600 dark:text-gray-300">
           Course or module not found.
         </p>

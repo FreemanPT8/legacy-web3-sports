@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -442,7 +440,7 @@ export default function LessonAdvancedEditorPage() {
       });
     }
 
-    setSaving(false);
+  setSaving(false);
   };
 
   if (
@@ -453,7 +451,7 @@ export default function LessonAdvancedEditorPage() {
     loadingData
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">
@@ -466,8 +464,7 @@ export default function LessonAdvancedEditorPage() {
 
   if (!canManageCourses) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
             <Lock className="h-10 w-10 text-amber-600 mx-auto mb-4" />
@@ -487,21 +484,16 @@ export default function LessonAdvancedEditorPage() {
             </Button>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
 
   if (!course || !module || !lesson) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            Course, module or lesson not found.
-          </p>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <p className="text-gray-600 dark:text-gray-300">
+          Course, module or lesson not found.
+        </p>
       </div>
     );
   }
@@ -516,257 +508,251 @@ export default function LessonAdvancedEditorPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto space-y-6">
-            {/* Top bar */}
-            <div className="flex justify-between items-center gap-4">
-              <div>
-                <Button
-                  variant="ghost"
-                  className="mb-2"
-                  onClick={() =>
-                    router.push(
-                      `/admin/courses/${courseId}/modules/${moduleId}/lessons`,
-                    )
-                  }
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Lessons
-                </Button>
-                <h1 className="text-2xl md:text-3xl font-bold mb-1">
-                  Edit Lesson
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Course{' '}
-                  <span className="font-semibold">
-                    {courseTitle || 'Untitled course'}
-                  </span>
-                  {' · '}
-                  Module{' '}
-                  <span className="font-semibold">
-                    {moduleTitle || 'Untitled module'}
-                  </span>
-                  {' · '}
-                  Lesson order{' '}
-                  <span className="font-semibold">{lesson.order}</span>
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2 items-end">
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    window.open(
-                      `/education/lessons/${lesson.id}`,
-                      '_blank',
-                    )
-                  }
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  Preview as student
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <Save className="h-4 w-4 mr-1" />
-                  {saving ? 'Saving...' : 'Save changes'}
-                </Button>
-              </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Top bar */}
+          <div className="flex justify-between items-center gap-4">
+            <div>
+              <Button
+                variant="ghost"
+                className="mb-2"
+                onClick={() =>
+                  router.push(
+                    `/admin/courses/${courseId}/modules/${moduleId}/lessons`,
+                  )
+                }
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Lessons
+              </Button>
+              <h1 className="text-2xl md:text-3xl font-bold mb-1">
+                Edit Lesson
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Course{' '}
+                <span className="font-semibold">
+                  {courseTitle || 'Untitled course'}
+                </span>
+                {' · '}
+                Module{' '}
+                <span className="font-semibold">
+                  {moduleTitle || 'Untitled module'}
+                </span>
+                {' · '}
+                Lesson order{' '}
+                <span className="font-semibold">{lesson.order}</span>
+              </p>
             </div>
 
-            {/* Selector de língua */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">
-                  Language for titles, descriptions & content
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {LANGUAGES.map((lang) => (
-                    <Badge
-                      key={lang.code}
-                      variant={
-                        currentLanguage === lang.code ? 'default' : 'outline'
-                      }
-                      className="cursor-pointer"
-                      onClick={() =>
-                        setCurrentLanguage(lang.code as LangCodeUnion)
-                      }
-                    >
-                      {lang.name}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col gap-2 items-end">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  window.open(
+                    `/education/lessons/${lesson.id}`,
+                    '_blank',
+                  )
+                }
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Preview as student
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Save className="h-4 w-4 mr-1" />
+                {saving ? 'Saving...' : 'Save changes'}
+              </Button>
+            </div>
+          </div>
 
-            {/* Editor principal */}
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Conteúdo */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Lesson content</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div>
-                      <Label>Title ({currentLangLabel})</Label>
-                      <Input
-                        value={lesson.title[currentLanguage] || ''}
-                        onChange={(e) =>
-                          updateMLField(
-                            'title',
-                            currentLanguage,
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Lesson title"
-                        className="text-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Description ({currentLangLabel})</Label>
-                      <Textarea
-                        value={lesson.description[currentLanguage] || ''}
-                        onChange={(e) =>
-                          updateMLField(
-                            'description',
-                            currentLanguage,
-                            e.target.value,
-                          )
-                        }
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Body ({currentLangLabel})</Label>
-                      <BlockEditor
-                        value={blocksByLanguage}
-                        onChange={setBlocksByLanguage}
-                        initialLanguage={currentLanguage as BlockLangCode}
-                        className="mt-2"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+          {/* Selector de língua */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">
+                Language for titles, descriptions & content
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGES.map((lang) => (
+                  <Badge
+                    key={lang.code}
+                    variant={
+                      currentLanguage === lang.code ? 'default' : 'outline'
+                    }
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setCurrentLanguage(lang.code as LangCodeUnion)
+                    }
+                  >
+                    {lang.name}
+                  </Badge>
+                ))}
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Meta / XP / ficheiros */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Lesson settings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label className="text-xs">Order</Label>
-                      <Input
-                        type="number"
-                        value={lesson.order}
-                        onChange={(e) =>
-                          updateField(
-                            'order',
-                            parseInt(e.target.value) || 1,
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
+          {/* Editor principal */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Conteúdo */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lesson content</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <Label>Title ({currentLangLabel})</Label>
+                    <Input
+                      value={lesson.title[currentLanguage] || ''}
+                      onChange={(e) =>
+                        updateMLField(
+                          'title',
+                          currentLanguage,
+                          e.target.value,
+                        )
+                      }
+                      placeholder="Lesson title"
+                      className="text-lg"
+                    />
+                  </div>
 
-                    <div>
-                      <Label className="text-xs">
-                        XP reward (earned when completed)
-                      </Label>
-                      <Input
-                        type="number"
-                        value={lesson.xp_reward}
-                        onChange={(e) =>
-                          updateField(
-                            'xp_reward',
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
+                  <div>
+                    <Label>Description ({currentLangLabel})</Label>
+                    <Textarea
+                      value={lesson.description[currentLanguage] || ''}
+                      onChange={(e) =>
+                        updateMLField(
+                          'description',
+                          currentLanguage,
+                          e.target.value,
+                        )
+                      }
+                      rows={3}
+                    />
+                  </div>
 
-                    <div>
-                      <Label className="text-xs">
-                        XP threshold (min XP to unlock)
-                      </Label>
-                      <Input
-                        type="number"
-                        value={lesson.xp_threshold}
-                        onChange={(e) =>
-                          updateField(
-                            'xp_threshold',
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
+                  <div>
+                    <Label>Body ({currentLangLabel})</Label>
+                    <BlockEditor
+                      value={blocksByLanguage}
+                      onChange={setBlocksByLanguage}
+                      initialLanguage={currentLanguage as BlockLangCode}
+                      className="mt-2"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-                    <div>
-                      <Label className="text-xs">
-                        Estimated time (minutes)
-                      </Label>
-                      <Input
-                        type="number"
-                        value={lesson.estimated_time}
-                        onChange={(e) =>
-                          updateField(
-                            'estimated_time',
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
+            {/* Meta / XP / ficheiros */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lesson settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-xs">Order</Label>
+                    <Input
+                      type="number"
+                      value={lesson.order}
+                      onChange={(e) =>
+                        updateField(
+                          'order',
+                          parseInt(e.target.value) || 1,
+                        )
+                      }
+                      className="mt-1"
+                    />
+                  </div>
 
-                    <div>
-                      <Label className="text-xs">Lesson image URL</Label>
-                      <Input
-                        type="text"
-                        value={lesson.image_url || ''}
-                        onChange={(e) =>
-                          updateField('image_url', e.target.value || null)
-                        }
-                        placeholder="https://..."
-                        className="mt-1"
-                      />
-                    </div>
+                  <div>
+                    <Label className="text-xs">
+                      XP reward (earned when completed)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={lesson.xp_reward}
+                      onChange={(e) =>
+                        updateField(
+                          'xp_reward',
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
+                      className="mt-1"
+                    />
+                  </div>
 
-                    <div>
-                      <Label className="text-xs">File URL (optional)</Label>
-                      <Input
-                        type="text"
-                        value={lesson.file_url || ''}
-                        onChange={(e) =>
-                          updateField('file_url', e.target.value || null)
-                        }
-                        placeholder="https://..."
-                        className="mt-1"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  <div>
+                    <Label className="text-xs">
+                      XP threshold (min XP to unlock)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={lesson.xp_threshold}
+                      onChange={(e) =>
+                        updateField(
+                          'xp_threshold',
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs">
+                      Estimated time (minutes)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={lesson.estimated_time}
+                      onChange={(e) =>
+                        updateField(
+                          'estimated_time',
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs">Lesson image URL</Label>
+                    <Input
+                      type="text"
+                      value={lesson.image_url || ''}
+                      onChange={(e) =>
+                        updateField('image_url', e.target.value || null)
+                      }
+                      placeholder="https://..."
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs">File URL (optional)</Label>
+                    <Input
+                      type="text"
+                      value={lesson.file_url || ''}
+                      onChange={(e) =>
+                        updateField('file_url', e.target.value || null)
+                      }
+                      placeholder="https://..."
+                      className="mt-1"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }

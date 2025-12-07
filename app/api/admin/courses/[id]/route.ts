@@ -8,6 +8,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  // ✅ Apenas garante que é Admin/Super Admin
   const authResult = await requireAdmin(request);
   if (!authResult.success) {
     return authResult.response!;
@@ -16,21 +17,12 @@ export async function GET(
   const currentUser = authResult.user!;
   const role = (currentUser.role || 'Member') as UserRole;
 
+  // ✅ Podemos calcular isto para uso futuro / logging, mas NÃO bloqueia o GET
   const canManageCourses = await userHasPermission(
     currentUser.userId,
     role,
     'canManageCourses',
   );
-
-  if (!canManageCourses) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'You do not have permission to manage courses.',
-      },
-      { status: 403 },
-    );
-  }
 
   try {
     const { data, error } = await supabase
@@ -97,6 +89,10 @@ export async function GET(
         author_name: authorName,
         xp_total_distributed: xpTotalDistributed,
         xp_creator_distributed: xpCreatorDistributed,
+      },
+      // opcional, pode dar jeito no futuro se quiseres ler isto diretamente aqui
+      permissions: {
+        canManageCourses,
       },
     });
   } catch (error) {
@@ -215,9 +211,12 @@ export async function PUT(
         xp_threshold: typeof xp_threshold === 'number' ? xp_threshold : 0,
         published: !!published,
         image_url: image_url ?? null,
-        xp_reward: typeof xp_reward === 'number' ? xp_reward : existing.xp_reward ?? 0,
-        is_completed: typeof is_completed === 'boolean' ? is_completed : wasCompleted,
-        is_paid: typeof is_paid === 'boolean' ? is_paid : existing.is_paid ?? false,
+        xp_reward:
+          typeof xp_reward === 'number' ? xp_reward : existing.xp_reward ?? 0,
+        is_completed:
+          typeof is_completed === 'boolean' ? is_completed : wasCompleted,
+        is_paid:
+          typeof is_paid === 'boolean' ? is_paid : existing.is_paid ?? false,
         overview: typeof overview === 'string' ? overview : existing.overview ?? '',
         key_takeaways: Array.isArray(key_takeaways)
           ? key_takeaways
@@ -237,7 +236,8 @@ export async function PUT(
           ? attachments
           : existing.attachments ?? [],
         seo: seo ?? existing.seo ?? null,
-        google_integrations: google_integrations ?? existing.google_integrations ?? null,
+        google_integrations:
+          google_integrations ?? existing.google_integrations ?? null,
         curriculum: curriculum ?? existing.curriculum ?? { topics: [] },
         publish_at: publish_at ?? null,
         expire_at: expire_at ?? null,
