@@ -1,3 +1,4 @@
+// app/api/admin/blog/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
@@ -171,97 +172,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Unexpected error in GET /api/admin/blog:', error);
-    return NextResponse.json(
-      { success: false, error: 'Server error' },
-      { status: 500 },
-    );
-  }
-}
-
-// POST → criar novo post
-export async function POST(request: NextRequest) {
-  const auth = await ensureCanManageBlog(request);
-  if (!auth.ok) return auth.response;
-
-  const { user } = auth;
-
-  try {
-    const body = await request.json();
-
-    const {
-      title,
-      excerpt,
-      content,
-      category,
-      published,
-      author,
-    } = body || {};
-
-    if (!title || typeof title !== 'object') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing or invalid "title".',
-        },
-        { status: 400 },
-      );
-    }
-
-    if (!content || typeof content !== 'object') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing or invalid "content".',
-        },
-        { status: 400 },
-      );
-    }
-
-    const insertPayload: Record<string, any> = {
-      title,
-      content,
-    };
-
-    if (excerpt && typeof excerpt === 'object') {
-      insertPayload.excerpt = excerpt;
-    }
-
-    if (typeof category === 'string') {
-      insertPayload.category = category;
-    }
-
-    insertPayload.published = !!published;
-
-    if (typeof author === 'string') {
-      insertPayload.author = author;
-    }
-
-    insertPayload.author_id = user.userId;
-
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .insert(insertPayload)
-      .select('*')
-      .single();
-
-    if (error || !data) {
-      console.error('Error creating blog post:', error);
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Failed to create blog post.',
-        },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      post: data,
-      message: 'Blog post created successfully.',
-    });
-  } catch (error) {
-    console.error('Unexpected error in POST /api/admin/blog:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
       { status: 500 },

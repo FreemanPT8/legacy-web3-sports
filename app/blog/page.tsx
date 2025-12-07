@@ -41,8 +41,14 @@ type BlogPost = {
 
   xp_reward?: number | null;
   reading_time?: number | null;
+
+  // nomes antigos possíveis
   total_xp_given?: number | null;
   registered_readers_count?: number | null;
+
+  // nomes novos vindos da API
+  registered_readers?: number | null;
+  total_xp_distributed?: number | null;
 
   is_completed?: boolean | null;
 };
@@ -115,15 +121,18 @@ export default function BlogPage() {
 
     const totalArticles = posts.length;
     const totalXpAvailable = posts.reduce((sum, p) => {
-      const xp = typeof p.xp_reward === 'number' ? p.xp_reward : 0;
+      const xp =
+        typeof p.xp_reward === 'number' ? p.xp_reward : 0;
       return sum + xp;
     }, 0);
 
     const totalRegisteredReaders = posts.reduce((sum, p) => {
       const readers =
-        typeof p.registered_readers_count === 'number'
-          ? p.registered_readers_count
-          : 0;
+        typeof p.registered_readers === 'number'
+          ? p.registered_readers
+          : typeof p.registered_readers_count === 'number'
+            ? p.registered_readers_count
+            : 0;
       return sum + readers;
     }, 0);
 
@@ -250,14 +259,18 @@ export default function BlogPage() {
                     : 5;
 
                 const totalXp =
-                  typeof post.total_xp_given === 'number'
-                    ? post.total_xp_given
-                    : 0;
+                  typeof post.total_xp_distributed === 'number'
+                    ? post.total_xp_distributed
+                    : typeof post.total_xp_given === 'number'
+                      ? post.total_xp_given
+                      : 0;
 
                 const registeredReaders =
-                  typeof post.registered_readers_count === 'number'
-                    ? post.registered_readers_count
-                    : 0;
+                  typeof post.registered_readers === 'number'
+                    ? post.registered_readers
+                    : typeof post.registered_readers_count === 'number'
+                      ? post.registered_readers_count
+                      : 0;
 
                 const isAuthor =
                   !!user && !!post.author_id && post.author_id === user.id;

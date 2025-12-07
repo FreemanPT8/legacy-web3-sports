@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
 
-    // 1) Buscar posts publicados + autor
+    // 1) Buscar posts publicados + autor base
     const { data: posts, error } = await db
       .from('blog_posts')
       .select(
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         author_user:users!blog_posts_author_id_fkey (
           username
         )
-      `
+      `,
       )
       .eq('published', true)
       .order('published_at', { ascending: false });
@@ -38,61 +38,89 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 2) Se não há user autenticado → devolve posts sem is_completed,
-    // mas com o nome do autor normalizado.
-    if (!user) {
-      const normalized = posts.map((p: any) => ({
-        ...p,
-        author:
-          p.author_user?.username ||
-          p.author ||
-          'Admin',
-      }));
-
-      return NextResponse.json({
-        success: true,
-        posts: normalized,
-      });
-    }
-
-    // 3) Buscar leituras do user para marcar is_completed
     const postIds = posts.map((p: any) => p.id).filter(Boolean);
 
-    const { data: reads, error: readsError } = await db
+    // 2) Buscar leituras de TODOS os utilizadores para estatísticas globais
+    const { data: allReads, error: allReadsError } = await db
       .from('blog_reads')
-      .select('blog_post_id')
-      .eq('user_id', user.id)
+      .select('blog_post_id, user_id, xp_earned')
       .in('blog_post_id', postIds);
 
-    if (readsError) {
-      console.error('Error fetching blog reads:', readsError);
-      // Mesmo com erro, devolvemos posts sem flag de completado
-      const normalized = posts.map((p: any) => ({
-        ...p,
-        author:
-          p.author_user?.username ||
-          p.author ||
-          'Admin',
-      }));
-
-      return NextResponse.json({
-        success: true,
-        posts: normalized,
-      });
+    if (allReadsError) {
+      console.error('Error fetching global blog reads:', allReadsError);
     }
 
-    const completedSet = new Set(
-      (reads || []).map((r: any) => r.blog_post_id),
-    );
+    const registeredReadersMap = new Map<string, number>();
+    const totalXpMap = new Map<string, number>();
 
-    const enrichedPosts = posts.map((p: any) => ({
-      ...p,
-      author:
+    if (allReads && allReads.length > 0) {
+      const readersPerPost: Record<string, Set<string>> = {};
+
+      for (const row of allReads as any[]) {
+        const postId = row.blog_post_id as string;
+        const userId = row.user_id as string | null;
+        const xp = row.xp_earned ?? 0;
+
+        if (!postId) continue;
+
+        // XP total por post
+        totalXpMap.set(postId, (totalXpMap.get(postId) ?? 0) + xp);
+
+        // leitores registados únicos por post
+        if (userId) {
+          if (!readersPerPost[postId]) {
+            readersPerPost[postId] = new Set<string>();
+          }
+          readersPerPost[postId].add(userId);
+        }
+      }
+
+      for (const [postId, set] of Object.entries(readersPerPost)) {
+        registeredReadersMap.set(postId, set.size);
+      }
+    }
+
+    // 3) Determinar quais posts estão completos para o utilizador autenticado
+    let completedSet = new Set<string>();
+    if (user && allReads && allReads.length > 0) {
+      completedSet = new Set(
+        (allReads as any[])
+          .filter((r) => r.user_id === user.id)
+          .map((r) => r.blog_post_id as string),
+      );
+    }
+
+    // 4) Normalizar resposta
+    const enrichedPosts = posts.map((p: any) => {
+      const postId = p.id as string;
+
+      const authorName =
         p.author_user?.username ||
         p.author ||
-        'Admin',
-      is_completed: completedSet.has(p.id),
-    }));
+        'Admin';
+
+      const registeredReaders =
+        registeredReadersMap.get(postId) ?? 0;
+
+      const totalXpDistributed =
+        totalXpMap.get(postId) ?? 0;
+
+      const isCompleted =
+        user &&
+        completedSet.has(postId) &&
+        !!p.author_id &&
+        p.author_id !== user.id
+          ? true
+          : false;
+
+      return {
+        ...p,
+        author: authorName,
+        registered_readers: registeredReaders,
+        total_xp_distributed: totalXpDistributed,
+        is_completed: isCompleted,
+      };
+    });
 
     return NextResponse.json({
       success: true,
