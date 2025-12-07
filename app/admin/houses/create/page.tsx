@@ -1,8 +1,10 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+
 import {
   Card,
   CardContent,
@@ -10,7 +12,9 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectTrigger,
@@ -18,396 +22,554 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Loader2, ArrowLeft, Trophy } from 'lucide-react';
-import { getSortedCountries } from '@/lib/countries';
 
+import { Button } from '@/components/ui/button';
+import { Loader2, Plus, Trophy } from 'lucide-react';
+import { SafeImage } from '@/app/components/SafeImage';
+import { format } from 'date-fns';
+
+// -------------------------------
+// Types
+// -------------------------------
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
-interface Sport {
+interface AdminHouse {
   id: string;
-  code: string | null;
-  name: string;
-  created_at: string | null;
+  sport_name: string | null;
+  sport_code: string | null;
+  country_code: string;
+  status: HouseStatus;
+  created_at: string;
+  avatar_url: string | null;
+  head?: {
+    user_id: string;
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+  moderators_count: number;
 }
 
-interface SportsApiResponse {
+interface ApiResponse {
   success: boolean;
-  sports?: Sport[];
+  houses?: AdminHouse[];
   error?: string;
 }
 
-interface CreateHouseResponse {
+interface AssigneeUser {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  email: string;
+  role: 'Super Admin' | 'Admin' | 'Member';
+}
+
+interface AssigneesResponse {
+  success: boolean;
+  users?: AssigneeUser[];
+  error?: string;
+}
+
+interface HeadPostResponse {
   success: boolean;
   error?: string;
-  house?: {
-    id: string;
+}
+
+// -------------------------------
+// Status Badge
+// -------------------------------
+function StatusBadge({ status }: { status: HouseStatus }) {
+  const styles = {
+    active: { label: 'Active', variant: 'default' as const },
+    under_construction: { label: 'Under construction', variant: 'secondary' as const },
+    development: { label: 'In development', variant: 'outline' as const },
   };
+  const config = styles[status];
+
+  return (
+    <Badge variant={config.variant} className="capitalize">
+      {config.label}
+    </Badge>
+  );
 }
 
-interface HeadApiResponse {
-  success: boolean;
-  error?: string;
-}
-
-const STATUS_OPTIONS: { value: HouseStatus; label: string }[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'under_construction', label: 'Under construction' },
-  { value: 'development', label: 'In development' },
-];
-
-export default function CreateHousePage() {
+// -------------------------------
+// Component
+// -------------------------------
+export default function AdminHousesPage() {
   const router = useRouter();
   const { user, getToken, loading: authLoading } = useAuth();
 
-  const [sports, setSports] = useState<Sport[]>([]);
-  const [loadingSports, setLoadingSports] = useState(true);
-
-  const [sportId, setSportId] = useState<string>('');
-  const [countryCode, setCountryCode] = useState<string>('PT');
-  const [status, setStatus] = useState<HouseStatus>('development');
-  const [headUserId, setHeadUserId] = useState<string>('');
-
-  const [submitting, setSubmitting] = useState(false);
+  const [houses, setHouses] = useState<AdminHouse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const countries = useMemo(() => getSortedCountries(), []);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | HouseStatus>('all');
 
-  // Proteger rota: apenas Admin / Super Admin
+  // Head Editing
+  const [assignees, setAssignees] = useState<AssigneeUser[]>([]);
+  const [headEditRow, setHeadEditRow] = useState<string | null>(null);
+  const [selectedHead, setSelectedHead] = useState<string>('');
+  const [savingHeadForId, setSavingHeadForId] = useState<string | null>(null);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
+
+  // -------------------------------
+  // Fetch Houses
+  // -------------------------------
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user || (user.role !== 'Super Admin' && user.role !== 'Admin')) {
+    if (!user || (user.role !== 'Admin' && user.role !== 'Super Admin')) {
       router.push('/login');
       return;
     }
-  }, [authLoading, user, router]);
 
-  // Carregar lista de desportos
-  useEffect(() => {
-    const fetchSports = async () => {
-      setLoadingSports(true);
+    const load = async () => {
+      setLoading(true);
       setError(null);
-
       try {
-        const res = await fetch('/api/sports?locale=pt');
-        const data: SportsApiResponse = await res.json();
+        const token = getToken();
+        const res = await fetch('/api/admin/houses', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data: ApiResponse = await res.json();
 
         if (!res.ok || !data.success) {
-          setError(data.error || 'Error loading sports.');
-          setSports([]);
-          setLoadingSports(false);
+          setError(data.error || 'Failed to load Houses');
+          setHouses([]);
           return;
         }
 
-        setSports(data.sports || []);
+        setHouses(data.houses || []);
       } catch (err) {
-        console.error('Error loading sports for House creation:', err);
-        setError('Network error while loading sports.');
+        console.error(err);
+        setError('Unexpected error');
       } finally {
-        setLoadingSports(false);
+        setLoading(false);
       }
     };
 
-    fetchSports();
-  }, []);
+    load();
+  }, [authLoading, user, getToken, router]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!sportId) {
-      setError('Please select a sport.');
-      return;
-    }
-
-    if (!countryCode.trim()) {
-      setError('Please select a country code.');
-      return;
-    }
+  // -------------------------------
+  // Load Assignees on demand
+  // -------------------------------
+  const loadAssignees = async () => {
+    if (!isSuperAdmin) return;
+    if (assignees.length > 0) return;
 
     try {
-      setSubmitting(true);
-
       const token = getToken();
-      if (!token) {
-        setError('No authentication token provided.');
-        setSubmitting(false);
-        return;
-      }
-
-      // 1) Criar a House
-      const res = await fetch('/api/admin/houses', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sportId,
-          countryCode,
-          status,
-        }),
+      const res = await fetch('/api/admin/onboarding/assignees', {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data: CreateHouseResponse = await res.json();
+      const data: AssigneesResponse = await res.json();
+      if (!data.success) return;
 
-      if (!res.ok || !data.success || !data.house?.id) {
-        setError(data.error || 'Error creating House of Sports.');
-        setSubmitting(false);
-        return;
-      }
-
-      const createdHouseId = data.house.id;
-
-      // 2) Se o admin indicou um Head of House, promover logo esse utilizador
-      if (headUserId.trim()) {
-        try {
-          const resHead = await fetch(
-            `/api/admin/houses/${createdHouseId}/head`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ userId: headUserId.trim() }),
-            },
-          );
-
-          const headJson: HeadApiResponse = await resHead.json();
-
-          if (!resHead.ok || !headJson.success) {
-            console.error(
-              'Error setting Head of House right after creation:',
-              headJson.error,
-            );
-            // Não bloqueia a criação da House; apenas mostra aviso
-            setError(
-              headJson.error ||
-                'House created, but failed to set Head of House automatically.',
-            );
-          }
-        } catch (err) {
-          console.error('Network error setting Head of House:', err);
-          setError(
-            'House created, but there was a network error while setting Head of House.',
-          );
-        }
-      }
-
-      // 3) Voltar para a lista de Houses
-      router.push('/admin/houses');
-    } catch (err) {
-      console.error('Error creating House of Sports:', err);
-      setError('Unexpected error while creating House of Sports.');
-    } finally {
-      setSubmitting(false);
+      setAssignees(
+        (data.users || []).filter(
+          (u) => u.role === 'Admin' || u.role === 'Super Admin',
+        ),
+      );
+    } catch (e) {
+      console.error('Error loading assignees:', e);
     }
   };
 
-  const goBack = () => {
-    router.push('/admin/houses');
+  // -------------------------------
+  // Save Head
+  // -------------------------------
+  const saveHead = async (houseId: string) => {
+    if (!isSuperAdmin) return;
+    setSavingHeadForId(houseId);
+
+    try {
+      const token = getToken();
+
+      const method = selectedHead ? 'POST' : 'DELETE';
+
+      const res = await fetch(`/api/admin/houses/${houseId}/head`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: selectedHead ? JSON.stringify({ userId: selectedHead }) : null,
+      });
+
+      const data: HeadPostResponse = await res.json();
+
+      if (!data.success) {
+        alert(data.error || "Couldn't update Head");
+        return;
+      }
+
+      // Refresh Houses
+      const reload = await fetch('/api/admin/houses', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const reloadData: ApiResponse = await reload.json();
+      setHouses(reloadData.houses || []);
+
+      setHeadEditRow(null);
+      setSelectedHead('');
+    } catch (err) {
+      console.error(err);
+      alert('Unexpected error');
+    } finally {
+      setSavingHeadForId(null);
+    }
   };
 
-  const isLoading = authLoading || loadingSports;
-  const noSportsDefined = !isLoading && sports.length === 0;
+  // -------------------------------
+  // Filtering
+  // -------------------------------
+  const filtered = useMemo(() => {
+    return houses.filter((h) => {
+      if (statusFilter !== 'all' && h.status !== statusFilter) return false;
+      if (!search.trim()) return true;
+      const s = search.toLowerCase();
 
-  if (authLoading) {
+      const headString = `${h.head?.full_name || ''} ${h.head?.username || ''}`.toLowerCase();
+
+      return (
+        (h.sport_name || '').toLowerCase().includes(s) ||
+        (h.sport_code || '').toLowerCase().includes(s) ||
+        h.country_code.toLowerCase().includes(s) ||
+        headString.includes(s)
+      );
+    });
+  }, [houses, search, statusFilter]);
+
+  // -------------------------------
+  // Render
+  // -------------------------------
+  if (
+    authLoading ||
+    !user ||
+    (user.role !== 'Admin' && user.role !== 'Super Admin')
+  ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Loading...</span>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 text-gray-600 dark:text-gray-300">
+        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+        Loading Houses...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
-      <div className="container mx-auto px-4 max-w-3xl">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-blue-700 dark:text-blue-400">
-          ADMIN · Create House of Sports
-        </h1>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-10">
+      <div className="container mx-auto max-w-7xl px-4 space-y-10">
 
-        <button
-          onClick={goBack}
-          className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Houses
-        </button>
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-bold">Houses of Sports</h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Manage Houses, Heads and Moderators.
+            </p>
+          </div>
 
+          <Link href="/admin/houses/create">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create House
+            </Button>
+          </Link>
+        </div>
+
+        {/* METRICS */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {[
+            ['Total', houses.length],
+            ['Active', houses.filter((h) => h.status === 'active').length],
+            ['Under Construction',
+              houses.filter((h) => h.status === 'under_construction').length],
+            ['Development',
+              houses.filter((h) => h.status === 'development').length],
+            ['Missing Head',
+              houses.filter((h) => !h.head).length],
+          ].map(([label, value]) => (
+            <Card key={label}>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-sm">{label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{value as number}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* FILTERS */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <Input
+                placeholder="Search sport, country or Head..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                <SelectTrigger className="w-full md:w-60">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="under_construction">Under construction</SelectItem>
+                  <SelectItem value="development">In development</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch('');
+                  setStatusFilter('all');
+                }}
+              >
+                Clear
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ERROR */}
+        {error && (
+          <Card className="border-red-300 bg-red-50 dark:bg-red-950">
+            <CardContent className="py-4 text-red-800 dark:text-red-200 text-sm">
+              {error}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* LIST */}
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center">
-                <Trophy className="h-6 w-6 text-yellow-500" />
-              </div>
-              <div>
-                <CardTitle>Create a new House of Sports</CardTitle>
-                <CardDescription>
-                  Define the sport, country and status. The name of the House
-                  will be generated automatically (ex: &quot;House of
-                  Climbing Portugal&quot;).
-                </CardDescription>
-              </div>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              Houses
+            </CardTitle>
+            <CardDescription>
+              Showing {filtered.length} of {houses.length}
+            </CardDescription>
           </CardHeader>
+
           <CardContent>
-            {error && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 px-3 py-2 text-sm text-red-700 dark:text-red-200">
-                {error}
+            {loading ? (
+              <div className="py-10 flex items-center justify-center text-gray-500">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Loading Houses...
               </div>
-            )}
-
-            {isLoading ? (
-              <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading data...
-              </div>
-            ) : noSportsDefined ? (
-              <div className="py-6 text-sm text-gray-700 dark:text-gray-200">
-                <p className="mb-2 font-medium">
-                  No sports found in the platform.
-                </p>
-                <p className="mb-2">
-                  To create a House of Sports you first need to define at
-                  least one sport in the <code>sports</code> table of
-                  Supabase.
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  After creating the sport (for example &quot;Climbing&quot;),
-                  come back to this page and the sport will be available in
-                  the dropdown.
-                </p>
-              </div>
+            ) : filtered.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">
+                No Houses found.
+              </p>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Sport */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Sport
-                  </label>
-                  <Select
-                    value={sportId}
-                    onValueChange={(value) => setSportId(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a sport" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sports.map((sport) => (
-                        <SelectItem key={sport.id} value={sport.id}>
-                          {sport.name}
-                          {sport.code && (
-                            <span className="ml-2 text-[11px] uppercase text-gray-400">
-                              ({sport.code})
-                            </span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    This defines which discipline this House belongs to.
-                  </p>
-                </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b">
+                    <tr className="bg-gray-50 dark:bg-gray-900">
+                      <th className="text-left py-2 px-3">Sport</th>
+                      <th className="text-left py-2 px-3">Country</th>
+                      <th className="text-left py-2 px-3">Status</th>
+                      <th className="text-left py-2 px-3">Head</th>
+                      <th className="text-left py-2 px-3">Mods</th>
+                      <th className="text-left py-2 px-3">Created</th>
+                    </tr>
+                  </thead>
 
-                {/* Country */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Country
-                  </label>
-                  <Select
-                    value={countryCode}
-                    onValueChange={(value) => setCountryCode(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          {c.name} ({c.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    This is used in the generated House name and for
-                    filtering.
-                  </p>
-                </div>
+                  <tbody>
+                    {filtered.map((house) => {
+                      const isEditing = headEditRow === house.id;
 
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Status
-                  </label>
-                  <Select
-                    value={status}
-                    onValueChange={(value) =>
-                      setStatus(value as HouseStatus)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>
-                          {s.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    You can change the status later from the House admin
-                    panel.
-                  </p>
-                </div>
+                      return (
+                        <tr
+                          key={house.id}
+                          className="border-b hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer"
+                          onClick={() => !isEditing && router.push(`/admin/houses/${house.id}`)}
+                        >
+                          {/* SPORT */}
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-md overflow-hidden border bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+                                {house.avatar_url ? (
+                                  <SafeImage
+                                    src={house.avatar_url}
+                                    width={48}
+                                    height={48}
+                                    alt={house.sport_name || 'House'}
+                                  />
+                                ) : (
+                                  <span className="text-xs font-bold">
+                                    {house.sport_code?.toUpperCase() ||
+                                      house.country_code ||
+                                      'H'}
+                                  </span>
+                                )}
+                              </div>
 
-                {/* Head of House (opcional) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Head of House (optional)
-                  </label>
-                  <Input
-                    value={headUserId}
-                    onChange={(e) => setHeadUserId(e.target.value)}
-                    placeholder="Paste the user_id of an Admin / Super Admin"
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    If you provide a valid user_id of an Admin or Super Admin,
-                    this user will be set as Head of House right after
-                    creation. You can also set or change the Head later in
-                    the House detail page.
-                  </p>
-                </div>
+                              <div
+                                className="block text-blue-700 dark:text-blue-400 font-medium hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Link href={`/admin/houses/${house.id}`}>
+                                  {house.sport_name}
+                                </Link>
+                                <div className="text-xs text-gray-500 uppercase">
+                                  {house.sport_code}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
 
-                {/* Submit */}
-                <div className="pt-2 flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={goBack}
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    Create House
-                  </Button>
-                </div>
-              </form>
+                          {/* COUNTRY */}
+                          <td className="py-3 px-3 uppercase text-xs font-mono">
+                            {house.country_code}
+                          </td>
+
+                          {/* STATUS */}
+                          <td className="py-3 px-3">
+                            <StatusBadge status={house.status} />
+                          </td>
+
+                          {/* HEAD */}
+                          <td className="py-3 px-3">
+                            {!isEditing ? (
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full overflow-hidden border bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+                                  {house.head?.avatar_url ? (
+                                    <SafeImage
+                                      src={house.head.avatar_url}
+                                      width={40}
+                                      height={40}
+                                      alt={house.head.full_name || 'Head'}
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-semibold">
+                                      {house.head
+                                        ? (house.head.full_name ||
+                                            house.head.username ||
+                                            'HH')
+                                            .slice(0, 2)
+                                            .toUpperCase()
+                                        : 'HH'}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col">
+                                  {house.head ? (
+                                    <>
+                                      <span className="font-medium">
+                                        {house.head.full_name ||
+                                          house.head.username}
+                                      </span>
+                                      {house.head.username && (
+                                        <span className="text-xs text-gray-500">
+                                          @{house.head.username}
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <Badge variant="outline" className="text-red-500">
+                                      Missing Head
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {isSuperAdmin && (
+                                  <Button
+                                    size="xs"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      loadAssignees();
+                                      setSelectedHead(house.head?.user_id || '');
+                                      setHeadEditRow(house.id);
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+                                )}
+                              </div>
+                            ) : (
+                              <div
+                                className="flex items-center gap-3"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Select
+                                  value={selectedHead}
+                                  onValueChange={setSelectedHead}
+                                >
+                                  <SelectTrigger className="w-48">
+                                    <SelectValue placeholder="Select Head..." />
+                                  </SelectTrigger>
+
+                                  <SelectContent>
+                                    <SelectItem value="">None</SelectItem>
+                                    {assignees.map((u) => (
+                                      <SelectItem key={u.id} value={u.id}>
+                                        {u.full_name || u.username || u.email}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
+                                {/* SAVE */}
+                                <Button
+                                  size="xs"
+                                  onClick={() => saveHead(house.id)}
+                                  disabled={savingHeadForId === house.id}
+                                >
+                                  {savingHeadForId === house.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    'Save'
+                                  )}
+                                </Button>
+
+                                {/* CANCEL */}
+                                <Button
+                                  size="xs"
+                                  variant="destructive"
+                                  onClick={() => setHeadEditRow(null)}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* MODERATORS */}
+                          <td className="py-3 px-3 text-center">
+                            {house.moderators_count}
+                          </td>
+
+                          {/* CREATED */}
+                          <td className="py-3 px-3 text-xs text-gray-500">
+                            {house.created_at
+                              ? format(new Date(house.created_at), 'dd/MM/yyyy')
+                              : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CardContent>
         </Card>
+
       </div>
     </div>
   );
