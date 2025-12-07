@@ -539,7 +539,7 @@ export default function AdminHousesPage() {
 
                                 {/* CANCEL */}
                                 <Button
-                                  size="xs"
+                                  size="sm"
                                   variant="destructive"
                                   onClick={() => setHeadEditRow(null)}
                                 >
