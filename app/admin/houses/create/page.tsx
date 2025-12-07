@@ -488,7 +488,7 @@ export default function AdminHousesPage() {
 
                                 {isSuperAdmin && (
                                   <Button
-                                    size="xs"
+                                    size="sm"
                                     variant="outline"
                                     onClick={(e) => {
                                       e.stopPropagation();
