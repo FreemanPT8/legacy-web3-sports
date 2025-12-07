@@ -1,4 +1,3 @@
-// app/admin/houses/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -22,7 +21,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Trophy, Loader2 } from 'lucide-react';
+import { Trophy, Loader2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { SafeImage } from '@/app/components/SafeImage';
 
@@ -179,114 +178,101 @@ export default function AdminHousesPage() {
   return (
     <div className="min-h-screen bg-slate-950 py-8">
       <div className="container mx-auto px-4 max-w-6xl space-y-8">
-        {/* Hero / breadcrumb — alinhado com /admin overview */}
-        <Card className="border-slate-800 bg-slate-900/70">
-          <CardHeader className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        {/* HERO IGUAL AO /admin */}
+        <Card className="border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950">
+          <CardHeader className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
               LEGACY Admin — Houses of Sports
             </p>
-            <CardTitle className="text-2xl md:text-3xl text-white flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-yellow-400" />
+            <CardTitle className="text-3xl md:text-4xl text-slate-50">
               Houses of Sports
             </CardTitle>
-            <CardDescription className="text-slate-300">
+            <CardDescription className="max-w-3xl text-sm text-slate-300">
               Visão global das Houses, países, estado de desenvolvimento e
-              liderança. É aqui que percebes se o ecossistema das Houses está
-              a crescer de forma saudável ou se alguma precisa da tua atenção.
+              liderança. É aqui que percebes se o ecossistema das Houses está a
+              crescer de forma saudável ou se alguma precisa da tua atenção.
             </CardDescription>
           </CardHeader>
         </Card>
 
-        {/* Métricas rápidas — mesma lógica visual do dashboard */}
-        <div className="grid md:grid-cols-5 gap-4">
-          <Card className="border-slate-800 bg-slate-900/70">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold text-slate-400 uppercase">
-                Total Houses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">
-                {totalHouses}
+        {/* RESUMO DAS HOUSES (estilo cards do overview) */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-slate-100">
+              Resumo das Houses
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-400">
+              Totais e estados atuais das Houses of Sports.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3">
+                <p className="text-xs font-medium text-slate-400 uppercase">
+                  Total Houses
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-50">
+                  {totalHouses}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-800 bg-slate-900/70">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold text-slate-400 uppercase">
-                Active
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-400">
-                {activeHouses}
+              <div className="rounded-lg border border-emerald-900/60 bg-emerald-950/40 px-4 py-3">
+                <p className="text-xs font-medium text-emerald-300 uppercase">
+                  Active
+                </p>
+                <p className="mt-1 text-2xl font-bold text-emerald-400">
+                  {activeHouses}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-800 bg-slate-900/70">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold text-slate-400 uppercase">
-                Under construction
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-400">
-                {buildingHouses}
+              <div className="rounded-lg border border-amber-900/60 bg-amber-950/40 px-4 py-3">
+                <p className="text-xs font-medium text-amber-300 uppercase">
+                  Under construction
+                </p>
+                <p className="mt-1 text-2xl font-bold text-amber-400">
+                  {buildingHouses}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-800 bg-slate-900/70">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold text-slate-400 uppercase">
-                In development
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-sky-400">
-                {developingHouses}
+              <div className="rounded-lg border border-sky-900/60 bg-sky-950/40 px-4 py-3">
+                <p className="text-xs font-medium text-sky-300 uppercase">
+                  In development
+                </p>
+                <p className="mt-1 text-2xl font-bold text-sky-400">
+                  {developingHouses}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-800 bg-slate-900/70">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold text-slate-400 uppercase">
-                Missing Head
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-rose-400">
-                {missingHeads}
+              <div className="rounded-lg border border-rose-900/60 bg-rose-950/40 px-4 py-3">
+                <p className="text-xs font-medium text-rose-300 uppercase">
+                  Missing Head
+                </p>
+                <p className="mt-1 text-2xl font-bold text-rose-400">
+                  {missingHeads}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Filtros + botão criar */}
-        <Card className="border-slate-800 bg-slate-900/70">
-          <CardContent className="pt-6 flex flex-col gap-4 md:flex-row md:items-center">
+        {/* FILTROS (card igual ao resto do admin) */}
+        <Card>
+          <CardContent className="pt-6 flex flex-col md:flex-row gap-4 items-center">
             <div className="flex-1 w-full">
               <Input
                 placeholder="Search by sport, country or Head of House..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-slate-950/60 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                className="bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500"
               />
             </div>
-            <div className="w-full md:w-56">
+            <div className="w-full md:w-60">
               <Select
                 value={statusFilter}
                 onValueChange={(val) =>
                   setStatusFilter(val as 'all' | HouseStatus)
                 }
               >
-                <SelectTrigger className="bg-slate-950/60 border-slate-700 text-slate-100">
+                <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-100">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-700">
+                <SelectContent>
                   {statusOptions.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
@@ -295,43 +281,44 @@ export default function AdminHousesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
+            <div className="flex gap-2 w-full md:w-auto justify-end">
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearch('');
                   setStatusFilter('all');
                 }}
-                className="border-slate-700 text-slate-200 hover:bg-slate-800"
+                className="border-slate-700 text-slate-200"
               >
                 Clear filters
               </Button>
               <Link href="/admin/houses/create">
-                <Button className="bg-sky-600 hover:bg-sky-500 text-white">
-                  + Create new House
+                <Button type="button" className="bg-sky-600 hover:bg-sky-500">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create new House
                 </Button>
               </Link>
             </div>
           </CardContent>
         </Card>
 
-        {/* Erro */}
+        {/* ERRO */}
         {error && (
-          <Card className="border-red-900 bg-red-950/60">
-            <CardContent className="pt-4 pb-4 text-sm text-red-100">
+          <Card className="border-red-900/70 bg-red-950/40">
+            <CardContent className="pt-4 pb-4 text-red-200 text-sm">
               {error}
             </CardContent>
           </Card>
         )}
 
-        {/* Lista */}
-        <Card className="border-slate-800 bg-slate-900/70">
+        {/* LISTA DE HOUSES */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-slate-100">
               <Trophy className="h-5 w-5 text-yellow-400" />
               Houses list
             </CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-xs text-slate-400">
               Showing {filtered.length} of {houses.length} Houses.
             </CardDescription>
           </CardHeader>
@@ -342,7 +329,7 @@ export default function AdminHousesPage() {
                 Loading Houses of Sports...
               </div>
             ) : filtered.length === 0 ? (
-              <p className="py-8 text-center text-sm text-slate-400">
+              <p className="py-8 text-center text-slate-400 text-sm">
                 {houses.length === 0
                   ? 'No Houses found. Create the first House using the button above.'
                   : 'No Houses match the current filters.'}
@@ -351,21 +338,23 @@ export default function AdminHousesPage() {
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-300">
-                      <th className="text-left py-2 px-3 font-medium">Sport</th>
-                      <th className="text-left py-2 px-3 font-medium">
+                    <tr className="border-b border-slate-800 bg-slate-900/60">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-slate-400">
+                        Sport
+                      </th>
+                      <th className="text-left py-2 px-3 text-xs font-medium text-slate-400">
                         Country
                       </th>
-                      <th className="text-left py-2 px-3 font-medium">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-slate-400">
                         Status
                       </th>
-                      <th className="text-left py-2 px-3 font-medium">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-slate-400">
                         Head of House
                       </th>
-                      <th className="text-left py-2 px-3 font-medium">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-slate-400">
                         Moderators
                       </th>
-                      <th className="text-left py-2 px-3 font-medium">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-slate-400">
                         Created
                       </th>
                     </tr>
@@ -379,7 +368,7 @@ export default function AdminHousesPage() {
                       >
                         <td className="py-2 px-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-md overflow-hidden border border-slate-800 bg-slate-950 flex-shrink-0 flex items-center justify-center text-xs text-slate-400">
+                            <div className="w-12 h-12 rounded-md overflow-hidden border border-slate-800 bg-slate-900 flex-shrink-0 flex items-center justify-center text-xs text-slate-400">
                               {house.avatar_url && house.avatar_url.trim() !== '' ? (
                                 <SafeImage
                                   src={house.avatar_url}
@@ -404,17 +393,17 @@ export default function AdminHousesPage() {
                               <div className="font-medium text-sky-400 hover:underline">
                                 {house.sport_name || 'Unknown sport'}
                               </div>
-                              <div className="text-xs text-slate-400 uppercase">
+                              <div className="text-xs text-slate-500 uppercase">
                                 {house.sport_code}
                               </div>
                             </Link>
                           </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                          <div className="text-[10px] text-slate-500 mt-0.5">
                             {house.id}
                           </div>
                         </td>
                         <td className="py-2 px-3">
-                          <span className="uppercase text-xs font-mono bg-slate-950 border border-slate-700 px-2 py-1 rounded text-slate-100">
+                          <span className="uppercase text-xs font-mono bg-slate-900 border border-slate-800 px-2 py-1 rounded text-slate-200">
                             {house.country_code}
                           </span>
                         </td>
@@ -423,7 +412,7 @@ export default function AdminHousesPage() {
                         </td>
                         <td className="py-2 px-3">
                           <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-800 bg-slate-950 flex-shrink-0 flex items-center justify-center text-[11px] text-slate-400">
+                            <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-800 bg-slate-900 flex-shrink-0 flex items-center justify-center text-[11px] text-slate-400">
                               {house.head?.avatar_url &&
                               house.head.avatar_url.trim() !== '' ? (
                                 <SafeImage
@@ -466,7 +455,7 @@ export default function AdminHousesPage() {
                               ) : (
                                 <Badge
                                   variant="outline"
-                                  className="text-rose-300 border-rose-800 bg-rose-950/40"
+                                  className="text-rose-300 border-rose-900/70 bg-rose-950/30"
                                 >
                                   Missing Head
                                 </Badge>
