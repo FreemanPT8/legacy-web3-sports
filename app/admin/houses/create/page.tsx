@@ -526,7 +526,7 @@ export default function AdminHousesPage() {
 
                                 {/* SAVE */}
                                 <Button
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => saveHead(house.id)}
                                   disabled={savingHeadForId === house.id}
                                 >
