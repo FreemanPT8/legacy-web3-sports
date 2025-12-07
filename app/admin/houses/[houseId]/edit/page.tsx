@@ -3,8 +3,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import {
   Card,
   CardContent,
@@ -41,7 +39,7 @@ interface SportsApiResponse {
 interface HouseFromApi {
   id: string;
   name?: string;
-  sport_id?: string | null;       // opcional, se o API já devolver
+  sport_id?: string | null;
   sport_name?: string | null;
   sport_code?: string | null;
   country_code?: string;
@@ -153,7 +151,7 @@ export default function EditHousePage() {
         if (!houseRes.ok || !houseJson.success || !houseJson.house) {
           console.error('Error loading house detail:', houseJson.error);
           setError(
-            houseJson.error || 'Failed to load House of Sports details.'
+            houseJson.error || 'Failed to load House of Sports details.',
           );
           setHouse(null);
         } else {
@@ -179,7 +177,7 @@ export default function EditHousePage() {
             const match = (sportsJson.sports || []).find(
               (s) =>
                 s.code &&
-                s.code.toLowerCase() === h.sport_code?.toLowerCase()
+                s.code.toLowerCase() === h.sport_code?.toLowerCase(),
             );
             if (match) {
               setSportId(match.id);
@@ -287,220 +285,217 @@ export default function EditHousePage() {
   };
 
   if (authLoading) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!isLoading && !house) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-gray-700 mb-4">
-              {error || 'House not found or could not be loaded.'}
-            </p>
-            <Button variant="outline" onClick={goBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </div>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="text-center">
+          <p className="text-gray-700 dark:text-gray-200 mb-4">
+            {error || 'House not found or could not be loaded.'}
+          </p>
+          <Button variant="outline" onClick={goBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <div className="container mx-auto px-4 max-w-3xl">
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-blue-700 dark:text-blue-400">
+          ADMIN · Edit House of Sports
+        </h1>
 
-      <main className="flex-1 bg-blue-50/40">
-        <div className="container mx-auto px-4 py-10 max-w-3xl">
-          <h1 className="text-3xl font-bold mb-6 text-blue-700">
-            ADMIN · Edit House of Sports
-          </h1>
+        <button
+          onClick={goBack}
+          className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to House
+        </button>
 
-          <button
-            onClick={goBack}
-            className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to House
-          </button>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center">
-                  <Trophy className="h-6 w-6 text-yellow-500" />
-                </div>
-                <div>
-                  <CardTitle>
-                    Edit House {house?.name ? `· ${house.name}` : ''}
-                  </CardTitle>
-                  <CardDescription>
-                    Adjust sport, country, status and public profile fields for
-                    this House.
-                  </CardDescription>
-                </div>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center">
+                <Trophy className="h-6 w-6 text-yellow-500" />
               </div>
-            </CardHeader>
-            <CardContent>
-              {error && (
-                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {error}
+              <div>
+                <CardTitle>
+                  Edit House {house?.name ? `· ${house.name}` : ''}
+                </CardTitle>
+                <CardDescription>
+                  Adjust sport, country, status and public profile fields for
+                  this House.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 px-3 py-2 text-sm text-red-700 dark:text-red-200">
+                {error}
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading data...
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Sport */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Sport
+                  </label>
+                  <Select
+                    value={sportId}
+                    onValueChange={(value) => setSportId(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a sport" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sports.map((sport) => (
+                        <SelectItem key={sport.id} value={sport.id}>
+                          {sport.name}
+                          {sport.code && (
+                            <span className="ml-2 text-[11px] uppercase text-gray-400">
+                              ({sport.code})
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    This defines which discipline this House belongs to.
+                  </p>
                 </div>
-              )}
 
-              {isLoading ? (
-                <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Loading data...
+                {/* Country */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Country
+                  </label>
+                  <Select
+                    value={countryCode}
+                    onValueChange={(value) => setCountryCode(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countryOptions.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.label} ({c.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Used for filters and in the generated House name.
+                  </p>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* Sport */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Sport
-                    </label>
-                    <Select
-                      value={sportId}
-                      onValueChange={(value) => setSportId(value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a sport" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sports.map((sport) => (
-                          <SelectItem key={sport.id} value={sport.id}>
-                            {sport.name}
-                            {sport.code && (
-                              <span className="ml-2 text-[11px] uppercase text-gray-400">
-                                ({sport.code})
-                              </span>
-                            )}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      This defines which discipline this House belongs to.
-                    </p>
-                  </div>
 
-                  {/* Country */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Country
-                    </label>
-                    <Select
-                      value={countryCode}
-                      onValueChange={(value) => setCountryCode(value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countryOptions.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {c.label} ({c.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Used for filters and in the generated House name.
-                    </p>
-                  </div>
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Status
+                  </label>
+                  <Select
+                    value={status}
+                    onValueChange={(value) =>
+                      setStatus(value as HouseStatus)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    You can always change this later from the House admin
+                    panel.
+                  </p>
+                </div>
 
-                  {/* Status */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Status
-                    </label>
-                    <Select
-                      value={status}
-                      onValueChange={(value) =>
-                        setStatus(value as HouseStatus)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>
-                            {s.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      You can always change this later from the House admin
-                      panel.
-                    </p>
-                  </div>
+                {/* Avatar URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Avatar URL (optional)
+                  </label>
+                  <Input
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="https://... (House image)"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    For now, we use a direct image URL. Later this can be
+                    replaced with an upload system.
+                  </p>
+                </div>
 
-                  {/* Avatar URL */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Avatar URL (optional)
-                    </label>
-                    <Input
-                      value={avatarUrl}
-                      onChange={(e) => setAvatarUrl(e.target.value)}
-                      placeholder="https://... (House image)"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      For now, we use a direct image URL. Later this can be
-                      replaced with an upload system.
-                    </p>
-                  </div>
+                {/* Short description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Short description
+                  </label>
+                  <textarea
+                    rows={4}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Public description for this House."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    You can write in Portuguese for now. Later this will be
+                    internationalised.
+                  </p>
+                </div>
 
-                  {/* Short description */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Short description
-                    </label>
-                    <textarea
-                      rows={4}
-                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      placeholder="Public description for this House."
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      You can write in Portuguese for now. Later this will be
-                      internationalised.
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="pt-2 flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={goBack}
-                      disabled={submitting}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={submitting}>
-                      {submitting && (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
-                      Save changes
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-
-      <Footer />
+                {/* Actions */}
+                <div className="pt-2 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={goBack}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Save changes
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

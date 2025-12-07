@@ -244,7 +244,7 @@ export default function AdminHouseDetailPage() {
   const canManageModerators = isSuperAdmin || isHeadOfThisHouse;
 
   const ensurePermissions = (
-    raw: ModeratorPermissions | null | undefined
+    raw: ModeratorPermissions | null | undefined,
   ): Required<ModeratorPermissions> => {
     return {
       canManageMissions: !!raw?.canManageMissions,
@@ -345,10 +345,10 @@ export default function AdminHouseDetailPage() {
                     ? 'under_construction'
                     : prev.status,
               }
-            : prev
+            : prev,
         );
         setStatusDraft((prev) =>
-          prev === 'development' ? 'under_construction' : prev
+          prev === 'development' ? 'under_construction' : prev,
         );
       }
 
@@ -404,10 +404,10 @@ export default function AdminHouseDetailPage() {
                   ? 'development'
                   : prev.status,
             }
-          : prev
+          : prev,
       );
       setStatusDraft((prev) =>
-        prev === 'under_construction' ? 'development' : prev
+        prev === 'under_construction' ? 'development' : prev,
       );
     } catch (err) {
       console.error('Error removing Head of House:', err);
@@ -427,7 +427,7 @@ export default function AdminHouseDetailPage() {
     }
     if (!canManageModerators) {
       setError(
-        'Only the Head of this House or a Super Admin can add moderators.'
+        'Only the Head of this House or a Super Admin can add moderators.',
       );
       return;
     }
@@ -484,7 +484,7 @@ export default function AdminHouseDetailPage() {
     if (!house) return;
     if (!canManageModerators) {
       setError(
-        'Only the Head of this House or a Super Admin can remove moderators.'
+        'Only the Head of this House or a Super Admin can remove moderators.',
       );
       return;
     }
@@ -528,7 +528,7 @@ export default function AdminHouseDetailPage() {
   const updateModeratorPermission = (
     modId: string,
     key: keyof ModeratorPermissions,
-    value: boolean
+    value: boolean,
   ) => {
     setModerators((prev) =>
       prev.map((m) => {
@@ -541,7 +541,7 @@ export default function AdminHouseDetailPage() {
             [key]: value,
           },
         };
-      })
+      }),
     );
   };
 
@@ -549,7 +549,7 @@ export default function AdminHouseDetailPage() {
     if (!house) return;
     if (!canManageModerators) {
       setError(
-        'Only the Head of this House or a Super Admin can change moderator permissions.'
+        'Only the Head of this House or a Super Admin can change moderator permissions.',
       );
       return;
     }
@@ -594,8 +594,8 @@ export default function AdminHouseDetailPage() {
       if (typeof json.permissions !== 'undefined') {
         setModerators((prev) =>
           prev.map((m) =>
-            m.id === userId ? { ...m, permissions: json.permissions ?? null } : m
-          )
+            m.id === userId ? { ...m, permissions: json.permissions ?? null } : m,
+          ),
         );
       }
     } catch (err) {
@@ -647,7 +647,7 @@ export default function AdminHouseDetailPage() {
               avatar_url: avatarDraft.trim() || null,
               description: descriptionDraft.trim() || null,
             }
-          : prev
+          : prev,
       );
     } catch (err) {
       console.error('Error updating public profile:', err);
@@ -659,12 +659,21 @@ export default function AdminHouseDetailPage() {
 
   // 7) Estados intermédios
 
-  if (authLoading) return null;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading House details...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex items-center gap-2 text-gray-600">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading House details...</span>
         </div>
@@ -674,9 +683,9 @@ export default function AdminHouseDetailPage() {
 
   if (!house) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center space-y-3">
-          <p className="text-gray-700">
+          <p className="text-gray-700 dark:text-gray-200">
             {error || 'House not found or could not be loaded.'}
           </p>
           <Button
@@ -695,12 +704,12 @@ export default function AdminHouseDetailPage() {
   const publicProfileUrl = `/sports/houses/${house.id}`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <main>
         <div className="container mx-auto px-4 max-w-5xl">
           <button
             onClick={() => router.push('/admin/houses')}
-            className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+            className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Houses
@@ -712,16 +721,16 @@ export default function AdminHouseDetailPage() {
                 <Trophy className="h-6 w-6 text-yellow-500" />
                 {house.name}
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                 Admin panel for this House of Sports. Manage status, leadership
                 and moderators. Ligada ao perfil público em{' '}
-                <span className="font-mono text-xs text-gray-700">
+                <span className="font-mono text-xs text-gray-700 dark:text-gray-200">
                   /sports/houses/{house.id}
                 </span>
                 .
               </p>
             </div>
-            <div className="flex flex-col items-end gap-2 text-xs text-gray-500 text-right">
+            <div className="flex flex-col items-end gap-2 text-xs text-gray-500 dark:text-gray-300 text-right">
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -731,6 +740,15 @@ export default function AdminHouseDetailPage() {
                   <ExternalLink className="h-4 w-4 mr-1" />
                   Public profile
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    router.push(`/admin/houses/${house.id}/edit`)
+                  }
+                >
+                  Edit House
+                </Button>
               </div>
               <div>ID: {house.id}</div>
               {createdAtFormatted && <div>Created at: {createdAtFormatted}</div>}
@@ -738,7 +756,7 @@ export default function AdminHouseDetailPage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 px-3 py-2 text-sm text-red-700 dark:text-red-200">
               {error}
             </div>
           )}
@@ -747,7 +765,9 @@ export default function AdminHouseDetailPage() {
           <div className="grid md:grid-cols-3 gap-4 mb-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-gray-600">Status</CardTitle>
+                <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
+                  Status
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <StatusBadge status={house.status} />
@@ -755,7 +775,9 @@ export default function AdminHouseDetailPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-gray-600">Head of House</CardTitle>
+                <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
+                  Head of House
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {head ? (
@@ -764,11 +786,16 @@ export default function AdminHouseDetailPage() {
                       {head.full_name || head.username || 'Head'}
                     </span>
                     {head.username && (
-                      <span className="text-xs text-gray-500">@{head.username}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        @{head.username}
+                      </span>
                     )}
                   </div>
                 ) : (
-                  <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
+                  <Badge
+                    variant="outline"
+                    className="text-red-600 border-red-200 bg-red-50 dark:bg-red-950/30 dark:text-red-200 dark:border-red-900"
+                  >
                     Missing Head
                   </Badge>
                 )}
@@ -776,7 +803,9 @@ export default function AdminHouseDetailPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-gray-600">Moderators</CardTitle>
+                <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
+                  Moderators
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{moderators.length}</div>
@@ -797,10 +826,10 @@ export default function AdminHouseDetailPage() {
               <CardContent className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs uppercase text-gray-500 mb-1">
+                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
                       Sport
                     </p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
                       {house.sport_name || 'Unknown sport'}
                     </p>
                     {house.sport_code && (
@@ -810,10 +839,13 @@ export default function AdminHouseDetailPage() {
                     )}
                   </div>
                   <div>
-                    <p className="text-xs uppercase text-gray-500 mb-1">
+                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
                       Country
                     </p>
-                    <Badge variant="outline" className="uppercase font-mono">
+                    <Badge
+                      variant="outline"
+                      className="uppercase font-mono dark:border-gray-700"
+                    >
                       {house.country_code}
                     </Badge>
                   </div>
@@ -821,17 +853,17 @@ export default function AdminHouseDetailPage() {
 
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase text-gray-500 mb-1">
+                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
                       Status
                     </p>
                     <div className="flex items-center gap-2">
                       <StatusBadge status={house.status} />
                     </div>
-                    <p className="mt-1 text-[11px] text-gray-500 max-w-sm">
-                      <strong>Regra sugerida:</strong> sem Head =&gt; development;
-                      Head mas House ainda a ser montada =&gt; under construction;
-                      House a receber membros =&gt; active (por agora controlado
-                      manualmente aqui).
+                    <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400 max-w-sm">
+                      <strong>Regra sugerida:</strong> sem Head =&gt;
+                      development; Head mas House ainda a ser montada =&gt;
+                      under construction; House a receber membros =&gt; active
+                      (por agora controlado manualmente aqui).
                     </p>
                   </div>
 
@@ -869,9 +901,9 @@ export default function AdminHouseDetailPage() {
                 </div>
 
                 <div className="border-t pt-4 mt-1 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
                     Este painel afeta o que os utilizadores veem em{' '}
-                    <span className="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded">
+                    <span className="font-mono text-[11px] bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">
                       {publicProfileUrl}
                     </span>
                     .
@@ -880,7 +912,7 @@ export default function AdminHouseDetailPage() {
                     <Link
                       href={publicProfileUrl}
                       target="_blank"
-                      className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-100 transition"
+                      className="inline-flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
                     >
                       <ExternalLink className="h-3 w-3" />
                       View public profile
@@ -888,7 +920,7 @@ export default function AdminHouseDetailPage() {
                     <Link
                       href="/sports/houses"
                       target="_blank"
-                      className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 transition"
+                      className="inline-flex items-center gap-1 rounded-md border border-gray-200 dark:border-gray-800 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
                     >
                       All Houses
                     </Link>
@@ -910,18 +942,18 @@ export default function AdminHouseDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {head ? (
-                  <div className="border rounded-md px-3 py-2 bg-gray-50">
-                    <p className="font-medium text-gray-900">
+                  <div className="border rounded-md px-3 py-2 bg-gray-50 dark:bg-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
                       {head.full_name || head.username || 'Unknown user'}
                     </p>
                     {head.username && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         @{head.username} · {head.role || 'Member'}
                       </p>
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     No Head of House defined yet. Quando definires um, a House
                     tende a passar de &quot;development&quot; para
                     &quot;under construction&quot;.
@@ -960,7 +992,7 @@ export default function AdminHouseDetailPage() {
                         </Button>
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-500">
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
                       Usa apenas utilizadores com role <strong>Admin</strong> ou{' '}
                       <strong>Super Admin</strong> como Head nesta fase. O nome e
                       o username aparecem no perfil público da House.
@@ -993,18 +1025,18 @@ export default function AdminHouseDetailPage() {
                     <SafeImage
                       src={avatarDraft}
                       alt={house.name}
-                      className="h-20 w-20 rounded-xl object-cover border border-gray-200 bg-gray-100"
+                      className="h-20 w-20 rounded-xl object-cover border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900"
                       width={80}
                       height={80}
                     />
                   ) : (
-                    <div className="h-20 w-20 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[10px] text-gray-400 text-center px-2">
+                    <div className="h-20 w-20 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center justify-center text-[10px] text-gray-400 text-center px-2">
                       No image yet
                     </div>
                   )}
                 </div>
                 <div className="flex-1 space-y-2">
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-200">
                     Avatar URL (temporário)
                   </label>
                   <Input
@@ -1012,7 +1044,7 @@ export default function AdminHouseDetailPage() {
                     value={avatarDraft}
                     onChange={(e) => setAvatarDraft(e.target.value)}
                   />
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
                     Mais tarde podes ter um sistema de upload com o layout
                     visual LEGACY. Por agora usamos um URL direto para a imagem
                     da House.
@@ -1021,17 +1053,17 @@ export default function AdminHouseDetailPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Short description
                 </label>
                 <textarea
                   rows={4}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Descrição curta da House (apresentação para a página pública)."
                   value={descriptionDraft}
                   onChange={(e) => setDescriptionDraft(e.target.value)}
                 />
-                <p className="mt-1 text-[11px] text-gray-500">
+                <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
                   Podes escrever em português por agora. No futuro vamos
                   internacionalizar esta descrição para as 6 línguas.
                 </p>
@@ -1090,7 +1122,7 @@ export default function AdminHouseDetailPage() {
                 </p>
               )}
 
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
                 Moderators não substituem o Head of House, mas podem gerir
                 missões, eventos e comunidade. Cada moderador pode ter
                 permissões específicas (missões, conteúdo, membros) definidas
@@ -1098,11 +1130,11 @@ export default function AdminHouseDetailPage() {
               </p>
 
               {moderators.length === 0 ? (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   No moderators assigned yet.
                 </p>
               ) : (
-                <div className="border rounded-md divide-y bg-white">
+                <div className="border rounded-md divide-y bg-white dark:bg-gray-900 dark:border-gray-800">
                   {moderators.map((mod) => {
                     const perms = ensurePermissions(mod.permissions ?? undefined);
 
@@ -1113,10 +1145,10 @@ export default function AdminHouseDetailPage() {
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
                               {mod.full_name || mod.username || 'Unknown user'}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {mod.username && <>@{mod.username} · </>}
                               {mod.role || 'Member'}
                             </p>
@@ -1140,21 +1172,21 @@ export default function AdminHouseDetailPage() {
 
                         {/* Permissões do moderador */}
                         <div className="mt-1">
-                          <p className="text-[11px] text-gray-500 mb-1">
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">
                             Permissions for this moderator:
                           </p>
-                          <div className="flex flex-wrap gap-3 text-[11px] text-gray-700">
+                          <div className="flex flex-wrap gap-3 text-[11px] text-gray-700 dark:text-gray-200">
                             <label className="inline-flex items-center gap-1">
                               <input
                                 type="checkbox"
-                                className="h-3.5 w-3.5 rounded border-gray-300"
+                                className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600"
                                 checked={perms.canManageMissions}
                                 disabled={!canManageModerators}
                                 onChange={(e) =>
                                   updateModeratorPermission(
                                     mod.id,
                                     'canManageMissions',
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -1163,14 +1195,14 @@ export default function AdminHouseDetailPage() {
                             <label className="inline-flex items-center gap-1">
                               <input
                                 type="checkbox"
-                                className="h-3.5 w-3.5 rounded border-gray-300"
+                                className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600"
                                 checked={perms.canManageContent}
                                 disabled={!canManageModerators}
                                 onChange={(e) =>
                                   updateModeratorPermission(
                                     mod.id,
                                     'canManageContent',
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -1179,14 +1211,14 @@ export default function AdminHouseDetailPage() {
                             <label className="inline-flex items-center gap-1">
                               <input
                                 type="checkbox"
-                                className="h-3.5 w-3.5 rounded border-gray-300"
+                                className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600"
                                 checked={perms.canManageMembers}
                                 disabled={!canManageModerators}
                                 onChange={(e) =>
                                   updateModeratorPermission(
                                     mod.id,
                                     'canManageMembers',
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />

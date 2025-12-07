@@ -1,11 +1,8 @@
-// app/admin/houses/create/page.tsx
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import {
   Card,
   CardContent,
@@ -175,7 +172,7 @@ export default function CreateHousePage() {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({ userId: headUserId.trim() }),
-            }
+            },
           );
 
           const headJson: HeadApiResponse = await resHead.json();
@@ -183,18 +180,18 @@ export default function CreateHousePage() {
           if (!resHead.ok || !headJson.success) {
             console.error(
               'Error setting Head of House right after creation:',
-              headJson.error
+              headJson.error,
             );
             // Não bloqueia a criação da House; apenas mostra aviso
             setError(
               headJson.error ||
-                'House created, but failed to set Head of House automatically.'
+                'House created, but failed to set Head of House automatically.',
             );
           }
         } catch (err) {
           console.error('Network error setting Head of House:', err);
           setError(
-            'House created, but there was a network error while setting Head of House.'
+            'House created, but there was a network error while setting Head of House.',
           );
         }
       }
@@ -216,197 +213,202 @@ export default function CreateHousePage() {
   const isLoading = authLoading || loadingSports;
   const noSportsDefined = !isLoading && sports.length === 0;
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-
-      <main className="flex-1 bg-blue-50/40">
-        <div className="container mx-auto px-4 py-10 max-w-3xl">
-          <h1 className="text-3xl font-bold mb-6 text-blue-700">
-            ADMIN · Create House of Sports
-          </h1>
-
-          <button
-            onClick={goBack}
-            className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Houses
-          </button>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center">
-                  <Trophy className="h-6 w-6 text-yellow-500" />
-                </div>
-                <div>
-                  <CardTitle>Create a new House of Sports</CardTitle>
-                  <CardDescription>
-                    Define the sport, country and status. The name of the House
-                    will be generated automatically (ex: &quot;House of
-                    Climbing Portugal&quot;).
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {error && (
-                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
-
-              {isLoading ? (
-                <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Loading data...
-                </div>
-              ) : noSportsDefined ? (
-                <div className="py-6 text-sm text-gray-700">
-                  <p className="mb-2 font-medium">
-                    No sports found in the platform.
-                  </p>
-                  <p className="mb-2">
-                    To create a House of Sports you first need to define at
-                    least one sport in the <code>sports</code> table of
-                    Supabase.
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    After creating the sport (for example &quot;Climbing&quot;),
-                    come back to this page and the sport will be available in
-                    the dropdown.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* Sport */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Sport
-                    </label>
-                    <Select
-                      value={sportId}
-                      onValueChange={(value) => setSportId(value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a sport" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sports.map((sport) => (
-                          <SelectItem key={sport.id} value={sport.id}>
-                            {sport.name}
-                            {sport.code && (
-                              <span className="ml-2 text-[11px] uppercase text-gray-400">
-                                ({sport.code})
-                              </span>
-                            )}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      This defines which discipline this House belongs to.
-                    </p>
-                  </div>
-
-                  {/* Country */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Country
-                    </label>
-                    <Select
-                      value={countryCode}
-                      onValueChange={(value) => setCountryCode(value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countries.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {c.name} ({c.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      This is used in the generated House name and for
-                      filtering.
-                    </p>
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Status
-                    </label>
-                    <Select
-                      value={status}
-                      onValueChange={(value) =>
-                        setStatus(value as HouseStatus)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>
-                            {s.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      You can change the status later from the House admin
-                      panel.
-                    </p>
-                  </div>
-
-                  {/* Head of House (opcional) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Head of House (optional)
-                    </label>
-                    <Input
-                      value={headUserId}
-                      onChange={(e) => setHeadUserId(e.target.value)}
-                      placeholder="Paste the user_id of an Admin / Super Admin"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      If you provide a valid user_id of an Admin or Super Admin,
-                      this user will be set as Head of House right after
-                      creation. You can also set or change the Head later in
-                      the House detail page.
-                    </p>
-                  </div>
-
-                  {/* Submit */}
-                  <div className="pt-2 flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={goBack}
-                      disabled={submitting}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={submitting}>
-                      {submitting && (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
-                      Create House
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading...</span>
         </div>
-      </main>
+      </div>
+    );
+  }
 
-      <Footer />
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+      <div className="container mx-auto px-4 max-w-3xl">
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-blue-700 dark:text-blue-400">
+          ADMIN · Create House of Sports
+        </h1>
+
+        <button
+          onClick={goBack}
+          className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to Houses
+        </button>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center">
+                <Trophy className="h-6 w-6 text-yellow-500" />
+              </div>
+              <div>
+                <CardTitle>Create a new House of Sports</CardTitle>
+                <CardDescription>
+                  Define the sport, country and status. The name of the House
+                  will be generated automatically (ex: &quot;House of
+                  Climbing Portugal&quot;).
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 px-3 py-2 text-sm text-red-700 dark:text-red-200">
+                {error}
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading data...
+              </div>
+            ) : noSportsDefined ? (
+              <div className="py-6 text-sm text-gray-700 dark:text-gray-200">
+                <p className="mb-2 font-medium">
+                  No sports found in the platform.
+                </p>
+                <p className="mb-2">
+                  To create a House of Sports you first need to define at
+                  least one sport in the <code>sports</code> table of
+                  Supabase.
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  After creating the sport (for example &quot;Climbing&quot;),
+                  come back to this page and the sport will be available in
+                  the dropdown.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Sport */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Sport
+                  </label>
+                  <Select
+                    value={sportId}
+                    onValueChange={(value) => setSportId(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a sport" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sports.map((sport) => (
+                        <SelectItem key={sport.id} value={sport.id}>
+                          {sport.name}
+                          {sport.code && (
+                            <span className="ml-2 text-[11px] uppercase text-gray-400">
+                              ({sport.code})
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    This defines which discipline this House belongs to.
+                  </p>
+                </div>
+
+                {/* Country */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Country
+                  </label>
+                  <Select
+                    value={countryCode}
+                    onValueChange={(value) => setCountryCode(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.name} ({c.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    This is used in the generated House name and for
+                    filtering.
+                  </p>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Status
+                  </label>
+                  <Select
+                    value={status}
+                    onValueChange={(value) =>
+                      setStatus(value as HouseStatus)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    You can change the status later from the House admin
+                    panel.
+                  </p>
+                </div>
+
+                {/* Head of House (opcional) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Head of House (optional)
+                  </label>
+                  <Input
+                    value={headUserId}
+                    onChange={(e) => setHeadUserId(e.target.value)}
+                    placeholder="Paste the user_id of an Admin / Super Admin"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    If you provide a valid user_id of an Admin or Super Admin,
+                    this user will be set as Head of House right after
+                    creation. You can also set or change the Head later in
+                    the House detail page.
+                  </p>
+                </div>
+
+                {/* Submit */}
+                <div className="pt-2 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={goBack}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Create House
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
