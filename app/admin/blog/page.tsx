@@ -1,8 +1,15 @@
+// app/admin/blog/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -73,7 +80,7 @@ function resolveLocalizedText(value: any): string {
   return String(value);
 }
 
-export default function BlogManagementPage() {
+export default function AdminBlogPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
@@ -118,7 +125,7 @@ export default function BlogManagementPage() {
         const res = await fetch('/api/admin/permissions', {
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {},
           },
         });
 
@@ -312,239 +319,168 @@ export default function BlogManagementPage() {
     });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-10">
-      <div className="container mx-auto px-4 max-w-7xl space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-1">Blog · Admin</h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              View metrics, filter posts and manage the Legacy Blog.
-            </p>
-            {!canManageBlog && (
-              <p className="mt-1 text-sm text-amber-700 flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                You can view posts, but you don&apos;t have permission to
-                create or edit them.
-              </p>
-            )}
-          </div>
-          <Button
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled={!canManageBlog}
-            onClick={() => {
-              if (!canManageBlog) return;
-              router.push('/admin/blog/create');
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Post
-          </Button>
+    <div className="w-full space-y-8">
+      {/* HERO - estilo B (Users) */}
+      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
         </div>
 
-        {/* Métricas rápidas */}
-        <div className="grid md:grid-cols-5 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
-                Total posts
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{posts.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
-                Published
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {publishedPosts.length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
-                Draft
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-600">
-                {draftPosts.length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
-                XP distributed
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {xpTotalAll}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
-                Views (total)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {totalViewsAll}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <div className="relative z-10 max-w-5xl">
+          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+            LEGACY Admin — Blog
+          </span>
 
-        {/* Tops */}
-        {posts.length > 0 && (
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  Top posts by views
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+            Blog Management
+          </h1>
+          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
+            Gestão centralizada de posts, XP e visualizações do Blog do LEGACY.
+            Filtra, revê e mantém vivo o conteúdo contínuo da comunidade.
+          </p>
+        </div>
+      </section>
+
+      {/* CONTEÚDO PRINCIPAL */}
+      <section className="pb-2">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* STAT CARDS */}
+          <div className="grid gap-4 md:grid-cols-5 mb-2">
+            <Card className="bg-card-custom border-custom">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium text-heading">
+                  Total posts
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {topByViews.length === 0 ? (
-                  <p className="text-sm text-gray-500">No views yet.</p>
-                ) : (
-                  topByViews.map((p, idx) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between text-sm border rounded-md px-3 py-2 bg-white dark:bg-gray-900"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">#{idx + 1}</Badge>
-                        <span className="font-semibold truncate max-w-[200px]">
-                          {resolveLocalizedText(p.title) || 'Untitled'}
-                        </span>
-                      </div>
-                      <div className="text-gray-600">{p.views || 0} views</div>
-                    </div>
-                  ))
-                )}
+              <CardContent className="pt-0 text-heading">
+                <div className="text-2xl font-bold">{posts.length}</div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  Top posts by XP
+            <Card className="bg-card-custom border-custom">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium text-heading">
+                  Published
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {topByXP.length === 0 ? (
-                  <p className="text-sm text-gray-500">No XP distributed yet.</p>
-                ) : (
-                  topByXP.map((p, idx) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between text-sm border rounded-md px-3 py-2 bg-white dark:bg-gray-900"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">#{idx + 1}</Badge>
-                        <span className="font-semibold truncate max-w-[200px]">
-                          {resolveLocalizedText(p.title) || 'Untitled'}
-                        </span>
-                      </div>
-                      <div className="text-gray-600">
-                        {p.xp_total_distributed || 0} XP
-                      </div>
-                    </div>
-                  ))
-                )}
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-emerald-400">
+                  {publishedPosts.length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card-custom border-custom">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium text-heading">
+                  Draft
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-amber-400">
+                  {draftPosts.length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card-custom border-custom">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium text-heading">
+                  XP distributed
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-blue-400">
+                  {xpTotalAll}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card-custom border-custom">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium text-heading">
+                  Views (total)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-purple-400">
+                  {totalViewsAll}
+                </div>
               </CardContent>
             </Card>
           </div>
-        )}
 
-        {/* Filtros */}
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-sm">Filters</CardTitle>
-            <CardDescription>
-              Combine status, category, author and ordering.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4 grid md:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500">Status</p>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as 'all' | 'published' | 'draft')
-                }
-              >
-                <option value="all">All</option>
-                <option value="published">Published</option>
-                <option value="draft">Draft</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500">Category</p>
-              <input
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                placeholder="e.g. News"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500">Author</p>
-              <input
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                value={authorFilter}
-                onChange={(e) => setAuthorFilter(e.target.value)}
-                placeholder="name or username"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500">Order by</p>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                value={sortBy}
-                onChange={(e) =>
-                  setSortBy(e.target.value as 'recent' | 'views' | 'xp')
-                }
-              >
-                <option value="recent">Most recent</option>
-                <option value="views">Views</option>
-                <option value="xp">XP distributed</option>
-              </select>
-            </div>
-          </CardContent>
-        </Card>
+          {/* TOP LISTS */}
+          {posts.length > 0 && (
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="bg-card-custom border-custom">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-heading">
+                    Top posts by views
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-body">
+                  {topByViews.length === 0 ? (
+                    <p className="text-sm text-muted-custom">No views yet.</p>
+                  ) : (
+                    topByViews.map((p, idx) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between text-sm border border-slate-800 rounded-md px-3 py-2 bg-slate-950/60"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">#{idx + 1}</Badge>
+                          <span className="font-semibold truncate max-w-[200px]">
+                            {resolveLocalizedText(p.title) || 'Untitled'}
+                          </span>
+                        </div>
+                        <div className="text-muted-custom">{p.views || 0} views</div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
 
-        {/* Lista / estado */}
-        {loadingData ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-              <p className="mt-4 text-gray-600 dark:text-gray-300">
-                Loading posts...
-              </p>
-            </CardContent>
-          </Card>
-        ) : filteredPosts.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">
-                No blog posts found
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Adjust filters or create your first blog post to get started.
-              </p>
+              <Card className="bg-card-custom border-custom">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-heading">
+                    Top posts by XP
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-body">
+                  {topByXP.length === 0 ? (
+                    <p className="text-sm text-muted-custom">
+                      No XP distributed yet.
+                    </p>
+                  ) : (
+                    topByXP.map((p, idx) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between text-sm border border-slate-800 rounded-md px-3 py-2 bg-slate-950/60"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">#{idx + 1}</Badge>
+                          <span className="font-semibold truncate max-w-[200px]">
+                            {resolveLocalizedText(p.title) || 'Untitled'}
+                          </span>
+                        </div>
+                        <div className="text-muted-custom">
+                          {p.xp_total_distributed || 0} XP
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* FILTROS + BOTÃO NOVO POST */}
+          <Card className="bg-card-custom border-custom">
+            <CardHeader className="pb-0 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <CardTitle className="text-sm text-heading">Filters</CardTitle>
+                <CardDescription className="text-muted-custom">
+                  Combine status, category, author and ordering.
+                </CardDescription>
+              </div>
               <Button
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 disabled={!canManageBlog}
@@ -554,138 +490,225 @@ export default function BlogManagementPage() {
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Create Post
+                New Post
               </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>All posts ({filteredPosts.length})</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {filteredPosts.map((post) => {
-                  const title =
-                    resolveLocalizedText(post.title) || 'Untitled post';
-                  const excerpt =
-                    resolveLocalizedText(post.excerpt) || 'No excerpt';
-                  const views = post.views ?? 0;
-                  const statusLabel =
-                    post.status || (post.published ? 'published' : 'draft');
-                  const isCreator = user && post.author_id === user.id;
-                  const xpTotal = post.xp_total_distributed || 0;
-                  const xpCreator = post.xp_creator_distributed || 0;
-                  return (
-                    <div
-                      key={post.id}
-                      className="p-4 rounded-lg border bg-white dark:bg-gray-900 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-3">
-                          {post.image_url && post.image_url.trim() !== '' && (
-                            <div className="w-28 h-20 flex-shrink-0 overflow-hidden rounded-md border bg-gray-50">
-                              <SafeImage
-                                src={post.image_url ?? ''}
-                                alt={title}
-                                className="w-full h-full object-cover"
-                                width={160}
-                                height={120}
-                              />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <Badge
-                                className={
-                                  statusLabel === 'published'
-                                    ? 'bg-green-600'
-                                    : 'bg-yellow-600'
-                                }
-                              >
-                                {statusLabel}
-                              </Badge>
-                              {post.category && (
-                                <Badge variant="outline">{post.category}</Badge>
-                              )}
-                              {isCreator && (
-                                <Badge variant="outline">Creator</Badge>
-                              )}
-                              {xpTotal > 0 && (
-                                <Badge variant="outline" className="gap-1">
-                                  XP: {xpTotal}
-                                </Badge>
-                              )}
-                              {xpCreator > 0 && (
-                                <Badge variant="outline" className="gap-1">
-                                  Creator XP: {xpCreator}
-                                </Badge>
-                              )}
-                              {post.registered_only && (
-                                <Badge variant="outline">Members only</Badge>
-                              )}
-                            </div>
-                            <h3 className="text-lg font-semibold truncate">
-                              {title}
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
-                              {excerpt}
-                            </p>
-                            <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                              <span className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {post.author_name || post.author || 'Admin'}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {post.created_at
-                                  ? new Date(post.created_at).toLocaleDateString()
-                                  : '-'}
-                              </span>
-                              {views > 0 && <span>{views} views</span>}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 ml-0 md:ml-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/blog/${post.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="disabled:opacity-60 disabled:cursor-not-allowed"
-                          disabled={!canManageBlog}
-                          onClick={() =>
-                            router.push(`/admin/blog/${post.id}`)
-                          }
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="disabled:opacity-60 disabled:cursor-not-allowed"
-                          disabled={!canManageBlog || !isSuperAdmin}
-                          onClick={() => handleDelete(post.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
+            <CardContent className="pt-4 grid md:grid-cols-4 gap-4 text-body">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-custom">Status</p>
+                <select
+                  className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as 'all' | 'published' | 'draft')
+                  }
+                >
+                  <option value="all">All</option>
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-custom">Category</p>
+                <input
+                  className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  placeholder="e.g. News"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-custom">Author</p>
+                <input
+                  className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={authorFilter}
+                  onChange={(e) => setAuthorFilter(e.target.value)}
+                  placeholder="name or username"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-custom">Order by</p>
+                <select
+                  className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={sortBy}
+                  onChange={(e) =>
+                    setSortBy(e.target.value as 'recent' | 'views' | 'xp')
+                  }
+                >
+                  <option value="recent">Most recent</option>
+                  <option value="views">Views</option>
+                  <option value="xp">XP distributed</option>
+                </select>
               </div>
             </CardContent>
           </Card>
-        )}
-      </div>
+
+          {/* LISTA / ESTADO */}
+          {loadingData ? (
+            <Card className="bg-card-custom border-custom">
+              <CardContent className="text-center py-12 text-body">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+                <p className="mt-4 text-muted-custom">Loading posts...</p>
+              </CardContent>
+            </Card>
+          ) : filteredPosts.length === 0 ? (
+            <Card className="bg-card-custom border-custom">
+              <CardContent className="text-center py-12 text-body">
+                <FileText className="h-16 w-16 text-slate-700 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2 text-heading">
+                  No blog posts found
+                </h3>
+                <p className="text-muted-custom mb-6">
+                  Adjust filters or create your first blog post to get started.
+                </p>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={!canManageBlog}
+                  onClick={() => {
+                    if (!canManageBlog) return;
+                    router.push('/admin/blog/create');
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Post
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-card-custom border-custom shadow-lg shadow-purple-950/40">
+              <CardHeader>
+                <CardTitle className="text-heading">
+                  All posts ({filteredPosts.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-body">
+                <div className="space-y-4">
+                  {filteredPosts.map((post) => {
+                    const title =
+                      resolveLocalizedText(post.title) || 'Untitled post';
+                    const excerpt =
+                      resolveLocalizedText(post.excerpt) || 'No excerpt';
+                    const views = post.views ?? 0;
+                    const statusLabel =
+                      post.status || (post.published ? 'published' : 'draft');
+                    const isCreator = user && post.author_id === user.id;
+                    const xpTotal = post.xp_total_distributed || 0;
+                    const xpCreator = post.xp_creator_distributed || 0;
+                    return (
+                      <div
+                        key={post.id}
+                        className="p-4 rounded-lg border border-slate-800 bg-slate-950/60 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-3">
+                            {post.image_url && post.image_url.trim() !== '' && (
+                              <div className="w-28 h-20 flex-shrink-0 overflow-hidden rounded-md border border-slate-800 bg-slate-900">
+                                <SafeImage
+                                  src={post.image_url ?? ''}
+                                  alt={title}
+                                  className="w-full h-full object-cover"
+                                  width={160}
+                                  height={120}
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <Badge
+                                  className={
+                                    statusLabel === 'published'
+                                      ? 'bg-emerald-600'
+                                      : 'bg-amber-600'
+                                  }
+                                >
+                                  {statusLabel}
+                                </Badge>
+                                {post.category && (
+                                  <Badge variant="outline">
+                                    {post.category}
+                                  </Badge>
+                                )}
+                                {isCreator && (
+                                  <Badge variant="outline">Creator</Badge>
+                                )}
+                                {xpTotal > 0 && (
+                                  <Badge variant="outline" className="gap-1">
+                                    XP: {xpTotal}
+                                  </Badge>
+                                )}
+                                {xpCreator > 0 && (
+                                  <Badge variant="outline" className="gap-1">
+                                    Creator XP: {xpCreator}
+                                  </Badge>
+                                )}
+                                {post.registered_only && (
+                                  <Badge variant="outline">Members only</Badge>
+                                )}
+                              </div>
+                              <h3 className="text-lg font-semibold truncate text-heading">
+                                {title}
+                              </h3>
+                              <p className="text-sm text-muted-custom line-clamp-2 mb-2">
+                                {excerpt}
+                              </p>
+                              <div className="flex items-center gap-3 text-xs text-muted-custom flex-wrap">
+                                <span className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {post.author_name || post.author || 'Admin'}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {post.created_at
+                                    ? new Date(
+                                        post.created_at,
+                                      ).toLocaleDateString()
+                                    : '-'}
+                                </span>
+                                {views > 0 && <span>{views} views</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-0 md:ml-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => router.push(`/blog/${post.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={!canManageBlog}
+                            onClick={() =>
+                              router.push(`/admin/blog/${post.id}`)
+                            }
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={!canManageBlog || !isSuperAdmin}
+                            onClick={() => handleDelete(post.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
