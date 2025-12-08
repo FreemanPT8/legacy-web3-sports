@@ -264,13 +264,13 @@ export function RichTextEditor({
           >
             <TextCursor className="h-4 w-4" />
           </Button>
-          {[1, 2, 3, 4, 5].map((level) => (
+          {([1, 2, 3, 4, 5] as Level[]).map((level) => (
             <Button
               key={`heading-${level}`}
               type="button"
               variant={editor?.isActive('heading', { level }) ? 'secondary' : 'ghost'}
               size="icon"
-              onClick={() => applyHeading(level as Level)}
+              onClick={() => applyHeading(level)}
               aria-label={`Heading ${level}`}
             >
               {level === 1 && <Heading1 className="h-4 w-4" />}
