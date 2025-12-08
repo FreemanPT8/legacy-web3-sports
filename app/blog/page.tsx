@@ -34,6 +34,8 @@ type BlogPost = {
   id: string;
   title: MultiLang | string;
   excerpt: MultiLang | string;
+  excerpt_preview?: string | null;
+  excerpt_has_read_more?: boolean;
   category?: string | null;
   author?: string | null;
   author_id?: string | null;
@@ -256,7 +258,7 @@ export default function BlogPage() {
                 const title = resolveTitle(post.title);
                 const { before: excerpt, hasReadMore } = resolveExcerpt(
                   post.excerpt,
-                  post.excerpt_preview,
+                  post.excerpt_preview ?? undefined,
                 );
 
                 const xpReward =

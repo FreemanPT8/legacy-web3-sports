@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+import { splitReadMore } from '@/lib/read-more';
 
 interface RouteContext {
   params: { id: string };
@@ -182,6 +183,10 @@ export async function GET(
           (a: any, b: any) => (a.order || 0) - (b.order || 0),
         )
         .map((l: any) => {
+          const contentRaw =
+            typeof l.content === 'string' ? l.content : '';
+          const { before: content_preview, hasReadMore: content_has_read_more } =
+            splitReadMore(contentRaw);
           const isLessonCreator =
             !!user &&
             ((l.author_id && l.author_id === user.id) ||
@@ -204,6 +209,8 @@ export async function GET(
             author_name: lessonAuthorName,
             isCompleted,
             isCreator: isLessonCreator,
+            content_preview,
+            content_has_read_more,
           };
         });
 

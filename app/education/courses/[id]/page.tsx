@@ -37,6 +37,7 @@ type Lesson = {
   author_name?: string | null;
   isCompleted?: boolean;
   isCreator?: boolean;
+  content_has_read_more?: boolean;
 };
 
 type Module = {
@@ -476,6 +477,8 @@ export default function CourseDetailPage() {
 
                               const estimatedMinutes =
                                 lesson.estimated_time ?? 10;
+                              const lessonHasReadMore =
+                                lesson.content_has_read_more ?? false;
 
                               return (
                                 <div
@@ -519,6 +522,11 @@ export default function CourseDetailPage() {
                                         {estimatedMinutes} min
                                       </span>
                                     </div>
+                                    {lessonHasReadMore && (
+                                      <div className="text-[11px] text-sky-500 uppercase tracking-wide">
+                                        Continue reading
+                                      </div>
+                                    )}
                                   </div>
 
                                   <div className="flex items-center justify-end">
