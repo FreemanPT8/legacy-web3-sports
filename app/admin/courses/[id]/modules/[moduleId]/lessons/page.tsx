@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
 import {
   Plus,
@@ -852,20 +853,19 @@ export default function ModuleLessonsPage() {
                           <Label className="text-xs">
                             Content HTML ({currentLangLabel})
                           </Label>
-                          <Textarea
+                          <RichTextEditor
                             value={content}
-                            onChange={(e) =>
+                            onChange={(next) =>
                               updateLessonMLField(
                                 index,
                                 'content',
                                 currentLanguage,
-                                e.target.value,
+                                next,
                               )
                             }
-                            rows={6}
-                            className="text-xs mt-1 font-mono"
-                            placeholder="<p>HTML for this lesson...</p>"
-                            disabled={!canManageCourses}
+                            placeholder="Write the lesson content with headings, lists, embeds, and links."
+                            minRows={10}
+                            className="mt-1 text-xs"
                           />
                         </div>
                       </div>
