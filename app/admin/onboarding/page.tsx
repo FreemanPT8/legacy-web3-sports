@@ -162,7 +162,7 @@ export default function AdminOnboardingPage() {
                   {stage.count}
                 </p>
                 <p className="text-xs text-muted-custom">
-                  {stage.badge === 'outline'
+                  {stage.badgeVariant === 'outline'
                     ? 'Requer feedback do mentor'
                     : 'Trilha em andamento'}
                 </p>
