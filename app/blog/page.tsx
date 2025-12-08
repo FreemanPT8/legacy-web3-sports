@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +37,7 @@ type BlogPost = {
   excerpt: MultiLang | string;
   excerpt_preview?: string | null;
   excerpt_has_read_more?: boolean;
+  image_url?: string | null;
   category?: string | null;
   author?: string | null;
   author_id?: string | null;
@@ -256,10 +258,10 @@ export default function BlogPage() {
             <section className="max-w-6xl mx-auto grid md:grid-cols-2 xl:grid-cols-3 gap-6">
               {posts.map((post) => {
                 const title = resolveTitle(post.title);
-                const { before: excerpt, hasReadMore } = resolveExcerpt(
-                  post.excerpt,
-                  post.excerpt_preview ?? undefined,
-                );
+                  const { before: excerpt, hasReadMore } = resolveExcerpt(
+                    post.excerpt,
+                    post.excerpt_preview ?? undefined,
+                  );
 
                 const xpReward =
                   typeof post.xp_reward === 'number'
@@ -291,12 +293,38 @@ export default function BlogPage() {
                 const isCompleted =
                   !!post.is_completed && !isAuthor; // nunca mostrar completed ao autor
 
+                const imageUrl = post.image_url || null;
+                const initials = title
+                  .split(' ')
+                  .map((word) => word[0] || '')
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase();
+
                 return (
                   <Card
                     key={post.id}
                     className="flex flex-col bg-card border-custom hover:border-sky-500/70 hover:shadow-[0_0_40px_rgba(56,189,248,0.20)] transition-all cursor-pointer"
                     onClick={() => router.push(`/blog/${post.id}`)}
                   >
+                    {imageUrl ? (
+                      <div className="w-full h-40 overflow-hidden">
+                        <Image
+                          src={imageUrl}
+                          alt={title}
+                          width={640}
+                          height={240}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-40 bg-gradient-to-br from-gray-800 via-slate-900 to-black flex items-center justify-center">
+                        <div className="text-white uppercase text-xl tracking-wide">
+                          {initials}
+                        </div>
+                      </div>
+                    )}
                     <CardHeader className="space-y-3">
                       {/* Badges topo */}
                       <div className="flex items-center justify-between">
