@@ -9,6 +9,7 @@ import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
+import { removeReadMoreMarker } from '@/lib/read-more';
 
 import {
   Card,
@@ -199,7 +200,9 @@ export default function LessonPage() {
 
   const title = getMultilingualContent(lesson.title, language);
   const description = getMultilingualContent(lesson.description, language);
-  const content = getMultilingualContent(lesson.content, language);
+  const content = removeReadMoreMarker(
+    getMultilingualContent(lesson.content, language),
+  );
   const moduleTitle = getMultilingualContent(module.title, language);
 
   const durationMinutes = lesson.estimated_time ?? 10;
