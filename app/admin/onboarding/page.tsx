@@ -156,7 +156,7 @@ export default function AdminOnboardingPage() {
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-heading">{stage.label}</p>
-                  <Badge variant={stage.badge as any}>{stage.badgeLabel}</Badge>
+                  <Badge variant={stage.badgeVariant as any}>{stage.badgeLabel}</Badge>
                 </div>
                 <p className="text-3xl font-semibold text-heading">
                   {stage.count}
