@@ -25,6 +25,7 @@ export function useMediaLibrary({
   const [items, setItems] = useState<MediaAsset[]>(initialItems);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -78,6 +79,7 @@ export function useMediaLibrary({
       setUploading(true);
       setError(null);
       try {
+        setUploadProgress(5);
         const formData = new FormData();
         formData.append('file', file);
         if (title) formData.append('title', title);
@@ -92,23 +94,26 @@ export function useMediaLibrary({
           body: formData,
         });
         const data = await res.json();
+        setUploadProgress(75);
         if (!res.ok || !data?.success) {
           throw new Error(data?.error || 'Failed to upload media.');
         }
         if (data.file) {
+          setUploadProgress(100);
           registerAsset(data.file as MediaAsset);
           return data.file as MediaAsset;
         }
-        return null;
-      } catch (err) {
+      return null;
+    } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Unknown error uploading media.',
         );
         return null;
       } finally {
-        setUploading(false);
-      }
-    },
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  },
     [],
   );
 
@@ -133,6 +138,7 @@ export function useMediaLibrary({
     allItems: items,
     loading,
     uploading,
+    uploadProgress,
     error,
     isOpen,
     activeTab,

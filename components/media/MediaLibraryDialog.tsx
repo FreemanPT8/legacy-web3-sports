@@ -58,6 +58,7 @@ export function MediaLibraryDialog({
   const [urlType, setUrlType] = useState<MediaAsset['type']>('image');
 
   const mediaItems = useMemo(() => library.items, [library.items]);
+  const recentUploads = useMemo(() => library.allItems.slice(0, 4), [library.allItems]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
@@ -223,6 +224,31 @@ export function MediaLibraryDialog({
                 </div>
               )}
             </ScrollArea>
+            {recentUploads.length > 0 && (
+              <div>
+                <h3 className="mt-4 text-xs font-semibold uppercase text-muted-foreground">Recent uploads</h3>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  {recentUploads.map((asset) => (
+                    <button
+                      type="button"
+                      key={`recent-${asset.id}`}
+                      onClick={() => {
+                        onSelect(asset);
+                        handleOpenChange(false);
+                      }}
+                      className="overflow-hidden rounded-xl border border-dashed border-gray-300 bg-white px-2 py-2 text-left text-xs text-gray-600 hover:border-sky-500 focus:outline-none"
+                    >
+                      <div className="font-semibold text-slate-900">
+                        {asset.title || 'Untitled asset'}
+                      </div>
+                      <div className="text-[11px] uppercase text-gray-400">
+                        {asset.type}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="upload">
@@ -296,6 +322,19 @@ export function MediaLibraryDialog({
                   </>
                 )}
               </Button>
+              {library.uploadProgress != null && (
+                <div className="mt-2 space-y-1">
+                  <div className="text-xs text-gray-500">
+                    Progresso do upload: {library.uploadProgress}%
+                  </div>
+                  <div className="h-1 rounded-full bg-slate-200">
+                    <div
+                      className="h-1 rounded-full bg-sky-500 transition-all"
+                      style={{ width: `${library.uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </form>
           </TabsContent>
 
