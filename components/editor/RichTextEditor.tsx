@@ -270,7 +270,7 @@ export function RichTextEditor({
               type="button"
               variant={editor?.isActive('heading', { level }) ? 'secondary' : 'ghost'}
               size="icon"
-              onClick={() => applyHeading(level)}
+              onClick={() => applyHeading(level as Level)}
               aria-label={`Heading ${level}`}
             >
               {level === 1 && <Heading1 className="h-4 w-4" />}
