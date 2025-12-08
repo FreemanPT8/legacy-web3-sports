@@ -13,6 +13,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import { type Level } from '@tiptap/extension-heading';
 import { Button } from '@/components/ui/button';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -128,7 +129,7 @@ export function RichTextEditor({
   }, [value, editor]);
 
   const applyHeading = useCallback(
-    (level: number | 'paragraph') => {
+    (level: Level | 'paragraph') => {
       if (!editor) return;
       if (level === 'paragraph') {
         editor.chain().focus().setParagraph().run();
