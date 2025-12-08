@@ -13,7 +13,6 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
-import { Extension, type Command } from '@tiptap/core';
 import { Button } from '@/components/ui/button';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -33,13 +32,11 @@ import {
   Heading4,
   Heading5,
   ImagePlus,
-  Indent,
   Italic,
   Link2,
   List,
   ListOrdered,
   Minus,
-  Outdent,
   Palette,
   Quote,
   Redo,
@@ -53,69 +50,6 @@ import {
 import type { MediaAsset } from '@/types/builder';
 import { type Level } from '@tiptap/extension-heading';
 
-const SPECIAL_CHARACTERS = ['•', '—', '–', '…', '™', '©', '®', '∞'];
-const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
-
-const IndentExtension = Extension.create({
-  name: 'legacyIndent',
-
-  addGlobalAttributes() {
-    return [
-      {
-        types: ['paragraph', 'heading', 'blockquote', 'listItem'],
-        attributes: {
-          indent: {
-            default: 0,
-            parseHTML: (element) => {
-              const value = parseInt(element.getAttribute('data-indent') || '0', 10);
-              return Number.isNaN(value) ? 0 : value;
-            },
-            renderHTML: (attributes) => {
-              const indent = Number(attributes.indent || 0);
-              if (!indent) return {};
-              const margin = `${indent * 1.3}rem`;
-              const baseStyle = attributes.style ? `${attributes.style};` : '';
-              return {
-                'data-indent': indent,
-                style: `${baseStyle}margin-left: ${margin};`,
-              };
-            },
-          },
-        },
-      },
-    ];
-  },
-
-  addCommands() {
-    const createCommand = (modifier: number) => ({ tr, state, dispatch }) => {
-      let updated = false;
-      state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
-        if (!node.type.isTextblock) return true;
-        const current = Number(node.attrs.indent || 0);
-        const next = Math.max(0, Math.min(4, current + modifier));
-        if (next === current) return true;
-        const attrs = { ...node.attrs };
-        if (next === 0) {
-          delete attrs.indent;
-        } else {
-          attrs.indent = next;
-        }
-        tr.setNodeMarkup(pos, undefined, attrs);
-        updated = true;
-        return true;
-      });
-      if (!updated) return false;
-      if (dispatch) dispatch(tr.scrollIntoView());
-      return true;
-    };
-
-    return {
-      increaseIndent: createCommand(1),
-      decreaseIndent: createCommand(-1),
-    };
-  },
-});
-
 interface RichTextEditorProps {
   id?: string;
   value: string;
@@ -124,6 +58,9 @@ interface RichTextEditorProps {
   minRows?: number;
   className?: string;
 }
+
+const SPECIAL_CHARACTERS = ['•', '—', '–', '…', '™', '©', '®', '∞'];
+const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
 
 export function RichTextEditor({
   id,
@@ -134,26 +71,15 @@ export function RichTextEditor({
   className,
 }: RichTextEditorProps) {
   const [forcePlainText, setForcePlainText] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [specialCharsVisible, setSpecialCharsVisible] = useState(false);
   const mediaLibrary = useMediaLibrary();
 
   const editor = useEditor({
-    editorProps: {
-      handlePaste(view, event) {
-        if (!forcePlainText) return false;
-        const text = event.clipboardData?.getData('text/plain') || '';
-        if (!text) return false;
-        event.preventDefault();
-        view.dispatch(view.state.tr.insertText(text, view.state.selection.from, view.state.selection.to));
-        return true;
-      },
-    },
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5] },
-        bulletList: { keepMarks: true, keepAttributes: true },
       }),
       Underline,
       Strike,
@@ -172,22 +98,29 @@ export function RichTextEditor({
         placeholder: placeholder || 'Start writing…',
       }),
       CharacterCount.configure(),
-      Image.configure({
-        inline: false,
-        HTMLAttributes: { class: 'rounded-2xl border border-slate-200 bg-slate-50' },
-      }),
+      Image.configure({ HTMLAttributes: { class: 'rounded-2xl border border-slate-200' } }),
       HorizontalRule.configure({ HTMLAttributes: { class: 'legacy-hr' } }),
-      IndentExtension,
     ],
     content: value || '',
-    onUpdate: ({ editor: next }) => {
+    editorProps: {
+      handlePaste(view, event) {
+        if (!forcePlainText) return false;
+        const text = event.clipboardData?.getData('text/plain');
+        if (!text) return false;
+        event.preventDefault();
+        view.dispatch(view.state.tr.insertText(text, view.state.selection.from, view.state.selection.to));
+        return true;
+      },
+    },
+    onUpdate({ editor: next }) {
       onChange(next.getHTML());
     },
   });
 
   useEffect(() => {
     if (!editor) return;
-    if (editor.getHTML() !== (value || '')) {
+    const current = editor.getHTML();
+    if (current !== (value || '')) {
       editor.commands.setContent(value || '');
     }
   }, [value, editor]);
@@ -205,8 +138,8 @@ export function RichTextEditor({
   );
 
   const toggleAlign = useCallback(
-    (align: 'left' | 'center' | 'right') => {
-      editor?.chain().focus().setTextAlign(align).run();
+    (direction: 'left' | 'center' | 'right') => {
+      editor?.chain().focus().setTextAlign(direction).run();
     },
     [editor],
   );
@@ -214,7 +147,7 @@ export function RichTextEditor({
   const insertLink = useCallback(() => {
     if (!editor) return;
     const current = editor.getAttributes('link').href || '';
-    const url = window.prompt('Enter link URL', current || 'https://');
+    const url = window.prompt('Enter the URL', current || 'https://');
     if (url === null) return;
     if (!url.trim()) {
       editor.commands.unsetLink();
@@ -223,22 +156,14 @@ export function RichTextEditor({
     editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
   }, [editor]);
 
-  const insertMedia = useCallback(
+  const openMedia = useCallback(
     (asset: MediaAsset) => {
       if (!editor) return;
       if (asset.type === 'image') {
-        editor
-          .chain()
-          .focus()
-          .setImage({
-            src: asset.url,
-            alt: asset.alt || asset.title || 'Media',
-          })
-          .run();
+        editor.chain().focus().setImage({ src: asset.url, alt: asset.alt || asset.title }).run();
         return;
       }
-      const label = asset.title || asset.url;
-      editor.chain().focus().insertContent(`<p><a href="${asset.url}">${label}</a></p>`).run();
+      editor.chain().focus().insertContent(`<p><a href="${asset.url}">${asset.title || asset.url}</a></p>`).run();
     },
     [editor],
   );
@@ -295,31 +220,60 @@ export function RichTextEditor({
         >
           <Strikethrough className="h-4 w-4" />
         </Button>
-        {[1, 2, 3, 4, 5].map((level) => (
-          <Button
-            key={`heading-${level}`}
-            type="button"
-            variant={editor?.isActive('heading', { level }) ? 'secondary' : 'ghost'}
-            size="icon"
-            onClick={() => applyHeading(level)}
-            aria-label={`Heading ${level}`}
-          >
-            {level === 1 && <Heading1 className="h-4 w-4" />}
-            {level === 2 && <Heading2 className="h-4 w-4" />}
-            {level === 3 && <Heading3 className="h-4 w-4" />}
-            {level === 4 && <Heading4 className="h-4 w-4" />}
-            {level === 5 && <Heading5 className="h-4 w-4" />}
-          </Button>
-        ))}
         <Button
           type="button"
-          variant={editor?.isActive('paragraph') ? 'secondary' : 'ghost'}
+          variant={editor?.isActive('bulletList') ? 'secondary' : 'ghost'}
           size="icon"
-          onClick={() => applyHeading('paragraph')}
-          aria-label="Paragraph"
+          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          aria-label="Bullet list"
         >
-          <TextCursor className="h-4 w-4" />
+          <List className="h-4 w-4" />
         </Button>
+        <Button
+          type="button"
+          variant={editor?.isActive('orderedList') ? 'secondary' : 'ghost'}
+          size="icon"
+          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          aria-label="Numbered list"
+        >
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant={editor?.isActive('blockquote') ? 'secondary' : 'ghost'}
+          size="icon"
+          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+          aria-label="Blockquote"
+        >
+          <Quote className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant={editor?.isActive('paragraph') ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => applyHeading('paragraph')}
+            aria-label="Paragraph"
+          >
+            <TextCursor className="h-4 w-4" />
+          </Button>
+          {[1, 2, 3, 4, 5].map((level) => (
+            <Button
+              key={`heading-${level}`}
+              type="button"
+              variant={editor?.isActive('heading', { level }) ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => applyHeading(level)}
+              aria-label={`Heading ${level}`}
+            >
+              {level === 1 && <Heading1 className="h-4 w-4" />}
+              {level === 2 && <Heading2 className="h-4 w-4" />}
+              {level === 3 && <Heading3 className="h-4 w-4" />}
+              {level === 4 && <Heading4 className="h-4 w-4" />}
+              {level === 5 && <Heading5 className="h-4 w-4" />}
+            </Button>
+          ))}
+        </div>
         <Button type="button" variant="ghost" size="icon" onClick={insertLink} aria-label="Insert link">
           <Link2 className="h-4 w-4" />
         </Button>
@@ -332,7 +286,7 @@ export function RichTextEditor({
         >
           <Unlink className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-1 border-l border-slate-200 px-2 pl-3 dark:border-slate-800">
+        <div className="border-l border-slate-200 px-2 dark:border-slate-800">
           <Button
             type="button"
             variant={editor?.isActive({ textAlign: 'left' }) ? 'secondary' : 'ghost'}
@@ -365,13 +319,13 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => setShowAdvanced((prev) => !prev)}
-          aria-label="More controls"
+          onClick={() => setAdvancedOpen((prev) => !prev)}
+          aria-label="Show more controls"
         >
           <Slash className="h-4 w-4" />
         </Button>
       </div>
-      {showAdvanced && (
+      {advancedOpen && (
         <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 text-xs text-slate-500 dark:border-slate-800">
           <Button
             type="button"
@@ -387,11 +341,11 @@ export function RichTextEditor({
             variant={forcePlainText ? 'secondary' : 'ghost'}
             size="icon"
             onClick={() => setForcePlainText((prev) => !prev)}
-            aria-label="Paste as plain text"
+            aria-label="Paste as text"
           >
             <Clipboard className="h-4 w-4" />
           </Button>
-          <Button type="button" variant="ghost" size="icon" onClick={() => editor?.chain().focus().setHorizontalRule().run()} aria-label="Insert horizontal rule">
+          <Button type="button" variant="ghost" size="icon" onClick={() => editor?.chain().focus().setHorizontalRule().run()} aria-label="Insert hr">
             <Minus className="h-4 w-4" />
           </Button>
           <Button type="button" variant="ghost" size="icon" onClick={() => editor?.chain().focus().clearNodes().unsetAllMarks().run()} aria-label="Clear formatting">
@@ -414,7 +368,7 @@ export function RichTextEditor({
               ))}
             </PopoverContent>
           </Popover>
-          <Button type="button" variant="ghost" size="icon" onClick={() => setSpecialCharsVisible((prev) => !prev)} aria-label="Special characters">
+          <Button type="button" variant="ghost" size="icon" onClick={() => setSpecialCharsVisible((prev) => !prev)} aria-label="Insert character">
             <Asterisk className="h-4 w-4" />
           </Button>
           {specialCharsVisible && (
@@ -426,24 +380,8 @@ export function RichTextEditor({
               ))}
             </div>
           )}
-          <Button variant="ghost" size="icon" onClick={() => editor?.commands.increaseIndent()} aria-label="Increase indent">
-            <Indent className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => editor?.commands.decreaseIndent()} aria-label="Decrease indent">
-            <Outdent className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().undo().run()} aria-label="Undo">
-            <Undo className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().redo().run()} aria-label="Redo">
-            <Redo className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().insertContent('<hr class="read-more" />').run()}>
-            Read More
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => mediaLibrary.openLibrary('library')}>
-            <ImagePlus className="mr-1 h-4 w-4" />
-            Add media
+          <Button variant="ghost" size="icon" onClick={() => mediaLibrary.openLibrary('library')} aria-label="Add media">
+            <ImagePlus className="h-4 w-4" />
           </Button>
           <MediaLibraryDialog
             open={mediaLibrary.isOpen}
@@ -451,19 +389,24 @@ export function RichTextEditor({
               if (!open) mediaLibrary.closeLibrary();
             }}
             library={mediaLibrary}
-            onSelect={insertMedia}
+            onSelect={openMedia}
             allowUrl
           />
         </div>
       )}
       <EditorContent
         editor={editor}
-        className={cn('min-h-[8rem] px-4 py-3 text-sm leading-relaxed focus:outline-none dark:text-white', `min-h-[${minRows * 32}px]`)}
+        className={cn(
+          'min-h-[8rem] px-4 py-3 text-sm leading-relaxed focus:outline-none dark:text-white',
+          `min-h-[${minRows * 32}px]`,
+        )}
         data-placeholder={placeholder}
         id={id}
       />
       <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-slate-800">
-        <span>{stats.characters.toLocaleString()} chars · {stats.words.toLocaleString()} words</span>
+        <span>
+          {stats.characters.toLocaleString()} chars · {stats.words.toLocaleString()} words
+        </span>
         <span>{forcePlainText ? 'Paste as plain text' : 'Rich paste enabled'}</span>
       </div>
     </div>
