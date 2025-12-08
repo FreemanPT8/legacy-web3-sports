@@ -40,11 +40,11 @@ import {
   Minus,
   Outdent,
   Palette,
-  Paragraph,
   Quote,
   Redo,
   Slash,
   Strikethrough,
+  TextCursor,
   Underline as UnderlineIcon,
   Undo,
   Unlink,
@@ -331,7 +331,7 @@ export function RichTextEditor({
             onClick={() => applyHeading('paragraph')}
             aria-label="Paragraph"
           >
-            <Paragraph className="h-4 w-4" />
+            <TextCursor className="h-4 w-4" />
           </Button>
           {[1, 2, 3, 4, 5].map((level) => (
             <Button
