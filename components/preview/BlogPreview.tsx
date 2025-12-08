@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useBuilderContext } from '@/contexts/BuilderContext';
+import { splitReadMore } from '@/lib/read-more';
 import type { BlogBuilderState } from '@/types/builder';
 
 export function BlogPreview() {
@@ -19,6 +20,7 @@ export function BlogPreview() {
     blog.content.en ||
     Object.values(blog.content).find((value) => value.trim().length) ||
     'Start writing your article to preview it here.';
+  const { before: previewBody, hasReadMore } = splitReadMore(body);
 
   return (
     <div className="space-y-4">
@@ -47,9 +49,14 @@ export function BlogPreview() {
           {excerpt}
         </p>
       </div>
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200">
-        {body.slice(0, 400) || 'Body preview will appear once you start writing.'}
-        {body.length > 400 && '…'}
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200">
+        {previewBody.slice(0, 400) || 'Body preview will appear once you start writing.'}
+        {(previewBody.length > 400 || hasReadMore) && '…'}
+        {hasReadMore && (
+          <p className="mt-2 text-xs text-primary-600 dark:text-primary-400">
+            Read more marker inserted
+          </p>
+        )}
       </div>
     </div>
   );

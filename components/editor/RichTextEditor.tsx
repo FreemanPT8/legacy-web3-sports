@@ -18,6 +18,7 @@ import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { READ_MORE_MARKER } from '@/lib/read-more';
 import {
   AlignCenter,
   AlignLeft,
@@ -61,7 +62,6 @@ interface RichTextEditorProps {
 }
 
 const SPECIAL_CHARACTERS = ['•', '—', '–', '…', '™', '©', '®', '∞'];
-const READ_MORE_MARKER = '<div class="read-more-marker" data-read-more></div>';
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
 
 export function RichTextEditor({
