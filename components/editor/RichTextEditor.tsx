@@ -13,7 +13,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
-import { type Level } from '@tiptap/extension-heading';
+import { Extension, type Command } from '@tiptap/core';
 import { Button } from '@/components/ui/button';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -51,9 +51,70 @@ import {
   Unlink,
 } from 'lucide-react';
 import type { MediaAsset } from '@/types/builder';
+import { type Level } from '@tiptap/extension-heading';
 
 const SPECIAL_CHARACTERS = ['•', '—', '–', '…', '™', '©', '®', '∞'];
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
+
+const IndentExtension = Extension.create({
+  name: 'legacyIndent',
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['paragraph', 'heading', 'blockquote', 'listItem'],
+        attributes: {
+          indent: {
+            default: 0,
+            parseHTML: (element) => {
+              const value = parseInt(element.getAttribute('data-indent') || '0', 10);
+              return Number.isNaN(value) ? 0 : value;
+            },
+            renderHTML: (attributes) => {
+              const indent = Number(attributes.indent || 0);
+              if (!indent) return {};
+              const margin = `${indent * 1.3}rem`;
+              const baseStyle = attributes.style ? `${attributes.style};` : '';
+              return {
+                'data-indent': indent,
+                style: `${baseStyle}margin-left: ${margin};`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    const createCommand = (modifier: number): Command => ({ tr, state, dispatch }) => {
+      let updated = false;
+      state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
+        if (!node.type.isTextblock) return true;
+        const current = Number(node.attrs.indent || 0);
+        const next = Math.max(0, Math.min(4, current + modifier));
+        if (next === current) return true;
+        const attrs = { ...node.attrs };
+        if (next === 0) {
+          delete attrs.indent;
+        } else {
+          attrs.indent = next;
+        }
+        tr.setNodeMarkup(pos, undefined, attrs);
+        updated = true;
+        return true;
+      });
+      if (!updated) return false;
+      if (dispatch) dispatch(tr.scrollIntoView());
+      return true;
+    };
+
+    return {
+      increaseIndent: () => createCommand(1),
+      decreaseIndent: () => createCommand(-1),
+    };
+  },
+});
 
 interface RichTextEditorProps {
   id?: string;
@@ -73,14 +134,14 @@ export function RichTextEditor({
   className,
 }: RichTextEditorProps) {
   const [forcePlainText, setForcePlainText] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const [specialCharVisible, setSpecialCharVisible] = useState(false);
+  const [specialCharsVisible, setSpecialCharsVisible] = useState(false);
   const mediaLibrary = useMediaLibrary();
 
   const editor = useEditor({
     editorProps: {
-      handlePaste: (view, event) => {
+      handlePaste(view, event) {
         if (!forcePlainText) return false;
         const text = event.clipboardData?.getData('text/plain') || '';
         if (!text) return false;
@@ -90,7 +151,10 @@ export function RichTextEditor({
       },
     },
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3, 4, 5] } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3, 4, 5] },
+        bulletList: { keepMarks: true, keepAttributes: true },
+      }),
       Underline,
       Strike,
       TextStyle,
@@ -109,11 +173,11 @@ export function RichTextEditor({
       }),
       CharacterCount.configure(),
       Image.configure({
-        HTMLAttributes: { class: 'legacy-media rounded-md' },
+        inline: false,
+        HTMLAttributes: { class: 'rounded-2xl border border-slate-200 bg-slate-50' },
       }),
-      HorizontalRule.configure({
-        HTMLAttributes: { class: 'legacy-divider' },
-      }),
+      HorizontalRule.configure({ HTMLAttributes: { class: 'legacy-hr' } }),
+      IndentExtension,
     ],
     content: value || '',
     onUpdate: ({ editor: next }) => {
@@ -140,7 +204,7 @@ export function RichTextEditor({
     [editor],
   );
 
-  const toggleTextAlign = useCallback(
+  const toggleAlign = useCallback(
     (align: 'left' | 'center' | 'right') => {
       editor?.chain().focus().setTextAlign(align).run();
     },
@@ -149,8 +213,8 @@ export function RichTextEditor({
 
   const insertLink = useCallback(() => {
     if (!editor) return;
-    const previous = editor.getAttributes('link').href || '';
-    const url = window.prompt('Enter the link URL', previous || 'https://');
+    const current = editor.getAttributes('link').href || '';
+    const url = window.prompt('Enter link URL', current || 'https://');
     if (url === null) return;
     if (!url.trim()) {
       editor.commands.unsetLink();
@@ -159,66 +223,7 @@ export function RichTextEditor({
     editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
   }, [editor]);
 
-  const insertReadMore = useCallback(() => {
-    editor?.chain().focus().insertContent('<hr class="read-more" data-read-more="true" />').run();
-  }, [editor]);
-
-  const insertHorizontalRule = useCallback(() => {
-    editor?.chain().focus().setHorizontalRule().run();
-  }, [editor]);
-
-  const clearFormatting = useCallback(() => {
-    editor?.chain().focus().clearNodes().unsetAllMarks().run();
-  }, [editor]);
-
-  const selectColor = useCallback(
-    (color: string) => {
-      editor?.chain().focus().setColor(color).run();
-      setColorPickerOpen(false);
-    },
-    [editor],
-  );
-
-  const insertSpecialCharacter = useCallback(
-    (character: string) => {
-      editor?.chain().focus().insertContent(character).run();
-      setSpecialCharVisible(false);
-    },
-    [editor],
-  );
-
-  const adjustIndent = useCallback(
-    (delta: number) => {
-      if (!editor) return;
-      editor.command(({ tr, state, dispatch }) => {
-        let updated = false;
-        state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
-          if (!node.type.isTextblock) return true;
-          const current = Number(node.attrs.style?.match(/margin-left:\\s*(\\d+(?:\\.\\d+)?)rem/)?.[1] || 0);
-          const next = Math.max(0, Math.min(4, current + delta));
-          const attrs = { ...node.attrs };
-          const existingStyle = attrs.style ? `${attrs.style}` : '';
-          const updatedStyle = existingStyle
-            .replace(/margin-left\\s*:\\s*\\d+(?:\\.\\d+)?rem;?/g, '')
-            .trim();
-          if (next === 0) {
-            delete attrs.style;
-          } else {
-            attrs.style = `${updatedStyle ? `${updatedStyle}; ` : ''}margin-left: ${next * 1.25}rem;`;
-          }
-          tr.setNodeMarkup(pos, undefined, attrs);
-          updated = true;
-          return true;
-        });
-        if (!updated) return false;
-        if (dispatch) dispatch(tr.scrollIntoView());
-        return true;
-      });
-    },
-    [editor],
-  );
-
-  const handleMediaSelect = useCallback(
+  const insertMedia = useCallback(
     (asset: MediaAsset) => {
       if (!editor) return;
       if (asset.type === 'image') {
@@ -227,31 +232,24 @@ export function RichTextEditor({
           .focus()
           .setImage({
             src: asset.url,
-            alt: asset.alt || asset.title || 'Legacy media',
-            title: asset.title || asset.url,
+            alt: asset.alt || asset.title || 'Media',
           })
           .run();
         return;
       }
-      const linkText = asset.title || asset.url;
-      editor
-        .chain()
-        .focus()
-        .insertContent(
-          `<p><a href="${asset.url}" target="_blank" rel="noreferrer noopener">${linkText}</a></p>`,
-        )
-        .run();
+      const label = asset.title || asset.url;
+      editor.chain().focus().insertContent(`<p><a href="${asset.url}">${label}</a></p>`).run();
     },
     [editor],
   );
 
-  const stats = useMemo(() => {
-    if (!editor) return { characters: 0, words: 0 };
-    return {
-      characters: editor.storage.characterCount.characters,
-      words: editor.storage.characterCount.words,
-    };
-  }, [editor]);
+  const stats = useMemo(
+    () => ({
+      characters: editor?.storage.characterCount.characters ?? 0,
+      words: editor?.storage.characterCount.words ?? 0,
+    }),
+    [editor],
+  );
 
   return (
     <div
@@ -297,67 +295,32 @@ export function RichTextEditor({
         >
           <Strikethrough className="h-4 w-4" />
         </Button>
-        <Button
-          type="button"
-          variant={editor?.isActive('bulletList') ? 'secondary' : 'ghost'}
-          size="icon"
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-          aria-label="Bullet list"
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant={editor?.isActive('orderedList') ? 'secondary' : 'ghost'}
-          size="icon"
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-          aria-label="Numbered list"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant={editor?.isActive('blockquote') ? 'secondary' : 'ghost'}
-          size="icon"
-          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-          aria-label="Blockquote"
-        >
-          <Quote className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((level) => (
           <Button
+            key={`heading-${level}`}
             type="button"
-            variant={editor?.isActive('paragraph') ? 'secondary' : 'ghost'}
+            variant={editor?.isActive('heading', { level }) ? 'secondary' : 'ghost'}
             size="icon"
-            onClick={() => applyHeading('paragraph')}
-            aria-label="Paragraph"
+            onClick={() => applyHeading(level)}
+            aria-label={`Heading ${level}`}
           >
-            <TextCursor className="h-4 w-4" />
+            {level === 1 && <Heading1 className="h-4 w-4" />}
+            {level === 2 && <Heading2 className="h-4 w-4" />}
+            {level === 3 && <Heading3 className="h-4 w-4" />}
+            {level === 4 && <Heading4 className="h-4 w-4" />}
+            {level === 5 && <Heading5 className="h-4 w-4" />}
           </Button>
-          {[1, 2, 3, 4, 5].map((level) => (
-            <Button
-              key={`heading-${level}`}
-              type="button"
-              variant={editor?.isActive('heading', { level }) ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => applyHeading(level)}
-              aria-label={`Heading ${level}`}
-            >
-              {level === 1 && <Heading1 className="h-4 w-4" />}
-              {level === 2 && <Heading2 className="h-4 w-4" />}
-              {level === 3 && <Heading3 className="h-4 w-4" />}
-              {level === 4 && <Heading4 className="h-4 w-4" />}
-              {level === 5 && <Heading5 className="h-4 w-4" />}
-            </Button>
-          ))}
-        </div>
+        ))}
         <Button
           type="button"
-          variant="ghost"
+          variant={editor?.isActive('paragraph') ? 'secondary' : 'ghost'}
           size="icon"
-          onClick={insertLink}
-          aria-label="Insert link"
+          onClick={() => applyHeading('paragraph')}
+          aria-label="Paragraph"
         >
+          <TextCursor className="h-4 w-4" />
+        </Button>
+        <Button type="button" variant="ghost" size="icon" onClick={insertLink} aria-label="Insert link">
           <Link2 className="h-4 w-4" />
         </Button>
         <Button
@@ -369,12 +332,12 @@ export function RichTextEditor({
         >
           <Unlink className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-1 border-l border-slate-200 px-2 dark:border-slate-800">
+        <div className="flex items-center gap-1 border-l border-slate-200 px-2 pl-3 dark:border-slate-800">
           <Button
             type="button"
             variant={editor?.isActive({ textAlign: 'left' }) ? 'secondary' : 'ghost'}
             size="icon"
-            onClick={() => toggleTextAlign('left')}
+            onClick={() => toggleAlign('left')}
             aria-label="Align left"
           >
             <AlignLeft className="h-4 w-4" />
@@ -383,7 +346,7 @@ export function RichTextEditor({
             type="button"
             variant={editor?.isActive({ textAlign: 'center' }) ? 'secondary' : 'ghost'}
             size="icon"
-            onClick={() => toggleTextAlign('center')}
+            onClick={() => toggleAlign('center')}
             aria-label="Align center"
           >
             <AlignCenter className="h-4 w-4" />
@@ -392,7 +355,7 @@ export function RichTextEditor({
             type="button"
             variant={editor?.isActive({ textAlign: 'right' }) ? 'secondary' : 'ghost'}
             size="icon"
-            onClick={() => toggleTextAlign('right')}
+            onClick={() => toggleAlign('right')}
             aria-label="Align right"
           >
             <AlignRight className="h-4 w-4" />
@@ -402,13 +365,13 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => setAdvancedOpen((prev) => !prev)}
+          onClick={() => setShowAdvanced((prev) => !prev)}
           aria-label="More controls"
         >
           <Slash className="h-4 w-4" />
         </Button>
       </div>
-      {advancedOpen && (
+      {showAdvanced && (
         <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 text-xs text-slate-500 dark:border-slate-800">
           <Button
             type="button"
@@ -424,26 +387,14 @@ export function RichTextEditor({
             variant={forcePlainText ? 'secondary' : 'ghost'}
             size="icon"
             onClick={() => setForcePlainText((prev) => !prev)}
-            aria-label="Paste as text"
+            aria-label="Paste as plain text"
           >
             <Clipboard className="h-4 w-4" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={insertHorizontalRule}
-            aria-label="Insert horizontal rule"
-          >
+          <Button type="button" variant="ghost" size="icon" onClick={() => editor?.chain().focus().setHorizontalRule().run()} aria-label="Insert horizontal rule">
             <Minus className="h-4 w-4" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={clearFormatting}
-            aria-label="Clear formatting"
-          >
+          <Button type="button" variant="ghost" size="icon" onClick={() => editor?.chain().focus().clearNodes().unsetAllMarks().run()} aria-label="Clear formatting">
             <Eraser className="h-4 w-4" />
           </Button>
           <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
@@ -458,73 +409,36 @@ export function RichTextEditor({
                   key={color}
                   className="h-8 w-8 rounded-full border border-slate-300"
                   style={{ backgroundColor: color }}
-                  onClick={() => selectColor(color)}
+                  onClick={() => editor?.chain().focus().setColor(color).run()}
                 />
               ))}
             </PopoverContent>
           </Popover>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setSpecialCharVisible((prev) => !prev)}
-            aria-label="Insert special character"
-          >
+          <Button type="button" variant="ghost" size="icon" onClick={() => setSpecialCharsVisible((prev) => !prev)} aria-label="Special characters">
             <Asterisk className="h-4 w-4" />
           </Button>
-          {specialCharVisible && (
+          {specialCharsVisible && (
             <div className="flex flex-wrap gap-1 border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900">
               {SPECIAL_CHARACTERS.map((char) => (
-                <Button
-                  key={char}
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-slate-600"
-                  onClick={() => insertSpecialCharacter(char)}
-                >
+                <Button key={char} type="button" variant="ghost" size="sm" onClick={() => editor?.chain().focus().insertContent(char).run()}>
                   {char}
                 </Button>
               ))}
             </div>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => adjustIndent(1)}
-            aria-label="Increase indent"
-          >
+          <Button variant="ghost" size="icon" onClick={() => editor?.commands.increaseIndent()} aria-label="Increase indent">
             <Indent className="h-4 w-4" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => adjustIndent(-1)}
-            aria-label="Decrease indent"
-          >
+          <Button variant="ghost" size="icon" onClick={() => editor?.commands.decreaseIndent()} aria-label="Decrease indent">
             <Outdent className="h-4 w-4" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => editor?.chain().focus().undo().run()}
-            aria-label="Undo"
-          >
+          <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().undo().run()} aria-label="Undo">
             <Undo className="h-4 w-4" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => editor?.chain().focus().redo().run()}
-            aria-label="Redo"
-          >
+          <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().redo().run()} aria-label="Redo">
             <Redo className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={insertReadMore}>
+          <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().insertContent('<hr class="read-more" />').run()}>
             Read More
           </Button>
           <Button variant="outline" size="sm" onClick={() => mediaLibrary.openLibrary('library')}>
@@ -537,24 +451,19 @@ export function RichTextEditor({
               if (!open) mediaLibrary.closeLibrary();
             }}
             library={mediaLibrary}
-            onSelect={handleMediaSelect}
+            onSelect={insertMedia}
             allowUrl
           />
         </div>
       )}
       <EditorContent
         editor={editor}
-        className={cn(
-          'min-h-[8rem] px-4 py-3 text-sm leading-relaxed focus:outline-none dark:text-white',
-          `min-h-[${minRows * 32}px]`,
-        )}
+        className={cn('min-h-[8rem] px-4 py-3 text-sm leading-relaxed focus:outline-none dark:text-white', `min-h-[${minRows * 32}px]`)}
         data-placeholder={placeholder}
         id={id}
       />
       <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-slate-800">
-        <span>
-          {stats.characters.toLocaleString()} chars · {stats.words.toLocaleString()} words
-        </span>
+        <span>{stats.characters.toLocaleString()} chars · {stats.words.toLocaleString()} words</span>
         <span>{forcePlainText ? 'Paste as plain text' : 'Rich paste enabled'}</span>
       </div>
     </div>
