@@ -103,8 +103,7 @@ export default function BlogPage() {
       typeof excerpt === 'string'
         ? excerpt
         : getMultilingualContent(excerpt, language);
-    const { before } = splitReadMore(text);
-    return before || text;
+    return splitReadMore(text);
   };
 
   const formatDate = (iso?: string) => {
@@ -251,7 +250,7 @@ export default function BlogPage() {
             <section className="max-w-6xl mx-auto grid md:grid-cols-2 xl:grid-cols-3 gap-6">
               {posts.map((post) => {
                 const title = resolveTitle(post.title);
-                const excerpt = resolveExcerpt(post.excerpt);
+                const { before: excerpt, hasReadMore } = resolveExcerpt(post.excerpt);
 
                 const xpReward =
                   typeof post.xp_reward === 'number'
@@ -323,6 +322,11 @@ export default function BlogPage() {
                       <p className="text-sm text-body line-clamp-3">
                         {excerpt}
                       </p>
+                      {hasReadMore && (
+                        <span className="text-xs font-semibold text-sky-500 uppercase tracking-wide">
+                          Continue reading
+                        </span>
+                      )}
                     </CardHeader>
 
                     <CardContent className="flex-1 flex flex-col justify-between space-y-3 pb-5">
