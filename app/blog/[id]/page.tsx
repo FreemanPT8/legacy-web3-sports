@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
+import { removeReadMoreMarker } from '@/lib/read-more';
 
 type MultiLang = Record<string, string>;
 
@@ -164,7 +165,7 @@ export default function BlogPostPage() {
     );
   }
 
-  const htmlContent = getContent(post.content);
+  const htmlContent = removeReadMoreMarker(getContent(post.content));
   const xpReward =
     typeof post.xp_reward === 'number' ? post.xp_reward : 0;
   const estimatedMinutes =

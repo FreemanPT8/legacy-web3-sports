@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { splitReadMore } from '@/lib/read-more';
 import { getMultilingualContent } from '@/lib/i18n';
 
 import {
@@ -97,10 +98,14 @@ export default function BlogPage() {
       ? title
       : getMultilingualContent(title, language);
 
-  const resolveExcerpt = (excerpt: MultiLang | string) =>
-    typeof excerpt === 'string'
-      ? excerpt
-      : getMultilingualContent(excerpt, language);
+  const resolveExcerpt = (excerpt: MultiLang | string) => {
+    const text =
+      typeof excerpt === 'string'
+        ? excerpt
+        : getMultilingualContent(excerpt, language);
+    const { before } = splitReadMore(text);
+    return before || text;
+  };
 
   const formatDate = (iso?: string) => {
     if (!iso) return '-';
