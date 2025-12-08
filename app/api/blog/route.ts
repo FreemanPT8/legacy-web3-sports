@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { splitReadMore } from '@/lib/read-more';
 import { verifyAuth } from '@/lib/auth';
 
 const db = supabaseAdmin ?? supabase;
@@ -113,8 +114,12 @@ export async function GET(request: NextRequest) {
           ? true
           : false;
 
+      const excerptRaw = typeof p.excerpt === 'string' ? p.excerpt : '';
+      const { before: excerpt_preview, hasReadMore } = splitReadMore(excerptRaw);
       return {
         ...p,
+        excerpt_preview,
+        excerpt_has_read_more: hasReadMore,
         author: authorName,
         registered_readers: registeredReaders,
         total_xp_distributed: totalXpDistributed,

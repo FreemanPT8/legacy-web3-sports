@@ -98,11 +98,15 @@ export default function BlogPage() {
       ? title
       : getMultilingualContent(title, language);
 
-  const resolveExcerpt = (excerpt: MultiLang | string) => {
+  const resolveExcerpt = (
+    excerpt: MultiLang | string,
+    preview?: string,
+  ) => {
     const text =
-      typeof excerpt === 'string'
+      preview ??
+      (typeof excerpt === 'string'
         ? excerpt
-        : getMultilingualContent(excerpt, language);
+        : getMultilingualContent(excerpt, language));
     return splitReadMore(text);
   };
 
@@ -250,7 +254,10 @@ export default function BlogPage() {
             <section className="max-w-6xl mx-auto grid md:grid-cols-2 xl:grid-cols-3 gap-6">
               {posts.map((post) => {
                 const title = resolveTitle(post.title);
-                const { before: excerpt, hasReadMore } = resolveExcerpt(post.excerpt);
+                const { before: excerpt, hasReadMore } = resolveExcerpt(
+                  post.excerpt,
+                  post.excerpt_preview,
+                );
 
                 const xpReward =
                   typeof post.xp_reward === 'number'

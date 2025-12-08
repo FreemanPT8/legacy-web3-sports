@@ -1,6 +1,7 @@
 // app/api/lessons/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { splitReadMore } from '@/lib/read-more';
 
 interface RouteContext {
   params: { id: string };
@@ -138,11 +139,17 @@ export async function GET(
     // 6) Normalizar dados da lesson
     const authorName = rawLesson.author_user?.username || null;
 
+    const rawContent = typeof rawLesson.content === 'string' ? rawLesson.content : '';
+    const { before: content_preview, hasReadMore: content_has_read_more } =
+      splitReadMore(rawContent);
+
     const lesson = {
       id: rawLesson.id,
       title: rawLesson.title,
       description: rawLesson.description,
       content: rawLesson.content,
+      content_preview,
+      content_has_read_more,
       xp_reward: rawLesson.xp_reward,
       estimated_time: rawLesson.estimated_time,
       order: rawLesson.order,
