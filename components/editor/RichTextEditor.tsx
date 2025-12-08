@@ -110,8 +110,8 @@ const IndentExtension = Extension.create({
     };
 
     return {
-      increaseIndent: () => createCommand(1),
-      decreaseIndent: () => createCommand(-1),
+      increaseIndent: createCommand(1),
+      decreaseIndent: createCommand(-1),
     };
   },
 });
