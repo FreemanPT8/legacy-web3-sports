@@ -17,15 +17,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
 import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
-
-import {
-  BlockEditor,
-  type BlocksByLanguage,
-  type LangCode as BlockLangCode,
-  serializeBlocksByLanguage,
-} from '@/components/admin/content/BlockEditor';
 
 import { getMultilingualContent } from '@/lib/i18n';
 
@@ -73,10 +67,6 @@ type PermissionsResponse = {
   error?: string;
 };
 
-function generateBlockId(prefix: string = 'blk') {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
 export default function LessonAdvancedEditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -91,8 +81,6 @@ export default function LessonAdvancedEditorPage() {
   const [module, setModule] = useState<Module | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
 
-  const [blocksByLanguage, setBlocksByLanguage] =
-    useState<BlocksByLanguage>({});
   const [currentLanguage, setCurrentLanguage] =
     useState<LangCodeUnion>('en');
 
@@ -280,23 +268,6 @@ export default function LessonAdvancedEditorPage() {
 
             setLesson(normalized);
 
-            // Inicializar BlockEditor
-            const initialBlocks: BlocksByLanguage = {};
-            LANGUAGES.forEach(({ code }) => {
-              const html = safeContent[code] || '';
-              if (html && html.trim()) {
-                initialBlocks[code] = [
-                  {
-                    id: generateBlockId('html'),
-                    type: 'html',
-                    data: { html },
-                  },
-                ];
-              } else {
-                initialBlocks[code] = [];
-              }
-            });
-            setBlocksByLanguage(initialBlocks);
           }
         }
       } catch (err) {
@@ -331,7 +302,7 @@ export default function LessonAdvancedEditorPage() {
     currentLanguage;
 
   function updateMLField(
-    field: 'title' | 'description',
+    field: 'title' | 'description' | 'content',
     lang: LangCodeUnion,
     value: string,
   ) {
@@ -393,12 +364,10 @@ export default function LessonAdvancedEditorPage() {
     try {
       const token = getToken();
 
-      const content = serializeBlocksByLanguage(blocksByLanguage);
-
       const payload = {
         title: lesson.title,
         description: lesson.description,
-        content,
+        content: lesson.content,
         xp_reward: lesson.xp_reward ?? 20,
         xp_threshold: lesson.xp_threshold ?? 0,
         order: lesson.order || 1,
@@ -638,10 +607,13 @@ export default function LessonAdvancedEditorPage() {
 
                   <div>
                     <Label>Body ({currentLangLabel})</Label>
-                    <BlockEditor
-                      value={blocksByLanguage}
-                      onChange={setBlocksByLanguage}
-                      initialLanguage={currentLanguage as BlockLangCode}
+                    <RichTextEditor
+                      value={lesson.content[currentLanguage] || ''}
+                      onChange={(next) =>
+                        updateMLField('content', currentLanguage, next)
+                      }
+                      placeholder="Write the lesson body with headings, lists, quotes, links, and media."
+                      minRows={12}
                       className="mt-2"
                     />
                   </div>
