@@ -160,7 +160,14 @@ export function RichTextEditor({
     (asset: MediaAsset) => {
       if (!editor) return;
       if (asset.type === 'image') {
-        editor.chain().focus().setImage({ src: asset.url, alt: asset.alt || asset.title }).run();
+        editor
+          .chain()
+          .focus()
+          .setImage({
+            src: asset.url,
+            alt: asset.alt || asset.title || '',
+          })
+          .run();
         return;
       }
       editor.chain().focus().insertContent(`<p><a href="${asset.url}">${asset.title || asset.url}</a></p>`).run();
