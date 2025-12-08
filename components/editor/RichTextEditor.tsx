@@ -37,6 +37,7 @@ import {
   List,
   ListOrdered,
   Minus,
+  MoreHorizontal,
   Palette,
   Quote,
   Redo,
@@ -60,6 +61,7 @@ interface RichTextEditorProps {
 }
 
 const SPECIAL_CHARACTERS = ['•', '—', '–', '…', '™', '©', '®', '∞'];
+const READ_MORE_MARKER = '<div class="read-more-marker" data-read-more></div>';
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
 
 export function RichTextEditor({
@@ -174,6 +176,11 @@ export function RichTextEditor({
     },
     [editor],
   );
+
+  const insertReadMore = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertContent(READ_MORE_MARKER).run();
+  }, [editor]);
 
   const stats = useMemo(
     () => ({
@@ -387,6 +394,15 @@ export function RichTextEditor({
               ))}
             </div>
           )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={insertReadMore}
+            aria-label="Insert Read More marker"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => mediaLibrary.openLibrary('library')} aria-label="Add media">
             <ImagePlus className="h-4 w-4" />
           </Button>
