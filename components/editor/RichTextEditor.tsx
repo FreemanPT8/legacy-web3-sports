@@ -87,7 +87,7 @@ const IndentExtension = Extension.create({
   },
 
   addCommands() {
-    const createCommand = (modifier: number): Command => ({ tr, state, dispatch }) => {
+    const createCommand = (modifier: number) => ({ tr, state, dispatch }) => {
       let updated = false;
       state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
         if (!node.type.isTextblock) return true;
