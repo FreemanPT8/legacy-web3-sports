@@ -174,142 +174,167 @@ export default function AdminPermissionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-1 flex items-center gap-2">
-              <Shield className="h-7 w-7 text-amber-500" />
-              Admin Permissions
-            </h1>
-            <p className="text-gray-600 text-sm">
-              Grant or revoke specific admin capabilities. Only Super Admins can access this page.
-            </p>
-          </div>
-          <Button asChild variant="outline">
-            <Link href="/admin">Back to Dashboard</Link>
-          </Button>
+    <div className="w-full space-y-8 py-8">
+      <section className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
         </div>
+        <div className="relative z-10 flex flex-col gap-3 max-w-5xl">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+                LEGACY Admin Settings
+              </span>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
+                <Shield className="h-7 w-7 text-amber-300" />
+                Permissions Control
+              </h1>
+              <p className="mt-1 text-sm text-blue-100/90">
+                Area dedicated to reviewing admin access, responsibilities, and guardrails.
+              </p>
+            </div>
+            <Button variant="outline" asChild className="border-blue-500 text-blue-100">
+              <Link href="/admin">Back to Dashboard</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Permissions overview</CardTitle>
-            <CardDescription className="text-sm">
-              Super Admin has full access by default. Admins start with basic access and can be given extra permissions here. Head of House powers são tratadas à parte, por House.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-
-        {error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-4 pb-4 text-red-800 text-sm">{error}</CardContent>
+      <section className="px-4 md:px-0">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Card className="bg-card-custom border-custom">
+            <CardHeader>
+              <CardTitle>Permissions summary</CardTitle>
+              <CardDescription className="text-muted-custom">
+                Super Admins keep full access while Admins can be granted extra capabilities here.
+              </CardDescription>
+            </CardHeader>
           </Card>
-        )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin list</CardTitle>
-            <CardDescription>
-              {loadingData ? 'Loading admins...' : `Showing ${admins.length} admin user(s).`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loadingData ? (
-              <div className="flex items-center justify-center py-10 gap-2 text-gray-500 text-sm">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading admin permissions...
-              </div>
-            ) : admins.length === 0 ? (
-              <p className="text-sm text-gray-500 py-6">No Admin or Super Admin users found.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-xs md:text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="text-left py-2 px-3">User</th>
-                      <th className="text-left py-2 px-3">Role</th>
-                      <th className="text-left py-2 px-3">Permissions (click to toggle)</th>
-                      <th className="text-left py-2 px-3 w-32">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {admins.map((admin) => {
-                      const isSuper = admin.role === 'Super Admin';
+          {error && (
+            <Card className="border-red-500/60 bg-red-50/80">
+              <CardContent className="py-4 text-sm text-red-700">{error}</CardContent>
+            </Card>
+          )}
 
-                      return (
-                        <tr key={admin.id} className="border-b hover:bg-gray-50 align-top">
-                          <td className="py-2 px-3">
-                            <div className="font-medium">{admin.full_name || admin.username || '—'}</div>
-                            <div className="text-[11px] text-gray-500">{admin.email}</div>
-                          </td>
-                          <td className="py-2 px-3 text-xs">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 border ${
-                                isSuper
-                                  ? 'border-red-300 bg-red-50 text-red-700'
-                                  : 'border-blue-300 bg-blue-50 text-blue-700'
-                              }`}
-                            >
-                              {admin.role}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3">
-                            {isSuper ? (
-                              <p className="text-xs text-gray-500">Super Admin has full access to all permissions.</p>
-                            ) : (
-                              <div className="flex flex-wrap gap-2">
-                                {sortedPermissions.map((perm) => {
-                                  const isBase = admin.basePermissions.includes(perm);
-                                  const isChecked = isBase || admin.extraPermissions.includes(perm);
+          <Card className="bg-card-custom border-custom">
+            <CardHeader>
+              <CardTitle>Admin roster</CardTitle>
+              <CardDescription>
+                {loadingData ? 'Loading admins...' : `Showing ${admins.length} admin user(s).`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingData ? (
+                <div className="flex items-center justify-center py-10 gap-2 text-muted-custom">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Loading admin permissions...
+                </div>
+              ) : admins.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-custom">
+                  No Admin or Super Admin users found.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs md:text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-800 bg-slate-900/60">
+                        <th className="text-left py-2 px-3 text-muted-custom">User</th>
+                        <th className="text-left py-2 px-3 text-muted-custom">Role</th>
+                        <th className="text-left py-2 px-3 text-muted-custom">
+                          Permissions (click to toggle)
+                        </th>
+                        <th className="text-left py-2 px-3 w-32 text-muted-custom">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {admins.map((admin) => {
+                        const isSuper = admin.role === 'Super Admin';
 
-                                  return (
-                                    <label
-                                      key={perm}
-                                      className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-[11px] shadow-sm"
-                                    >
-                                      <Checkbox
-                                        className="h-3 w-3"
-                                        checked={isChecked}
-                                        disabled={isBase}
-                                        onCheckedChange={() => handleToggle(admin.id, perm)}
-                                      />
-                                      <span>
-                                        {PERMISSION_LABELS[perm] || perm}
-                                        {isBase && (
-                                          <span className="ml-1 text-[10px] text-gray-400">(role)</span>
-                                        )}
-                                      </span>
-                                    </label>
-                                  );
-                                })}
+                        return (
+                          <tr key={admin.id} className="border-b border-slate-800 hover:bg-slate-950/40 align-top">
+                            <td className="py-2 px-3">
+                              <div className="font-medium text-heading">
+                                {admin.full_name || admin.username || '---'}
                               </div>
-                            )}
-                          </td>
-                          <td className="py-2 px-3">
-                            {!isSuper && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleSave(admin)}
-                                disabled={savingForUser === admin.id}
-                                className="text-xs"
+                              <div className="text-[11px] text-muted-custom">{admin.email}</div>
+                            </td>
+                            <td className="py-2 px-3">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] ${
+                                  isSuper
+                                    ? 'border border-rose-400 bg-rose-950/60 text-rose-200'
+                                    : 'border border-blue-500 bg-blue-950/60 text-blue-200'
+                                }`}
                               >
-                                {savingForUser === admin.id && (
-                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                )}
-                                Save
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                                {admin.role}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3">
+                              {isSuper ? (
+                                <p className="text-xs text-muted-custom">
+                                  Super Admin has access to all toggles.
+                                </p>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {sortedPermissions.map((perm) => {
+                                    const isBase = admin.basePermissions.includes(perm);
+                                    const isChecked =
+                                      isBase || admin.extraPermissions.includes(perm);
+
+                                    return (
+                                      <label
+                                        key={perm}
+                                        className="inline-flex items-center gap-1 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-[11px]"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          className="h-3 w-3 text-blue-500 accent-blue-500"
+                                          checked={isChecked}
+                                          disabled={isBase}
+                                          onChange={() => handleToggle(admin.id, perm)}
+                                        />
+                                        <span>
+                                          {PERMISSION_LABELS[perm] || perm}
+                                          {isBase && (
+                                            <span className="ml-1 text-[10px] text-muted-custom">
+                                              (role)
+                                            </span>
+                                          )}
+                                        </span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2 px-3">
+                              {!isSuper && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSave(admin)}
+                                  disabled={savingForUser === admin.id}
+                                  className="text-xs"
+                                >
+                                  {savingForUser === admin.id && (
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  )}
+                                  Save
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }
