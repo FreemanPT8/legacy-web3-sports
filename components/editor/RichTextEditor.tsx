@@ -5,7 +5,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Strike from '@tiptap/extension-strike';
-import TextStyle from '@tiptap/extension-text-style';
+import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
@@ -46,7 +46,7 @@ import {
   Undo,
   Redo,
   Asterisk,
-  Paragraph as ParagraphIcon,
+  TextCursor as ParagraphIcon,
   Eraser,
   Clipboard,
 } from 'lucide-react';
