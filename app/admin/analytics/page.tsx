@@ -355,18 +355,18 @@ export default function AdminAnalyticsPage() {
             </Button>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <MetricCard
-              label="XP total (all actions)"
-              value={safeStats.courses.xp.allActions.total}
-            />
-            <MetricCard
-              label="XP últimas 24h"
-              value={safeStats.courses.xp.allActions.last24h}
-            />
-            <MetricCard
-              label="XP últimos 30d"
-              value={safeStats.courses.xp.allActions.last30d}
-            />
+          <MetricCard
+            label="XP total (all actions)"
+            value={safeStats.courses.xp?.allActions?.total ?? 0}
+          />
+          <MetricCard
+            label="XP últimas 24h"
+            value={safeStats.courses.xp?.allActions?.last24h ?? 0}
+          />
+          <MetricCard
+            label="XP últimos 30d"
+            value={safeStats.courses.xp?.allActions?.last30d ?? 0}
+          />
           </div>
         </div>
       </section>
