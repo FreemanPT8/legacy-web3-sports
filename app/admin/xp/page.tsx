@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, Award, Zap } from 'lucide-react';
+import { Loader2, Sparkles, Award, Zap, BookOpen } from 'lucide-react';
 
 const xpMetrics = [
   { label: 'XP total distribuído', value: 126_400 },
@@ -86,6 +86,79 @@ export default function AdminXpPage() {
             Monitora como XP circula, premia quem importa e detecta fluxos críticos.
           </p>
         </div>
+      </section>
+
+      {/* ACTION PANEL */}
+      <section>
+        <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-900/60 shadow-2xl mx-auto max-w-6xl">
+          <CardHeader className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-amber-500/20 text-amber-100 border border-amber-500/40">
+                Pulse
+              </Badge>
+              <CardTitle className="text-heading text-lg">
+                Operação de XP com foco em impacto
+              </CardTitle>
+            </div>
+            <CardDescription className="text-muted-custom max-w-3xl">
+              Conecte distribuições a ações mensuráveis (posts, cursos, eventos) e mantenha o valor do XP claro para toda a comunidade.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="flex flex-col gap-3 md:flex-row">
+              <Button
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
+                onClick={() => router.push('/admin/blog')}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Ver iniciativas que geram XP
+              </Button>
+              <Button
+                className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+                onClick={() => router.push('/admin/courses')}
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Revisar cursos ativos
+              </Button>
+              <Button
+                className="flex-1 border border-blue-600 text-blue-100 bg-blue-950/50 hover:bg-blue-900"
+                onClick={() => router.push('/admin/xp')}
+              >
+                <Award className="h-4 w-4 mr-2" />
+                Atualizar regras de recompensa
+              </Button>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Meta semanal
+                </p>
+                <p className="text-sm font-bold mt-1">+12k XP distribuídos</p>
+                <p className="text-muted-custom text-[11px]">
+                  Priorize campanhas multicanal com foco em +222 XP por experiência.
+                </p>
+              </div>
+              <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Fluxo
+                </p>
+                <p className="text-sm font-bold mt-1">68% XP em iniciativas oficiais</p>
+                <p className="text-muted-custom text-[11px]">
+                  Mantenha as ações alinhadas ao roadmap e evite dispersão de XP.
+                </p>
+              </div>
+              <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Comunidade
+                </p>
+                <p className="text-sm font-bold mt-1">+4k participantes ativos</p>
+                <p className="text-muted-custom text-[11px]">
+                  Use esses números para calibrar recompensas e narrativas públicas.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       <section className="space-y-6">
