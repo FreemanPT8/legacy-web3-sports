@@ -12,7 +12,13 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MessageCircle, ShieldCheck, TrendingUp } from 'lucide-react';
+import {
+  Loader2,
+  MessageCircle,
+  ShieldCheck,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
 
 const forumMetrics = [
   { label: 'Threads ativos', value: 54 },
@@ -97,6 +103,86 @@ export default function AdminForumPage() {
             Monitoriza tópicos, acelera moderação e mantém uma comunidade saudável.
           </p>
         </div>
+      </section>
+
+      {/* ACTION PANEL */}
+      <section>
+        <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-purple-900/60 shadow-2xl mx-auto max-w-6xl">
+          <CardHeader className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-purple-500/20 text-purple-100 border border-purple-500/40">
+                Pulse
+              </Badge>
+              <CardTitle className="text-heading text-lg">
+                Fórum com ritmo e moderação
+              </CardTitle>
+            </div>
+            <p className="text-muted-custom text-sm max-w-3xl">
+              Abra debates, priorize a moderação e acompanhe os indicadores reais
+              do fórum para que cada thread gere XP e comunidade.
+            </p>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="flex flex-col gap-3 md:flex-row">
+              <Button
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                onClick={() => router.push('/admin/forum')}
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Ver threads em destaque
+              </Button>
+              <Button
+                className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+                onClick={() => router.push('/admin/forum')}
+              >
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                Ir para moderação
+              </Button>
+              <Button
+                className="flex-1 border border-emerald-500 text-emerald-100 bg-emerald-950/50 hover:bg-emerald-900"
+                onClick={() => router.push('/admin')}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Comparar métricas gerais
+              </Button>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+              <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Threads ativos
+                </p>
+                <p className="text-2xl font-bold mt-1">
+                  {forumMetrics[0]?.value ?? 0}
+                </p>
+                <p className="text-muted-custom text-[11px]">
+                  Contagem mostrada é atual.
+                </p>
+              </div>
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Moderação
+                </p>
+                <p className="text-2xl font-bold mt-1">
+                  {moderationQueue.length} report(es)
+                </p>
+                <p className="text-muted-custom text-[11px]">
+                  Use esse conteudo real para priorizar respostas.
+                </p>
+              </div>
+              <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Mensagens (24h)
+                </p>
+                <p className="text-2xl font-bold mt-1">
+                  {forumMetrics[1]?.value ?? 0}
+                </p>
+                <p className="text-muted-custom text-[11px]">
+                  Esse volume é medido minuto a minuto.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       <section className="space-y-6">
