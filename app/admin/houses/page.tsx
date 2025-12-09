@@ -205,6 +205,83 @@ export default function AdminHousesPage() {
         </div>
       </section>
 
+      {/* ACTION PANEL */}
+      <section>
+        <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-sky-900/70 shadow-2xl mx-auto max-w-6xl">
+          <CardHeader className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-sky-500/20 text-sky-100 border border-sky-500/40">
+                Operational
+              </Badge>
+              <CardTitle className="text-heading text-lg">
+                Houses pulse check
+              </CardTitle>
+            </div>
+            <p className="text-muted-custom text-sm max-w-3xl">
+              Os números abaixo refletem o estado atual das Houses trazido direto da API. Use-os para priorizar intervenções ou celebrar tops ativos.
+            </p>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="flex flex-col gap-3 md:flex-row">
+              <Button
+                className="flex-1 bg-sky-600 hover:bg-sky-700 text-white"
+                onClick={() => router.push('/admin/houses/create')}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Criar House
+              </Button>
+              <Button
+                className="flex-1 border border-slate-700 text-slate-100 bg-slate-950/60 hover:bg-slate-900"
+                onClick={() => router.push('/admin/houses')}
+                disabled={houses.length === 0}
+              >
+                <Trophy className="h-4 w-4 mr-2" />
+                Revisar House ativa
+              </Button>
+              <Button
+                className="flex-1 border border-emerald-500 text-emerald-100 bg-emerald-950/50 hover:bg-emerald-900"
+                onClick={() => {
+                  setSearch('');
+                  setStatusFilter('all');
+                }}
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Resetar filtros
+              </Button>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+              <div className="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-slate-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Houses totais
+                </p>
+                <p className="text-2xl font-bold mt-1">{totalHouses}</p>
+                <p className="text-muted-custom text-[11px]">
+                  Esse valor vem direto da API em cada carregamento.
+                </p>
+              </div>
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Ativas
+                </p>
+                <p className="text-2xl font-bold mt-1">{activeHouses}</p>
+                <p className="text-muted-custom text-[11px]">
+                  Priorize casas sem head ou com status diferente.
+                </p>
+              </div>
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Sem liderança
+                </p>
+                <p className="text-2xl font-bold mt-1">{missingHeads}</p>
+                <p className="text-muted-custom text-[11px]">
+                  Corresponder estes dados ao diretório de heads ajuda a ativar Houses mais rápido.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       <section className="space-y-8">
         {/* RESUMO DAS HOUSES (mesmo padrão de secções do admin) */}
         <div className="space-y-3">
