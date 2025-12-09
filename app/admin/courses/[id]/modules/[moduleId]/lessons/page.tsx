@@ -679,6 +679,99 @@ export default function ModuleLessonsPage() {
             </div>
           </div>
 
+          {/* ACTION PANEL */}
+          <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-blue-900/60 shadow-2xl">
+            <CardHeader className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="bg-blue-500/20 text-blue-100 border border-blue-500/40">
+                  Editorial Flow
+                </Badge>
+                <CardTitle className="text-heading text-lg">
+                  Construa lições com foco em XP e comunidade
+                </CardTitle>
+              </div>
+              <p className="text-sm text-muted-custom max-w-3xl">
+                Cria e valida as lições do módulo mantendo alinhamento com os resultados de XP, tempo médio e revisão.
+              </p>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="flex flex-col gap-3 md:flex-row">
+                <Button
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+                  disabled={!canManageCourses}
+                  onClick={handleAddLesson}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar lesson
+                </Button>
+                <Button
+                  className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900 disabled:opacity-60"
+                  disabled={!canManageCourses || lessons.length === 0}
+                  onClick={() => {
+                    if (!lessons.length) return;
+                    router.push(`/admin/courses/${courseId}/modules/${moduleId}/lessons/${lessons[0].id ?? 'new'}`);
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Revisar lição salva
+                </Button>
+                <Button
+                  className="flex-1 border border-blue-600 text-blue-100 bg-blue-950/50 hover:bg-blue-900"
+                  disabled={!canManageCourses || lessons.length === 0}
+                  onClick={() => {
+                    const lesson = lessons.find((l) => l.id);
+                    if (!lesson) return;
+                    window.open(`/education/lessons/${lesson.id}`, '_blank');
+                  }}
+                >
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  Abrir preview
+                </Button>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+                <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                  <p className="font-semibold uppercase tracking-wide text-[11px]">
+                    XP meta
+                  </p>
+                  <p className="text-sm font-bold mt-1">
+                    {lessons.reduce((sum, lesson) => sum + (lesson.xp_reward || 0), 0)} XP total
+                  </p>
+                  <p className="text-muted-custom text-[11px]">
+                    Ajusta os rewards para refletirem o tempo e complexidade.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
+                  <p className="font-semibold uppercase tracking-wide text-[11px]">
+                    Tempo médio
+                  </p>
+                  <p className="text-sm font-bold mt-1">
+                    {Math.round(
+                      lessons.reduce(
+                        (sum, lesson) => sum + (lesson.estimated_time || 0),
+                        0,
+                      ) / Math.max(1, lessons.length),
+                    )}{' '}
+                    min
+                  </p>
+                  <p className="text-muted-custom text-[11px]">
+                    Ostras humanas mantém o ritmo coerente? Ajuste.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
+                  <p className="font-semibold uppercase tracking-wide text-[11px]">
+                    Comunidade
+                  </p>
+                  <p className="text-sm font-bold mt-1">
+                    {lessons.length} lições em revisão
+                  </p>
+                  <p className="text-muted-custom text-[11px]">
+                    Publicações completas nascem de lições bem estruturadas. Continue adicionando imagens & atividades.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Selector de língua */}
           <Card>
             <CardHeader>
