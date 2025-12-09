@@ -596,39 +596,67 @@ export default function AdminBlogPage() {
                   Revisar desempenho
                 </Button>
               </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
-                <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
-                  <p className="font-semibold text-[11px] uppercase tracking-wide">
-                    XP distribuído
+              <div className="mt-4 grid gap-3 md:grid-cols-2 text-xs">
+                <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-custom">
+                    Top post por visualizações
                   </p>
-                  <p className="text-sm font-bold mt-1">
-                    {xpTotalAll.toLocaleString('pt-PT', { maximumFractionDigits: 0 })} XP
-                  </p>
-                  <p className="text-muted-custom text-[11px]">
-                    Somatório direto dos posts listados nesta página.
-                  </p>
+                  {topByViews[0] ? (
+                    <>
+                      <p className="text-sm font-semibold text-heading truncate">
+                        {(resolveLocalizedText(topByViews[0].title) ||
+                          'Untitled').slice(0, 45)}
+                      </p>
+                      <p className="text-[11px] text-purple-200">
+                        {topByViews[0].views?.toLocaleString('pt-PT') || 0} views
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 w-full"
+                        onClick={() =>
+                          router.push(`/blog/${topByViews[0].id}`)
+                        }
+                      >
+                        Abrir post
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-muted-custom">
+                      Sem posts com views registrados.
+                    </p>
+                  )}
                 </div>
-                <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
-                  <p className="font-semibold text-[11px] uppercase tracking-wide">
-                    Visualizações
+                <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-custom">
+                    Impacto de XP
                   </p>
-                  <p className="text-sm font-bold mt-1">
-                    {totalViewsAll.toLocaleString('pt-PT', { maximumFractionDigits: 0 })}
-                  </p>
-                  <p className="text-muted-custom text-[11px]">
-                    Número real capturado do campo de views dos posts.
-                  </p>
-                </div>
-                <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
-                  <p className="font-semibold text-[11px] uppercase tracking-wide">
-                    Publicados
-                  </p>
-                  <p className="text-sm font-bold mt-1">
-                    {publishedPosts.length}
-                  </p>
-                  <p className="text-muted-custom text-[11px]">
-                    Posts reais exibidos no filtro atual.
-                  </p>
+                  {topByXP[0] ? (
+                    <>
+                      <p className="text-sm font-semibold text-heading truncate">
+                        {(resolveLocalizedText(topByXP[0].title) ||
+                          'Untitled').slice(0, 45)}
+                      </p>
+                      <p className="text-[11px] text-emerald-200">
+                        {topByXP[0].xp_total_distributed?.toLocaleString(
+                          'pt-PT',
+                        ) || 0}{' '}
+                        XP
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 w-full"
+                        onClick={() => router.push(`/admin/blog/${topByXP[0].id}`)}
+                      >
+                        Ver
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-muted-custom">
+                      Ainda não há posts com XP distribuído.
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
