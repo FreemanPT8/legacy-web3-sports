@@ -12,11 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Mail,
-  Sparkles,
-  Loader2,
-} from 'lucide-react';
+import { Mail, Sparkles, Loader2, ClipboardList } from 'lucide-react';
 
 const quickMetrics = [
   { label: 'Leads novos (24h)', value: 28, hint: 'Contactados' },
@@ -117,6 +113,86 @@ export default function AdminOnboardingPage() {
             acompanha cadaLead, responde a tempo e garante que ninguém fica esquecido no processo.
           </p>
         </div>
+      </section>
+
+      {/* ACTION PANEL */}
+      <section>
+        <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-emerald-900/60 shadow-2xl mx-auto max-w-6xl">
+          <CardHeader className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-emerald-500/20 text-emerald-100 border border-emerald-500/40">
+                Pulse
+              </Badge>
+              <CardTitle className="text-heading text-lg">
+                Onboarding com ritmo
+              </CardTitle>
+            </div>
+            <p className="text-muted-custom text-sm max-w-3xl">
+              Use dados reais do pipeline para priorizar mensagens, acelerar o
+              contato e garantir que ninguém fique parado em cada etapa.
+            </p>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="flex flex-col gap-3 md:flex-row">
+              <Button
+                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+                onClick={() => router.push('/admin/onboarding')}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Ver novos leads
+              </Button>
+              <Button
+                className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+                onClick={() => router.push('/admin/onboarding')}
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Revisar checklist
+              </Button>
+              <Button
+                className="flex-1 border border-blue-600 text-blue-100 bg-blue-950/50 hover:bg-blue-900"
+                onClick={() => router.push('/admin')}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Compartilhar pipeline
+              </Button>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Leads (24h)
+                </p>
+                <p className="text-2xl font-bold mt-1">
+                  {quickMetrics[0]?.value ?? 0}
+                </p>
+                <p className="text-muted-custom text-[11px]">
+                  Atualizado automaticamente.
+                </p>
+              </div>
+              <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Onboardings ativos
+                </p>
+                <p className="text-2xl font-bold mt-1">
+                  {quickMetrics[1]?.value ?? 0}
+                </p>
+                <p className="text-muted-custom text-[11px]">
+                  Meta de {quickMetrics[3]?.value ?? 0} dias para conclusão.
+                </p>
+              </div>
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Pendentes
+                </p>
+                <p className="text-2xl font-bold mt-1">
+                  {quickMetrics[2]?.value ?? 0}
+                </p>
+                <p className="text-muted-custom text-[11px]">
+                  Acompanhe essas conversas para não atrasar.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       <section className="space-y-4">
