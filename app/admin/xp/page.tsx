@@ -12,7 +12,17 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, Award, Zap, BookOpen } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Loader2, Sparkles, Award, Zap, BookOpen, RefreshCcw } from 'lucide-react';
+import { UserSelect } from '@/components/admin/UserSelect';
+import { useToast } from '@/hooks/use-toast';
 
 type AdminStatsSummary = {
   courses?: {
@@ -55,8 +65,19 @@ export default function AdminXpPage() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
 
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [xpValue, setXpValue] = useState('');
+  const [xpAction, setXpAction] = useState<'add' | 'remove'>('add');
+  const [reason, setReason] = useState('');
+  const [submittingXP, setSubmittingXP] = useState(false);
+  const [resettingXP, setResettingXP] = useState(false);
+  const { toast } = useToast();
+
   const isAdmin =
     !!user && (user.role === 'Admin' || user.role === 'Super Admin');
+
+  const isSuperAdminFreeman =
+    user?.role === 'Super Admin' && user?.username === 'freemanpt';
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -93,6 +114,105 @@ export default function AdminXpPage() {
       setLoadingStats(false);
     }
   }, [getToken, isAdmin]);
+
+  const normalizedAmount = useMemo(() => {
+    const numeric = Number(xpValue);
+    if (!Number.isFinite(numeric) || numeric === 0) return null;
+    return Math.abs(Math.trunc(numeric));
+  }, [xpValue]);
+
+  const handleXpAdjustment = async () => {
+    if (!selectedUserId || !normalizedAmount || submittingXP) return;
+
+    const amount = xpAction === 'add' ? normalizedAmount : -normalizedAmount;
+    setSubmittingXP(true);
+
+    try {
+      const token = getToken();
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch('/api/admin/xp/grant', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          userId: selectedUserId,
+          xpAmount: amount,
+          reason: reason || undefined,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || 'Falha ao ajustar XP.');
+      }
+
+      toast({
+        title: 'XP atualizado',
+        description: payload.message || 'O XP foi atualizado com sucesso.',
+      });
+      setXpValue('');
+      setReason('');
+      setXpAction('add');
+      fetchStats();
+    } catch (err: any) {
+      console.error('XP adjustment error', err);
+      toast({
+        title: 'Erro',
+        description: err?.message || 'Não foi possível atualizar o XP.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmittingXP(false);
+    }
+  };
+
+  const handleResetXP = async () => {
+    if (!isSuperAdminFreeman || resettingXP) return;
+
+    if (!confirm('Tem a certeza de que quer resetar todo o XP? Esta ação é irreversível.')) {
+      return;
+    }
+
+    setResettingXP(true);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch('/api/admin/xp/reset', {
+        method: 'POST',
+        headers,
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || 'Falha no reset global de XP.');
+      }
+
+      toast({
+        title: 'Reset global',
+        description:
+          payload.message || 'XP resetado para todos os utilizadores.',
+      });
+      fetchStats();
+    } catch (err: any) {
+      console.error('XP reset error', err);
+      toast({
+        title: 'Erro',
+        description: err?.message || 'Não foi possível resetar o XP.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingXP(false);
+    }
+  };
 
   useEffect(() => {
     if (isAdmin) {
@@ -175,11 +295,11 @@ export default function AdminXpPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
-            <div className="flex flex-col gap-3 md:flex-row">
-              <Button
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
-                onClick={() => router.push('/admin/blog')}
-              >
+              <div className="flex flex-col gap-3 md:flex-row">
+                <Button
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
+                  onClick={() => router.push('/admin/blog')}
+                >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Ver iniciativas que geram XP
               </Button>
@@ -232,6 +352,78 @@ export default function AdminXpPage() {
                   Acompanhe o pipeline real carregado pelo admin stats.
                 </p>
               </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+      <section className="space-y-4">
+        <Card className="bg-card-custom border-custom shadow-lg shadow-amber-950/40">
+          <CardHeader>
+            <CardTitle className="text-heading text-sm font-semibold">
+              Ajustar XP manualmente
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-custom">
+              Selecione um utilizador e aplique ou remova XP diretamente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <UserSelect value={selectedUserId} onChange={setSelectedUserId} />
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Input
+                placeholder="Amount"
+                type="number"
+                value={xpValue}
+                onChange={(event) => setXpValue(event.target.value)}
+              />
+              <Select
+                value={xpAction}
+                onValueChange={(value) => setXpAction(value as 'add' | 'remove')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="add">Add XP</SelectItem>
+                  <SelectItem value="remove">Remove XP</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Reason (optional)"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                onClick={handleXpAdjustment}
+                disabled={!selectedUserId || !normalizedAmount || submittingXP}
+              >
+                {submittingXP ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Zap className="h-4 w-4 mr-2" />
+                )}
+                Aplicar XP
+              </Button>
+              {isSuperAdminFreeman && (
+                <Button
+                  variant="outline"
+                  className="text-red-400 border-red-500"
+                  onClick={handleResetXP}
+                  disabled={resettingXP}
+                >
+                  {resettingXP ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCcw className="h-4 w-4 mr-2" />
+                  )}
+                  Reset global de XP (freemanpt)
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
