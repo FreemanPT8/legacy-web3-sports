@@ -55,6 +55,8 @@ export async function GET(request: NextRequest) {
         xp_total,
         streak_count,
         streak_updated_at,
+        streak_long_count,
+        streak_long_updated_at,
         created_at
       `,
       )
@@ -71,6 +73,7 @@ export async function GET(request: NextRequest) {
 
     const safeXpTotal = Number(userRow.xp_total ?? 0);
     const streakCount = Number(userRow.streak_count ?? 0);
+    const longStreakCount = Number(userRow.streak_long_count ?? 0);
 
     // 2) Transações dos últimos 30 dias
     const { data: txData, error: txError } = await db
@@ -141,6 +144,8 @@ export async function GET(request: NextRequest) {
           xp_last_30_days: xpLast30,
           streak_count: streakCount,
           streak_updated_at: userRow.streak_updated_at,
+          streak_long_count: longStreakCount,
+          streak_long_updated_at: userRow.streak_long_updated_at,
           action_breakdown: actionBreakdown,
           recent_transactions: recentTransactions,
         },

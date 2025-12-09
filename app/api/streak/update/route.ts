@@ -25,10 +25,11 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (user) {
+        const streakDays = result.bonusDays ?? 7;
         const bonusEmail = getStreakBonusEmailTemplate(
           user.username,
           user.email,
-          7,
+          streakDays,
           result.bonus
         );
         await sendEmail(bonusEmail).catch(err => {
@@ -37,15 +38,20 @@ export async function POST(request: Request) {
       }
     }
 
+    const streakMessage =
+      result.bonus > 0
+        ? `Congratulations! ${result.bonusDays ?? 7}-day streak completed. +${result.bonus} XP bonus!`
+        : result.newStreak > 0
+        ? `Streak updated to ${result.newStreak} days!`
+        : 'Streak started!';
+
     return NextResponse.json({
       success: true,
       newStreak: result.newStreak,
+      longStreak: result.longStreak,
       bonus: result.bonus,
-      message: result.bonus > 0
-        ? `Congratulations! 7-day streak completed. +${result.bonus} XP bonus!`
-        : result.newStreak > 0
-        ? `Streak updated to ${result.newStreak} days!`
-        : 'Streak started!'
+      bonusDays: result.bonusDays,
+      message: streakMessage,
     });
   } catch (error) {
     logger.error('Streak update error:', error);

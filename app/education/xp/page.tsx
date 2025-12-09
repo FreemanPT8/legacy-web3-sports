@@ -26,6 +26,8 @@ type XPSummary = {
   xp_last_30_days: number;
   streak_count: number;
   streak_updated_at: string | null;
+  streak_long_count: number;
+  streak_long_updated_at: string | null;
   recent_transactions: {
     id: string;
     action: string;
@@ -55,6 +57,7 @@ export default function DashboardPage() {
   const [loadingMissions, setLoadingMissions] = useState(true);
 
   const [streak, setStreak] = useState(0);
+  const [longStreak, setLongStreak] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   const [globalRank, setGlobalRank] = useState<{
@@ -101,6 +104,9 @@ export default function DashboardPage() {
       const data = await response.json();
       if (data.success) {
         setStreak(data.newStreak);
+        if (typeof data.longStreak === 'number') {
+          setLongStreak(data.longStreak);
+        }
       }
     } catch (error) {
       console.error('Failed to update streak:', error);
@@ -159,6 +165,7 @@ export default function DashboardPage() {
 
       const xpData = data.xp as XPSummary;
       setXpSummary(xpData);
+      setLongStreak(xpData.streak_long_count ?? 0);
 
       if (typeof xpData.streak_count === 'number' && xpData.streak_count > 0) {
         setStreak(xpData.streak_count);
@@ -353,13 +360,22 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 space-y-2">
                   <p className="text-sm text-slate-300">
                     {t('dashboard.keepLearning')}
                   </p>
                   <p className="text-xs text-sky-400 mt-1">
                     {t('dashboard.bonusAt7Days')}
                   </p>
+                  <div className="space-y-1 text-xs">
+                    <p className="text-slate-300">
+                      {t('dashboard.longStreakLabel')} {longStreak}/30
+                    </p>
+                    <p className="text-slate-400">
+                      {t('dashboard.longStreakTooltip')}
+                    </p>
+                    <p className="text-sky-400">{t('dashboard.bonusAt30Days')}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
