@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Users, Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, Edit, Trash2, Eye, EyeOff, Sparkles } from 'lucide-react';
 
 export default function AdminEventsPage() {
   const router = useRouter();
@@ -127,6 +127,90 @@ export default function AdminEventsPage() {
                 </Button>
               </Link>
             </div>
+
+            {/* ACTION PANEL */}
+            <Card className="mb-6 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-blue-900/60 shadow-2xl">
+              <CardHeader className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="bg-blue-500/20 text-blue-100 border border-blue-500/40">
+                    Pulse
+                  </Badge>
+                  <CardTitle className="text-heading text-lg">
+                    Operação de eventos com impacto
+                  </CardTitle>
+                </div>
+                <p className="text-sm text-muted-custom max-w-3xl">
+                  Use os eventos planejados para engajar a comunidade e transformar experiências em XP e participação ativa.
+                </p>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <Button
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => router.push('/admin/events/create')}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Planejar novo evento
+                  </Button>
+                  <Button
+                    className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+                    disabled={events.length === 0}
+                    onClick={() => {
+                      if (events.length === 0) return;
+                      router.push(`/admin/events/${events[0].id}`);
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Revisar evento recente
+                  </Button>
+                  <Button
+                    className="flex-1 border border-emerald-500 text-emerald-100 bg-emerald-950/50 hover:bg-emerald-900"
+                    onClick={() => router.push('/admin')}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Ver impacto comunitário
+                  </Button>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+                  <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
+                    <p className="font-semibold uppercase tracking-wide text-[11px]">
+                      Total
+                    </p>
+                    <p className="text-sm font-bold mt-1">{events.length} eventos</p>
+                    <p className="text-muted-custom text-[11px]">
+                      Dados reais do backend; atualizamos ao carregar a lista.
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                    <p className="font-semibold uppercase tracking-wide text-[11px]">
+                      Ativos
+                    </p>
+                    <p className="text-sm font-bold mt-1">
+                      {events.filter((event) => event.published).length} publicados
+                    </p>
+                    <p className="text-muted-custom text-[11px]">
+                      Use a publicação para garantir XP aos participantes.
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100">
+                    <p className="font-semibold uppercase tracking-wide text-[11px]">
+                      Próximos
+                    </p>
+                    <p className="text-sm font-bold mt-1">
+                      {
+                        events.filter((event) => {
+                          const date = new Date(event.date);
+                          return date.getTime() >= Date.now();
+                        }).length
+                      } agendados
+                    </p>
+                    <p className="text-muted-custom text-[11px]">
+                      Isso mostra o pipeline de experiências no momento.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {loadingEvents ? (
               <div className="text-center py-12">
