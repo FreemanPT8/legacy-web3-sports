@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SafeImage } from '@/app/components/SafeImage';
@@ -314,6 +314,99 @@ export default function CoursesManagementPage() {
               criar ou editar conteúdo.
             </p>
           )}
+        </div>
+      </section>
+
+      {/* ACTION PANEL */}
+      <section>
+        <div className="max-w-6xl mx-auto">
+          <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-emerald-800/60 shadow-xl">
+            <CardHeader className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="bg-emerald-500/20 text-emerald-100 border border-emerald-500/40">
+                  Playbook
+                </Badge>
+                <CardTitle className="text-heading text-lg">
+                  Ações imediatas para acelerar os cursos
+                </CardTitle>
+              </div>
+              <CardDescription className="text-muted-custom max-w-3xl">
+                Organize lançamentos, mantenha módulos engajando e conecte cada update com XP e impacto real.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="flex flex-col gap-3 md:flex-row">
+                <Button
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+                  disabled={!canManageCourses}
+                  onClick={() => {
+                    if (!canManageCourses) return;
+                    router.push('/admin/courses/create');
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar novo curso
+                </Button>
+                <Button
+                  className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900 disabled:opacity-60"
+                  disabled={!canManageCourses}
+                  onClick={() => {
+                    if (!canManageCourses) return;
+                    toast({
+                      title: 'Adicionar módulo',
+                      description:
+                        'Abra um curso e use o builder de módulos/lessons para adicionar conteúdo passo a passo.',
+                    });
+                  }}
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Adicionar módulo
+                </Button>
+                <Button
+                  className="flex-1 border border-blue-600 text-blue-100 hover:bg-blue-900 bg-blue-950/50"
+                  onClick={() => router.push('/admin/courses')}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Rever portfólio
+                </Button>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+                <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+                    Cursos ativos
+                  </p>
+                  <p className="text-sm font-bold mt-1">
+                    {publishedCourses.length} publicados
+                  </p>
+                  <p className="text-muted-custom text-[11px]">
+                    Foque em transformar 3 deles em experiências multimídia.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
+                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+                    Módulos / lições
+                  </p>
+                  <p className="text-sm font-bold mt-1">
+                    {totalModules} módulos · {totalLessons} lições
+                  </p>
+                  <p className="text-muted-custom text-[11px]">
+                    Cada módulo concluído gera potencial de XP e retenção.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
+                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+                    Engajamento
+                  </p>
+                  <p className="text-sm font-bold mt-1">
+                    {draftCourses.length} rascunhos
+                  </p>
+                  <p className="text-muted-custom text-[11px]">
+                    Finalize e publique para ativar XP em massa.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
