@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -20,49 +20,41 @@ import {
   Zap,
 } from 'lucide-react';
 
-const forumMetrics = [
-  { label: 'Threads ativos', value: 54 },
-  { label: 'Mensagens (24h)', value: 312 },
-  { label: 'Users engajados', value: 142 },
-  { label: 'Reports pendentes', value: 7 },
-];
+type TopicSummary = {
+  id: string;
+  title?: string | null;
+  views?: number | null;
+  room?: { name?: string | null };
+};
 
-const trendingThreads = [
-  {
-    title: 'Como prepararmos os próximos eventos?',
-    replies: 68,
-    activity: '2h',
-  },
-  {
-    title: 'Ideias de badges de experiência',
-    replies: 45,
-    activity: '4h',
-  },
-  {
-    title: 'Atualização das rules da comunidade',
-    replies: 29,
-    activity: '6h',
-  },
-];
+type PostSummary = {
+  id: string;
+  content?: string | null;
+  created_at?: string | null;
+  topic?: { id: string; title?: string | null };
+  author?: { username?: string | null };
+};
 
-const moderationQueue = [
-  { id: 'report-1', type: 'Spam', user: 'guerreiro' },
-  { id: 'report-2', type: 'Comportamento', user: 'lugani' },
-  { id: 'report-3', type: 'Conteúdo impróprio', user: 'alvamar' },
-];
+type ForumSummary = {
+  topicCount: number;
+  postCount: number;
+  roomCount: number;
+  topTopics: TopicSummary[];
+  recentPosts: PostSummary[];
+};
 
-const MetricItem = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-    <p className="text-xs uppercase text-muted-custom">{label}</p>
-    <p className="text-3xl font-semibold text-heading">
-      {value.toLocaleString('pt-PT')}
-    </p>
-  </div>
-);
+const truncate = (value: string | undefined | null, length = 80) => {
+  if (!value) return '—';
+  return value.length > length ? `${value.slice(0, length)}...` : value;
+};
 
 export default function AdminForumPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, getToken } = useAuth();
+
+  const [summary, setSummary] = useState<ForumSummary | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const isAdmin =
     !!user && (user.role === 'Admin' || user.role === 'Super Admin');
@@ -72,6 +64,53 @@ export default function AdminForumPage() {
       router.push('/login');
     }
   }, [user, loading, router, isAdmin]);
+
+  const fetchSummary = useCallback(async () => {
+    if (!isAdmin) return;
+    setLoadingSummary(true);
+    setSummaryError(null);
+
+    try {
+      const token = getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch('/api/admin/forum/summary', { headers });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        setSummaryError(payload.error || 'Não foi possível carregar dados do fórum.');
+        setSummary(null);
+        return;
+      }
+
+      setSummary(payload.summary || null);
+    } catch (error: any) {
+      console.error('Erro carregando resumo do fórum:', error);
+      setSummaryError(error?.message || 'Erro inesperado.');
+      setSummary(null);
+    } finally {
+      setLoadingSummary(false);
+    }
+  }, [getToken, isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchSummary();
+    }
+  }, [isAdmin, fetchSummary]);
+
+  const quickMetrics = useMemo(
+    () => [
+      { label: 'Threads totais', value: summary?.topicCount ?? 0 },
+      { label: 'Posts registrados', value: summary?.postCount ?? 0 },
+      { label: 'Salas monitoradas', value: summary?.roomCount ?? 0 },
+    ],
+    [summary],
+  );
+
+  const topTopics = summary?.topTopics ?? [];
+  const recentPosts = summary?.recentPosts ?? [];
 
   if (loading || !user || !isAdmin) {
     return (
@@ -93,19 +132,21 @@ export default function AdminForumPage() {
         </div>
         <div className="relative z-10 max-w-5xl">
           <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin ƒ?" Forum
+            LEGACY Admin — Fórum
           </span>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
             <MessageCircle className="h-7 w-7 text-purple-300" />
-            Forum Control Center
+            Forum Control Room
           </h1>
           <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Monitoriza tópicos, acelera moderação e mantém uma comunidade saudável.
+            Monitore tópicos ativos, priorize moderação e acompanhe os dados oficiais do fórum.
           </p>
+          {summaryError && (
+            <p className="mt-3 text-xs text-red-400">{summaryError}</p>
+          )}
         </div>
       </section>
 
-      {/* ACTION PANEL */}
       <section>
         <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-purple-900/60 shadow-2xl mx-auto max-w-6xl">
           <CardHeader className="flex flex-col gap-3">
@@ -114,12 +155,11 @@ export default function AdminForumPage() {
                 Pulse
               </Badge>
               <CardTitle className="text-heading text-lg">
-                Fórum com ritmo e moderação
+                Fórum com ritmo
               </CardTitle>
             </div>
             <p className="text-muted-custom text-sm max-w-3xl">
-              Abra debates, priorize a moderação e acompanhe os indicadores reais
-              do fórum para que cada thread gere XP e comunidade.
+              Use métricas reais para priorizar threads, moderação e crescimento da comunidade.
             </p>
           </CardHeader>
           <CardContent className="pt-2">
@@ -147,39 +187,25 @@ export default function AdminForumPage() {
               </Button>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
-              <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Threads ativos
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {forumMetrics[0]?.value ?? 0}
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Contagem mostrada é atual.
-                </p>
-              </div>
-              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Moderação
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {moderationQueue.length} report(es)
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Use esse conteudo real para priorizar respostas.
-                </p>
-              </div>
-              <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Mensagens (24h)
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {forumMetrics[1]?.value ?? 0}
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Esse volume é medido minuto a minuto.
-                </p>
-              </div>
+              {loadingSummary ? (
+                <div className="md:col-span-3 text-center text-sm text-muted-custom">
+                  A carregar métricas do fórum...
+                </div>
+              ) : (
+                quickMetrics.map((metric) => (
+                  <div
+                    key={metric.label}
+                    className="rounded-lg border border-slate-800 bg-slate-950/40 p-3"
+                  >
+                    <p className="text-[11px] uppercase text-muted-custom">
+                      {metric.label}
+                    </p>
+                    <p className="text-2xl font-semibold text-heading">
+                      {metric.value.toLocaleString('pt-PT')}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -189,80 +215,77 @@ export default function AdminForumPage() {
         <Card className="bg-card-custom border-custom shadow-lg shadow-purple-950/40">
           <CardHeader>
             <CardTitle className="text-heading text-sm font-semibold">
-              Visão geral do fórum
+              Top threads por views
             </CardTitle>
             <CardDescription className="text-xs text-muted-custom">
-              Atividade instantânea e reports críticos.
+              Baseado nos dados oficiais.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-4 gap-4">
-            {forumMetrics.map((metric) => (
-              <MetricItem
-                key={metric.label}
-                label={metric.label}
-                value={metric.value}
-              />
-            ))}
+          <CardContent className="space-y-3">
+            {topTopics.length === 0 ? (
+              <p className="text-xs text-muted-custom">Sem dados disponíveis.</p>
+            ) : (
+              topTopics.map((topic) => (
+                <div
+                  key={topic.id}
+                  className="flex items-center justify-between gap-3 border border-slate-800 rounded-md px-3 py-2 bg-slate-950/60 text-sm"
+                >
+                  <div>
+                    <p className="font-semibold text-heading">
+                      {topic.title ?? 'Sem título'}
+                    </p>
+                    {topic.room?.name && (
+                      <p className="text-[11px] text-muted-custom">
+                        Sala: {topic.room.name}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-custom">
+                    {topic.views?.toLocaleString('pt-PT') ?? '0'} views
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="bg-card-custom border-custom">
-            <CardHeader>
-              <CardTitle className="text-heading flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-emerald-400" />
-                Threads em destaque
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-body">
-              {trendingThreads.map((thread) => (
+        <Card className="bg-card-custom border-custom">
+          <CardHeader>
+            <CardTitle className="text-heading text-sm font-semibold">
+              Atividade recente
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-custom">
+              Últimos posts publicados.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recentPosts.length === 0 ? (
+              <p className="text-xs text-muted-custom">Sem atividade recente.</p>
+            ) : (
+              recentPosts.map((post) => (
                 <div
-                  key={thread.title}
-                  className="flex flex-col border border-slate-800 rounded-md p-3 bg-slate-950/60"
+                  key={post.id}
+                  className="rounded-md border border-slate-800 bg-slate-950/60 p-3 text-xs space-y-1"
                 >
-                  <p className="text-sm font-semibold text-heading">
-                    {thread.title}
+                  <div className="flex items-center justify-between text-muted-custom uppercase tracking-wide">
+                    <span>
+                      {post.topic?.title ?? 'Sem tópico'} ·{' '}
+                      {post.author?.username ? `@${post.author.username}` : '—'}
+                    </span>
+                    {post.created_at && (
+                      <span>
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-body">
+                    {truncate(post.content)}
                   </p>
-                  <div className="flex items-center justify-between text-xs text-muted-custom">
-                    <span>{thread.replies} respostas</span>
-                    <span>Última atividade há {thread.activity}</span>
-                  </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card-custom border-custom">
-            <CardHeader>
-              <CardTitle className="text-heading flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-amber-400" />
-                Moderação rápida
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {moderationQueue.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between border border-slate-800 rounded-md p-3 bg-slate-950/60"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-heading">
-                      {item.type}
-                    </p>
-                    <p className="text-xs text-muted-custom">por {item.user}</p>
-                  </div>
-                  <Badge variant="secondary">Prioritário</Badge>
-                </div>
-              ))}
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => router.push('/admin/forum')}
-              >
-                Abrir central de moderação
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </section>
     </div>
   );

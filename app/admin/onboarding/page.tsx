@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
+  CardDescription,
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,40 +14,81 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Mail, Sparkles, Loader2, ClipboardList } from 'lucide-react';
 
-const quickMetrics = [
-  { label: 'Leads novos (24h)', value: 28, hint: 'Contactados' },
-  { label: 'Onboardings em curso', value: 12, hint: 'Equipa Design' },
-  { label: 'Pendentes por responder', value: 6, hint: 'Follow-up' },
-  { label: 'Tempo médio (dias)', value: 4, hint: 'Meta: ≤ 7' },
-];
+type OnboardingStatsPayload = {
+  onboarding?: {
+    pendingTotal?: number;
+    pendingPorAbrir?: number;
+    pendingByStatus?: Record<string, number>;
+    byResponsible?: Record<string, number>;
+  };
+};
 
-const pipelineStages = [
+type StageConfig = {
+  status: string;
+  label: string;
+  badgeVariant: 'default' | 'secondary' | 'outline';
+  badgeLabel: string;
+  description: string;
+};
+
+const stageConfigs: StageConfig[] = [
   {
-    label: 'Descoberta',
-    count: 14,
-    badgeVariant: 'default',
-    badgeLabel: 'Active',
-  },
-  {
-    label: 'Introducao',
-    count: 8,
-    badgeVariant: 'secondary',
-    badgeLabel: 'In review',
-  },
-  {
-    label: 'Checklist',
-    count: 5,
+    status: 'PENDING_RESPONSE',
+    label: 'Aguardando primeiro contacto',
     badgeVariant: 'outline',
-    badgeLabel: 'Awaiting input',
+    badgeLabel: 'Novo',
+    description: 'Leads que ainda não foram contactados.',
   },
   {
-    label: 'Conclusao',
-    count: 3,
+    status: 'RESPONDED_WAITING',
+    label: 'À espera de resposta',
+    badgeVariant: 'secondary',
+    badgeLabel: 'Follow-up',
+    description: 'Mensagens enviadas aguardando retorno.',
+  },
+  {
+    status: 'FIRST_CONTACT_SCHEDULED',
+    label: 'Primeiro contacto agendado',
     badgeVariant: 'default',
-    badgeLabel: 'Completed',
+    badgeLabel: 'Agendado',
+    description: 'Contatos com primeira chamada marcada.',
+  },
+  {
+    status: 'FIRST_CONTACT_DONE',
+    label: 'Primeiro contacto concluído',
+    badgeVariant: 'default',
+    badgeLabel: 'Em progresso',
+    description: 'Primeiras conversas realizadas.',
+  },
+  {
+    status: 'ONBOARDING_LEGACY',
+    label: 'Trilha Legacy',
+    badgeVariant: 'default',
+    badgeLabel: 'Legacy',
+    description: 'Leads ativados no programa principal.',
+  },
+  {
+    status: 'ONBOARDING_DAO1',
+    label: 'Trilha DAO1',
+    badgeVariant: 'default',
+    badgeLabel: 'DAO1',
+    description: 'Leads encaminhados para as squads DAO1.',
+  },
+  {
+    status: 'ONBOARDING_TELEGRAM',
+    label: 'Trilha Telegram',
+    badgeVariant: 'outline',
+    badgeLabel: 'Telegram',
+    description: 'Leads em grupos exclusivos do Telegram.',
+  },
+  {
+    status: 'unknown',
+    label: 'Outros estados',
+    badgeVariant: 'outline',
+    badgeLabel: 'Outros',
+    description: 'Estados adicionais do pipeline.',
   },
 ];
-
 
 const StatTile = ({
   label,
@@ -69,7 +110,11 @@ const StatTile = ({
 
 export default function AdminOnboardingPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, getToken } = useAuth();
+
+  const [stats, setStats] = useState<OnboardingStatsPayload | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   const isAdmin =
     !!user && (user.role === 'Admin' || user.role === 'Super Admin');
@@ -80,8 +125,85 @@ export default function AdminOnboardingPage() {
     }
   }, [loading, user, router, isAdmin]);
 
-  const stages = useMemo(() => pipelineStages, []);
+  const fetchStats = useCallback(async () => {
+    if (!isAdmin) return;
+    setLoadingStats(true);
+    setStatsError(null);
 
+    try {
+      const token = getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch('/api/admin/stats', { headers });
+      const payload = await res.json();
+
+      if (!res.ok || !payload.success) {
+        setStatsError(payload.error || 'Falha ao carregar métricas de onboarding.');
+        setStats(null);
+        return;
+      }
+
+      setStats(payload.stats);
+    } catch (error: any) {
+      console.error('Erro ao buscar stats de onboarding:', error);
+      setStatsError(error?.message || 'Erro inesperado ao carregar dados.');
+      setStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [getToken, isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchStats();
+    }
+  }, [isAdmin, fetchStats]);
+
+  const onboardingStats = useMemo(
+    () => ({
+      pendingTotal: stats?.onboarding?.pendingTotal ?? 0,
+      pendingPorAbrir: stats?.onboarding?.pendingPorAbrir ?? 0,
+      pendingByStatus: stats?.onboarding?.pendingByStatus ?? {},
+      byResponsible: stats?.onboarding?.byResponsible ?? {},
+    }),
+    [stats],
+  );
+
+  const quickMetrics = useMemo(
+    () => [
+      {
+        label: 'Onboardings ativos',
+        value: onboardingStats.pendingTotal,
+        hint: 'Inclui todas as fases abertas do pipeline.',
+      },
+      {
+        label: 'Leads por abrir',
+        value: onboardingStats.pendingPorAbrir,
+        hint: 'Contatos ainda não iniciados.',
+      },
+      {
+        label: 'Responsáveis engajados',
+        value: Object.keys(onboardingStats.byResponsible).length,
+        hint: 'Admins com leads atribuídos.',
+      },
+    ],
+    [onboardingStats],
+  );
+
+  const stageData = useMemo(
+    () =>
+      stageConfigs.map((stage) => ({
+        ...stage,
+        count: onboardingStats.pendingByStatus[stage.status] ?? 0,
+      })),
+    [onboardingStats],
+  );
+
+  const firstContactScheduled =
+    onboardingStats.pendingByStatus['FIRST_CONTACT_SCHEDULED'] ?? 0;
+
+  const pendingTotal = onboardingStats.pendingTotal;
 
   if (loading || !user || !isAdmin) {
     return (
@@ -103,15 +225,18 @@ export default function AdminOnboardingPage() {
         </div>
         <div className="relative z-10 max-w-5xl">
           <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin ƒ?" Onboarding
+            LEGACY Admin — Onboarding
           </span>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
             <Mail className="h-7 w-7 text-emerald-300" />
             Onboarding Central
           </h1>
           <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            acompanha cadaLead, responde a tempo e garante que ninguém fica esquecido no processo.
+            Acompanhe cada lead, responda rapidamente e garanta que ninguém fica parado no fluxo.
           </p>
+          {statsError && (
+            <p className="mt-3 text-xs text-red-400">{statsError}</p>
+          )}
         </div>
       </section>
 
@@ -128,8 +253,8 @@ export default function AdminOnboardingPage() {
               </CardTitle>
             </div>
             <p className="text-muted-custom text-sm max-w-3xl">
-              Use dados reais do pipeline para priorizar mensagens, acelerar o
-              contato e garantir que ninguém fique parado em cada etapa.
+              Dados reais do pipeline para priorizar respostas e acelerar
+              cada etapa do contato.
             </p>
           </CardHeader>
           <CardContent className="pt-2">
@@ -157,39 +282,20 @@ export default function AdminOnboardingPage() {
               </Button>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
-              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Leads (24h)
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {quickMetrics[0]?.value ?? 0}
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Atualizado automaticamente.
-                </p>
-              </div>
-              <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Onboardings ativos
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {quickMetrics[1]?.value ?? 0}
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Meta de {quickMetrics[3]?.value ?? 0} dias para conclusão.
-                </p>
-              </div>
-              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Pendentes
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {quickMetrics[2]?.value ?? 0}
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Acompanhe essas conversas para não atrasar.
-                </p>
-              </div>
+              {loadingStats ? (
+                <div className="md:col-span-3 text-center text-sm text-muted-custom">
+                  A carregar métricas rápidas...
+                </div>
+              ) : (
+                quickMetrics.map((metric) => (
+                  <StatTile
+                    key={metric.label}
+                    label={metric.label}
+                    value={metric.value}
+                    hint={metric.hint}
+                  />
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -202,45 +308,28 @@ export default function AdminOnboardingPage() {
               Métricas rápidas
             </CardTitle>
             <CardDescription className="text-muted-custom text-xs">
-              Visão imediata dos pontos críticos no onboarding ativo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-4 gap-4">
-            {quickMetrics.map((metric) => (
-              <StatTile
-                key={metric.label}
-                label={metric.label}
-                value={metric.value}
-                hint={metric.hint}
-              />
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card-custom border-custom">
-          <CardHeader className="pb-3 flex flex-col gap-2">
-            <CardTitle className="text-heading">Pipeline de onboarding</CardTitle>
-            <CardDescription className="text-xs text-muted-custom">
-              Complementa com follow-ups e responsáveis.
+              Visão imediata das fases críticas do pipeline.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-4">
-            {stages.map((stage) => (
+            {stageData.map((stage) => (
               <div
-                key={stage.label}
+                key={stage.status}
                 className="rounded-lg border border-slate-800 bg-slate-950/60 p-4 flex flex-col gap-2"
               >
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-heading">{stage.label}</p>
-                  <Badge variant={stage.badgeVariant as any}>{stage.badgeLabel}</Badge>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-heading">
+                    {stage.label}
+                  </p>
+                  <Badge variant={stage.badgeVariant as any}>
+                    {stage.badgeLabel}
+                  </Badge>
                 </div>
                 <p className="text-3xl font-semibold text-heading">
                   {stage.count}
                 </p>
                 <p className="text-xs text-muted-custom">
-                  {stage.badgeVariant === 'outline'
-                    ? 'Requer feedback do mentor'
-                    : 'Trilha em andamento'}
+                  {stage.description}
                 </p>
               </div>
             ))}
@@ -251,7 +340,7 @@ export default function AdminOnboardingPage() {
           <CardHeader>
             <CardTitle className="text-heading">Ações rápidas</CardTitle>
             <CardDescription className="text-xs text-muted-custom">
-              Centraliza tarefas e cronogramas.
+              Priorize follow-ups com base nos números reais.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -259,7 +348,10 @@ export default function AdminOnboardingPage() {
               <div>
                 <p className="text-xs text-muted-custom uppercase">Checklist</p>
                 <p className="text-lg font-semibold text-heading">
-                  Completar acompanhamento de convidados VIP
+                  {firstContactScheduled.toLocaleString('pt-PT')} contatos agendados
+                </p>
+                <p className="text-xs text-muted-custom mt-1">
+                  Contatos com primeira chamada marcada.
                 </p>
               </div>
               <Button variant="outline" className="border-emerald-500">
@@ -268,11 +360,12 @@ export default function AdminOnboardingPage() {
             </div>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs text-muted-custom uppercase">
-                  Mensagens pendentes
-                </p>
+                <p className="text-xs text-muted-custom uppercase">Mensagens pendentes</p>
                 <p className="text-lg font-semibold text-heading">
-                  3 conversas aguardam resposta
+                  {pendingTotal.toLocaleString('pt-PT')} conversas abertas
+                </p>
+                <p className="text-xs text-muted-custom mt-1">
+                  Acompanhe essas conversas para não atrasar o onboarding.
                 </p>
               </div>
               <Button className="bg-blue-600 hover:bg-blue-700">

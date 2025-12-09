@@ -599,29 +599,35 @@ export default function AdminBlogPage() {
               <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
                 <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
                   <p className="font-semibold text-[11px] uppercase tracking-wide">
-                    Meta XP
+                    XP distribuído
                   </p>
-                  <p className="text-sm font-bold mt-1">+222 XP semanal</p>
+                  <p className="text-sm font-bold mt-1">
+                    {xpTotalAll.toLocaleString('pt-PT', { maximumFractionDigits: 0 })} XP
+                  </p>
                   <p className="text-muted-custom text-[11px]">
-                    Publique 3 posts de liderança nesta semana.
+                    Somatório direto dos posts listados nesta página.
                   </p>
                 </div>
                 <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
                   <p className="font-semibold text-[11px] uppercase tracking-wide">
-                    Alcance
+                    Visualizações
                   </p>
-                  <p className="text-sm font-bold mt-1">3.6K leituras</p>
+                  <p className="text-sm font-bold mt-1">
+                    {totalViewsAll.toLocaleString('pt-PT', { maximumFractionDigits: 0 })}
+                  </p>
                   <p className="text-muted-custom text-[11px]">
-                    Os conteúdos com badge “Top” mostram confiança da comunidade.
+                    Número real capturado do campo de views dos posts.
                   </p>
                 </div>
                 <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
                   <p className="font-semibold text-[11px] uppercase tracking-wide">
-                    Confiança
+                    Publicados
                   </p>
-                  <p className="text-sm font-bold mt-1">4.9⭐</p>
+                  <p className="text-sm font-bold mt-1">
+                    {publishedPosts.length}
+                  </p>
                   <p className="text-muted-custom text-[11px]">
-                    Feedback da comunidade em destaque quando o post vira destaque.
+                    Posts reais exibidos no filtro atual.
                   </p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -14,25 +14,29 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, Award, Zap, BookOpen } from 'lucide-react';
 
-const xpMetrics = [
-  { label: 'XP total distribuído', value: 126_400 },
-  { label: 'Novos eventos (24h)', value: 18 },
-  { label: 'Criadores ativos', value: 62 },
-  { label: 'XP médio por evento', value: 400 },
-];
-
-const topEarners = [
-  { name: 'Marta Campos', xp: 8200, role: 'Líder de Houses' },
-  { name: 'Thiago Dias', xp: 7100, role: 'Mentor de Projetos' },
-  { name: 'LEGACY Crew', xp: 6600, role: 'Operações' },
-];
-
-const rewardStreams = [
-  { label: 'Cursos', xp: 54_200 },
-  { label: 'Blog & News', xp: 21_800 },
-  { label: 'Houses', xp: 28_500 },
-  { label: 'Experiências & Lives', xp: 21_900 },
-];
+type AdminStatsSummary = {
+  courses?: {
+    activeCourses?: number;
+    totalCourses?: number;
+    xp?: {
+      allActions?: {
+        total?: number;
+        last24h?: number;
+        last30d?: number;
+      };
+      totalCourses?: number;
+      totalModules?: number;
+      totalLessons?: number;
+    };
+  };
+  blog?: {
+    totalPosts?: number;
+    xp?: { total?: number; last24h?: number; last30d?: number };
+  };
+  onboarding?: {
+    pendingTotal?: number;
+  };
+};
 
 const MetricCard = ({ label, value }: { label: string; value: number }) => (
   <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
@@ -45,7 +49,11 @@ const MetricCard = ({ label, value }: { label: string; value: number }) => (
 
 export default function AdminXpPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, getToken } = useAuth();
+
+  const [stats, setStats] = useState<AdminStatsSummary | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   const isAdmin =
     !!user && (user.role === 'Admin' || user.role === 'Super Admin');
@@ -55,6 +63,64 @@ export default function AdminXpPage() {
       router.push('/login');
     }
   }, [loading, user, router, isAdmin]);
+
+  const fetchStats = useCallback(async () => {
+    if (!isAdmin) return;
+    const token = getToken();
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    try {
+      setLoadingStats(true);
+      setStatsError(null);
+      const response = await fetch('/api/admin/stats', { headers });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setStatsError(data.error || 'Failed to load XP stats');
+        setStats(null);
+        return;
+      }
+
+      setStats(data.stats as AdminStatsSummary);
+    } catch (error) {
+      console.error('Error loading XP stats:', error);
+      setStatsError('Failed to load XP stats');
+      setStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [getToken, isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchStats();
+    }
+  }, [isAdmin, fetchStats]);
+
+  const safeStats = useMemo(() => {
+    return {
+      xpTotal: stats?.courses?.xp?.allActions?.total ?? 0,
+      xp24h: stats?.courses?.xp?.allActions?.last24h ?? 0,
+      xp30d: stats?.courses?.xp?.allActions?.last30d ?? 0,
+      blogPosts: stats?.blog?.totalPosts ?? 0,
+      coursesActive: stats?.courses?.activeCourses ?? 0,
+      coursesTotal: stats?.courses?.totalCourses ?? 0,
+      onboardingPending: stats?.onboarding?.pendingTotal ?? 0,
+    };
+  }, [stats]);
+
+  const metrics = useMemo(
+    () => [
+      { label: 'XP total (all actions)', value: safeStats.xpTotal },
+      { label: 'XP últimas 24h', value: safeStats.xp24h },
+      { label: 'XP últimos 30d', value: safeStats.xp30d },
+      { label: 'Postagens de blog', value: safeStats.blogPosts },
+    ],
+    [safeStats],
+  );
 
   if (loading || !user || !isAdmin) {
     return (
@@ -76,19 +142,22 @@ export default function AdminXpPage() {
         </div>
         <div className="relative z-10 max-w-5xl">
           <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin ƒ?" XP
+            LEGACY Admin — XP
           </span>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
             <Sparkles className="h-7 w-7 text-amber-300" />
             XP Control Room
           </h1>
           <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Monitora como XP circula, premia quem importa e detecta fluxos críticos.
+            Monitora como XP circula, premia quem importa e detecta fluxos críticos com
+            base nos números oficiais.
           </p>
+          {statsError && (
+            <p className="mt-3 text-xs text-red-400">{statsError}</p>
+          )}
         </div>
       </section>
 
-      {/* ACTION PANEL */}
       <section>
         <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-900/60 shadow-2xl mx-auto max-w-6xl">
           <CardHeader className="flex flex-col gap-2">
@@ -100,8 +169,9 @@ export default function AdminXpPage() {
                 Operação de XP com foco em impacto
               </CardTitle>
             </div>
-            <CardDescription className="text-muted-custom max-w-3xl">
-              Conecte distribuições a ações mensuráveis (posts, cursos, eventos) e mantenha o valor do XP claro para toda a comunidade.
+            <CardDescription className="text-muted-custom text-sm max-w-3xl">
+              Conecte as distribuições de XP a ações mensuráveis (posts, cursos, eventos)
+              a partir dos dados oficiais do painel admin.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
@@ -131,29 +201,35 @@ export default function AdminXpPage() {
             <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
               <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100">
                 <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Meta semanal
+                  XP total
                 </p>
-                <p className="text-sm font-bold mt-1">+12k XP distribuídos</p>
+                <p className="text-2xl font-bold mt-1">
+                  {safeStats.xpTotal.toLocaleString('pt-PT')}
+                </p>
                 <p className="text-muted-custom text-[11px]">
-                  Priorize campanhas multicanal com foco em +222 XP por experiência.
-                </p>
-              </div>
-              <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Fluxo
-                </p>
-                <p className="text-sm font-bold mt-1">68% XP em iniciativas oficiais</p>
-                <p className="text-muted-custom text-[11px]">
-                  Mantenha as ações alinhadas ao roadmap e evite dispersão de XP.
+                  Métrica puxada direto de /api/admin/stats.
                 </p>
               </div>
               <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
                 <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Comunidade
+                  Cursos ativos
                 </p>
-                <p className="text-sm font-bold mt-1">+4k participantes ativos</p>
+                <p className="text-2xl font-bold mt-1">
+                  {safeStats.coursesActive.toLocaleString('pt-PT')}
+                </p>
                 <p className="text-muted-custom text-[11px]">
-                  Use esses números para calibrar recompensas e narrativas públicas.
+                  Atualizado conforme os cursos no dashboard.
+                </p>
+              </div>
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                <p className="font-semibold uppercase tracking-wide text-[11px]">
+                  Onboardings pendentes
+                </p>
+                <p className="text-2xl font-bold mt-1">
+                  {safeStats.onboardingPending.toLocaleString('pt-PT')}
+                </p>
+                <p className="text-muted-custom text-[11px]">
+                  Acompanhe o pipeline real carregado pelo admin stats.
                 </p>
               </div>
             </div>
@@ -168,72 +244,19 @@ export default function AdminXpPage() {
               Métricas principais
             </CardTitle>
             <CardDescription className="text-xs text-muted-custom">
-              Um painel rápido de onde o XP reage.
+              Um painel rápido com números reais do XP.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid md:grid-cols-4 gap-4">
-            {xpMetrics.map((metric) => (
-              <MetricCard key={metric.label} label={metric.label} value={metric.value} />
+            {metrics.map((metric) => (
+              <MetricCard
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+              />
             ))}
           </CardContent>
         </Card>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="bg-card-custom border-custom">
-            <CardHeader>
-              <CardTitle className="text-heading flex items-center gap-2">
-                <Award className="h-4 w-4 text-emerald-400" />
-                Top creators da semana
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topEarners.map((creator) => (
-                <div
-                  key={creator.name}
-                  className="flex items-center justify-between border border-slate-800 rounded-md px-3 py-2 bg-slate-950/60"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-heading">
-                      {creator.name}
-                    </p>
-                    <p className="text-xs text-muted-custom">{creator.role}</p>
-                  </div>
-                  <p className="text-lg font-bold text-emerald-400">
-                    {creator.xp.toLocaleString('pt-PT')} XP
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card-custom border-custom">
-            <CardHeader>
-              <CardTitle className="text-heading flex items-center gap-2">
-                <Zap className="h-4 w-4 text-blue-400" />
-                Fluxos de recompensa
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {rewardStreams.map((stream) => (
-                <div
-                  key={stream.label}
-                  className="flex items-center justify-between border border-slate-800 rounded-md px-3 py-2 bg-slate-950/60"
-                >
-                  <p className="text-sm text-muted-custom">{stream.label}</p>
-                  <Badge variant="outline">
-                    {stream.xp.toLocaleString('pt-PT')} XP
-                  </Badge>
-                </div>
-              ))}
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => router.push('/admin')}
-              >
-                Revisitar métricas gerais
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
       </section>
     </div>
   );
