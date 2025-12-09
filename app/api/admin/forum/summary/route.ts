@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         .limit(5),
     ]);
 
-    const topicsCount =
+    const topicCount =
       topicsCountResult.count ?? topicsCountResult.data?.length ?? 0;
     const postsCount =
       postsCountResult.count ?? postsCountResult.data?.length ?? 0;
