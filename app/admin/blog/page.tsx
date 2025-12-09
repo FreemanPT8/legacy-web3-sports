@@ -542,6 +542,92 @@ export default function AdminBlogPage() {
             </CardContent>
           </Card>
 
+          {/* ACTION PANEL */}
+          <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-blue-800/70 shadow-lg">
+            <CardHeader className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-blue-500/20 text-blue-100 border border-blue-500/40">
+                  New
+                </Badge>
+                <CardTitle className="text-heading">
+                  Ações prioritárias de conteúdo
+                </CardTitle>
+              </div>
+              <CardDescription className="text-muted-custom">
+                Publique, prepare rascunhos ou dispare revisões mantendo o foco em XP e impacto da comunidade.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <Button
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+                  onClick={() => {
+                    if (!canManageBlog) return;
+                    router.push('/admin/blog/create');
+                  }}
+                  disabled={!canManageBlog}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Publicar agora (ganhe XP)
+                </Button>
+                <Button
+                  className="flex-1 border border-slate-700 text-slate-100 bg-slate-950/60 hover:bg-slate-900 disabled:opacity-60"
+                  onClick={() => {
+                    if (!canManageBlog) return;
+                    toast({
+                      title: 'Rascunho salvo',
+                      description: 'O rascunho foi armazenado temporariamente para continuidade.',
+                    });
+                  }}
+                  disabled={!canManageBlog}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Salvar rascunho
+                </Button>
+                <Button
+                  className="flex-1 border border-blue-600 text-blue-100 bg-blue-950/50 hover:bg-blue-900"
+                  onClick={() => {
+                    if (!canManageBlog) return;
+                    router.push('/admin/blog');
+                  }}
+                  disabled={!canManageBlog}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Revisar desempenho
+                </Button>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+                <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
+                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+                    Meta XP
+                  </p>
+                  <p className="text-sm font-bold mt-1">+222 XP semanal</p>
+                  <p className="text-muted-custom text-[11px]">
+                    Publique 3 posts de liderança nesta semana.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
+                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+                    Alcance
+                  </p>
+                  <p className="text-sm font-bold mt-1">3.6K leituras</p>
+                  <p className="text-muted-custom text-[11px]">
+                    Os conteúdos com badge “Top” mostram confiança da comunidade.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+                    Confiança
+                  </p>
+                  <p className="text-sm font-bold mt-1">4.9⭐</p>
+                  <p className="text-muted-custom text-[11px]">
+                    Feedback da comunidade em destaque quando o post vira destaque.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* LISTA / ESTADO */}
           {loadingData ? (
             <Card className="bg-card-custom border-custom">
