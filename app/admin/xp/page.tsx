@@ -20,7 +20,14 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { Loader2, Sparkles, Award, Zap, BookOpen, RefreshCcw } from 'lucide-react';
+import {
+  Loader2,
+  Sparkles,
+  Award,
+  Zap,
+  BookOpen,
+  RefreshCcw,
+} from 'lucide-react';
 import { UserSelect } from '@/components/admin/UserSelect';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,18 +41,36 @@ type AdminStatsSummary = {
         last24h?: number;
         last30d?: number;
       };
-      totalCourses?: number;
-      totalModules?: number;
-      totalLessons?: number;
     };
   };
   blog?: {
     totalPosts?: number;
-    xp?: { total?: number; last24h?: number; last30d?: number };
   };
   onboarding?: {
     pendingTotal?: number;
   };
+};
+
+type RewardConfig = {
+  action_type: string;
+  label: string;
+  description: string;
+  min_xp: number;
+  max_xp: number;
+  creator_bonus_pct?: number | null;
+};
+
+type LimitConfig = {
+  action_type: string;
+  xp_earned: number;
+  count: number;
+};
+
+type ThresholdConfig = {
+  id: string;
+  xp_total: number;
+  feature_name: string;
+  description: string;
 };
 
 const MetricCard = ({ label, value }: { label: string; value: number }) => (
@@ -60,10 +85,18 @@ const MetricCard = ({ label, value }: { label: string; value: number }) => (
 export default function AdminXpPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
+  const { toast } = useToast();
 
   const [stats, setStats] = useState<AdminStatsSummary | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [xpConfig, setXpConfig] = useState<{
+    rewards: RewardConfig[];
+    limits: LimitConfig[];
+    thresholds: ThresholdConfig[];
+  } | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [savingConfig, setSavingConfig] = useState(false);
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [xpValue, setXpValue] = useState('');
@@ -71,11 +104,9 @@ export default function AdminXpPage() {
   const [reason, setReason] = useState('');
   const [submittingXP, setSubmittingXP] = useState(false);
   const [resettingXP, setResettingXP] = useState(false);
-  const { toast } = useToast();
 
   const isAdmin =
     !!user && (user.role === 'Admin' || user.role === 'Super Admin');
-
   const isSuperAdminFreeman =
     user?.role === 'Super Admin' && user?.username === 'freemanpt';
 
@@ -92,28 +123,60 @@ export default function AdminXpPage() {
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
-
     try {
       setLoadingStats(true);
       setStatsError(null);
       const response = await fetch('/api/admin/stats', { headers });
       const data = await response.json();
-
       if (!response.ok || !data.success) {
-        setStatsError(data.error || 'Failed to load XP stats');
+        setStatsError(data.error || 'Falha ao carregar métricas de XP');
         setStats(null);
         return;
       }
-
       setStats(data.stats as AdminStatsSummary);
     } catch (error) {
       console.error('Error loading XP stats:', error);
-      setStatsError('Failed to load XP stats');
+      setStatsError('Falha ao carregar métricas de XP');
       setStats(null);
     } finally {
       setLoadingStats(false);
     }
   }, [getToken, isAdmin]);
+
+  const fetchXpConfig = useCallback(async () => {
+    if (!isAdmin) return;
+    const token = getToken();
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    try {
+      const response = await fetch('/api/admin/xp', { headers });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setConfigError(data.error || 'Falha ao carregar regras de XP');
+        setXpConfig(null);
+        return;
+      }
+      setXpConfig({
+        rewards: data.rewards || [],
+        limits: data.limits || [],
+        thresholds: data.thresholds || [],
+      });
+      setConfigError(null);
+    } catch (err) {
+      console.error('Error loading xp config', err);
+      setConfigError('Falha ao carregar regras de XP');
+      setXpConfig(null);
+    }
+  }, [getToken, isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchStats();
+      fetchXpConfig();
+    }
+  }, [isAdmin, fetchStats, fetchXpConfig]);
 
   const normalizedAmount = useMemo(() => {
     const numeric = Number(xpValue);
@@ -123,17 +186,12 @@ export default function AdminXpPage() {
 
   const handleXpAdjustment = async () => {
     if (!selectedUserId || !normalizedAmount || submittingXP) return;
-
-    const amount = xpAction === 'add' ? normalizedAmount : -normalizedAmount;
     setSubmittingXP(true);
-
     try {
       const token = getToken();
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
-
+      const amount = xpAction === 'add' ? normalizedAmount : -normalizedAmount;
       const response = await fetch('/api/admin/xp/grant', {
         method: 'POST',
         headers,
@@ -143,16 +201,13 @@ export default function AdminXpPage() {
           reason: reason || undefined,
         }),
       });
-
       const payload = await response.json();
-
       if (!response.ok || !payload.success) {
         throw new Error(payload.error || 'Falha ao ajustar XP.');
       }
-
       toast({
         title: 'XP atualizado',
-        description: payload.message || 'O XP foi atualizado com sucesso.',
+        description: payload.message || 'XP atualizado com sucesso.',
       });
       setXpValue('');
       setReason('');
@@ -172,34 +227,25 @@ export default function AdminXpPage() {
 
   const handleResetXP = async () => {
     if (!isSuperAdminFreeman || resettingXP) return;
-
-    if (!confirm('Tem a certeza de que quer resetar todo o XP? Esta ação é irreversível.')) {
+    if (!confirm('Tem a certeza? O reset global de XP é irreversível.')) {
       return;
     }
-
     setResettingXP(true);
     try {
       const token = getToken();
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
-
       const response = await fetch('/api/admin/xp/reset', {
         method: 'POST',
         headers,
       });
-
       const payload = await response.json();
-
       if (!response.ok || !payload.success) {
-        throw new Error(payload.error || 'Falha no reset global de XP.');
+        throw new Error(payload.error || 'Falha ao reset global.');
       }
-
       toast({
         title: 'Reset global',
-        description:
-          payload.message || 'XP resetado para todos os utilizadores.',
+        description: payload.message || 'XP resetado com sucesso.',
       });
       fetchStats();
     } catch (err: any) {
@@ -214,30 +260,24 @@ export default function AdminXpPage() {
     }
   };
 
-  useEffect(() => {
-    if (isAdmin) {
-      fetchStats();
-    }
-  }, [isAdmin, fetchStats]);
-
-  const safeStats = useMemo(() => {
-    return {
+  const safeStats = useMemo(
+    () => ({
       xpTotal: stats?.courses?.xp?.allActions?.total ?? 0,
       xp24h: stats?.courses?.xp?.allActions?.last24h ?? 0,
       xp30d: stats?.courses?.xp?.allActions?.last30d ?? 0,
       blogPosts: stats?.blog?.totalPosts ?? 0,
       coursesActive: stats?.courses?.activeCourses ?? 0,
-      coursesTotal: stats?.courses?.totalCourses ?? 0,
       onboardingPending: stats?.onboarding?.pendingTotal ?? 0,
-    };
-  }, [stats]);
+    }),
+    [stats],
+  );
 
   const metrics = useMemo(
     () => [
       { label: 'XP total (all actions)', value: safeStats.xpTotal },
       { label: 'XP últimas 24h', value: safeStats.xp24h },
       { label: 'XP últimos 30d', value: safeStats.xp30d },
-      { label: 'Postagens de blog', value: safeStats.blogPosts },
+      { label: 'Posts de blog', value: safeStats.blogPosts },
     ],
     [safeStats],
   );
@@ -262,100 +302,289 @@ export default function AdminXpPage() {
         </div>
         <div className="relative z-10 max-w-5xl">
           <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin — XP
+            LEGACY Admin · XP
           </span>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
             <Sparkles className="h-7 w-7 text-amber-300" />
             XP Control Room
           </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Monitora como XP circula, premia quem importa e detecta fluxos críticos com
-            base nos números oficiais.
+          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-3xl">
+            Central para editar as regras oficiais de recompensa, limites diários,
+            streaks e thresholds que movem o ecossistema.
           </p>
-          {statsError && (
-            <p className="mt-3 text-xs text-red-400">{statsError}</p>
+          {(statsError || configError) && (
+            <p className="mt-3 text-xs text-red-400">
+              {statsError || configError}
+            </p>
           )}
         </div>
       </section>
 
-      <section>
-        <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-900/60 shadow-2xl mx-auto max-w-6xl">
-          <CardHeader className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-amber-500/20 text-amber-100 border border-amber-500/40">
-                Pulse
-              </Badge>
-              <CardTitle className="text-heading text-lg">
-                Operação de XP com foco em impacto
-              </CardTitle>
-            </div>
-            <CardDescription className="text-muted-custom text-sm max-w-3xl">
-              Conecte as distribuições de XP a ações mensuráveis (posts, cursos, eventos)
-              a partir dos dados oficiais do painel admin.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2">
-              <div className="flex flex-col gap-3 md:flex-row">
+      {xpConfig && (
+        <section className="space-y-6">
+          <Card className="bg-card-custom border-custom shadow-lg shadow-amber-950/40">
+            <CardHeader>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="bg-blue-500/20 text-blue-100 border border-blue-500/40">
+                  XP Rules
+                </Badge>
+                <CardTitle className="text-heading text-sm font-semibold">
+                  Recompensas, limites e thresholds
+                </CardTitle>
+              </div>
+              <CardDescription className="text-xs text-muted-custom">
+                Atualize de forma segura os valores oficiais usados pelo XP público.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4">
+                <div>
+                  <p className="text-xs uppercase text-muted-custom tracking-[0.4em]">
+                    Recompensas
+                  </p>
+                  <div className="mt-3 grid gap-4 md:grid-cols-2">
+                    {xpConfig.rewards.map((reward, index) => (
+                      <div
+                        key={reward.action_type}
+                        className="rounded-lg border border-slate-800 p-4"
+                      >
+                        <p className="text-sm font-semibold text-heading">
+                          {reward.label}
+                        </p>
+                        <p className="text-xs text-muted-custom">
+                          {reward.description}
+                        </p>
+                        <div className="mt-3 grid gap-2">
+                          <Input
+                            type="number"
+                            value={reward.min_xp}
+                            onChange={(event) => {
+                              const value = Number(event.target.value);
+                              setXpConfig((prev) => {
+                                if (!prev) return prev;
+                                const next = [...prev.rewards];
+                                next[index] = {
+                                  ...next[index],
+                                  min_xp: Number.isFinite(value)
+                                    ? Math.trunc(value)
+                                    : 0,
+                                };
+                                return { ...prev, rewards: next };
+                              });
+                            }}
+                            placeholder="XP mínimo"
+                          />
+                          <Input
+                            type="number"
+                            value={reward.max_xp}
+                            onChange={(event) => {
+                              const value = Number(event.target.value);
+                              setXpConfig((prev) => {
+                                if (!prev) return prev;
+                                const next = [...prev.rewards];
+                                next[index] = {
+                                  ...next[index],
+                                  max_xp: Number.isFinite(value)
+                                    ? Math.trunc(value)
+                                    : 0,
+                                };
+                                return { ...prev, rewards: next };
+                              });
+                            }}
+                            placeholder="XP máximo"
+                          />
+                          <Input
+                            type="number"
+                            value={reward.creator_bonus_pct ?? ''}
+                            onChange={(event) => {
+                              const value = Number(event.target.value);
+                              setXpConfig((prev) => {
+                                if (!prev) return prev;
+                                const next = [...prev.rewards];
+                                next[index] = {
+                                  ...next[index],
+                                  creator_bonus_pct: Number.isFinite(value)
+                                    ? value
+                                    : null,
+                                };
+                                return { ...prev, rewards: next };
+                              });
+                            }}
+                            placeholder="Bônus criador (%)"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase text-muted-custom tracking-[0.4em]">
+                    Limites diários
+                  </p>
+                  <div className="mt-3 grid gap-4 md:grid-cols-2">
+                    {xpConfig.limits.map((limit, index) => (
+                      <div
+                        key={limit.action_type}
+                        className="rounded-lg border border-slate-800 p-4"
+                      >
+                        <p className="text-sm font-semibold text-heading">
+                          {limit.action_type}
+                        </p>
+                        <div className="mt-2 grid gap-2">
+                          <Input
+                            type="number"
+                            value={limit.xp_earned}
+                            onChange={(event) => {
+                              const value = Number(event.target.value);
+                              setXpConfig((prev) => {
+                                if (!prev) return prev;
+                                const next = [...prev.limits];
+                                next[index] = {
+                                  ...next[index],
+                                  xp_earned: Number.isFinite(value)
+                                    ? Math.trunc(value)
+                                    : 0,
+                                };
+                                return { ...prev, limits: next };
+                              });
+                            }}
+                            placeholder="XP diário"
+                          />
+                          <Input
+                            type="number"
+                            value={limit.count}
+                            onChange={(event) => {
+                              const value = Number(event.target.value);
+                              setXpConfig((prev) => {
+                                if (!prev) return prev;
+                                const next = [...prev.limits];
+                                next[index] = {
+                                  ...next[index],
+                                  count: Number.isFinite(value)
+                                    ? Math.trunc(value)
+                                    : 0,
+                                };
+                                return { ...prev, limits: next };
+                              });
+                            }}
+                            placeholder="Máximo de ações"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase text-muted-custom tracking-[0.4em]">
+                    Thresholds
+                  </p>
+                  <div className="mt-3 space-y-3">
+                    {xpConfig.thresholds.map((threshold, index) => (
+                      <div
+                        key={threshold.id}
+                        className="rounded-lg border border-slate-800 p-4"
+                      >
+                        <Input
+                          type="number"
+                          value={threshold.xp_total}
+                          onChange={(event) => {
+                            const value = Number(event.target.value);
+                            setXpConfig((prev) => {
+                              if (!prev) return prev;
+                              const next = [...prev.thresholds];
+                              next[index] = {
+                                ...next[index],
+                                xp_total: Number.isFinite(value)
+                                  ? Math.trunc(value)
+                                  : 0,
+                              };
+                              return { ...prev, thresholds: next };
+                            });
+                          }}
+                          placeholder="XP total"
+                        />
+                        <Input
+                          className="mt-2"
+                          value={threshold.feature_name}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setXpConfig((prev) => {
+                              if (!prev) return prev;
+                              const next = [...prev.thresholds];
+                              next[index] = { ...next[index], feature_name: value };
+                              return { ...prev, thresholds: next };
+                            });
+                          }}
+                          placeholder="Recurso liberado"
+                        />
+                        <Input
+                          className="mt-2"
+                          value={threshold.description}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setXpConfig((prev) => {
+                              if (!prev) return prev;
+                              const next = [...prev.thresholds];
+                              next[index] = { ...next[index], description: value };
+                              return { ...prev, thresholds: next };
+                            });
+                          }}
+                          placeholder="Descrição"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
                 <Button
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
-                  onClick={() => router.push('/admin/blog')}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={async () => {
+                    if (!xpConfig) return;
+                    setSavingConfig(true);
+                    try {
+                      const token = getToken();
+                      const headers: HeadersInit = {
+                        'Content-Type': 'application/json',
+                      };
+                      if (token) headers.Authorization = `Bearer ${token}`;
+                      const response = await fetch('/api/admin/xp', {
+                        method: 'PUT',
+                        headers,
+                        body: JSON.stringify(xpConfig),
+                      });
+                      const payload = await response.json();
+                      if (!response.ok || !payload.success) {
+                        throw new Error(payload.error || 'Falha ao salvar regras.');
+                      }
+                      toast({
+                        title: 'Configuração salva',
+                        description: payload.message || 'Regras de XP atualizadas.',
+                      });
+                    } catch (err: any) {
+                      console.error('Save xp config', err);
+                      setConfigError(err?.message || 'Erro ao salvar.');
+                      toast({
+                        title: 'Erro',
+                        description: err?.message || 'Não foi possível salvar.',
+                        variant: 'destructive',
+                      });
+                    } finally {
+                      setSavingConfig(false);
+                    }
+                  }}
+                  disabled={savingConfig}
                 >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Ver iniciativas que geram XP
-              </Button>
-              <Button
-                className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
-                onClick={() => router.push('/admin/courses')}
-              >
-                <BookOpen className="h-4 w-4 mr-2" />
-                Revisar cursos ativos
-              </Button>
-              <Button
-                className="flex-1 border border-blue-600 text-blue-100 bg-blue-950/50 hover:bg-blue-900"
-                onClick={() => router.push('/admin/xp')}
-              >
-                <Award className="h-4 w-4 mr-2" />
-                Atualizar regras de recompensa
-              </Button>
-            </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
-              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  XP total
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {safeStats.xpTotal.toLocaleString('pt-PT')}
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Métrica puxada direto de /api/admin/stats.
-                </p>
-              </div>
-              <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Cursos ativos
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {safeStats.coursesActive.toLocaleString('pt-PT')}
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Atualizado conforme os cursos no dashboard.
-                </p>
-              </div>
-              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Onboardings pendentes
-                </p>
-                <p className="text-2xl font-bold mt-1">
-                  {safeStats.onboardingPending.toLocaleString('pt-PT')}
-                </p>
-                <p className="text-muted-custom text-[11px]">
-                  Acompanhe o pipeline real carregado pelo admin stats.
-                </p>
-              </div>
+                  {savingConfig ? 'Salvando...' : 'Salvar regras oficiais'}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </section>
+      )}
 
       <section className="space-y-4">
         <Card className="bg-card-custom border-custom shadow-lg shadow-amber-950/40">
@@ -436,16 +665,12 @@ export default function AdminXpPage() {
               Métricas principais
             </CardTitle>
             <CardDescription className="text-xs text-muted-custom">
-              Um painel rápido com números reais do XP.
+              Um painel rápido com números em tempo real do XP.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid md:grid-cols-4 gap-4">
             {metrics.map((metric) => (
-              <MetricCard
-                key={metric.label}
-                label={metric.label}
-                value={metric.value}
-              />
+              <MetricCard key={metric.label} label={metric.label} value={metric.value} />
             ))}
           </CardContent>
         </Card>
