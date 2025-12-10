@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import type { MediaAsset } from '@/types/builder';
 import { supabase } from '@/lib/supabase';
 
 type SectionKey = 'hero' | 'web3Academy' | 'web3Sports';
+const SECTION_KEYS: SectionKey[] = ['hero', 'web3Academy', 'web3Sports'];
 
 function detectAssetType(mime?: string | null) {
   if (!mime) return 'other';
@@ -58,25 +60,29 @@ export async function GET() {
       );
     }
 
-    const settings = { ...DEFAULT_SETTINGS };
+    const settings = SECTION_KEYS.reduce((acc, section) => {
+      acc[section] = { ...DEFAULT_SETTINGS[section] };
+      return acc;
+    }, {} as Record<SectionKey, { asset: MediaAsset | null; offset: number }>);
 
     (data || []).forEach((row: any) => {
       const section = row.section as SectionKey;
-      if (!section || !Object.prototype.hasOwnProperty.call(settings, section)) {
+      if (!section || !settings[section]) {
         return;
       }
+      const assetRow = row.asset;
       settings[section] = {
-        asset: row.asset
+        asset: assetRow
           ? {
-              id: row.asset.id,
-              url: row.asset.url,
-              title: row.asset.title,
-              alt: row.asset.alt,
-              type: detectAssetType(row.asset.mime_type),
-              thumbnailUrl: row.asset.url,
-              sizeBytes: row.asset.size_bytes ?? null,
+              id: assetRow.id,
+              url: assetRow.url,
+              title: assetRow.title,
+              alt: assetRow.alt,
+              type: detectAssetType(assetRow.mime_type),
+              thumbnailUrl: assetRow.url,
+              sizeBytes: assetRow.size_bytes ?? null,
               durationSeconds: null,
-              createdAt: row.asset.created_at ?? null,
+              createdAt: assetRow.created_at ?? null,
             }
           : null,
         offset: typeof row.offset === 'number' ? row.offset : 0,
