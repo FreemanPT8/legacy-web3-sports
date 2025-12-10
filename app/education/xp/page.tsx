@@ -259,48 +259,7 @@ export default async function EducationXpPage() {
             </div>
           </section>
 
-          <section className="grid md:grid-cols-2 gap-5">
-            <Card className="bg-slate-900/70 border border-slate-800/80">
-              <CardHeader>
-                <CardTitle className="text-slate-100">Limites diários</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-slate-300">
-                <p className="text-xs text-slate-500">
-                  Cada ação soma um teto (XP + contagem) e conforma o limite diário global de 369 XP.
-                  O painel admin mantém estes limites atualizados em tempo real.
-                </p>
-                {limitTable.length === 0 ? (
-                  <p className="text-sm text-slate-400">
-                    {fetchError
-                      ? 'Não conseguimos carregar os limites enquanto o backend não responde.'
-                      : 'Este painel é atualizado assim que o painel admin grava novas regras.'}
-                  </p>
-                ) : (
-                  limitTable.map((limit) => (
-                    <div
-                      key={limit.action_type}
-                      className="flex items-center justify-between gap-6 rounded-lg border border-slate-800/60 bg-slate-950/40 p-3"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-white">
-                          {limit.action_type.replace(/_/g, ' ')}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          Até {limit.count ?? 0} ações por dia
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold text-emerald-300">
-                          {limit.xp_earned ?? 0} XP
-                        </p>
-                        <p className="text-xs text-slate-500">total</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
+          <section className="grid md:grid-cols-1 gap-5">
             <Card className="bg-slate-900/70 border border-slate-800/80">
               <CardHeader>
                 <CardTitle className="text-slate-100">Streaks & consistência</CardTitle>
