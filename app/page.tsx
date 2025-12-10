@@ -99,8 +99,8 @@ export default function Home() {
 
       <main className="flex-1">
         {/* HERO DARK FUTURISTA */}
-          <section
-            className="relative overflow-hidden text-white py-20 md:py-32"
+        <section
+            className="relative overflow-hidden text-white py-20 md:py-32 min-h-[520px]"
             style={{
               backgroundImage: `url('${heroImageUrl}')`,
               backgroundSize: 'cover',
@@ -130,7 +130,7 @@ export default function Home() {
             </div>
           )}
           <div className="relative z-10 container mx-auto px-4">
-            <div className="max-w-4xl text-center space-y-8 mx-auto">
+            <div className="max-w-4xl text-center space-y-8 mx-auto flex min-h-[420px] flex-col justify-end">
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
                 {t('hero.title')}
               </h1>
@@ -140,7 +140,7 @@ export default function Home() {
               <p className="text-lg text-slate-200 max-w-2xl mx-auto">
                 {t('hero.description')}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pb-4">
                 {!user ? (
                   <>
                     <Link href="/signup">
