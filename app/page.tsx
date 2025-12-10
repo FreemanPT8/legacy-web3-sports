@@ -29,6 +29,7 @@ import {
 export default function Home() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'Super Admin';
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,69 +59,89 @@ export default function Home() {
         {/* HERO DARK FUTURISTA */}
         <section className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white py-20 md:py-32">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center space-y-8">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                {t('hero.title')}
-              </h1>
-              <p className="text-xl md:text-2xl text-sky-200">
-                {t('hero.subtitle')}
-              </p>
-              <p className="text-lg text-slate-200 max-w-2xl mx-auto">
-                {t('hero.description')}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {!user ? (
-                  <>
-                    <Link href="/signup">
+            <div className="grid gap-12 lg:grid-cols-[1.1fr,0.9fr] items-center">
+              <div className="space-y-8 text-center lg:text-left">
+                <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                  {t('hero.title')}
+                </h1>
+                <p className="text-xl md:text-2xl text-sky-200">
+                  {t('hero.subtitle')}
+                </p>
+                <p className="text-lg text-slate-200 max-w-2xl mx-auto lg:mx-0">
+                  {t('hero.description')}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                  {!user ? (
+                    <>
+                      <Link href="/signup">
+                        <Button
+                          size="lg"
+                          className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
+                        >
+                          {t('cta.join')}
+                        </Button>
+                      </Link>
+                      <Link href="/education/courses">
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="px-8 border-sky-500 text-sky-200 hover:bg-slate-900"
+                        >
+                          {t('cta.learn')}
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <Link href="/dashboard">
                       <Button
                         size="lg"
                         className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
                       >
-                        {t('cta.join')}
+                        {t('cta.goDashboard')}
                       </Button>
                     </Link>
-                    <Link href="/education/courses">
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="px-8 border-sky-500 text-sky-200 hover:bg-slate-900"
-                      >
-                        {t('cta.learn')}
-                      </Button>
-                    </Link>
-                  </>
-                ) : (
-                  <Link href="/dashboard">
-                    <Button
-                      size="lg"
-                      className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
-                    >
-                      {t('cta.goDashboard')}
-                    </Button>
-                  </Link>
-                )}
+                  )}
+                </div>
               </div>
-              <div className="mt-12 flex justify-center">
-                <div className="relative w-full max-w-4xl h-80 rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
-                  <div
-                    className="absolute inset-0 bg-cover bg-center"
-                    style={{
-                      backgroundImage:
-                        "url('https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80')",
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/30 to-transparent" />
-                  <div className="absolute inset-0 flex flex-col justify-end p-6">
-                    <p className="text-xs uppercase tracking-[0.4em] text-slate-300 mb-1">
-                      O Legacy
-                    </p>
-                    <h3 className="text-3xl font-semibold text-white mb-2">
-                      A plataforma que liga conteúdo, XP e comunidade Web3
-                    </h3>
-                    <p className="text-sm text-slate-200 max-w-2xl">
-                      Um showcase visual do grau de maturidade da nossa rede: imagem, cores e textura fazem parte do nosso storytelling.
-                    </p>
-                  </div>
+              <div className="relative w-full lg:h-[360px] rounded-[32px] overflow-hidden border border-white/20 shadow-[0_20px_60px_rgba(2,6,23,0.8)]">
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{
+                    backgroundImage:
+                      "url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80')",
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-l from-slate-900/90 via-slate-950/70 to-black/20" />
+                <div className="absolute inset-0 flex flex-col justify-end p-8 text-left">
+                  <p className="text-xs uppercase tracking-[0.4em] text-slate-300 mb-2">
+                    O Legacy
+                  </p>
+                  <h3 className="text-3xl font-semibold text-white mb-3">
+                    A plataforma que conecta conteúdo, XP e comunidade
+                  </h3>
+                  <p className="text-sm text-slate-200 max-w-xl">
+                    A imagem aqui respira o tom premium do Legacy: textura, iluminação e profundidade para mostrar a nossa jornada Web3.
+                  </p>
+                  {isSuperAdmin && (
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-white/50 text-white/80"
+                        onClick={() => alert('Abrir modal de edição de imagem...')}
+                      >
+                        Editar imagem
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="border border-red-500/60 text-red-300 hover:bg-red-500/10"
+                        onClick={() => alert('Remover imagem atual...')}
+                      >
+                        Eliminar imagem
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
