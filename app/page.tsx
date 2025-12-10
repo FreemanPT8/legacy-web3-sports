@@ -274,56 +274,56 @@ export default function Home() {
                   </div>
                 </div>
 
-                  <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-8 rounded-2xl border border-slate-800 shadow-lg">
-                    <div className="mb-6 h-72 w-full rounded-2xl overflow-hidden border border-slate-800">
-                      <img
-                        src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80"
-                        alt="Web3 Academy snapshot"
-                        className="w-full h-full object-cover object-center"
-                      />
-                    </div>
-                    {loading ? (
-                      <div className="flex justify-center items-center h-full">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400"></div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
-                          <div className="text-3xl font-bold text-sky-400">
-                            {stats?.totalCourses || 0}+
-                          </div>
-                          <div className="text-sm text-gray-400">
-                            {t('home.courses')}
-                          </div>
-                        </div>
-                        <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
-                          <div className="text-3xl font-bold text-sky-400">
-                            {stats?.totalLessons || 0}+
-                          </div>
-                          <div className="text-sm text-gray-400">
-                            {t('home.lessons')}
-                          </div>
-                        </div>
-                        <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
-                          <div className="text-3xl font-bold text-sky-400">
-                            {stats?.activeUsers || 0}+
-                          </div>
-                          <div className="text-sm text-gray-400">
-                            {t('home.members')}
-                          </div>
-                        </div>
-                        <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
-                          <div className="text-3xl font-bold text-sky-400">6</div>
-                          <div className="text-sm text-gray-400">
-                            {t('home.languages')}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                  <div className="h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
+                    <img
+                      src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80"
+                      alt="Web3 Academy snapshot"
+                      className="w-full h-full object-cover object-center"
+                    />
                   </div>
+                </div>
+                </div>
+                <div className="mt-10 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-8 rounded-2xl border border-slate-800 shadow-lg">
+                  {loading ? (
+                    <div className="flex justify-center items-center h-full">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400"></div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-sky-400">
+                          {stats?.totalCourses || 0}+
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {t('home.courses')}
+                        </div>
+                      </div>
+                      <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-sky-400">
+                          {stats?.totalLessons || 0}+
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {t('home.lessons')}
+                        </div>
+                      </div>
+                      <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-sky-400">
+                          {stats?.activeUsers || 0}+
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {t('home.members')}
+                        </div>
+                      </div>
+                      <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-sky-400">6</div>
+                        <div className="text-sm text-gray-400">
+                          {t('home.languages')}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
         </section>
 
         {/* SECÇÃO 4 — WEB3 SPORTS / HOUSES OF SPORTS */}
