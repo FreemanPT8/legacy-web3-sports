@@ -309,84 +309,72 @@ export default function Home() {
         {/* SECÇÃO 4 — WEB3 SPORTS / HOUSES OF SPORTS */}
         <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div className="order-2 md:order-1 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-8 rounded-2xl border border-slate-800">
-                  <div className="space-y-4">
-                    <div className="bg-card border border-slate-800 p-4 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Users className="h-8 w-8 text-sky-400" />
-                        <div>
-                          <div className="font-semibold text-gray-100">
-                            {t('home.housesOfSports')}
-                          </div>
-                          <div className="text-sm text-gray-400">
-                            {t('home.housesOfSportsDesc')}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-card border border-slate-800 p-4 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Globe2 className="h-8 w-8 text-sky-400" />
-                        <div>
-                          <div className="font-semibold text-gray-100">
-                            {t('home.globalCommunity')}
-                          </div>
-                          <div className="text-sm text-gray-400">
-                            {t('home.globalCommunityDesc')}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-card border border-slate-800 p-4 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Target className="h-8 w-8 text-sky-400" />
-                        <div>
-                          <div className="font-semibold text-gray-100">
-                            {t('home.personalizedOnboarding')}
-                          </div>
-                          <div className="text-sm text-gray-400">
-                            {t('home.personalizedOnboardingDesc')}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="order-1 md:order-2">
-                  <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">
-                    {t('home.web3Sports')}
-                  </h2>
-                  <p className="text-lg text-gray-400 mb-6">
-                    {t('home.web3SportsDesc')}
-                  </p>
-                  <p className="text-gray-400 mb-6">
-                    {t('home.web3SportsDesc2')}
-                  </p>
-                  <div className="flex gap-4">
-                    <Link href="/sports">
-                      <Button
-                        size="lg"
-                        className="bg-sky-500 hover:bg-sky-400 text-slate-950"
-                      >
-                        {t('home.exploreWeb3Sports')}
-                      </Button>
-                    </Link>
-                    <Link href="/sports/onboarding">
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="border-gray-700 text-gray-200 hover:bg-gray-900"
-                      >
-                        {t('home.startOnboarding')}
-                      </Button>
-                    </Link>
-                  </div>
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-semibold text-gray-100 mb-4">
+                  {t('home.web3Sports')}
+                </h2>
+                <p className="text-base text-gray-400 mb-4 max-w-3xl leading-relaxed">
+                  {t('home.web3SportsDesc')}
+                </p>
+                <p className="text-sm text-gray-400 mb-6 max-w-3xl">
+                  {t('home.web3SportsDesc2')}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/sports">
+                    <Button size="md" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
+                      {t('home.exploreWeb3Sports')}
+                    </Button>
+                  </Link>
+                  <Link href="/sports/onboarding">
+                    <Button size="md" variant="outline" className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900">
+                      {t('home.startOnboarding')}
+                    </Button>
+                  </Link>
                 </div>
               </div>
+              <div className="h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+                <img
+                  src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80"
+                  alt="People collaborating in sports tech"
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
             </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              {[
+                {
+                  title: t('home.housesOfSports'),
+                  desc: t('home.housesOfSportsDesc'),
+                  icon: Users,
+                },
+                {
+                  title: t('home.globalCommunity'),
+                  desc: t('home.globalCommunityDesc'),
+                  icon: Globe2,
+                },
+                {
+                  title: t('home.personalizedOnboarding'),
+                  desc: t('home.personalizedOnboardingDesc'),
+                  icon: Target,
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="bg-card border border-slate-800 p-5 rounded-2xl text-left shadow-sm"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <item.icon className="h-6 w-6 text-sky-400" />
+                    <div className="text-lg font-semibold text-gray-100">
+                      {item.title}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400 leading-relaxed max-w-sm">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
           </div>
         </section>
 
