@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       streak_count: user.streak_count ?? 0,
     };
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         user: safeUser,
@@ -116,6 +116,22 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     );
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none' as const,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    };
+
+    response.cookies.set('sb-access-token', token, cookieOptions);
+    response.cookies.set('sb-refresh-token', token, {
+      ...cookieOptions,
+      maxAge: 60 * 60 * 24 * 30,
+    });
+
+    return response;
   } catch (err: any) {
     console.error('Unexpected error in /api/auth/login:', err);
     return NextResponse.json(
