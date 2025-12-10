@@ -225,15 +225,15 @@ export default function Home() {
         <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
-              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="grid md:grid-cols-2 gap-8 items-center max-w-5xl mx-auto">
                 <div>
                   <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">
                     {t('home.web3Education')}
                   </h2>
-                  <p className="text-lg text-gray-400 mb-6">
+                    <p className="text-base text-gray-400 mb-4">
                     {t('home.web3EducationDesc')}
                   </p>
-                  <ul className="space-y-3 mb-6">
+                    <ul className="space-y-2 mb-5">
                     <li className="flex items-start gap-2">
                       <Target className="h-6 w-6 text-sky-400 flex-shrink-0 mt-0.5" />
                       <span className="text-gray-300">
@@ -253,7 +253,7 @@ export default function Home() {
                       </span>
                     </li>
                   </ul>
-                  <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-3">
                     <Link href="/education">
                       <Button
                         size="lg"
@@ -274,7 +274,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                  <div className="h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
+                  <div className="h-56 md:h-72 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
                     <img
                       src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80"
                       alt="Web3 Academy snapshot"
@@ -283,13 +283,13 @@ export default function Home() {
                   </div>
                 </div>
                 </div>
-                <div className="mt-10 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-8 rounded-2xl border border-slate-800 shadow-lg">
+                  <div className="mt-6 bg-gradient-to-br from-slate-900/70 via-slate-900 to-slate-900/70 p-6 rounded-2xl border border-slate-800 shadow-lg">
                   {loading ? (
                     <div className="flex justify-center items-center h-full">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400"></div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3 md:gap-4">
                       <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
                         <div className="text-3xl font-bold text-sky-400">
                           {stats?.totalCourses || 0}+
