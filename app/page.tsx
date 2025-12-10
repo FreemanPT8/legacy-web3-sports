@@ -29,40 +29,195 @@ import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import type { MediaAsset } from '@/types/builder';
 
-const HERO_IMAGE_KEY = 'legacyHeroImage';
 const DEFAULT_HERO_IMAGE =
   'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=80';
+
+const SECTION_KEYS = ['hero', 'web3Academy', 'web3Sports'] as const;
+type SectionKey = (typeof SECTION_KEYS)[number];
+
+const DEFAULT_ACADEMY_IMAGE =
+  'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80';
+const DEFAULT_SPORTS_IMAGE =
+  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80';
+
+const DEFAULT_MEDIA_SETTINGS: Record<
+  SectionKey,
+  { asset: MediaAsset | null; offset: number }
+> = {
+  hero: { asset: null, offset: 0 },
+  web3Academy: { asset: null, offset: 0 },
+  web3Sports: { asset: null, offset: 0 },
+};
 
 export default function Home() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'Super Admin';
   const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [heroImage, setHeroImage] = useState<MediaAsset | null>(null);
-  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [mediaSettings, setMediaSettings] = useState<
+    Record<SectionKey, { asset: MediaAsset | null; offset: number }>
+  >(() => ({ ...DEFAULT_MEDIA_SETTINGS }));
   const [heroOffset, setHeroOffset] = useState(0);
+  const [mediaDialogState, setMediaDialogState] = useState<{
+    open: boolean;
+    section: SectionKey | null;
+  }>({ open: false, section: null });
   const library = useMediaLibrary();
 
-  const persistHeroImage = useCallback((asset: MediaAsset | null) => {
-    setHeroImage(asset);
-    if (typeof window !== 'undefined') {
-      if (asset) {
-        localStorage.setItem(HERO_IMAGE_KEY, JSON.stringify(asset));
-      } else {
-        localStorage.removeItem(HERO_IMAGE_KEY);
-      }
-    }
+  const heroAsset = mediaSettings.hero.asset;
+  const heroImageUrl = heroAsset?.url || DEFAULT_HERO_IMAGE;
+  const academyImageUrl =
+    mediaSettings.web3Academy.asset?.url || DEFAULT_ACADEMY_IMAGE;
+  const sportsImageUrl =
+    mediaSettings.web3Sports.asset?.url || DEFAULT_SPORTS_IMAGE;
+
+  const sectionDialogTitles: Record<SectionKey, string> = {
+    hero: 'Imagem do Hero',
+    web3Academy: 'Imagem da Web3 Academy',
+    web3Sports: 'Imagem da Web3 Sports',
+  };
+
+  const sectionDialogDescriptions: Record<SectionKey, string> = {
+    hero: 'Selecione ou envie a imagem que ficará no hero principal da homepage.',
+    web3Academy:
+      'Escolha a imagem que representa a Web3 Academy e o seu conteúdo de formação.',
+    web3Sports:
+      'Defina a imagem que transmite a experiência Web3 para desportos e comunidades.',
+  };
+
+  const openMediaDialogFor = useCallback((section: SectionKey) => {
+    setMediaDialogState({ open: true, section });
   }, []);
 
-  const heroImageUrl = heroImage?.url || DEFAULT_HERO_IMAGE;
-  const handleHeroSelect = useCallback(
-    (asset: MediaAsset) => {
-      persistHeroImage(asset);
-      setLibraryOpen(false);
+  const handleMediaDialogOpenChange = useCallback((open: boolean) => {
+    setMediaDialogState((prev) => ({
+      open,
+      section: open ? prev.section : null,
+    }));
+  }, []);
+
+  const updateMediaSetting = useCallback(
+    async (payload: {
+      section: SectionKey;
+      assetId?: string | null;
+      offset?: number;
+    }) => {
+      try {
+        const response = await fetch('/api/admin/media/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok || !data?.success) {
+          console.error('Failed to persist media setting:', data?.error);
+        }
+        return data?.setting ?? null;
+      } catch (error) {
+        console.error('Failed to persist media setting:', error);
+        return null;
+      }
     },
-    [persistHeroImage],
+    [],
   );
+
+  const applyMediaSelection = useCallback(
+    (section: SectionKey, asset: MediaAsset) => {
+      let previousOffset = 0;
+      setMediaSettings((prev) => {
+        previousOffset = prev[section].offset;
+        return {
+          ...prev,
+          [section]: {
+            ...prev[section],
+            asset,
+          },
+        };
+      });
+      void updateMediaSetting({
+        section,
+        assetId: asset.id,
+        offset: section === 'hero' ? heroOffset : previousOffset,
+      });
+    },
+    [heroOffset, updateMediaSetting],
+  );
+
+  const handleMediaSelect = useCallback(
+    (asset: MediaAsset) => {
+      const section = mediaDialogState.section;
+      if (!section) return;
+      applyMediaSelection(section, asset);
+    },
+    [applyMediaSelection, mediaDialogState.section],
+  );
+
+  const activeDialogSection = mediaDialogState.section;
+  const dialogTitle = activeDialogSection
+    ? sectionDialogTitles[activeDialogSection]
+    : 'Media Library';
+  const dialogDescription = activeDialogSection
+    ? sectionDialogDescriptions[activeDialogSection]
+    : 'Selecione ou envie ficheiros para o Legacy.';
+
+  const handleHeroOffsetChange = useCallback(
+    (value: number) => {
+      const heroAssetId = mediaSettings.hero.asset?.id ?? null;
+      setHeroOffset(value);
+      setMediaSettings((prev) => ({
+        ...prev,
+        hero: {
+          ...prev.hero,
+          offset: value,
+        },
+      }));
+      void updateMediaSetting({
+        section: 'hero',
+        assetId: heroAssetId,
+        offset: value,
+      });
+    },
+    [mediaSettings.hero.asset?.id, updateMediaSetting],
+  );
+
+  const handleRemoveHeroImage = useCallback(() => {
+    setMediaSettings((prev) => ({
+      ...prev,
+      hero: {
+        ...prev.hero,
+        asset: null,
+      },
+    }));
+    setHeroOffset(0);
+    void updateMediaSetting({
+      section: 'hero',
+      assetId: null,
+      offset: 0,
+    });
+  }, [updateMediaSetting]);
+
+  const fetchMediaSettings = useCallback(async () => {
+    try {
+      const response = await fetch('/api/media/settings');
+      const data = await response.json();
+      if (data.success) {
+        const nextSettings = SECTION_KEYS.reduce((acc, section) => {
+          const remote = data.settings?.[section];
+          return {
+            ...acc,
+            [section]: {
+              asset: remote?.asset ?? null,
+              offset: typeof remote?.offset === 'number' ? remote.offset : 0,
+            },
+          };
+        }, {} as Record<SectionKey, { asset: MediaAsset | null; offset: number }>);
+        setMediaSettings(nextSettings);
+        setHeroOffset(nextSettings.hero.offset ?? 0);
+      }
+    } catch (error) {
+      console.error('Failed to load media settings:', error);
+    }
+  }, []);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -74,7 +229,6 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -82,16 +236,8 @@ export default function Home() {
   }, [fetchStats]);
 
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? localStorage.getItem(HERO_IMAGE_KEY) : null;
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as MediaAsset;
-        persistHeroImage(parsed);
-      } catch {
-        localStorage.removeItem(HERO_IMAGE_KEY);
-      }
-    }
-  }, [persistHeroImage]);
+    fetchMediaSettings();
+  }, [fetchMediaSettings]);
 
   return (
     <div className="min-h-screen flex flex-col bg-page">
@@ -119,7 +265,7 @@ export default function Home() {
                   variant="outline"
                   size="sm"
                   className="border-white/50 text-white/80"
-                  onClick={() => setLibraryOpen(true)}
+                  onClick={() => openMediaDialogFor('hero')}
                 >
                   Editar imagem
                 </Button>
@@ -127,7 +273,7 @@ export default function Home() {
                   variant="ghost"
                   size="sm"
                   className="border border-red-500/60 text-red-300 hover:bg-red-500/10"
-                  onClick={() => persistHeroImage(null)}
+                  onClick={handleRemoveHeroImage}
                 >
                   Eliminar imagem
                 </Button>
@@ -140,7 +286,7 @@ export default function Home() {
                 min={-200}
                 max={200}
                 value={heroOffset}
-                onChange={(event) => setHeroOffset(Number(event.target.value))}
+                onChange={(event) => handleHeroOffsetChange(Number(event.target.value))}
                 className="w-48 accent-sky-400"
               />
             </div>
@@ -298,13 +444,25 @@ export default function Home() {
                   </div>
                 </div>
 
-                  <div className="h-56 md:h-72 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
-                    <img
-                      src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80"
-                      alt="Web3 Academy snapshot"
-                      className="w-full h-full object-cover object-center"
-                    />
-                  </div>
+                <div className="relative h-56 md:h-72 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
+                  <img
+                    src={academyImageUrl}
+                    alt="Web3 Academy snapshot"
+                    className="w-full h-full object-cover object-center"
+                  />
+                  {isSuperAdmin && (
+                    <div className="absolute top-3 right-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-white/60 text-white/80 hover:bg-white/5"
+                        onClick={() => openMediaDialogFor('web3Academy')}
+                      >
+                        Editar imagem
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 </div>
                 </div>
                   <div className="mt-6 max-w-3xl mx-auto grid grid-cols-2 gap-3">
@@ -358,12 +516,24 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-              <div className="h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+              <div className="relative h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
                 <img
-                  src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80"
+                  src={sportsImageUrl}
                   alt="People collaborating in sports tech"
                   className="w-full h-full object-cover object-center"
                 />
+                {isSuperAdmin && (
+                  <div className="absolute top-3 right-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-white/60 text-white/80 hover:bg-white/5"
+                      onClick={() => openMediaDialogFor('web3Sports')}
+                    >
+                      Editar imagem
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
             <div className="grid md:grid-cols-3 gap-4">
@@ -457,11 +627,12 @@ export default function Home() {
           </div>
         </section>
         <MediaLibraryDialog
-          open={libraryOpen}
-          onOpenChange={(open) => setLibraryOpen(open)}
+          open={mediaDialogState.open}
+          onOpenChange={(open) => handleMediaDialogOpenChange(open)}
           library={library}
-          onSelect={handleHeroSelect}
-          description="Selecione ou envie uma nova imagem para o hero."
+          onSelect={handleMediaSelect}
+          title={dialogTitle}
+          description={dialogDescription}
           allowUrl
         />
       </main>
