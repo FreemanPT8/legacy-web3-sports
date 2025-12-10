@@ -283,46 +283,22 @@ export default function Home() {
                   </div>
                 </div>
                 </div>
-                  <div className="mt-6 bg-gradient-to-br from-slate-900/70 via-slate-900 to-slate-900/70 p-6 rounded-2xl border border-slate-800 shadow-lg max-w-3xl mx-auto">
-                  {loading ? (
-                    <div className="flex justify-center items-center h-full">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400"></div>
-                    </div>
-                  ) : (
-                      <div className="grid grid-cols-2 gap-3 md:gap-4">
-                      <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-sky-400">
-                          {stats?.totalCourses || 0}+
-                        </div>
-                        <div className="text-sm text-gray-400">
-                          {t('home.courses')}
-                        </div>
+                  <div className="mt-6 max-w-3xl mx-auto flex flex-wrap justify-center gap-3 text-center">
+                    {[
+                      ['home.courses', stats?.totalCourses || 0],
+                      ['home.lessons', stats?.totalLessons || 0],
+                      ['home.members', stats?.activeUsers || 0],
+                      ['home.languages', 6],
+                    ].map(([labelKey, value]) => (
+                      <div
+                        key={labelKey}
+                        className="flex-none px-4 py-2 rounded-full border border-slate-800 bg-slate-950/60 text-xs uppercase tracking-[0.5em] text-slate-300"
+                      >
+                        <div className="text-sm text-sky-400 font-semibold">{value || 0}+</div>
+                        <div className="text-[0.55rem]">{t(labelKey)}</div>
                       </div>
-                      <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-sky-400">
-                          {stats?.totalLessons || 0}+
-                        </div>
-                        <div className="text-sm text-gray-400">
-                          {t('home.lessons')}
-                        </div>
-                      </div>
-                      <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-sky-400">
-                          {stats?.activeUsers || 0}+
-                        </div>
-                        <div className="text-sm text-gray-400">
-                          {t('home.members')}
-                        </div>
-                      </div>
-                      <div className="bg-card border border-slate-800 p-6 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-sky-400">6</div>
-                        <div className="text-sm text-gray-400">
-                          {t('home.languages')}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    ))}
+                  </div>
               </div>
         </section>
 
