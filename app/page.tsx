@@ -100,15 +100,15 @@ export default function Home() {
       <main className="flex-1">
         {/* HERO DARK FUTURISTA */}
         <section
-          className="relative overflow-hidden text-white min-h-[520px]"
+          className="relative overflow-hidden text-white min-h-[640px]"
           style={{
             backgroundImage: `url('${heroImageUrl}')`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: 'center top',
             backgroundRepeat: 'no-repeat',
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/10 to-slate-950" />
           {isSuperAdmin && (
             <div className="absolute top-6 right-6 flex flex-wrap items-center gap-3 bg-slate-900/70 px-4 py-2 rounded-full border border-white/20 shadow-xl">
               <Button
