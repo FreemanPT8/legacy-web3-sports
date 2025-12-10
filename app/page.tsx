@@ -149,7 +149,7 @@ export default function Home() {
         </section>
 
         <section className="py-12 bg-background text-white">
-          <div className="container mx-auto px-4 text-center space-y-4">
+          <div className="container mx-auto px-4 text-center space-y-4 max-w-6xl">
             <p className="text-xs tracking-[0.6em] uppercase text-slate-400">LEGACY XP</p>
             <h1 className="text-3xl md:text-4xl font-semibold">
               LEGACY: Gamified Web3 Academy for Sports
@@ -248,8 +248,8 @@ export default function Home() {
         {/* SECÇÃO 3 — WEB3 EDUCATION + ESTATÍSTICAS */}
         <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
-                <div className="grid md:grid-cols-2 gap-8 items-center max-w-5xl mx-auto">
+            <div className="max-w-6xl mx-auto space-y-8">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div>
                   <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">
                     {t('home.web3Education')}
