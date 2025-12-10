@@ -109,7 +109,7 @@ export default function Home() {
             backgroundRepeat: 'no-repeat',
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/40 to-slate-950" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60" />
           {isSuperAdmin && (
             <div className="absolute top-6 right-6 flex flex-col gap-3 bg-slate-900/70 px-4 py-3 rounded-2xl border border-white/20 shadow-xl">
               <div className="flex flex-wrap items-center gap-3">
