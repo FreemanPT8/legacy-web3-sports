@@ -2,6 +2,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/lib/supabase';
 import {
   CalendarCheck,
   Flame,
@@ -9,10 +10,6 @@ import {
   Sparkles,
   Trophy,
 } from 'lucide-react';
-
-const baseUrl =
-  process.env.NEXT_PUBLIC_APP_URL ??
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 export const dynamic = 'force-dynamic';
 
@@ -40,42 +37,35 @@ type EducationXpData = {
   rewards: XpReward[];
   limits: XpLimit[];
   thresholds: XpThreshold[];
-  streak: {
-    action: string;
-    latestXp: number;
-  } | null;
 };
 
 async function fetchEducationXpData() {
-  const res = await fetch(new URL('/api/education/xp', baseUrl).toString(), {
-    cache: 'no-store',
-  });
+  const rewardsPromise = supabase.from('xp_rewards').select('*');
+  const limitsPromise = supabase.from('xp_daily_limits').select('*');
+  const thresholdsPromise = supabase
+    .from('xp_thresholds')
+    .select('*')
+    .order('xp_total', { ascending: true });
 
-  if (!res.ok) {
-    const payload = await res.json().catch(() => null);
-    throw new Error(
-      payload?.error || `Recebi ${res.status} ao carregar os metadados de XP.`,
-    );
-  }
+  const [rewards, limits, thresholds] = await Promise.all([
+    rewardsPromise,
+    limitsPromise,
+    thresholdsPromise,
+  ]);
 
-  const data = (await res.json()) as {
-    success: boolean;
-    error?: string;
-    rewards: XpReward[];
-    limits: XpLimit[];
-    thresholds: XpThreshold[];
-    streak?: EducationXpData['streak'];
-  };
-
-  if (!data.success) {
-    throw new Error(data.error || 'Falha ao carregar os dados de XP.');
+  if (rewards.error || limits.error || thresholds.error) {
+    const message =
+      rewards.error?.message ||
+      limits.error?.message ||
+      thresholds.error?.message ||
+      'Falha ao buscar os dados do XP.';
+    throw new Error(message);
   }
 
   return {
-    rewards: data.rewards || [],
-    limits: data.limits || [],
-    thresholds: data.thresholds || [],
-    streak: data.streak ?? null,
+    rewards: rewards.data || [],
+    limits: limits.data || [],
+    thresholds: thresholds.data || [],
   } satisfies EducationXpData;
 }
 
@@ -102,21 +92,21 @@ export default async function EducationXpPage() {
       label: 'Limite diário global',
       value: '369 XP',
       detail:
-        'É o teto de XP que se pode ganhar num único dia. Continuar estudando mais cedo ou tarde não concede mais XP.',
+        'É o teto de XP que um membro pode ganhar num só dia. A partir daí o conteúdo continua disponível, mas sem crédito adicional.',
       icon: ShieldCheck,
     },
     {
       label: 'Streak curto (7 dias)',
       value: '222 XP',
       detail:
-        'Requer ganhar XP todos os dias seguidos; login simples não conta. Falhar um dia quebra o streak.',
+        'Requer ganhar XP todos os dias; o login simples não conta. Falhar um dia quebra o streak.',
       icon: Flame,
     },
     {
       label: 'Streak longo (30 dias)',
       value: '1.111 XP',
       detail:
-        'Mantém a chama viva por 30 dias consecutivos de XP e recebe esse bónus mais alto.',
+        'Mantém a consistência por 30 dias seguidos de XP e concede um bónus premium ao final.',
       icon: CalendarCheck,
     },
   ];
@@ -138,7 +128,7 @@ export default async function EducationXpPage() {
               </h1>
               <p className="text-base text-slate-300">
                 O XP recompensa aprendizagem, criação e participação real. Estes
-                limites, streaks e thresholds são mantidos em base de dados e
+                limites, streaks e thresholds são mantidos na base de dados e
                 podem ser geridos pela equipa admin através do painel{' '}
                 <span className="text-sky-300 font-semibold">/admin/xp</span>.
               </p>
@@ -178,7 +168,7 @@ export default async function EducationXpPage() {
                   Não conseguimos carregar os dados oficiais agora: {fetchError}
                 </p>
                 <p className="text-xs text-rose-300">
-                  Verifique as variáveis de ambiente ou tente novamente em breve.
+                  Verifique as variáveis de ambiente ou tente novamente mais tarde.
                 </p>
               </CardContent>
             </Card>
@@ -191,7 +181,7 @@ export default async function EducationXpPage() {
                   Recompensas
                 </p>
                 <h2 className="text-2xl font-bold text-white">
-                  Cada ação devolve um intervalo de XP
+                  Cada ação retorna um intervalo oficial de XP
                 </h2>
               </div>
               <Badge variant="outline" className="text-slate-100 border-slate-700">
@@ -234,7 +224,7 @@ export default async function EducationXpPage() {
                         </div>
                         {typeof reward.creator_bonus_pct === 'number' && (
                           <div className="flex items-center justify-between text-xs text-slate-400">
-                            <span>Bónus do criador</span>
+                            <span>Bônus do criador</span>
                             <span className="text-white">
                               +{reward.creator_bonus_pct}% quando outros leem
                             </span>
@@ -255,12 +245,12 @@ export default async function EducationXpPage() {
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-300">
                 <p className="text-xs text-slate-500">
-                  Cada tipo de ação tem um teto (XP + contagem) para evitar farming.
+                  Cada tipo de ação possui um teto (XP e contagem) para prevenir abuse.
                 </p>
                 {limitTable.length === 0 ? (
                   <p className="text-sm text-slate-400">
                     {fetchError
-                      ? 'Não conseguimos carregar os limites enquanto o back-end não responde.'
+                      ? 'Não conseguimos carregar os limites enquanto o backend não responde.'
                       : 'Sem limites definidos — peça ao time admin para preencher o painel /admin/xp.'}
                   </p>
                 ) : (
@@ -301,12 +291,16 @@ export default async function EducationXpPage() {
                     Como mantemos a chama acesa
                   </p>
                   <ul className="space-y-2 list-disc pl-5">
-                    <li>Ganhar XP todos os dias é obrigatório para manter streaks.</li>
-                    <li>Streak de 7 dias rende 222 XP; streak de 30 dias vale 1.111 XP.</li>
-                    <li>Faltar um único dia derruba o streak e reinicia a contagem.</li>
                     <li>
-                      O servidor valida duplicados usando lesson_completions e
-                      blog_reads, e impede criadores de ganhar XP pelo próprio conteúdo.
+                      Ganhar XP todos os dias é obrigatório para manter qualquer streak,
+                      login puro não conta.
+                    </li>
+                    <li>Streak de 7 dias rende 222 XP; streak de 30 vale 1.111 XP.</li>
+                    <li>Faltar um único dia quebra o streak e reinicia a contagem.</li>
+                    <li>
+                      O backend usa lesson_completions e blog_reads para evitar XP
+                      duplicado e impedir criadores de ganhar XP lendo seu próprio
+                      conteúdo.
                     </li>
                   </ul>
                 </div>
@@ -316,21 +310,15 @@ export default async function EducationXpPage() {
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                         Última ação registada
                       </p>
-                      {xpData?.streak ? (
-                        <p className="text-sm text-slate-200">
-                          {xpData.streak.action} (+{xpData.streak.latestXp} XP)
-                        </p>
-                      ) : (
-                        <p className="text-sm text-slate-400">
-                          Ative o painel com credenciais para ver o histórico.
-                        </p>
-                      )}
+                      <p className="text-sm text-slate-400">
+                        Autentique-se no painel admin para ver o histórico em tempo real.
+                      </p>
                     </div>
                     <Sparkles className="h-6 w-6 text-amber-400" />
                   </div>
                   <p className="mt-2 text-xs text-slate-500">
-                    Notificações via Resend são disparadas quando os streaks de 7 ou
-                    30 dias são concluídos.
+                    Notificações via Resend são disparadas quando os streaks de 7 ou 30
+                    dias são concluídos.
                   </p>
                 </div>
               </CardContent>
@@ -354,8 +342,8 @@ export default async function EducationXpPage() {
                 <Card className="bg-slate-900/70 border border-slate-800/80">
                   <CardContent>
                     <p className="text-sm text-slate-400">
-                      Ainda não há thresholds publicados. A equipa admin pode preencher
-                      essas etapas no painel /admin/xp.
+                      Ainda não há thresholds publicados. A equipa admin pode adicionar
+                      essas etapas em /admin/xp.
                     </p>
                   </CardContent>
                 </Card>
