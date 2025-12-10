@@ -38,21 +38,21 @@ const heroHighlights = [
     label: 'Limite diário global',
     value: '369 XP',
     detail:
-      'Total máximo que um membro pode somar num único dia. Depois disso, o conteúdo continua disponível mas não soma mais crédito.',
+      'Total máximo que um membro pode somar numa só jornada. Depois disso, o conteúdo permanece acessível, mas o XP não acumula.',
     icon: ShieldCheck,
   },
   {
     label: '7 dias consecutivos com XP ganho',
     value: '222 XP',
     detail:
-      'Streak curto: é preciso ganhar XP confirmado todos os dias; login sozinho não basta. Perder um dia reinicia a contagem.',
+      'Streak curto: é preciso ganhar XP confirmado a cada dia — login sozinho não conta. Um dia perdido reinicia a contagem.',
     icon: Flame,
   },
   {
     label: '30 dias consecutivos com XP ganho',
     value: '1.111 XP',
     detail:
-      'Streak longo: mantém a consistência diária e paga esse bónus premium apenas após completar 30 dias reais de XP.',
+      'Streak longo: só paga esse bónus premium depois de completar 30 dias reais de XP.',
     icon: CalendarCheck,
   },
 ];
@@ -78,7 +78,7 @@ async function fetchEducationXpData() {
       rewards.error?.message ||
       limits.error?.message ||
       thresholds.error?.message ||
-      'Falha ao buscar os dados do XP.';
+      'Falha ao carregar o modelo de XP.';
     throw new Error(message);
   }
 
@@ -119,14 +119,13 @@ export default async function EducationXpPage() {
               </Badge>
               <h1 className="text-3xl md:text-4xl font-bold text-white">XP da Legacy</h1>
               <p className="text-base text-slate-300">
-                XP na Legacy recompensa aprendizagem, criação e participação real.
-                As regras oficiais estão versionadas no banco e são mantidas pela equipa
-                admin dentro do painel{' '}
-                <span className="text-sky-300 font-semibold">/admin/xp</span>.
+                XP na Legacy recompensa aprendizagem, criação e participação real. O modelo
+                está documentado aqui e as regras oficiais podem ser revistas por quem quiser
+                entender o funcionamento do sistema.
               </p>
               <p className="text-sm text-slate-400">
-                Não existe XP por login automático; é preciso ganhar crédito legítimo
-                ao completar lições, ler blogs ou contribuir no fórum.
+                Não existe XP por login automático; é preciso ganhar crédito legítimo completando
+                lições, lendo blogs ou contribuindo no fórum.
               </p>
             </div>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -174,9 +173,6 @@ export default async function EducationXpPage() {
                   Cada ação devolve um intervalo oficial de XP
                 </h2>
               </div>
-              <Badge variant="outline" className="text-slate-100 border-slate-700">
-                Intervalos auditados
-              </Badge>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {rewardTable.length === 0 ? (
@@ -215,8 +211,7 @@ export default async function EducationXpPage() {
                         </div>
                         {reward.creator_bonus_pct && (
                           <p className="text-xs text-slate-400">
-                            +{reward.creator_bonus_pct}% quando outros leem — crédito
-                            exclusivo para criadores.
+                            +{reward.creator_bonus_pct}% quando outros leem — crédito exclusivo para criadores.
                           </p>
                         )}
                       </CardContent>
@@ -234,14 +229,14 @@ export default async function EducationXpPage() {
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-slate-300">
                 <p className="text-xs text-slate-500">
-                  Cada ação possui um teto (XP + contagem) para evitar farming. O limite
-                  global diário é 369 XP e é aplicado juntamente com as regras abaixo.
+                  Cada ação tem um teto (XP + contagem) para impedir farming. O limite global diário
+                  é 369 XP e é aplicado juntamente com as regras abaixo.
                 </p>
                 {limitTable.length === 0 ? (
                   <p className="text-sm text-slate-400">
                     {fetchError
                       ? 'Não conseguimos carregar os limites enquanto o backend não responde.'
-                      : 'Sem limites definidos — peça ao time admin para preencher o painel /admin/xp.'}
+                      : 'Os limites não estão disponíveis no momento.'}
                   </p>
                 ) : (
                   limitTable.map((limit) => (
@@ -279,12 +274,12 @@ export default async function EducationXpPage() {
                     Mantemos a chama acesa
                   </p>
                   <ul className="space-y-2 list-disc pl-5">
-                    <li>Ganhar XP todos os dias é obrigatório para manter um streak.</li>
-                    <li>Streak de 7 dias vale 222 XP; o streak de 30 vale 1.111 XP.</li>
+                    <li>Ganhar XP todos os dias é obrigatório para manter qualquer streak.</li>
+                    <li>Streak de 7 dias vale 222 XP; streak de 30 dias vale 1.111 XP.</li>
                     <li>Faltar um dia quebra o streak e reinicia a contagem.</li>
                     <li>
-                      As tabelas lesson_completions e blog_reads impedem XP duplicado e
-                      bloqueiam criadores de ganhar XP lendo o próprio conteúdo.
+                      As tabelas lesson_completions e blog_reads evitam XP duplicado e bloqueiam
+                      criadores de ganhar XP lendo o próprio conteúdo.
                     </li>
                   </ul>
                 </div>
@@ -295,7 +290,7 @@ export default async function EducationXpPage() {
                         Última ação registada
                       </p>
                       <p className="text-sm text-slate-400">
-                        Autentique-se no painel admin para acessar o histórico em tempo real.
+                        Autentique-se no painel admin para acompanhar o histórico em tempo real.
                       </p>
                     </div>
                     <Sparkles className="h-6 w-6 text-amber-400" />
