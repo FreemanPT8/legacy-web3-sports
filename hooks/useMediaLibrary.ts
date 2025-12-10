@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { MediaAsset } from '@/types/builder';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface UseMediaLibraryOptions {
   listEndpoint?: string;
