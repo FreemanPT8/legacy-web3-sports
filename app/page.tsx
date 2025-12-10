@@ -51,7 +51,7 @@ const DEFAULT_MEDIA_SETTINGS: Record<
 
 export default function Home() {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const isSuperAdmin = user?.role === 'Super Admin';
   const [stats, setStats] = useState<any>(null);
   const [mediaSettings, setMediaSettings] = useState<
@@ -103,12 +103,19 @@ export default function Home() {
       offset?: number;
     }) => {
       try {
-        const response = await fetch('/api/admin/media/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        });
+      const token = getToken?.();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const response = await fetch('/api/admin/media/settings', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
         const data = await response.json();
         if (!response.ok || !data?.success) {
           console.error('Failed to persist media setting:', data?.error);
