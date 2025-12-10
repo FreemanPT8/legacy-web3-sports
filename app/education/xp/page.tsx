@@ -192,30 +192,31 @@ export default async function EducationXpPage() {
                     reward.min_xp === reward.max_xp
                       ? `${reward.min_xp ?? 0} XP`
                       : `${reward.min_xp ?? 0} - ${reward.max_xp ?? 0} XP`;
+                  const formattedAction = reward.action_type
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, (char) => char.toUpperCase());
                   return (
                     <Card
                       key={reward.action_type}
-                      className="bg-slate-900/80 border border-slate-800/90"
+                      className="bg-slate-900/80 border border-slate-800/90 transition hover:border-sky-500/60 hover:-translate-y-0.5"
                     >
-                      <CardHeader className="pb-1">
-                        <CardTitle className="text-sm font-semibold text-slate-100">
-                          {reward.action_type}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2 text-sm text-slate-300">
-                        <div>
-                          <p className="text-xs text-slate-500 uppercase">
-                            Intervalo oficial de XP
-                          </p>
-                          <p className="text-lg font-semibold text-white">{range}</p>
+                      <CardContent className="space-y-3 text-sm text-slate-300">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-base font-semibold text-white">
+                            {formattedAction}
+                          </h3>
+                          <Badge
+                            variant="outline"
+                            className="text-slate-200 border-slate-700"
+                          >
+                            Intervalo oficial
+                          </Badge>
                         </div>
-                        {typeof reward.creator_bonus_pct === 'number' && (
-                          <div className="flex items-center justify-between text-xs text-slate-400">
-                            <span>Bônus do criador</span>
-                            <span className="text-white">
-                              +{reward.creator_bonus_pct}% quando outros leem
-                            </span>
-                          </div>
+                        <p className="text-xl font-bold text-white">{range}</p>
+                        {reward.creator_bonus_pct && (
+                          <p className="text-xs text-slate-400">
+                            +{reward.creator_bonus_pct}% quando outros leem.
+                          </p>
                         )}
                       </CardContent>
                     </Card>
