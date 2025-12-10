@@ -93,6 +93,7 @@ export default function AdminBlogPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [authorFilter, setAuthorFilter] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'views' | 'xp'>('recent');
+  const [focusMode, setFocusMode] = useState(false);
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
@@ -326,10 +327,10 @@ export default function AdminBlogPage() {
           <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
         </div>
 
-        <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin — Blog
-          </span>
+          <div className="relative z-10 max-w-5xl">
+            <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+              LEGACY Admin — Blog
+            </span>
 
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
             Blog Management
@@ -354,12 +355,42 @@ export default function AdminBlogPage() {
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               Trend monitorado: {totalViewsAll.toLocaleString('pt-PT')} views nos últimos 7 dias
             </div>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <div className="rounded-2xl border border-white/20 bg-gradient-to-r from-blue-700/40 via-slate-900 to-slate-950 px-4 py-3 text-sm text-white shadow-lg shadow-blue-900/40 backdrop-blur-md">
+                <p className="text-[11px] uppercase tracking-[0.35em] text-blue-200">
+                  Meta XP semanal
+                </p>
+                <p className="text-xl font-semibold">
+                  {xpTotalAll.toLocaleString('pt-PT')} XP
+                </p>
+                <p className="text-xs text-blue-100/80">
+                  Meta: publicar +3 artigos com 200+ XP cada.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-xs text-white flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                Trend monitorado: {totalViewsAll.toLocaleString('pt-PT')} views nos últimos 7 dias
+              </div>
+              <Button
+                variant="outline"
+                className={`hfit ${focusMode ? 'border-emerald-500 text-emerald-100' : ''}`}
+                onClick={() => setFocusMode((prev) => !prev)}
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                {focusMode ? 'Modo foco ativo' : 'Ativar modo foco'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* CONTEÚDO PRINCIPAL */}
-      <section className="pb-2">
+      <section
+        className={`pb-2 ${
+          focusMode
+            ? 'bg-slate-950/80 shadow-inner shadow-blue-900/50 transition-all duration-300'
+            : ''
+        }`}
+      >
         <div className="max-w-6xl mx-auto space-y-6">
           {/* STAT CARDS */}
           <div className="grid gap-4 md:grid-cols-5 mb-2">
