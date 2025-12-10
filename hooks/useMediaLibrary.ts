@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { MediaAsset } from '@/types/builder';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UseMediaLibraryOptions {
   listEndpoint?: string;
@@ -28,6 +30,7 @@ export function useMediaLibrary({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { getToken } = useAuth();
 
   const registerAsset = useCallback((asset: MediaAsset) => {
     setItems((prev) => [asset, ...prev.filter((i) => i.id !== asset.id)]);
@@ -39,7 +42,12 @@ export function useMediaLibrary({
       setError(null);
       try {
         const query = search ? `?search=${encodeURIComponent(search)}` : '';
-        const res = await fetch(`${listEndpoint}${query}`);
+        const headers: Record<string, string> = {};
+        const token = getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`${listEndpoint}${query}`, {
+          headers,
+        });
         const data = await res.json();
         if (!res.ok || !data?.success) {
           throw new Error(
@@ -89,8 +97,12 @@ export function useMediaLibrary({
           formData.append('tags', tags.join(','));
         }
 
+        const headers: Record<string, string> = {};
+        const token = getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const res = await fetch('/api/admin/media/upload', {
           method: 'POST',
+          headers,
           body: formData,
         });
         const data = await res.json();
