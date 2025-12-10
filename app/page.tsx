@@ -283,7 +283,7 @@ export default function Home() {
                   </div>
                 </div>
                 </div>
-                  <div className="mt-6 bg-gradient-to-br from-slate-900/70 via-slate-900 to-slate-900/70 p-6 rounded-2xl border border-slate-800 shadow-lg">
+                  <div className="mt-6 bg-gradient-to-br from-slate-900/70 via-slate-900 to-slate-900/70 p-6 rounded-2xl border border-slate-800 shadow-lg max-w-3xl mx-auto">
                   {loading ? (
                     <div className="flex justify-center items-center h-full">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400"></div>
