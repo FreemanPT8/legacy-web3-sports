@@ -170,14 +170,14 @@ export default async function EducationXpPage() {
                   Recompensas
                 </p>
                 <h2 className="text-2xl font-bold text-white">
-                  Cada ação segue um intervalo oficial de XP
+                  Cada ação devolve um intervalo oficial de XP
                 </h2>
               </div>
               <Badge variant="outline" className="text-slate-100 border-slate-700">
-                Dados da tabela xp_rewards
+                Intervalos auditados
               </Badge>
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               {rewardTable.length === 0 ? (
                 <Card className="bg-slate-900/70 border border-slate-800/80">
                   <CardContent>
@@ -201,21 +201,21 @@ export default async function EducationXpPage() {
                       className="bg-slate-900/80 border border-slate-800/90 transition hover:border-sky-500/60 hover:-translate-y-0.5"
                     >
                       <CardContent className="space-y-3 text-sm text-slate-300">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-base font-semibold text-white">
-                            {formattedAction}
-                          </h3>
-                          <Badge
-                            variant="outline"
-                            className="text-slate-200 border-slate-700"
-                          >
-                            Intervalo oficial
-                          </Badge>
+                        <div className="flex justify-between items-center gap-4">
+                          <div>
+                            <h3 className="text-base font-semibold text-white">
+                              {formattedAction}
+                            </h3>
+                            <p className="text-xs text-slate-400">Intervalo oficial</p>
+                          </div>
+                          <span className="rounded-full border border-slate-700 px-3 py-1 text-xs uppercase tracking-wide text-slate-300">
+                            {range}
+                          </span>
                         </div>
-                        <p className="text-xl font-bold text-white">{range}</p>
                         {reward.creator_bonus_pct && (
                           <p className="text-xs text-slate-400">
-                            +{reward.creator_bonus_pct}% quando outros leem.
+                            +{reward.creator_bonus_pct}% quando outros leem. Este bônus é
+                            reservado para criadores.
                           </p>
                         )}
                       </CardContent>
