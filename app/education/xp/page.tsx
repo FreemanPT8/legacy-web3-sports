@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Sparkles,
   Trophy,
-  TrophyStar,
 } from 'lucide-react';
 
 const APOLLO_APP_URL =
@@ -397,7 +396,7 @@ export default async function EducationXpPage() {
             <Card className="bg-slate-900/80 border border-slate-800/80">
               <CardContent className="space-y-3 text-sm text-slate-300">
                 <div className="flex items-center gap-3">
-                  <TrophyStar className="h-5 w-5 text-amber-300" />
+                  <Sparkles className="h-5 w-5 text-amber-300" />
                   <p>
                     Nível = XP total ÷ 100, com progresso calculado pelo resto (%) de
                     XP rumo ao próximo nível.
