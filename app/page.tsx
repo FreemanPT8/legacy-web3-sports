@@ -100,17 +100,18 @@ export default function Home() {
 
       <main className="flex-1">
         {/* HERO DARK FUTURISTA */}
-        <section
-          className="relative overflow-hidden text-white min-h-[640px]"
-          style={{
-            backgroundImage: `url('${heroImageUrl}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: `center calc(50% + ${heroOffset}px)`,
-            backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed',
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60" />
+        <section className="relative overflow-hidden text-white min-h-[640px] bg-slate-950">
+          <div className="absolute inset-0">
+            <img
+              src={heroImageUrl}
+              alt="Hero legacy"
+              className="w-full h-full object-cover object-center"
+              style={{
+                objectPosition: `center calc(50% + ${heroOffset}px)`,
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60" />
+          </div>
           {isSuperAdmin && (
             <div className="absolute top-6 right-6 flex flex-col gap-3 bg-slate-900/70 px-4 py-3 rounded-2xl border border-white/20 shadow-xl">
               <div className="flex flex-wrap items-center gap-3">
