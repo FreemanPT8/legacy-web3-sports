@@ -25,6 +25,13 @@ import {
   TrendingUp,
   Award,
 } from 'lucide-react';
+import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
+import { useMediaLibrary } from '@/hooks/useMediaLibrary';
+import type { MediaAsset } from '@/types/builder';
+
+const HERO_IMAGE_KEY = 'legacyHeroImage';
+const DEFAULT_HERO_IMAGE =
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=80';
 
 export default function Home() {
   const { t } = useLanguage();
@@ -32,6 +39,38 @@ export default function Home() {
   const isSuperAdmin = user?.role === 'Super Admin';
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [heroImage, setHeroImage] = useState<MediaAsset | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const library = useMediaLibrary();
+
+  const persistHeroImage = useCallback((asset: MediaAsset | null) => {
+    setHeroImage(asset);
+    if (typeof window !== 'undefined') {
+      if (asset) {
+        localStorage.setItem(HERO_IMAGE_KEY, JSON.stringify(asset));
+      } else {
+        localStorage.removeItem(HERO_IMAGE_KEY);
+      }
+    }
+  }, []);
+
+  const heroImageUrl = heroImage?.url || DEFAULT_HERO_IMAGE;
+  const handleHeroSelect = useCallback(
+    (asset: MediaAsset) => {
+      persistHeroImage(asset);
+      setLibraryOpen(false);
+    },
+    [persistHeroImage],
+  );
+  const handleHeroSelect = useCallback(
+    (asset: MediaAsset) => {
+      persistHeroImage(asset);
+      setLibraryOpen(false);
+    },
+    [persistHeroImage],
+  );
+
+  const heroImageUrl = heroImage?.url || DEFAULT_HERO_IMAGE;
 
   const fetchStats = useCallback(async () => {
     try {
@@ -50,6 +89,18 @@ export default function Home() {
     fetchStats();
   }, [fetchStats]);
 
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem(HERO_IMAGE_KEY) : null;
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as MediaAsset;
+        persistHeroImage(parsed);
+      } catch {
+        localStorage.removeItem(HERO_IMAGE_KEY);
+      }
+    }
+  }, [persistHeroImage]);
+
   return (
     <div className="min-h-screen flex flex-col bg-page">
       <CryptoTicker />
@@ -57,24 +108,23 @@ export default function Home() {
 
       <main className="flex-1">
         {/* HERO DARK FUTURISTA */}
-        <section
-          className="relative overflow-hidden bg-slate-950 text-white py-20 md:py-32"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=80')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        >
+          <section
+            className="relative overflow-hidden text-white py-20 md:py-32"
+            style={{
+              backgroundImage: `url('${heroImageUrl}')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent" />
-          {isSuperAdmin && (
-            <div className="absolute top-6 right-6 flex items-center gap-3 bg-slate-900/70 px-4 py-2 rounded-full border border-white/20 shadow-xl">
+{isSuperAdmin && (
+            <div className="absolute top-6 right-6 flex flex-wrap items-center gap-3 bg-slate-900/70 px-4 py-2 rounded-full border border-white/20 shadow-xl">
               <Button
                 variant="outline"
                 size="sm"
                 className="border-white/50 text-white/80"
-                onClick={() => alert('Abrir modal de edição de imagem...')}
+                onClick={() => setLibraryOpen(true)}
               >
                 Editar imagem
               </Button>
@@ -82,7 +132,7 @@ export default function Home() {
                 variant="ghost"
                 size="sm"
                 className="border border-red-500/60 text-red-300 hover:bg-red-500/10"
-                onClick={() => alert('Remover imagem atual...')}
+                onClick={() => persistHeroImage(null)}
               >
                 Eliminar imagem
               </Button>
@@ -443,6 +493,14 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <MediaLibraryDialog
+          open={libraryOpen}
+          onOpenChange={(open) => setLibraryOpen(open)}
+          library={library}
+          onSelect={handleHeroSelect}
+          description="Selecione ou envie uma nova imagem para o hero."
+          allowUrl
+        />
       </main>
 
       <Footer />
