@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useId } from 'react';
 import { Upload, Link2, Search, RefreshCw, Loader2, ImageIcon } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -56,6 +56,7 @@ export function MediaLibraryDialog({
   const [urlValue, setUrlValue] = useState('');
   const [urlTitle, setUrlTitle] = useState('');
   const [urlType, setUrlType] = useState<MediaAsset['type']>('image');
+  const descriptionId = useId();
 
   const mediaItems = useMemo(() => library.items, [library.items]);
   const recentUploads = useMemo(() => library.allItems.slice(0, 4), [library.allItems]);
@@ -123,10 +124,18 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-5xl">
+      <DialogContent
+        className="max-w-5xl"
+        aria-describedby={descriptionId}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <p className="text-sm text-gray-500">{description}</p>
+          <p
+            id={descriptionId}
+            className="text-sm text-gray-500"
+          >
+            {description}
+          </p>
         </DialogHeader>
 
         <Tabs

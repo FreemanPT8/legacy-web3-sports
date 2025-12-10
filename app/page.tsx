@@ -106,6 +106,7 @@ export default function Home() {
         const response = await fetch('/api/admin/media/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(payload),
         });
         const data = await response.json();
