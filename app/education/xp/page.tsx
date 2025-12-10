@@ -35,28 +35,27 @@ type EducationXpData = {
 
 const heroHighlights = [
   {
-    label: 'Limite diario global',
+    label: 'Limite diário global',
     value: '369 XP',
     detail:
-      'Total maximo de XP valido num dia util. Depois disso o conteudo continua acessivel, mas nao soma mais creditos.',
+      'Total máximo que um membro pode somar num único dia. Depois disso, o conteúdo continua disponível mas não soma mais crédito.',
     icon: ShieldCheck,
   },
   {
     label: '7 dias consecutivos com XP ganho',
     value: '222 XP',
     detail:
-      'Streak curto que exige XP confirmado todos os dias; login simples nao e suficiente. Faltar um dia reinicia a contagem.',
+      'Streak curto: é preciso ganhar XP confirmado todos os dias; login sozinho não basta. Perder um dia reinicia a contagem.',
     icon: Flame,
   },
   {
     label: '30 dias consecutivos com XP ganho',
     value: '1.111 XP',
     detail:
-      'Streak longo requer consistencia diaria e so recompensa apos 30 dias completos de XP.',
+      'Streak longo: mantém a consistência diária e paga esse bónus premium apenas após completar 30 dias reais de XP.',
     icon: CalendarCheck,
   },
 ];
-
 
 const levelFormula = 'Nível = XP total ÷ 100 (arredondado para baixo)';
 
@@ -121,13 +120,13 @@ export default async function EducationXpPage() {
               <h1 className="text-3xl md:text-4xl font-bold text-white">XP da Legacy</h1>
               <p className="text-base text-slate-300">
                 XP na Legacy recompensa aprendizagem, criação e participação real.
-                As regras oficiais estão versionadas no banco e mantidas pelo time
+                As regras oficiais estão versionadas no banco e são mantidas pela equipa
                 admin dentro do painel{' '}
                 <span className="text-sky-300 font-semibold">/admin/xp</span>.
               </p>
               <p className="text-sm text-slate-400">
                 Não existe XP por login automático; é preciso ganhar crédito legítimo
-                completando lições, lendo blogs ou contribuindo no fórum.
+                ao completar lições, ler blogs ou contribuir no fórum.
               </p>
             </div>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -136,7 +135,7 @@ export default async function EducationXpPage() {
                 return (
                   <Card
                     key={highlight.label}
-                    className="flex flex-col bg-slate-900/80 border border-slate-800 shadow-lg shadow-slate-950/40"
+                    className="flex flex-col bg-slate-900/80 border border-slate-800 shadow-lg shadow-slate-950/40 transition hover:-translate-y-0.5 hover:border-sky-500/60"
                   >
                     <CardContent className="space-y-2">
                       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -216,8 +215,8 @@ export default async function EducationXpPage() {
                         </div>
                         {reward.creator_bonus_pct && (
                           <p className="text-xs text-slate-400">
-                            +{reward.creator_bonus_pct}% quando outros leem —
-                            crédito exclusivo para criadores.
+                            +{reward.creator_bonus_pct}% quando outros leem — crédito
+                            exclusivo para criadores.
                           </p>
                         )}
                       </CardContent>
@@ -235,8 +234,8 @@ export default async function EducationXpPage() {
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-slate-300">
                 <p className="text-xs text-slate-500">
-                  Cada ação tem um teto (XP + contagem) para impedir farming e spam.
-                  O limite global diário segue 369 XP e é respeitado por todas as regras abaixo.
+                  Cada ação possui um teto (XP + contagem) para evitar farming. O limite
+                  global diário é 369 XP e é aplicado juntamente com as regras abaixo.
                 </p>
                 {limitTable.length === 0 ? (
                   <p className="text-sm text-slate-400">
@@ -252,7 +251,7 @@ export default async function EducationXpPage() {
                     >
                       <div>
                         <p className="text-sm font-semibold text-white">
-                          {limit.action_type}
+                          {limit.action_type.replace(/_/g, ' ')}
                         </p>
                         <p className="text-xs text-slate-400">
                           Até {limit.count ?? 0} ações por dia
@@ -280,8 +279,8 @@ export default async function EducationXpPage() {
                     Mantemos a chama acesa
                   </p>
                   <ul className="space-y-2 list-disc pl-5">
-                    <li>Ganhar XP todos os dias é obrigatório para manter o streak.</li>
-                    <li>Streak de 7 dias vale 222 XP; streak de 30 vale 1.111 XP.</li>
+                    <li>Ganhar XP todos os dias é obrigatório para manter um streak.</li>
+                    <li>Streak de 7 dias vale 222 XP; o streak de 30 vale 1.111 XP.</li>
                     <li>Faltar um dia quebra o streak e reinicia a contagem.</li>
                     <li>
                       As tabelas lesson_completions e blog_reads impedem XP duplicado e
@@ -296,7 +295,7 @@ export default async function EducationXpPage() {
                         Última ação registada
                       </p>
                       <p className="text-sm text-slate-400">
-                        Autentique-se no painel admin para ver o histórico em tempo real.
+                        Autentique-se no painel admin para acessar o histórico em tempo real.
                       </p>
                     </div>
                     <Sparkles className="h-6 w-6 text-amber-400" />
@@ -318,7 +317,7 @@ export default async function EducationXpPage() {
                 Cada milestone desbloqueia acesso extra
               </h2>
               <p className="text-sm text-slate-400">
-                XP total determina privilégios, reputação e desbloqueios. Veja os thresholds oficiais.
+                O XP total define privilégios, reputação e desbloqueios. Veja os thresholds oficiais abaixo.
               </p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
@@ -356,7 +355,7 @@ export default async function EducationXpPage() {
               <CardContent className="space-y-3 text-sm text-slate-300">
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-5 w-5 text-amber-300" />
-                  <p>{levelFormula}, também mostrando o progresso restante ao próximo nível.</p>
+                  <p>{levelFormula}, também mostrando o progresso restante rumo ao próximo nível.</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Trophy className="h-5 w-5 text-emerald-300" />
