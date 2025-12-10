@@ -46,6 +46,7 @@ export function useMediaLibrary({
         if (token) headers['Authorization'] = `Bearer ${token}`;
         const res = await fetch(`${listEndpoint}${query}`, {
           headers,
+          credentials: 'include',
         });
         const data = await res.json();
         if (!res.ok || !data?.success) {
@@ -102,6 +103,7 @@ export function useMediaLibrary({
         const res = await fetch('/api/admin/media/upload', {
           method: 'POST',
           headers,
+          credentials: 'include',
           body: formData,
         });
         const data = await res.json();
