@@ -148,6 +148,30 @@ export default function Home() {
           <div className="relative z-10 container mx-auto px-0 h-full" />
         </section>
 
+        <section className="py-12 bg-background text-white">
+          <div className="container mx-auto px-4 text-center space-y-4">
+            <p className="text-xs tracking-[0.6em] uppercase text-slate-400">LEGACY XP</p>
+            <h1 className="text-3xl md:text-4xl font-semibold">
+              LEGACY: Gamified Web3 Academy for Sports
+            </h1>
+            <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+              A collaborative platform dedicated to onboarding and educating sports professionals in Web3 technologies, particularly the Apertum network.
+            </p>
+            <div className="flex justify-center flex-wrap gap-4">
+              <Link href="/signup">
+                <Button size="lg" className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold">
+                  Junte-se Agora
+                </Button>
+              </Link>
+              <Link href="/education">
+                <Button size="lg" variant="outline" className="px-8 border-sky-500 text-sky-200 hover:bg-slate-900">
+                  Saiba Mais
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
 
         {/* SECÇÃO 2 — BENEFÍCIOS (CARDS ESCUROS) */}
         <section className="py-16 bg-background">
