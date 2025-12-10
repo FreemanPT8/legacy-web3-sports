@@ -382,7 +382,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'xp.locked': 'Unlock at',
     'xp.consumed': 'Completed',
     'xp.available': 'Available',
-    'home.sectionTitle': 'LEGACY: Gamified Web3 Academy for Sports',
+    'home.sectionTitle': 'LEGACY XP Highlights',
     'home.sectionDesc': 'A collaborative platform dedicated to onboarding and educating sports professionals in Web3 technologies, particularly the Apertum network.',
     'home.learnEarn': 'Learn & Earn',
     'home.learnEarnDesc': 'Complete lessons and articles to earn XP. Every action counts toward your growth.',
