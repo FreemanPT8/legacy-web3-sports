@@ -176,7 +176,7 @@ export default function Home() {
         {/* SECÇÃO 2 — BENEFÍCIOS (CARDS ESCUROS) */}
         <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
+            <div className="max-w-6xl mx-auto text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-100">
                 {t('home.sectionTitle')}
               </h2>
@@ -185,7 +185,8 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-card border-gray-800">
                 <CardHeader>
                   <BookOpen className="h-10 w-10 text-sky-400 mb-2" />
