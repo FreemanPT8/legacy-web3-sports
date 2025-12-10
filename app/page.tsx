@@ -347,12 +347,12 @@ export default function Home() {
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Link href="/sports">
-                    <Button size="md" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
+                    <Button size="lg" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
                       {t('home.exploreWeb3Sports')}
                     </Button>
                   </Link>
                   <Link href="/sports/onboarding">
-                    <Button size="md" variant="outline" className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900">
+                    <Button size="lg" variant="outline" className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900">
                       {t('home.startOnboarding')}
                     </Button>
                   </Link>
