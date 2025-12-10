@@ -100,6 +100,29 @@ export default function Home() {
                   </Link>
                 )}
               </div>
+              <div className="mt-12 flex justify-center">
+                <div className="relative w-full max-w-4xl h-80 rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
+                  <div
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{
+                      backgroundImage:
+                        "url('https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80')",
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/30 to-transparent" />
+                  <div className="absolute inset-0 flex flex-col justify-end p-6">
+                    <p className="text-xs uppercase tracking-[0.4em] text-slate-300 mb-1">
+                      O Legacy
+                    </p>
+                    <h3 className="text-3xl font-semibold text-white mb-2">
+                      A plataforma que liga conteúdo, XP e comunidade Web3
+                    </h3>
+                    <p className="text-sm text-slate-200 max-w-2xl">
+                      Um showcase visual do grau de maturidade da nossa rede: imagem, cores e textura fazem parte do nosso storytelling.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
