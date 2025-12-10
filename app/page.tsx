@@ -41,6 +41,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [heroImage, setHeroImage] = useState<MediaAsset | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [heroOffset, setHeroOffset] = useState(0);
   const library = useMediaLibrary();
 
   const persistHeroImage = useCallback((asset: MediaAsset | null) => {
@@ -104,29 +105,42 @@ export default function Home() {
           style={{
             backgroundImage: `url('${heroImageUrl}')`,
             backgroundSize: '100% auto',
-            backgroundPosition: 'center top',
+            backgroundPosition: `center calc(50% + ${heroOffset}px)`,
             backgroundRepeat: 'no-repeat',
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/40 to-slate-950" />
           {isSuperAdmin && (
-            <div className="absolute top-6 right-6 flex flex-wrap items-center gap-3 bg-slate-900/70 px-4 py-2 rounded-full border border-white/20 shadow-xl">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-white/50 text-white/80"
-                onClick={() => setLibraryOpen(true)}
-              >
-                Editar imagem
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="border border-red-500/60 text-red-300 hover:bg-red-500/10"
-                onClick={() => persistHeroImage(null)}
-              >
-                Eliminar imagem
-              </Button>
+            <div className="absolute top-6 right-6 flex flex-col gap-3 bg-slate-900/70 px-4 py-3 rounded-2xl border border-white/20 shadow-xl">
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/50 text-white/80"
+                  onClick={() => setLibraryOpen(true)}
+                >
+                  Editar imagem
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="border border-red-500/60 text-red-300 hover:bg-red-500/10"
+                  onClick={() => persistHeroImage(null)}
+                >
+                  Eliminar imagem
+                </Button>
+              </div>
+              <label className="text-xs uppercase tracking-widest text-slate-300">
+                Ajuste vertical
+              </label>
+              <input
+                type="range"
+                min={-200}
+                max={200}
+                value={heroOffset}
+                onChange={(event) => setHeroOffset(Number(event.target.value))}
+                className="w-48 accent-sky-400"
+              />
             </div>
           )}
           <div className="relative z-10 container mx-auto px-0 h-full" />
