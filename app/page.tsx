@@ -62,15 +62,6 @@ export default function Home() {
     },
     [persistHeroImage],
   );
-  const handleHeroSelect = useCallback(
-    (asset: MediaAsset) => {
-      persistHeroImage(asset);
-      setLibraryOpen(false);
-    },
-    [persistHeroImage],
-  );
-
-  const heroImageUrl = heroImage?.url || DEFAULT_HERO_IMAGE;
 
   const fetchStats = useCallback(async () => {
     try {
