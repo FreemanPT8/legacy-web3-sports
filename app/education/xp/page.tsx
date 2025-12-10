@@ -1,644 +1,424 @@
-'use client';
-
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Trophy,
-  Target,
+  CalendarCheck,
   Flame,
-  TrendingUp,
-  Award,
-  CheckCircle2,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  TrophyStar,
 } from 'lucide-react';
 
-const DAILY_XP_LIMIT = 369;
+const APOLLO_APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
-type XPSummary = {
-  xp_total: number;
-  xp_today: number;
-  xp_last_7_days: number;
-  xp_last_30_days: number;
-  streak_count: number;
-  streak_updated_at: string | null;
-  streak_long_count: number;
-  streak_long_updated_at: string | null;
-  recent_transactions: {
-    id: string;
-    action: string;
-    xp_earned: number;
-    created_at: string;
-  }[];
+export const dynamic = 'force-dynamic';
+
+type XpReward = {
+  action_type: string;
+  min_xp: number | null;
+  max_xp: number | null;
+  creator_bonus_pct?: number | null;
 };
 
-function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
+type XpLimit = {
+  action_type: string;
+  xp_earned: number | null;
+  count: number | null;
+};
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const { user, loading, getToken } = useAuth();
-  const { t } = useLanguage();
+type XpThreshold = {
+  xp_total: number;
+  feature_name: string;
+  description?: string | null;
+  id?: string;
+};
 
-  const [xpSummary, setXpSummary] = useState<XPSummary | null>(null);
-  const [xpLoading, setXpLoading] = useState(false);
-  const [xpError, setXpError] = useState<string | null>(null);
+type EducationXpData = {
+  rewards: XpReward[];
+  limits: XpLimit[];
+  thresholds: XpThreshold[];
+  streak: {
+    action: string;
+    latestXp: number;
+  } | null;
+};
 
-  const [missions, setMissions] = useState<any[]>([]);
-  const [loadingMissions, setLoadingMissions] = useState(true);
+async function fetchEducationXpData() {
+  const res = await fetch(`${APOLLO_APP_URL}/api/education/xp`, {
+    cache: 'no-store',
+  });
 
-  const [streak, setStreak] = useState(0);
-  const [longStreak, setLongStreak] = useState(0);
-  const [mounted, setMounted] = useState(false);
-
-  const [globalRank, setGlobalRank] = useState<{
-    rank: number | null;
-    totalUsers: number;
-  } | null>(null);
-  const [loadingRank, setLoadingRank] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  // 🔹 MISSÕES
-  const fetchMissions = useCallback(async () => {
-    if (!user) return;
-    try {
-      const response = await fetch(`/api/missions/generate?userId=${user.id}`);
-      const data = await response.json();
-      if (data.success) {
-        setMissions(data.missions || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch missions:', error);
-    } finally {
-      setLoadingMissions(false);
-    }
-  }, [user]);
-
-  // 🔹 STREAK
-  const updateStreak = useCallback(async () => {
-    if (!user) return;
-    try {
-      const response = await fetch('/api/streak/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setStreak(data.newStreak);
-        if (typeof data.longStreak === 'number') {
-          setLongStreak(data.longStreak);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to update streak:', error);
-    }
-  }, [user]);
-
-  // 🔹 GLOBAL RANK
-  const fetchGlobalRank = useCallback(async () => {
-    if (!user) return;
-    try {
-      setLoadingRank(true);
-      const response = await fetch(`/api/leaderboard/rank?userId=${user.id}`);
-      const data = await response.json();
-      if (data.success) {
-        setGlobalRank({
-          rank: typeof data.rank === 'number' ? data.rank : null,
-          totalUsers: typeof data.totalUsers === 'number' ? data.totalUsers : 0,
-        });
-      } else {
-        console.error('Failed to fetch global rank:', data.error);
-      }
-    } catch (error) {
-      console.error('Failed to fetch global rank:', error);
-    } finally {
-      setLoadingRank(false);
-    }
-  }, [user]);
-
-  // 🔹 RESUMO DE XP
-  const fetchXpSummary = useCallback(async () => {
-    if (!user) return;
-    const token = getToken();
-    if (!token) {
-      setXpError('Token inválido ou expirado');
-      return;
-    }
-
-    try {
-      setXpLoading(true);
-      setXpError(null);
-
-      const response = await fetch('/api/me/xp', {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        console.error('Failed to fetch XP summary:', data.error);
-        setXpError(data.error || 'Falha ao carregar XP');
-        return;
-      }
-
-      const xpData = data.xp as XPSummary;
-      setXpSummary(xpData);
-      setLongStreak(xpData.streak_long_count ?? 0);
-
-      if (typeof xpData.streak_count === 'number' && xpData.streak_count > 0) {
-        setStreak(xpData.streak_count);
-      }
-    } catch (error) {
-      console.error('Failed to fetch XP summary:', error);
-      setXpError('Falha ao carregar XP');
-    } finally {
-      setXpLoading(false);
-    }
-  }, [user, getToken]);
-
-  // 🔹 Efeito principal
-  useEffect(() => {
-    if (user) {
-      fetchMissions();
-      updateStreak();
-      fetchGlobalRank();
-      fetchXpSummary();
-    }
-  }, [user, fetchMissions, updateStreak, fetchGlobalRank, fetchXpSummary]);
-
-  // ------- DERIVADOS DE XP -----
-
-  const xpTotal = useMemo(() => {
-    if (xpSummary) return xpSummary.xp_total;
-    return typeof user?.xp_total === 'number' ? user.xp_total : 0;
-  }, [xpSummary, user?.xp_total]);
-
-  const level = useMemo(
-    () => (xpTotal ? Math.floor(xpTotal / 100) : 0),
-    [xpTotal],
-  );
-
-  const xpProgress = useMemo(
-    () => (xpTotal ? xpTotal % 100 : 0),
-    [xpTotal],
-  );
-
-  const xpHistory = useMemo(
-    () => xpSummary?.recent_transactions || [],
-    [xpSummary],
-  );
-
-  const todayXp = useMemo(() => {
-    if (xpSummary) return xpSummary.xp_today || 0;
-
-    if (!xpHistory || xpHistory.length === 0) return 0;
-    const now = new Date();
-    return xpHistory.reduce((sum, tx) => {
-      if (!tx.created_at || typeof tx.xp_earned !== 'number') return sum;
-      const d = new Date(tx.created_at);
-      if (isSameDay(now, d)) {
-        return sum + tx.xp_earned;
-      }
-      return sum;
-    }, 0);
-  }, [xpSummary, xpHistory]);
-
-  const todayLimitProgress = useMemo(() => {
-    if (DAILY_XP_LIMIT <= 0) return 0;
-    const ratio = (todayXp / DAILY_XP_LIMIT) * 100;
-    return Math.max(0, Math.min(100, Math.round(ratio)));
-  }, [todayXp]);
-
-  const remainingTodayXp = useMemo(
-    () => Math.max(DAILY_XP_LIMIT - todayXp, 0),
-    [todayXp],
-  );
-
-  // ------------- LOADING --------------
-
-  if (loading || !user || !mounted) {
-    return (
-      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
-            <p className="mt-4 text-slate-300">A carregar...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null);
+    throw new Error(
+      payload?.error || `Recebi ${res.status} ao carregar XP oficial.`,
     );
   }
 
-  // ------------- PAGE --------------
+  const data = (await res.json()) as {
+    success: boolean;
+    error?: string;
+    rewards: XpReward[];
+    limits: XpLimit[];
+    thresholds: XpThreshold[];
+    streak?: EducationXpData['streak'];
+  };
+
+  if (!data.success) {
+    throw new Error(data.error || 'Falha ao carregar os dados de XP.');
+  }
+
+  return {
+    rewards: data.rewards || [],
+    limits: data.limits || [],
+    thresholds: data.thresholds || [],
+    streak: data.streak || null,
+  } satisfies EducationXpData;
+}
+
+export default async function EducationXpPage() {
+  let xpData: EducationXpData | null = null;
+  let fetchError: string | null = null;
+
+  try {
+    xpData = await fetchEducationXpData();
+  } catch (error) {
+    console.error('/education/xp falha ao buscar dados', error);
+    fetchError =
+      error instanceof Error ? error.message : 'Erro desconhecido ao carregar XP.';
+  }
+
+  const rewardTable = xpData?.rewards ?? [];
+  const limitTable = xpData?.limits ?? [];
+  const thresholdTable = xpData?.thresholds ?? [];
+
+  const heroHighlights = [
+    {
+      label: 'Limite diário global',
+      value: '369 XP',
+      detail:
+        'É o teto de XP que um membro pode ganhar num só dia. A partir daí, o conteúdo continua disponível mas sem crédito adicional.',
+      icon: ShieldCheck,
+    },
+    {
+      label: 'Streak curto (7 dias)',
+      value: '222 XP',
+      detail:
+        'Para completar o streak, o utilizador tem de ganhar XP todos os dias (não basta fazer login).',
+      icon: Flame,
+    },
+    {
+      label: 'Streak longo (30 dias)',
+      value: '1.111 XP',
+      detail:
+        'Mantém a consistência por 30 dias seguidos de XP diário e recebe uma recompensa premium.',
+      icon: CalendarCheck,
+    },
+  ];
+
+  const levelFormula = 'Nível = XP total ÷ 100 (arredondado para baixo)';
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
       <Header />
+      <main className="flex-1 py-12">
+        <div className="container mx-auto px-4 space-y-12 max-w-6xl">
+          <section className="rounded-3xl border border-slate-800/60 bg-gradient-to-br from-slate-900/80 via-slate-950 to-slate-900/90 px-6 py-10 shadow-xl shadow-slate-900/60">
+            <div className="max-w-3xl space-y-4">
+              <Badge className="bg-sky-500/10 text-sky-200 border border-sky-400/40">
+                Legacy XP • Sistema oficial
+              </Badge>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+                XP da Legacy
+              </h1>
+              <p className="text-base text-slate-300">
+                Aprenda como o XP recompensa aprendizado, criação e participação.
+                Os limites, streaks e thresholds descritos aqui são mantidos em
+                base de dados e podem ser geridos por admins autorizados via{' '}
+                <span className="text-sky-300 font-semibold">
+                  /admin/xp
+                </span>
+                .
+              </p>
+              <p className="text-sm text-slate-400">
+                Não há XP por simples login: é necessário ganhar crédito
+                legítimo, seja lendo um blog, completando uma lição ou
+                participando no fórum.
+              </p>
+            </div>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {heroHighlights.map((highlight) => {
+                const Icon = highlight.icon;
+                return (
+                  <Card
+                    key={highlight.label}
+                    className="bg-slate-900/80 border border-slate-800 shadow-lg shadow-sky-900/30"
+                  >
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <Icon className="h-4 w-4 text-sky-300" />
+                        {highlight.label}
+                      </div>
+                      <p className="text-2xl font-bold text-white">
+                        {highlight.value}
+                      </p>
+                      <p className="text-sm text-slate-400">{highlight.detail}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
 
-      <main className="flex-1 py-8">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-slate-50">
-              {t('dashboard.welcomeBack').replace('{username}', user.username)}
-            </h1>
-            <p className="text-sm md:text-base text-slate-300">
-              {t('dashboard.trackProgress')}
-            </p>
-
-            {xpError && (
-              <p className="mt-2 text-sm text-red-400">{xpError}</p>
-            )}
-          </div>
-
-          {/* RESUMO RÁPIDO DE XP / STREAK / RANK */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {/* XP TOTAL */}
-            <Card className="bg-slate-900/80 border border-slate-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-300">
-                  {t('dashboard.totalXp')}
-                </CardTitle>
-              </CardHeader>
+          {fetchError && (
+            <Card className="bg-rose-950/80 border border-rose-600">
               <CardContent>
-                <div className="flex items-center gap-3">
-                  <Trophy className="h-10 w-10 text-sky-400" />
-                  <div>
-                    <div className="text-3xl font-bold text-slate-50">
-                      {xpLoading && !xpSummary ? '...' : xpTotal}
-                    </div>
-                    <p className="text-sm text-slate-400">
-                      {t('dashboard.level')} {level}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Progresso de nível */}
-                <div className="mt-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-300">
-                      {t('dashboard.nextLevel')}
-                    </span>
-                    <span className="font-medium text-slate-100">
-                      {xpProgress}/100
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2">
-                    <div
-                      className="bg-sky-500 h-2 rounded-full transition-all"
-                      style={{ width: `${xpProgress}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* XP diário */}
-                <div className="mt-5 border-t border-slate-800 pt-4">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-300">XP ganho hoje</span>
-                    <span className="font-semibold text-slate-100">
-                      {todayXp} / {DAILY_XP_LIMIT}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${
-                        todayXp >= DAILY_XP_LIMIT
-                          ? 'bg-amber-500'
-                          : 'bg-emerald-500'
-                      }`}
-                      style={{ width: `${todayLimitProgress}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-400">
-                    {todayXp >= DAILY_XP_LIMIT
-                      ? 'Atingiste o limite diário de XP. Podes continuar a estudar, mas sem ganhar mais XP hoje.'
-                      : `Ainda podes ganhar até ${remainingTodayXp} XP hoje.`}
-                  </p>
-                </div>
+                <p className="text-sm text-rose-200">
+                  Não conseguimos carregar os metadados oficiais agora.{' '}
+                  {fetchError}
+                </p>
               </CardContent>
             </Card>
+          )}
 
-            {/* STREAK */}
-            <Card className="bg-slate-900/80 border border-slate-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-300">
-                  {t('dashboard.currentStreak')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <Flame className="h-10 w-10 text-orange-500" />
-                  <div>
-                    <div className="text-3xl font-bold text-slate-50">
-                      {streak}
-                    </div>
+          <section className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-400 uppercase tracking-[0.2em]">
+                  Recompensas
+                </p>
+                <h2 className="text-2xl font-bold text-white">
+                  Cada ação tem um intervalo oficial
+                </h2>
+              </div>
+              <Badge variant="outline" className="text-slate-100 border-slate-700">
+                Baseado em XP_rewards
+              </Badge>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {rewardTable.length === 0 ? (
+                <Card className="bg-slate-900/70 border border-slate-800/80">
+                  <CardContent>
                     <p className="text-sm text-slate-400">
-                      {t('dashboard.days')}
+                      Ainda não existem regras de recompensa configuradas.
                     </p>
-                  </div>
-                </div>
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm text-slate-300">
-                    {t('dashboard.keepLearning')}
-                  </p>
-                  <p className="text-xs text-sky-400 mt-1">
-                    {t('dashboard.bonusAt7Days')}
-                  </p>
-                  <div className="space-y-1 text-xs">
-                    <p className="text-slate-300">
-                      {t('dashboard.longStreakLabel')} {longStreak}/30
-                    </p>
-                    <p className="text-slate-400">
-                      {t('dashboard.longStreakTooltip')}
-                    </p>
-                    <p className="text-sky-400">{t('dashboard.bonusAt30Days')}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* GLOBAL RANK */}
-            <Card className="bg-slate-900/80 border border-slate-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-300">
-                  {t('dashboard.globalRank')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="h-10 w-10 text-emerald-400" />
-                  <div>
-                    <div className="text-3xl font-bold text-slate-50">
-                      {loadingRank
-                        ? '...'
-                        : globalRank?.rank
-                        ? `#${globalRank.rank}`
-                        : '-'}
-                    </div>
-                    <p className="text-sm text-slate-400">
-                      {globalRank?.rank
-                        ? `Among ${globalRank.totalUsers} active learners`
-                        : t('dashboard.unranked')}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <p className="text-sm text-slate-300">
-                    {t('dashboard.earnMoreXp')}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* MISSÕES + FEATURES DESBLOQUEADAS */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            {/* MISSÕES */}
-            <Card className="bg-slate-900/80 border border-slate-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-50">
-                  <Target className="h-5 w-5 text-sky-400" />
-                  {t('dashboard.dailyMissions')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loadingMissions ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500 mx-auto" />
-                    <p className="mt-2 text-sm text-slate-300">
-                      {t('dashboard.loadingMissions')}
-                    </p>
-                  </div>
-                ) : missions.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Target className="h-12 w-12 text-slate-500 mx-auto mb-3" />
-                    <p className="text-slate-300">
-                      {t('dashboard.noMissionsToday')}
-                    </p>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {t('dashboard.checkBackTomorrow')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {missions.map((mission: any) => {
-                      const missionData = Array.isArray(mission.user_missions)
-                        ? mission.user_missions[0]
-                        : mission.user_missions;
-                      const progress = missionData?.progress || 0;
-                      const completed = missionData?.completed || false;
-                      return (
-                        <div
-                          key={mission.id}
-                          className={`flex items-center justify-between p-4 rounded-lg border border-slate-800 ${
-                            completed
-                              ? 'bg-emerald-950/40'
-                              : 'bg-slate-900/80'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            {completed && (
-                              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                            )}
-                            <div>
-                              <p
-                                className={`font-medium ${
-                                  completed
-                                    ? 'text-emerald-200'
-                                    : 'text-slate-100'
-                                }`}
-                              >
-                                {mission.description}
-                              </p>
-                              <p className="text-sm text-slate-400">
-                                {progress}/{mission.target_count}{' '}
-                                {t('dashboard.completed')}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge
-                            variant={completed ? 'default' : 'outline'}
-                            className={
-                              completed
-                                ? 'bg-emerald-400 text-emerald-950 border-emerald-300'
-                                : 'border-slate-600 text-slate-200'
-                            }
-                          >
-                            {completed
-                              ? t('dashboard.completedMission')
-                              : `+${mission.xp_reward} XP`}
-                          </Badge>
+                  </CardContent>
+                </Card>
+              ) : (
+                rewardTable.map((reward) => {
+                  const range =
+                    reward.min_xp === reward.max_xp
+                      ? `${reward.min_xp ?? 0} XP`
+                      : `${reward.min_xp ?? 0} - ${reward.max_xp ?? 0} XP`;
+                  return (
+                    <Card
+                      key={reward.action_type}
+                      className="bg-slate-900/80 border border-slate-800/90"
+                    >
+                      <CardHeader className="pb-1">
+                        <CardTitle className="text-sm font-semibold text-slate-100">
+                          {reward.action_type}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3 text-sm text-slate-300">
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase">
+                            XP ganho por ação
+                          </p>
+                          <p className="text-lg font-semibold text-white">
+                            {range}
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
+                        {typeof reward.creator_bonus_pct === 'number' && (
+                          <div className="flex items-center justify-between w-full text-slate-400 text-xs">
+                            <span>Bónus do criador</span>
+                            <span className="text-white">
+                              +{reward.creator_bonus_pct}% pelo alcance
+                            </span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </section>
+
+          <section className="grid md:grid-cols-2 gap-6">
+            <Card className="bg-slate-900/70 border border-slate-800/80">
+              <CardHeader>
+                <CardTitle className="text-slate-100">Limites diários</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-slate-300">
+                <p className="text-xs text-slate-500">
+                  Para evitar farming, cada ação possui teto de XP e contagem.
+                </p>
+                {limitTable.length === 0 ? (
+                  <p className="text-sm text-slate-400">
+                    Nenhum limite definido. O admin pode configurar via
+                    /admin/xp.
+                  </p>
+                ) : (
+                  limitTable.map((limit) => (
+                    <div
+                      key={limit.action_type}
+                      className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-950/40 p-3"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          {limit.action_type}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Até {limit.count ?? 0} ações por dia
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-emerald-300">
+                          {limit.xp_earned ?? 0} XP
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          total por limite
+                        </p>
+                      </div>
+                    </div>
+                  ))
                 )}
               </CardContent>
             </Card>
 
-            {/* FEATURES DESBLOQUEADAS */}
-            <Card className="bg-slate-900/80 border border-slate-800">
+            <Card className="bg-slate-900/70 border border-slate-800/80">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-50">
-                  <div className="p-2 bg-sky-500/10 rounded-lg">
-                    <Award className="h-5 w-5 text-sky-300" />
-                  </div>
-                  {t('dashboard.unlockedFeatures')}
-                </CardTitle>
+                <CardTitle className="text-slate-100">Streaks & consistência</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    <span className="text-slate-200">
-                      {t('dashboard.basicCourses')}
-                    </span>
+              <CardContent className="space-y-4 text-sm text-slate-300">
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">
+                    Como mantemos a chama acesa
+                  </p>
+                  <ul className="space-y-2 list-disc pl-5">
+                    <li>
+                      Ganhar XP todos os dias é obrigatório para estender qualquer
+                      streak: login puro não conta.
+                    </li>
+                    <li>
+                      Streak de 7 dias rende 222 XP, enquanto o streak de 30 dias
+                      vale 1.111 XP e recomeça ao cair um único dia.
+                    </li>
+                    <li>
+                      O backend valida cada ação via tabelas{' '}
+                      <span className="text-slate-100">lesson_completions</span> e{' '}
+                      <span className="text-slate-100">blog_reads</span> para evitar
+                      duplicados e XP de criador lendo o próprio conteúdo.
+                    </li>
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                        Última ação com XP
+                      </p>
+                      {xpData?.streak ? (
+                        <p className="text-sm text-slate-200">
+                          {xpData.streak.action} (+{xpData.streak.latestXp} XP)
+                        </p>
+                      ) : (
+                        <p className="text-sm text-slate-400">
+                          Ative o painel com creds para visualizar o histórico.
+                        </p>
+                      )}
+                    </div>
+                    <Sparkles className="h-6 w-6 text-amber-400" />
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    {xpTotal >= 99 ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
-                    )}
-                    <span
-                      className={
-                        xpTotal >= 99 ? 'text-slate-200' : 'text-slate-500'
-                      }
-                    >
-                      {t('dashboard.profileEditing')} (99 XP)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {xpTotal >= 369 ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
-                    )}
-                    <span
-                      className={
-                        xpTotal >= 369 ? 'text-slate-200' : 'text-slate-500'
-                      }
-                    >
-                      {t('dashboard.forumReadAccess')} (369 XP)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {xpTotal >= 444 ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
-                    )}
-                    <span
-                      className={
-                        xpTotal >= 444 ? 'text-slate-200' : 'text-slate-500'
-                      }
-                    >
-                      {t('dashboard.forumInteract')} (444 XP)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {xpTotal >= 555 ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
-                    )}
-                    <span
-                      className={
-                        xpTotal >= 555 ? 'text-slate-200' : 'text-slate-500'
-                      }
-                    >
-                      {t('dashboard.forumPostCreate')} (555 XP)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {xpTotal >= 3333 ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-slate-500" />
-                    )}
-                    <span
-                      className={
-                        xpTotal >= 3333 ? 'text-slate-200' : 'text-slate-500'
-                      }
-                    >
-                      {t('dashboard.hallOfFame')} (3333 XP)
-                    </span>
-                  </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    O servidor também envia notificações (Resend) quando um streak
+                    de 7 ou 30 dias é concluído.
+                  </p>
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </section>
 
-          {/* HISTÓRICO DE XP */}
-          <Card className="bg-slate-900/80 border border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-slate-50">
-                {t('dashboard.recentXpActivity')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!xpHistory || xpHistory.length === 0 ? (
-                <div className="text-center py-8">
-                  <Trophy className="h-12 w-12 text-slate-500 mx-auto mb-3" />
-                  <p className="text-slate-300">
-                    {t('dashboard.noActivityYet')}
+          <section className="space-y-6">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-semibold text-slate-400 uppercase tracking-[0.2em]">
+                Progressão e thresholds
+              </p>
+              <h2 className="text-2xl font-bold text-white">
+                Cada milestone desbloqueia acesso extra
+              </h2>
+              <p className="text-sm text-slate-400">
+                O XP total também define privilégios e reputação. Veja abaixo os
+                thresholds da comunidade.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {thresholdTable.length === 0 ? (
+                <Card className="bg-slate-900/70 border border-slate-800/80">
+                  <CardContent>
+                    <p className="text-sm text-slate-400">
+                      Ainda não há thresholds publicados. Admins podem adicionar
+                      esses dados via /admin/xp.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                thresholdTable.map((threshold) => (
+                  <Card
+                    key={threshold.xp_total + threshold.feature_name}
+                    className="bg-slate-900/80 border border-slate-800/80"
+                  >
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-500">
+                          {threshold.xp_total} XP
+                        </span>
+                        <Badge variant="outline" className="text-slate-200 border-slate-700">
+                          Desbloqueia
+                        </Badge>
+                      </div>
+                      <p className="text-lg font-semibold text-white">
+                        {threshold.feature_name}
+                      </p>
+                      {threshold.description && (
+                        <p className="text-sm text-slate-400">
+                          {threshold.description}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+            <Card className="bg-slate-900/80 border border-slate-800/80">
+              <CardContent className="space-y-3 text-sm text-slate-300">
+                <div className="flex items-center gap-3">
+                  <TrophyStar className="h-5 w-5 text-amber-300" />
+                  <p>
+                    Nível = XP total ÷ 100, com progresso calculado pelo resto (%) de
+                    XP rumo ao próximo nível.
                   </p>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {xpHistory.map((tx: any) => (
-                    <div
-                      key={tx.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-slate-900/80 border border-slate-800"
-                    >
-                      <div>
-                        <p className="font-medium text-slate-100">
-                          {tx.action}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          {new Date(tx.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <Badge className="bg-sky-500 text-slate-950">
-                        +{tx.xp_earned} XP
-                      </Badge>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-3">
+                  <Trophy className="h-5 w-5 text-emerald-300" />
+                  <p>
+                    O ranking global é alimentado pelas transações na tabela{' '}
+                    <span className="text-slate-100">xp_transactions</span>,
+                    permitindo novos desafios competitivos.
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <p className="text-xs text-slate-500">
+                  {levelFormula}
+                </p>
+              </CardContent>
+            </Card>
+          </section>
         </div>
       </main>
-
       <Footer />
     </div>
   );
