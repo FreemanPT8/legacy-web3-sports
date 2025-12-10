@@ -10,8 +10,9 @@ import {
   Trophy,
 } from 'lucide-react';
 
-const APOLLO_APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const baseUrl =
+  process.env.NEXT_PUBLIC_APP_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 export const dynamic = 'force-dynamic';
 
@@ -46,14 +47,14 @@ type EducationXpData = {
 };
 
 async function fetchEducationXpData() {
-  const res = await fetch(`${APOLLO_APP_URL}/api/education/xp`, {
+  const res = await fetch(new URL('/api/education/xp', baseUrl).toString(), {
     cache: 'no-store',
   });
 
   if (!res.ok) {
     const payload = await res.json().catch(() => null);
     throw new Error(
-      payload?.error || `Recebi ${res.status} ao carregar XP oficial.`,
+      payload?.error || `Recebi ${res.status} ao carregar os metadados de XP.`,
     );
   }
 
@@ -74,7 +75,7 @@ async function fetchEducationXpData() {
     rewards: data.rewards || [],
     limits: data.limits || [],
     thresholds: data.thresholds || [],
-    streak: data.streak || null,
+    streak: data.streak ?? null,
   } satisfies EducationXpData;
 }
 
@@ -87,7 +88,9 @@ export default async function EducationXpPage() {
   } catch (error) {
     console.error('/education/xp falha ao buscar dados', error);
     fetchError =
-      error instanceof Error ? error.message : 'Erro desconhecido ao carregar XP.';
+      error instanceof Error
+        ? error.message
+        : 'Erro desconhecido ao carregar os metadados.';
   }
 
   const rewardTable = xpData?.rewards ?? [];
@@ -99,21 +102,21 @@ export default async function EducationXpPage() {
       label: 'Limite diário global',
       value: '369 XP',
       detail:
-        'É o teto de XP que um membro pode ganhar num só dia. A partir daí, o conteúdo continua disponível mas sem crédito adicional.',
+        'É o teto de XP que se pode ganhar num único dia. Continuar estudando mais cedo ou tarde não concede mais XP.',
       icon: ShieldCheck,
     },
     {
       label: 'Streak curto (7 dias)',
       value: '222 XP',
       detail:
-        'Para completar o streak, o utilizador tem de ganhar XP todos os dias (não basta fazer login).',
+        'Requer ganhar XP todos os dias seguidos; login simples não conta. Falhar um dia quebra o streak.',
       icon: Flame,
     },
     {
       label: 'Streak longo (30 dias)',
       value: '1.111 XP',
       detail:
-        'Mantém a consistência por 30 dias seguidos de XP diário e recebe uma recompensa premium.',
+        'Mantém a chama viva por 30 dias consecutivos de XP e recebe esse bónus mais alto.',
       icon: CalendarCheck,
     },
   ];
@@ -124,7 +127,7 @@ export default async function EducationXpPage() {
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
       <Header />
       <main className="flex-1 py-12">
-        <div className="container mx-auto px-4 space-y-12 max-w-6xl">
+        <div className="container mx-auto px-4 space-y-10 max-w-6xl">
           <section className="rounded-3xl border border-slate-800/60 bg-gradient-to-br from-slate-900/80 via-slate-950 to-slate-900/90 px-6 py-10 shadow-xl shadow-slate-900/60">
             <div className="max-w-3xl space-y-4">
               <Badge className="bg-sky-500/10 text-sky-200 border border-sky-400/40">
@@ -134,18 +137,14 @@ export default async function EducationXpPage() {
                 XP da Legacy
               </h1>
               <p className="text-base text-slate-300">
-                Aprenda como o XP recompensa aprendizado, criação e participação.
-                Os limites, streaks e thresholds descritos aqui são mantidos em
-                base de dados e podem ser geridos por admins autorizados via{' '}
-                <span className="text-sky-300 font-semibold">
-                  /admin/xp
-                </span>
-                .
+                O XP recompensa aprendizagem, criação e participação real. Estes
+                limites, streaks e thresholds são mantidos em base de dados e
+                podem ser geridos pela equipa admin através do painel{' '}
+                <span className="text-sky-300 font-semibold">/admin/xp</span>.
               </p>
               <p className="text-sm text-slate-400">
-                Não há XP por simples login: é necessário ganhar crédito
-                legítimo, seja lendo um blog, completando uma lição ou
-                participando no fórum.
+                Não há XP por simples login: é necessário ganhar crédito legítimo,
+                seja concluindo lições, lendo blog posts ou participando no fórum.
               </p>
             </div>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -157,7 +156,7 @@ export default async function EducationXpPage() {
                     className="bg-slate-900/80 border border-slate-800 shadow-lg shadow-sky-900/30"
                   >
                     <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                         <Icon className="h-4 w-4 text-sky-300" />
                         {highlight.label}
                       </div>
@@ -176,8 +175,10 @@ export default async function EducationXpPage() {
             <Card className="bg-rose-950/80 border border-rose-600">
               <CardContent>
                 <p className="text-sm text-rose-200">
-                  Não conseguimos carregar os metadados oficiais agora.{' '}
-                  {fetchError}
+                  Não conseguimos carregar os dados oficiais agora: {fetchError}
+                </p>
+                <p className="text-xs text-rose-300">
+                  Verifique as variáveis de ambiente ou tente novamente em breve.
                 </p>
               </CardContent>
             </Card>
@@ -190,11 +191,11 @@ export default async function EducationXpPage() {
                   Recompensas
                 </p>
                 <h2 className="text-2xl font-bold text-white">
-                  Cada ação tem um intervalo oficial
+                  Cada ação devolve um intervalo de XP
                 </h2>
               </div>
               <Badge variant="outline" className="text-slate-100 border-slate-700">
-                Baseado em XP_rewards
+                Baseado na tabela xp_rewards
               </Badge>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -202,7 +203,7 @@ export default async function EducationXpPage() {
                 <Card className="bg-slate-900/70 border border-slate-800/80">
                   <CardContent>
                     <p className="text-sm text-slate-400">
-                      Ainda não existem regras de recompensa configuradas.
+                      Nenhuma regra de recompensa foi publicada ainda.
                     </p>
                   </CardContent>
                 </Card>
@@ -232,10 +233,10 @@ export default async function EducationXpPage() {
                           </p>
                         </div>
                         {typeof reward.creator_bonus_pct === 'number' && (
-                          <div className="flex items-center justify-between w-full text-slate-400 text-xs">
+                          <div className="flex items-center justify-between text-xs text-slate-400">
                             <span>Bónus do criador</span>
                             <span className="text-white">
-                              +{reward.creator_bonus_pct}% pelo alcance
+                              +{reward.creator_bonus_pct}% quando outros leem
                             </span>
                           </div>
                         )}
@@ -254,12 +255,13 @@ export default async function EducationXpPage() {
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-300">
                 <p className="text-xs text-slate-500">
-                  Para evitar farming, cada ação possui teto de XP e contagem.
+                  Cada tipo de ação tem um teto (XP + contagem) para evitar farming.
                 </p>
                 {limitTable.length === 0 ? (
                   <p className="text-sm text-slate-400">
-                    Nenhum limite definido. O admin pode configurar via
-                    /admin/xp.
+                    {fetchError
+                      ? 'Não conseguimos carregar os limites enquanto o back-end não responde.'
+                      : 'Sem limites definidos — peça ao time admin para preencher o painel /admin/xp.'}
                   </p>
                 ) : (
                   limitTable.map((limit) => (
@@ -299,19 +301,12 @@ export default async function EducationXpPage() {
                     Como mantemos a chama acesa
                   </p>
                   <ul className="space-y-2 list-disc pl-5">
+                    <li>Ganhar XP todos os dias é obrigatório para manter streaks.</li>
+                    <li>Streak de 7 dias rende 222 XP; streak de 30 dias vale 1.111 XP.</li>
+                    <li>Faltar um único dia derruba o streak e reinicia a contagem.</li>
                     <li>
-                      Ganhar XP todos os dias é obrigatório para estender qualquer
-                      streak: login puro não conta.
-                    </li>
-                    <li>
-                      Streak de 7 dias rende 222 XP, enquanto o streak de 30 dias
-                      vale 1.111 XP e recomeça ao cair um único dia.
-                    </li>
-                    <li>
-                      O backend valida cada ação via tabelas{' '}
-                      <span className="text-slate-100">lesson_completions</span> e{' '}
-                      <span className="text-slate-100">blog_reads</span> para evitar
-                      duplicados e XP de criador lendo o próprio conteúdo.
+                      O servidor valida duplicados usando lesson_completions e
+                      blog_reads, e impede criadores de ganhar XP pelo próprio conteúdo.
                     </li>
                   </ul>
                 </div>
@@ -319,7 +314,7 @@ export default async function EducationXpPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                        Última ação com XP
+                        Última ação registada
                       </p>
                       {xpData?.streak ? (
                         <p className="text-sm text-slate-200">
@@ -327,15 +322,15 @@ export default async function EducationXpPage() {
                         </p>
                       ) : (
                         <p className="text-sm text-slate-400">
-                          Ative o painel com creds para visualizar o histórico.
+                          Ative o painel com credenciais para ver o histórico.
                         </p>
                       )}
                     </div>
                     <Sparkles className="h-6 w-6 text-amber-400" />
                   </div>
                   <p className="mt-2 text-xs text-slate-500">
-                    O servidor também envia notificações (Resend) quando um streak
-                    de 7 ou 30 dias é concluído.
+                    Notificações via Resend são disparadas quando os streaks de 7 ou
+                    30 dias são concluídos.
                   </p>
                 </div>
               </CardContent>
@@ -351,8 +346,7 @@ export default async function EducationXpPage() {
                 Cada milestone desbloqueia acesso extra
               </h2>
               <p className="text-sm text-slate-400">
-                O XP total também define privilégios e reputação. Veja abaixo os
-                thresholds da comunidade.
+                O XP total define privilégios e reputação. Veja abaixo os thresholds oficiais.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -360,15 +354,15 @@ export default async function EducationXpPage() {
                 <Card className="bg-slate-900/70 border border-slate-800/80">
                   <CardContent>
                     <p className="text-sm text-slate-400">
-                      Ainda não há thresholds publicados. Admins podem adicionar
-                      esses dados via /admin/xp.
+                      Ainda não há thresholds publicados. A equipa admin pode preencher
+                      essas etapas no painel /admin/xp.
                     </p>
                   </CardContent>
                 </Card>
               ) : (
                 thresholdTable.map((threshold) => (
                   <Card
-                    key={threshold.xp_total + threshold.feature_name}
+                    key={`${threshold.xp_total}-${threshold.feature_name}`}
                     className="bg-slate-900/80 border border-slate-800/80"
                   >
                     <CardContent className="space-y-2">
@@ -376,7 +370,10 @@ export default async function EducationXpPage() {
                         <span className="text-sm text-slate-500">
                           {threshold.xp_total} XP
                         </span>
-                        <Badge variant="outline" className="text-slate-200 border-slate-700">
+                        <Badge
+                          variant="outline"
+                          className="text-slate-200 border-slate-700"
+                        >
                           Desbloqueia
                         </Badge>
                       </div>
@@ -398,21 +395,17 @@ export default async function EducationXpPage() {
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-5 w-5 text-amber-300" />
                   <p>
-                    Nível = XP total ÷ 100, com progresso calculado pelo resto (%) de
-                    XP rumo ao próximo nível.
+                    {levelFormula}, calculando também o progresso restante rumo ao
+                    próximo nível.
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Trophy className="h-5 w-5 text-emerald-300" />
                   <p>
-                    O ranking global é alimentado pelas transações na tabela{' '}
-                    <span className="text-slate-100">xp_transactions</span>,
-                    permitindo novos desafios competitivos.
+                    O ranking global usa xp_transactions para alimentar desafios e
+                    gamificação.
                   </p>
                 </div>
-                <p className="text-xs text-slate-500">
-                  {levelFormula}
-                </p>
               </CardContent>
             </Card>
           </section>
