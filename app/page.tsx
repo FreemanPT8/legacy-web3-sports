@@ -149,7 +149,7 @@ export default function Home() {
         </section>
 
         <section className="py-12 bg-background text-white">
-          <div className="container mx-auto px-4 text-center space-y-4 max-w-6xl">
+          <div className="container mx-auto px-4 text-center space-y-4">
             <p className="text-xs tracking-[0.6em] uppercase text-slate-400">LEGACY XP</p>
             <h1 className="text-3xl md:text-4xl font-semibold">
               LEGACY: Gamified Web3 Academy for Sports
@@ -176,7 +176,7 @@ export default function Home() {
         {/* SECÇÃO 2 — BENEFÍCIOS (CARDS ESCUROS) */}
         <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto text-center mb-12">
+            <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-100">
                 {t('home.sectionTitle')}
               </h2>
@@ -185,8 +185,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="max-w-6xl mx-auto">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-card border-gray-800">
                 <CardHeader>
                   <BookOpen className="h-10 w-10 text-sky-400 mb-2" />
@@ -249,8 +248,8 @@ export default function Home() {
         {/* SECÇÃO 3 — WEB3 EDUCATION + ESTATÍSTICAS */}
         <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto space-y-8">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="max-w-6xl mx-auto">
+                <div className="grid md:grid-cols-2 gap-8 items-center max-w-5xl mx-auto">
                 <div>
                   <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">
                     {t('home.web3Education')}
@@ -348,12 +347,12 @@ export default function Home() {
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Link href="/sports">
-                    <Button size="lg" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
+                    <Button size="md" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
                       {t('home.exploreWeb3Sports')}
                     </Button>
                   </Link>
                   <Link href="/sports/onboarding">
-                    <Button size="lg" variant="outline" className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900">
+                    <Button size="md" variant="outline" className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900">
                       {t('home.startOnboarding')}
                     </Button>
                   </Link>
