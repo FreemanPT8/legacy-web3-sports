@@ -104,9 +104,10 @@ export default function Home() {
           className="relative overflow-hidden text-white min-h-[640px]"
           style={{
             backgroundImage: `url('${heroImageUrl}')`,
-            backgroundSize: '100% auto',
+            backgroundSize: 'cover',
             backgroundPosition: `center calc(50% + ${heroOffset}px)`,
             backgroundRepeat: 'no-repeat',
+            backgroundAttachment: 'fixed',
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60" />
