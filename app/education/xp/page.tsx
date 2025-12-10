@@ -35,27 +35,28 @@ type EducationXpData = {
 
 const heroHighlights = [
   {
-    label: 'Limite diário global',
+    label: 'Limite diario global',
     value: '369 XP',
     detail:
-      'Total máximo de XP válido num dia útil. Depois disso o conteúdo continua acessível, mas sem crédito adicional.',
+      'Total maximo de XP valido num dia util. Depois disso o conteudo continua acessivel, mas nao soma mais creditos.',
     icon: ShieldCheck,
   },
   {
-    label: 'Streak curto (7 dias)',
+    label: '7 dias consecutivos com XP ganho',
     value: '222 XP',
     detail:
-      'Exige ganhar XP todos os dias consecutivos. Login simples não conta; um dia perdido reinicia o streak.',
+      'Streak curto que exige XP confirmado todos os dias; login simples nao e suficiente. Faltar um dia reinicia a contagem.',
     icon: Flame,
   },
   {
-    label: 'Streak longo (30 dias)',
+    label: '30 dias consecutivos com XP ganho',
     value: '1.111 XP',
     detail:
-      'Conserva o ritmo por 30 dias e paga esse bónus premium. A consistência dá prémio; faltar reinicia.',
+      'Streak longo requer consistencia diaria e so recompensa apos 30 dias completos de XP.',
     icon: CalendarCheck,
   },
 ];
+
 
 const levelFormula = 'Nível = XP total ÷ 100 (arredondado para baixo)';
 
@@ -119,8 +120,9 @@ export default async function EducationXpPage() {
               </Badge>
               <h1 className="text-3xl md:text-4xl font-bold text-white">XP da Legacy</h1>
               <p className="text-base text-slate-300">
-                O XP recompensa aprendizagem, criação e participação autêntica.
-                Todas as regras descritas aqui estão registadas no banco e são geridas via{' '}
+                XP na Legacy recompensa aprendizagem, criação e participação real.
+                As regras oficiais estão versionadas no banco e mantidas pelo time
+                admin dentro do painel{' '}
                 <span className="text-sky-300 font-semibold">/admin/xp</span>.
               </p>
               <p className="text-sm text-slate-400">
@@ -214,8 +216,8 @@ export default async function EducationXpPage() {
                         </div>
                         {reward.creator_bonus_pct && (
                           <p className="text-xs text-slate-400">
-                            +{reward.creator_bonus_pct}% quando outros leem. Este bônus é
-                            reservado para criadores.
+                            +{reward.creator_bonus_pct}% quando outros leem —
+                            crédito exclusivo para criadores.
                           </p>
                         )}
                       </CardContent>
@@ -234,6 +236,7 @@ export default async function EducationXpPage() {
               <CardContent className="space-y-2 text-sm text-slate-300">
                 <p className="text-xs text-slate-500">
                   Cada ação tem um teto (XP + contagem) para impedir farming e spam.
+                  O limite global diário segue 369 XP e é respeitado por todas as regras abaixo.
                 </p>
                 {limitTable.length === 0 ? (
                   <p className="text-sm text-slate-400">
