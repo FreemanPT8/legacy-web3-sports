@@ -338,6 +338,23 @@ export default function AdminBlogPage() {
             Gestão centralizada de posts, XP e visualizações do Blog do LEGACY.
             Filtra, revê e mantém vivo o conteúdo contínuo da comunidade.
           </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <div className="rounded-2xl border border-white/20 bg-gradient-to-r from-blue-700/40 via-slate-900 to-slate-950 px-4 py-3 text-sm text-white shadow-lg shadow-blue-900/40 backdrop-blur-md">
+              <p className="text-[11px] uppercase tracking-[0.35em] text-blue-200">
+                Meta XP semanal
+              </p>
+              <p className="text-xl font-semibold">
+                {xpTotalAll.toLocaleString('pt-PT')} XP
+              </p>
+              <p className="text-xs text-blue-100/80">
+                Meta: publicar +3 artigos com 200+ XP cada.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-xs text-white flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Trend monitorado: {totalViewsAll.toLocaleString('pt-PT')} views nos últimos 7 dias
+            </div>
+          </div>
         </div>
       </section>
 
