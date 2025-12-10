@@ -1,7 +1,7 @@
 create table if not exists public.site_media_settings (
   section text not null primary key,
   asset_id uuid null references public.media_files (id) on delete set null,
-  offset integer not null default 0,
+  vertical_offset integer not null default 0,
   created_at timestamp with time zone not null default now(),
   updated_at timestamp with time zone not null default now()
 );

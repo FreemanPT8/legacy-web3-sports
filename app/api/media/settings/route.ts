@@ -37,7 +37,7 @@ export async function GET() {
       .select(
         `
           section,
-          offset,
+          vertical_offset,
           asset:media_files (
             id,
             url,
@@ -85,7 +85,7 @@ export async function GET() {
               createdAt: assetRow.created_at ?? null,
             }
           : null,
-        offset: typeof row.offset === 'number' ? row.offset : 0,
+        offset: typeof row.vertical_offset === 'number' ? row.vertical_offset : 0,
       };
     });
 

@@ -209,16 +209,21 @@ export default function Home() {
       const response = await fetch('/api/media/settings');
       const data = await response.json();
       if (data.success) {
-        const nextSettings = SECTION_KEYS.reduce((acc, section) => {
-          const remote = data.settings?.[section];
-          return {
-            ...acc,
-            [section]: {
-              asset: remote?.asset ?? null,
-              offset: typeof remote?.offset === 'number' ? remote.offset : 0,
-            },
-          };
-        }, {} as Record<SectionKey, { asset: MediaAsset | null; offset: number }>);
+      const nextSettings = SECTION_KEYS.reduce((acc, section) => {
+        const remote = data.settings?.[section];
+        return {
+          ...acc,
+          [section]: {
+            asset: remote?.asset ?? null,
+            offset:
+              typeof remote?.offset === 'number'
+                ? remote.offset
+                : typeof remote?.vertical_offset === 'number'
+                ? remote.vertical_offset
+                : 0,
+          },
+        };
+      }, {} as Record<SectionKey, { asset: MediaAsset | null; offset: number }>);
         setMediaSettings(nextSettings);
         setHeroOffset(nextSettings.hero.offset ?? 0);
       }

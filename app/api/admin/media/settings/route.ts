@@ -77,13 +77,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (hasOffset) {
-      payload.offset = offset ?? 0;
+      payload.vertical_offset = offset ?? 0;
     }
 
     const { data, error } = await supabaseAdmin
       .from('site_media_settings')
       .upsert(payload, { onConflict: 'section' })
-      .select('section, offset, asset_id');
+      .select('section, vertical_offset, asset_id');
 
     if (error) {
       console.error('Failed to update site media settings:', error);
