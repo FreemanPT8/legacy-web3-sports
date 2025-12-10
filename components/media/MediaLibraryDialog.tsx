@@ -126,16 +126,15 @@ export function MediaLibraryDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="max-w-5xl"
-        aria-describedby={descriptionId}
+        aria-describedby={description ? descriptionId : undefined}
       >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <p
-            id={descriptionId}
-            className="text-sm text-gray-500"
-          >
-            {description}
-          </p>
+          {description && (
+            <p id={descriptionId} className="text-sm text-gray-500">
+              {description}
+            </p>
+          )}
         </DialogHeader>
 
         <Tabs
