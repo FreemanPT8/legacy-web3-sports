@@ -98,7 +98,7 @@ export default function Home() {
       <CryptoTicker />
       <Header />
 
-      <main className="flex-1">
+      <main className="flex-1 px-4">
         {/* HERO DARK FUTURISTA */}
         <section className="relative overflow-hidden text-white min-h-[640px] bg-slate-950">
           <div className="absolute inset-0">
