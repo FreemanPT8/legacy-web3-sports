@@ -100,16 +100,16 @@ export default function Home() {
       <main className="flex-1">
         {/* HERO DARK FUTURISTA */}
         <section
-            className="relative overflow-hidden text-white py-20 md:py-32 min-h-[520px]"
-            style={{
-              backgroundImage: `url('${heroImageUrl}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-            }}
-          >
+          className="relative overflow-hidden text-white min-h-[520px]"
+          style={{
+            backgroundImage: `url('${heroImageUrl}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent" />
-{isSuperAdmin && (
+          {isSuperAdmin && (
             <div className="absolute top-6 right-6 flex flex-wrap items-center gap-3 bg-slate-900/70 px-4 py-2 rounded-full border border-white/20 shadow-xl">
               <Button
                 variant="outline"
@@ -129,49 +129,31 @@ export default function Home() {
               </Button>
             </div>
           )}
-          <div className="relative z-10 container mx-auto px-4">
-            <div className="max-w-4xl text-center space-y-8 mx-auto flex min-h-[420px] flex-col justify-end">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                {t('hero.title')}
-              </h1>
-              <p className="text-xl md:text-2xl text-sky-200">
-                {t('hero.subtitle')}
-              </p>
-              <p className="text-lg text-slate-200 max-w-2xl mx-auto">
-                {t('hero.description')}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pb-4">
-                {!user ? (
-                  <>
-                    <Link href="/signup">
-                      <Button
-                        size="lg"
-                        className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
-                      >
-                        {t('cta.join')}
-                      </Button>
-                    </Link>
-                    <Link href="/education/courses">
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="px-8 border-sky-500 text-sky-200 hover:bg-slate-900"
-                      >
-                        {t('cta.learn')}
-                      </Button>
-                    </Link>
-                  </>
-                ) : (
-                  <Link href="/dashboard">
-                    <Button
-                      size="lg"
-                      className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
-                    >
-                      {t('cta.goDashboard')}
-                    </Button>
-                  </Link>
-                )}
-              </div>
+          <div className="relative z-10 container mx-auto px-0 h-full" />
+        </section>
+
+        <section className="py-16 bg-background text-center text-white">
+          <div className="container mx-auto px-4">
+            <p className="text-sm font-semibold tracking-[0.3em] text-sky-400 mb-4">
+              LEGACY XP
+            </p>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              LEGACY: Educação Web3 Gamificada para Desportos
+            </h1>
+            <p className="text-lg text-slate-300 max-w-3xl mx-auto mb-8">
+              Uma plataforma colaborativa dedicada à integração e educação de profissionais de desportos em tecnologias Web3, particularmente a rede Apertum.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Link href="/signup">
+                <Button size="lg" className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold">
+                  Junte-se Agora
+                </Button>
+              </Link>
+              <Link href="/education">
+                <Button size="lg" variant="outline" className="px-8 border-sky-500 text-sky-200 hover:bg-slate-900">
+                  Saiba Mais
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
