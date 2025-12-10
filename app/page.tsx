@@ -283,7 +283,7 @@ export default function Home() {
                   </div>
                 </div>
                 </div>
-                  <div className="mt-6 max-w-3xl mx-auto flex flex-wrap justify-center gap-3 text-center">
+                  <div className="mt-6 max-w-3xl mx-auto grid grid-cols-2 gap-3">
                     {[
                       ['home.courses', stats?.totalCourses || 0],
                       ['home.lessons', stats?.totalLessons || 0],
@@ -292,10 +292,14 @@ export default function Home() {
                     ].map(([labelKey, value]) => (
                       <div
                         key={labelKey}
-                        className="flex-none px-4 py-2 rounded-full border border-slate-800 bg-slate-950/60 text-xs uppercase tracking-[0.5em] text-slate-300"
+                        className="bg-card border border-slate-800 rounded-xl px-4 py-4 text-center shadow-sm"
                       >
-                        <div className="text-sm text-sky-400 font-semibold">{value || 0}+</div>
-                        <div className="text-[0.55rem]">{t(labelKey)}</div>
+                        <div className="text-lg font-semibold text-sky-400">
+                          {value || 0}+
+                        </div>
+                        <div className="text-xs uppercase tracking-[0.4em] text-gray-400 mt-1">
+                          {t(labelKey)}
+                        </div>
                       </div>
                     ))}
                   </div>
