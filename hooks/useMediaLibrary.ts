@@ -54,8 +54,14 @@ export function useMediaLibrary({
             data?.error || 'Unable to load media library at the moment.',
           );
         }
-        const files = (data.files || data.items || []) as MediaAsset[];
-        setItems(files);
+        const rawFiles = (data.files || data.items || []) as MediaAsset[];
+        const normalized = rawFiles.map((file) => {
+          if (file.type) return file;
+          const mime = file.mime_type || '';
+          const normalizedType = mime.split('/')[0] || 'file';
+          return { ...file, type: normalizedType } as MediaAsset;
+        });
+        setItems(normalized);
       } catch (err) {
         setError(
           err instanceof Error
