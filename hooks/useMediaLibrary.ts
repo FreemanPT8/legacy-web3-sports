@@ -116,18 +116,56 @@ export function useMediaLibrary({
           registerAsset(data.file as MediaAsset);
           return data.file as MediaAsset;
         }
-      return null;
-    } catch (err) {
+        return null;
+      } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Unknown error uploading media.',
         );
         return null;
       } finally {
-      setUploading(false);
-      setUploadProgress(null);
-    }
-  },
-    [],
+        setUploading(false);
+        setUploadProgress(null);
+      }
+    },
+    [getToken, registerAsset],
+  );
+
+  const deleteAsset = useCallback(
+    async (assetId: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        const token = getToken();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await fetch('/api/admin/media/delete', {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({ id: assetId }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.error || 'Unable to delete media asset.');
+        }
+        setItems((prev) => prev.filter((item) => item.id !== assetId));
+        return true;
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Unknown error deleting media asset.',
+        );
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken],
   );
 
   const filteredItems = useMemo(() => {
@@ -163,5 +201,6 @@ export function useMediaLibrary({
     refresh: fetchItems,
     uploadAsset,
     registerAsset,
+    deleteAsset,
   };
 }

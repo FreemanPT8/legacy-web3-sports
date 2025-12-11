@@ -71,6 +71,9 @@ export function MediaLibraryDialog({
     onOpenChange(nextOpen);
   };
 
+  const [assetToDelete, setAssetToDelete] = useState<MediaAsset | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!file) return;
@@ -120,6 +123,15 @@ export function MediaLibraryDialog({
     setUrlValue('');
     setUrlTitle('');
     setUrlType('image');
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!assetToDelete) return;
+    const success = await library.deleteAsset(assetToDelete.id);
+    if (success) {
+      setAssetToDelete(null);
+      setConfirmOpen(false);
+    }
   };
 
   return (
@@ -194,16 +206,27 @@ export function MediaLibraryDialog({
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {mediaItems.map((asset) => (
                     <button
-                      key={asset.id}
-                      type="button"
-                      onClick={() => {
-                        onSelect(asset);
-                        handleOpenChange(false);
-                      }}
-                      className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
-                    >
-                      <div className="relative h-36 w-full overflow-hidden bg-gray-50">
-                        {asset.type === 'image' ? (
+                        key={asset.id}
+                        type="button"
+                    onClick={() => {
+                      onSelect(asset);
+                      handleOpenChange(false);
+                    }}
+                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
+                  >
+                    <div className="relative h-36 w-full overflow-hidden bg-gray-50">
+                        <button
+                          type="button"
+                          className="absolute right-2 top-2 z-10 rounded-full bg-black/60 px-2 py-1 text-xs text-white"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setAssetToDelete(asset);
+                            setConfirmOpen(true);
+                          }}
+                        >
+                          Eliminar
+                        </button>
+                      {asset.type === 'image' ? (
                           <Image
                             src={asset.thumbnailUrl || asset.url}
                             alt={asset.title || 'Media asset'}
@@ -395,6 +418,31 @@ export function MediaLibraryDialog({
           )}
         </Tabs>
       </DialogContent>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar eliminação</DialogTitle>
+            <p className="text-sm text-gray-500">
+              Tens a certeza que queres eliminar esta imagem do Media Library? Esta ação
+              não pode ser desfeita.
+            </p>
+          </DialogHeader>
+          <div className="mt-4 flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmOpen(false);
+                setAssetToDelete(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button className="bg-red-500 hover:bg-red-600" onClick={handleDeleteConfirm}>
+              Eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
