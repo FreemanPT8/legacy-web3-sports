@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState, useId } from 'react';
+import { useMemo, useState, useId, useEffect } from 'react';
 import { Upload, Link2, Search, RefreshCw, Loader2, ImageIcon } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -61,10 +61,14 @@ export function MediaLibraryDialog({
   const mediaItems = useMemo(() => library.items, [library.items]);
   const recentUploads = useMemo(() => library.allItems.slice(0, 4), [library.allItems]);
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
+  useEffect(() => {
+    if (open) {
       void library.openLibrary(library.activeTab);
-    } else {
+    }
+  }, [open, library]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
       library.closeLibrary();
       resetForms();
     }
