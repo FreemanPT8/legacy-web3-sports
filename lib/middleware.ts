@@ -35,7 +35,15 @@ export async function authenticateRequest(
       'token',
       'access_token',
       'sb-access-token',
-      'sb-refresh-token',
+      'sb_refresh_token',
+      'sb-access_token',
+      'sbAccessToken',
+      'sbRefreshToken',
+      'sb_refresh-token',
+      'sbAccessToken',
+      'sb_refreshToken',
+      'sb-refresh_token',
+      'sb',
     ];
 
     for (const name of possibleCookieNames) {
