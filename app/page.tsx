@@ -85,9 +85,13 @@ export default function Home() {
       'Defina a imagem que transmite a experiência Web3 para desportos e comunidades.',
   };
 
-  const openMediaDialogFor = useCallback((section: SectionKey) => {
-    setMediaDialogState({ open: true, section });
-  }, []);
+  const openMediaDialogFor = useCallback(
+    (section: SectionKey) => {
+      setMediaDialogState({ open: true, section });
+      void library.openLibrary('library');
+    },
+    [library],
+  );
 
   const handleMediaDialogOpenChange = useCallback((open: boolean) => {
     setMediaDialogState((prev) => ({
