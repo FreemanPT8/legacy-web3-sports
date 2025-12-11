@@ -213,10 +213,10 @@ export function MediaLibraryDialog({
                             unoptimized
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-sm text-gray-500">
-                            <ImageIcon className="mr-2 h-4 w-4" />
-                            {asset.type.toUpperCase()}
-                          </div>
+                            <div className="flex h-full w-full items-center justify-center text-sm text-gray-500">
+                              <ImageIcon className="mr-2 h-4 w-4" />
+                              {(asset.type || 'file').toUpperCase()}
+                            </div>
                         )}
                       </div>
                       <div className="p-3">
