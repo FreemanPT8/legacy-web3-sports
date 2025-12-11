@@ -30,7 +30,13 @@ export async function authenticateRequest(
 
   // 2) Fallback: tentar via cookies (auth_token / token / access_token)
   if (!token) {
-    const possibleCookieNames = ['auth_token', 'token', 'access_token'];
+    const possibleCookieNames = [
+      'auth_token',
+      'token',
+      'access_token',
+      'sb-access-token',
+      'sb-refresh-token',
+    ];
 
     for (const name of possibleCookieNames) {
       const cookieValue = request.cookies.get(name)?.value;
