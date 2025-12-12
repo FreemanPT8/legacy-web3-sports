@@ -223,6 +223,8 @@ export default function Home() {
       desc: 'Conecta-te às Houses of Sports e encontra mentores/pares mundiais.',
     },
   ];
+  const sectionBgColors = ['#000c12', '#05212b'];
+  const getSectionBg = (index: number) => sectionBgColors[index % sectionBgColors.length];
 
 
   const handleHeroOffsetChange = useCallback(
@@ -391,7 +393,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-12 bg-slate-950 text-white">
+        <section className="py-12 text-white" style={{ backgroundColor: getSectionBg(0) }}>
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-3 gap-6">
               {pillarCards.map((card) => (
@@ -412,7 +414,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-16 bg-background text-white">
+        <section className="py-16 text-white" style={{ backgroundColor: getSectionBg(1) }}>
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
               <div>
@@ -471,7 +473,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-16 bg-slate-950 text-white">
+        <section className="py-16 text-white" style={{ backgroundColor: getSectionBg(2) }}>
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
               <div>
