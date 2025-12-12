@@ -58,6 +58,7 @@ export default function Home() {
     Record<SectionKey, { asset: MediaAsset | null; offset: number }>
   >(() => ({ ...DEFAULT_MEDIA_SETTINGS }));
   const [heroOffset, setHeroOffset] = useState(0);
+  const [mediaSettingsLoaded, setMediaSettingsLoaded] = useState(false);
   const [mediaDialogState, setMediaDialogState] = useState<{
     open: boolean;
     section: SectionKey | null;
@@ -233,6 +234,8 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Failed to load media settings:', error);
+    } finally {
+      setMediaSettingsLoaded(true);
     }
   }, []);
 
@@ -264,15 +267,16 @@ export default function Home() {
       <main className="flex-1 px-4">
         {/* HERO DARK FUTURISTA */}
         <section className="relative overflow-hidden text-white min-h-[640px] bg-slate-950">
-          <div className="absolute inset-0">
-            <img
-              src={heroImageUrl}
-              alt="Hero legacy"
-              className="w-full h-full object-cover object-center"
-              style={{
-                objectPosition: `center calc(50% + ${heroOffset}px)`,
-              }}
-            />
+            <div className="absolute inset-0">
+              <img
+                src={heroImageUrl}
+                alt="Hero legacy"
+                className="w-full h-full object-cover object-center"
+                style={{
+                  objectPosition: `center calc(50% + ${heroOffset}px)`,
+                  opacity: mediaSettingsLoaded ? 1 : 0,
+                }}
+              />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60" />
           </div>
           {isSuperAdmin && (
@@ -315,10 +319,10 @@ export default function Home() {
           <div className="container mx-auto px-4 text-center space-y-4">
             <p className="text-xs tracking-[0.6em] uppercase text-slate-400">LEGACY XP</p>
             <h1 className="text-3xl md:text-4xl font-semibold">
-              LEGACY: Gamified Web3 Academy for Sports
+              {t('hero.title')}
             </h1>
-            <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-              A collaborative platform dedicated to onboarding and educating sports professionals in Web3 technologies, particularly the Apertum network.
+            <p className="text-base text-gray-400 max-w-3xl mx-auto">
+              {t('hero.description')}
             </p>
             <div className="flex justify-center flex-wrap gap-4">
               <Link href="/signup">
