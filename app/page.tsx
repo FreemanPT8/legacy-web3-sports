@@ -173,6 +173,58 @@ export default function Home() {
     ? sectionDialogDescriptions[activeDialogSection]
     : 'Selecione ou envie ficheiros para o Legacy.';
 
+  const pillarCards = [
+    {
+      title: 'Explora o Blog Público',
+      desc: 'Artigos e notícias que descomplicam Web3, Blockchain e Apertum.',
+      icon: BookOpen,
+      link: '/blog',
+      cta: 'Ver artigos',
+    },
+    {
+      title: 'Aprende com Conteúdos Exclusivos',
+      desc: 'Cursos, módulos e lições com XP genuíno dentro da Academia Web3.',
+      icon: Award,
+      link: '/education/courses',
+      cta: 'Entrar nos cursos',
+    },
+    {
+      title: 'Conecta-te a uma House',
+      desc: 'Houses of Sports globais para praticantes, criadores e curious minds.',
+      icon: Users,
+      link: '/sports/houses',
+      cta: 'Explorar Houses',
+    },
+  ];
+
+  const academyHighlights = [
+    { label: 'Cursos com XP validado', value: '12+' },
+    { label: 'Módulos guiados', value: '4' },
+    { label: 'Lições públicas+privadas', value: '28' },
+  ];
+
+  const sportsHighlights = [
+    { label: 'Houses em funcionamento', value: '9' },
+    { label: 'Regiões de operação', value: '6' },
+    { label: 'Mentores ativos', value: '18' },
+  ];
+
+  const storySteps = [
+    {
+      title: '1 · Conhecimento aberto',
+      desc: 'O blog mostra Web3, Blockchain e Apertum em linguagem clara.',
+    },
+    {
+      title: '2 · Cursos + XP',
+      desc: 'Avança pelos cursos da Academia e acumula XP real e privado.',
+    },
+    {
+      title: '3 · Houses e comunidade',
+      desc: 'Conecta-te às Houses of Sports e encontra mentores/pares mundiais.',
+    },
+  ];
+
+
   const handleHeroOffsetChange = useCallback(
     (value: number) => {
       const heroAssetId = mediaSettings.hero.asset?.id ?? null;
@@ -335,6 +387,194 @@ export default function Home() {
                   Saiba Mais
                 </Button>
               </Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12 bg-slate-950 text-white">
+          <div className="container mx-auto px-4">
+            <div className="grid md:grid-cols-3 gap-6">
+              {pillarCards.map((card) => (
+                <div key={card.title} className="bg-card border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
+                  <div>
+                    <card.icon className="h-8 w-8 text-sky-400 mb-3" />
+                    <h3 className="text-xl font-semibold text-gray-100 mb-2">{card.title}</h3>
+                    <p className="text-sm text-gray-400">{card.desc}</p>
+                  </div>
+                  <Link href={card.link}>
+                    <Button size="sm" variant="ghost" className="px-3 border border-slate-700 text-slate-200 hover:bg-white/5 mt-4">
+                      {card.cta}
+                    </Button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-background text-white">
+          <div className="container mx-auto px-4">
+            <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
+              <div>
+                <p className="text-xs uppercase tracking-[0.6em] text-slate-400">Web3 Academy</p>
+                <h2 className="text-3xl md:text-4xl font-semibold text-gray-100 mb-4">
+                  Cursos imersivos, módulos guiados, XP genuíno.
+                </h2>
+                <p className="text-gray-400 mb-6 max-w-3xl">
+                  {t('hero.description')}
+                </p>
+                <div className="flex flex-wrap gap-3 mb-6">
+                  <Link href="/education/courses">
+                    <Button size="lg" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
+                      Explorar cursos
+                    </Button>
+                  </Link>
+                  <Link href="/education/courses">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900"
+                    >
+                      Ver módulos
+                    </Button>
+                  </Link>
+                </div>
+                <div className="flex gap-6 flex-wrap">
+                  {academyHighlights.map((item) => (
+                    <div key={item.label} className="bg-card border border-slate-800 rounded-2xl px-5 py-4 text-left">
+                      <p className="text-3xl font-semibold text-gray-100">{item.value}</p>
+                      <p className="text-sm uppercase tracking-widest text-gray-400 mt-1">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="relative h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+                <img
+                  src={academyImageUrl}
+                  alt="Web3 Academy experience"
+                  className="w-full h-full object-cover object-center"
+                />
+                {isSuperAdmin && (
+                  <div className="absolute top-3 right-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-white/60 text-white/80 hover:bg-white/5"
+                      onClick={() => openMediaDialogFor('web3Academy')}
+                    >
+                      Editar imagem
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-slate-950 text-white">
+          <div className="container mx-auto px-4">
+            <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
+              <div>
+                <p className="text-xs uppercase tracking-[0.6em] text-slate-400">Web3 Sports</p>
+                <h2 className="text-3xl md:text-4xl font-semibold text-gray-100 mb-4">
+                  Houses of Sports e onboarding personalizado.
+                </h2>
+                <p className="text-gray-400 mb-6 max-w-3xl">
+                  Comunidade global para aplicar Web3 com segurança e propósito.
+                </p>
+                <div className="flex flex-wrap gap-3 mb-6">
+                  <Link href="/sports/houses">
+                    <Button size="lg" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
+                      Explorar Houses
+                    </Button>
+                  </Link>
+                  <Link href="/sports/onboarding">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900"
+                    >
+                      Iniciar Onboarding
+                    </Button>
+                  </Link>
+                </div>
+                <div className="flex gap-6 flex-wrap">
+                  {sportsHighlights.map((item) => (
+                    <div key={item.label} className="bg-card border border-slate-800 rounded-2xl px-5 py-4 text-left">
+                      <p className="text-3xl font-semibold text-gray-100">{item.value}</p>
+                      <p className="text-sm uppercase tracking-widest text-gray-400 mt-1">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="relative h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+                <img
+                  src={sportsImageUrl}
+                  alt="People collaborating in sports tech"
+                  className="w-full h-full object-cover object-center"
+                />
+                {isSuperAdmin && (
+                  <div className="absolute top-3 right-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-white/60 text-white/80 hover:bg-white/5"
+                      onClick={() => openMediaDialogFor('web3Sports')}
+                    >
+                      Editar imagem
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12 bg-background text-white">
+          <div className="container mx-auto px-4">
+            <div className="grid md:grid-cols-3 gap-6">
+              {storySteps.map((step) => (
+                <div key={step.title} className="bg-card border border-slate-800 rounded-2xl p-5 h-full shadow-sm">
+                  <h3 className="text-2xl font-bold text-sky-300 mb-2">{step.title}</h3>
+                  <p className="text-sm text-gray-300 leading-relaxed">{step.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-10 bg-slate-950 text-white">
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-xs uppercase tracking-[0.5em] text-slate-400 mb-4">Legacy é</p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {['Conteúdos públicos', 'Cursos privados com XP genuíno', 'Houses globais / capacitação profissional'].map((chip) => (
+                <span
+                  key={chip}
+                  className="px-4 py-2 border border-slate-800 rounded-full text-sm text-gray-200 bg-white/5"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12 bg-background text-white">
+          <div className="container mx-auto px-4 text-center space-y-6 max-w-3xl">
+            <h3 className="text-2xl font-semibold text-gray-100">FAQs rápidas</h3>
+            <div className="space-y-4 text-left">
+              <div className="bg-card border border-slate-800 rounded-2xl p-5">
+                <p className="text-lg font-semibold text-gray-100">Preciso ser atleta profissional?</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Não. Legacy aceita qualquer pessoa curiosa por Web3, desporto ou blockchain, com especial cuidado para profissionais do desporto.
+                </p>
+              </div>
+              <div className="bg-card border border-slate-800 rounded-2xl p-5">
+                <p className="text-lg font-semibold text-gray-100">Como ganho XP dentro da Legacy?</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Conclui lições e cursos exclusivos, participa da comunidade Houses e revisita o blog para inspiração contínua.
+                </p>
+              </div>
             </div>
           </div>
         </section>
