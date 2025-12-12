@@ -57,7 +57,7 @@ export function useMediaLibrary({
         const rawFiles = (data.files || data.items || []) as MediaAsset[];
         const normalized = rawFiles.map((file) => {
           if (file.type) return file;
-          const mime = file.mime_type || '';
+          const mime = (file as any).mime_type || '';
           const normalizedType = mime.split('/')[0] || 'file';
           return { ...file, type: normalizedType } as MediaAsset;
         });
