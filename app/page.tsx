@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
@@ -86,11 +86,11 @@ export default function Home() {
   };
 
   const sectionDialogDescriptions: Record<SectionKey, string> = {
-    hero: 'Selecione ou envie a imagem que ficará no hero principal da homepage.',
+    hero: 'Selecione ou envie a imagem que ficarÃ¡ no hero principal da homepage.',
     web3Academy:
-      'Escolha a imagem que representa a Web3 Academy e o seu conteúdo de formação.',
+      'Escolha a imagem que representa a Web3 Academy e o seu conteÃºdo de formaÃ§Ã£o.',
     web3Sports:
-      'Defina a imagem que transmite a experiência Web3 para desportos e comunidades.',
+      'Defina a imagem que transmite a experiÃªncia Web3 para desportos e comunidades.',
   };
 
   const openMediaDialogFor = useCallback(
@@ -182,15 +182,15 @@ export default function Home() {
 
   const pillarCards = [
     {
-      title: 'Explora o Blog Público',
-      desc: 'Artigos e notícias que descomplicam Web3, Blockchain e Apertum.',
+      title: 'Explora o Blog PÃºblico',
+      desc: 'Artigos e notÃ­cias que descomplicam Web3, Blockchain e Apertum.',
       icon: BookOpen,
       link: '/blog',
       cta: 'Ver artigos',
     },
     {
-      title: 'Aprende com Conteúdos Exclusivos',
-      desc: 'Cursos, módulos e lições com XP genuíno dentro da Academia Web3.',
+      title: 'Aprende com ConteÃºdos Exclusivos',
+      desc: 'Cursos, mÃ³dulos e liÃ§Ãµes com XP genuÃ­no dentro da Academia Web3.',
       icon: Award,
       link: '/education/courses',
       cta: 'Entrar nos cursos',
@@ -206,13 +206,13 @@ export default function Home() {
 
   const academyHighlights = [
     { label: 'Cursos com XP validado', value: '12+' },
-    { label: 'Módulos guiados', value: '4' },
-    { label: 'Lições públicas+privadas', value: '28' },
+    { label: 'MÃ³dulos guiados', value: '4' },
+    { label: 'LiÃ§Ãµes pÃºblicas+privadas', value: '28' },
   ];
 
   const sportsHighlights = [
     { label: 'Houses em funcionamento', value: '9' },
-    { label: 'Regiões de operação', value: '6' },
+    { label: 'RegiÃµes de operaÃ§Ã£o', value: '6' },
     { label: 'Mentores ativos', value: '18' },
   ];
 
@@ -416,7 +416,7 @@ export default function Home() {
               <div>
                 <p className="text-xs uppercase tracking-[0.6em] text-slate-400">Web3 Academy</p>
                 <h2 className="text-3xl md:text-4xl font-semibold text-gray-100 mb-4">
-                  Cursos imersivos, módulos guiados, XP genuíno.
+                  Cursos imersivos, mÃ³dulos guiados, XP genuÃ­no.
                 </h2>
                 <p className="text-gray-400 mb-6 max-w-3xl">
                   {t('hero.description')}
@@ -433,7 +433,7 @@ export default function Home() {
                       variant="outline"
                       className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900"
                     >
-                      Ver módulos
+                      Ver mÃ³dulos
                     </Button>
                   </Link>
                 </div>
@@ -478,7 +478,7 @@ export default function Home() {
                   Houses of Sports e onboarding personalizado.
                 </h2>
                 <p className="text-gray-400 mb-6 max-w-3xl">
-                  Comunidade global para aplicar Web3 com segurança e propósito.
+                  Comunidade global para aplicar Web3 com seguranÃ§a e propÃ³sito.
                 </p>
                 <div className="flex flex-wrap gap-3 mb-6">
                   <Link href="/sports/houses">
@@ -535,13 +535,13 @@ export default function Home() {
             </h2>
             <p className="text-sm text-slate-900 max-w-3xl mx-auto">
               {user
-                ? 'J� �s membro Legacy? Continua a subir o n�vel ligando-te �s Houses of Sports e participando dos cursos da Academia.'
-                : '�s profissional ou entusiasta de desportos? Preenche o formul�rio de onboarding personalizado e recebe orienta��o dedicada nos primeiros passos.'}
+                ? 'Já és membro Legacy? Continua a subir o nível ligando-te às Houses of Sports e participando dos cursos da Academia.'
+                : 'És profissional ou entusiasta de desportos? Preenche o formulário de onboarding personalizado e recebe orientação dedicada nos primeiros passos.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href={user ? '/sports/houses' : '/sports/onboarding'}>
                 <Button size="lg" className="px-8 bg-slate-900 text-white font-semibold">
-                  {user ? 'Explorar Houses' : 'Come�ar Onboarding'}
+                  {user ? 'Explorar Houses' : 'Começar Onboarding'}
                 </Button>
               </Link>
               <Link href="/blog">
@@ -572,3 +572,4 @@ export default function Home() {
     </div>
   );
 }
+
