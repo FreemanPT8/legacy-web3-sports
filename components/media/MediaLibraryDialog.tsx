@@ -227,20 +227,20 @@ export function MediaLibraryDialog({
                           Eliminar
                         </button>
                       {asset.thumbnailUrl || asset.url ? (
-                        <Image
-                          src={asset.thumbnailUrl || asset.url}
-                          alt={asset.title || 'Media asset'}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 1024px) 50vw, 320px"
-                          unoptimized
+                        <div
+                          className="h-full w-full bg-cover bg-center"
+                          style={{
+                            backgroundImage: `url("${
+                              asset.thumbnailUrl || asset.url
+                            }")`,
+                          }}
                         />
                       ) : (
-                            <div className="flex h-full w-full items-center justify-center text-sm text-gray-500">
-                              <ImageIcon className="mr-2 h-4 w-4" />
-                              {(asset.type || 'file').toUpperCase()}
-                            </div>
-                        )}
+                        <div className="flex h-full w-full items-center justify-center text-sm text-gray-500">
+                          <ImageIcon className="mr-2 h-4 w-4" />
+                          {(asset.type || 'file').toUpperCase()}
+                        </div>
+                      )}
                       </div>
                       <div className="p-3">
                         <p className="text-sm font-semibold">
