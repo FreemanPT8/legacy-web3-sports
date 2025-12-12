@@ -49,6 +49,13 @@ const DEFAULT_MEDIA_SETTINGS: Record<
   web3Sports: { asset: null, offset: 0 },
 };
 
+const HERO_BG = '#000c12';
+const SECTION_ALT_BG = '#05212b';
+const CTA_BG = '#1d98a6';
+const alternatingSectionColors = [SECTION_ALT_BG, HERO_BG];
+const getAlternateSectionBg = (index: number) =>
+  alternatingSectionColors[index % alternatingSectionColors.length];
+
 export default function Home() {
   const { t } = useLanguage();
   const { user, getToken } = useAuth();
@@ -209,23 +216,6 @@ export default function Home() {
     { label: 'Mentores ativos', value: '18' },
   ];
 
-  const storySteps = [
-    {
-      title: '1 Â· Conhecimento aberto',
-      desc: 'O blog mostra Web3, Blockchain e Apertum em linguagem clara.',
-    },
-    {
-      title: '2 Â· Cursos + XP',
-      desc: 'AvanÃ§a pelos cursos da Academia e acumula XP real e privado.',
-    },
-    {
-      title: '3 Â· Houses e comunidade',
-      desc: 'Conecta-te Ã s Houses of Sports e encontra mentores/pares mundiais.',
-    },
-  ];
-  const sectionBgColors = ['#000c12', '#05212b'];
-  const getSectionBg = (index: number) => sectionBgColors[index % sectionBgColors.length];
-
 
   const handleHeroOffsetChange = useCallback(
     (value: number) => {
@@ -320,7 +310,10 @@ export default function Home() {
 
       <main className="flex-1 px-4">
         {/* HERO DARK FUTURISTA */}
-        <section className="relative overflow-hidden text-white min-h-[640px] bg-slate-950">
+        <section
+          className="relative overflow-hidden text-white min-h-[640px]"
+          style={{ backgroundColor: HERO_BG }}
+        >
             <div className="absolute inset-0">
               <img
                 src={heroImageUrl}
@@ -369,7 +362,10 @@ export default function Home() {
           <div className="relative z-10 container mx-auto px-0 h-full" />
         </section>
 
-        <section className="py-12 bg-background text-white">
+        <section
+          className="py-12 text-white"
+          style={{ backgroundColor: getAlternateSectionBg(0) }}
+        >
           <div className="container mx-auto px-4 text-center space-y-4">
             <p className="text-xs tracking-[0.6em] uppercase text-slate-400">LEGACY XP</p>
             <h1 className="text-3xl md:text-4xl font-semibold">
@@ -393,7 +389,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-12 text-white" style={{ backgroundColor: getSectionBg(0) }}>
+        <section className="py-12 text-white" style={{ backgroundColor: getAlternateSectionBg(1) }}>
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-3 gap-6">
               {pillarCards.map((card) => (
@@ -414,7 +410,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-16 text-white" style={{ backgroundColor: getSectionBg(1) }}>
+        <section className="py-16 text-white" style={{ backgroundColor: getAlternateSectionBg(2) }}>
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
               <div>
@@ -473,7 +469,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-16 text-white" style={{ backgroundColor: getSectionBg(2) }}>
+        <section className="py-16 text-white" style={{ backgroundColor: getAlternateSectionBg(3) }}>
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
               <div>
@@ -532,63 +528,27 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-12 bg-background text-white">
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-3 gap-6">
-              {storySteps.map((step) => (
-                <div key={step.title} className="bg-card border border-slate-800 rounded-2xl p-5 h-full shadow-sm">
-                  <h3 className="text-2xl font-bold text-sky-300 mb-2">{step.title}</h3>
-                  <p className="text-sm text-gray-300 leading-relaxed">{step.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="py-10 bg-slate-950 text-white">
-          <div className="container mx-auto px-4 text-center">
-            <p className="text-xs uppercase tracking-[0.5em] text-slate-400 mb-4">Legacy Ã©</p>
-            <div className="flex flex-wrap justify-center gap-3">
-              {['ConteÃºdos pÃºblicos', 'Cursos privados com XP genuÃ­no', 'Houses globais / capacitaÃ§Ã£o profissional'].map((chip) => (
-                <span
-                  key={chip}
-                  className="px-4 py-2 border border-slate-800 rounded-full text-sm text-gray-200 bg-white/5"
-                >
-                  {chip}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA FINAL */}
-        <section className="py-16 bg-gradient-to-r from-slate-950 via-blue-900 to-slate-950 text-white">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+        <section className="py-16 text-white" style={{ backgroundColor: CTA_BG }}>
+          <div className="container mx-auto px-4 text-center space-y-5">
+            <h2 className="text-3xl md:text-4xl font-bold">
               {t('home.readyJourney')}
             </h2>
-            <p className="text-xl text-sky-200 mb-6 max-w-2xl mx-auto">
-              {t('home.joinThousands')}
-            </p>
-            <p className="text-sm text-gray-200 mb-8 max-w-2xl mx-auto">
+            <p className="text-sm text-slate-900 max-w-3xl mx-auto">
               {user
-                ? 'Ã‰s parte da comunidade Legacy? Explora agora as Houses of Sports e continua a crescer com os teus pares.'
-                : 'Ã‰s profissional ou entusiasta de um desporto especÃ­fico? Preenche o formulÃ¡rio de Onboarding personalizado e recebe ajuda dedicada nos primeiros passos.'}
+                ? 'Já és membro Legacy? Continua a subir o nível ligando-te às Houses of Sports e participando dos cursos da Academia.'
+                : 'És profissional ou entusiasta de desportos? Preenche o formulário de onboarding personalizado e recebe orientação dedicada nos primeiros passos.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href={user ? '/sports/houses' : '/sports/onboarding'}>
-                <Button
-                  size="lg"
-                  className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
-                >
-                  {user ? 'Explorar Houses' : 'ComeÃ§ar Onboarding'}
+                <Button size="lg" className="px-8 bg-slate-900 text-white font-semibold">
+                  {user ? 'Explorar Houses' : 'Começar Onboarding'}
                 </Button>
               </Link>
               <Link href="/blog">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="px-8 border-sky-300 text-sky-100 hover:bg-slate-900"
+                  className="px-8 border-white text-white hover:bg-white/10"
                 >
                   {t('home.exploreBlog')}
                 </Button>
@@ -596,6 +556,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+
         <MediaLibraryDialog
           open={mediaDialogState.open}
           onOpenChange={(open) => handleMediaDialogOpenChange(open)}
