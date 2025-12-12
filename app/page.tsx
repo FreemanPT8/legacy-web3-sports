@@ -505,6 +505,169 @@ export default function Home() {
               </div>
         </section>
 
+        {/* SECÇÃO 4 — WEB3 SPORTS / HOUSES OF SPORTS */}
+        <section className="py-16 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-semibold text-gray-100 mb-4">
+                  {t('home.web3Education')}
+                </h2>
+                <p className="text-base text-gray-400 mb-4 max-w-3xl leading-relaxed">
+                  {t('home.web3EducationDesc')}
+                </p>
+                <p className="text-sm text-gray-400 mb-6 max-w-3xl">
+                  {t('home.trackProgress')}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/education/courses">
+                    <Button size="lg" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
+                      {t('home.exploreWeb3')}
+                    </Button>
+                  </Link>
+                  <Link href="/education/courses">
+                    <Button size="lg" variant="outline" className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900">
+                      {t('home.viewCourses')}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="relative h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+                <img
+                  src={academyImageUrl}
+                  alt="Web3 Academy experience"
+                  className="w-full h-full object-cover object-center"
+                />
+                {isSuperAdmin && (
+                  <div className="absolute top-3 right-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-white/60 text-white/80 hover:bg-white/5"
+                      onClick={() => openMediaDialogFor('web3Academy')}
+                    >
+                      Editar imagem
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-8 grid md:grid-cols-3 gap-4">
+              {[
+                {
+                  title: t('home.learnPaths'),
+                  desc: t('home.learnPathsDesc'),
+                  icon: BookOpen,
+                },
+                {
+                  title: t('home.earnXpEveryLesson'),
+                  desc: t('home.earnXpDesc'),
+                  icon: TrendingUp,
+                },
+                {
+                  title: t('home.unlockNewContent'),
+                  desc: t('home.unlockContentDesc'),
+                  icon: Award,
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="bg-card border border-slate-800 p-5 rounded-2xl text-left shadow-sm"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <item.icon className="h-6 w-6 text-sky-400" />
+                    <div className="text-lg font-semibold text-gray-100">
+                      {item.title}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400 leading-relaxed max-w-sm">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-semibold text-gray-100 mb-4">
+                  {t('home.web3Sports')}
+                </h2>
+                <p className="text-base text-gray-400 mb-4 max-w-3xl leading-relaxed">
+                  {t('home.web3SportsDesc')}
+                </p>
+                <p className="text-sm text-gray-400 mb-6 max-w-3xl">
+                  {t('home.web3SportsDesc2')}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/sports">
+                    <Button size="lg" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
+                      {t('home.exploreWeb3Sports')}
+                    </Button>
+                  </Link>
+                  <Link href="/sports/onboarding">
+                    <Button size="lg" variant="outline" className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900">
+                      {t('home.startOnboarding')}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="relative h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+                <img
+                  src={sportsImageUrl}
+                  alt="People collaborating in sports tech"
+                  className="w-full h-full object-cover object-center"
+                />
+                {isSuperAdmin && (
+                  <div className="absolute top-3 right-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-white/60 text-white/80 hover:bg-white/5"
+                      onClick={() => openMediaDialogFor('web3Sports')}
+                    >
+                      Editar imagem
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-8 grid md:grid-cols-3 gap-4">
+              {[
+                {
+                  title: t('home.housesOfSports'),
+                  desc: t('home.housesOfSportsDesc'),
+                  icon: Users,
+                },
+                {
+                  title: t('home.globalCommunity'),
+                  desc: t('home.globalCommunityDesc'),
+                  icon: Globe2,
+                },
+                {
+                  title: t('home.personalizedOnboarding'),
+                  desc: t('home.personalizedOnboardingDesc'),
+                  icon: Target,
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="bg-card border border-slate-800 p-5 rounded-2xl text-left shadow-sm"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <item.icon className="h-6 w-6 text-sky-400" />
+                    <div className="text-lg font-semibold text-gray-100">
+                      {item.title}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400 leading-relaxed max-w-sm">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* CTA FINAL */}
         <section className="py-16 bg-gradient-to-r from-slate-950 via-blue-900 to-slate-950 text-white">
           <div className="container mx-auto px-4 text-center">
