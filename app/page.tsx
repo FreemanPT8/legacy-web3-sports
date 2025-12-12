@@ -559,27 +559,6 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-12 bg-background text-white">
-          <div className="container mx-auto px-4 text-center space-y-6 max-w-3xl">
-            <h3 className="text-2xl font-semibold text-gray-100">FAQs rápidas</h3>
-            <div className="space-y-4 text-left">
-              <div className="bg-card border border-slate-800 rounded-2xl p-5">
-                <p className="text-lg font-semibold text-gray-100">Preciso ser atleta profissional?</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Não. Legacy aceita qualquer pessoa curiosa por Web3, desporto ou blockchain, com especial cuidado para profissionais do desporto.
-                </p>
-              </div>
-              <div className="bg-card border border-slate-800 rounded-2xl p-5">
-                <p className="text-lg font-semibold text-gray-100">Como ganho XP dentro da Legacy?</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Conclui lições e cursos exclusivos, participa da comunidade Houses e revisita o blog para inspiração contínua.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
         {/* CTA FINAL */}
         <section className="py-16 bg-gradient-to-r from-slate-950 via-blue-900 to-slate-950 text-white">
           <div className="container mx-auto px-4 text-center">
