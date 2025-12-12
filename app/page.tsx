@@ -325,9 +325,9 @@ export default function Home() {
               {t('hero.description')}
             </p>
             <div className="flex justify-center flex-wrap gap-4">
-              <Link href="/signup">
+              <Link href={user ? '/education/courses' : '/signup'}>
                 <Button size="lg" className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold">
-                  Junte-se Agora
+                  {user ? 'Continuar Aprendizagem' : 'Junte-se Agora'}
                 </Button>
               </Link>
               <Link href="/education">
@@ -346,51 +346,32 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
               {t('home.readyJourney')}
             </h2>
-            <p className="text-xl text-sky-200 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-sky-200 mb-6 max-w-2xl mx-auto">
               {t('home.joinThousands')}
             </p>
+            <p className="text-sm text-gray-200 mb-8 max-w-2xl mx-auto">
+              {user
+                ? 'És parte da comunidade Legacy? Explora agora as Houses of Sports e continua a crescer com os teus pares.'
+                : 'És profissional ou entusiasta de um desporto específico? Preenche o formulário de Onboarding personalizado e recebe ajuda dedicada nos primeiros passos.'}
+            </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {!user ? (
-                <>
-                  <Link href="/signup">
-                    <Button
-                      size="lg"
-                      className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
-                    >
-                      {t('cta.join')}
-                    </Button>
-                  </Link>
-                  <Link href="/blog">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="px-8 border-sky-300 text-sky-100 hover:bg-slate-900"
-                    >
-                      {t('home.exploreBlog')}
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/education/courses">
-                    <Button
-                      size="lg"
-                      className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
-                    >
-                      {t('cta.start')}
-                    </Button>
-                  </Link>
-                  <Link href="/blog">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="px-8 border-sky-300 text-sky-100 hover:bg-slate-900"
-                    >
-                      {t('home.exploreBlog')}
-                    </Button>
-                  </Link>
-                </>
-              )}
+              <Link href={user ? '/sports/houses' : '/sports/onboarding'}>
+                <Button
+                  size="lg"
+                  className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
+                >
+                  {user ? 'Explorar Houses' : 'Começar Onboarding'}
+                </Button>
+              </Link>
+              <Link href="/blog">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="px-8 border-sky-300 text-sky-100 hover:bg-slate-900"
+                >
+                  {t('home.exploreBlog')}
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
