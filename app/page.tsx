@@ -1,575 +1,466 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, useCallback } from 'react';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { CryptoTicker } from '@/components/CryptoTicker';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useMemo, useState } from 'react';
+import { Activity, ArrowRight, BookOpen, CircleDot, GraduationCap, ShieldCheck, Users } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Trophy,
-  BookOpen,
-  Users,
-  Zap,
-  Target,
-  Globe2,
-  TrendingUp,
-  Award,
-} from 'lucide-react';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
+import { cn } from '@/lib/utils';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
+import { useAuth } from '@/contexts/AuthContext';
 import type { MediaAsset } from '@/types/builder';
 
-const DEFAULT_HERO_IMAGE =
-  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=80';
-
-const SECTION_KEYS = ['hero', 'web3Academy', 'web3Sports'] as const;
-type SectionKey = (typeof SECTION_KEYS)[number];
-
-const DEFAULT_ACADEMY_IMAGE =
-  'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80';
-const DEFAULT_SPORTS_IMAGE =
-  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80';
-
-const DEFAULT_MEDIA_SETTINGS: Record<
-  SectionKey,
-  { asset: MediaAsset | null; offset: number }
-> = {
-  hero: { asset: null, offset: 0 },
-  web3Academy: { asset: null, offset: 0 },
-  web3Sports: { asset: null, offset: 0 },
+const GUEST_PRIMARY = { label: 'Junte-se Agora', href: '/sports/onboarding' };
+const GUEST_SECONDARY = {
+  label: 'Começar a Jornada Web3',
+  description:
+    'És profissional ou entusiasta de algum desporto específico? Preenche o formulário e recebe ajuda personalizada nos primeiros passos.',
+  href: '/sports/onboarding',
+};
+const MEMBER_PRIMARY = { label: 'Explorar Cursos', href: '/education/courses' };
+const MEMBER_SECONDARY = {
+  label: 'Ver Houses',
+  description: 'A comunidade global das Houses of Sports está pronta para te receber.',
+  href: '/sports/houses',
 };
 
-const HERO_BG = '#000c12';
-const SECTION_ALT_BG = '#05212b';
-const CTA_BG = '#1d98a6';
-const alternatingSectionColors = [SECTION_ALT_BG, HERO_BG];
-const getAlternateSectionBg = (index: number) =>
-  alternatingSectionColors[index % alternatingSectionColors.length];
+const sectionAlternating = ['bg-[#05212b]', 'bg-[#000c12]'];
+const cardBackground = (sectionBg: string) => (sectionBg === '#000c12' ? '#05212b' : '#000c12');
 
-export default function Home() {
-  const { t } = useLanguage();
-  const { user, getToken } = useAuth();
-  const isSuperAdmin = user?.role === 'Super Admin';
-  const [stats, setStats] = useState<any>(null);
-  const [mediaSettings, setMediaSettings] = useState<
-    Record<SectionKey, { asset: MediaAsset | null; offset: number }>
-  >(() => ({ ...DEFAULT_MEDIA_SETTINGS }));
+const pillarCards = [
+  {
+    title: 'Explora o Blog Público',
+    description:
+      'Aprende Web3, Blockchain e Apertum com histórias e análises escritas por jornalistas e entusiastas.',
+    icon: BookOpen,
+    href: '/blog',
+    action: 'Ver artigos',
+  },
+  {
+    title: 'Aprende com Conteúdos Exclusivos',
+    description:
+      'Cursos, módulos e lições gamificadas que recompensam XP real e privado para quem quer aprofundar o conhecimento.',
+    icon: GraduationCap,
+    href: '/education/courses',
+    action: 'Entrar nos cursos',
+  },
+  {
+    title: 'Conecta-te a uma Casa de Desporto',
+    description:
+      'Houses of Sports espalhadas pelo mundo para te aproximar de mentores e pares no ecossistema Apertum.',
+    icon: Users,
+    href: '/sports/houses',
+    action: 'Explorar Houses',
+  },
+];
+
+const storySteps = [
+  {
+    title: '1 · Consome conhecimentos públicos',
+    copy: 'Lê o blog para dominar os fundamentos Web3 e perceber o papel da Apertum.',
+    icon: Activity,
+  },
+  {
+    title: '2 · Aprofunda com conteúdos exclusivos',
+    copy: 'Segues cursos da Academia Web3, completas lições e acumulas XP genuíno.',
+    icon: GraduationCap,
+  },
+  {
+    title: '3 · Prepara-te com a comunidade',
+    copy: 'As Houses of Sports ligam-te a profissionais que vivem o ecossistema Web3 diariamente.',
+    icon: ShieldCheck,
+  },
+];
+
+const academyHighlights = [
+  'Módulos guiados para todos os níveis',
+  'XP de aprendizagem autenticada a cada lição concluída',
+  'Tutoriais em Blockchain e nos principais desportos',
+];
+
+const sportsHighlights = [
+  'Houses em cidades-chave para treino e networking',
+  'Onboarding personalizado com mentores dedicados',
+  'Eventos ao vivo e digitais para profissionais e entusiastas',
+];
+
+const legacyValues = ['Conteúdos públicos', 'Cursos privados com XP genuíno', 'Houses globais / capacitação profissional'];
+
+const faqs = [
+  {
+    question: 'Preciso ser atleta para participar?',
+    answer:
+      'O Legacy aceita profissionais, entusiastas e curiosos pela Web3. O foco é aproximar qualquer pessoa interessada em desporto e Apertum.',
+  },
+  {
+    question: 'Como ganho XP?',
+    answer:
+      'Conclui lições e cursos da Academia Web3, participa em desafios da comunidade e os pontos são adicionados automaticamente ao teu perfil.',
+  },
+];
+
+const CTA_SUBTITLE = 'Para membros Legacy ou quem quer fazer parte da comunidade global Web3 + Desporto.';
+
+export default function HomePage() {
+  const { user } = useAuth();
+  const mediaLibrary = useMediaLibrary();
+  const [heroAsset, setHeroAsset] = useState<MediaAsset | null>(null);
   const [heroOffset, setHeroOffset] = useState(0);
-  const [mediaSettingsLoaded, setMediaSettingsLoaded] = useState(false);
-  const [mediaDialogState, setMediaDialogState] = useState<{
-    open: boolean;
-    section: SectionKey | null;
-  }>({ open: false, section: null });
-  const library = useMediaLibrary();
+  const [heroDialogOpen, setHeroDialogOpen] = useState(false);
 
-  const heroAsset = mediaSettings.hero.asset;
-  const heroImageUrl = heroAsset?.url || DEFAULT_HERO_IMAGE;
-  const academyImageUrl =
-    mediaSettings.web3Academy.asset?.url || DEFAULT_ACADEMY_IMAGE;
-  const sportsImageUrl =
-    mediaSettings.web3Sports.asset?.url || DEFAULT_SPORTS_IMAGE;
+  const heroButtons = useMemo(() => {
+    if (user) {
+      return [MEMBER_PRIMARY, MEMBER_SECONDARY];
+    }
+    return [GUEST_PRIMARY, GUEST_SECONDARY];
+  }, [user]);
 
-  const sectionDialogTitles: Record<SectionKey, string> = {
-    hero: 'Imagem do Hero',
-    web3Academy: 'Imagem da Web3 Academy',
-    web3Sports: 'Imagem da Web3 Sports',
-  };
+  const heroImageUrl = heroAsset?.url || 'https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?auto=format&fit=crop&w=1600&q=80';
+  const heroActionDescription = user
+    ? 'Explora cursos e liga-te a Houses globais.'
+    : 'Começa a tua jornada Web3 com onboarding personalizado.';
 
-  const sectionDialogDescriptions: Record<SectionKey, string> = {
-    hero: 'Selecione ou envie a imagem que ficarÃ¡ no hero principal da homepage.',
-    web3Academy:
-      'Escolha a imagem que representa a Web3 Academy e o seu conteÃºdo de formaÃ§Ã£o.',
-    web3Sports:
-      'Defina a imagem que transmite a experiÃªncia Web3 para desportos e comunidades.',
-  };
-
-  const openMediaDialogFor = useCallback(
-    (section: SectionKey) => {
-      setMediaDialogState({ open: true, section });
-      void library.openLibrary('library');
-    },
-    [library],
-  );
-
-  const handleMediaDialogOpenChange = useCallback((open: boolean) => {
-    setMediaDialogState((prev) => ({
-      open,
-      section: open ? prev.section : null,
-    }));
-  }, []);
-
-  const updateMediaSetting = useCallback(
-    async (payload: {
-      section: SectionKey;
-      assetId?: string | null;
-      offset?: number;
-    }) => {
+  useEffect(() => {
+    const fetchHero = async () => {
       try {
-      const token = getToken?.();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      const response = await fetch('/api/admin/media/settings', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-        const data = await response.json();
-        if (!response.ok || !data?.success) {
-          console.error('Failed to persist media setting:', data?.error);
+        const res = await fetch('/api/media/settings');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data?.success) return;
+        const hero = data.settings?.hero;
+        if (hero?.asset) {
+          setHeroAsset(hero.asset);
         }
-        return data?.setting ?? null;
+        if (typeof hero?.offset === 'number') {
+          setHeroOffset(hero.offset);
+        }
       } catch (error) {
-        console.error('Failed to persist media setting:', error);
-        return null;
+        console.error('Unable to load hero settings', error);
       }
-    },
-    [],
-  );
-
-  const applyMediaSelection = useCallback(
-    (section: SectionKey, asset: MediaAsset) => {
-      let previousOffset = 0;
-      setMediaSettings((prev) => {
-        previousOffset = prev[section].offset;
-        return {
-          ...prev,
-          [section]: {
-            ...prev[section],
-            asset,
-          },
-        };
-      });
-      void updateMediaSetting({
-        section,
-        assetId: asset.id,
-        offset: section === 'hero' ? heroOffset : previousOffset,
-      });
-    },
-    [heroOffset, updateMediaSetting],
-  );
-
-  const handleMediaSelect = useCallback(
-    (asset: MediaAsset) => {
-      const section = mediaDialogState.section;
-      if (!section) return;
-      applyMediaSelection(section, asset);
-    },
-    [applyMediaSelection, mediaDialogState.section],
-  );
-
-  const activeDialogSection = mediaDialogState.section;
-  const dialogTitle = activeDialogSection
-    ? sectionDialogTitles[activeDialogSection]
-    : 'Media Library';
-  const dialogDescription = activeDialogSection
-    ? sectionDialogDescriptions[activeDialogSection]
-    : 'Selecione ou envie ficheiros para o Legacy.';
-
-  const pillarCards = [
-    {
-      title: 'Explora o Blog PÃºblico',
-      desc: 'Artigos e notÃ­cias que descomplicam Web3, Blockchain e Apertum.',
-      icon: BookOpen,
-      link: '/blog',
-      cta: 'Ver artigos',
-    },
-    {
-      title: 'Aprende com ConteÃºdos Exclusivos',
-      desc: 'Cursos, mÃ³dulos e liÃ§Ãµes com XP genuÃ­no dentro da Academia Web3.',
-      icon: Award,
-      link: '/education/courses',
-      cta: 'Entrar nos cursos',
-    },
-    {
-      title: 'Conecta-te a uma House',
-      desc: 'Houses of Sports globais para praticantes, criadores e curious minds.',
-      icon: Users,
-      link: '/sports/houses',
-      cta: 'Explorar Houses',
-    },
-  ];
-
-  const academyHighlights = [
-    { label: 'Cursos com XP validado', value: '12+' },
-    { label: 'MÃ³dulos guiados', value: '4' },
-    { label: 'LiÃ§Ãµes pÃºblicas+privadas', value: '28' },
-  ];
-
-  const sportsHighlights = [
-    { label: 'Houses em funcionamento', value: '9' },
-    { label: 'RegiÃµes de operaÃ§Ã£o', value: '6' },
-    { label: 'Mentores ativos', value: '18' },
-  ];
-
-
-  const handleHeroOffsetChange = useCallback(
-    (value: number) => {
-      const heroAssetId = mediaSettings.hero.asset?.id ?? null;
-      setHeroOffset(value);
-      setMediaSettings((prev) => ({
-        ...prev,
-        hero: {
-          ...prev.hero,
-          offset: value,
-        },
-      }));
-      void updateMediaSetting({
-        section: 'hero',
-        assetId: heroAssetId,
-        offset: value,
-      });
-    },
-    [mediaSettings.hero.asset?.id, updateMediaSetting],
-  );
-
-  const handleRemoveHeroImage = useCallback(() => {
-    setMediaSettings((prev) => ({
-      ...prev,
-      hero: {
-        ...prev.hero,
-        asset: null,
-      },
-    }));
-    setHeroOffset(0);
-    void updateMediaSetting({
-      section: 'hero',
-      assetId: null,
-      offset: 0,
-    });
-  }, [updateMediaSetting]);
-
-  const fetchMediaSettings = useCallback(async () => {
-    try {
-      const response = await fetch('/api/media/settings');
-      const data = await response.json();
-      if (data.success) {
-      const nextSettings = SECTION_KEYS.reduce((acc, section) => {
-        const remote = data.settings?.[section];
-        return {
-          ...acc,
-          [section]: {
-            asset: remote?.asset ?? null,
-            offset:
-              typeof remote?.offset === 'number'
-                ? remote.offset
-                : typeof remote?.vertical_offset === 'number'
-                ? remote.vertical_offset
-                : 0,
-          },
-        };
-      }, {} as Record<SectionKey, { asset: MediaAsset | null; offset: number }>);
-        setMediaSettings(nextSettings);
-        setHeroOffset(nextSettings.hero.offset ?? 0);
-      }
-    } catch (error) {
-      console.error('Failed to load media settings:', error);
-    } finally {
-      setMediaSettingsLoaded(true);
-    }
+    };
+    fetchHero();
   }, []);
 
-  const fetchStats = useCallback(async () => {
+  const persistHeroSetting = async (assetId: string | null, offset?: number) => {
     try {
-      const response = await fetch('/api/education/stats');
-      const data = await response.json();
-      if (data.success) {
-        setStats(data.stats);
-      }
+      await fetch('/api/admin/media/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'hero', assetId, offset }),
+      });
     } catch (error) {
-      console.error('Failed to fetch stats:', error);
+      console.error('Unable to persist hero setting', error);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+  const handleHeroSelect = async (asset: MediaAsset) => {
+    setHeroAsset(asset);
+    await persistHeroSetting(asset.id, heroOffset);
+  };
 
-  useEffect(() => {
-    fetchMediaSettings();
-  }, [fetchMediaSettings]);
+  const handleOffsetChange = async (value: number[]) => {
+    const next = value[0];
+    setHeroOffset(next);
+    await persistHeroSetting(heroAsset?.id ?? null, next);
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-page">
-      <CryptoTicker />
-      <Header />
+    <div className="min-h-screen bg-[#000c12] text-white">
+      <header className="bg-[#000c12]">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="text-lg font-semibold tracking-[0.4em] text-cyan-300">LEGACY</div>
+          <nav className="flex items-center gap-4 text-sm">
+            <Link className="transition hover:text-cyan-100" href="/blog">
+              Blog
+            </Link>
+            <Link className="transition hover:text-cyan-100" href="/education/courses">
+              Academia
+            </Link>
+            <Link className="transition hover:text-cyan-100" href="/sports/houses">
+              Houses
+            </Link>
+          </nav>
+        </div>
+      </header>
 
-      <main className="flex-1 px-4">
-        {/* HERO DARK FUTURISTA */}
-        <section
-          className="relative overflow-hidden text-white min-h-[640px]"
-          style={{ backgroundColor: HERO_BG }}
-        >
-            <div className="absolute inset-0">
-              <img
-                src={heroImageUrl}
-                alt="Hero legacy"
-                className="w-full h-full object-cover object-center"
-                style={{
-                  objectPosition: `center calc(50% + ${heroOffset}px)`,
-                  opacity: mediaSettingsLoaded ? 1 : 0,
-                }}
-              />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60" />
-          </div>
-          {isSuperAdmin && (
-            <div className="absolute top-6 right-6 flex flex-col gap-3 bg-slate-900/70 px-4 py-3 rounded-2xl border border-white/20 shadow-xl">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-white/50 text-white/80"
-                  onClick={() => openMediaDialogFor('hero')}
-                >
-                  Editar imagem
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="border border-red-500/60 text-red-300 hover:bg-red-500/10"
-                  onClick={handleRemoveHeroImage}
-                >
-                  Eliminar imagem
-                </Button>
+      <main className="space-y-16">
+        <section className="relative isolate overflow-hidden bg-[#000c12] px-6 py-16">
+          <div className="absolute inset-0 opacity-30" aria-hidden="true" />
+          <div className="mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center" style={{ minHeight: '420px' }}>
+            <div className="relative z-10 flex-1 space-y-6">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">LEGACY XP</p>
+              <h1 className="text-4xl font-semibold leading-tight text-white md:text-5xl">
+                LEGACY: Gamified Web3 Academy for Sports
+              </h1>
+              <p className="text-lg text-slate-200">{heroActionDescription}</p>
+              <div className="flex flex-wrap gap-4">
+                {heroButtons.map((action) => (
+                  <Button key={action.label} variant="default" asChild>
+                    <Link href={action.href} className="flex items-center gap-2">
+                      {action.label}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                ))}
               </div>
-              <label className="text-xs uppercase tracking-widest text-slate-300">
-                Ajuste vertical
-              </label>
-              <input
-                type="range"
-                min={-200}
-                max={200}
-                value={heroOffset}
-                onChange={(event) => handleHeroOffsetChange(Number(event.target.value))}
-                className="w-48 accent-sky-400"
-              />
+              <p className="text-xs text-slate-300">{CTA_SUBTITLE}</p>
             </div>
-          )}
-          <div className="relative z-10 container mx-auto px-0 h-full" />
-        </section>
-
-        <section
-          className="py-12 text-white"
-          style={{ backgroundColor: getAlternateSectionBg(0) }}
-        >
-          <div className="container mx-auto px-4 text-center space-y-4">
-            <p className="text-xs tracking-[0.6em] uppercase text-slate-400">LEGACY XP</p>
-            <h1 className="text-3xl md:text-4xl font-semibold">
-              {t('hero.title')}
-            </h1>
-            <p className="text-base text-gray-400 max-w-3xl mx-auto">
-              {t('hero.description')}
-            </p>
-            <div className="flex justify-center flex-wrap gap-4">
-              <Link href={user ? '/education/courses' : '/signup'}>
-                <Button size="lg" className="px-8 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold">
-                  {user ? 'Continuar Aprendizagem' : 'Junte-se Agora'}
-                </Button>
-              </Link>
-              <Link href="/education">
-                <Button size="lg" variant="outline" className="px-8 border-sky-500 text-sky-200 hover:bg-slate-900">
-                  Saiba Mais
-                </Button>
-              </Link>
+            <div className="relative flex-1 rounded-[32px] border border-white/10 bg-slate-950 shadow-2xl">
+              <div
+                className="h-72 rounded-[32px] bg-cover bg-center"
+                style={{
+                  backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.65)), url('${heroImageUrl}')`,
+                  backgroundPosition: `center ${heroOffset}px`,
+                }}
+              ></div>
+              {user?.role === 'Super Admin' && (
+                <div className="absolute right-4 -top-4 flex items-center gap-3 rounded-full border border-white/40 bg-black/80 px-4 py-2 text-xs text-white">
+                  <Button size="sm" variant="ghost" onClick={() => setHeroDialogOpen(true)}>
+                    Editar imagem
+                  </Button>
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.4em] text-slate-200">
+                    <span>Offset</span>
+                    <Slider
+                      className="w-24"
+                      value={[heroOffset]}
+                      min={-120}
+                      max={120}
+                      step={1}
+                      onValueChange={handleOffsetChange}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+          <MediaLibraryDialog
+            open={heroDialogOpen || mediaLibrary.isOpen}
+            onOpenChange={(open) => {
+              setHeroDialogOpen(open);
+              if (open) {
+                mediaLibrary.openLibrary();
+              } else {
+                mediaLibrary.closeLibrary();
+              }
+            }}
+            library={mediaLibrary}
+            onSelect={handleHeroSelect}
+            title="Imagem do Hero"
+            description="Seleciona ou envia a imagem principal para a homepage do Legacy."
+          />
         </section>
 
-        <section className="py-12 text-white" style={{ backgroundColor: getAlternateSectionBg(1) }}>
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-3 gap-6">
-              {pillarCards.map((card) => (
-                <div key={card.title} className="bg-card border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
-                  <div>
-                    <card.icon className="h-8 w-8 text-sky-400 mb-3" />
-                    <h3 className="text-xl font-semibold text-gray-100 mb-2">{card.title}</h3>
-                    <p className="text-sm text-gray-400">{card.desc}</p>
-                  </div>
-                  <Link href={card.link}>
-                    <Button size="sm" variant="ghost" className="px-3 border border-slate-700 text-slate-200 hover:bg-white/5 mt-4">
-                      {card.cta}
-                    </Button>
-                  </Link>
-                </div>
+        <section className="bg-[#05212b] px-6 py-16">
+          <div className="mx-auto max-w-6xl space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">LEGACY XP HIGHLIGHTS</p>
+                <h2 className="text-3xl font-semibold text-white">Transparência total de XP</h2>
+              </div>
+              <span className="text-sm text-slate-300">Alterna entre conteúdo público e privado com XP auditado.</span>
+            </div>
+            <div className="grid gap-4 md:grid-cols-4">
+              {[
+                { label: 'Aprende com blog público', value: '5 - 33 XP' },
+                { label: 'Lições concluídas', value: '7 - 33 XP' },
+                { label: 'Streak 7 dias', value: '222 XP' },
+                { label: 'Streak 30 dias', value: '1.111 XP' },
+              ].map((item) => (
+                <Card
+                  key={item.label}
+                  className={cn('border border-white/10 bg-[#000c12]', 'duration-200 hover:-translate-y-0.5')}
+                >
+                  <CardHeader>
+                    <CardTitle className="text-sm font-semibold text-slate-200">{item.label}</CardTitle>
+                    <CardDescription className="text-2xl font-bold text-white">{item.value}</CardDescription>
+                  </CardHeader>
+                </Card>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="py-16 text-white" style={{ backgroundColor: getAlternateSectionBg(2) }}>
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
-              <div>
-                <p className="text-xs uppercase tracking-[0.6em] text-slate-400">Web3 Academy</p>
-                <h2 className="text-3xl md:text-4xl font-semibold text-gray-100 mb-4">
-                  Cursos imersivos, mÃ³dulos guiados, XP genuÃ­no.
-                </h2>
-                <p className="text-gray-400 mb-6 max-w-3xl">
-                  {t('hero.description')}
-                </p>
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <Link href="/education/courses">
-                    <Button size="lg" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
-                      Explorar cursos
-                    </Button>
-                  </Link>
-                  <Link href="/education/courses">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900"
-                    >
-                      Ver mÃ³dulos
-                    </Button>
-                  </Link>
-                </div>
-                <div className="flex gap-6 flex-wrap">
-                  {academyHighlights.map((item) => (
-                    <div key={item.label} className="bg-card border border-slate-800 rounded-2xl px-5 py-4 text-left">
-                      <p className="text-3xl font-semibold text-gray-100">{item.value}</p>
-                      <p className="text-sm uppercase tracking-widest text-gray-400 mt-1">{item.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="relative h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
-                <img
-                  src={academyImageUrl}
-                  alt="Web3 Academy experience"
-                  className="w-full h-full object-cover object-center"
-                />
-                {isSuperAdmin && (
-                  <div className="absolute top-3 right-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-white/60 text-white/80 hover:bg-white/5"
-                      onClick={() => openMediaDialogFor('web3Academy')}
-                    >
-                      Editar imagem
-                    </Button>
-                  </div>
-                )}
-              </div>
+        <section className="bg-[#000c12] px-6 py-16">
+          <div className="mx-auto max-w-6xl space-y-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">TRÊS PILARES</p>
+              <h2 className="text-3xl font-semibold text-white">O Legacy revela o que existe de verdade em cada área</h2>
             </div>
-          </div>
-        </section>
-
-        <section className="py-16 text-white" style={{ backgroundColor: getAlternateSectionBg(3) }}>
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-center max-w-6xl mx-auto">
-              <div>
-                <p className="text-xs uppercase tracking-[0.6em] text-slate-400">Web3 Sports</p>
-                <h2 className="text-3xl md:text-4xl font-semibold text-gray-100 mb-4">
-                  Houses of Sports e onboarding personalizado.
-                </h2>
-                <p className="text-gray-400 mb-6 max-w-3xl">
-                  Comunidade global para aplicar Web3 com seguranÃ§a e propÃ³sito.
-                </p>
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <Link href="/sports/houses">
-                    <Button size="lg" className="px-6 bg-sky-500 hover:bg-sky-400 text-slate-950">
-                      Explorar Houses
-                    </Button>
-                  </Link>
-                  <Link href="/sports/onboarding">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="px-6 border-gray-600 text-gray-200 hover:bg-gray-900"
-                    >
-                      Iniciar Onboarding
-                    </Button>
-                  </Link>
-                </div>
-                <div className="flex gap-6 flex-wrap">
-                  {sportsHighlights.map((item) => (
-                    <div key={item.label} className="bg-card border border-slate-800 rounded-2xl px-5 py-4 text-left">
-                      <p className="text-3xl font-semibold text-gray-100">{item.value}</p>
-                      <p className="text-sm uppercase tracking-widest text-gray-400 mt-1">{item.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="relative h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
-                <img
-                  src={sportsImageUrl}
-                  alt="People collaborating in sports tech"
-                  className="w-full h-full object-cover object-center"
-                />
-                {isSuperAdmin && (
-                  <div className="absolute top-3 right-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-white/60 text-white/80 hover:bg-white/5"
-                      onClick={() => openMediaDialogFor('web3Sports')}
-                    >
-                      Editar imagem
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-16 text-white" style={{ backgroundColor: CTA_BG }}>
-          <div className="container mx-auto px-4 text-center space-y-5">
-            <h2 className="text-3xl md:text-4xl font-bold">
-              {t('home.readyJourney')}
-            </h2>
-            <p className="text-sm text-slate-900 max-w-3xl mx-auto">
-              {user
-                ? 'Já és membro Legacy? Continua a subir o nível ligando-te às Houses of Sports e participando dos cursos da Academia.'
-                : 'És profissional ou entusiasta de desportos? Preenche o formulário de onboarding personalizado e recebe orientação dedicada nos primeiros passos.'}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href={user ? '/sports/houses' : '/sports/onboarding'}>
-                <Button size="lg" className="px-8 bg-slate-900 text-white font-semibold">
-                  {user ? 'Explorar Houses' : 'Começar Onboarding'}
-                </Button>
-              </Link>
-              <Link href="/blog">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="px-8 border-white text-white hover:bg-white/10"
+            <div className="grid gap-6 md:grid-cols-3">
+              {pillarCards.map((pill) => (
+                <Card
+                  key={pill.title}
+                  className={cn('border-white/10 bg-[#05212b] text-white shadow-xl', 'flex flex-col justify-between p-6')}
                 >
-                  {t('home.exploreBlog')}
-                </Button>
-              </Link>
+                  <div className="flex items-center gap-4">
+                    <pill.icon className="h-6 w-6 text-cyan-300" />
+                    <CardTitle className="text-lg font-bold">{pill.title}</CardTitle>
+                  </div>
+                  <CardDescription className="mt-4 text-sm text-slate-200">{pill.description}</CardDescription>
+                  <Link href={pill.href} className="mt-6 text-sm font-semibold text-cyan-300">
+                    {pill.action} <ArrowRight className="inline-block h-4 w-4" />
+                  </Link>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
 
-        <MediaLibraryDialog
-          open={mediaDialogState.open}
-          onOpenChange={(open) => handleMediaDialogOpenChange(open)}
-          library={library}
-          onSelect={handleMediaSelect}
-          title={dialogTitle}
-          description={dialogDescription}
-          allowUrl
-        />
+        <section className="bg-[#05212b] px-6 py-16">
+          <div className="mx-auto max-w-6xl space-y-8">
+            <div>
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">STORY</p>
+              <h2 className="text-3xl font-semibold text-white">3 passos para dominar o ecossistema</h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {storySteps.map((step) => (
+                <Card key={step.title} className="border border-white/10 bg-[#000c12] p-6">
+                  <div className="flex items-center gap-3">
+                    <step.icon className="h-5 w-5 text-cyan-300" />
+                    <CardTitle className="text-base font-semibold">{step.title}</CardTitle>
+                  </div>
+                  <CardDescription className="mt-3 text-sm text-slate-200">{step.copy}</CardDescription>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#000c12] px-6 py-16">
+          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">WEB3 ACADEMY</p>
+              <h2 className="text-3xl font-semibold text-white">Academia Web3</h2>
+              <p className="text-sm text-slate-300">
+                Cursos estruturados que combinam teoria, prática e XP autenticado para profissionais ou quem quer explorar Blockchain e Apertum.
+              </p>
+              <ul className="space-y-2 text-sm text-slate-200">
+                {academyHighlights.map((highlight) => (
+                  <li key={highlight} className="flex items-center gap-2">
+                    <CircleDot className="h-4 w-4 text-cyan-300" />
+                    {highlight}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-4">
+                <Button variant="secondary" asChild>
+                  <Link href="/education/courses">Explorar Academia Web3</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/education/courses">Ver Cursos</Link>
+                </Button>
+              </div>
+            </div>
+            <div className="relative rounded-[32px] border border-white/10 bg-[#05212b] p-6 shadow-2xl">
+              <div
+                className="h-56 rounded-[24px] bg-cover bg-center"
+                style={{
+                  backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.65)), url('${heroImageUrl}')`,
+                }}
+              />
+              {user?.role === 'Super Admin' && (
+                <div className="mt-4 flex items-center justify-between text-xs text-slate-200">
+                  <Button size="sm" variant="ghost" onClick={() => setHeroDialogOpen(true)}>
+                    Editar imagem
+                  </Button>
+                  <span>Offset {heroOffset}px</span>
+                </div>
+              )}
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                {[{
+                  label: 'Cursos',
+                  value: '0+ cursos',
+                }].map((item) => (
+                  <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
+                    <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
+                    <CardDescription className="text-sm text-slate-200">{item.value}</CardDescription>
+                  </Card>
+                ))}
+                {[{
+                  label: 'Lições',
+                  value: '0+ lições',
+                }].map((item) => (
+                  <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
+                    <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
+                    <CardDescription className="text-sm text-slate-200">{item.value}</CardDescription>
+                  </Card>
+                ))}
+                {[{
+                  label: 'Membros',
+                  value: '3+ membros',
+                }].map((item) => (
+                  <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
+                    <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
+                    <CardDescription className="text-sm text-slate-200">{item.value}</CardDescription>
+                  </Card>
+                ))}
+                {[{
+                  label: 'Idiomas',
+                  value: '6+ idiomas',
+                }].map((item) => (
+                  <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
+                    <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
+                    <CardDescription className="text-sm text-slate-200">{item.value}</CardDescription>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#000c12] px-6 py-16">
+          <div className="mx-auto max-w-6xl space-y-6">
+            <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">LEGACY É</p>
+            <div className="flex flex-wrap gap-3">
+              {legacyValues.map((value) => (
+                <span
+                  key={value}
+                  className="rounded-full border border-white/30 bg-[#05212b] px-4 py-1 text-xs uppercase tracking-[0.4em] text-cyan-100"
+                >
+                  {value}
+                </span>
+              ))}
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {faqs.map((faq) => (
+                <Card key={faq.question} className="border border-white/10 bg-[#05212b] p-6">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold text-white">{faq.question}</CardTitle>
+                    <CardDescription className="text-sm text-slate-200">{faq.answer}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84] px-6 py-16">
+          <div className="mx-auto max-w-5xl text-center">
+            <p className="text-xs uppercase tracking-[0.6em] text-white">PRONTO PARA COMEÇAR A TUA JORNADA WEB3?</p>
+            <h2 className="mt-4 text-3xl font-semibold text-white">O Legacy é a tua porta de entrada para a Web3 + Desporto.</h2>
+            <p className="mt-2 text-sm text-cyan-50">A comunidade de Houses e os cursos da Academia estão alinhados para te preparar para o futuro.</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-4">
+              <Button size="lg" variant="default" asChild>
+                <Link href={user ? '/sports/houses' : '/sports/onboarding'}>
+                  {user ? 'Ir para as Houses' : 'Começar'}
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/education/courses">Descobrir a Academia</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <Footer />
+      <footer className="bg-[#000c12] text-center text-xs text-slate-400">
+        <div className="mx-auto max-w-6xl px-6 py-6">
+          © {new Date().getFullYear()} Legacy · Aprendizagem Web3 para desportos e comunidades globais.
+        </div>
+      </footer>
     </div>
   );
 }
-
