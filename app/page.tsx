@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Activity, ArrowRight, BookOpen, CircleDot, GraduationCap, ShieldCheck, Users } from 'lucide-react';
 
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -26,9 +28,6 @@ const MEMBER_SECONDARY = {
   description: 'A comunidade global das Houses of Sports está pronta para te receber.',
   href: '/sports/houses',
 };
-
-const sectionAlternating = ['bg-[#05212b]', 'bg-[#000c12]'];
-const cardBackground = (sectionBg: string) => (sectionBg === '#000c12' ? '#05212b' : '#000c12');
 
 const pillarCards = [
   {
@@ -79,12 +78,6 @@ const academyHighlights = [
   'Módulos guiados para todos os níveis',
   'XP de aprendizagem autenticada a cada lição concluída',
   'Tutoriais em Blockchain e nos principais desportos',
-];
-
-const sportsHighlights = [
-  'Houses em cidades-chave para treino e networking',
-  'Onboarding personalizado com mentores dedicados',
-  'Eventos ao vivo e digitais para profissionais e entusiastas',
 ];
 
 const legacyValues = ['Conteúdos públicos', 'Cursos privados com XP genuíno', 'Houses globais / capacitação profissional'];
@@ -169,22 +162,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#000c12] text-white">
-      <header className="bg-[#000c12]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="text-lg font-semibold tracking-[0.4em] text-cyan-300">LEGACY</div>
-          <nav className="flex items-center gap-4 text-sm">
-            <Link className="transition hover:text-cyan-100" href="/blog">
-              Blog
-            </Link>
-            <Link className="transition hover:text-cyan-100" href="/education/courses">
-              Academia
-            </Link>
-            <Link className="transition hover:text-cyan-100" href="/sports/houses">
-              Houses
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <main className="space-y-16">
         <section className="relative isolate overflow-hidden bg-[#000c12] px-6 py-16">
@@ -372,7 +350,7 @@ export default function HomePage() {
               <div className="mt-6 grid gap-3 md:grid-cols-2">
                 {[{
                   label: 'Cursos',
-                  value: '0+ cursos',
+                  value: 'Cursos em preparação',
                 }].map((item) => (
                   <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
                     <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
@@ -381,7 +359,7 @@ export default function HomePage() {
                 ))}
                 {[{
                   label: 'Lições',
-                  value: '0+ lições',
+                  value: 'Lições em construção',
                 }].map((item) => (
                   <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
                     <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
@@ -390,7 +368,7 @@ export default function HomePage() {
                 ))}
                 {[{
                   label: 'Membros',
-                  value: '3+ membros',
+                  value: 'Primeiros membros a chegar',
                 }].map((item) => (
                   <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
                     <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
@@ -399,7 +377,7 @@ export default function HomePage() {
                 ))}
                 {[{
                   label: 'Idiomas',
-                  value: '6+ idiomas',
+                  value: 'Idiomas planeados',
                 }].map((item) => (
                   <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
                     <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
@@ -456,11 +434,7 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="bg-[#000c12] text-center text-xs text-slate-400">
-        <div className="mx-auto max-w-6xl px-6 py-6">
-          © {new Date().getFullYear()} Legacy · Aprendizagem Web3 para desportos e comunidades globais.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
