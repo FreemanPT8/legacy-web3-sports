@@ -110,9 +110,11 @@ type AdvancedStats = {
 
 function StatTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border bg-card/80 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-2xl font-semibold text-foreground">
+    <div className="rounded-xl border border-white/10 bg-[#05212b] p-4">
+      <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+        {label}
+      </p>
+      <p className="mt-2 text-3xl font-semibold text-white">
         {(value ?? 0).toLocaleString('pt-PT')}
       </p>
     </div>
@@ -127,32 +129,32 @@ function TopList({
   items: { id: string; title: any; views: number }[];
 }) {
   return (
-    <Card className="border border-dashed border-border bg-card/80">
+    <Card className="border border-dashed border-white/10 bg-[#05212b]">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-foreground">
+        <CardTitle className="text-sm text-white">
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 text-sm text-muted-foreground">
+      <CardContent className="space-y-2 text-sm text-slate-300">
         {items && items.length > 0 ? (
           items.map((item) => (
             <div
               key={item.id}
               className="flex items-center justify-between gap-3"
             >
-              <span className="truncate text-foreground">
+              <span className="truncate text-white">
                 {(item.title as any)?.pt ??
                   (item.title as any)?.en ??
                   item.title ??
                   '—'}
               </span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-white">
                 {(item.views ?? 0).toLocaleString('pt-PT')}
               </span>
             </div>
           ))
         ) : (
-          <p className="text-xs text-muted-foreground">Sem dados</p>
+          <p className="text-xs text-slate-300">Sem dados</p>
         )}
       </CardContent>
     </Card>
@@ -343,90 +345,80 @@ export default function AdminDashboardPage() {
     typeof n === 'number' ? n.toLocaleString('pt-PT') : '0';
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-10">
       {/* HERO */}
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
-        </div>
-
-        <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin — Overview
-          </span>
-
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
-            Admin Dashboard
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Visão rápida sobre utilizadores, cursos, blog,
-            onboarding e Houses of Sports. Um painel para
-            perceber se o LEGACY está a crescer de forma
-            saudável ou se algo precisa da tua atenção.
-          </p>
-
-          {statsError && (
-            <p className="mt-3 text-xs text-red-400">{statsError}</p>
-          )}
-        </div>
+      <section className="rounded-2xl border border-white/10 bg-[#05212b] px-6 py-8">
+        <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+          LEGACY ADMIN
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold text-white">
+          Admin Dashboard
+        </h1>
+        <p className="mt-2 text-sm text-slate-300 max-w-3xl">
+          Visão rápida sobre utilizadores, cursos, blog, onboarding e Houses of
+          Sports. Usa este painel para perceber se o LEGACY cresce de forma
+          saudável ou se algo precisa da tua atenção.
+        </p>
+        {statsError && (
+          <p className="mt-3 text-xs text-rose-400">{statsError}</p>
+        )}
       </section>
 
       {/* BLOCOS PRINCIPAIS */}
       <section className="space-y-8">
         {/* USERS */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Utilizadores
           </h2>
-          <Card className="bg-card-custom border-custom shadow-lg shadow-slate-950/40">
+          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-slate-950/40">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-heading">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <Users className="h-5 w-5 text-blue-400" />
                 Users
               </CardTitle>
-              <CardDescription className="text-muted-custom">
+              <CardDescription className="text-slate-300">
                 Base de utilizadores e registos recentes.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-4 gap-4 text-body">
-              <div className="rounded-lg border-custom bg-card-custom p-3">
-                <p className="text-xs text-muted-custom">Total</p>
-                <p className="text-3xl font-bold text-heading">
+            <CardContent className="grid md:grid-cols-4 gap-4 text-slate-300">
+              <div className="rounded-lg border-white/10 bg-[#05212b] p-3">
+                <p className="text-xs text-slate-300">Total</p>
+                <p className="text-3xl font-bold text-white">
                   {loadingStats ? '...' : formatNumber(safeStats.users.total)}
                 </p>
-                <p className="text-xs text-muted-custom mt-1">
+                <p className="text-xs text-slate-300 mt-1">
                   Super Admin: {formatNumber(safeStats.users.superAdmins)} |{' '}
                   Admin: {formatNumber(safeStats.users.admins)} | Members:{' '}
                   {formatNumber(safeStats.users.members)}
                 </p>
               </div>
-              <div className="rounded-lg border-custom bg-card-custom p-3">
-                <p className="text-xs text-muted-custom">Novos (24h)</p>
-                <p className="text-3xl font-bold text-heading">
+              <div className="rounded-lg border-white/10 bg-[#05212b] p-3">
+                <p className="text-xs text-slate-300">Novos (24h)</p>
+                <p className="text-3xl font-bold text-white">
                   {formatNumber(safeStats.users.new24h)}
                 </p>
-                <p className="text-xs text-muted-custom mt-1">
+                <p className="text-xs text-slate-300 mt-1">
                   Últimas 24 horas
                 </p>
               </div>
-              <div className="rounded-lg border-custom bg-card-custom p-3">
-                <p className="text-xs text-muted-custom">Novos (30d)</p>
-                <p className="text-3xl font-bold text-heading">
+              <div className="rounded-lg border-white/10 bg-[#05212b] p-3">
+                <p className="text-xs text-slate-300">Novos (30d)</p>
+                <p className="text-3xl font-bold text-white">
                   {formatNumber(safeStats.users.new30d)}
                 </p>
-                <p className="text-xs text-muted-custom mt-1">
+                <p className="text-xs text-slate-300 mt-1">
                   Últimos 30 dias
                 </p>
               </div>
-              <div className="rounded-lg border-custom bg-card-custom p-3">
-                <p className="text-xs text-muted-custom">
+              <div className="rounded-lg border-white/10 bg-[#05212b] p-3">
+                <p className="text-xs text-slate-300">
                   XP Total (todas ações)
                 </p>
-                <p className="text-xl font-semibold text-heading">
+                <p className="text-xl font-semibold text-white">
                   {formatNumber(safeStats.courses.xp.allActions.total)}
                 </p>
-                <p className="text-[11px] text-muted-custom">
+                <p className="text-[11px] text-slate-300">
                   24h:{' '}
                   {formatNumber(safeStats.courses.xp.allActions.last24h)} | 30d:{' '}
                   {formatNumber(safeStats.courses.xp.allActions.last30d)}
@@ -438,20 +430,20 @@ export default function AdminDashboardPage() {
 
         {/* COURSES / MODULES / LESSONS */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Conteúdo educativo
           </h2>
-          <Card className="bg-card-custom border-custom shadow-lg shadow-blue-950/40">
+          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-blue-950/40">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-heading">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <BookOpen className="h-5 w-5 text-emerald-400" />
                 Active Courses
               </CardTitle>
-              <CardDescription className="text-muted-custom">
+              <CardDescription className="text-slate-300">
                 Cursos, módulos, lições e distribuição de XP.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-body">
+            <CardContent className="space-y-4 text-slate-300">
               <div className="grid md:grid-cols-4 gap-4">
                 <StatTile
                   label="Courses (published)"
@@ -471,14 +463,14 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div className="grid md:grid-cols-3 gap-4">
-                <Card className="border-custom border-dashed bg-card-custom">
+                <Card className="border-white/10 border-dashed bg-[#05212b]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-heading">
+                    <CardTitle className="text-sm flex items-center gap-2 text-white">
                       <Activity className="h-4 w-4 text-emerald-400" />
                       XP Distribuído (Total)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-body">
+                  <CardContent className="space-y-2 text-sm text-slate-300">
                     <div>
                       Cursos:{' '}
                       {formatNumber(safeStats.courses.xp.totalCourses)}
@@ -493,14 +485,14 @@ export default function AdminDashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-custom border-dashed bg-card-custom">
+                <Card className="border-white/10 border-dashed bg-[#05212b]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-heading">
+                    <CardTitle className="text-sm flex items-center gap-2 text-white">
                       <TrendingUp className="h-4 w-4 text-blue-400" />
                       XP (Últimas 24h)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-body">
+                  <CardContent className="space-y-2 text-sm text-slate-300">
                     <div>
                       Cursos:{' '}
                       {formatNumber(safeStats.courses.xp.last24h.courses)}
@@ -515,14 +507,14 @@ export default function AdminDashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-custom border-dashed bg-card-custom">
+                <Card className="border-white/10 border-dashed bg-[#05212b]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-heading">
+                    <CardTitle className="text-sm flex items-center gap-2 text-white">
                       <BarChart3 className="h-4 w-4 text-purple-400" />
                       XP (Últimos 30d)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-body">
+                  <CardContent className="space-y-2 text-sm text-slate-300">
                     <div>
                       Cursos:{' '}
                       {formatNumber(safeStats.courses.xp.last30d.courses)}
@@ -544,20 +536,20 @@ export default function AdminDashboardPage() {
 
         {/* BLOG */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Blog & Educação contínua
           </h2>
-          <Card className="bg-card-custom border-custom shadow-lg shadow-purple-950/40">
+          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-purple-950/40">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-heading">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <FileText className="h-5 w-5 text-purple-400" />
                 Blog Posts
               </CardTitle>
-              <CardDescription className="text-muted-custom">
+              <CardDescription className="text-slate-300">
                 Publicados, XP distribuído e visualizações.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-body">
+            <CardContent className="space-y-4 text-slate-300">
               <div className="grid md:grid-cols-4 gap-4">
                 <StatTile
                   label="Publicados"
@@ -577,14 +569,14 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div className="grid md:grid-cols-3 gap-4">
-                <Card className="border-custom border-dashed bg-card-custom">
+                <Card className="border-white/10 border-dashed bg-[#05212b]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-heading">
+                    <CardTitle className="text-sm flex items-center gap-2 text-white">
                       <BarChart3 className="h-4 w-4 text-slate-300" />
                       Visualizações
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-1 text-sm text-body">
+                  <CardContent className="space-y-1 text-sm text-slate-300">
                     <div>
                       Total:{' '}
                       {formatNumber(safeStats.blog.views.total)}
@@ -614,20 +606,20 @@ export default function AdminDashboardPage() {
 
         {/* ONBOARDING */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Onboarding & Leads
           </h2>
-          <Card className="bg-card-custom border-custom shadow-lg shadow-orange-950/40">
+          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-orange-950/40">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-heading">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <Mail className="h-5 w-5 text-orange-400" />
                 Pending Onboarding
               </CardTitle>
-              <CardDescription className="text-muted-custom">
+              <CardDescription className="text-slate-300">
                 Estados e responsáveis.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-body">
+            <CardContent className="space-y-4 text-slate-300">
               <div className="grid md:grid-cols-3 gap-4">
                 <StatTile
                   label="Pendentes (total)"
@@ -647,12 +639,12 @@ export default function AdminDashboardPage() {
                   {onboardingStatusEntries.map(([status, count]) => (
                     <div
                       key={status}
-                      className="rounded border-custom bg-card-custom p-3"
+                      className="rounded border-white/10 bg-[#05212b] p-3"
                     >
-                      <div className="font-semibold text-heading">
+                      <div className="font-semibold text-white">
                         {status}
                       </div>
-                      <div className="text-sm text-body">{count}</div>
+                      <div className="text-sm text-slate-300">{count}</div>
                     </div>
                   ))}
                 </div>
@@ -660,7 +652,7 @@ export default function AdminDashboardPage() {
               {Object.keys(safeStats.onboarding.byResponsible || {}).length >
                 0 && (
                 <div className="space-y-2 text-xs">
-                  <div className="font-semibold text-heading">
+                  <div className="font-semibold text-white">
                     Responsáveis (by user_id)
                   </div>
                   <div className="grid md:grid-cols-4 gap-2">
@@ -668,12 +660,12 @@ export default function AdminDashboardPage() {
                       ([uid, count]) => (
                         <div
                           key={uid}
-                          className="rounded border-custom bg-card-custom p-2"
+                          className="rounded border-white/10 bg-[#05212b] p-2"
                         >
-                          <div className="text-[11px] text-muted-custom break-all">
+                          <div className="text-[11px] text-slate-300 break-all">
                             {uid}
                           </div>
-                          <div className="text-sm font-semibold text-body">
+                          <div className="text-sm font-semibold text-slate-300">
                             {count}
                           </div>
                         </div>
@@ -688,20 +680,20 @@ export default function AdminDashboardPage() {
 
         {/* HOUSES */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Houses of Sports
           </h2>
-          <Card className="bg-card-custom border-custom shadow-lg shadow-amber-950/40">
+          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-amber-950/40">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-heading">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <Building2 className="h-5 w-5 text-amber-400" />
                 Houses of Sports
               </CardTitle>
-              <CardDescription className="text-muted-custom">
+              <CardDescription className="text-slate-300">
                 Visão geral de estado.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-4 gap-4 text-body">
+            <CardContent className="grid md:grid-cols-4 gap-4 text-slate-300">
               <StatTile label="Total" value={safeStats.houses.total} />
               <StatTile label="Active" value={safeStats.houses.active} />
               <StatTile label="Building" value={safeStats.houses.building} />
@@ -716,7 +708,7 @@ export default function AdminDashboardPage() {
         {/* BOTÃO + INSIGHTS AVANÇADOS */}
         <div className="space-y-4 border-t border-slate-800/70 pt-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold flex items-center gap-2 text-heading">
+            <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
               Advanced Insights
             </h2>
 
@@ -737,15 +729,15 @@ export default function AdminDashboardPage() {
               )}
 
               {/* User Growth */}
-              <Card className="bg-card-custom border-custom">
+              <Card className="bg-[#000c12] border-white/10">
                 <CardHeader>
-                  <CardTitle className="text-heading">
+                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                     User Growth (Monthly)
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-body">
+                <CardContent className="text-slate-300">
                   {loadingAdvanced && !advanced ? (
-                    <p className="text-sm text-muted-custom">
+                    <p className="text-sm text-slate-300">
                       A carregar...
                     </p>
                   ) : (
@@ -764,15 +756,15 @@ export default function AdminDashboardPage() {
               </Card>
 
               {/* Course Engagement */}
-              <Card className="bg-card-custom border-custom">
+              <Card className="bg-[#000c12] border-white/10">
                 <CardHeader>
-                  <CardTitle className="text-heading">
+                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                     Course Engagement
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-body">
+                <CardContent className="text-slate-300">
                   {loadingAdvanced && !advanced ? (
-                    <p className="text-sm text-muted-custom">
+                    <p className="text-sm text-slate-300">
                       A carregar...
                     </p>
                   ) : (
@@ -782,15 +774,15 @@ export default function AdminDashboardPage() {
               </Card>
 
               {/* Weekly Engagement */}
-              <Card className="bg-card-custom border-custom">
+              <Card className="bg-[#000c12] border-white/10">
                 <CardHeader>
-                  <CardTitle className="text-heading">
+                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                     User Activity (Weekly)
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-body">
+                <CardContent className="text-slate-300">
                   {loadingAdvanced && !advanced ? (
-                    <p className="text-sm text-muted-custom">
+                    <p className="text-sm text-slate-300">
                       A carregar...
                     </p>
                   ) : (
