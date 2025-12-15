@@ -128,31 +128,18 @@ export default function HousesPage() {
 
           <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 md:py-16">
             <div className="mx-auto max-w-5xl space-y-6">
-              <div className="space-y-3">
-                <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-100">
-                  Passo 2 · Houses of Sports
-                </span>
-
-                <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
-                  O mapa global das Houses of Sports do LEGACY.
-                </h1>
-
-                <p className="max-w-3xl text-sm leading-relaxed text-cyan-100 md:text-base">
-                  Cada House of Sports é uma comunidade focada num{' '}
-                  <strong>desporto específico</strong> num{' '}
-                  <strong>país concreto</strong>. No início, funcionam como
-                  núcleos de aprendizagem e organização dentro do ecossistema
-                  LEGACY e da <strong>Apertum Blockchain</strong>. Com o tempo,
-                  algumas vão destacar-se pelas iniciativas dos membros e pela
-                  liderança da própria House.
+              <div className="space-y-4">
+                <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                  HOUSES OF SPORTS
                 </p>
-
-                <p className="max-w-3xl text-sm leading-relaxed text-slate-200 md:text-base">
-                  Se já vives o desporto por dentro, há lugar para ti. Se ainda
-                  não vives, mas queres aprender Web3 com cabeça, também. A
-                  lógica é simples: primeiro criamos contexto e educação séria;
-                  depois abrimos espaço para participação e reputação dentro das
-                  Houses que fizerem sentido — sem pressa e sem promessas vazias.
+                <h1 className="text-3xl font-semibold text-white md:text-4xl">
+                  Explora as Houses
+                </h1>
+                <p className="max-w-3xl text-sm text-slate-300 md:text-base">
+                  Cada House of Sports é uma comunidade que junta desporto, formação Web3 e networking local. Descobre onde estas Houses já estão ativas, quais estão em construção e as próximas a chegar ao ecossistema LEGACY.
+                </p>
+                <p className="max-w-3xl text-sm text-slate-300 md:text-base">
+                  Escolhe a House alinhada com o teu desporto e contexto ou usa este mapa para perceber onde podes liderar uma nova iniciativa.
                 </p>
               </div>
 
@@ -241,7 +228,7 @@ export default function HousesPage() {
             )}
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#020b16] px-6 py-10 text-center">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#05212b] px-6 py-10 text-center">
                 <p className="text-sm font-medium text-white">
                   A carregar Houses of Sports...
                 </p>
@@ -251,7 +238,7 @@ export default function HousesPage() {
                 </p>
               </div>
             ) : houses.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#020b16] px-6 py-10 text-center">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#05212b] px-6 py-10 text-center">
                 <p className="text-sm font-medium text-white">
                   Ainda não existem Houses of Sports visíveis.
                 </p>
@@ -354,8 +341,8 @@ function HousesSection({
 
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
-              <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#020b16] p-4 shadow-sm transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
-                <div className="mb-3 h-20 overflow-hidden rounded-lg border border-white/10 bg-[#020b16]">
+              <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#05212b] p-4 shadow-sm transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
+                <div className="mb-3 h-20 overflow-hidden rounded-lg border border-white/10 bg-[#000c12]">
                   {house.cover_image_url || house.avatar_url ? (
                     <SafeImage
                       src={house.cover_image_url || house.avatar_url || ''}
@@ -369,7 +356,7 @@ function HousesSection({
 
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#020b16] text-[11px] font-semibold text-slate-300">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#000c12] text-[11px] font-semibold text-slate-200">
                       {house.avatar_url ? (
                         <SafeImage
                           src={house.avatar_url}
@@ -385,7 +372,7 @@ function HousesSection({
                         {house.name}
                       </p>
                       {house.sport && (
-                        <p className="truncate text-[11px] text-slate-300">
+                        <p className="truncate text-[11px] text-slate-200">
                           {house.sport.name} · {house.sport.code}
                         </p>
                       )}
@@ -411,7 +398,7 @@ function HousesSection({
                 </div>
 
                 {headUsername ? (
-                  <p className="mt-1 text-[11px] text-slate-300">
+                  <p className="mt-1 text-[11px] text-slate-200">
                     Head of House:{' '}
                     <span className="font-medium text-white">
                       {headUsername}
@@ -436,4 +423,3 @@ function HousesSection({
     </div>
   );
 }
-
