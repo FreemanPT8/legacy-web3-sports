@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
 
 import {
@@ -18,100 +19,53 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  {
-    href: '/admin',
-    label: 'Overview',
-    icon: LayoutDashboard,
-  },
-  {
-    href: '/admin/users',
-    label: 'Users',
-    icon: Users,
-  },
-  {
-    href: '/admin/courses',
-    label: 'Courses',
-    icon: BookOpen,
-  },
-  {
-    href: '/admin/blog',
-    label: 'Blog',
-    icon: FileText,
-  },
-  {
-    href: '/admin/houses',
-    label: 'Houses of Sports',
-    icon: Trophy,
-  },
-  {
-    href: '/admin/onboarding',
-    label: 'Onboarding',
-    icon: Mail,
-  },
-  {
-    href: '/admin/forum',
-    label: 'Forum',
-    icon: MessageCircle,
-  },
-  {
-    href: '/admin/xp',
-    label: 'XP Management',
-    icon: Award,
-  },
-  {
-    href: '/admin/analytics',
-    label: 'Analytics',
-    icon: BarChart3,
-  },
-  {
-    href: '/admin/settings/permissions',
-    label: 'Permissions',
-    icon: Settings,
-  },
+  { href: '/admin', label: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/courses', label: 'Courses', icon: BookOpen },
+  { href: '/admin/blog', label: 'Blog', icon: FileText },
+  { href: '/admin/houses', label: 'Houses of Sports', icon: Trophy },
+  { href: '/admin/onboarding', label: 'Onboarding', icon: Mail },
+  { href: '/admin/forum', label: 'Forum', icon: MessageCircle },
+  { href: '/admin/xp', label: 'XP Management', icon: Award },
+  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/admin/settings/permissions', label: 'Permissions', icon: Settings },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside
-      className="
-        w-64
-        bg-white dark:bg-gray-900
-        border-r border-gray-200 dark:border-gray-800
-        p-6
-        hidden md:flex flex-col gap-6
-        sticky top-0 h-[calc(100vh-120px)]
-      "
-    >
-      <div>
-        <h2 className="text-lg font-semibold flex items-center gap-2 mb-1">
-          <LayoutDashboard className="h-5 w-5 text-blue-600" />
+    <aside className="hidden h-[calc(100vh-120px)] w-64 flex-col gap-6 border-r border-white/10 bg-[#05212b] p-6 md:flex">
+      <div className="space-y-1">
+        <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.4em] text-cyan-300">
+          <LayoutDashboard className="h-4 w-4" />
           Admin Panel
         </h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          Ferramentas de gestão
-        </p>
+        <p className="text-xs text-slate-400">Ferramentas de gestão</p>
       </div>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-2 text-sm font-medium text-slate-200">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive =
             pathname === item.href ||
-            (item.href !== '/admin' &&
-              pathname.startsWith(item.href));
+            (item.href !== '/admin' && pathname.startsWith(item.href));
 
           return (
             <Link key={item.href} href={item.href}>
               <Button
-                variant={isActive ? 'default' : 'ghost'}
-                className={`
-                  w-full justify-start gap-2
-                  ${isActive ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
-                `}
+                variant="outline"
+                className={`w-full justify-start gap-3 border-white/10 ${
+                  isActive
+                    ? 'border-cyan-400/40 bg-cyan-500/20 text-white hover:bg-cyan-500/30'
+                    : 'bg-transparent text-slate-200 hover:border-white/20 hover:bg-[#041923]'
+                }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon
+                  className={`h-4 w-4 ${
+                    isActive ? 'text-white' : 'text-cyan-300'
+                  }`}
+                />
                 {item.label}
               </Button>
             </Link>
