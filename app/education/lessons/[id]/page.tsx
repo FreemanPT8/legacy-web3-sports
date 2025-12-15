@@ -153,7 +153,7 @@ export default function LessonPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#000c12]">
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -170,16 +170,16 @@ export default function LessonPage() {
 
   if (!lesson || !module) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <Card className="max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+          <Card className="max-w-md border border-white/10 bg-[#000c12]">
             <CardContent className="text-center py-12">
-              <BookOpen className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-50">
+              <BookOpen className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-white">
                 {tr('lessons.notFound', 'Lição não encontrada')}
               </h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
+              <p className="text-slate-300 mb-4">
                 {tr(
                   'lessons.notFoundDescription',
                   'Esta lição não existe ou foi removida.',
@@ -220,7 +220,7 @@ export default function LessonPage() {
     : '/education/courses';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
 
       <main className="flex-1 py-8">
@@ -231,19 +231,22 @@ export default function LessonPage() {
               <Link href={backHref}>
                 <Button
                   variant="ghost"
-                  className="mb-4 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="mb-2 text-slate-300 hover:text-white hover:bg-white/5"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   {tr('lessons.backToCourse', 'Voltar ao curso')}
                 </Button>
               </Link>
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                {tr('lessons.label', 'Lição')}
+              </p>
             </div>
 
             {/* HEADER */}
-            <Card className="mb-4 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+            <Card className="mb-4 border border-white/10 bg-[#000c12]">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
-                  <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-100">
+                  <Badge variant="outline" className="border-white/20 text-cyan-100 bg-[#05212b]">
                     {moduleTitle}
                   </Badge>
 
@@ -260,21 +263,21 @@ export default function LessonPage() {
                   ) : null}
                 </div>
 
-                <CardTitle className="text-3xl text-gray-900 dark:text-gray-50">
+                <CardTitle className="text-3xl text-white">
                   {title}
                 </CardTitle>
 
                 {description && (
-                  <p className="text-gray-600 dark:text-gray-300 text-lg mt-2">
+                  <p className="text-sm text-slate-300 mt-2">
                     {description}
                   </p>
                 )}
               </CardHeader>
 
               <CardContent>
-                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex flex-wrap items-center gap-6 text-sm text-slate-300">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
+                    <Clock className="h-4 w-4 text-cyan-300" />
                     <span>
                       {durationMinutes}{' '}
                       {tr('lessons.minutes', 'minutos')}
@@ -282,7 +285,7 @@ export default function LessonPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Award className="h-4 w-4" />
+                    <Award className="h-4 w-4 text-cyan-300" />
                     <span>
                       {lesson.xp_reward}{' '}
                       {tr('lessons.xpReward', 'XP por conclusão')}
@@ -293,27 +296,27 @@ export default function LessonPage() {
             </Card>
 
             {/* META INFO */}
-            <Card className="mb-6 bg-card border border-border">
-              <CardContent className="py-4 text-sm text-gray-700 dark:text-gray-300">
+            <Card className="mb-6 border border-white/10 bg-[#000c12]">
+              <CardContent className="py-4 text-sm text-slate-300">
                 <div className="grid gap-3 md:grid-cols-4">
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    <span className="block text-xs uppercase text-slate-400 mb-1">
                       {tr('lessons.meta.creator', 'Criador')}
                     </span>
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    <span className="font-semibold text-white">
                       {creatorName}
                     </span>
                   </div>
 
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    <span className="block text-xs uppercase text-slate-400 mb-1">
                       {tr('lessons.meta.createdAt', 'Criada em')}
                     </span>
                     <span>{createdAtStr}</span>
                   </div>
 
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    <span className="block text-xs uppercase text-slate-400 mb-1">
                       {tr(
                         'lessons.meta.completedTimes',
                         'Conclusões',
@@ -326,7 +329,7 @@ export default function LessonPage() {
                   </div>
 
                   <div>
-                    <span className="block text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    <span className="block text-xs uppercase text-slate-400 mb-1">
                       {tr(
                         'lessons.meta.xpDistributed',
                         'XP distribuído',
@@ -339,8 +342,8 @@ export default function LessonPage() {
             </Card>
 
             {/* CONTENT + TRACKER */}
-            <Card className="mb-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-              <CardContent className="prose prose-lg max-w-none py-8 prose-headings:text-gray-900 dark:prose-invert">
+            <Card className="mb-6 border border-white/10 bg-[#000c12]">
+              <CardContent className="prose prose-lg max-w-none py-8 prose-headings:text-white prose-p:text-slate-200 prose-strong:text-white">
                 <ContentTracker
                   userId={user?.id ?? null}
                   contentId={lesson.id}
@@ -363,10 +366,10 @@ export default function LessonPage() {
               <Card className="mb-6 bg-green-50 dark:bg-green-900/40 border-green-200 dark:border-green-700">
                 <CardContent className="py-6 text-center">
                   <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-300 mx-auto mb-3" />
-                  <h3 className="font-semibold text-lg mb-1 text-gray-900 dark:text-gray-50">
+                  <h3 className="font-semibold text-lg mb-1 text-white">
                     {tr('lessons.completedTitle', 'Lição concluída!')}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-200">
+                  <p className="text-sm text-slate-200">
                     {tr(
                       'lessons.completedDescription',
                       'Ganhaste {xp} XP por completar esta lição.',
