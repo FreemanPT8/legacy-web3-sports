@@ -152,15 +152,14 @@ export default function BlogPage() {
           <div className="mx-auto max-w-6xl">
             <div className="rounded-3xl border border-white/10 bg-[#05212b] px-6 py-8 shadow-[0_0_60px_rgba(34,211,238,0.20)] md:px-10 md:py-10">
               <div className="space-y-6">
-                <div className="inline-flex items-center rounded-full border border-white/30 bg-[#000c12]/80 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.4em] text-cyan-100">
+                <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                   Blog · Web3 · Desporto · Apertum
-                </div>
-
+                </p>
                 <div className="space-y-3">
                   <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
                     Artigos que ligam Web3, desporto e Apertum — sem bullshit.
                   </h1>
-                  <p className="max-w-2xl text-sm text-slate-200 md:text-base">
+                  <p className="max-w-2xl text-sm text-slate-300">
                     Aqui encontras explicações diretas sobre blockchain, Apertum
                     e o impacto real no desporto. Sem hype vazio, sem jargão
                     técnico — apenas contexto, exemplos e caminhos que podes
@@ -294,7 +293,7 @@ export default function BlogPage() {
                   return (
                     <Card
                       key={post.id}
-                      className="flex cursor-pointer flex-col border border-white/10 bg-[#05212b] transition hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(34,211,238,0.30)]"
+                      className="flex cursor-pointer flex-col border border-white/10 bg-[#000c12] transition hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(34,211,238,0.30)]"
                       onClick={() => router.push(`/blog/${post.id}`)}
                     >
                       {imageUrl ? (
@@ -351,7 +350,7 @@ export default function BlogPage() {
                       </CardHeader>
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pb-5">
-                        <p className="line-clamp-3 text-sm text-slate-200">
+                        <p className="line-clamp-3 text-sm text-slate-300">
                           {excerpt}
                         </p>
 
@@ -361,7 +360,7 @@ export default function BlogPage() {
                           </span>
                         )}
 
-                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-300">
+                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
                           <div className="flex items-center gap-3">
                             {post.author && (
                               <span className="inline-flex items-center gap-1">
@@ -412,4 +411,3 @@ export default function BlogPage() {
     </div>
   );
 }
-
