@@ -165,7 +165,7 @@ export default function CourseDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#000c12]">
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -182,14 +182,14 @@ export default function CourseDetailPage() {
 
   if (notFound || !course) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#000c12]">
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center px-4">
-            <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-50">
+            <h1 className="text-2xl font-semibold mb-2 text-white">
               {tr('courses.notFound', 'Curso não encontrado')}
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
+            <p className="text-slate-300 mb-4">
               {tr(
                 'courses.notFoundDescription',
                 'O curso que procuras não existe ou não está publicado.',
@@ -197,7 +197,7 @@ export default function CourseDetailPage() {
             </p>
             <Link
               href="/education/courses"
-              className="inline-flex items-center gap-2 text-primary hover:underline"
+              className="inline-flex items-center gap-2 text-cyan-300 hover:underline"
             >
               <ArrowLeft className="h-4 w-4" />
               {tr('courses.back', 'Voltar aos cursos')}
@@ -238,7 +238,7 @@ export default function CourseDetailPage() {
     : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#000c12]">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
 
       <main className="flex-1 py-8">
@@ -247,7 +247,7 @@ export default function CourseDetailPage() {
             <div className="mb-4">
               <Link
                 href="/education/courses"
-                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:underline"
+                className="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {tr('courses.back', 'Voltar aos cursos')}
@@ -255,10 +255,10 @@ export default function CourseDetailPage() {
             </div>
 
             {/* HEADER DO CURSO */}
-            <Card className="mb-6 overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+            <Card className="mb-6 overflow-hidden border border-white/10 bg-[#000c12]">
               {/* Thumbnail / Placeholder */}
               {imageUrl ? (
-                <div className="w-full h-56 bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                <div className="w-full h-56 border-b border-white/10 bg-[#000c12] overflow-hidden">
                   <img
                     src={imageUrl}
                     alt={title}
@@ -282,68 +282,71 @@ export default function CourseDetailPage() {
               )}
 
               <CardHeader>
-                <div className="flex flex-wrap justify-between items-start gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-wrap justify-between items-start gap-6">
+                  <div className="space-y-3 max-w-3xl">
+                    <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                      {tr('nav.education', 'WEB3 ACADEMY')}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
                       {getLevelBadge(course.level)}
                       {isCourseCreator && (
-                        <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                        <Badge className="bg-[#14718f] text-white flex items-center gap-1">
                           <PenSquare className="h-3 w-3" />
                           Creator
                         </Badge>
                       )}
                     </div>
 
-                    <CardTitle className="text-2xl md:text-3xl text-gray-900 dark:text-gray-50">
+                    <CardTitle className="text-3xl font-semibold text-white">
                       {title}
                     </CardTitle>
 
                     {description && (
-                      <CardDescription className="text-base text-gray-700 dark:text-gray-300">
+                      <CardDescription className="text-sm text-slate-300">
                         {description}
                       </CardDescription>
                     )}
 
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-slate-400">
                       {tr('courses.by', 'Criado por')}{' '}
-                      <span className="font-semibold">
+                      <span className="font-semibold text-white">
                         {authorName}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="flex flex-col items-end gap-2 text-sm text-slate-300">
                     <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-primary" />
+                      <BookOpen className="h-4 w-4 text-cyan-300" />
                       <span>
                         {totalModules}{' '}
                         {tr('courses.modules', 'módulos')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-primary" />
+                      <BookOpen className="h-4 w-4 text-cyan-300" />
                       <span>
                         {totalLessons}{' '}
                         {tr('courses.lessons', 'lições')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Award className="h-4 w-4 text-primary" />
+                      <Award className="h-4 w-4 text-cyan-300" />
                       <span>
                         {totalXP}{' '}
                         {tr('courses.totalXP', 'XP disponível')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Award className="h-4 w-4 text-green-600" />
+                      <Award className="h-4 w-4 text-cyan-300" />
                       <span>
                         {xpDistributed}{' '}
                         {tr('courses.xpDistributed', 'XP já entregue')}
                       </span>
                     </div>
                     {user && (
-                      <div className="flex items-center gap-2 text-xs text-blue-900 dark:text-blue-100 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 rounded-full px-3 py-1">
-                        <Award className="h-3 w-3" />
+                      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#05212b] px-3 py-1 text-xs text-cyan-100">
+                        <Award className="h-3 w-3 text-cyan-300" />
                         <span>
                           {tr(
                             'courses.yourXPInCourse',
@@ -355,12 +358,12 @@ export default function CourseDetailPage() {
                       </div>
                     )}
                     {xpRequired > 0 && (
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="mt-1 text-xs text-slate-400">
                         {tr(
                           'courses.unlockAt',
                           'XP mínimo recomendado',
                         )}
-                        : <strong>{xpRequired} XP</strong>
+                        : <strong className="text-white">{xpRequired} XP</strong>
                       </div>
                     )}
                   </div>
@@ -370,8 +373,8 @@ export default function CourseDetailPage() {
 
             {/* MÓDULOS & LIÇÕES */}
             {modules.length === 0 ? (
-              <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-                <CardContent className="py-8 text-center text-gray-500 dark:text-gray-300">
+              <Card className="border border-white/10 bg-[#000c12]">
+                <CardContent className="py-8 text-center text-slate-300">
                   {tr(
                     'courses.noModules',
                     'Este curso ainda não tem módulos publicados.',
@@ -406,12 +409,12 @@ export default function CourseDetailPage() {
                   return (
                     <Card
                       key={mod.id}
-                      className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                      className="border border-white/10 bg-[#05212b]"
                     >
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start gap-3">
                           <div>
-                            <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-50">
+                            <CardTitle className="text-lg flex items-center gap-2 text-white">
                               {modTitle}
                               {isModuleCreator && (
                                 <Badge className="bg-purple-600 text-white flex items-center gap-1">
@@ -426,7 +429,7 @@ export default function CourseDetailPage() {
                                 </Badge>
                               )}
                             </CardTitle>
-                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <div className="mt-1 text-xs text-slate-400">
                               {tr('courses.by', 'Criado por')}{' '}
                               <span className="font-semibold">
                                 {moduleAuthorName}
@@ -434,9 +437,9 @@ export default function CourseDetailPage() {
                             </div>
                           </div>
 
-                          <div className="flex flex-col items-end gap-1 text-xs text-gray-600 dark:text-gray-300">
+                          <div className="flex flex-col items-end gap-1 text-xs text-slate-300">
                             <div className="flex items-center gap-1">
-                              <Award className="h-3 w-3 text-blue-600" />
+                              <Award className="h-4 w-4 text-cyan-300" />
                               <span>
                                 {moduleXpDistributed} /{' '}
                                 {moduleXpAvailable} XP
@@ -448,7 +451,7 @@ export default function CourseDetailPage() {
 
                       <CardContent className="pt-0">
                         {lessons.length === 0 ? (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                          <p className="text-xs text-slate-400">
                             {tr(
                               'courses.noLessons',
                               'Ainda não há lições publicadas neste módulo.',
@@ -483,11 +486,11 @@ export default function CourseDetailPage() {
                               return (
                                 <div
                                   key={lesson.id}
-                                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-t border-gray-200 dark:border-gray-700 pt-3"
+                                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-t border-white/10 pt-3"
                                 >
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-medium text-gray-900 dark:text-gray-50">
+                                      <span className="font-medium text-white">
                                         {lessonTitle}
                                       </span>
                                       {isLessonCreator && (
@@ -503,7 +506,7 @@ export default function CourseDetailPage() {
                                         </Badge>
                                       )}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
                                       <span>
                                         {tr(
                                           'courses.by',
@@ -514,16 +517,16 @@ export default function CourseDetailPage() {
                                         </span>
                                       </span>
                                       <span className="flex items-center gap-1">
-                                        <Award className="h-3 w-3 text-primary" />
+                                        <Award className="h-4 w-4 text-cyan-300" />
                                         {lesson.xp_reward || 0} XP
                                       </span>
                                       <span className="flex items-center gap-1">
-                                        <Clock className="h-3 w-3 text-primary" />
+                                        <Clock className="h-4 w-4 text-cyan-300" />
                                         {estimatedMinutes} min
                                       </span>
                                     </div>
                                     {lessonHasReadMore && (
-                                      <div className="text-[11px] text-sky-500 uppercase tracking-wide">
+                                      <div className="text-[11px] text-cyan-300 uppercase tracking-wide">
                                         Continue reading
                                       </div>
                                     )}
