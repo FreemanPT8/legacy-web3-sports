@@ -31,12 +31,10 @@ export default function ForumPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="mt-4 text-sm text-muted-foreground">
-            {t('common.loading')}
-          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto" />
+          <p className="mt-4 text-sm text-slate-400">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -48,42 +46,39 @@ export default function ForumPage() {
 
   if (!canRead) {
     return (
-      <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center justify-center py-16">
-          <Card className="max-w-md bg-card/80 border border-border shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+          <Card className="max-w-md border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
             <CardHeader className="text-center">
-              <Lock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <CardTitle className="text-2xl text-foreground">
+              <Lock className="h-16 w-16 text-white/70 mx-auto mb-4" />
+              <CardTitle className="text-2xl text-white">
                 {t('forum.forumLocked')}
               </CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">
+              <CardDescription className="text-sm text-slate-300">
                 {t('forum.earnMoreXp')} {369 - user.xp_total}{' '}
                 {t('forum.moreXpToUnlock')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-muted rounded-full h-3">
+                <div className="flex-1 bg-[#05212b] rounded-full h-3">
                   <div
-                    className="bg-primary h-3 rounded-full transition-all"
+                    className="bg-cyan-400 h-3 rounded-full transition-all"
                     style={{
-                      width: `${Math.min(
-                        (user.xp_total / 369) * 100,
-                        100,
-                      )}%`,
+                      width: `${Math.min((user.xp_total / 369) * 100, 100)}%`,
                     }}
                   />
                 </div>
-                <span className="text-sm font-semibold text-foreground">
+                <span className="text-sm font-semibold text-white">
                   {user.xp_total}/369
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-sm text-slate-300 text-center">
                 {t('forum.completeToEarnXp')}
               </p>
               <Link href="/education/courses">
-                <Button className="w-full">
+                <Button className="w-full border border-white/30 text-slate-200">
                   {t('forum.startLearning')}
                 </Button>
               </Link>
@@ -95,271 +90,195 @@ export default function ForumPage() {
     );
   }
 
+  const accessLevels = [
+    { label: 'Read Access', xp: 369, unlocked: canRead },
+    { label: 'Interact', xp: 444, unlocked: canInteract },
+    { label: 'Post & Create', xp: 555, unlocked: canPost },
+  ];
+
+  const rooms = [
+    {
+      title: t('forum.generalDiscussion'),
+      desc: t('forum.generalDiscussionDesc'),
+      badge: t('forum.public'),
+      topics: '234 Topics',
+      posts: '1.2k Posts',
+      icon: Users,
+    },
+    {
+      title: t('forum.apertumNetwork'),
+      desc: t('forum.apertumNetworkDesc'),
+      badge: t('forum.public'),
+      topics: '89 Topics',
+      posts: '456 Posts',
+      icon: Users,
+    },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
 
       <main className="flex-1 py-8">
         <div className="mx-auto w-full max-w-6xl px-4">
-            <div className="mb-8 border-b border-border pb-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-primary">
-                LEGACY FORUM
-              </p>
-              <h1 className="mt-1 text-3xl md:text-4xl font-bold mb-2 text-foreground">
-                {t('forum.communityForum')}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {t('forum.communityForumDesc')}
-              </p>
-            </div>
+          <div className="mb-8 border-b border-white/10 pb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.6em] text-cyan-300">
+              LEGACY FORUM
+            </p>
+            <h1 className="mt-1 text-3xl md:text-4xl font-bold text-white">
+              {t('forum.communityForum')}
+            </h1>
+            <p className="text-sm text-slate-300">
+              {t('forum.communityForumDesc')}
+            </p>
+          </div>
 
-            {/* Níveis de acesso por XP */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {accessLevels.map((level) => (
               <Card
-                className={`bg-card/80 border border-border ${
-                  canRead ? 'border-emerald-500/70' : ''
-                } shadow-[0_18px_45px_rgba(0,0,0,0.45)]`}
+                key={level.label}
+                className={`border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)] ${
+                  level.unlocked ? 'border-cyan-500/70' : ''
+                }`}
               >
                 <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge
-                        className={
-                          canRead
-                            ? 'bg-emerald-500 text-emerald-50'
-                            : 'bg-muted text-muted-foreground'
-                        }
-                      >
-                        {canRead ? 'Unlocked' : 'Locked'}
-                      </Badge>
-                      <span className="text-sm font-semibold text-muted-foreground">
-                        369 XP
-                      </span>
-                    </div>
-                    <CardTitle className="text-lg text-foreground">
-                      Read Access
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      View all forum discussions and topics
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge
+                      className={
+                        level.unlocked
+                          ? 'bg-cyan-500 text-white'
+                          : 'bg-[#05212b] text-slate-300'
+                      }
+                    >
+                      {level.unlocked ? 'Unlocked' : 'Locked'}
+                    </Badge>
+                    <span className="text-sm font-semibold text-slate-300">
+                      {level.xp} XP
+                    </span>
+                  </div>
+                  <CardTitle className="text-lg text-white">
+                    {level.label}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-slate-300">
+                    {level.label === 'Read Access' &&
+                      'View all forum discussions and topics'}
+                    {level.label === 'Interact' &&
+                      'Like posts and leave comments'}
+                    {level.label === 'Post & Create' &&
+                      'Create topics and post replies'}
+                  </p>
+                  {!level.unlocked && (
+                    <p className="text-xs text-cyan-200 mt-2">
+                      {level.xp - user.xp_total} XP to unlock
                     </p>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  className={`bg-card/80 border border-border ${
-                    canInteract ? 'border-emerald-500/70' : ''
-                  } shadow-[0_18px_45px_rgba(0,0,0,0.45)]`}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge
-                        className={
-                          canInteract
-                            ? 'bg-emerald-500 text-emerald-50'
-                            : 'bg-muted text-muted-foreground'
-                        }
-                      >
-                        {canInteract ? 'Unlocked' : 'Locked'}
-                      </Badge>
-                      <span className="text-sm font-semibold text-muted-foreground">
-                        444 XP
-                      </span>
-                    </div>
-                    <CardTitle className="text-lg text-foreground">
-                      Interact
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Like posts and leave comments
-                    </p>
-                    {!canInteract && (
-                      <p className="text-xs text-primary mt-2">
-                        {444 - user.xp_total} XP to unlock
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card
-                  className={`bg-card/80 border border-border ${
-                    canPost ? 'border-emerald-500/70' : ''
-                  } shadow-[0_18px_45px_rgba(0,0,0,0.45)]`}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge
-                        className={
-                          canPost
-                            ? 'bg-emerald-500 text-emerald-50'
-                            : 'bg-muted text-muted-foreground'
-                        }
-                      >
-                        {canPost ? 'Unlocked' : 'Locked'}
-                      </Badge>
-                      <span className="text-sm font-semibold text-muted-foreground">
-                        555 XP
-                      </span>
-                    </div>
-                    <CardTitle className="text-lg text-foreground">
-                      Post & Create
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Create topics and post replies
-                    </p>
-                    {!canPost && (
-                      <p className="text-xs text-primary mt-2">
-                        {555 - user.xp_total} XP to unlock
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-            </div>
-
-            {/* Rooms / Categorias */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4 text-foreground">
-                  {t('forum.forumRooms')}
-                </h2>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card className="bg-card/80 border border-border">
-                    <CardHeader>
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge>{t('forum.public')}</Badge>
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <CardTitle className="text-foreground">
-                        {t('forum.generalDiscussion')}
-                      </CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground">
-                        {t('forum.generalDiscussionDesc')}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                          <span>234 Topics</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                          <span>1.2k Posts</span>
-                        </div>
-                      </div>
-                      <Button className="w-full">
-                        Browse Topics
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-card/80 border border-border">
-                    <CardHeader>
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge>{t('forum.public')}</Badge>
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <CardTitle className="text-foreground">
-                        {t('forum.apertumNetwork')}
-                      </CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground">
-                        {t('forum.apertumNetworkDesc')}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                          <span>89 Topics</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                          <span>456 Posts</span>
-                        </div>
-                      </div>
-                      <Button className="w-full">
-                        Browse Topics
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-card/80 border border-border">
-                    <CardHeader>
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge variant="outline">House</Badge>
-                        <Lock className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <CardTitle className="text-foreground">
-                        Swimming Community
-                      </CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground">
-                        Private room for House of Swimming members
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Join the House of Swimming to access this private room
-                      </p>
-                      <Button variant="outline" className="w-full">
-                        View House
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-card/80 border border-border">
-                    <CardHeader>
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge variant="outline">House</Badge>
-                        <Lock className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <CardTitle className="text-foreground">
-                        Football Community
-                      </CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground">
-                        Private room for House of Football members
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Join the House of Football to access this private room
-                      </p>
-                      <Button variant="outline" className="w-full">
-                        View House
-                      </Button>
-                    </CardContent>
-                  </Card>
-              </div>
-            </div>
-
-            {/* Guidelines */}
-            <Card className="bg-gradient-to-br from-[#020b16] via-[#020b18] to-[#000c12] border border-primary/40">
-              <CardHeader>
-                <CardTitle className="text-foreground">
-                  {t('forum.guidelines')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-cyan-100">
-                  <strong>Be Respectful:</strong> Treat all members with
-                  respect and courtesy
-                </p>
-                <p className="text-sm text-cyan-100">
-                  <strong>Stay On Topic:</strong> Keep discussions relevant to
-                  Web3 and sports
-                </p>
-                <p className="text-sm text-cyan-100">
-                  <strong>Quality Over Quantity:</strong> Thoughtful comments
-                  earn more XP
-                </p>
-                <p className="text-sm text-cyan-100">
-                  <strong>No Spam:</strong> Repeated or low-quality posts may be
-                  moderated
-                </p>
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
           </div>
+
+          <div className="mb-8 space-y-4">
+            <h2 className="text-2xl font-bold text-white">
+              {t('forum.forumRooms')}
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              {rooms.map((room) => (
+                <Card
+                  key={room.title}
+                  className="border border-white/10 bg-[#000c12]"
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge className="bg-cyan-500/10 text-cyan-100 border border-white/10">
+                        {room.badge}
+                      </Badge>
+                      <room.icon className="h-5 w-5 text-slate-300" />
+                    </div>
+                    <CardTitle className="text-white">{room.title}</CardTitle>
+                    <CardDescription className="text-sm text-slate-300">
+                      {room.desc}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between text-sm text-slate-300">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-cyan-300" />
+                        <span>{room.topics}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-cyan-300" />
+                        <span>{room.posts}</span>
+                      </div>
+                    </div>
+                    <Button className="w-full border border-white/30 text-slate-200">
+                      Browse Topics
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+              {[1, 2].map((item) => (
+                <Card
+                  key={`house-${item}`}
+                  className="border border-white/10 bg-[#000c12]"
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant="outline" className="border-white/30 text-slate-300 bg-transparent">
+                        House
+                      </Badge>
+                      <Lock className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <CardTitle className="text-white">
+                      {item === 1 ? 'Swimming Community' : 'Football Community'}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-300">
+                      Private room for House of{' '}
+                      {item === 1 ? 'Swimming' : 'Football'} members
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-slate-300">
+                      Join the House of{' '}
+                      {item === 1 ? 'Swimming' : 'Football'} to access this
+                      private room
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="w-full border-white/30 text-slate-200"
+                    >
+                      View House
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          <Card className="bg-gradient-to-br from-[#020b16] via-[#020b18] to-[#000c12] border border-primary/40">
+            <CardHeader>
+              <CardTitle className="text-white">{t('forum.guidelines')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-cyan-100">
+                <strong>Be Respectful:</strong> Treat all members with respect and
+                courtesy
+              </p>
+              <p className="text-sm text-cyan-100">
+                <strong>Stay On Topic:</strong> Keep discussions relevant to Web3
+                and sports
+              </p>
+              <p className="text-sm text-cyan-100">
+                <strong>Quality Over Quantity:</strong> Thoughtful comments earn
+                more XP
+              </p>
+              <p className="text-sm text-cyan-100">
+                <strong>No Spam:</strong> Repeated or low-quality posts may be
+                moderated
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </main>
 

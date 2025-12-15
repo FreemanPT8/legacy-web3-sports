@@ -70,10 +70,10 @@ export default function ProfilePage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
+          <p className="mt-4 text-sm text-slate-300">Loading...</p>
         </div>
       </div>
     );
@@ -154,7 +154,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#000c12] text-foreground">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
 
       <main className="flex-1 bg-[#000c12] py-8">
@@ -165,7 +165,7 @@ export default function ProfilePage() {
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
                   Your Profile
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-slate-300">
                   Manage your personal information and privacy settings
                 </p>
               </div>
@@ -173,7 +173,7 @@ export default function ProfilePage() {
                 <div className="text-2xl font-bold text-primary">
                   {user.xp_total} XP
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-slate-300">
                   Level {Math.floor(user.xp_total / 100)}
                 </p>
               </div>
@@ -229,14 +229,14 @@ export default function ProfilePage() {
                   <div>
                     <Label>Username</Label>
                       <Input value={user.username} disabled />
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-slate-300 mt-1">
                         Cannot be changed
                       </p>
                   </div>
                   <div>
                     <Label>Country</Label>
                       <Input value="Your Country" disabled />
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-slate-300 mt-1">
                         Cannot be changed
                       </p>
                   </div>
@@ -251,7 +251,7 @@ export default function ProfilePage() {
                   <Trophy className="h-5 w-5 text-primary" />
                   Profile Details{' '}
                     {!isUnlocked && (
-                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      <Lock className="h-4 w-4 text-slate-300" />
                     )}
                 </CardTitle>
                 <CardDescription>
@@ -284,7 +284,7 @@ export default function ProfilePage() {
                         }
                         disabled={!isUnlocked}
                       />
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-slate-300">
                           Public
                         </span>
                     </div>
@@ -303,7 +303,7 @@ export default function ProfilePage() {
                     disabled={!isUnlocked}
                     maxLength={888}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-300">
                       {profileData.bio.length}/888 characters
                     </p>
                 </div>
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                         }
                         disabled={!isUnlocked}
                       />
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-slate-300">
                           Public
                         </span>
                     </div>
@@ -459,7 +459,7 @@ export default function ProfilePage() {
             </Card>
 
             {/* XP Rewards Card */}
-            <Card className="mb-6 bg-gradient-to-br from-[#05212b] via-[#000c12] to-[#05212b] border border-border">
+            <Card className="mb-6 bg-gradient-to-br from-[#05212b] via-[#000c12] to-[#05212b] border border-white/10">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="h-5 w-5 text-primary" />
@@ -467,7 +467,7 @@ export default function ProfilePage() {
                 </CardTitle>
               </CardHeader>
                 <CardContent>
-                 <p className="text-sm text-muted-foreground mb-4">
+                 <p className="text-sm text-slate-300 mb-4">
                     Complete your profile fields to earn bonus XP! Each field is
                   awarded once.
                 </p>
@@ -475,12 +475,12 @@ export default function ProfilePage() {
                   {Object.entries(xpRewards).map(([key, xp]) => (
                     <div
                       key={key}
-                      className="bg-[#000c12] border border-border p-3 rounded-lg text-center"
+                      className="bg-[#000c12] border border-white/10 p-3 rounded-lg text-center"
                     >
                       <div className="text-xl font-bold text-primary">
                         +{xp}
                       </div>
-                      <div className="text-xs text-muted-foreground capitalize">
+                      <div className="text-xs text-slate-300 capitalize">
                         {key.replace('_', ' ')}
                       </div>
                     </div>
