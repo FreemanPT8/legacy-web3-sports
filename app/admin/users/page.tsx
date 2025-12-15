@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -131,7 +132,7 @@ export default function AdminUsersPage() {
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
-  // Proteção básica
+  // Protecao basica
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -143,7 +144,7 @@ export default function AdminUsersPage() {
     }
   }, [user, loading, router]);
 
-  // Permissões do utilizador atual
+  // Permissoes do utilizador atual
   useEffect(() => {
     if (loading || !user) return;
 
@@ -228,7 +229,7 @@ export default function AdminUsersPage() {
     }
   }, [user, getToken, toast]);
 
-  // Stats rápidas (vêm de /api/admin/stats -> users block)
+  // Stats rapidas (vem de /api/admin/stats -> users block)
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -256,7 +257,7 @@ export default function AdminUsersPage() {
     }
   }, [user, getToken]);
 
-  // Opções de filtros (país e desporto)
+  // Opcoes de filtros (pais e desporto)
   const countryOptions = useMemo(() => {
     const set = new Set<string>();
     users.forEach((u) => {
@@ -714,15 +715,12 @@ export default function AdminUsersPage() {
 
   const getRoleBadgeStyle = (role: string) => {
     if (role === 'Super Admin') {
-      return { variant: 'destructive' as const, className: '' };
+      return 'border border-rose-400/70 bg-rose-500/10 text-rose-200';
     }
     if (role === 'Admin') {
-      return {
-        variant: 'outline' as const,
-        className: 'border-blue-500 text-blue-400',
-      };
+      return 'border border-cyan-400/60 bg-cyan-400/10 text-cyan-200';
     }
-    return { variant: 'secondary' as const, className: '' };
+    return 'border border-white/10 bg-white/5 text-slate-200';
   };
 
   const formatDate = (iso: string | null) => {
@@ -744,12 +742,13 @@ export default function AdminUsersPage() {
   };
 
   const renderSortIcon = (key: SortKey) => {
-    if (sortKey !== key)
-      return <span className="ml-1 text-xs text-gray-400">↕</span>;
-    return (
-      <span className="ml-1 text-xs text-gray-200">
-        {sortDirection === 'asc' ? '↑' : '↓'}
-      </span>
+    if (sortKey !== key) {
+      return <ArrowUpDown className="ml-1 h-3 w-3 text-slate-500" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="ml-1 h-3 w-3 text-cyan-300" />
+    ) : (
+      <ArrowDown className="ml-1 h-3 w-3 text-cyan-300" />
     );
   };
 
@@ -763,125 +762,69 @@ export default function AdminUsersPage() {
   if (loading || !permissionsLoaded) {
     return (
       <div className="w-full">
-        <p className="text-sm text-blue-100/90">A carregar utilizadores…</p>
+        <p className="text-sm text-blue-100/90">A carregar utilizadores...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-8">
+    <div className="min-h-screen w-full space-y-8 bg-[#000c12] px-4 py-6 text-white md:px-8">
       {/* HERO */}
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-10 shadow-2xl shadow-black/40">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+          <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
         </div>
 
-        <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin — Users
-          </span>
+        <div className="relative z-10 max-w-5xl space-y-4">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+            LEGACY ADMIN - USERS
+          </p>
 
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl font-semibold text-white md:text-4xl">
             User Management
           </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Gestão centralizada de roles, permissões e filtros de utilizadores
-            por país, desporto, atividade recente e XP. A sala de controlo
-            da comunidade LEGACY.
+          <p className="text-sm text-slate-300 md:text-base">
+            Gestao centralizada de roles, permissoes e filtros de utilizadores
+            por pais, desporto, atividade recente e XP. A sala de controlo da
+            comunidade LEGACY.
           </p>
         </div>
       </section>
 
-      {/* CONTEÚDO */}
+      {/* CONTEUDO */}
       <section className="pb-2">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="mx-auto max-w-6xl space-y-6">
           {/* STAT CARDS */}
-          <div className="grid gap-4 md:grid-cols-6 mb-2">
-            <Card className="bg-card-custom border-custom">
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
-                  Total Users
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 text-heading">
-                <div className="text-2xl font-bold">
-                  {userStats ? userStats.total : statsLocal.total}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card-custom border-custom">
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
-                  Super Admins
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-red-400">
-                  {userStats ? userStats.superAdmins : statsLocal.superAdmins}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card-custom border-custom">
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
-                  Admins
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-body">
-                  {userStats ? userStats.admins : statsLocal.admins}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card-custom border-custom">
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
-                  Members
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-blue-400">
-                  {userStats ? userStats.members : statsLocal.members}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card-custom border-custom">
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
-                  Novos 24h
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-emerald-400">
-                  {userStats ? userStats.new24h : 0}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card-custom border-custom">
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
-                  Novos 30d
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-emerald-400">
-                  {userStats ? userStats.new30d : 0}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-2">
+            {metricCards.map((metric) => (
+              <Card
+                key={metric.label}
+                className="border border-white/10 bg-[#05212b] p-5 shadow-sm shadow-black/40"
+              >
+                <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                  {metric.label}
+                </p>
+                <p className="mt-3 text-3xl font-semibold text-white">
+                  {metric.value}
+                </p>
+                <p className="mt-1 text-sm text-slate-300">
+                  {metric.description}
+                </p>
+              </Card>
+            ))}
           </div>
 
           {/* USER MANAGEMENT */}
-          <Card className="bg-card-custom border-custom shadow-lg shadow-emerald-950/40">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-emerald-950/40">
             <CardHeader>
-              <CardTitle className="text-heading">User Management</CardTitle>
-              <p className="text-sm text-muted-custom">
-                Filtros avançados por role, país, desporto, último login e
-                último XP.
+              <CardTitle className="text-white">User Management</CardTitle>
+              <p className="text-sm text-slate-300">
+                Filtros avancados por role, pais, desporto, ultimo login e
+                ultimo XP.
               </p>
             </CardHeader>
-            <CardContent className="text-body">
+            <CardContent className="text-slate-300">
               <div className="flex flex-col gap-4 mb-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div className="flex gap-2 items-center">
@@ -889,20 +832,22 @@ export default function AdminUsersPage() {
                       placeholder="Search by username, name or email..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="max-w-md"
+                      className="max-w-md bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
                     />
                     <Button
                       variant="outline"
                       onClick={() => setSearch('')}
                       disabled={!search}
+                      className="border-white/30 text-white hover:text-cyan-300"
                     >
                       Clear
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       onClick={() => setShowFilters((p) => !p)}
+                      className="border-white/30 text-white hover:text-cyan-300"
                     >
                       {showFilters ? 'Esconder filtros' : 'Procurar por filtros'}
                     </Button>
@@ -910,10 +855,10 @@ export default function AdminUsersPage() {
                 </div>
 
                 {showFilters && (
-                  <div className="space-y-4 border-custom rounded-lg p-4 bg-card-custom/80">
+                  <div className="space-y-4 rounded-lg border border-white/10 bg-[#000c12] p-4">
                     <div className="flex flex-wrap gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-custom">
+                        <span className="text-sm text-slate-300">
                           Last login:
                         </span>
                         <Select
@@ -922,24 +867,24 @@ export default function AdminUsersPage() {
                             setLastLoginFilter(v as typeof lastLoginFilter)
                           }
                         >
-                          <SelectTrigger className="w-[150px]">
+                          <SelectTrigger className="w-[150px] bg-[#000c12] border-white/10 text-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="any">Any</SelectItem>
                             <SelectItem value="last7d">
-                              Últimos 7 dias
+                              Ultimos 7 dias
                             </SelectItem>
                             <SelectItem value="last30d">
-                              Últimos 30 dias
+                              Ultimos 30 dias
                             </SelectItem>
                             <SelectItem value="never">Nunca</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-custom">
-                          Último XP:
+                        <span className="text-sm text-slate-300">
+                          Ultimo XP:
                         </span>
                         <Select
                           value={lastXpFilter}
@@ -947,16 +892,16 @@ export default function AdminUsersPage() {
                             setLastXpFilter(v as typeof lastXpFilter)
                           }
                         >
-                          <SelectTrigger className="w-[150px]">
+                          <SelectTrigger className="w-[150px] bg-[#000c12] border-white/10 text-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="any">Any</SelectItem>
                             <SelectItem value="last7d">
-                              Últimos 7 dias
+                              Ultimos 7 dias
                             </SelectItem>
                             <SelectItem value="last30d">
-                              Últimos 30 dias
+                              Ultimos 30 dias
                             </SelectItem>
                             <SelectItem value="never">Nunca</SelectItem>
                           </SelectContent>
@@ -966,7 +911,7 @@ export default function AdminUsersPage() {
 
                     <div className="grid md:grid-cols-3 gap-3">
                       <div>
-                        <p className="text-xs font-semibold mb-2 text-heading">
+                        <p className="text-sm font-semibold text-slate-200 mb-2">
                           Roles
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -978,8 +923,13 @@ export default function AdminUsersPage() {
                               size="sm"
                               variant={
                                 roleFilters.includes(r)
-                                  ? 'secondary'
+                                  ? 'default'
                                   : 'outline'
+                              }
+                              className={
+                                roleFilters.includes(r)
+                                  ? ''
+                                  : 'border-white/30 text-white hover:text-cyan-300'
                               }
                               onClick={() =>
                                 setRoleFilters((prev) =>
@@ -996,8 +946,8 @@ export default function AdminUsersPage() {
                       </div>
 
                       <div>
-                        <p className="text-xs font-semibold mb-2 text-heading">
-                          País
+                        <p className="text-sm font-semibold text-slate-200 mb-2">
+                          Pais
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {countryOptions.map((c) => (
@@ -1006,8 +956,13 @@ export default function AdminUsersPage() {
                               size="sm"
                               variant={
                                 countryFilters.includes(c)
-                                  ? 'secondary'
+                                  ? 'default'
                                   : 'outline'
+                              }
+                              className={
+                                countryFilters.includes(c)
+                                  ? ''
+                                  : 'border-white/30 text-white hover:text-cyan-300'
                               }
                               onClick={() =>
                                 setCountryFilters((prev) =>
@@ -1019,7 +974,7 @@ export default function AdminUsersPage() {
                             </Button>
                           ))}
                           {countryOptions.length === 0 && (
-                            <span className="text-xs text-muted-custom">
+                            <span className="text-xs text-slate-300">
                               Sem dados
                             </span>
                           )}
@@ -1027,7 +982,7 @@ export default function AdminUsersPage() {
                       </div>
 
                       <div>
-                        <p className="text-xs font-semibold mb-2 text-heading">
+                        <p className="text-sm font-semibold text-slate-200 mb-2">
                           Desporto
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -1037,8 +992,13 @@ export default function AdminUsersPage() {
                               size="sm"
                               variant={
                                 sportFilters.includes(s)
-                                  ? 'secondary'
+                                  ? 'default'
                                   : 'outline'
+                              }
+                              className={
+                                sportFilters.includes(s)
+                                  ? ''
+                                  : 'border-white/30 text-white hover:text-cyan-300'
                               }
                               onClick={() =>
                                 setSportFilters((prev) =>
@@ -1050,7 +1010,7 @@ export default function AdminUsersPage() {
                             </Button>
                           ))}
                           {sportOptions.length === 0 && (
-                            <span className="text-xs text-muted-custom">
+                            <span className="text-xs text-slate-300">
                               Sem dados
                             </span>
                           )}
@@ -1061,12 +1021,12 @@ export default function AdminUsersPage() {
                 )}
               </div>
 
-              <div className="overflow-x-auto rounded-lg border-custom bg-card-custom">
-                <table className="min-w-full divide-y divide-slate-800 text-sm">
-                  <thead className="bg-slate-900/70">
+              <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-[#000c12]">
+                <table className="min-w-full text-left text-sm text-slate-200">
+                  <thead className="bg-[#05212b] text-xs uppercase tracking-[0.2em] text-slate-300">
                     <tr>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('username')}
                       >
                         <span className="inline-flex items-center">
@@ -1074,7 +1034,7 @@ export default function AdminUsersPage() {
                         </span>
                       </th>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('full_name')}
                       >
                         <span className="inline-flex items-center">
@@ -1082,7 +1042,7 @@ export default function AdminUsersPage() {
                         </span>
                       </th>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('email')}
                       >
                         <span className="inline-flex items-center">
@@ -1090,7 +1050,7 @@ export default function AdminUsersPage() {
                         </span>
                       </th>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('role')}
                       >
                         <span className="inline-flex items-center">
@@ -1098,7 +1058,7 @@ export default function AdminUsersPage() {
                         </span>
                       </th>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('country')}
                       >
                         <span className="inline-flex items-center">
@@ -1106,7 +1066,7 @@ export default function AdminUsersPage() {
                         </span>
                       </th>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('xp_total')}
                       >
                         <span className="inline-flex items-center">
@@ -1114,7 +1074,7 @@ export default function AdminUsersPage() {
                         </span>
                       </th>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('created_at')}
                       >
                         <span className="inline-flex items-center">
@@ -1122,7 +1082,7 @@ export default function AdminUsersPage() {
                         </span>
                       </th>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('last_login')}
                       >
                         <span className="inline-flex items-center">
@@ -1130,31 +1090,28 @@ export default function AdminUsersPage() {
                         </span>
                       </th>
                       <th
-                        className="px-4 py-2 text-left font-semibold cursor-pointer select-none text-heading"
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('last_xp_at')}
                       >
                         <span className="inline-flex items-center">
                           Last XP{renderSortIcon('last_xp_at')}
                         </span>
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-heading">
+                      <th className="px-4 py-3 text-left font-semibold text-slate-200">
                         Change Role
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-heading">
+                      <th className="px-4 py-3 text-left font-semibold text-slate-200">
                         Permissions
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-heading">
+                      <th className="px-4 py-3 text-left font-semibold text-slate-200">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800">
+                  <tbody>
                     {isLoadingUsers && (
                       <tr>
-                        <td
-                          colSpan={12}
-                          className="px-4 py-6 text-center text-muted-custom"
-                        >
+                        <td colSpan={12} className="px-4 py-6 text-center text-slate-300">
                           Loading users...
                         </td>
                       </tr>
@@ -1162,10 +1119,7 @@ export default function AdminUsersPage() {
 
                     {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
                       <tr>
-                        <td
-                          colSpan={12}
-                          className="px-4 py-6 text-center text-muted-custom"
-                        >
+                        <td colSpan={12} className="px-4 py-6 text-center text-slate-300">
                           No users found.
                         </td>
                       </tr>
@@ -1175,11 +1129,11 @@ export default function AdminUsersPage() {
                       filteredAndSortedUsers.map((u) => (
                         <tr
                           key={u.id}
-                          className="hover:bg-slate-900/40 transition-colors"
+                          className="odd:bg-[#000c12] even:bg-[#020b11] hover:bg-[#05212b]/40 text-slate-200 transition-colors"
                         >
-                          <td className="px-4 py-2 font-medium text-heading">
+                          <td className="px-4 py-3 font-medium text-white">
                             {u.username || (
-                              <span className="text-muted-custom">-</span>
+                              <span className="text-slate-300">-</span>
                             )}
                             {user?.id === u.id && (
                               <span className="ml-1 text-[10px] text-blue-400">
@@ -1187,43 +1141,40 @@ export default function AdminUsersPage() {
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-3">
                             {u.full_name || (
-                              <span className="text-muted-custom">-</span>
+                              <span className="text-slate-300">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-3">
                             {u.email || (
-                              <span className="text-muted-custom">-</span>
+                              <span className="text-slate-300">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-2">
-                            {(() => {
-                              const { variant, className } =
-                                getRoleBadgeStyle(u.role);
-                              return (
-                                <Badge variant={variant} className={className}>
-                                  {u.role}
-                                </Badge>
-                              );
-                            })()}
+                          <td className="px-4 py-3">
+                            <Badge
+                              variant="outline"
+                              className={getRoleBadgeStyle(u.role)}
+                            >
+                              {u.role}
+                            </Badge>
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-3">
                             {u.country || (
-                              <span className="text-muted-custom">-</span>
+                              <span className="text-slate-300">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-2">{u.xp_total ?? 0}</td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-3">{u.xp_total ?? 0}</td>
+                          <td className="px-4 py-3">
                             {u.created_at ? formatDate(u.created_at) : '-'}
                           </td>
-                          <td className="px-4 py-2 text-xs">
-                            {u.last_login ? formatDate(u.last_login) : '—'}
+                          <td className="px-4 py-3 text-xs">
+                            {u.last_login ? formatDate(u.last_login) : '--'}
                           </td>
-                          <td className="px-4 py-2 text-xs">
-                            {u.last_xp_at ? formatDate(u.last_xp_at) : '—'}
+                          <td className="px-4 py-3 text-xs">
+                            {u.last_xp_at ? formatDate(u.last_xp_at) : '--'}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-3">
                             {canEditUsers ? (
                               <Select
                                 disabled={updatingUserId === u.id}
@@ -1242,7 +1193,7 @@ export default function AdminUsersPage() {
                                   )
                                 }
                               >
-                                <SelectTrigger className="w-[140px]">
+                                <SelectTrigger className="w-[150px] border-white/10 bg-[#000c12] text-white focus-visible:ring-1 focus-visible:ring-cyan-300 focus-visible:ring-offset-0">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1254,25 +1205,27 @@ export default function AdminUsersPage() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <span className="text-xs text-muted-custom">
+                              <span className="text-xs text-slate-300">
                                 View only
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-3">
                             <Button
                               variant="outline"
                               size="sm"
+                              className="border-white/30 text-white hover:text-cyan-300"
                               onClick={() => handleOpenUserPermissions(u)}
                             >
                               View / Edit
                             </Button>
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-3">
                             {canEditUsers && isSuperAdmin ? (
                               <Button
-                                variant="destructive"
+                                variant="outline"
                                 size="sm"
+                                className="border-white/30 text-rose-300 hover:text-rose-400"
                                 disabled={deletingUserId === u.id}
                                 onClick={() => handleDeleteUser(u.id, u.username)}
                               >
@@ -1281,7 +1234,7 @@ export default function AdminUsersPage() {
                                   : 'Delete'}
                               </Button>
                             ) : (
-                              <span className="text-xs text-muted-custom">
+                              <span className="text-xs text-slate-300">
                                 -
                               </span>
                             )}
@@ -1293,18 +1246,16 @@ export default function AdminUsersPage() {
               </div>
 
               {selectedUser && (
-                <div className="mt-6 border-t border-slate-800 pt-4">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="mt-8 rounded-2xl border border-white/10 bg-[#05212b] p-6">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-heading">
-                        Permissions for{' '}
-                        {selectedUser.username ||
-                          selectedUser.email ||
-                          'user'}
+                      <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Permissions</p>
+                      <h2 className="mt-2 text-2xl font-semibold text-white">
+                        {selectedUser.username || selectedUser.email || 'user'}
                       </h2>
-                      <p className="text-xs text-muted-custom">
+                      <p className="text-sm text-slate-300">
                         Role:{' '}
-                        <span className="font-medium">
+                        <span className="font-semibold text-white">
                           {selectedUserRole || selectedUser.role}
                         </span>
                       </p>
@@ -1313,6 +1264,7 @@ export default function AdminUsersPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="border-white/30 text-white hover:text-cyan-300"
                         onClick={() => {
                           setSelectedUser(null);
                           setSelectedUserRole(null);
@@ -1325,63 +1277,63 @@ export default function AdminUsersPage() {
                         <Button
                           size="sm"
                           onClick={handleSaveUserPermissions}
-                          disabled={
-                            savingUserPermissions || loadingUserPermissions
-                          }
+                          disabled={savingUserPermissions || loadingUserPermissions}
                         >
                           {savingUserPermissions ? 'Saving...' : 'Save'}
                         </Button>
                       )}
                     </div>
                   </div>
-
-                  {loadingUserPermissions ? (
-                    <p className="text-sm text-muted-custom">
-                      Loading permissions...
-                    </p>
-                  ) : (
-                    <>
-                      {selectedUserRole === 'Super Admin' && (
-                        <p className="text-sm text-muted-custom mb-2">
-                          Super Admin already has all permissions. Extra
-                          overrides are not needed.
-                        </p>
-                      )}
-                      {selectedUserRole === 'Member' && (
-                        <p className="text-sm text-muted-custom mb-2">
-                          Members cannot have admin permissions. Change the role
-                          to <strong>Admin</strong> if you want to grant
-                          admin-level permissions.
-                        </p>
-                      )}
-                      {selectedUserRole === 'Admin' && (
-                        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-                          {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
-                            <label
-                              key={key}
-                              className="flex items-center gap-2 text-sm"
-                            >
-                              <Checkbox
-                                checked={!!selectedUserPermissions[key]}
-                                disabled={
-                                  !permissionsEditable ||
-                                  !canEditUsers ||
-                                  !isSuperAdmin ||
-                                  savingUserPermissions
-                                }
-                                onCheckedChange={(checked) =>
-                                  handleTogglePermission(key, Boolean(checked))
-                                }
-                              />
-                              <span>{PERMISSION_LABELS[key]}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
+                  <div className="mt-4 space-y-4">
+                    {loadingUserPermissions ? (
+                      <p className="text-sm text-slate-300">Loading permissions...</p>
+                    ) : (
+                      <>
+                        {selectedUserRole === 'Super Admin' && (
+                          <p className="text-sm text-slate-300">
+                            Super Admin already has all permissions. Extra overrides are not needed.
+                          </p>
+                        )}
+                        {selectedUserRole === 'Member' && (
+                          <p className="text-sm text-slate-300">
+                            Members cannot have admin permissions. Change the role to <strong>Admin</strong> to grant admin-level permissions.
+                          </p>
+                        )}
+                        {selectedUserRole === 'Admin' && (
+                          <div className="rounded-xl border border-white/10 bg-[#000c12] p-4">
+                            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                              Admin permissions
+                            </p>
+                            <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                              {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
+                                <label
+                                  key={key}
+                                  className="flex items-center gap-2 text-sm text-slate-200"
+                                >
+                                  <Checkbox
+                                    checked={!!selectedUserPermissions[key]}
+                                    disabled={
+                                      !permissionsEditable ||
+                                      !canEditUsers ||
+                                      !isSuperAdmin ||
+                                      savingUserPermissions
+                                    }
+                                    onCheckedChange={(checked) =>
+                                      handleTogglePermission(key, Boolean(checked))
+                                    }
+                                  />
+                                  <span>{PERMISSION_LABELS[key]}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
+
             </CardContent>
           </Card>
         </div>
