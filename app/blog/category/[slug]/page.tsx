@@ -236,7 +236,7 @@ export default function BlogCategoryPage() {
                             </div>
                           </div>
                           <div className="mt-3 text-[11px] text-slate-400">
-                            por @{article.author.username} - {getTimeSince(article.created_at)}
+                            por @{article.author.username} ? {getTimeSince(article.created_at)}
                           </div>
                         </CardContent>
                       </Card>
