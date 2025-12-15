@@ -48,8 +48,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#000c12] p-4">
-      <Card className="w-full max-w-md border border-white/10 bg-[#000c12] shadow-xl">
+    <div className="min-h-screen bg-[#000c12] text-white flex items-center justify-center px-4">
+      <Card className="w-full max-w-md rounded-2xl border border-white/10 bg-[#05212b] p-6 md:p-8">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center space-x-2">
@@ -68,13 +68,14 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-slate-100">
+              <Label htmlFor="username" className="text-sm text-slate-200">
                 Username
               </Label>
               <Input
                 id="username"
                 type="text"
                 placeholder="O teu username"
+                className="bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 required
@@ -82,13 +83,14 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-100">
+              <Label htmlFor="password" className="text-sm text-slate-200">
                 Palavra-passe
               </Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="A tua palavra-passe"
+                className="bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
@@ -96,7 +98,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex justify-end">
-              <Link href="/forgot-password" className="text-xs text-cyan-300 hover:underline">
+              <Link href="/forgot-password" className="text-xs text-slate-300 hover:text-cyan-300">
                 Esqueceste a palavra-passe?
               </Link>
             </div>
@@ -108,7 +110,7 @@ export default function LoginPage() {
             </Button>
             <p className="text-center text-sm text-slate-400">
               Ainda não tens conta?{' '}
-              <Link href="/signup" className="text-cyan-300 hover:underline">
+              <Link href="/signup" className="text-xs text-slate-300 hover:text-cyan-300">
                 {t('nav.signup')}
               </Link>
             </p>
@@ -118,4 +120,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

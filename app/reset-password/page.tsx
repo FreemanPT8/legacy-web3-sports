@@ -115,8 +115,8 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#000c12] px-4">
-        <Card className="w-full max-w-md border border-white/10 bg-[#000c12] shadow-xl">
+      <div className="min-h-screen bg-[#000c12] text-white flex items-center justify-center px-4">
+        <Card className="w-full max-w-md rounded-2xl border border-white/10 bg-[#05212b] p-6 md:p-8">
           <CardHeader className="space-y-4">
             <div className="flex justify-center">
               <div className="flex items-center space-x-2">
@@ -139,7 +139,7 @@ export default function ResetPasswordPage() {
               Pedir novo link
             </Button>
             <p className="text-center text-sm text-slate-400">
-              <Link href="/login" className="text-cyan-300 hover:underline">
+              <Link href="/login" className="text-xs text-slate-300 hover:text-cyan-300">
                 Voltar ao login
               </Link>
             </p>
@@ -150,8 +150,8 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#000c12] px-4">
-      <Card className="w-full max-w-md border border-white/10 bg-[#000c12] shadow-xl">
+    <div className="min-h-screen bg-[#000c12] text-white flex items-center justify-center px-4">
+      <Card className="w-full max-w-md rounded-2xl border border-white/10 bg-[#05212b] p-6 md:p-8">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center space-x-2">
@@ -170,13 +170,14 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-100">
+              <Label htmlFor="password" className="text-sm text-slate-200">
                 Nova palavra-passe *
               </Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="Mínimo 6 caracteres"
+                className="bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
                 value={formData.password}
                 onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                 required
@@ -184,13 +185,14 @@ export default function ResetPasswordPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-slate-100">
+              <Label htmlFor="confirmPassword" className="text-sm text-slate-200">
                 Confirmar palavra-passe *
               </Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 placeholder="Repete a nova palavra-passe"
+                className="bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
                 value={formData.confirmPassword}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -215,7 +217,7 @@ export default function ResetPasswordPage() {
             </Button>
 
             <p className="text-center text-sm text-slate-400">
-              <Link href="/login" className="text-cyan-300 hover:underline">
+              <Link href="/login" className="text-xs text-slate-300 hover:text-cyan-300">
                 Voltar ao login
               </Link>
             </p>
@@ -225,4 +227,3 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
-

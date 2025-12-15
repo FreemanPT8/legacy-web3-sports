@@ -66,8 +66,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#000c12] px-4">
-      <Card className="w-full max-w-md border border-white/10 bg-[#000c12] shadow-xl">
+    <div className="min-h-screen bg-[#000c12] text-white flex items-center justify-center px-4">
+      <Card className="w-full max-w-md rounded-2xl border border-white/10 bg-[#05212b] p-6 md:p-8">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center space-x-2">
@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div>
-              <Label className="mb-1 block text-sm font-medium text-slate-100" htmlFor="email">
+              <Label className="mb-1 block text-sm text-slate-200" htmlFor="email">
                 Email
               </Label>
               <Input
@@ -96,6 +96,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="o.teu@email.com"
+                className="bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
               />
             </div>
 
@@ -114,7 +115,7 @@ export default function ForgotPasswordPage() {
             </Button>
 
             <p className="text-center text-sm text-slate-400">
-              <Link href="/login" className="text-cyan-300 hover:underline">
+              <Link href="/login" className="text-xs text-slate-300 hover:text-cyan-300">
                 Voltar ao login
               </Link>
             </p>
@@ -124,4 +125,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-
