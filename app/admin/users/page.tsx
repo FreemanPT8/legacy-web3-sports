@@ -408,6 +408,44 @@ export default function AdminUsersPage() {
     return { total, superAdmins, admins, members };
   }, [users]);
 
+  const statsDisplay = (primary?: number | null, fallback?: number) => {
+    const value = primary ?? fallback ?? 0;
+    return value.toLocaleString();
+  };
+
+  const metricCards = [
+    {
+      label: 'TOTAL USERS',
+      value: statsDisplay(userStats?.total, statsLocal.total),
+      description: 'Utilizadores registados',
+    },
+    {
+      label: 'SUPER ADMINS',
+      value: statsDisplay(userStats?.superAdmins, statsLocal.superAdmins),
+      description: 'Contas com acesso total',
+    },
+    {
+      label: 'ADMINS',
+      value: statsDisplay(userStats?.admins, statsLocal.admins),
+      description: 'Admins ativos',
+    },
+    {
+      label: 'MEMBERS',
+      value: statsDisplay(userStats?.members, statsLocal.members),
+      description: 'Membros base',
+    },
+    {
+      label: 'NOVOS 24H',
+      value: statsDisplay(userStats?.new24h, 0),
+      description: 'Entradas nas ultimas 24h',
+    },
+    {
+      label: 'NOVOS 30D',
+      value: statsDisplay(userStats?.new30d, 0),
+      description: 'Entradas nos ultimos 30 dias',
+    },
+  ];
+
   const canEditUsers = canManageUsers;
 
   const handleOpenUserPermissions = async (userRow: AdminUser) => {
