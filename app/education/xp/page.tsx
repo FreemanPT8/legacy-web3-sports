@@ -146,11 +146,9 @@ export default async function EducationXpPage() {
           {/* Hero */}
           <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#000c12] to-[#020b16] px-6 py-10 shadow-xl shadow-black/60">
             <div className="space-y-4">
-              <Badge className="bg-cyan-500/10 text-cyan-100 border border-cyan-400/40">
-                Legacy XP — Sistema oficial
-              </Badge>
-              <h1 className="text-3xl md:text-4xl font-bold text-white">XP da Legacy</h1>
-              <p className="text-base text-slate-200">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">XP SYSTEM</p>
+              <h1 className="text-3xl md:text-4xl font-semibold text-white">XP da Legacy</h1>
+              <p className="text-sm text-slate-300">
                 O Legacy recompensa aprendizagem, criação e participação real. O modelo completo está
                 documentado aqui e explica, passo a passo, como cada ação é creditada.
               </p>
@@ -158,6 +156,9 @@ export default async function EducationXpPage() {
                 Nenhum XP é creditado apenas pelo login; é preciso ganhar crédito legítimo
                 completando lições, lendo conteúdos ou contribuindo no fórum.
               </p>
+              <Badge className="bg-cyan-500/10 text-cyan-100 border border-cyan-400/40">
+                Legacy XP — Sistema oficial
+              </Badge>
             </div>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {heroHighlights.map((highlight) => {
@@ -375,4 +376,3 @@ export default async function EducationXpPage() {
     </div>
   );
 }
-
