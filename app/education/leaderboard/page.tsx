@@ -55,8 +55,11 @@ export default function LeaderboardPage() {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl md:text-4xl font-semibold mb-4 text-white">
+            <div className="mb-8 text-center space-y-3">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                {t('nav.leaderboard')}
+              </p>
+              <h1 className="text-3xl md:text-4xl font-semibold text-white">
                 {t('leaderboard.title')}
               </h1>
               <p className="text-sm text-slate-300">
@@ -65,7 +68,7 @@ export default function LeaderboardPage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card className="border border-cyan-400/70 bg-gradient-to-br from-[#05212b] via-[#05212b] to-[#000c12] shadow-lg shadow-cyan-500/30">
+              <Card className="border border-white/10 bg-[#05212b]">
                 <CardHeader className="text-center pb-3">
                   <Crown className="h-12 w-12 text-cyan-300 mx-auto mb-2" />
                   <CardTitle className="text-2xl">{t('leaderboard.rank1')}</CardTitle>
@@ -79,7 +82,7 @@ export default function LeaderboardPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border border-white/20 bg-[#05212b]">
+              <Card className="border border-white/10 bg-[#05212b]">
                 <CardHeader className="text-center pb-3">
                   <Medal className="h-12 w-12 text-slate-300 mx-auto mb-2" />
                   <CardTitle className="text-2xl">{t('leaderboard.rank2')}</CardTitle>
@@ -93,7 +96,7 @@ export default function LeaderboardPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border border-white/20 bg-[#05212b]">
+              <Card className="border border-white/10 bg-[#05212b]">
                 <CardHeader className="text-center pb-3">
                   <Medal className="h-12 w-12 text-slate-300 mx-auto mb-2" />
                   <CardTitle className="text-2xl">{t('leaderboard.rank3')}</CardTitle>
@@ -116,10 +119,10 @@ export default function LeaderboardPage() {
               </TabsList>
 
               <TabsContent value="individual" className="mt-6">
-                <Card>
+                <Card className="border border-white/10 bg-[#000c12]">
                   <CardHeader>
-                    <CardTitle>{t('leaderboard.globalRankings')}</CardTitle>
-                    <CardDescription>{t('leaderboard.globalRankingsDesc')}</CardDescription>
+                    <CardTitle className="text-white text-lg">{t('leaderboard.globalRankings')}</CardTitle>
+                    <CardDescription className="text-slate-300">{t('leaderboard.globalRankingsDesc')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {restOfGlobal.length === 0 ? (
@@ -153,10 +156,10 @@ export default function LeaderboardPage() {
               </TabsContent>
 
               <TabsContent value="country" className="mt-6">
-                <Card>
+                <Card className="border border-white/10 bg-[#000c12]">
                   <CardHeader>
-                    <CardTitle>{t('leaderboard.countryRankings')}</CardTitle>
-                    <CardDescription>{t('leaderboard.countryRankingsDesc')}</CardDescription>
+                    <CardTitle className="text-white text-lg">{t('leaderboard.countryRankings')}</CardTitle>
+                    <CardDescription className="text-slate-300">{t('leaderboard.countryRankingsDesc')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {!leaderboardData?.country || leaderboardData.country.length === 0 ? (
@@ -192,10 +195,10 @@ export default function LeaderboardPage() {
               </TabsContent>
 
               <TabsContent value="national" className="mt-6">
-                <Card>
+                <Card className="border border-white/10 bg-[#000c12]">
                   <CardHeader>
-                    <CardTitle>{t('leaderboard.nationalCompetitions')}</CardTitle>
-                    <CardDescription>{t('leaderboard.nationalCompetitionsDesc')}</CardDescription>
+                    <CardTitle className="text-white text-lg">{t('leaderboard.nationalCompetitions')}</CardTitle>
+                    <CardDescription className="text-slate-300">{t('leaderboard.nationalCompetitionsDesc')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="text-center py-12">
@@ -233,5 +236,3 @@ export default function LeaderboardPage() {
     </div>
   );
 }
-
-
