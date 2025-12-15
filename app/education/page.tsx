@@ -92,26 +92,29 @@ export default function EducationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000c12] text-white">
+    <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
       <Header />
 
-      <main className="space-y-16">
+      <main className="flex-1 space-y-16">
         {/* HERO ESCURO / FUTURISTA */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-[#000c12] via-[#020b16] to-[#000c12] py-20 md:py-28">
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#000c12] via-[#020b16] to-[#000c12] py-20 md:py-28 border-b border-white/10">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-32 -right-32 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
             <div className="absolute -bottom-40 -left-20 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
           </div>
 
           <div className="mx-auto max-w-6xl px-6 relative z-10">
-            <div className="mx-auto max-w-4xl text-center space-y-6">
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight text-white">
+            <div className="mx-auto max-w-3xl text-center space-y-4">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                {t('nav.education')}
+              </p>
+              <h1 className="text-3xl md:text-4xl font-semibold text-white">
                 {t('education.hero.title')}
               </h1>
-              <p className="text-xl md:text-2xl text-cyan-100">
+              <p className="text-sm text-slate-300">
                 {t('education.hero.subtitle')}
               </p>
-              <p className="text-lg text-cyan-100/80 max-w-3xl mx-auto">
+              <p className="text-sm text-slate-300">
                 {t('education.hero.description')}
               </p>
             </div>
@@ -191,35 +194,35 @@ export default function EducationPage() {
                 </div>
               )}
 
-                {user && (
-                  <Card className="mb-4 border border-primary/40 bg-gradient-to-br from-[#020b16] via-[#020b18] to-[#000c12]">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <Star className="h-6 w-6 text-amber-400" />
-                        {t('education.myProgress')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid md:grid-cols-3 gap-6">
-                        <div>
-                          <div className="text-sm text-cyan-100/80 mb-1">
-                            {t('dashboard.currentXp') || 'Current XP'}
-                          </div>
-                          <div className="text-2xl font-bold text-white">
-                            {user.xp_total} XP
-                          </div>
+              {user && (
+                <Card className="mb-4 border border-white/10 bg-[#05212b]">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Star className="h-6 w-6 text-amber-400" />
+                      {t('education.myProgress')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div>
+                        <div className="text-sm text-cyan-100/80 mb-1">
+                          {t('dashboard.currentXp') || 'Current XP'}
                         </div>
-                        <div>
-                          <div className="text-sm text-cyan-100/80 mb-1">
-                            {t('dashboard.level')}
-                          </div>
-                          <div className="text-xl font-semibold text-emerald-300">
-                            {getLevel(user.xp_total)}
-                          </div>
+                        <div className="text-2xl font-bold text-white">
+                          {user.xp_total} XP
                         </div>
-                        <div>
-                          <div className="text-sm text-cyan-100/80 mb-1">
-                            {t('dashboard.streak')}
+                      </div>
+                      <div>
+                        <div className="text-sm text-cyan-100/80 mb-1">
+                          {t('dashboard.level')}
+                        </div>
+                        <div className="text-xl font-semibold text-emerald-300">
+                          {getLevel(user.xp_total)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-cyan-100/80 mb-1">
+                          {t('dashboard.streak')}
                         </div>
                         <div className="text-2xl font-bold text-white">
                           {user.streak_count} {t('dashboard.days')}
@@ -312,11 +315,11 @@ export default function EducationPage() {
                             <div className="space-y-3">
                               <div className="flex items-center gap-2 text-sm text-slate-300">
                                 <BookOpen className="h-4 w-4 text-cyan-300" />
-                              <span>
-                                {modulesArray.length} {t('education.modules')} •{' '}
-                                {lessonsCount} {t('education.lessons')}
-                              </span>
-                            </div>
+                                <span>
+                                  {modulesArray.length} {t('education.modules')} /{' '}
+                                  {lessonsCount} {t('education.lessons')}
+                                </span>
+                              </div>
                             {isLocked ? (
                               <Button
                                 variant="outline"
@@ -492,13 +495,11 @@ export default function EducationPage() {
                       {leaderboard.slice(0, 5).map((learner, index) => (
                         <Card
                           key={learner.id}
-                        className={cn(
-                          'border border-white/10 bg-[#000c12]',
-                          index < 3
-                            ? 'border-2 border-primary/70'
-                            : 'border-white/10',
-                        )}
-                      >
+                          className={cn(
+                            'border border-white/10 bg-[#000c12]',
+                            index < 3 ? 'ring-1 ring-primary/60' : '',
+                          )}
+                        >
                         <CardContent className="flex items-center gap-4 p-6">
                           <div
                             className={`text-2xl font-bold ${
