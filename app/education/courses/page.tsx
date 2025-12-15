@@ -163,12 +163,15 @@ export default function CoursesPage() {
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl">
             {/* Hero */}
-            <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div>
-                <h1 className="mb-2 text-3xl font-bold text-white md:text-4xl">
+                <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                  {tr('nav.courses', 'Cursos')}
+                </p>
+                <h1 className="mb-2 text-3xl font-semibold text-white md:text-4xl">
                   {tr('courses.mainTitle', 'Cursos')}
                 </h1>
-                <p className="max-w-2xl text-slate-300">
+                <p className="max-w-2xl text-sm text-slate-300">
                   {tr(
                     'courses.mainSubtitle',
                     'Percursos estruturados sobre Web3, a blockchain Apertum e o ecossistema desportivo. Ganha XP à medida que avanças.',
@@ -259,7 +262,7 @@ export default function CoursesPage() {
                   return (
                     <Card
                       key={course.id}
-                      className="flex flex-col overflow-hidden border border-white/10 bg-[#000c12] transition-shadow hover:border-primary/70 hover:shadow-[0_0_25px_rgba(45,212,191,0.25)]"
+                      className="flex flex-col overflow-hidden border border-white/10 bg-[#000c12] hover:border-primary/70 hover:shadow-[0_0_25px_rgba(45,212,191,0.25)] transition-all"
                     >
                       {/* Thumbnail / Placeholder */}
                       {imageUrl ? (
@@ -319,7 +322,7 @@ export default function CoursesPage() {
                       </CardHeader>
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0">
-                        <div className="flex flex-col gap-2 text-xs text-slate-300">
+                        <div className="flex flex-col gap-2 text-sm text-slate-300">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <BookOpen className="h-4 w-4 text-cyan-300" />
@@ -401,4 +404,3 @@ export default function CoursesPage() {
     </div>
   );
 }
-
