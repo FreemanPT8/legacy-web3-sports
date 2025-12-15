@@ -18,14 +18,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  ArrowRight,
+  Award,
   BookOpen,
+  Star,
+  Target,
+  TrendingUp,
   Trophy,
   Users,
   Zap,
-  Target,
-  Award,
-  TrendingUp,
-  Star,
 } from 'lucide-react';
 
 export default function EducationPage() {
@@ -91,46 +92,99 @@ export default function EducationPage() {
     return t('education.level.newcomer');
   };
 
+  const formatStat = (value?: number | null) => {
+    if (value === null || value === undefined) {
+      return loading ? '...' : '0';
+    }
+    return value.toLocaleString();
+  };
+
   return (
     <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
       <Header />
 
       <main className="flex-1 space-y-16">
-        {/* HERO ESCURO / FUTURISTA */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-[#000c12] via-[#020b16] to-[#000c12] py-20 md:py-28 border-b border-white/10">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-32 -right-32 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-            <div className="absolute -bottom-40 -left-20 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
-          </div>
-
-          <div className="mx-auto max-w-6xl px-6 relative z-10">
-            <div className="mx-auto max-w-3xl text-center space-y-4">
+        {/* HERO */}
+        <section className="relative isolate overflow-hidden bg-[#000c12] px-6 py-16">
+          <div className="mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center">
+            <div className="relative z-10 flex-1 space-y-6">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                 {t('nav.education')}
               </p>
-              <h1 className="text-3xl md:text-4xl font-semibold text-white">
+              <h1 className="text-4xl font-semibold leading-tight text-white md:text-5xl">
                 {t('education.hero.title')}
               </h1>
-              <p className="text-sm text-slate-300">
+              <p className="text-lg text-slate-200">
                 {t('education.hero.subtitle')}
               </p>
               <p className="text-sm text-slate-300">
                 {t('education.hero.description')}
               </p>
+              <div className="flex flex-wrap gap-4">
+                <Button size="lg" variant="default" asChild>
+                  <Link href="/education/courses" className="flex items-center gap-2">
+                    {t('education.viewAll')} {t('education.courses')}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/education/xp" className="flex items-center gap-2">
+                    {t('education.learnMoreXP')}
+                    <BookOpen className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <p className="text-xs text-slate-300">{t('home.trackProgress')}</p>
             </div>
-          </div>
 
-          <div className="absolute bottom-0 left-0 right-0 opacity-40">
-            <svg
-              viewBox="0 0 1440 120"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 80C1200 80 1320 70 1380 65L1440 60V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
-                fill="#020617"
-              />
-            </svg>
+            <div className="flex-1">
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card className="border border-white/10 bg-[#05212b]">
+                  <CardHeader className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
+                      <BookOpen className="h-4 w-4" />
+                      <span>{t('education.stats.courses')}</span>
+                    </div>
+                    <CardTitle className="text-3xl font-semibold text-white">
+                      {formatStat(stats?.totalCourses)}
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-300">
+                      {t('home.structuredPaths')}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card className="border border-white/10 bg-[#05212b]">
+                  <CardHeader className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
+                      <Target className="h-4 w-4" />
+                      <span>{t('education.stats.lessons')}</span>
+                    </div>
+                    <CardTitle className="text-3xl font-semibold text-white">
+                      {formatStat(stats?.totalLessons)}
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-300">
+                      {t('home.learnEarnDesc')}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card className="border border-white/10 bg-[#05212b]">
+                  <CardHeader className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
+                      <Users className="h-4 w-4" />
+                      <span>{t('education.stats.activeUsers')}</span>
+                    </div>
+                    <CardTitle className="text-3xl font-semibold text-white">
+                      {formatStat(stats?.activeUsers)}
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-300">
+                      {t('home.personalizedOnboardingDesc')}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </div>
+            </div>
           </div>
         </section>
 
