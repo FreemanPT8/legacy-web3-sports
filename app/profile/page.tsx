@@ -70,10 +70,10 @@ export default function ProfilePage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -154,27 +154,26 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-foreground">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
+      <main className="flex-1 bg-[#000c12] py-8">
+        <div className="mx-auto w-full max-w-4xl px-4">
             {/* Header com XP */}
             <div className="mb-8 flex items-center justify-between">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
                   Your Profile
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-muted-foreground">
                   Manage your personal information and privacy settings
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-primary">
                   {user.xp_total} XP
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-muted-foreground">
                   Level {Math.floor(user.xp_total / 100)}
                 </p>
               </div>
@@ -218,7 +217,7 @@ export default function ProfilePage() {
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-blue-600" />
+                  <User className="h-5 w-5 text-primary" />
                   Basic Information
                 </CardTitle>
                 <CardDescription>
@@ -229,17 +228,17 @@ export default function ProfilePage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>Username</Label>
-                    <Input value={user.username} disabled />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Cannot be changed
-                    </p>
+                      <Input value={user.username} disabled />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cannot be changed
+                      </p>
                   </div>
                   <div>
                     <Label>Country</Label>
-                    <Input value="Your Country" disabled />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Cannot be changed
-                    </p>
+                      <Input value="Your Country" disabled />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cannot be changed
+                      </p>
                   </div>
                 </div>
               </CardContent>
@@ -249,11 +248,11 @@ export default function ProfilePage() {
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-blue-600" />
+                  <Trophy className="h-5 w-5 text-primary" />
                   Profile Details{' '}
-                  {!isUnlocked && (
-                    <Lock className="h-4 w-4 text-gray-400" />
-                  )}
+                    {!isUnlocked && (
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                    )}
                 </CardTitle>
                 <CardDescription>
                   Earn XP by completing your profile. Toggle visibility for each
@@ -285,9 +284,9 @@ export default function ProfilePage() {
                         }
                         disabled={!isUnlocked}
                       />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Public
-                      </span>
+                      <span className="text-sm text-muted-foreground">
+                          Public
+                        </span>
                     </div>
                   </div>
                   <Textarea
@@ -304,9 +303,9 @@ export default function ProfilePage() {
                     disabled={!isUnlocked}
                     maxLength={888}
                   />
-                  <p className="text-xs text-gray-500">
-                    {profileData.bio.length}/888 characters
-                  </p>
+                  <p className="text-xs text-muted-foreground">
+                      {profileData.bio.length}/888 characters
+                    </p>
                 </div>
 
                 {/* Sports Role */}
@@ -333,9 +332,9 @@ export default function ProfilePage() {
                         }
                         disabled={!isUnlocked}
                       />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Public
-                      </span>
+                      <span className="text-sm text-muted-foreground">
+                          Public
+                        </span>
                     </div>
                   </div>
                   <Select
@@ -460,28 +459,28 @@ export default function ProfilePage() {
             </Card>
 
             {/* XP Rewards Card */}
-            <Card className="mb-6 bg-gradient-to-br from-blue-50 to-cyan-50">
+            <Card className="mb-6 bg-gradient-to-br from-[#05212b] via-[#000c12] to-[#05212b] border border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-blue-600" />
+                  <Award className="h-5 w-5 text-primary" />
                   Profile XP Rewards
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
-                  Complete your profile fields to earn bonus XP! Each field is
+                <CardContent>
+                 <p className="text-sm text-muted-foreground mb-4">
+                    Complete your profile fields to earn bonus XP! Each field is
                   awarded once.
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {Object.entries(xpRewards).map(([key, xp]) => (
                     <div
                       key={key}
-                      className="bg-white p-3 rounded-lg text-center"
+                      className="bg-[#000c12] border border-border p-3 rounded-lg text-center"
                     >
-                      <div className="text-xl font-bold text-blue-600">
+                      <div className="text-xl font-bold text-primary">
                         +{xp}
                       </div>
-                      <div className="text-xs text-gray-600 capitalize">
+                      <div className="text-xs text-muted-foreground capitalize">
                         {key.replace('_', ' ')}
                       </div>
                     </div>
@@ -493,7 +492,7 @@ export default function ProfilePage() {
             <Button
               onClick={handleSave}
               size="lg"
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full"
               disabled={!isUnlocked || saving}
             >
               {saving ? t('profile.saving') : t('profile.saveProfile')}

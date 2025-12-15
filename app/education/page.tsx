@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -91,26 +92,26 @@ export default function EducationPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
+    <div className="min-h-screen bg-[#000c12] text-white">
       <Header />
 
-      <main className="flex-1">
+      <main className="space-y-16">
         {/* HERO ESCURO / FUTURISTA */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-20 md:py-28">
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#000c12] via-[#020b16] to-[#000c12] py-20 md:py-28">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-32 -right-32 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-            <div className="absolute -bottom-40 -left-20 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
+            <div className="absolute -bottom-40 -left-20 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
           </div>
 
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-4xl mx-auto text-center space-y-6">
+          <div className="mx-auto max-w-6xl px-6 relative z-10">
+            <div className="mx-auto max-w-4xl text-center space-y-6">
               <h1 className="text-4xl md:text-5xl font-bold leading-tight text-white">
                 {t('education.hero.title')}
               </h1>
-              <p className="text-xl md:text-2xl text-blue-100">
+              <p className="text-xl md:text-2xl text-cyan-100">
                 {t('education.hero.subtitle')}
               </p>
-              <p className="text-lg text-blue-100/80 max-w-3xl mx-auto">
+              <p className="text-lg text-cyan-100/80 max-w-3xl mx-auto">
                 {t('education.hero.description')}
               </p>
             </div>
@@ -131,94 +132,94 @@ export default function EducationPage() {
         </section>
 
         {/* STATS + PROGRESSO PESSOAL */}
-        <section className="py-16 bg-slate-950">
-          <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto space-y-10">
+        <section className="py-16 bg-[#000c12]">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="space-y-10">
               {loading ? (
                 <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
                   <p className="mt-4 text-slate-300">
                     {t('education.loadingStats')}
                   </p>
                 </div>
               ) : (
                 <div className="grid md:grid-cols-4 gap-6 mb-4">
-                  <Card className="text-center border border-slate-800 bg-slate-900/80">
+                  <Card className="text-center border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
                     <CardContent className="pt-6">
-                      <BookOpen className="h-10 w-10 text-sky-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-slate-50">
-                        {stats?.totalCourses || 0}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        {t('education.stats.courses')}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="text-center border border-slate-800 bg-slate-900/80">
+                        <BookOpen className="h-10 w-10 text-primary mx-auto mb-3" />
+                        <div className="text-3xl font-bold text-white">
+                          {stats?.totalCourses || 0}
+                        </div>
+                        <div className="text-sm text-slate-300">
+                          {t('education.stats.courses')}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  <Card className="text-center border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
                     <CardContent className="pt-6">
                       <Target className="h-10 w-10 text-cyan-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-slate-50">
-                        {stats?.totalLessons || 0}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        {t('education.stats.lessons')}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="text-center border border-slate-800 bg-slate-900/80">
+                        <div className="text-3xl font-bold text-white">
+                          {stats?.totalLessons || 0}
+                        </div>
+                        <div className="text-sm text-slate-300">
+                          {t('education.stats.lessons')}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  <Card className="text-center border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
                     <CardContent className="pt-6">
                       <Users className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-slate-50">
-                        {stats?.activeUsers || 0}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        {t('education.stats.activeUsers')}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="text-center border border-slate-800 bg-slate-900/80">
+                        <div className="text-3xl font-bold text-white">
+                          {stats?.activeUsers || 0}
+                        </div>
+                        <div className="text-sm text-slate-300">
+                          {t('education.stats.activeUsers')}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  <Card className="text-center border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
                     <CardContent className="pt-6">
                       <Zap className="h-10 w-10 text-amber-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-slate-50">
-                        {stats?.totalXPDistributed?.toLocaleString() || 0}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        {t('education.stats.xpDistributed')}
-                      </div>
+                        <div className="text-3xl font-bold text-white">
+                          {stats?.totalXPDistributed?.toLocaleString() || 0}
+                        </div>
+                        <div className="text-sm text-slate-300">
+                          {t('education.stats.xpDistributed')}
+                        </div>
                     </CardContent>
                   </Card>
                 </div>
               )}
 
-              {user && (
-                <Card className="mb-4 border border-blue-900/60 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Star className="h-6 w-6 text-amber-400" />
-                      {t('education.myProgress')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-3 gap-6">
-                      <div>
-                        <div className="text-sm text-blue-200 mb-1">
-                          {t('dashboard.currentXp') || 'Current XP'}
+                {user && (
+                  <Card className="mb-4 border border-primary/40 bg-gradient-to-br from-[#020b16] via-[#020b18] to-[#000c12]">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <Star className="h-6 w-6 text-amber-400" />
+                        {t('education.myProgress')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid md:grid-cols-3 gap-6">
+                        <div>
+                          <div className="text-sm text-cyan-100/80 mb-1">
+                            {t('dashboard.currentXp') || 'Current XP'}
+                          </div>
+                          <div className="text-2xl font-bold text-white">
+                            {user.xp_total} XP
+                          </div>
                         </div>
-                        <div className="text-2xl font-bold text-white">
-                          {user.xp_total} XP
+                        <div>
+                          <div className="text-sm text-cyan-100/80 mb-1">
+                            {t('dashboard.level')}
+                          </div>
+                          <div className="text-xl font-semibold text-emerald-300">
+                            {getLevel(user.xp_total)}
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-blue-200 mb-1">
-                          {t('dashboard.level')}
-                        </div>
-                        <div className="text-xl font-semibold text-emerald-300">
-                          {getLevel(user.xp_total)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-blue-200 mb-1">
-                          {t('dashboard.streak')}
+                        <div>
+                          <div className="text-sm text-cyan-100/80 mb-1">
+                            {t('dashboard.streak')}
                         </div>
                         <div className="text-2xl font-bold text-white">
                           {user.streak_count} {t('dashboard.days')}
@@ -233,33 +234,33 @@ export default function EducationPage() {
         </section>
 
         {/* CURSOS EM DESTAQUE */}
-        <section className="py-16 bg-slate-950">
+        <section className="py-16 bg-[#05212b]">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-50">
-                  {t('education.featured.title')}
-                </h2>
-                <p className="text-lg text-slate-300">
-                  {t('education.featuredDesc') ||
-                    'Start your learning journey with our most popular courses'}
-                </p>
-              </div>
-
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                    {t('education.featured.title')}
+                  </h2>
+                  <p className="text-lg text-slate-300">
+                    {t('education.featuredDesc') ||
+                      'Start your learning journey with our most popular courses'}
+                  </p>
                 </div>
-              ) : topCourses.length === 0 ? (
-                <Card className="border border-slate-800 bg-slate-900/80">
-                  <CardContent className="text-center py-12">
-                    <BookOpen className="h-16 w-16 text-slate-500 mx-auto mb-4" />
-                    <p className="text-slate-300">
-                      {t('education.noCourses') || 'No courses available yet'}
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
+
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                  </div>
+                ) : topCourses.length === 0 ? (
+                  <Card className="border border-white/10 bg-[#000c12]">
+                    <CardContent className="text-center py-12">
+                      <BookOpen className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                      <p className="text-slate-300">
+                        {t('education.noCourses') || 'No courses available yet'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
                   {topCourses.slice(0, 3).map((course) => {
                     const title = getMultilingualContent(
@@ -286,31 +287,31 @@ export default function EducationPage() {
                     );
 
                     return (
-                      <Card
-                        key={course.id}
-                        className="border border-slate-800 bg-slate-900/80 hover:border-sky-500/70 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)] transition-all"
-                      >
+                        <Card
+                          key={course.id}
+                          className="border border-white/10 bg-[#000c12] hover:border-primary/70 hover:shadow-[0_0_25px_rgba(45,212,191,0.25)] transition-all"
+                        >
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
                             {getLevelBadge(course.level)}
-                            <Badge
-                              variant="outline"
-                              className="border-sky-700/60 text-slate-100"
-                            >
-                              {course.xp_required} XP
-                            </Badge>
-                          </div>
-                          <CardTitle className="text-xl text-slate-50">
-                            {title}
-                          </CardTitle>
-                          <CardDescription className="line-clamp-2 text-slate-300">
-                            {description}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm text-slate-300">
-                              <BookOpen className="h-4 w-4" />
+                                <Badge
+                                  variant="outline"
+                                  className="border-primary/70 bg-black/40 text-cyan-100"
+                                >
+                                {course.xp_required} XP
+                              </Badge>
+                            </div>
+                              <CardTitle className="text-xl text-white">
+                                {title}
+                              </CardTitle>
+                              <CardDescription className="line-clamp-2 text-slate-300">
+                                {description}
+                              </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 text-sm text-slate-300">
+                                <BookOpen className="h-4 w-4 text-cyan-300" />
                               <span>
                                 {modulesArray.length} {t('education.modules')} •{' '}
                                 {lessonsCount} {t('education.lessons')}
@@ -319,7 +320,7 @@ export default function EducationPage() {
                             {isLocked ? (
                               <Button
                                 variant="outline"
-                                className="w-full border-slate-600 text-slate-300"
+                                className="w-full border-white/30 text-slate-300"
                                 disabled
                               >
                                 {t('education.unlockAt') || 'Unlock at'}{' '}
@@ -327,7 +328,7 @@ export default function EducationPage() {
                               </Button>
                             ) : (
                               <Link href={`/education/courses/${course.id}`}>
-                                <Button className="w-full bg-sky-600 hover:bg-sky-500">
+                                  <Button className="w-full">
                                   {t('education.startCourse') || 'Start Course'}
                                 </Button>
                               </Link>
@@ -341,12 +342,12 @@ export default function EducationPage() {
               )}
 
               <div className="text-center">
-                <Link href="/education/courses">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-sky-600 text-sky-400 hover:bg-slate-900"
-                  >
+                  <Link href="/education/courses">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-primary text-primary hover:bg-[#000c12]"
+                    >
                     {t('education.viewAll') || t('dashboard.viewAll')}{' '}
                     {t('education.courses')}
                   </Button>
@@ -357,35 +358,35 @@ export default function EducationPage() {
         </section>
 
         {/* SISTEMA DE XP */}
-        <section className="py-16 bg-slate-950">
-          <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6 text-slate-50">
-                  {t('education.xp.title')}
-                </h2>
-                <p className="text-lg text-slate-300 mb-6">
-                  {t('education.xp.description')}
-                </p>
-                <div className="space-y-4 text-sm">
-                  <div className="flex items-start gap-3">
-                    <BookOpen className="h-6 w-6 text-sky-400 flex-shrink-0 mt-1" />
-                    <div>
-                      <div className="font-semibold text-slate-100">
-                        {t('education.completeLessons')}
-                      </div>
-                      <div className="text-slate-300">
-                        {t('education.completeLessonsDesc')}
+        <section className="bg-[#000c12] px-6 py-16">
+          <div className="mx-auto max-w-6xl">
+            <div className="grid items-center gap-12 md:grid-cols-2">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
+                    {t('education.xp.title')}
+                  </h2>
+                  <p className="mb-6 text-lg text-slate-300">
+                    {t('education.xp.description')}
+                  </p>
+                  <div className="space-y-4 text-sm">
+                    <div className="flex items-start gap-3">
+                      <BookOpen className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold text-white">
+                          {t('education.completeLessons')}
+                        </div>
+                        <div className="text-slate-300">
+                          {t('education.completeLessonsDesc')}
+                        </div>
                       </div>
                     </div>
-                  </div>
                   <div className="flex items-start gap-3">
                     <Award className="h-6 w-6 text-amber-400 flex-shrink-0 mt-1" />
                     <div>
-                      <div className="font-semibold text-slate-100">
+                        <div className="font-semibold text-white">
                         {t('education.readArticles')}
                       </div>
-                      <div className="text-slate-300">
+                        <div className="text-slate-300">
                         {t('education.readArticlesDesc')}
                       </div>
                     </div>
@@ -393,10 +394,10 @@ export default function EducationPage() {
                   <div className="flex items-start gap-3">
                     <Users className="h-6 w-6 text-emerald-400 flex-shrink-0 mt-1" />
                     <div>
-                      <div className="font-semibold text-slate-100">
+                        <div className="font-semibold text-white">
                         {t('education.forumParticipation')}
                       </div>
-                      <div className="text-slate-300">
+                        <div className="text-slate-300">
                         {t('education.forumParticipationDesc')}
                       </div>
                     </div>
@@ -404,32 +405,32 @@ export default function EducationPage() {
                   <div className="flex items-start gap-3">
                     <TrendingUp className="h-6 w-6 text-cyan-400 flex-shrink-0 mt-1" />
                     <div>
-                      <div className="font-semibold text-slate-100">
+                        <div className="font-semibold text-white">
                         {t('education.dailyStreaks')}
                       </div>
-                      <div className="text-slate-300">
+                        <div className="text-slate-300">
                         {t('education.dailyStreaksDesc')}
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="mt-8">
-                  <Link href="/education/xp">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-slate-600 text-slate-100"
-                    >
-                      {t('education.learnMoreXP')}
-                    </Button>
-                  </Link>
-                </div>
+                  <div className="mt-8">
+                    <Link href="/education/xp">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="border-white/40 text-slate-100 hover:bg-[#000c12]"
+                      >
+                        {t('education.learnMoreXP')}
+                      </Button>
+                    </Link>
+                  </div>
               </div>
 
-              <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-2xl border border-slate-800">
-                <h3 className="text-xl font-bold mb-6 text-center text-blue-100">
-                  {t('education.xpLevels')}
-                </h3>
+              <div className="bg-gradient-to-br from-[#020b16] to-[#000c12] p-8 rounded-2xl border border-white/10">
+                  <h3 className="text-xl font-bold mb-6 text-center text-cyan-100">
+                    {t('education.xpLevels')}
+                  </h3>
                 <div className="space-y-3 text-sm">
                   {[
                     { levelKey: 'newcomer', xp: '0-98 XP' },
@@ -443,12 +444,12 @@ export default function EducationPage() {
                   ].map((item) => (
                     <div
                       key={item.levelKey}
-                      className="bg-slate-900/60 border border-slate-700 rounded-lg px-4 py-3 flex justify-between items-center"
+                      className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] px-4 py-3"
                     >
-                      <span className="font-semibold text-slate-100">
+                        <span className="font-semibold text-white">
                         {t(`education.level.${item.levelKey}`)}
                       </span>
-                      <span className="text-sm text-blue-200">
+                      <span className="text-sm text-cyan-100">
                         {item.xp}
                       </span>
                     </div>
@@ -460,42 +461,43 @@ export default function EducationPage() {
         </section>
 
         {/* LEADERBOARD */}
-        <section className="py-16 bg-slate-950">
-          <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-50">
+          <section className="bg-[#05212b] px-6 py-16">
+            <div className="mx-auto max-w-6xl">
+              <div className="mx-auto max-w-6xl">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
                   {t('education.leaderboard.title')}
-                </h2>
-                <p className="text-lg text-slate-300">
-                  See who's leading the way in Web3 education
-                </p>
-              </div>
-
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
+                  </h2>
+                  <p className="text-lg text-slate-300">
+                    See who's leading the way in Web3 education
+                  </p>
                 </div>
-              ) : leaderboard.length === 0 ? (
-                <Card className="border border-slate-800 bg-slate-900/80">
-                  <CardContent className="text-center py-12">
-                    <Trophy className="h-16 w-16 text-slate-500 mx-auto mb-4" />
-                    <p className="text-slate-300">
-                      {t('education.noLeaderboard')}
-                    </p>
+
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                  </div>
+                ) : leaderboard.length === 0 ? (
+                  <Card className="border border-white/10 bg-[#000c12]">
+                    <CardContent className="text-center py-12">
+                      <Trophy className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                      <p className="text-slate-300">
+                        {t('education.noLeaderboard')}
+                      </p>
                   </CardContent>
                 </Card>
               ) : (
                 <>
                   <div className="space-y-4 mb-8">
-                    {leaderboard.slice(0, 5).map((learner, index) => (
-                      <Card
-                        key={learner.id}
-                        className={`border bg-slate-900/80 ${
+                      {leaderboard.slice(0, 5).map((learner, index) => (
+                        <Card
+                          key={learner.id}
+                        className={cn(
+                          'border border-white/10 bg-[#000c12]',
                           index < 3
-                            ? 'border-2 border-sky-500/80'
-                            : 'border-slate-800'
-                        }`}
+                            ? 'border-2 border-primary/70'
+                            : 'border-white/10',
+                        )}
                       >
                         <CardContent className="flex items-center gap-4 p-6">
                           <div
@@ -503,39 +505,41 @@ export default function EducationPage() {
                               index === 0
                                 ? 'text-amber-400'
                                 : index === 1
-                                ? 'text-slate-200'
+                                ? 'text-white'
                                 : index === 2
                                 ? 'text-orange-400'
-                                : 'text-slate-500'
+                                : 'text-slate-400'
                             }`}
                           >
                             #{index + 1}
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-lg text-slate-50">
+                            <div className="font-semibold text-lg text-white">
                               {learner.username}
                             </div>
-                            <div className="text-sm text-slate-400">
+                            <div className="text-sm text-slate-300">
                               {learner.country}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-sky-400">
+                            <div className="text-right">
+                            <div className="text-2xl font-bold text-primary">
                               {learner.xp_total}
                             </div>
-                            <div className="text-sm text-slate-300">XP</div>
+                            <div className="text-sm text-slate-300">
+                              XP
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
                   </div>
-                  <div className="text-center">
-                    <Link href="/education/leaderboard">
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="border-sky-600 text-sky-400 hover:bg-slate-900"
-                      >
+                    <div className="text-center">
+                      <Link href="/education/leaderboard">
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="border-primary text-primary hover:bg-[#000c12]"
+                        >
                         View Full Leaderboard
                       </Button>
                     </Link>
@@ -547,40 +551,30 @@ export default function EducationPage() {
         </section>
 
         {/* CTA FINAL */}
-        <section className="py-16 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-              {t('education.cta.title')}
-            </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+        <section className="py-16 bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84]">
+          <div className="mx-auto max-w-5xl px-6 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
+                {t('education.cta.title')}
+              </h2>
+            <p className="text-xl text-cyan-100 mb-8 max-w-2xl mx-auto">
               {t('education.cta.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {!user ? (
                 <Link href="/signup">
-                  <Button
-                    size="lg"
-                    className="bg-white text-blue-700 hover:bg-gray-100 px-8"
-                  >
+                  <Button size="lg" className="px-8">
                     {t('cta.startJourney')}
                   </Button>
                 </Link>
               ) : (
                 <Link href="/education/courses">
-                  <Button
-                    size="lg"
-                    className="bg-white text-blue-700 hover:bg-gray-100 px-8"
-                  >
+                  <Button size="lg" className="px-8">
                     {t('cta.explore')} Courses
                   </Button>
                 </Link>
               )}
               <Link href="/blog">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-blue-300 text-blue-100 hover:bg-blue-900/40 px-8"
-                >
+                <Button size="lg" variant="outline" className="px-8">
                   {t('cta.exploreBlog')}
                 </Button>
               </Link>

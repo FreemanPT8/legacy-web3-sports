@@ -2,41 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* Light theme – pouco usado porque a app força .dark,
+       mas mantemos coerente com a identidade LEGACY */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 4%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222 47% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 222 47% 4%;
+    --primary: 188 92% 55%; /* cyan legacy */
+    --primary-foreground: 222 47% 4%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 4%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 40%;
+    --accent: 188 92% 55%;
+    --accent-foreground: 222 47% 4%;
+    --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 210 30% 88%;
+    --input: 210 30% 88%;
+    --ring: 188 92% 55%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -45,26 +33,27 @@
     --radius: 0.5rem;
   }
   .dark {
-    --background: 222 47% 4%;
+    /* LEGACY dark premium palette – alinhada com a homepage */
+    --background: 200 80% 4%; /* ~ #000c12 */
     --foreground: 210 40% 98%;
-    --card: 222 47% 6%;
+    --card: 200 70% 8%; /* ~ #05212b */
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 5%;
+    --popover: 200 80% 4%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
+    --primary: 188 92% 55%; /* cyan principal */
     --primary-foreground: 222 47% 4%;
-    --secondary: 217 33% 17%;
+    --secondary: 200 45% 12%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 15%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 91% 60%;
+    --muted: 200 35% 18%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 188 92% 55%;
     --accent-foreground: 222 47% 4%;
-    --destructive: 0 63% 31%;
+    --destructive: 0 63% 40%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
+    --border: 200 40% 20%;
+    --input: 200 40% 20%;
+    --ring: 188 92% 55%;
+    --chart-1: 188 92% 55%;
     --chart-2: 142 76% 36%;
     --chart-3: 47 96% 53%;
     --chart-4: 280 65% 60%;
@@ -83,26 +72,43 @@
 
 @layer utilities {
   .bg-page {
-    @apply bg-gray-50 dark:bg-gray-950;
+    @apply bg-background;
   }
 
   .bg-card-custom {
-    @apply bg-white dark:bg-gray-900;
+    @apply bg-card;
   }
 
   .text-heading {
-    @apply text-gray-900 dark:text-white;
+    @apply text-foreground;
   }
 
   .text-body {
-    @apply text-gray-600 dark:text-gray-300;
+    @apply text-sm text-muted-foreground;
   }
 
   .text-muted-custom {
-    @apply text-gray-500 dark:text-gray-400;
+    @apply text-xs text-muted-foreground;
   }
 
   .border-custom {
-    @apply border-gray-200 dark:border-gray-800;
+    @apply border border-border;
+  }
+
+  /* Helpers específicos LEGACY para secções/páginas */
+  .legacy-page {
+    @apply min-h-screen bg-background text-foreground;
+  }
+
+  .legacy-section {
+    @apply px-6 py-16 bg-background;
+  }
+
+  .legacy-section-alt {
+    @apply px-6 py-16 bg-card;
+  }
+
+  .legacy-container {
+    @apply mx-auto w-full max-w-6xl;
   }
 }

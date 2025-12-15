@@ -1,12 +1,13 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { SafeImage } from '@/app/components/SafeImage';
+import { useAuth } from '@/contexts/AuthContext';
 
 type HouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
@@ -114,196 +115,176 @@ export default function HousesPage() {
   const visibleInDevelopment = isLegacyTeam ? inDevelopment : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-page">
+    <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
       <Header />
 
-      <main className="flex-1 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
-        {/* HERO – Mapa das Houses */}
-        <section className="relative overflow-hidden border-b border-slate-900/80">
-          <div className="absolute inset-0 pointer-events-none">
+      <main className="flex-1 bg-[#000c12]">
+        {/* HERO / INTRO */}
+        <section className="relative overflow-hidden border-b border-white/10">
+          <div className="pointer-events-none absolute inset-0">
             <div className="absolute -top-32 -right-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
             <div className="absolute -bottom-40 -left-24 h-80 w-80 rounded-full bg-emerald-500/20 blur-3xl" />
           </div>
 
-          <div className="relative z-10 container mx-auto px-4 py-12 md:py-16">
-            <div className="max-w-5xl mx-auto space-y-6">
+          <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 md:py-16">
+            <div className="mx-auto max-w-5xl space-y-6">
               <div className="space-y-3">
-                <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-[11px] font-semibold text-blue-50 border border-white/15 tracking-wide uppercase">
-                  Passo 2 no caminho · Houses of Sports
+                <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-100">
+                  Passo 2 · Houses of Sports
                 </span>
 
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
-                  O mapa das Houses of Sports do LEGACY.
+                <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
+                  O mapa global das Houses of Sports do LEGACY.
                 </h1>
 
-                <p className="text-sm md:text-base text-blue-100 max-w-3xl leading-relaxed">
+                <p className="max-w-3xl text-sm leading-relaxed text-cyan-100 md:text-base">
                   Cada House of Sports é uma comunidade focada num{' '}
                   <strong>desporto específico</strong> num{' '}
                   <strong>país concreto</strong>. No início, funcionam como
                   núcleos de aprendizagem e organização dentro do ecossistema
                   LEGACY e da <strong>Apertum Blockchain</strong>. Com o tempo,
-                  algumas vão acabar por se destacar das demais devido às
-                  iniciativas dos seus membros ou da própria liderança da Casa.
-                  Em Web3 a comunidade tem um peso significativo, mas nem todas
-                  as comunidades existem para deixar a sua marca.
+                  algumas vão destacar-se pelas iniciativas dos membros e pela
+                  liderança da própria House.
                 </p>
 
-                <p className="text-xs md:text-sm text-blue-200/90 max-w-3xl leading-relaxed">
-                  Se pertences a este mundo, há lugar para ti. E se não
-                  pertences, mas queres aprender Web3 com cabeça, também. A
-                  lógica é simples: primeiro criamos contexto e educação séria,
+                <p className="max-w-3xl text-sm leading-relaxed text-slate-200 md:text-base">
+                  Se já vives o desporto por dentro, há lugar para ti. Se ainda
+                  não vives, mas queres aprender Web3 com cabeça, também. A
+                  lógica é simples: primeiro criamos contexto e educação séria;
                   depois abrimos espaço para participação e reputação dentro das
                   Houses que fizerem sentido — sem pressa e sem promessas vazias.
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-[1.3fr,1.1fr] gap-8 items-start">
-                <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 to-slate-900 p-5 text-xs text-body shadow-lg space-y-3">
-                  <p className="text-[11px] uppercase tracking-wide text-blue-200/80">
-                    Como esta página se liga ao teu caminho
-                  </p>
-                  <ul className="space-y-2 list-disc list-inside">
+              <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#020b16]/80 p-4 md:grid-cols-3 md:p-6">
+                <StatusSummaryItem
+                  label="Houses ativas"
+                  value={totalActive}
+                  description="Comunidades que já estão a receber membros de forma estruturada."
+                />
+                <StatusSummaryItem
+                  label="Houses em construção"
+                  value={totalUnderConstruction}
+                  description="Equipas a formar e primeiros membros a serem ligados."
+                />
+                <StatusSummaryItem
+                  label="Houses em desenvolvimento"
+                  value={totalInDevelopment}
+                  description="Mapeadas pela equipa LEGACY. Visíveis apenas para a equipa LEGACY."
+                />
+              </div>
+
+              <div className="grid gap-6 border-t border-white/10 pt-6 md:grid-cols-[1.8fr,1.2fr]">
+                <div className="space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-200">
+                    COMO ESTA PÁGINA SE LIGA AO TEU CAMINHO
+                  </h2>
+                  <ul className="space-y-2 text-sm text-slate-200">
                     <li>
-                      Na página de entrada do LEGACY para o desporto ficaste com
-                      o contexto geral: o que é o portal, porque é que a
-                      Apertum importa e como a tecnologia pode servir o teu
-                      futuro.
+                      Na página de entrada do LEGACY tu entendes{' '}
+                      <strong>o que é o portal</strong> e porque é que a Apertum
+                      se cruza com desporto.
                     </li>
                     <li>
-                      Aqui vês <strong>onde já existem comunidades a nascer</strong> – por
-                      desporto, país e estado das Houses (ativas, em construção
-                      ou em desenvolvimento).
+                      Aqui vês{' '}
+                      <strong>onde já existem comunidades a nascer</strong> — por
+                      desporto, país e estado das Houses (ativas, em
+                      construção ou em desenvolvimento).
                     </li>
                     <li>
                       No passo seguinte, através de um{' '}
-                      <strong>formulário simples de onboarding</strong>, mostras
-                      quem és e o que procuras. É aí que a equipa te consegue
-                      orientar com mais precisão.
+                      <strong>formulário simples de onboarding</strong>,
+                      mostras quem és e o que procuras. A partir daí a equipa
+                      consegue orientar-te com muito mais precisão.
                     </li>
                   </ul>
-                  <p className="text-[11px] text-muted-custom">
-                    Não precisas de “entrar em tudo”. A ideia é perceber onde
-                    faz sentido colocar a tua energia – como membro, como líder
-                    ou simplesmente como alguém que quer aprender com estrutura.
+                  <p className="text-xs text-slate-400">
+                    Não precisas de &quot;entrar em tudo&quot;. A ideia é
+                    perceber onde faz sentido colocar a tua energia — como
+                    membro, como líder ou simplesmente como alguém que quer
+                    aprender com estrutura.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-cyan-500/35 bg-slate-950/90 p-5 text-xs text-body shadow-[0_0_38px_rgba(34,211,238,0.28)] space-y-3">
-                  <p className="text-[11px] uppercase tracking-wide text-blue-200/80">
-                    Estado atual das Houses
+                <div className="space-y-3 rounded-2xl border border-white/10 bg-[#020b16]/80 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200">
+                    PRÓXIMO PASSO
                   </p>
-                  <div className="space-y-2">
-                    <StatusRow label="Houses ativas" value={totalActive} />
-                    <StatusRow
-                      label="Houses em construção"
-                      value={totalUnderConstruction}
-                    />
-                    <StatusRow
-                      label={
-                        isLegacyTeam
-                          ? 'Houses em desenvolvimento (interno)'
-                          : 'Houses em desenvolvimento'
-                      }
-                      value={totalInDevelopment}
-                    />
-                  </div>
-                  <p className="text-[11px] text-muted-custom">
-                    Este mapa vai evoluir ao longo do tempo. Algumas Houses vão
-                    abrir, outras vão ficar em incubação até existir liderança e
-                    equipa certa. O objetivo é evitar “comunidades vazias” e
-                    construir algo com critério.
+                  <p className="text-sm text-slate-200">
+                    Quando te sentires pronto, faz o onboarding e diz-nos qual é
+                    a tua relação com o desporto, o teu contexto e o que
+                    queres construir. A partir daí a equipa LEGACY ajuda-te a
+                    encontrar a House certa — ou a preparar o terreno para
+                    uma nova.
                   </p>
-                  <div className="pt-2 flex flex-wrap gap-2">
-                    <Link href="/sports/onboarding">
-                      <Button
-                        size="sm"
-                        className="bg-white text-slate-950 hover:bg-slate-100"
-                      >
-                        Preencher formulário para onboarding personalizado
-                      </Button>
-                    </Link>
-                    <Link href="/sports">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-slate-600 text-blue-100 hover:bg-slate-900"
-                      >
-                        Voltar ao portal LEGACY Sports
-                      </Button>
-                    </Link>
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    <Button asChild size="sm">
+                      <Link href="/sports/onboarding">Fazer Onboarding</Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/education/courses">Começar pela Academia</Link>
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </section>
 
+        {/* LISTAS DE HOUSES */}
+        <section className="bg-[#000c12] px-6 py-12 md:py-16">
+          <div className="mx-auto max-w-6xl space-y-10">
             {error && (
-              <div className="max-w-4xl mx-auto mt-6 rounded-md border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-100">
+              <div className="rounded-xl border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
                 {error}
               </div>
             )}
-          </div>
-        </section>
 
-        {/* LISTA DE HOUSES */}
-        <section className="py-10 md:py-14">
-          <div className="container mx-auto px-4">
             {loading ? (
-              <div className="max-w-4xl mx-auto text-center text-sm text-blue-100 py-16">
-                A carregar Houses of Sports…
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#020b16] px-6 py-10 text-center">
+                <p className="text-sm font-medium text-white">
+                  A carregar Houses of Sports...
+                </p>
+                <p className="text-xs text-slate-300">
+                  Estamos a buscar o mapa atualizado das Houses. Isto pode
+                  demorar alguns segundos.
+                </p>
               </div>
             ) : houses.length === 0 ? (
-              <div className="max-w-4xl mx-auto rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-6 text-sm text-blue-100 text-center">
-                Ainda não existem Houses of Sports visíveis. A equipa do LEGACY
-                está a preparar a primeira vaga de comunidades.
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#020b16] px-6 py-10 text-center">
+                <p className="text-sm font-medium text-white">
+                  Ainda não existem Houses of Sports visíveis.
+                </p>
+                <p className="text-xs text-slate-300">
+                  A equipa do LEGACY está a preparar a primeira vaga de
+                  comunidades. Mantém-te atento ao portal e à Academia.
+                </p>
               </div>
             ) : (
-              <div className="max-w-6xl mx-auto space-y-10">
+              <>
                 <HousesSection
                   title="Houses ativas"
-                  description="Comunidades que já estão a receber membros e a organizar a sua base educativa."
+                  description="Comunidades que já estão a receber membros e a testar formatos de aprendizagem, treino e networking."
                   houses={active}
                 />
+
                 <HousesSection
                   title="Houses em construção"
-                  description="Casas com liderança definida, a preparar estrutura, conteúdos e primeiros membros."
+                  description="Houses a ganhar forma: definição de equipa, visão interna e primeiros membros próximos da comunidade."
                   houses={underConstruction}
                 />
-                {isLegacyTeam && (
-                  <HousesSection
-                    title="Houses em desenvolvimento (equipa interna LEGACY)"
-                    description="Desportos e países que estão na fila estratégica para receber uma House em breve."
-                    houses={visibleInDevelopment}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        </section>
 
-        {/* BLOCO FINAL – CTA ONBOARDING */}
-        <section className="py-12 bg-gradient-to-b from-slate-900 via-slate-950 to-black border-t border-slate-800">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center space-y-4">
-              <h2 className="text-2xl md:text-3xl font-bold text-heading">
-                Se queres liderar ou apoiar uma House, começa pelo onboarding.
-              </h2>
-              <p className="text-sm md:text-base text-body max-w-2xl mx-auto leading-relaxed">
-                Heads of House e equipas fortes não aparecem por acaso. Nascem
-                de pessoas que assumem responsabilidade, estudam a tecnologia e
-                sabem o que estão a fazer. O teu onboarding é a forma mais
-                simples de mostrares que fazes parte dessa percentagem rara.
-              </p>
-              <div className="flex flex-wrap gap-3 justify-center pt-2">
-                <Link href="/sports/onboarding">
-                  <Button
-                    size="lg"
-                    className="bg-blue-600 hover:bg-blue-500 text-white"
-                  >
-                    Preencher formulário para onboarding personalizado
-                  </Button>
-                </Link>
-              </div>
-            </div>
+                <HousesSection
+                  title="Houses em desenvolvimento"
+                  description={
+                    isLegacyTeam
+                      ? 'Visão interna para quem está a desenhar o futuro do mapa de Houses e do ecossistema LEGACY.'
+                      : 'Houses em fase inicial de desenho e validação internas. Visíveis apenas para a equipa LEGACY.'
+                  }
+                  houses={visibleInDevelopment}
+                />
+              </>
+            )}
           </div>
         </section>
       </main>
@@ -313,11 +294,20 @@ export default function HousesPage() {
   );
 }
 
-function StatusRow({ label, value }: { label: string; value: number }) {
+function StatusSummaryItem(props: {
+  label: string;
+  value: number;
+  description: string;
+}) {
+  const { label, value, description } = props;
+
   return (
-    <div className="flex items-center justify-between text-xs text-blue-100">
-      <span>{label}</span>
-      <span className="font-semibold text-heading">{value}</span>
+    <div className="rounded-xl border border-white/10 bg-[#000c12]/80 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+      <p className="mt-1 text-xs text-slate-300">{description}</p>
     </div>
   );
 }
@@ -337,12 +327,12 @@ function HousesSection({
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 mb-4">
+      <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h3 className="text-md font-semibold text-heading">{title}</h3>
-          <p className="text-xs text-muted-custom">{description}</p>
+          <h3 className="text-md font-semibold text-white">{title}</h3>
+          <p className="text-xs text-slate-300">{description}</p>
         </div>
-        <p className="text-[11px] text-muted-custom">
+        <p className="text-[11px] text-slate-400">
           {houses.length} {houses.length === 1 ? 'House' : 'Houses'}
         </p>
       </div>
@@ -364,9 +354,8 @@ function HousesSection({
 
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
-              <div className="h-full rounded-xl border border-custom bg-card-custom/95 p-4 shadow-sm hover:border-cyan-400/80 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)] transition flex flex-col">
-                {/* Cover */}
-                <div className="mb-3 h-20 rounded-lg border border-custom overflow-hidden bg-slate-900">
+              <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#020b16] p-4 shadow-sm transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
+                <div className="mb-3 h-20 overflow-hidden rounded-lg border border-white/10 bg-[#020b16]">
                   {house.cover_image_url || house.avatar_url ? (
                     <SafeImage
                       src={house.cover_image_url || house.avatar_url || ''}
@@ -378,9 +367,9 @@ function HousesSection({
                   )}
                 </div>
 
-                <div className="flex items-center justify-between mb-2 gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-[11px] font-semibold text-muted-custom overflow-hidden border border-custom shrink-0">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#020b16] text-[11px] font-semibold text-slate-300">
                       {house.avatar_url ? (
                         <SafeImage
                           src={house.avatar_url}
@@ -392,11 +381,11 @@ function HousesSection({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-heading truncate">
+                      <p className="truncate text-sm font-semibold text-white">
                         {house.name}
                       </p>
                       {house.sport && (
-                        <p className="text-[11px] text-muted-custom truncate">
+                        <p className="truncate text-[11px] text-slate-300">
                           {house.sport.name} · {house.sport.code}
                         </p>
                       )}
@@ -404,17 +393,17 @@ function HousesSection({
                   </div>
 
                   {house.country_code && (
-                    <span className="text-[10px] font-mono uppercase bg-slate-900 rounded px-2 py-0.5 text-blue-200 border border-slate-700">
+                    <span className="rounded px-2 py-0.5 text-[10px] font-mono uppercase text-cyan-100 border border-white/20 bg-[#020b16]">
                       {house.country_code}
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2 flex items-center justify-between">
                   <span className={STATUS_BADGE_CLASSES[house.status]}>
                     {STATUS_LABELS[house.status]}
                   </span>
-                  <span className="text-[11px] text-muted-custom">
+                  <span className="text-[11px] text-slate-400">
                     {house.created_at
                       ? new Date(house.created_at).toLocaleDateString('pt-PT')
                       : 'Data por definir'}
@@ -422,21 +411,19 @@ function HousesSection({
                 </div>
 
                 {headUsername ? (
-                  <div className="mt-1">
-                    <p className="text-[11px] text-muted-custom">
-                      Head of House:{' '}
-                      <span className="font-medium text-heading">
-                        {headUsername}
-                      </span>
-                    </p>
-                  </div>
+                  <p className="mt-1 text-[11px] text-slate-300">
+                    Head of House:{' '}
+                    <span className="font-medium text-white">
+                      {headUsername}
+                    </span>
+                  </p>
                 ) : (
-                  <p className="mt-1 text-[11px] text-muted-custom">
+                  <p className="mt-1 text-[11px] text-slate-400">
                     Head of House a definir.
                   </p>
                 )}
 
-                <p className="mt-auto pt-2 text-[11px] text-muted-custom">
+                <p className="mt-auto pt-2 text-[11px] text-slate-400">
                   {house.moderators.length > 0
                     ? `${house.moderators.length} moderador(es) atribuídos.`
                     : 'Sem moderadores definidos ainda.'}
@@ -449,3 +436,4 @@ function HousesSection({
     </div>
   );
 }
+

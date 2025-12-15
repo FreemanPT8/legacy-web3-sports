@@ -118,15 +118,15 @@ export default function NotificationsPage() {
   const getIcon = (type: string) => {
     switch (type) {
       case 'achievement':
-        return <Trophy className="h-5 w-5 text-yellow-600" />;
+        return <Trophy className="h-5 w-5 text-yellow-500" />;
       case 'xp':
-        return <Award className="h-5 w-5 text-blue-600" />;
+        return <Award className="h-5 w-5 text-primary" />;
       case 'forum':
-        return <MessageSquare className="h-5 w-5 text-green-600" />;
+        return <MessageSquare className="h-5 w-5 text-emerald-400" />;
       case 'course':
-        return <BookOpen className="h-5 w-5 text-purple-600" />;
+        return <BookOpen className="h-5 w-5 text-fuchsia-400" />;
       default:
-        return <Bell className="h-5 w-5 text-gray-600" />;
+        return <Bell className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -149,16 +149,16 @@ export default function NotificationsPage() {
   const readNotifications = notifications.filter(n => n.read);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-foreground">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Notifications</h1>
-                <p className="text-gray-600 dark:text-gray-300">
+                <h1 className="text-3xl font-bold mb-2 text-white">Notifications</h1>
+                <p className="text-muted-foreground">
                   {unreadCount > 0
                     ? `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
                     : 'All caught up!'}
@@ -173,18 +173,18 @@ export default function NotificationsPage() {
             </div>
 
             {loading ? (
-              <Card>
+              <Card className="bg-card border border-border">
                 <CardContent className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-300">Loading notifications...</p>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading notifications...</p>
                 </CardContent>
               </Card>
             ) : notifications.length === 0 ? (
-              <Card>
+              <Card className="bg-card border border-border">
                 <CardContent className="text-center py-12">
-                  <Bell className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <Bell className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">No Notifications</h3>
-                  <p className="text-gray-600 dark:text-gray-300">You're all caught up! Check back later.</p>
+                  <p className="text-muted-foreground">You're all caught up! Check back later.</p>
                 </CardContent>
               </Card>
             ) : (
@@ -201,7 +201,7 @@ export default function NotificationsPage() {
                   <TabsTrigger value="unread">
                     Unread
                     {unreadCount > 0 && (
-                      <Badge className="ml-2 bg-blue-600">
+                      <Badge className="ml-2 bg-primary text-primary-foreground">
                         {unreadCount}
                       </Badge>
                     )}
@@ -212,8 +212,8 @@ export default function NotificationsPage() {
                   {notifications.map((notification) => (
                     <Card
                       key={notification.id}
-                      className={`cursor-pointer transition-all ${
-                        !notification.read ? 'border-l-4 border-l-blue-600 bg-blue-50' : ''
+                      className={`cursor-pointer transition-all bg-card border border-border ${
+                        !notification.read ? 'border-l-4 border-l-primary bg-primary/5' : ''
                       }`}
                       onClick={() => {
                         markAsRead(notification.id);
@@ -229,17 +229,19 @@ export default function NotificationsPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 mb-1">
-                              <h3 className="font-semibold">
+                              <h3 className="font-semibold text-heading">
                                 {notification.title}
                                 {!notification.read && (
-                                  <Badge className="ml-2 bg-blue-600 text-xs">New</Badge>
+                                  <Badge className="ml-2 bg-primary text-primary-foreground text-xs">
+                                    New
+                                  </Badge>
                                 )}
                               </h3>
-                              <span className="text-xs text-gray-500 whitespace-nowrap">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
                                 {getTimeSince(notification.created_at)}
                               </span>
                             </div>
-                            <p className="text-gray-600 text-sm">{notification.message}</p>
+                            <p className="text-muted-foreground text-sm">{notification.message}</p>
                           </div>
                           <Button
                             variant="ghost"
@@ -259,18 +261,18 @@ export default function NotificationsPage() {
 
                 <TabsContent value="unread" className="space-y-3">
                   {unreadNotifications.length === 0 ? (
-                    <Card>
+                    <Card className="bg-card border border-border">
                       <CardContent className="text-center py-12">
-                        <Check className="h-12 w-12 text-green-600 mx-auto mb-3" />
+                        <Check className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
                         <h3 className="font-semibold mb-2">All Caught Up!</h3>
-                        <p className="text-gray-600 dark:text-gray-300">No unread notifications</p>
+                        <p className="text-muted-foreground">No unread notifications</p>
                       </CardContent>
                     </Card>
                   ) : (
                     unreadNotifications.map((notification) => (
                       <Card
                         key={notification.id}
-                        className="cursor-pointer transition-all border-l-4 border-l-blue-600 bg-blue-50"
+                        className="cursor-pointer transition-all bg-card border border-border border-l-4 border-l-primary bg-primary/5"
                         onClick={() => {
                           markAsRead(notification.id);
                           if (notification.link) {
@@ -285,15 +287,17 @@ export default function NotificationsPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-1">
-                                <h3 className="font-semibold">
+                                <h3 className="font-semibold text-heading">
                                   {notification.title}
-                                  <Badge className="ml-2 bg-blue-600 text-xs">New</Badge>
+                                  <Badge className="ml-2 bg-primary text-primary-foreground text-xs">
+                                    New
+                                  </Badge>
                                 </h3>
-                                <span className="text-xs text-gray-500 whitespace-nowrap">
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
                                   {getTimeSince(notification.created_at)}
                                 </span>
                               </div>
-                              <p className="text-gray-600 text-sm">{notification.message}</p>
+                              <p className="text-muted-foreground text-sm">{notification.message}</p>
                             </div>
                             <Button
                               variant="ghost"

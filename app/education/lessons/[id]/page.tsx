@@ -153,12 +153,12 @@ export default function LessonPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen flex flex-col bg-[#000c12]">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-slate-200">
               {tr('lessons.loading', 'A carregar lição...')}
             </p>
           </div>
@@ -293,7 +293,7 @@ export default function LessonPage() {
             </Card>
 
             {/* META INFO */}
-            <Card className="mb-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+            <Card className="mb-6 bg-card border border-border">
               <CardContent className="py-4 text-sm text-gray-700 dark:text-gray-300">
                 <div className="grid gap-3 md:grid-cols-4">
                   <div>
@@ -383,10 +383,7 @@ export default function LessonPage() {
                   href={`/education/lessons/${prevLesson.id}`}
                   className="flex-1"
                 >
-                  <Button
-                    variant="outline"
-                    className="w-full text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
+                  <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     {tr('lessons.previous', 'Anterior')}:{' '}
                     {getMultilingualContent(
@@ -404,7 +401,7 @@ export default function LessonPage() {
                   href={`/education/lessons/${nextLesson.id}`}
                   className="flex-1"
                 >
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  <Button className="w-full">
                     {tr('lessons.next', 'Seguinte')}:{' '}
                     {getMultilingualContent(
                       nextLesson.title,
@@ -415,7 +412,7 @@ export default function LessonPage() {
                 </Link>
               ) : (
                 <Link href={backHref} className="flex-1">
-                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                  <Button variant="secondary" className="w-full">
                     {tr('lessons.backToCourseCta', 'Voltar ao curso')}
                     <CheckCircle className="h-4 w-4 ml-2" />
                   </Button>

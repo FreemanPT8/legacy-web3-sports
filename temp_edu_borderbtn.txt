@@ -1,0 +1,13 @@
+                  <Link href="/education/courses">
+                    <Button
+                      size="lg"
+                      variant="outline"
+>                     className="border-sky-600 text-sky-400 hover:bg-slate-900"
+                    >
+                      {t('education.viewAll') || t('dashboard.viewAll')}{' '}
+                      {t('education.courses')}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>

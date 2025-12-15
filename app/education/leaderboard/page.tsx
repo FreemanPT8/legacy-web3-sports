@@ -33,12 +33,12 @@ export default function LeaderboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-300">{t('leaderboard.loading')}</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto" />
+            <p className="mt-4 text-sm text-slate-300">{t('leaderboard.loading')}</p>
           </div>
         </main>
         <Footer />
@@ -49,53 +49,61 @@ export default function LeaderboardPage() {
   const topThree = leaderboardData?.global?.slice(0, 3) || [];
   const restOfGlobal = leaderboardData?.global?.slice(3) || [];
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8 text-center">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">{t('leaderboard.title')}</h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
+              <h1 className="text-3xl md:text-4xl font-semibold mb-4 text-white">
+                {t('leaderboard.title')}
+              </h1>
+              <p className="text-sm text-slate-300">
                 {t('leaderboard.subtitle')}
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card className="border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50">
+              <Card className="border border-cyan-400/70 bg-gradient-to-br from-[#05212b] via-[#05212b] to-[#000c12] shadow-lg shadow-cyan-500/30">
                 <CardHeader className="text-center pb-3">
-                  <Crown className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
+                  <Crown className="h-12 w-12 text-cyan-300 mx-auto mb-2" />
                   <CardTitle className="text-2xl">{t('leaderboard.rank1')}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-xl font-bold mb-1">{topThree[0]?.username || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 mb-2">{topThree[0]?.country || 'N/A'}</p>
-                  <Badge className="bg-yellow-500 text-white text-lg px-4 py-1">{topThree[0]?.xp_total || 0} XP</Badge>
+                  <p className="text-sm text-slate-300 mb-2">{topThree[0]?.country || 'N/A'}</p>
+                  <Badge className="bg-cyan-500 text-black text-lg px-4 py-1">
+                    {topThree[0]?.xp_total || 0} XP
+                  </Badge>
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-gray-300">
+              <Card className="border border-white/20 bg-[#05212b]">
                 <CardHeader className="text-center pb-3">
-                  <Medal className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                  <Medal className="h-12 w-12 text-slate-300 mx-auto mb-2" />
                   <CardTitle className="text-2xl">{t('leaderboard.rank2')}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-xl font-bold mb-1">{topThree[1]?.username || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 mb-2">{topThree[1]?.country || 'N/A'}</p>
-                  <Badge variant="secondary" className="text-lg px-4 py-1">{topThree[1]?.xp_total || 0} XP</Badge>
+                  <p className="text-sm text-slate-300 mb-2">{topThree[1]?.country || 'N/A'}</p>
+                  <Badge variant="secondary" className="text-lg px-4 py-1">
+                    {topThree[1]?.xp_total || 0} XP
+                  </Badge>
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-orange-300">
+              <Card className="border border-white/20 bg-[#05212b]">
                 <CardHeader className="text-center pb-3">
-                  <Medal className="h-12 w-12 text-orange-400 mx-auto mb-2" />
+                  <Medal className="h-12 w-12 text-slate-300 mx-auto mb-2" />
                   <CardTitle className="text-2xl">{t('leaderboard.rank3')}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-xl font-bold mb-1">{topThree[2]?.username || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 mb-2">{topThree[2]?.country || 'N/A'}</p>
-                  <Badge variant="secondary" className="text-lg px-4 py-1">{topThree[2]?.xp_total || 0} XP</Badge>
+                  <p className="text-sm text-slate-300 mb-2">{topThree[2]?.country || 'N/A'}</p>
+                  <Badge variant="secondary" className="text-lg px-4 py-1">
+                    {topThree[2]?.xp_total || 0} XP
+                  </Badge>
                 </CardContent>
               </Card>
             </div>
@@ -117,22 +125,25 @@ export default function LeaderboardPage() {
                     {restOfGlobal.length === 0 ? (
                       <div className="text-center py-12">
                         <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-600 dark:text-gray-300">{t('leaderboard.noRankings')}</p>
+                        <p className="text-slate-300">{t('leaderboard.noRankings')}</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
                         {restOfGlobal.map((user: any, i: number) => (
-                          <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div
+                            key={user.id}
+                            className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] p-4 transition-colors hover:bg-[#05212b]"
+                          >
                             <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
                                 #{i + 4}
                               </div>
                               <div>
                                 <p className="font-semibold">{user.username}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">{user.country}</p>
+                                <p className="text-sm text-slate-300">{user.country}</p>
                               </div>
                             </div>
-                            <Badge className="bg-blue-600">{user.xp_total} XP</Badge>
+                            <Badge className="bg-primary">{user.xp_total} XP</Badge>
                           </div>
                         ))}
                       </div>
@@ -150,20 +161,25 @@ export default function LeaderboardPage() {
                   <CardContent>
                     {!leaderboardData?.country || leaderboardData.country.length === 0 ? (
                       <div className="text-center py-12">
-                        <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-600 dark:text-gray-300">{t('leaderboard.noCountryRankings')}</p>
+                        <Trophy className="h-16 w-16 text-cyan-300 mx-auto mb-4" />
+                        <p className="text-slate-300">{t('leaderboard.noCountryRankings')}</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
                         {leaderboardData.country.map((item: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div
+                            key={i}
+                            className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] p-4 transition-colors hover:bg-[#05212b]"
+                          >
                             <div className="flex items-center gap-4">
                               <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
                                 #{i + 1}
                               </div>
                               <div>
                                 <p className="font-semibold">{item.country}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">{item.user_count} {t('leaderboard.members')}</p>
+                                <p className="text-sm text-slate-300">
+                                  {item.user_count} {t('leaderboard.members')}
+                                </p>
                               </div>
                             </div>
                             <Badge className="bg-green-600">{item.total_xp} XP</Badge>
@@ -183,29 +199,29 @@ export default function LeaderboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-center py-12">
-                      <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <Trophy className="h-16 w-16 text-cyan-300 mx-auto mb-4" />
                       <p className="text-lg font-semibold mb-2">{t('leaderboard.noNationalActive')}</p>
-                      <p className="text-gray-600 dark:text-gray-300">{t('leaderboard.noNationalActiveDesc')}</p>
+                      <p className="text-slate-300">{t('leaderboard.noNationalActiveDesc')}</p>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
 
-            <Card className="mt-8 bg-gradient-to-br from-blue-600 to-cyan-600 text-white">
+            <Card className="mt-8 bg-gradient-to-br from-[#14718f] via-[#1d98a6] to-[#126e84] text-white">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   <Trophy className="h-8 w-8" />
                   {t('leaderboard.hallOfFame')}
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-cyan-50">
                   {t('leaderboard.hallOfFameDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
                   <p className="text-lg">{t('leaderboard.noHallMembers')}</p>
-                  <p className="text-sm text-blue-100 mt-2">{t('leaderboard.beFirst')}</p>
+                  <p className="text-sm text-cyan-100 mt-2">{t('leaderboard.beFirst')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -217,3 +233,5 @@ export default function LeaderboardPage() {
     </div>
   );
 }
+
+

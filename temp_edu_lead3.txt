@@ -1,0 +1,37 @@
+                    <CardContent className="text-center py-12">
+                      <Trophy className="h-16 w-16 text-slate-500 mx-auto mb-4" />
+                      <p className="text-slate-300">
+                        {t('education.noLeaderboard')}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    <div className="space-y-4 mb-8">
+>                     {leaderboard.slice(0, 5).map((learner, index) => (
+                        <Card
+                          key={learner.id}
+                          className={cn(
+                            'border bg-card/80',
+                            index < 3
+                              ? 'border-2 border-primary/70'
+                              : 'border-border',
+                          )}
+                        >
+                          <CardContent className="flex items-center gap-4 p-6">
+                            <div
+                              className={`text-2xl font-bold ${
+                                index === 0
+                                  ? 'text-amber-400'
+                                  : index === 1
+                                  ? 'text-slate-200'
+                                  : index === 2
+                                  ? 'text-orange-400'
+                                  : 'text-slate-500'
+                              }`}
+                            >
+                              #{index + 1}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-semibold text-lg text-slate-50">
+                                {learner.username}

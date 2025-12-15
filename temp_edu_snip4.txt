@@ -1,0 +1,37 @@
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+  
+                {user && (
+                  <Card className="mb-4 border border-blue-900/60 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <Star className="h-6 w-6 text-amber-400" />
+>                       {t('education.myProgress')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid md:grid-cols-3 gap-6">
+                        <div>
+                          <div className="text-sm text-blue-200 mb-1">
+                            {t('dashboard.currentXp') || 'Current XP'}
+                          </div>
+                          <div className="text-2xl font-bold text-white">
+                            {user.xp_total} XP
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-blue-200 mb-1">
+                            {t('dashboard.level')}
+                          </div>
+                          <div className="text-xl font-semibold text-emerald-300">
+                            {getLevel(user.xp_total)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-blue-200 mb-1">
+                            {t('dashboard.streak')}
+                          </div>
+                          <div className="text-2xl font-bold text-white">
+                            {user.streak_count} {t('dashboard.days')}

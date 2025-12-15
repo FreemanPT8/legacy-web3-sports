@@ -556,18 +556,18 @@ export default function OnboardingPage() {
     <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
-      <main className="flex-1 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+      <main className="flex-1 bg-[#000c12]">
         {/* HERO alinhado com /sports e /sports/houses */}
-        <section className="border-b border-slate-900 relative overflow-hidden">
+        <section className="border-b border-border relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-            <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+            <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
           </div>
 
           <div className="relative z-10 max-w-5xl mx-auto px-4 py-10 md:py-14">
             <div className="grid md:grid-cols-[2fr,1.2fr] gap-8 items-center">
               <div>
-                <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+                <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-100 mb-3 border border-white/10">
                   LEGACY Onboarding — Sports & Web3
                 </span>
 
@@ -575,7 +575,7 @@ export default function OnboardingPage() {
                   Onboarding personalizado para a tua jornada no LEGACY.
                 </h1>
 
-                <p className="mt-3 text-sm md:text-base text-blue-100 max-w-xl">
+                <p className="mt-3 text-sm md:text-base text-cyan-100 max-w-xl">
                   Na área de Sports do LEGACY ficaste com o contexto geral. Nas
                   Houses of Sports viste onde a comunidade está a nascer. Aqui,
                   pedes ajuda para dar os primeiros passos: dizes quem és, de
@@ -583,7 +583,7 @@ export default function OnboardingPage() {
                   à educação séria em Blockchain, Web3 e à Apertum.
                 </p>
 
-                <p className="mt-3 text-xs text-blue-200/80 max-w-xl">
+                <p className="mt-3 text-xs text-muted-foreground max-w-xl">
                   Não interessa se és atleta, treinador, staff, empreendedor ou
                   apenas alguém que quer entender este novo mundo sem seguir
                   modas cegas. O objetivo é simples: educar primeiro, decidir
@@ -594,7 +594,7 @@ export default function OnboardingPage() {
 
               <div className="bg-card-custom border border-custom rounded-2xl p-5 text-xs text-body shadow-lg">
                 <h2 className="text-sm font-semibold text-heading mb-2 flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-blue-400" />
+                  <Shield className="h-4 w-4 text-primary" />
                   O que acontece depois do envio?
                 </h2>
                 <ol className="space-y-2 list-decimal list-inside">
@@ -630,22 +630,22 @@ export default function OnboardingPage() {
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               {/* Step indicator visual mais discreto */}
-              <div className="mb-6 flex flex-wrap items-center gap-2 text-[11px] text-blue-100/80">
+              <div className="mb-6 flex flex-wrap items-center gap-2 text-[11px] text-cyan-100/80">
                 <span className="font-semibold uppercase tracking-wide">
                   {t('onboarding.title')}
                 </span>
-                <span className="h-[1px] w-6 bg-blue-500/60" />
+                <span className="h-[1px] w-6 bg-primary/60" />
                 <span>{t('onboarding.subtitle')}</span>
               </div>
 
               {/* Como queres usar o LEGACY? */}
-              <Card className="mb-6 bg-slate-950/70 border border-slate-800 text-blue-50">
+              <Card className="mb-6 bg-card-custom border-custom text-body">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-blue-400" />
+                    <Shield className="h-5 w-5 text-primary" />
                     {getProfileModeTitle(language)}
                   </CardTitle>
-                  <CardDescription className="text-blue-200/80">
+                  <CardDescription className="text-muted-foreground">
                     Escolhe se vens pelo lado do desporto ou apenas para
                     aprender Blockchain, Web3 e Apertum. Isto ajusta o tipo de
                     perguntas que te fazemos e o contexto interno onde o teu
@@ -659,14 +659,14 @@ export default function OnboardingPage() {
                       onClick={() => setIsNonSports(false)}
                       className={`flex-1 rounded-lg border px-3 py-3 text-left text-sm transition ${
                         !isNonSports
-                          ? 'border-blue-500 bg-blue-950/60 text-blue-50 shadow-[0_0_18px_rgba(59,130,246,0.35)]'
-                          : 'border-slate-700 bg-slate-950 text-blue-100 hover:border-blue-500/60'
+                          ? 'border-primary bg-[#020b16] text-foreground shadow-[0_0_18px_rgba(34,211,238,0.35)]'
+                          : 'border-border bg-background text-muted-foreground hover:border-primary/60'
                       }`}
                     >
                       <span className="block font-semibold mb-1">
                         {getProfileModeSportsLabel(language)}
                       </span>
-                      <span className="block text-[11px] text-blue-200/80">
+                      <span className="block text-[11px] text-muted-foreground">
                         Ex: atleta, treinador, clube, dirigente, criador de
                         conteúdo, staff técnico.
                       </span>
@@ -678,7 +678,7 @@ export default function OnboardingPage() {
                       className={`flex-1 rounded-lg border px-3 py-3 text-left text-sm transition ${
                         isNonSports
                           ? 'border-emerald-500 bg-emerald-950/60 text-emerald-50 shadow-[0_0_18px_rgba(16,185,129,0.35)]'
-                          : 'border-slate-700 bg-slate-950 text-blue-100 hover:border-emerald-500/60'
+                          : 'border-border bg-background text-muted-foreground hover:border-emerald-500/60'
                       }`}
                     >
                       <span className="block font-semibold mb-1">
@@ -692,7 +692,7 @@ export default function OnboardingPage() {
                     </button>
                   </div>
 
-                  <p className="mt-3 text-[11px] text-blue-200/80">
+                  <p className="mt-3 text-[11px] text-muted-foreground">
                     {getProfileModeHint(language)}
                   </p>
                 </CardContent>
@@ -703,7 +703,7 @@ export default function OnboardingPage() {
                 <Card className="mb-6 bg-card-custom border-custom">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Mail className="h-5 w-5 text-blue-600" />
+                      <Mail className="h-5 w-5 text-primary" />
                       {t('onboarding.step1')}
                     </CardTitle>
                     <CardDescription>
@@ -761,7 +761,7 @@ export default function OnboardingPage() {
                 <Card className="mb-6 bg-card-custom border-custom">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-blue-600" />
+                      <User className="h-5 w-5 text-primary" />
                       {t('onboarding.step2')}
                     </CardTitle>
                   </CardHeader>
@@ -814,7 +814,7 @@ export default function OnboardingPage() {
                 <Card className="mb-6 bg-card-custom border-custom">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Trophy className="h-5 w-5 text-blue-600" />
+                      <Trophy className="h-5 w-5 text-primary" />
                       {!isNonSports
                         ? t('onboarding.step3')
                         : L === 'pt'
@@ -1027,7 +1027,7 @@ export default function OnboardingPage() {
                 <Card className="mb-6 bg-card-custom border-custom">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Lightbulb className="h-5 w-5 text-blue-600" />
+                      <Lightbulb className="h-5 w-5 text-primary" />
                       {t('onboarding.step4')}
                     </CardTitle>
                   </CardHeader>
@@ -1103,7 +1103,7 @@ export default function OnboardingPage() {
                 <Card className="mb-6 bg-card-custom border-custom">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5 text-blue-600" />
+                      <MessageSquare className="h-5 w-5 text-primary" />
                       {t('onboarding.step5')}
                     </CardTitle>
                   </CardHeader>
@@ -1128,7 +1128,7 @@ export default function OnboardingPage() {
                         minLength={8}
                         maxLength={8888}
                       />
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <p className="text-sm text-muted-foreground">
                         {formData.message.length}/8888{' '}
                         {t('onboarding.characters')}
                       </p>
@@ -1139,7 +1139,7 @@ export default function OnboardingPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  className="w-full"
                   disabled={loading}
                 >
                   {loading
@@ -1170,7 +1170,7 @@ export default function OnboardingPage() {
           </DialogHeader>
           <div className="mt-4 flex flex-col gap-3">
             <Button
-              className="w-full bg-black text-white hover:bg-gray-900"
+              className="w-full"
               onClick={handleGoToSignup}
             >
               Registar-me com este email
@@ -1188,3 +1188,20 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

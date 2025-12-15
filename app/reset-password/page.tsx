@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Trophy } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trophy } from 'lucide-react';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
@@ -36,12 +37,12 @@ export default function ResetPasswordPage() {
     }
 
     if (formData.password !== formData.confirmPassword) {
-      const msg = 'As passwords não coincidem. Verifica e tenta novamente.';
+      const msg = 'As palavras-passe não coincidem. Verifica e tenta novamente.';
       setError(msg);
       setStatus('error');
 
       toast({
-        title: 'Erro na password',
+        title: 'Erro na palavra-passe',
         description: msg,
         variant: 'destructive',
       });
@@ -49,12 +50,12 @@ export default function ResetPasswordPage() {
     }
 
     if (formData.password.length < 6) {
-      const msg = 'A password deve ter pelo menos 6 caracteres.';
+      const msg = 'A palavra-passe deve ter pelo menos 6 caracteres.';
       setError(msg);
       setStatus('error');
 
       toast({
-        title: 'Password demasiado curta',
+        title: 'Palavra-passe demasiado curta',
         description: msg,
         variant: 'destructive',
       });
@@ -82,7 +83,7 @@ export default function ResetPasswordPage() {
         setError(msg);
 
         toast({
-          title: 'Erro ao redefinir password',
+          title: 'Erro ao redefinir palavra-passe',
           description: msg,
           variant: 'destructive',
         });
@@ -93,11 +94,10 @@ export default function ResetPasswordPage() {
       setStatus('success');
 
       toast({
-        title: 'Password atualizada',
+        title: 'Palavra-passe atualizada',
         description: 'A tua palavra-passe foi redefinida com sucesso. Já podes entrar.',
       });
 
-      // pequena pausa opcional: aqui podemos redirecionar logo
       router.push('/login');
     } catch (err) {
       console.error(err);
@@ -113,41 +113,33 @@ export default function ResetPasswordPage() {
     }
   };
 
-  // Caso não exista token na URL
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-950 dark:to-gray-900 px-4">
-        <Card className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+      <div className="flex min-h-screen items-center justify-center bg-[#000c12] px-4">
+        <Card className="w-full max-w-md border border-white/10 bg-[#000c12] shadow-xl">
           <CardHeader className="space-y-4">
             <div className="flex justify-center">
               <div className="flex items-center space-x-2">
-                <Trophy className="h-8 w-8 text-blue-600" />
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                <Trophy className="h-8 w-8 text-cyan-300" />
+                <span className="bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84] bg-clip-text text-2xl font-bold text-transparent tracking-[0.35em]">
                   LEGACY
                 </span>
               </div>
             </div>
-            <CardTitle className="text-2xl text-center">
-              Link inválido ou expirado
-            </CardTitle>
-            <CardDescription className="text-center text-gray-600 dark:text-gray-300">
+            <CardTitle className="text-center text-2xl text-white">Link inválido ou expirado</CardTitle>
+            <CardDescription className="text-center text-slate-300">
               O link de redefinição de palavra-passe é inválido, está em falta ou já expirou.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-center text-gray-600 dark:text-gray-300">
-            <p>
-              Volta à página de recuperação e pede um novo link de redefinição.
-            </p>
+          <CardContent className="space-y-2 text-center text-sm text-slate-300">
+            <p>Volta à página de recuperação e pede um novo link de redefinição.</p>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
-            <Button
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              onClick={() => router.push('/forgot-password')}
-            >
+            <Button className="w-full" onClick={() => router.push('/forgot-password')}>
               Pedir novo link
             </Button>
-            <p className="text-sm text-center text-gray-600 dark:text-gray-300">
-              <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
+            <p className="text-center text-sm text-slate-400">
+              <Link href="/login" className="text-cyan-300 hover:underline">
                 Voltar ao login
               </Link>
             </p>
@@ -157,23 +149,20 @@ export default function ResetPasswordPage() {
     );
   }
 
-  // Fluxo normal com token válido
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-950 dark:to-gray-900 px-4">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+    <div className="flex min-h-screen items-center justify-center bg-[#000c12] px-4">
+      <Card className="w-full max-w-md border border-white/10 bg-[#000c12] shadow-xl">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center space-x-2">
-              <Trophy className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              <Trophy className="h-8 w-8 text-cyan-300" />
+              <span className="bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84] bg-clip-text text-2xl font-bold text-transparent tracking-[0.35em]">
                 LEGACY
               </span>
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">
-            Definir nova palavra-passe
-          </CardTitle>
-          <CardDescription className="text-center text-gray-600 dark:text-gray-300">
+          <CardTitle className="text-center text-2xl text-white">Definir nova palavra-passe</CardTitle>
+          <CardDescription className="text-center text-slate-300">
             Escolhe uma nova palavra-passe segura para a tua conta.
           </CardDescription>
         </CardHeader>
@@ -181,21 +170,23 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Nova palavra-passe *</Label>
+              <Label htmlFor="password" className="text-slate-100">
+                Nova palavra-passe *
+              </Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="Mínimo 6 caracteres"
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, password: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar palavra-passe *</Label>
+              <Label htmlFor="confirmPassword" className="text-slate-100">
+                Confirmar palavra-passe *
+              </Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -211,28 +202,20 @@ export default function ResetPasswordPage() {
               />
             </div>
 
-            {status === 'error' && error && (
-              <p className="text-sm text-red-500">{error}</p>
-            )}
+            {status === 'error' && error && <p className="text-sm text-red-400">{error}</p>}
 
             {status === 'success' && (
-              <p className="text-sm text-green-600">
-                A tua palavra-passe foi atualizada. Já podes entrar.
-              </p>
+              <p className="text-sm text-emerald-400">A tua palavra-passe foi atualizada. Já podes entrar.</p>
             )}
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              disabled={status === 'loading'}
-            >
+            <Button type="submit" className="w-full" disabled={status === 'loading'}>
               {status === 'loading' ? 'A guardar...' : 'Atualizar palavra-passe'}
             </Button>
 
-            <p className="text-sm text-center text-gray-600 dark:text-gray-300">
-              <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
+            <p className="text-center text-sm text-slate-400">
+              <Link href="/login" className="text-cyan-300 hover:underline">
                 Voltar ao login
               </Link>
             </p>
@@ -242,3 +225,4 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
+

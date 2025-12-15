@@ -1,0 +1,41 @@
+>                   {topCourses.slice(0, 3).map((course) => {
+                      const title = getMultilingualContent(
+                        course.title,
+                        language,
+                      );
+                      const description = getMultilingualContent(
+                        course.description,
+                        language,
+                      );
+                      const isLocked =
+                        course.xp_required > (user?.xp_total || 0);
+                      const modulesArray = Array.isArray(course.modules)
+                        ? course.modules
+                        : [];
+                      const lessonsCount = modulesArray.reduce(
+                        (acc: number, mod: any) => {
+                          const lessonsArray = Array.isArray(mod.lessons)
+                            ? mod.lessons
+                            : [];
+                          return acc + lessonsArray.length;
+                        },
+                        0,
+                      );
+  
+                      return (
+                        <Card
+                          key={course.id}
+                          className="border border-slate-800 bg-slate-900/80 hover:border-sky-500/70 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)] transition-all"
+                        >
+                          <CardHeader>
+                            <div className="flex justify-between items-start mb-2">
+                              {getLevelBadge(course.level)}
+                              <Badge
+                                variant="outline"
+                                className="border-sky-700/60 text-slate-100"
+                              >
+                                {course.xp_required} XP
+                              </Badge>
+                            </div>
+                            <CardTitle className="text-xl text-slate-50">
+                              {title}

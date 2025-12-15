@@ -1,0 +1,66 @@
+  
+          {/* LISTA DE HOUSES */}
+          <section className="py-10 md:py-14">
+            <div className="container mx-auto px-4">
+              {loading ? (
+                <div className="max-w-4xl mx-auto text-center text-sm text-blue-100 py-16">
+                  A carregar Houses of Sports…
+                </div>
+>             ) : houses.length === 0 ? (
+                <div className="max-w-4xl mx-auto rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-6 text-sm text-blue-100 text-center">
+                  Ainda não existem Houses of Sports visíveis. A equipa do LEGACY
+                  está a preparar a primeira vaga de comunidades.
+                </div>
+              ) : (
+                <div className="max-w-6xl mx-auto space-y-10">
+                  <HousesSection
+                    title="Houses ativas"
+                    description="Comunidades que já estão a receber membros e a organizar a sua base educativa."
+                    houses={active}
+                  />
+                  <HousesSection
+                    title="Houses em construção"
+                    description="Casas com liderança definida, a preparar estrutura, conteúdos e primeiros membros."
+                    houses={underConstruction}
+                  />
+                  {isLegacyTeam && (
+                    <HousesSection
+                      title="Houses em desenvolvimento (equipa interna LEGACY)"
+                      description="Desportos e países que estão na fila estratégica para receber uma House em breve."
+                      houses={visibleInDevelopment}
+                    />
+                  )}
+                </div>
+    title,
+    description,
+    houses,
+  }: {
+    title: string;
+    description: string;
+    houses: House[];
+  }) {
+>   if (!houses || houses.length === 0) return null;
+  
+    const subset = houses.slice(0, 9);
+  
+    return (
+      <div>
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 mb-4">
+          <div>
+            <h3 className="text-md font-semibold text-foreground">{title}</h3>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {houses.length} {houses.length === 1 ? 'House' : 'Houses'}
+          </p>
+        </div>
+  
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {subset.map((house) => {
+            const headUsername = house.head?.username
+              ? `@${house.head.username}`
+              : null;
+  
+            const initialsSource = house.head?.username || house.name || 'H';
+  
+            const initials = initialsSource

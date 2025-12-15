@@ -1,0 +1,13 @@
+                            size="lg"
+                            variant="outline"
+                            className="border-primary text-primary hover:bg-[#000c12]"
+                          >
+>                         View Full Leaderboard
+                        </Button>
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>

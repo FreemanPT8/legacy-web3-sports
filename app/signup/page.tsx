@@ -94,13 +94,13 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-950 dark:to-gray-900 p-4">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-[#000c12] p-4">
+      <Card className="w-full max-w-md bg-card border border-border">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center space-x-2">
-              <Trophy className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              <Trophy className="h-8 w-8 text-primary" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84] bg-clip-text text-transparent">
                 LEGACY
               </span>
             </div>
@@ -108,7 +108,7 @@ export default function SignupPage() {
           <CardTitle className="text-2xl text-center">
             {t('nav.signup')}
           </CardTitle>
-          <CardDescription className="text-center text-gray-600 dark:text-gray-300">
+          <CardDescription className="text-center text-muted-foreground">
             Create your account and start earning XP
           </CardDescription>
         </CardHeader>
@@ -211,18 +211,14 @@ export default function SignupPage() {
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Creating account...' : t('nav.signup')}
             </Button>
-            <p className="text-sm text-center text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-center text-muted-foreground">
               Already have an account?{' '}
               <Link
                 href="/login"
-                className="text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-primary hover:underline"
               >
                 {t('nav.login')}
               </Link>

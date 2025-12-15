@@ -1,0 +1,33 @@
+          </section>
+  
+          {/* CURSOS EM DESTAQUE */}
+          <section className="py-16 bg-[#05212b]">
+            <div className="container mx-auto px-4">
+              <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-50">
+>                   {t('education.featured.title')}
+                  </h2>
+                  <p className="text-lg text-slate-300">
+                    {t('education.featuredDesc') ||
+                      'Start your learning journey with our most popular courses'}
+                  </p>
+                </div>
+  
+                  {loading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                    </div>
+                  ) : topCourses.length === 0 ? (
+                    <Card className="border border-border bg-card/80">
+                      <CardContent className="text-center py-12">
+                        <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">
+                          {t('education.noCourses') || 'No courses available yet'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                  <div className="grid md:grid-cols-3 gap-6 mb-8">
+                    {topCourses.slice(0, 3).map((course) => {
+                      const title = getMultilingualContent(

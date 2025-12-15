@@ -1,0 +1,33 @@
+          </section>
+  
+          {/* LEADERBOARD */}
+          <section className="py-16 bg-[#05212b]">
+            <div className="container mx-auto px-4">
+              <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-50">
+>                   {t('education.leaderboard.title')}
+                  </h2>
+                  <p className="text-lg text-slate-300">
+                    See who's leading the way in Web3 education
+                  </p>
+                </div>
+  
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto" />
+                  </div>
+                ) : leaderboard.length === 0 ? (
+                  <Card className="border border-border bg-card/80">
+                    <CardContent className="text-center py-12">
+                      <Trophy className="h-16 w-16 text-slate-500 mx-auto mb-4" />
+                      <p className="text-slate-300">
+                        {t('education.noLeaderboard')}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    <div className="space-y-4 mb-8">
+                      {leaderboard.slice(0, 5).map((learner, index) => (
+                        <Card

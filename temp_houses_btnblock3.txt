@@ -1,0 +1,15 @@
+>                   <div className="pt-2 flex flex-wrap gap-2">
+                      <Link href="/sports/onboarding">
+                        <Button
+                          size="sm"
+                          className="bg-white text-slate-950 hover:bg-slate-100"
+                        >
+                          Preencher formulário para onboarding personalizado
+                        </Button>
+                      </Link>
+                      <Link href="/sports">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-slate-600 text-blue-100 hover:bg-slate-900"
+                        >

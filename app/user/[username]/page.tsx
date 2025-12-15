@@ -96,8 +96,8 @@ export default function UserProfilePage() {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Loading profile...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading profile...</p>
           </div>
         </main>
         <Footer />
@@ -110,11 +110,11 @@ export default function UserProfilePage() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <Card className="max-w-md">
+          <Card className="max-w-md bg-card border border-border">
             <CardContent className="text-center py-12">
-              <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">User Not Found</h3>
-              <p className="text-gray-600 mb-4">This user doesn't exist.</p>
+              <p className="text-muted-foreground mb-4">This user doesn't exist.</p>
               <Link href="/education/leaderboard">
                 <Button>View Leaderboard</Button>
               </Link>
@@ -130,10 +130,10 @@ export default function UserProfilePage() {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 bg-[#000c12] py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <Card className="mb-6">
+            <Card className="mb-6 bg-card border border-border">
               <CardContent className="p-8">
                 <div className="flex items-start gap-6">
                   <Avatar className="h-24 w-24">
@@ -144,21 +144,21 @@ export default function UserProfilePage() {
 
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-bold">{profile.username}</h1>
-                      <Badge className="bg-blue-600 text-lg px-3 py-1">
+                      <h1 className="text-3xl font-bold text-white">{profile.username}</h1>
+                      <Badge className="bg-primary text-primary-foreground text-lg px-3 py-1">
                         {getLevel(profile.xp_total)}
                       </Badge>
                     </div>
 
                     {profile.sports_role && (
-                      <p className="text-gray-600 mb-3">{profile.sports_role}</p>
+                      <p className="text-muted-foreground mb-3">{profile.sports_role}</p>
                     )}
 
                     {profile.bio && (
-                      <p className="text-gray-700 mb-4 max-w-2xl">{profile.bio}</p>
+                      <p className="text-muted-foreground mb-4 max-w-2xl">{profile.bio}</p>
                     )}
 
-                    <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span>Joined {new Date(profile.created_at).toLocaleDateString()}</span>
@@ -173,10 +173,10 @@ export default function UserProfilePage() {
                   </div>
 
                   <div className="text-right">
-                    <div className="text-4xl font-bold text-blue-600 mb-1">
+                    <div className="text-4xl font-bold text-primary mb-1">
                       {profile.xp_total.toLocaleString()}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Total XP</div>
+                    <div className="text-sm text-muted-foreground">Total XP</div>
                     {profile.stats.rank > 0 && (
                       <Badge variant="outline" className="mt-2">
                         <Trophy className="h-3 w-3 mr-1" />
@@ -189,23 +189,23 @@ export default function UserProfilePage() {
             </Card>
 
             <div className="grid md:grid-cols-4 gap-4 mb-6">
-              <Card>
+              <Card className="bg-card border border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
                     Lessons Completed
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
+                  <BookOpen className="h-5 w-5 text-primary" />
                     <span className="text-2xl font-bold">{profile.stats.lessonsCompleted}</span>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-card border border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
                     Articles Read
                   </CardTitle>
                 </CardHeader>
@@ -217,9 +217,9 @@ export default function UserProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-card border border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
                     Forum Topics
                   </CardTitle>
                 </CardHeader>
@@ -231,9 +231,9 @@ export default function UserProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-card border border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
                     Forum Posts
                   </CardTitle>
                 </CardHeader>
@@ -253,7 +253,7 @@ export default function UserProfilePage() {
               </TabsList>
 
               <TabsContent value="activity">
-                <Card>
+                <Card className="bg-card border border-border">
                   <CardHeader>
                     <CardTitle>Recent Activity</CardTitle>
                   </CardHeader>
@@ -263,23 +263,23 @@ export default function UserProfilePage() {
                         {profile.recentActivity.map((activity) => (
                           <div
                             key={activity.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                            className="flex items-center justify-between p-3 bg-card border border-border rounded-lg"
                           >
                             <div className="flex items-center gap-3">
-                              <Award className="h-5 w-5 text-blue-600" />
+                              <Award className="h-5 w-5 text-primary" />
                               <div>
-                                <p className="font-medium">{activity.description}</p>
-                                <p className="text-sm text-gray-500">
+                                <p className="font-medium text-white">{activity.description}</p>
+                                <p className="text-sm text-muted-foreground">
                                   {getTimeSince(activity.created_at)}
                                 </p>
                               </div>
                             </div>
-                            <Badge className="bg-blue-600">+{activity.xp} XP</Badge>
+                            <Badge className="bg-primary text-primary-foreground">+{activity.xp} XP</Badge>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-center text-gray-600 py-8">No recent activity</p>
+                      <p className="text-center text-muted-foreground py-8">No recent activity</p>
                     )}
                   </CardContent>
                 </Card>
@@ -293,20 +293,20 @@ export default function UserProfilePage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Lessons Completed</span>
-                        <span className="font-bold text-blue-600">
+                        <span className="text-muted-foreground">Lessons Completed</span>
+                        <span className="font-bold text-primary">
                           {profile.stats.lessonsCompleted}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Articles Read</span>
-                        <span className="font-bold text-blue-600">
+                        <span className="text-muted-foreground">Articles Read</span>
+                        <span className="font-bold text-primary">
                           {profile.stats.articlesRead}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Current Level</span>
-                        <span className="font-bold text-blue-600">
+                        <span className="text-muted-foreground">Current Level</span>
+                        <span className="font-bold text-primary">
                           {getLevel(profile.xp_total)}
                         </span>
                       </div>
@@ -319,20 +319,20 @@ export default function UserProfilePage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Forum Topics Created</span>
-                        <span className="font-bold text-blue-600">
+                        <span className="text-muted-foreground">Forum Topics Created</span>
+                        <span className="font-bold text-primary">
                           {profile.stats.forumTopics}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Forum Posts</span>
-                        <span className="font-bold text-blue-600">
+                        <span className="text-muted-foreground">Forum Posts</span>
+                        <span className="font-bold text-primary">
                           {profile.stats.forumPosts}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Leaderboard Rank</span>
-                        <span className="font-bold text-blue-600">
+                        <span className="text-muted-foreground">Leaderboard Rank</span>
+                        <span className="font-bold text-primary">
                           #{profile.stats.rank}
                         </span>
                       </div>

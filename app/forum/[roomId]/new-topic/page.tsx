@@ -80,8 +80,8 @@ export default function NewTopicPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-page">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">
             {t('common.loading')}
           </p>
         </div>
@@ -146,10 +146,10 @@ export default function NewTopicPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <main className="flex-1 flex items-center justify-center bg-page">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">
               {t('forum.loadingRoom') || 'Loading forum room...'}
             </p>
           </div>
@@ -164,14 +164,14 @@ export default function NewTopicPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-          <Card className="max-w-md">
+        <main className="flex-1 flex items-center justify-center bg-page">
+          <Card className="max-w-md bg-card border border-border">
             <CardContent className="text-center py-12">
-              <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">
                 {t('forum.roomNotFound') || 'Room Not Found'}
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 {t('forum.roomNotFoundDesc') ||
                   'This forum room does not exist or is not available.'}
               </p>
@@ -191,23 +191,23 @@ export default function NewTopicPage() {
     const needed = room.xp_required_post - userXP;
 
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-page">
         <Header />
-        <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+        <main className="flex-1 py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
-              <Card className="border-2 border-yellow-500 bg-yellow-50">
+              <Card className="border-2 border-yellow-500 bg-yellow-500/10">
                 <CardContent className="text-center py-12">
                   <Lock className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
                   <h3 className="text-2xl font-semibold mb-2">
                     {t('forum.insufficientXp') || 'Insufficient XP'}
                   </h3>
-                  <p className="text-gray-700 mb-4">
+                  <p className="text-muted-foreground mb-4">
                     {t('forum.needXpToPost')}{' '}
                     <strong>{room.xp_required_post} XP</strong>{' '}
                     {t('forum.toPostInForum')}
                   </p>
-                  <p className="text-gray-700 mb-6">
+                  <p className="text-muted-foreground mb-6">
                     {t('forum.currentXp')}{' '}
                     <strong>{userXP} XP</strong> | {t('forum.needMore')}{' '}
                     <strong>
@@ -240,10 +240,10 @@ export default function NewTopicPage() {
 
   // Vista normal: formulário de novo tópico
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-page">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="mb-6 flex items-center justify-between">
@@ -255,21 +255,21 @@ export default function NewTopicPage() {
               </Link>
             </div>
 
-            <Card className="mb-6">
+            <Card className="mb-6 bg-card border border-border">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="text-4xl">{room.icon}</div>
                     <div>
-                      <CardTitle className="text-2xl">
+                      <CardTitle className="text-2xl text-heading">
                         {t('forum.newTopicIn') || 'New Topic in'} {room.name}
                       </CardTitle>
-                      <p className="text-gray-600 dark:text-gray-300 mt-2">
+                      <p className="text-body mt-2">
                         {room.description}
                       </p>
                     </div>
                   </div>
-                  <Badge className="bg-blue-600">
+                  <Badge className="bg-primary text-primary-foreground">
                     {room.xp_required_post} XP
                   </Badge>
                 </div>
@@ -296,7 +296,7 @@ export default function NewTopicPage() {
                       maxLength={160}
                       required
                     />
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {t('forum.topicTitleHelp') ||
                         'Pensa no título como um resumo em 1 frase do que queres discutir.'}
                     </p>
@@ -321,7 +321,7 @@ export default function NewTopicPage() {
                       disabled={submitting}
                       required
                     />
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {t('forum.topicContentHelp') ||
                         'Tópicos com contexto, detalhe e respeito tendem a gerar melhores respostas e mais XP.'}
                     </p>
@@ -333,15 +333,14 @@ export default function NewTopicPage() {
                     </p>
                   )}
 
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
-                    <p className="text-xs text-gray-500">
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground">
                       {t('forum.topicEarnXp') ||
                         'Criar um tópico relevante pode atribuir-te XP adicional.'}
                     </p>
                     <Button
                       type="submit"
                       disabled={submitting || !title.trim() || !content.trim()}
-                      className="bg-blue-600 hover:bg-blue-700"
                     >
                       <PlusCircle className="h-4 w-4 mr-2" />
                       {submitting

@@ -157,12 +157,12 @@ export default function WalletPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 py-8">
+      <main className="flex-1 bg-[#000c12] py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold mb-2">Your Wallet</h1>
-              <p className="text-gray-600 dark:text-gray-300">Manage your crypto assets on Apertum network</p>
+              <p className="text-muted-foreground">Manage your crypto assets on Apertum network</p>
             </div>
 
             <div className="grid lg:grid-cols-3 gap-6 mb-8">
@@ -192,7 +192,7 @@ export default function WalletPage() {
               <div className="space-y-4">
                 <Card>
                   <CardContent className="p-6">
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 mb-3">
+                    <Button className="w-full  mb-3">
                       <Download className="h-4 w-4 mr-2" />
                       {t('wallet.receive')}
                     </Button>
@@ -242,20 +242,20 @@ export default function WalletPage() {
                         {tokens.map((token) => (
                           <div
                             key={token.id}
-                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="flex items-center justify-between p-4 bg-card rounded-lg hover:bg-muted transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-4">
                               <div className="text-3xl">{token.icon}</div>
                               <div>
                                 <div className="font-semibold">{token.name}</div>
-                                <div className="text-sm text-gray-600 dark:text-gray-300">{token.symbol}</div>
+                                <div className="text-sm text-muted-foreground">{token.symbol}</div>
                               </div>
                             </div>
                             <div className="text-right">
                               <div className="font-semibold">
                                 {token.balance.toLocaleString()} {token.symbol}
                               </div>
-                              <div className="text-sm text-gray-600 dark:text-gray-300">
+                              <div className="text-sm text-muted-foreground">
                                 ${token.value_usd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                               </div>
                               <Badge
@@ -280,7 +280,7 @@ export default function WalletPage() {
                   </CardHeader>
                   <CardContent>
                     {transactions.length === 0 ? (
-                      <div className="text-center py-8 text-gray-600 dark:text-gray-300">
+                      <div className="text-center py-8 text-muted-foreground">
                         No transactions yet
                       </div>
                     ) : (
@@ -288,23 +288,23 @@ export default function WalletPage() {
                         {transactions.map((tx) => (
                           <div
                             key={tx.id}
-                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted transition-colors"
                           >
                             <div className="flex items-center gap-4">
                               <div className={`p-2 rounded-full ${
                                 tx.type === 'receive' ? 'bg-green-100' :
-                                tx.type === 'send' ? 'bg-blue-100' :
+                                tx.type === 'send' ? 'bg-primary/10' :
                                 tx.type === 'stake' ? 'bg-purple-100' :
                                 'bg-yellow-100'
                               }`}>
                                 {tx.type === 'receive' ? <Download className="h-5 w-5 text-green-600" /> :
-                                 tx.type === 'send' ? <Send className="h-5 w-5 text-blue-600" /> :
+                                 tx.type === 'send' ? <Send className="h-5 w-5 text-primary" /> :
                                  tx.type === 'stake' ? <TrendingUp className="h-5 w-5 text-purple-600" /> :
                                  <Plus className="h-5 w-5 text-yellow-600" />}
                               </div>
                               <div>
                                 <div className="font-semibold capitalize">{tx.type}</div>
-                                <div className="text-sm text-gray-600 dark:text-gray-300">
+                                <div className="text-sm text-muted-foreground">
                                   {tx.from && `From ${tx.from}`}
                                   {tx.to && `To ${tx.to}`}
                                   {!tx.from && !tx.to && getTimeSince(tx.date)}
@@ -318,7 +318,7 @@ export default function WalletPage() {
                                 {tx.type === 'receive' || tx.type === 'claim' ? '+' : '-'}
                                 {tx.amount} {tx.token}
                               </div>
-                              <div className="text-sm text-gray-600 dark:text-gray-300">{getTimeSince(tx.date)}</div>
+                              <div className="text-sm text-muted-foreground">{getTimeSince(tx.date)}</div>
                               <Badge
                                 variant={
                                   tx.status === 'completed' ? 'default' :
@@ -341,12 +341,12 @@ export default function WalletPage() {
               <TabsContent value="nfts">
                 <Card>
                   <CardContent className="text-center py-12">
-                    <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <TrendingUp className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-xl font-semibold mb-2">No NFTs Yet</h3>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-muted-foreground mb-6">
                       Start collecting NFTs on the Apertum network
                     </p>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Button className="">
                       Explore NFT Marketplace
                     </Button>
                   </CardContent>
@@ -368,7 +368,7 @@ export default function WalletPage() {
                   <li>✓ Maintain daily streaks</li>
                   <li>✓ Achieve milestones</li>
                 </ul>
-                <Button className="bg-blue-600 hover:bg-blue-700">
+                <Button className="">
                   View Opportunities
                 </Button>
               </CardContent>
@@ -381,3 +381,11 @@ export default function WalletPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

@@ -6,27 +6,27 @@ import { Footer } from '@/components/layout/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Home, Search, BookOpen } from 'lucide-react';
+import { Home, BookOpen } from 'lucide-react';
 
 export default function NotFound() {
   const { t } = useLanguage();
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-foreground">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center py-16">
+      <main className="flex-1 flex items-center justify-center py-16">
         <div className="container mx-auto px-4">
-          <Card className="max-w-2xl mx-auto">
+          <Card className="max-w-2xl mx-auto bg-card border border-border">
             <CardContent className="text-center py-16">
-              <div className="text-8xl font-bold text-blue-600 mb-4">404</div>
+              <div className="text-8xl font-bold text-primary mb-4">404</div>
               <h1 className="text-3xl font-bold mb-4">{t('home.notFound')}</h1>
-              <p className="text-lg text-gray-600 mb-8">
+              <p className="text-lg text-muted-foreground mb-8">
                 {t('home.notFoundDesc')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/">
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                  <Button size="lg">
                     <Home className="h-5 w-5 mr-2" />
                     {t('home.goHome')}
                   </Button>
@@ -39,26 +39,31 @@ export default function NotFound() {
                 </Link>
               </div>
 
-              <div className="mt-12 pt-8 border-t">
-                <p className="text-sm text-gray-600 mb-4">{t('home.popularPages')}</p>
-                <div className="flex flex-wrap gap-3 justify-center">
-                  <Link href="/blog" className="text-blue-600 hover:underline text-sm">
+              <div className="mt-12 pt-8 border-t border-border">
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t('home.popularPages')}
+                </p>
+                <div className="flex flex-wrap gap-3 justify-center text-sm">
+                  <Link href="/blog" className="text-primary hover:underline">
                     {t('blog.title')}
                   </Link>
-                  <span className="text-gray-300">•</span>
-                  <Link href="/education/leaderboard" className="text-blue-600 hover:underline text-sm">
+                  <span className="text-muted-foreground">·</span>
+                  <Link
+                    href="/education/leaderboard"
+                    className="text-primary hover:underline"
+                  >
                     {t('education.leaderboard')}
                   </Link>
-                  <span className="text-gray-300">•</span>
-                  <Link href="/sports/houses" className="text-blue-600 hover:underline text-sm">
+                  <span className="text-muted-foreground">·</span>
+                  <Link href="/sports/houses" className="text-primary hover:underline">
                     {t('home.housesOfSports2')}
                   </Link>
-                  <span className="text-gray-300">•</span>
-                  <Link href="/about" className="text-blue-600 hover:underline text-sm">
+                  <span className="text-muted-foreground">·</span>
+                  <Link href="/about" className="text-primary hover:underline">
                     {t('home.about')}
                   </Link>
-                  <span className="text-gray-300">•</span>
-                  <Link href="/dashboard" className="text-blue-600 hover:underline text-sm">
+                  <span className="text-muted-foreground">·</span>
+                  <Link href="/dashboard" className="text-primary hover:underline">
                     {t('dashboard.title')}
                   </Link>
                 </div>

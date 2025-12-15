@@ -1,0 +1,21 @@
+                      <Link href="/sports">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-slate-600 text-blue-100 hover:bg-slate-900"
+                        >
+>                         Voltar ao portal LEGACY Sports
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+  
+              {error && (
+                <div className="max-w-4xl mx-auto mt-6 rounded-md border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-100">
+                  {error}
+                </div>
+              )}
+            </div>
+          </section>

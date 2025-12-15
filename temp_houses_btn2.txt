@@ -1,0 +1,30 @@
+                        <Button
+                          size="sm"
+                          className="bg-white text-slate-950 hover:bg-slate-100"
+                        >
+>                         Preencher formulário para onboarding personalizado
+                        </Button>
+                      </Link>
+                      <Link href="/sports">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-slate-600 text-blue-100 hover:bg-slate-900"
+                        >
+                          Voltar ao portal LEGACY Sports
+                        </Button>
+                    <Button
+                      size="lg"
+                      className="bg-blue-600 hover:bg-blue-500 text-white"
+                    >
+>                     Preencher formulário para onboarding personalizado
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+  
+        <Footer />
+      </div>

@@ -86,29 +86,29 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
 
-      <main className="flex-1 bg-gray-50 dark:bg-gray-950">
+      <main className="flex-1">
         {/* HERO */}
-        <section className="bg-gradient-to-br from-blue-600 to-cyan-600 text-white py-16 md:py-20">
+        <section className="bg-gradient-to-br from-[#1d98a6] via-[#14718f] to-[#126e84] text-white py-16 md:py-20">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-3xl md:text-5xl font-bold mb-4 md:mb-6">
               {t('about.title')}
             </h1>
-            <p className="text-base md:text-xl text-blue-100 max-w-3xl mx-auto">
+            <p className="text-base md:text-xl text-cyan-100 max-w-3xl mx-auto">
               {t('about.subtitle')}
             </p>
           </div>
         </section>
 
         {/* STATS / NÚMEROS DA PLATAFORMA */}
-        <section className="py-14 bg-white dark:bg-gray-950">
+        <section className="py-14 bg-[#000c12]">
           <div className="container mx-auto px-4">
             {loading ? (
               <div className="text-center py-10">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3" />
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
                   A carregar estatísticas da comunidade…
                 </p>
               </div>
@@ -116,13 +116,13 @@ export default function AboutPage() {
               <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
                 <Card className="text-center shadow-sm">
                   <CardHeader>
-                    <Users className="h-10 w-10 text-blue-600 mx-auto mb-2" />
+                    <Users className="h-10 w-10 text-primary mx-auto mb-2" />
                     <CardTitle className="text-2xl font-bold">
                       {(stats?.activeUsers ?? 0) + '+'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {t('about.activeMembers')}
                     </p>
                   </CardContent>
@@ -130,13 +130,13 @@ export default function AboutPage() {
 
                 <Card className="text-center shadow-sm">
                   <CardHeader>
-                    <Trophy className="h-10 w-10 text-blue-600 mx-auto mb-2" />
+                    <Trophy className="h-10 w-10 text-primary mx-auto mb-2" />
                     <CardTitle className="text-2xl font-bold">
                       {(stats?.totalLessons ?? 0) + '+'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {t('about.lessonsAvailable')}
                     </p>
                   </CardContent>
@@ -144,11 +144,11 @@ export default function AboutPage() {
 
                 <Card className="text-center shadow-sm">
                   <CardHeader>
-                    <Globe2 className="h-10 w-10 text-blue-600 mx-auto mb-2" />
+                    <Globe2 className="h-10 w-10 text-primary mx-auto mb-2" />
                     <CardTitle className="text-2xl font-bold">6</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {t('about.languagesSupported')}
                     </p>
                   </CardContent>
@@ -156,13 +156,13 @@ export default function AboutPage() {
 
                 <Card className="text-center shadow-sm">
                   <CardHeader>
-                    <Award className="h-10 w-10 text-blue-600 mx-auto mb-2" />
+                    <Award className="h-10 w-10 text-primary mx-auto mb-2" />
                     <CardTitle className="text-2xl font-bold">
                       {(stats?.totalBlogPosts ?? 0) + '+'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {t('about.blogArticles')}
                     </p>
                   </CardContent>
@@ -173,14 +173,14 @@ export default function AboutPage() {
         </section>
 
         {/* MISSÃO / VISÃO / QUALIDADE / COMUNIDADE */}
-        <section className="py-16 bg-gray-50 dark:bg-gray-900">
+        <section className="py-16 bg-[#05212b]">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto space-y-10">
               <div className="text-center">
                 <h2 className="text-2xl md:text-3xl font-bold mb-3">
                   {t('about.mission')}
                 </h2>
-                <p className="text-base text-gray-600 dark:text-gray-300">
+                <p className="text-base text-muted-foreground">
                   {t('about.missionDesc')}
                 </p>
               </div>
@@ -188,11 +188,11 @@ export default function AboutPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <Card className="shadow-sm">
                   <CardHeader>
-                    <Target className="h-8 w-8 text-blue-600 mb-2" />
+                    <Target className="h-8 w-8 text-primary mb-2" />
                     <CardTitle>{t('about.visionTitle')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {t('about.visionDesc')}
                     </p>
                   </CardContent>
@@ -200,11 +200,11 @@ export default function AboutPage() {
 
                 <Card className="shadow-sm">
                   <CardHeader>
-                    <Zap className="h-8 w-8 text-blue-600 mb-2" />
+                    <Zap className="h-8 w-8 text-primary mb-2" />
                     <CardTitle>{t('about.quality')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {t('about.qualityDesc')}
                     </p>
                   </CardContent>
@@ -212,11 +212,11 @@ export default function AboutPage() {
 
                 <Card className="shadow-sm">
                   <CardHeader>
-                    <Users className="h-8 w-8 text-blue-600 mb-2" />
+                    <Users className="h-8 w-8 text-primary mb-2" />
                     <CardTitle>{t('about.community')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {t('about.communityDesc')}
                     </p>
                   </CardContent>
@@ -224,11 +224,11 @@ export default function AboutPage() {
 
                 <Card className="shadow-sm">
                   <CardHeader>
-                    <Trophy className="h-8 w-8 text-blue-600 mb-2" />
+                    <Trophy className="h-8 w-8 text-primary mb-2" />
                     <CardTitle>{t('about.gamification')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {t('about.gamificationDesc')}
                     </p>
                   </CardContent>
@@ -239,13 +239,13 @@ export default function AboutPage() {
         </section>
 
         {/* HISTÓRIA */}
-        <section className="py-16 bg-white dark:bg-gray-950">
+        <section className="py-16 bg-[#000c12]">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
                 {t('about.ourStory')}
               </h2>
-              <div className="prose prose-sm md:prose-lg max-w-none text-gray-600 dark:text-gray-300">
+              <div className="prose prose-sm md:prose-lg max-w-none text-muted-foreground">
                 <p className="mb-4">{t('about.story1')}</p>
                 <p className="mb-4">{t('about.story2')}</p>
                 <p>{t('about.story3')}</p>
@@ -255,7 +255,7 @@ export default function AboutPage() {
         </section>
 
         {/* CONTACTO */}
-        <section className="py-16 bg-gray-50 dark:bg-gray-900">
+        <section className="py-16 bg-[#05212b]">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
@@ -340,7 +340,7 @@ export default function AboutPage() {
 
                     <Button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full"
                     >
                       {t('about.sendBtn')}
                     </Button>
@@ -356,3 +356,11 @@ export default function AboutPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

@@ -1,0 +1,23 @@
+                      Não precisas de “entrar em tudo”. A ideia é perceber onde
+                      faz sentido colocar a tua energia – como membro, como líder
+                      ou simplesmente como alguém que quer aprender com estrutura.
+                    </p>
+                  </div>
+  
+>                 <div className="rounded-2xl border border-cyan-500/35 bg-slate-950/90 p-5 text-xs text-body shadow-[0_0_38px_rgba(34,211,238,0.28)] space-y-3">
+                    <p className="text-[11px] uppercase tracking-wide text-blue-200/80">
+                      Estado atual das Houses
+                    </p>
+                    <div className="space-y-2">
+                      <StatusRow label="Houses ativas" value={totalActive} />
+                      <StatusRow
+                        label="Houses em construção"
+                        value={totalUnderConstruction}
+                      />
+                      <StatusRow
+                        label={
+                          isLegacyTeam
+                            ? 'Houses em desenvolvimento (interno)'
+                            : 'Houses em desenvolvimento'
+                        }
+                        value={totalInDevelopment}

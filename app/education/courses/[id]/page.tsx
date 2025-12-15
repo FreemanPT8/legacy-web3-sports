@@ -165,12 +165,12 @@ export default function CourseDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen flex flex-col bg-[#000c12]">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-slate-200">
               {tr('courses.loading', 'A carregar curso...')}
             </p>
           </div>
@@ -182,7 +182,7 @@ export default function CourseDetailPage() {
 
   if (notFound || !course) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen flex flex-col bg-[#000c12]">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center px-4">
@@ -197,7 +197,7 @@ export default function CourseDetailPage() {
             </p>
             <Link
               href="/education/courses"
-              className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
+              className="inline-flex items-center gap-2 text-primary hover:underline"
             >
               <ArrowLeft className="h-4 w-4" />
               {tr('courses.back', 'Voltar aos cursos')}
@@ -238,7 +238,7 @@ export default function CourseDetailPage() {
     : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen flex flex-col bg-[#000c12]">
       <Header />
 
       <main className="flex-1 py-8">
@@ -314,21 +314,21 @@ export default function CourseDetailPage() {
 
                   <div className="flex flex-col items-end gap-2 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-blue-600" />
+                      <BookOpen className="h-4 w-4 text-primary" />
                       <span>
                         {totalModules}{' '}
                         {tr('courses.modules', 'módulos')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-blue-600" />
+                      <BookOpen className="h-4 w-4 text-primary" />
                       <span>
                         {totalLessons}{' '}
                         {tr('courses.lessons', 'lições')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Award className="h-4 w-4 text-blue-600" />
+                      <Award className="h-4 w-4 text-primary" />
                       <span>
                         {totalXP}{' '}
                         {tr('courses.totalXP', 'XP disponível')}
@@ -514,11 +514,11 @@ export default function CourseDetailPage() {
                                         </span>
                                       </span>
                                       <span className="flex items-center gap-1">
-                                        <Award className="h-3 w-3 text-blue-600" />
+                                        <Award className="h-3 w-3 text-primary" />
                                         {lesson.xp_reward || 0} XP
                                       </span>
                                       <span className="flex items-center gap-1">
-                                        <Clock className="h-3 w-3 text-blue-600" />
+                                        <Clock className="h-3 w-3 text-primary" />
                                         {estimatedMinutes} min
                                       </span>
                                     </div>
@@ -530,10 +530,8 @@ export default function CourseDetailPage() {
                                   </div>
 
                                   <div className="flex items-center justify-end">
-                                    <Link
-                                      href={`/education/lessons/${lesson.id}`}
-                                    >
-                                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                    <Link href={`/education/lessons/${lesson.id}`}>
+                                      <Button size="sm" className="bg-primary hover:bg-primary/90">
                                         {tr(
                                           'courses.openLesson',
                                           'Abrir lição',

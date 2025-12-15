@@ -101,28 +101,31 @@ export default function CoursesPage() {
   }, [getToken]);
 
   const getLevelBadge = (level?: string | null) => {
+    const baseClass =
+      'border border-primary/70 bg-black/40 text-cyan-100 text-[11px] uppercase tracking-[0.3em] rounded-full px-3 py-1';
+
     switch (level) {
       case 'beginner':
         return (
-          <Badge className="bg-green-600">
+          <Badge variant="outline" className={baseClass}>
             {tr('education.level.beginner', 'Principiante')}
           </Badge>
         );
       case 'intermediate':
         return (
-          <Badge className="bg-yellow-600">
+          <Badge variant="outline" className={baseClass}>
             {tr('education.level.intermediate', 'Intermédio')}
           </Badge>
         );
       case 'advanced':
         return (
-          <Badge className="bg-red-600">
+          <Badge variant="outline" className={baseClass}>
             {tr('education.level.advanced', 'Avançado')}
           </Badge>
         );
       default:
         return (
-          <Badge>
+          <Badge variant="outline" className={baseClass}>
             {tr('education.level.unknown', 'Todos os níveis')}
           </Badge>
         );
@@ -138,12 +141,12 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-slate-300">
               {tr('courses.loading', 'A carregar cursos...')}
             </p>
           </div>
@@ -154,18 +157,18 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
       <main className="flex-1 py-10">
         <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="mx-auto max-w-6xl">
             {/* Hero */}
-            <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 dark:text-gray-50">
+                <h1 className="mb-2 text-3xl font-bold text-white md:text-4xl">
                   {tr('courses.mainTitle', 'Cursos')}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
+                <p className="max-w-2xl text-slate-300">
                   {tr(
                     'courses.mainSubtitle',
                     'Percursos estruturados sobre Web3, a blockchain Apertum e o ecossistema desportivo. Ganha XP à medida que avanças.',
@@ -175,19 +178,19 @@ export default function CoursesPage() {
               <div className="flex items-center gap-3 text-sm">
                 {user ? (
                   <>
-                    <span className="text-gray-600 dark:text-gray-300">
+                    <span className="text-slate-300">
                       {tr('courses.yourXP', 'O teu XP')}:{' '}
                       <strong>{userXP}</strong>
                     </span>
-                    <Badge variant="outline" className="text-gray-700 dark:text-gray-100 border-gray-300 dark:border-gray-600">
+                    <Badge
+                      variant="outline"
+                      className="border-primary/70 bg-black/40 text-cyan-100 text-[11px] uppercase tracking-[0.3em]"
+                    >
                       {tr('courses.loggedIn', 'Sessão iniciada')}
                     </Badge>
                   </>
                 ) : (
-                  <Button
-                    onClick={() => router.push('/login')}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
+                  <Button onClick={() => router.push('/login')}>
                     {tr('auth.login', 'Inicia sessão para ganhar XP')}
                   </Button>
                 )}
@@ -195,8 +198,8 @@ export default function CoursesPage() {
             </div>
 
             {courses.length === 0 ? (
-              <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-                <CardContent className="py-10 text-center text-gray-500 dark:text-gray-300">
+              <Card className="border border-white/10 bg-[#000c12]">
+                <CardContent className="py-10 text-center text-slate-300">
                   {tr(
                     'courses.noCourses',
                     'Ainda não há cursos disponíveis. Volta em breve!',
@@ -204,7 +207,7 @@ export default function CoursesPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {courses.map((course) => {
                   const title = getMultilingualContent(course.title, language);
                   const description = getMultilingualContent(
@@ -248,34 +251,35 @@ export default function CoursesPage() {
                   const authorName = course.author_name || 'Admin';
                   const isCourseCreator = !!course.isCreator;
 
-                  const imageUrl = course.image_url || course.thumbnail_url || null;
+                  const imageUrl =
+                    course.image_url || course.thumbnail_url || null;
 
                   const initials = getInitials(title);
 
                   return (
                     <Card
                       key={course.id}
-                      className="flex flex-col overflow-hidden hover:shadow-md transition-shadow bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                      className="flex flex-col overflow-hidden border border-white/10 bg-[#000c12] transition-shadow hover:border-primary/70 hover:shadow-[0_0_25px_rgba(45,212,191,0.25)]"
                     >
                       {/* Thumbnail / Placeholder */}
                       {imageUrl ? (
-                        <div className="w-full h-40 bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                        <div className="h-40 w-full overflow-hidden border border-white/10 bg-[#000c12]">
                           <img
                             src={imageUrl}
                             alt={title}
-                            className="w-full h-full object-cover"
+                            className="h-full w-full object-cover"
                           />
                         </div>
                       ) : (
-                        <div className="w-full h-40 bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 flex items-center justify-center">
+                        <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-400">
                           <div className="flex flex-col items-center text-white">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="mb-1 flex items-center gap-2">
                               <BookOpen className="h-6 w-6" />
                               <span className="text-xl font-bold">
                                 {initials}
                               </span>
                             </div>
-                            <span className="text-[11px] uppercase tracking-wide opacity-80">
+                            <span className="text-[11px] uppercase tracking-[0.3em] opacity-80">
                               Legacy Course
                             </span>
                           </div>
@@ -283,35 +287,29 @@ export default function CoursesPage() {
                       )}
 
                       <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start gap-3">
+                        <div className="flex items-start justify-between gap-3">
                           <div>
-                            <CardTitle className="text-lg line-clamp-2 flex items-center gap-2 text-gray-900 dark:text-gray-50">
+                            <CardTitle className="flex items-center gap-2 text-lg text-white line-clamp-2">
                               {title}
                               {isCourseCreator && (
-                                <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                                <Badge className="flex items-center gap-1 bg-[#14718f] text-white">
                                   <PenSquare className="h-3 w-3" />
                                   Creator
                                 </Badge>
                               )}
                             </CardTitle>
                             {description && (
-                              <CardDescription className="mt-1 line-clamp-3 text-gray-600 dark:text-gray-300">
+                              <CardDescription className="mt-1 line-clamp-3 text-slate-300">
                                 {description}
                               </CardDescription>
                             )}
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                              {tr('courses.by', 'Criado por')}{' '}
-                              <span className="font-semibold">
-                                {authorName}
-                              </span>
-                            </p>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {getLevelBadge(course.level)}
                             {xpRequired > 0 && (
                               <Badge
                                 variant="outline"
-                                className="text-xs text-gray-700 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                                className="border-primary/70 bg-black/40 text-cyan-100 text-[11px] uppercase tracking-[0.3em]"
                               >
                                 {xpRequired} XP min
                               </Badge>
@@ -320,18 +318,18 @@ export default function CoursesPage() {
                         </div>
                       </CardHeader>
 
-                      <CardContent className="flex-1 flex flex-col justify-between pt-0 space-y-4">
-                        <div className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
+                      <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0">
+                        <div className="flex flex-col gap-2 text-xs text-slate-300">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4 text-blue-600" />
+                              <BookOpen className="h-4 w-4 text-cyan-300" />
                               <span>
                                 {totalModules}{' '}
                                 {tr('courses.modules', 'módulos')}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4 text-blue-600" />
+                              <BookOpen className="h-4 w-4 text-cyan-300" />
                               <span>
                                 {totalLessons}{' '}
                                 {tr('courses.lessons', 'lições')}
@@ -340,14 +338,14 @@ export default function CoursesPage() {
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <Award className="h-4 w-4 text-blue-600" />
+                            <Award className="h-4 w-4 text-cyan-300" />
                             <span>
                               {totalXP}{' '}
                               {tr('courses.totalXP', 'XP disponível')}
                               {xpDistributed > 0 && (
                                 <>
                                   {' · '}
-                                  <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                  <span className="text-[11px] text-slate-400">
                                     {xpDistributed} XP já distribuído
                                   </span>
                                 </>
@@ -356,9 +354,9 @@ export default function CoursesPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="mt-2 flex items-center justify-between">
                           {isLocked ? (
-                            <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700 rounded-full px-3 py-1">
+                            <div className="flex items-center gap-2 rounded-full border border-amber-400 bg-amber-500/10 px-3 py-1 text-xs text-amber-200">
                               <Lock className="h-3 w-3" />
                               <span>
                                 {tr('courses.unlockAt', 'Desbloqueia aos')}{' '}
@@ -366,7 +364,7 @@ export default function CoursesPage() {
                               </span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 rounded-full px-3 py-1">
+                            <div className="flex items-center gap-2 rounded-full border border-emerald-400 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
                               <CheckCircle className="h-3 w-3" />
                               <span>
                                 {tr(
@@ -380,13 +378,13 @@ export default function CoursesPage() {
                           <Link href={`/education/courses/${course.id}`}>
                             <Button
                               size="sm"
-                              className="bg-blue-600 hover:bg-blue-700"
+                              className="bg-primary hover:bg-primary/90"
                               disabled={isLocked && !user}
                             >
                               <span className="text-xs">
                                 {tr('courses.viewDetails', 'Ver curso')}
                               </span>
-                              <ArrowRight className="h-3 w-3 ml-1" />
+                              <ArrowRight className="ml-1 h-3 w-3" />
                             </Button>
                           </Link>
                         </div>
@@ -403,3 +401,4 @@ export default function CoursesPage() {
     </div>
   );
 }
+

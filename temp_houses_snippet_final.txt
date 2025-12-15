@@ -1,0 +1,11 @@
+>                 A carregar Houses of Sports…
+                </div>
+              ) : houses.length === 0 ? (
+                <div className="max-w-4xl mx-auto rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-6 text-sm text-blue-100 text-center">
+                  Ainda não existem Houses of Sports visíveis. A equipa do LEGACY
+                  está a preparar a primeira vaga de comunidades.
+                </div>
+              ) : (
+                <div className="max-w-6xl mx-auto space-y-10">
+                  <HousesSection
+                    title="Houses ativas"

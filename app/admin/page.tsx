@@ -110,9 +110,9 @@ type AdvancedStats = {
 
 function StatTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border-custom bg-card-custom p-3">
-      <p className="text-xs text-muted-custom">{label}</p>
-      <p className="text-2xl font-semibold text-heading">
+    <div className="rounded-lg border border-border bg-card/80 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-2xl font-semibold text-foreground">
         {(value ?? 0).toLocaleString('pt-PT')}
       </p>
     </div>
@@ -127,32 +127,32 @@ function TopList({
   items: { id: string; title: any; views: number }[];
 }) {
   return (
-    <Card className="border-custom border-dashed bg-card-custom">
+    <Card className="border border-dashed border-border bg-card/80">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-heading">
+        <CardTitle className="text-sm text-foreground">
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 text-sm text-body">
+      <CardContent className="space-y-2 text-sm text-muted-foreground">
         {items && items.length > 0 ? (
           items.map((item) => (
             <div
               key={item.id}
               className="flex items-center justify-between gap-3"
             >
-              <span className="truncate">
+              <span className="truncate text-foreground">
                 {(item.title as any)?.pt ??
                   (item.title as any)?.en ??
                   item.title ??
                   '—'}
               </span>
-              <span className="font-semibold">
+              <span className="font-semibold text-foreground">
                 {(item.views ?? 0).toLocaleString('pt-PT')}
               </span>
             </div>
           ))
         ) : (
-          <p className="text-xs text-muted-custom">Sem dados</p>
+          <p className="text-xs text-muted-foreground">Sem dados</p>
         )}
       </CardContent>
     </Card>

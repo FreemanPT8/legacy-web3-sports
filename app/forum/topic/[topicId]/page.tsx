@@ -144,7 +144,7 @@ export default function ForumTopicPage() {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
             <p className="text-body">{t('forum.loadingTopic')}</p>
           </div>
         </main>
@@ -201,7 +201,7 @@ export default function ForumTopicPage() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   {topic.pinned && (
-                    <Badge className="bg-blue-600">
+                    <Badge className="bg-primary text-primary-foreground">
                       <Pin className="h-3 w-3 mr-1" />
                       {t('forum.pinned')}
                     </Badge>
@@ -328,7 +328,6 @@ export default function ForumTopicPage() {
                       <Button
                         type="submit"
                         disabled={!replyContent.trim() || submitting}
-                        className="bg-blue-600 hover:bg-blue-700"
                       >
                         <Send className="h-4 w-4 mr-2" />
                         {submitting
@@ -340,7 +339,7 @@ export default function ForumTopicPage() {
                 </CardContent>
               </Card>
             ) : topic.locked ? (
-              <Card className="border-2 border-gray-500 bg-gray-900/60">
+              <Card className="border-2 border-border bg-card">
                 <CardContent className="text-center py-8">
                   <Lock className="h-12 w-12 text-muted-custom mx-auto mb-3" />
                   <h3 className="font-semibold mb-2 text-heading">

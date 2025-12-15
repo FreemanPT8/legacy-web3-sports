@@ -3,13 +3,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
-import {
-  CalendarCheck,
-  Flame,
-  ShieldCheck,
-  Sparkles,
-  Trophy,
-} from 'lucide-react';
+import { CalendarCheck, Flame, ShieldCheck, Sparkles, Trophy } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,36 +57,37 @@ const heroHighlights = [
   },
 ];
 
-const levelFormula = 'Nível = XP total ÷ 100 (arredondado para baixo)';
+const levelFormula = 'Nível = XP total / 100 (arredondado para baixo)';
 
 const rewardMetadata: Record<string, { title: string; creatorBonus?: string }> = {
   lesson_complete: {
-    title: 'Lesson Complete',
-    creatorBonus: '+19% quando outros leem — crédito exclusivo para criadores.',
+    title: 'Lição concluída',
+    creatorBonus: '+19% quando outros completam a tua lição — crédito exclusivo para criadores.',
   },
   blog_read: {
-    title: 'Blog Read',
-    creatorBonus: '+19% quando outros leem — crédito exclusivo para criadores.',
+    title: 'Artigo lido',
+    creatorBonus: '+19% quando outros leem o teu artigo — crédito exclusivo para criadores.',
   },
   profile_complete: {
-    title: 'Profile Complete',
+    title: 'Perfil completo',
   },
   forum_post: {
-    title: 'Forum Post',
+    title: 'Publicação no fórum',
   },
   forum_topic: {
-    title: 'Forum Topic',
+    title: 'Tópico no fórum',
   },
   forum_comment: {
-    title: 'Forum Comment',
-    creatorBonus: '+0.5% quando outros leem — crédito exclusivo para criadores.',
+    title: 'Comentário no fórum',
+    creatorBonus:
+      '+0.5% quando outros interagem com o teu comentário — crédito exclusivo para criadores.',
   },
   mission_daily: {
-    title: 'Mission Daily',
+    title: 'Missão diária',
   },
 };
 
-async function fetchEducationXpData() {
+async function fetchEducationXpData(): Promise<EducationXpData> {
   const rewardsPromise = supabase.from('xp_rewards').select('*');
   const limitsPromise = supabase.from('xp_daily_limits').select('*');
   const thresholdsPromise = supabase
@@ -119,7 +114,7 @@ async function fetchEducationXpData() {
     rewards: rewards.data || [],
     limits: limits.data || [],
     thresholds: thresholds.data || [],
-  } satisfies EducationXpData;
+  };
 }
 
 export default async function EducationXpPage() {
@@ -144,23 +139,24 @@ export default async function EducationXpPage() {
   const thresholdTable = xpData?.thresholds ?? [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-50">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 space-y-10 max-w-5xl">
-          <section className="rounded-3xl border border-slate-800/60 bg-gradient-to-br from-slate-900/80 via-slate-950 to-slate-900/90 px-6 py-10 shadow-xl shadow-slate-950/60">
+          {/* Hero */}
+          <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#000c12] to-[#020b16] px-6 py-10 shadow-xl shadow-black/60">
             <div className="space-y-4">
-              <Badge className="bg-sky-500/10 text-sky-200 border border-sky-400/40">
-                Legacy XP • Sistema oficial
+              <Badge className="bg-cyan-500/10 text-cyan-100 border border-cyan-400/40">
+                Legacy XP — Sistema oficial
               </Badge>
               <h1 className="text-3xl md:text-4xl font-bold text-white">XP da Legacy</h1>
-              <p className="text-base text-slate-300">
-                O Legacy recompensa aprendizagem, criação e participação real. O modelo completo
-                está documentado aqui e explica, passo a passo, como cada ação é creditada.
+              <p className="text-base text-slate-200">
+                O Legacy recompensa aprendizagem, criação e participação real. O modelo completo está
+                documentado aqui e explica, passo a passo, como cada ação é creditada.
               </p>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-300">
                 Nenhum XP é creditado apenas pelo login; é preciso ganhar crédito legítimo
-                completando lições, lendo posts ou contribuindo no fórum.
+                completando lições, lendo conteúdos ou contribuindo no fórum.
               </p>
             </div>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -169,15 +165,15 @@ export default async function EducationXpPage() {
                 return (
                   <Card
                     key={highlight.label}
-                    className="flex flex-col bg-slate-900/80 border border-slate-800 shadow-lg shadow-slate-950/40 transition hover:-translate-y-0.5 hover:border-sky-500/60"
+                    className="flex flex-col bg-[#05212b] border border-white/10 shadow-lg shadow-black/60 transition hover:-translate-y-0.5 hover:border-cyan-400/60"
                   >
                     <CardContent className="space-y-2">
                       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                        <Icon className="h-4 w-4 text-sky-300" />
+                        <Icon className="h-4 w-4 text-cyan-300" />
                         {highlight.label}
                       </div>
                       <p className="text-2xl font-bold text-white">{highlight.value}</p>
-                      <p className="text-sm text-slate-400">{highlight.detail}</p>
+                      <p className="text-sm text-slate-300">{highlight.detail}</p>
                     </CardContent>
                   </Card>
                 );
@@ -185,19 +181,21 @@ export default async function EducationXpPage() {
             </div>
           </section>
 
+          {/* Error state */}
           {fetchError && (
-            <Card className="bg-rose-950/80 border border-rose-600">
-              <CardContent>
-                <p className="text-sm text-rose-200">
+            <Card className="bg-rose-950/80 border border-rose-600/80">
+              <CardContent className="space-y-2 py-4">
+                <p className="text-sm text-rose-100">
                   Não conseguimos carregar os dados oficiais agora: {fetchError}
                 </p>
-                <p className="text-xs text-rose-300">
-                  Confirme se as variáveis de ambiente estão definidas ou tente novamente.
+                <p className="text-xs text-rose-200">
+                  Confirma se as variáveis de ambiente estão definidas e tenta novamente.
                 </p>
               </CardContent>
             </Card>
           )}
 
+          {/* Rewards */}
           <section className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
@@ -211,10 +209,11 @@ export default async function EducationXpPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {visibleRewards.length === 0 ? (
-                <Card className="bg-slate-900/70 border border-slate-800/80">
-                  <CardContent>
-                    <p className="text-sm text-slate-400">
-                      Nenhuma regra de recompensa foi publicada ainda.
+                <Card className="bg-[#000c12] border border-white/10">
+                  <CardContent className="py-6">
+                    <p className="text-sm text-slate-300">
+                      Ainda não existem regras de recompensa publicadas. Assim que forem criadas no
+                      painel admin, aparecem aqui.
                     </p>
                   </CardContent>
                 </Card>
@@ -230,26 +229,29 @@ export default async function EducationXpPage() {
                     reward.action_type
                       .replace(/_/g, ' ')
                       .replace(/\b\w/g, (char) => char.toUpperCase());
+                  const creatorBonusText =
+                    meta?.creatorBonus ||
+                    (reward.creator_bonus_pct != null
+                      ? `+${reward.creator_bonus_pct}% quando outros interagem com o conteúdo — crédito exclusivo para criadores.`
+                      : null);
+
                   return (
                     <Card
                       key={reward.action_type}
-                      className="bg-slate-900/80 border border-slate-800/90 transition hover:border-sky-500/60 hover:-translate-y-0.5"
+                      className="bg-[#05212b] border border-white/10 transition hover:border-cyan-400/60 hover:-translate-y-0.5"
                     >
-                      <CardContent className="space-y-3 text-sm text-slate-300">
+                      <CardContent className="space-y-3 text-sm text-slate-200 py-5">
                         <div className="flex justify-between items-center gap-4">
                           <div>
                             <h3 className="text-base font-semibold text-white">{title}</h3>
                             <p className="text-xs text-slate-400">Intervalo oficial</p>
                           </div>
-                          <span className="rounded-full border border-slate-700 px-3 py-1 text-xs uppercase tracking-wide text-slate-300">
+                          <span className="rounded-full border border-white/20 px-3 py-1 text-xs uppercase tracking-wide text-slate-100">
                             {range}
                           </span>
                         </div>
-                        {(meta?.creatorBonus || reward.creator_bonus_pct) && (
-                          <p className="text-xs text-slate-400">
-                            {meta?.creatorBonus ||
-                              `+${reward.creator_bonus_pct}% quando outros leem — crédito exclusivo para criadores.`}
-                          </p>
+                        {creatorBonusText && (
+                          <p className="text-xs text-slate-300">{creatorBonusText}</p>
                         )}
                       </CardContent>
                     </Card>
@@ -259,46 +261,49 @@ export default async function EducationXpPage() {
             </div>
           </section>
 
-          <section className="grid md:grid-cols-1 gap-5">
-            <Card className="bg-slate-900/70 border border-slate-800/80">
-              <CardHeader>
-                <CardTitle className="text-slate-100">Streaks & consistência</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-300">
-                <div className="space-y-2">
-                  <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">
-                    Mantemos a chama acesa
+          {/* Limits & streaks */}
+          <section className="space-y-4">
+            <Card className="bg-[#05212b] border border-white/10">
+              <CardContent className="grid gap-6 py-6 md:grid-cols-2">
+                <div className="space-y-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">
+                    Streaks & consistência
                   </p>
-                  <ul className="space-y-2 list-disc pl-5">
+                  <p className="text-sm text-slate-200">
+                    Streaks são pensados para premiar consistência real, não apenas presença.
+                  </p>
+                  <ul className="space-y-2 list-disc pl-5 text-sm text-slate-200">
                     <li>Ganhar XP todos os dias é obrigatório para manter um streak.</li>
                     <li>Streak de 7 dias rende 222 XP; streak de 30 dias rende 1.111 XP.</li>
                     <li>Faltar um dia quebra o streak e reinicia a contagem.</li>
                     <li>
-                      Lesson completions e blog reads garantem que o XP só aparece uma vez por conteúdo
-                      e impedem criadores de ganhar XP lendo o próprio material.
+                      Conclusões de lições e leituras de blog garantem que o XP só é contado uma vez
+                      por conteúdo e impedem criadores de ganhar XP lendo o próprio material.
                     </li>
                   </ul>
                 </div>
-                <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-4">
-                  <div className="flex items-center justify-between">
+                <div className="rounded-2xl border border-white/10 bg-[#000c12]/80 p-4">
+                  <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                         Última ação registada
                       </p>
-                      <p className="text-sm text-slate-400">
-                        Autentique-se no painel admin para acompanhar o histórico em tempo real.
+                      <p className="text-sm text-slate-300">
+                        Autentica-te no painel admin para acompanhar o histórico em tempo real.
                       </p>
                     </div>
-                    <Sparkles className="h-6 w-6 text-amber-400" />
+                    <Sparkles className="h-6 w-6 text-amber-300" />
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Notificações via Resend são disparadas quando os streaks de 7 ou 30 dias são concluídos.
+                  <p className="mt-2 text-xs text-slate-400">
+                    Notificações via Resend são disparadas quando os streaks de 7 ou 30 dias são
+                    concluídos.
                   </p>
                 </div>
               </CardContent>
             </Card>
           </section>
 
+          {/* Thresholds */}
           <section className="space-y-4">
             <div className="flex flex-col gap-2">
               <p className="text-sm font-semibold text-slate-400 uppercase tracking-[0.2em]">
@@ -307,16 +312,18 @@ export default async function EducationXpPage() {
               <h2 className="text-2xl font-bold text-white">
                 Cada milestone desbloqueia acesso extra
               </h2>
-              <p className="text-sm text-slate-400">
-                O XP total determina privilégios, reputação e desbloqueios. Veja os thresholds oficiais abaixo.
+              <p className="text-sm text-slate-300">
+                O XP total determina privilégios, reputação e desbloqueios. Vê abaixo os thresholds
+                oficiais definidos pela equipa.
               </p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {thresholdTable.length === 0 ? (
-                <Card className="bg-slate-900/70 border border-slate-800/80">
-                  <CardContent>
-                    <p className="text-sm text-slate-400">
-                      Ainda não há thresholds publicados. A equipa admin pode adicioná-los no painel /admin/xp.
+                <Card className="bg-[#05212b] border border-white/10">
+                  <CardContent className="py-5">
+                    <p className="text-sm text-slate-200">
+                      Ainda não há thresholds publicados. A equipa admin pode adicioná-los no painel{' '}
+                      <span className="font-semibold">/admin/xp</span>.
                     </p>
                   </CardContent>
                 </Card>
@@ -324,33 +331,40 @@ export default async function EducationXpPage() {
                 thresholdTable.map((threshold) => (
                   <Card
                     key={`${threshold.xp_total}-${threshold.feature_name}`}
-                    className="bg-slate-900/80 border border-slate-800/80"
+                    className="bg-[#05212b] border border-white/10"
                   >
-                    <CardContent className="space-y-2">
+                    <CardContent className="space-y-2 py-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-500">{threshold.xp_total} XP</span>
-                        <Badge variant="outline" className="text-slate-200 border-slate-700">
+                        <span className="text-sm text-slate-300">{threshold.xp_total} XP</span>
+                        <Badge variant="outline" className="text-slate-100 border-white/30">
                           Desbloqueia
                         </Badge>
                       </div>
-                      <p className="text-lg font-semibold text-white">{threshold.feature_name}</p>
+                      <p className="text-lg font-semibold text-white">
+                        {threshold.feature_name}
+                      </p>
                       {threshold.description && (
-                        <p className="text-sm text-slate-400">{threshold.description}</p>
+                        <p className="text-sm text-slate-300">{threshold.description}</p>
                       )}
                     </CardContent>
                   </Card>
                 ))
               )}
             </div>
-            <Card className="bg-slate-900/80 border border-slate-800/80">
-              <CardContent className="space-y-3 text-sm text-slate-300">
+            <Card className="bg-[#05212b] border border-white/10">
+              <CardContent className="space-y-3 text-sm text-slate-200 py-4">
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-5 w-5 text-amber-300" />
-                  <p>{levelFormula}, também mostrando o progresso restante rumo ao próximo nível.</p>
+                  <p>
+                    {levelFormula}, também mostrando o progresso restante rumo ao próximo nível.
+                  </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Trophy className="h-5 w-5 text-emerald-300" />
-                  <p>O ranking global usa xp_transactions para alimentar desafios e gamificação.</p>
+                  <p>
+                    O ranking global usa <code className="text-xs">xp_transactions</code> para
+                    alimentar desafios e gamificação.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -361,3 +375,4 @@ export default async function EducationXpPage() {
     </div>
   );
 }
+

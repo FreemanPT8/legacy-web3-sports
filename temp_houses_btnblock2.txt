@@ -1,0 +1,50 @@
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      <Link href="/sports/onboarding">
+                        <Button
+                          size="sm"
+                          className="bg-white text-slate-950 hover:bg-slate-100"
+                        >
+>                         Preencher formulário para onboarding personalizado
+                        </Button>
+                      </Link>
+                      <Link href="/sports">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-slate-600 text-blue-100 hover:bg-slate-900"
+                        >
+                          Voltar ao portal LEGACY Sports
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+  
+              {error && (
+                <div className="max-w-4xl mx-auto mt-6 rounded-md border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-100">
+                <div className="flex flex-wrap gap-3 justify-center pt-2">
+                  <Link href="/sports/onboarding">
+                    <Button
+                      size="lg"
+                      className="bg-blue-600 hover:bg-blue-500 text-white"
+                    >
+>                     Preencher formulário para onboarding personalizado
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+  
+        <Footer />
+      </div>
+    );
+  }
+  
+  function StatusRow({ label, value }: { label: string; value: number }) {
+    return (
+      <div className="flex items-center justify-between text-xs text-cyan-100">
+        <span>{label}</span>
+        <span className="font-semibold text-foreground">{value}</span>

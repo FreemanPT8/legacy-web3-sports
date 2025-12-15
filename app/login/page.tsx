@@ -3,21 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Trophy } from 'lucide-react';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Trophy } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,80 +48,67 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-950 dark:to-gray-900 p-4">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+    <div className="flex min-h-screen items-center justify-center bg-[#000c12] p-4">
+      <Card className="w-full max-w-md border border-white/10 bg-[#000c12] shadow-xl">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center space-x-2">
-              <Trophy className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              <Trophy className="h-8 w-8 text-cyan-300" />
+              <span className="bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84] bg-clip-text text-2xl font-bold text-transparent">
                 LEGACY
               </span>
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">
-            {t('nav.login')}
-          </CardTitle>
-          <CardDescription className="text-center text-gray-600 dark:text-gray-300">
-            Enter your credentials to access your account
+          <CardTitle className="text-center text-2xl text-white">{t('nav.login')}</CardTitle>
+          <CardDescription className="text-center text-slate-300">
+            Introduz as tuas credenciais para entrares no Legacy.
           </CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="text-slate-100">
+                Username
+              </Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Enter your username"
+                placeholder="O teu username"
                 value={formData.username}
-                onChange={(e) =>
-                  setFormData({ ...formData, username: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-slate-100">
+                Palavra-passe
+              </Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="A tua palavra-passe"
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
               />
             </div>
 
-            {/* Link para recuperação de palavra-passe */}
             <div className="flex justify-end">
-              <Link
-                href="/forgot-password"
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-              >
+              <Link href="/forgot-password" className="text-xs text-cyan-300 hover:underline">
                 Esqueceste a palavra-passe?
               </Link>
             </div>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              disabled={loading}
-            >
-              {loading ? 'Logging in...' : t('nav.login')}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'A entrar...' : t('nav.login')}
             </Button>
-            <p className="text-sm text-center text-gray-600 dark:text-gray-300">
-              Don't have an account?{' '}
-              <Link
-                href="/signup"
-                className="text-blue-600 dark:text-blue-400 hover:underline"
-              >
+            <p className="text-center text-sm text-slate-400">
+              Ainda não tens conta?{' '}
+              <Link href="/signup" className="text-cyan-300 hover:underline">
                 {t('nav.signup')}
               </Link>
             </p>
@@ -137,3 +118,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

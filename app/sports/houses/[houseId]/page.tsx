@@ -279,7 +279,7 @@ export default function PublicHouseProfilePage() {
                 <div className="flex flex-wrap gap-2">
                   <Link
                     href="/sports/onboarding"
-                    className="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500"
+                    className="inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
                   >
                     Fazer onboarding de desporto
                   </Link>
@@ -342,7 +342,7 @@ export default function PublicHouseProfilePage() {
             <div className="space-y-4">
               <div className="rounded-xl border border-custom bg-card-custom p-4 shadow-sm">
                 <h3 className="text-sm font-semibold text-heading mb-2 flex items-center gap-2">
-                  <User className="h-4 w-4 text-blue-400" />
+                  <User className="h-4 w-4 text-primary" />
                   Head of House
                 </h3>
 
@@ -373,7 +373,7 @@ export default function PublicHouseProfilePage() {
 
               <div className="rounded-xl border border-custom bg-card-custom p-4 shadow-sm">
                 <h3 className="text-sm font-semibold text-heading mb-2 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-400" />
+                  <Users className="h-4 w-4 text-primary" />
                   Moderadores da House
                 </h3>
 
@@ -443,7 +443,7 @@ export default function PublicHouseProfilePage() {
             </div>
             <Link
               href="/sports/onboarding"
-              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+              className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
             >
               Começar onboarding personalizado
             </Link>

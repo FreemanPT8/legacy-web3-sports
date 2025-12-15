@@ -1,0 +1,18 @@
+              <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-12">
+>                 <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-50">
+                    {t('education.featured.title')}
+                  </h2>
+                  <p className="text-lg text-slate-300">
+                    {t('education.featuredDesc') ||
+                      'Start your learning journey with our most popular courses'}
+                  </p>
+                <div className="max-w-6xl mx-auto">
+                  <div className="text-center mb-12">
+>                   <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                    {t('education.leaderboard.title')}
+                    </h2>
+                    <p className="text-lg text-slate-300">
+                      See who's leading the way in Web3 education
+                    </p>
+                  </div>

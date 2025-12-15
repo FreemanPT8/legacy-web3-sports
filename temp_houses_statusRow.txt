@@ -1,0 +1,79 @@
+                      faz sentido colocar a tua energia – como membro, como líder
+                      ou simplesmente como alguém que quer aprender com estrutura.
+                    </p>
+                  </div>
+  
+                  <div className="rounded-2xl border border-primary/40 bg-[#020b18] p-5 text-xs text-muted-foreground shadow-[0_0_38px_rgba(34,211,238,0.28)] space-y-3">
+                    <p className="text-[11px] uppercase tracking-wide text-blue-200/80">
+                      Estado atual das Houses
+                    </p>
+                    <div className="space-y-2">
+>                     <StatusRow label="Houses ativas" value={totalActive} />
+>                     <StatusRow
+                        label="Houses em construção"
+                        value={totalUnderConstruction}
+                      />
+>                     <StatusRow
+                        label={
+                          isLegacyTeam
+                            ? 'Houses em desenvolvimento (interno)'
+                            : 'Houses em desenvolvimento'
+                        }
+                        value={totalInDevelopment}
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-custom">
+                      Este mapa vai evoluir ao longo do tempo. Algumas Houses vão
+                      abrir, outras vão ficar em incubação até existir liderança e
+                      equipa certa. O objetivo é evitar “comunidades vazias” e
+                      construir algo com critério.
+                    </p>
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      <Link href="/sports/onboarding">
+                        <Button
+                          size="sm"
+                          className="bg-white text-slate-950 hover:bg-slate-100"
+                        >
+                          Preencher formulário para onboarding personalizado
+                        </Button>
+                      </Link>
+                      <Link href="/sports">
+                        <Button
+                          size="sm"
+              </div>
+            </div>
+          </section>
+        </main>
+  
+        <Footer />
+      </div>
+    );
+  }
+  
+> function StatusRow({ label, value }: { label: string; value: number }) {
+    return (
+      <div className="flex items-center justify-between text-xs text-blue-100">
+        <span>{label}</span>
+        <span className="font-semibold text-heading">{value}</span>
+      </div>
+    );
+  }
+  
+  function HousesSection({
+    title,
+    description,
+    houses,
+  }: {
+    title: string;
+    description: string;
+    houses: House[];
+  }) {
+    if (!houses || houses.length === 0) return null;
+  
+    const subset = houses.slice(0, 9);
+  
+    return (
+      <div>
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 mb-4">
+          <div>
+            <h3 className="text-md font-semibold text-heading">{title}</h3>

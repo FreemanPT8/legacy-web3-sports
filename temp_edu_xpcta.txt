@@ -1,0 +1,119 @@
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+  
+          {/* SISTEMA DE XP */}
+          <section className="py-16 bg-[#000c12]">
+            <div className="container mx-auto px-4">
+              <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold mb-6 text-slate-50">
+>                   {t('education.xp.title')}
+                  </h2>
+                  <p className="text-lg text-slate-300 mb-6">
+>                   {t('education.xp.description')}
+                  </p>
+                  <div className="space-y-4 text-sm">
+                    <div className="flex items-start gap-3">
+                      <BookOpen className="h-6 w-6 text-sky-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold text-slate-100">
+                          {t('education.completeLessons')}
+                        </div>
+                        <div className="text-slate-300">
+                          {t('education.completeLessonsDesc')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Award className="h-6 w-6 text-amber-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold text-slate-100">
+                          {t('education.readArticles')}
+                        </div>
+                        <div className="text-slate-300">
+                          {t('education.readArticlesDesc')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Users className="h-6 w-6 text-emerald-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold text-slate-100">
+                          {t('education.forumParticipation')}
+                        </div>
+                        <div className="text-slate-300">
+                          {t('education.forumParticipationDesc')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <TrendingUp className="h-6 w-6 text-cyan-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold text-slate-100">
+                          {t('education.dailyStreaks')}
+                        </div>
+                        <div className="text-slate-300">
+                          {t('education.dailyStreaksDesc')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-8">
+>                   <Link href="/education/xp">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="border-slate-600 text-slate-100"
+                      >
+                        {t('education.learnMoreXP')}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+  
+                <div className="bg-gradient-to-br from-[#020b16] to-[#000c12] p-8 rounded-2xl border border-border">
+                  <h3 className="text-xl font-bold mb-6 text-center text-blue-100">
+>                   {t('education.xpLevels')}
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    {[
+                      { levelKey: 'newcomer', xp: '0-98 XP' },
+                      { levelKey: 'beginner', xp: '99-368 XP' },
+                      { levelKey: 'intermediate', xp: '369-554 XP' },
+                      { levelKey: 'advanced', xp: '555-999 XP' },
+                      { levelKey: 'expert', xp: '1,000-3,332 XP' },
+                      { levelKey: 'hallOfFame', xp: '3,333-4,999 XP' },
+                      { levelKey: 'master', xp: '5,000-9,999 XP' },
+                      { levelKey: 'legend', xp: '10,000+ XP' },
+                    ].map((item) => (
+                      <div
+                        key={item.levelKey}
+                        className="bg-card/70 border border-border rounded-lg px-4 py-3 flex justify-between items-center"
+                      >
+                        <span className="font-semibold text-slate-100">
+                          {t(`education.level.${item.levelKey}`)}
+                        </span>
+                        <span className="text-sm text-blue-200">
+                          {item.xp}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+  
+          {/* LEADERBOARD */}
+            <section className="py-16 bg-[#05212b]">
+              <div className="container mx-auto px-4">
+                <div className="max-w-6xl mx-auto">
+                  <div className="text-center mb-12">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                    {t('education.leaderboard.title')}
+                    </h2>
+                    <p className="text-lg text-slate-300">
+                      See who's leading the way in Web3 education

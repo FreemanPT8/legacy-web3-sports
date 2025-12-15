@@ -104,7 +104,7 @@ export default function ForumRoomPage() {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
             <p className="text-body">Loading forum room...</p>
           </div>
         </main>
@@ -234,7 +234,7 @@ export default function ForumRoomPage() {
                   </div>
                   {canPost ? (
                     <Link href={`/forum/${room.id}/new-topic`}>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Button>
                         <Plus className="h-4 w-4 mr-2" />
                         New Topic
                       </Button>
@@ -303,7 +303,7 @@ export default function ForumRoomPage() {
                   </p>
                   {canPost && (
                     <Link href={`/forum/${room.id}/new-topic`}>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Button>
                         Create First Topic
                       </Button>
                     </Link>
@@ -314,7 +314,7 @@ export default function ForumRoomPage() {
               <div className="space-y-3">
                 {sortedTopics.map(topic => (
                   <Link key={topic.id} href={`/forum/topic/${topic.id}`}>
-                    <Card className="bg-card border-custom hover:shadow-lg hover:border-blue-500/60 transition-all cursor-pointer">
+                    <Card className="bg-card border-custom hover:shadow-lg hover:border-primary/60 transition-all cursor-pointer">
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">
                           <Avatar className="flex-shrink-0">
@@ -328,7 +328,7 @@ export default function ForumRoomPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
                               {topic.pinned && (
-                                <Pin className="h-4 w-4 text-blue-500" />
+                                <Pin className="h-4 w-4 text-primary" />
                               )}
                               {topic.locked && (
                                 <Lock className="h-4 w-4 text-muted-custom" />

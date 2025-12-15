@@ -1,0 +1,27 @@
+                    <p className="mt-4 text-muted-foreground">
+                      {t('education.loadingStats')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-4 gap-6 mb-4">
+                    <Card className="text-center border border-border bg-card/80 shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+                      <CardContent className="pt-6">
+>                       <BookOpen className="h-10 w-10 text-sky-400 mx-auto mb-3" />
+                          <div className="text-3xl font-bold text-foreground">
+                            {stats?.totalCourses || 0}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {t('education.stats.courses')}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    <Card className="text-center border border-border bg-card/80 shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+                      <CardContent className="pt-6">
+                        <Target className="h-10 w-10 text-cyan-400 mx-auto mb-3" />
+                          <div className="text-3xl font-bold text-foreground">
+                            {stats?.totalLessons || 0}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {t('education.stats.lessons')}
+                          </div>
+                        </CardContent>

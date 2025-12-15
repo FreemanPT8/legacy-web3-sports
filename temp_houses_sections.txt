@@ -1,0 +1,23 @@
+                    depois abrimos espaço para participação e reputação dentro das
+                    Houses que fizerem sentido — sem pressa e sem promessas vazias.
+                  </p>
+                </div>
+  
+                <div className="grid md:grid-cols-[1.3fr,1.1fr] gap-8 items-start">
+>                 <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 to-slate-900 p-5 text-xs text-body shadow-lg space-y-3">
+                    <p className="text-[11px] uppercase tracking-wide text-blue-200/80">
+                      Como esta página se liga ao teu caminho
+                    </p>
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li>
+                        Na página de entrada do LEGACY para o desporto ficaste com
+                        o contexto geral: o que é o portal, porque é que a
+                        Apertum importa e como a tecnologia pode servir o teu
+                        futuro.
+                      </li>
+                      <li>
+                        Aqui vês <strong>onde já existem comunidades a nascer</strong> – por
+                        desporto, país e estado das Houses (ativas, em construção
+                        ou em desenvolvimento).
+                      </li>
+                      <li>

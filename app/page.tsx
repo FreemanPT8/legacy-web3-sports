@@ -80,6 +80,29 @@ const academyHighlights = [
   'Tutoriais em Blockchain e nos principais desportos',
 ];
 
+const navigationHighlights = [
+  {
+    label: 'XP & Níveis',
+    description: 'Vê como o teu XP evolui, desbloqueia streaks e acompanha o teu progresso.',
+    href: '/education/xp',
+  },
+  {
+    label: 'Leaderboard',
+    description: 'Sobe na tabela global e vê quem lidera a aprendizagem Web3.',
+    href: '/education/leaderboard',
+  },
+  {
+    label: 'Eventos',
+    description: 'Explora próximos eventos físicos e digitais ligados ao ecossistema Apertum.',
+    href: '/events',
+  },
+  {
+    label: 'Fórum',
+    description: 'Entra nas salas do fórum para trocar ideias com a comunidade.',
+    href: '/forum',
+  },
+];
+
 const legacyValues = ['Conteúdos públicos', 'Cursos privados com XP genuíno', 'Houses globais / capacitação profissional'];
 
 const faqs = [
@@ -303,6 +326,85 @@ export default function HomePage() {
                   <CardDescription className="mt-3 text-sm text-slate-200">{step.copy}</CardDescription>
                 </Card>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#000c12] px-6 py-16">
+          <div className="mx-auto max-w-6xl space-y-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">EXPLORA O LEGACY</p>
+              <h2 className="text-3xl font-semibold text-white">O que podes fazer dentro da plataforma</h2>
+              <p className="mt-2 text-sm text-slate-300">
+                Do XP à tabela de líderes, passando por eventos e fórum, o Legacy conecta aprendizagem, comunidade e oportunidades reais.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-4">
+              {navigationHighlights.map((item) => (
+                <Card
+                  key={item.label}
+                  className="flex h-full flex-col justify-between border border-white/10 bg-[#05212b] p-5"
+                >
+                  <div className="space-y-2">
+                    <CardTitle className="text-sm font-semibold text-white">{item.label}</CardTitle>
+                    <CardDescription className="text-xs text-slate-200">{item.description}</CardDescription>
+                  </div>
+                  <div className="mt-4">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={item.href} className="text-xs">
+                        Entrar
+                      </Link>
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#05212b] px-6 py-16">
+          <div className="mx-auto max-w-6xl grid gap-10 lg:grid-cols-2">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">HOUSES OF SPORTS</p>
+              <h2 className="text-3xl font-semibold text-white">A tua casa dentro do ecossistema</h2>
+              <p className="text-sm text-slate-200">
+                As Houses of Sports são comunidades distribuídas por várias cidades, pensadas para ligar atletas, profissionais e entusiastas que querem
+                crescer no universo Web3 + Desporto. Mentores, eventos, treino e networking num só lugar.
+              </p>
+              <ul className="space-y-2 text-sm text-slate-200">
+                <li className="flex items-center gap-2">
+                  <CircleDot className="h-4 w-4 text-cyan-300" />
+                  Mentoria local com foco em Web3 e carreira.
+                </li>
+                <li className="flex items-center gap-2">
+                  <CircleDot className="h-4 w-4 text-cyan-300" />
+                  Eventos presenciais e digitais com a comunidade Legacy.
+                </li>
+                <li className="flex items-center gap-2">
+                  <CircleDot className="h-4 w-4 text-cyan-300" />
+                  Pontos de contacto oficiais da Apertum no desporto.
+                </li>
+              </ul>
+              <div className="flex flex-wrap gap-4">
+                <Button variant="default" asChild>
+                  <Link href="/sports/houses">Explorar Houses</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/sports/onboarding">Encontrar a tua House</Link>
+                </Button>
+              </div>
+            </div>
+            <div className="relative rounded-[32px] border border-white/10 bg-[#000c12] p-6">
+              <div
+                className="h-64 rounded-[24px] bg-cover bg-center"
+                style={{
+                  backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.75)), url('${heroImageUrl}')`,
+                }}
+              />
+              <p className="mt-4 text-xs text-slate-300">
+                Começa pelo onboarding personalizado, partilha o teu contexto (atleta, treinador, gestor, criador de conteúdo ou fã) e recebe recomendações
+                sobre a melhor House para ti.
+              </p>
             </div>
           </div>
         </section>

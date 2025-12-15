@@ -1,0 +1,15 @@
+                                {learner.country}
+                              </div>
+                            </div>
+                            <div className="text-right">
+>                             <div className="text-2xl font-bold text-sky-400">
+                                {learner.xp_total}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                XP
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>

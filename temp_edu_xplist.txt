@@ -1,0 +1,41 @@
+>                         {t('education.completeLessonsDesc')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Award className="h-6 w-6 text-amber-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold text-slate-100">
+                          {t('education.readArticles')}
+                        </div>
+                        <div className="text-slate-300">
+                          {t('education.readArticlesDesc')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Users className="h-6 w-6 text-emerald-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold text-slate-100">
+                          {t('education.forumParticipation')}
+                        </div>
+                        <div className="text-slate-300">
+                          {t('education.forumParticipationDesc')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <TrendingUp className="h-6 w-6 text-cyan-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <div className="font-semibold text-slate-100">
+                          {t('education.dailyStreaks')}
+                        </div>
+                        <div className="text-slate-300">
+                          {t('education.dailyStreaksDesc')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-8">
+                    <Link href="/education/xp">
+                      <Button

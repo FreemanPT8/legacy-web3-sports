@@ -1,0 +1,37 @@
+                              <CardTitle className="text-xl text-foreground">
+                                {title}
+                              </CardTitle>
+                              <CardDescription className="line-clamp-2 text-muted-foreground">
+                                {description}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <BookOpen className="h-4 w-4" />
+                                <span>
+>                                 {modulesArray.length} {t('education.modules')} •{' '}
+                                  {lessonsCount} {t('education.lessons')}
+                                </span>
+                              </div>
+                              {isLocked ? (
+                                <Button
+                                  variant="outline"
+                                  className="w-full border-slate-600 text-slate-300"
+                                  disabled
+                                >
+                                  {t('education.unlockAt') || 'Unlock at'}{' '}
+                                  {course.xp_required} XP
+                                </Button>
+                              ) : (
+                                <Link href={`/education/courses/${course.id}`}>
+                                  <Button className="w-full bg-sky-600 hover:bg-sky-500">
+                                    {t('education.startCourse') || 'Start Course'}
+                                  </Button>
+                                </Link>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
