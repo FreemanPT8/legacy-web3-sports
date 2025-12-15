@@ -78,12 +78,12 @@ export default function BlogCategoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-page">
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4" />
-            <p className="text-body">
+            <p className="text-slate-300">
               A carregar artigos...
             </p>
           </div>
@@ -94,7 +94,7 @@ export default function BlogCategoryPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-page">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
 
       <main className="flex-1 py-8">
@@ -104,7 +104,7 @@ export default function BlogCategoryPage() {
               <Link href="/blog">
                 <Button
                   variant="ghost"
-                  className="mb-4 text-body hover:text-sky-300 hover:bg-slate-900/60"
+                  className="mb-4 text-slate-300 hover:text-white hover:bg-white/5"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar ao Blog
@@ -113,18 +113,21 @@ export default function BlogCategoryPage() {
             </div>
 
             {/* Hero da categoria */}
-            <section className="mb-8 rounded-3xl border-custom bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950 px-6 py-6 md:px-10 md:py-8 shadow-[0_0_40px_rgba(56,189,248,0.18)]">
+            <section className="mb-8 rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950 px-6 py-6 md:px-10 md:py-8 shadow-[0_0_40px_rgba(56,189,248,0.18)]">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
+                  <p className="text-xs uppercase tracking-[0.6em] text-cyan-300 mb-2">
+                    Categoria
+                  </p>
                   <div className="flex items-center gap-3 mb-4">
                     <Tag className="h-7 w-7 text-sky-400" />
-                    <h1 className="text-3xl md:text-4xl font-bold text-heading">
+                    <h1 className="text-3xl md:text-4xl font-bold text-white">
                       {categoryName}
                     </h1>
                   </div>
-                  <p className="text-sm md:text-base text-body max-w-2xl">
+                  <p className="text-sm md:text-base text-slate-300 max-w-2xl">
                     Explora artigos sobre{' '}
-                    <span className="font-semibold lowercase text-heading">
+                    <span className="font-semibold lowercase text-white">
                       {categoryName}
                     </span>{' '}
                     e o que a Web3, a Apertum e o ecossistema LEGACY podem
@@ -132,14 +135,14 @@ export default function BlogCategoryPage() {
                   </p>
                 </div>
 
-                <Card className="border-custom bg-card w-full md:w-72">
+                <Card className="border border-white/10 bg-[#000c12] w-full md:w-72">
                   <CardContent className="p-4">
-                    <div className="grid grid-cols-3 gap-4 text-center text-heading">
+                    <div className="grid grid-cols-3 gap-4 text-center text-white">
                       <div>
                         <div className="text-xl font-bold text-sky-400">
                           {articles.length}
                         </div>
-                        <div className="text-[11px] text-muted-custom">
+                        <div className="text-[11px] text-slate-400">
                           Artigos
                         </div>
                       </div>
@@ -150,7 +153,7 @@ export default function BlogCategoryPage() {
                             0,
                           )}
                         </div>
-                        <div className="text-[11px] text-muted-custom">
+                        <div className="text-[11px] text-slate-400">
                           Visualizações
                         </div>
                       </div>
@@ -161,7 +164,7 @@ export default function BlogCategoryPage() {
                             0,
                           )}
                         </div>
-                        <div className="text-[11px] text-muted-custom">
+                        <div className="text-[11px] text-slate-400">
                           XP disponível
                         </div>
                       </div>
@@ -173,13 +176,13 @@ export default function BlogCategoryPage() {
 
             {/* Lista de artigos */}
             {articles.length === 0 ? (
-              <Card className="border-custom bg-card">
+              <Card className="border border-white/10 bg-[#000c12]">
                 <CardContent className="text-center py-12">
-                  <BookOpen className="h-16 w-16 text-muted-custom mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2 text-heading">
+                  <BookOpen className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2 text-white">
                     Ainda não há artigos nesta categoria
                   </h3>
-                  <p className="text-body text-sm max-w-md mx-auto">
+                  <p className="text-slate-300 text-sm max-w-md mx-auto">
                     Volta mais tarde. Esta categoria vai receber conteúdos assim
                     que houver algo realmente útil para te mostrar.
                   </p>
@@ -199,7 +202,7 @@ export default function BlogCategoryPage() {
 
                   return (
                     <Link key={article.id} href={`/blog/${article.id}`}>
-                      <Card className="h-full bg-card border-custom hover:border-sky-500/70 hover:shadow-[0_0_30px_rgba(56,189,248,0.18)] transition-shadow cursor-pointer">
+                      <Card className="h-full bg-[#000c12] border border-white/10 hover:border-sky-500/70 hover:shadow-[0_0_30px_rgba(56,189,248,0.18)] transition-shadow cursor-pointer">
                         <CardHeader>
                           <div className="flex items-center justify-between mb-2">
                             <Badge className="bg-sky-600 text-white">
@@ -207,32 +210,32 @@ export default function BlogCategoryPage() {
                             </Badge>
                             <Badge
                               variant="outline"
-                              className="border-slate-600 text-heading"
+                              className="border-white/20 text-white"
                             >
                               {article.xp_reward} XP
                             </Badge>
                           </div>
-                          <CardTitle className="line-clamp-2 text-heading">
+                          <CardTitle className="line-clamp-2 text-white">
                             {title}
                           </CardTitle>
-                          <CardDescription className="line-clamp-3 text-body">
+                          <CardDescription className="line-clamp-3 text-slate-300">
                             {excerpt}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="flex items-center justify-between text-xs text-muted-custom">
+                          <div className="flex items-center justify-between text-xs text-slate-400">
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
+                                <Clock className="h-4 w-4 text-cyan-300" />
                                 <span>{article.reading_time} min</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <Eye className="h-4 w-4" />
+                                <Eye className="h-4 w-4 text-cyan-300" />
                                 <span>{article.view_count}</span>
                               </div>
                             </div>
                           </div>
-                          <div className="mt-3 text-[11px] text-muted-custom">
+                          <div className="mt-3 text-[11px] text-slate-400">
                             por @{article.author.username} ·{' '}
                             {getTimeSince(article.created_at)}
                           </div>
