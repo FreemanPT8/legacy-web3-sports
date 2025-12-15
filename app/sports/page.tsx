@@ -69,10 +69,10 @@ export default function SportsLandingPage() {
   const totalMembers = houses.reduce((acc, house) => acc + (house.membersCount ?? 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#000c12] text-white">
+    <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
 
-      <main className="space-y-16">
+      <main className="flex-1 space-y-16">
         {/* Hero */}
         <section className="relative isolate overflow-hidden bg-[#000c12] px-6 py-16">
           <div className="mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center">
@@ -84,6 +84,10 @@ export default function SportsLandingPage() {
               <p className="text-lg text-slate-200">
                 Explora os desportos cobertos pelo Legacy, descobre Houses oficiais e encontra o ponto de partida
                 certo para a tua jornada Web3 + Desporto.
+              </p>
+              <p className="text-sm text-slate-300">
+                Cada House é um hub para treino, networking e XP. Escolhe a comunidade certa e acompanha o teu progresso
+                com o mesmo design system da homepage.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Button size="lg" variant="default" asChild>
@@ -99,7 +103,7 @@ export default function SportsLandingPage() {
                   </Link>
                 </Button>
               </div>
-              <p className="text-xs text-slate-300">
+              <p className="text-sm text-slate-300">
                 Podes sempre ajustar o teu desporto principal e a tua House mais tarde no teu perfil Legacy.
               </p>
             </div>
@@ -150,7 +154,7 @@ export default function SportsLandingPage() {
         </section>
 
         {/* Secção desportos */}
-        <section className="bg-[#000c12] px-6 py-16">
+        <section className="bg-[#05212b] px-6 py-16">
           <div className="mx-auto max-w-6xl space-y-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
@@ -158,8 +162,8 @@ export default function SportsLandingPage() {
                 <h2 className="text-3xl font-semibold text-white">Onde o Legacy joga</h2>
               </div>
               <p className="max-w-xl text-sm text-slate-300">
-                O Legacy começa por desportos-chave, mas a lista vai crescer com o tempo. Cada desporto pode ter
-                Houses locais, Houses globais e trilhos específicos na Academia Web3.
+                O Legacy come?a por desportos-chave e vai expandindo ao ritmo da comunidade. Cada modalidade pode ter
+                Houses locais, Houses globais e trilhos espec?ficos na Academia Web3.
               </p>
             </div>
 
@@ -177,7 +181,7 @@ export default function SportsLandingPage() {
 
             {!loading && !error && sports.length === 0 && (
               <div className="rounded-xl border border-white/10 bg-[#000c12] px-4 py-6 text-sm text-slate-200">
-                Os desportos estão a ser configurados. Em breve vais poder ver todas as modalidades cobertas pelo
+                Estamos a preparar a lista inicial de desportos. Em breve vais poder ver todas as modalidades cobertas pelo
                 Legacy.
               </div>
             )}
@@ -190,12 +194,12 @@ export default function SportsLandingPage() {
                   return (
                     <Card
                       key={sport.id}
-                      className="flex h-full flex-col justify-between border border-white/10 bg-[#05212b] transition-transform duration-150 hover:-translate-y-0.5 hover:border-cyan-400/50"
+                      className="flex h-full flex-col justify-between border border-white/10 bg-[#000c12] transition-transform duration-150 hover:-translate-y-0.5 hover:border-cyan-400/50"
                     >
                       <CardHeader className="space-y-3">
                         <div className="flex items-center justify-between gap-3">
                           <CardTitle className="text-base font-semibold text-white">{sport.name}</CardTitle>
-                          <span className="rounded-full bg-[#000c12] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
+                          <span className="rounded-full bg-[#05212b] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
                             Desporto
                           </span>
                         </div>
@@ -227,7 +231,7 @@ export default function SportsLandingPage() {
         </section>
 
         {/* Secção Houses */}
-        <section className="bg-[#05212b] px-6 py-16">
+        <section className="bg-[#000c12] px-6 py-16">
           <div className="mx-auto max-w-6xl space-y-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
@@ -262,12 +266,12 @@ export default function SportsLandingPage() {
                   return (
                     <Card
                       key={house.id}
-                      className="flex h-full flex-col justify-between border border-white/10 bg-[#000c12] transition-transform duration-150 hover:-translate-y-0.5 hover:border-cyan-400/50"
+                      className="flex h-full flex-col justify-between border border-white/10 bg-[#05212b] transition-transform duration-150 hover:-translate-y-0.5 hover:border-cyan-400/50"
                     >
                       <CardHeader className="space-y-3">
                         <div className="flex items-center justify-between gap-3">
                           <CardTitle className="text-base font-semibold text-white">{house.name}</CardTitle>
-                          <span className="rounded-full bg-[#05212b] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
+                          <span className="rounded-full bg-[#000c12] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
                             House
                           </span>
                         </div>
@@ -300,7 +304,12 @@ export default function SportsLandingPage() {
                           </div>
                         </CardDescription>
                         <div className="pt-2">
-                          <Button variant="secondary" size="sm" asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-white/30 text-slate-100 hover:bg-[#000c12]"
+                            asChild
+                          >
                             <Link href={href}>Ver detalhes da House</Link>
                           </Button>
                         </div>
@@ -316,7 +325,7 @@ export default function SportsLandingPage() {
         {/* CTA final */}
         <section className="bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84] px-6 py-16">
           <div className="mx-auto max-w-5xl text-center">
-            <p className="text-xs uppercase tracking-[0.6em] text-white">PRONTO PARA ESCOLHER O TEU CAMINHO?</p>
+            <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">PRONTO PARA ESCOLHER O TEU CAMINHO?</p>
             <h2 className="mt-4 text-3xl font-semibold text-white">
               Define o desporto, a House e começa a ganhar XP genuíno.
             </h2>
@@ -340,4 +349,3 @@ export default function SportsLandingPage() {
     </div>
   );
 }
-
