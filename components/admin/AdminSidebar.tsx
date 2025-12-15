@@ -38,10 +38,10 @@ export function AdminSidebar() {
     <aside className="hidden h-[calc(100vh-120px)] w-64 flex-col gap-6 border-r border-white/10 bg-[#05212b] p-6 md:flex">
       <div className="space-y-1">
         <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.4em] text-cyan-300">
-          <LayoutDashboard className="h-4 w-4" />
+          <LayoutDashboard className="h-4 w-4 text-cyan-300" />
           Admin Panel
         </h2>
-        <p className="text-xs text-slate-400">Ferramentas de gestão</p>
+        <p className="text-xs text-slate-400">Ferramentas de gestao</p>
       </div>
 
       <nav className="flex flex-col gap-2 text-sm font-medium text-slate-200">
@@ -55,10 +55,10 @@ export function AdminSidebar() {
             <Link key={item.href} href={item.href}>
               <Button
                 variant="outline"
-                className={`w-full justify-start gap-3 border-white/10 ${
+                className={`w-full justify-start gap-3 border-white/30 text-white transition hover:border-cyan-300/40 hover:text-cyan-300 ${
                   isActive
-                    ? 'border-cyan-400/40 bg-cyan-500/20 text-white hover:bg-cyan-500/30'
-                    : 'bg-transparent text-slate-200 hover:border-white/20 hover:bg-[#041923]'
+                    ? 'border-cyan-400/60 bg-cyan-400/10 text-white'
+                    : 'bg-transparent'
                 }`}
               >
                 <Icon

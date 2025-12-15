@@ -413,38 +413,41 @@ export default function AdminUsersPage() {
     return value.toLocaleString();
   };
 
-  const metricCards = [
-    {
-      label: 'TOTAL USERS',
-      value: statsDisplay(userStats?.total, statsLocal.total),
-      description: 'Utilizadores registados',
-    },
-    {
-      label: 'SUPER ADMINS',
-      value: statsDisplay(userStats?.superAdmins, statsLocal.superAdmins),
-      description: 'Contas com acesso total',
-    },
-    {
-      label: 'ADMINS',
-      value: statsDisplay(userStats?.admins, statsLocal.admins),
-      description: 'Admins ativos',
-    },
-    {
-      label: 'MEMBERS',
-      value: statsDisplay(userStats?.members, statsLocal.members),
-      description: 'Membros base',
-    },
-    {
-      label: 'NOVOS 24H',
-      value: statsDisplay(userStats?.new24h, 0),
-      description: 'Entradas nas ultimas 24h',
-    },
-    {
-      label: 'NOVOS 30D',
-      value: statsDisplay(userStats?.new30d, 0),
-      description: 'Entradas nos ultimos 30 dias',
-    },
-  ];
+  const metricCards = useMemo(
+    () => [
+      {
+        label: 'TOTAL USERS',
+        value: statsDisplay(userStats?.total, statsLocal.total),
+        description: 'Utilizadores registados',
+      },
+      {
+        label: 'SUPER ADMINS',
+        value: statsDisplay(userStats?.superAdmins, statsLocal.superAdmins),
+        description: 'Contas com acesso total',
+      },
+      {
+        label: 'ADMINS',
+        value: statsDisplay(userStats?.admins, statsLocal.admins),
+        description: 'Admins ativos',
+      },
+      {
+        label: 'MEMBERS',
+        value: statsDisplay(userStats?.members, statsLocal.members),
+        description: 'Membros base',
+      },
+      {
+        label: 'NOVOS 24H',
+        value: statsDisplay(userStats?.new24h, 0),
+        description: 'Entradas nas ultimas 24h',
+      },
+      {
+        label: 'NOVOS 30D',
+        value: statsDisplay(userStats?.new30d, 0),
+        description: 'Entradas nos ultimos 30 dias',
+      },
+    ],
+    [statsLocal, userStats],
+  );
 
   const canEditUsers = canManageUsers;
 
@@ -799,8 +802,8 @@ export default function AdminUsersPage() {
 
   if (loading || !permissionsLoaded) {
     return (
-      <div className="w-full">
-        <p className="text-sm text-blue-100/90">A carregar utilizadores...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+        <p className="text-sm text-slate-300">A carregar utilizadores...</p>
       </div>
     );
   }

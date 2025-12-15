@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, BarChart3, Globe2, Activity } from 'lucide-react';
 
 type AdminStats = {
@@ -59,9 +58,9 @@ type AdminStats = {
 };
 
 const MetricCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-    <p className="text-xs uppercase text-muted-custom">{label}</p>
-    <p className="text-3xl font-semibold text-heading">
+  <div className="rounded-xl border border-white/10 bg-[#05212b] p-4">
+    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{label}</p>
+    <p className="mt-2 text-3xl font-semibold text-white">
       {value.toLocaleString('pt-PT')}
     </p>
   </div>
@@ -74,32 +73,32 @@ const TopList = ({
   title: string;
   items: { id: string; title: any; views: number }[];
 }) => (
-  <Card className="border-custom border-dashed bg-card-custom">
+  <Card className="border border-white/10 border-dashed bg-[#05212b]">
     <CardHeader className="pb-2">
-      <CardTitle className="text-sm text-heading">{title}</CardTitle>
+      <CardTitle className="text-sm text-white">{title}</CardTitle>
     </CardHeader>
-    <CardContent className="space-y-2 text-sm text-body">
+    <CardContent className="space-y-2 text-sm text-slate-300">
       {items && items.length > 0 ? (
         items.map((item) => (
           <div
             key={item.id}
             className="flex items-center justify-between gap-3"
           >
-            <span className="truncate">
+            <span className="truncate text-white">
               {typeof item.title === 'string'
                 ? item.title
                 : (item.title as any)?.pt ??
                   (item.title as any)?.en ??
                   item.title ??
-                  'Sem título'}
+                  'Sem titulo'}
             </span>
-            <span className="font-semibold">
+            <span className="font-semibold text-white">
               {item.views.toLocaleString('pt-PT')}
             </span>
           </div>
         ))
       ) : (
-        <p className="text-xs text-muted-custom">Sem dados</p>
+        <p className="text-xs text-slate-400">Sem dados</p>
       )}
     </CardContent>
   </Card>
@@ -130,7 +129,7 @@ export default function AdminAnalyticsPage() {
       const payload = await response.json();
 
       if (!response.ok || !payload.success) {
-        setStatsError(payload.error || 'Falha ao carregar métricas.');
+        setStatsError(payload.error || 'Falha ao carregar metricas.');
         setStats(null);
         return;
       }
@@ -213,9 +212,9 @@ export default function AdminAnalyticsPage() {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-custom">
-          <Loader2 className="h-5 w-5 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-300">
+          <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
           A carregar analytics...
         </div>
       </div>
@@ -224,42 +223,43 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="w-full space-y-8">
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+      <section className="relative mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#05212b] px-6 py-8">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
+          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
         </div>
-        <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin — Analytics
-          </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
+        <div className="relative z-10 max-w-5xl space-y-3">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+            LEGACY ADMIN
+          </p>
+          <h1 className="flex items-center gap-2 text-3xl font-semibold text-white md:text-4xl">
             <BarChart3 className="h-7 w-7 text-cyan-300" />
             Insights & Analytics
           </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Métricas oficiais do ecossistema para informar decisões de tráfego, conteúdo e engajamento.
+          <p className="text-sm text-slate-300 md:text-base">
+            Metricas oficiais do ecossistema para informar decisoes de trafego,
+            conteudo e engagement.
           </p>
           {statsError && (
-            <p className="mt-3 text-xs text-red-400">{statsError}</p>
+            <p className="text-xs text-rose-400">{statsError}</p>
           )}
         </div>
       </section>
 
       <section className="space-y-6">
-        <Card className="bg-card-custom border-custom shadow-lg shadow-slate-950/40">
+        <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-slate-950/40">
           <CardHeader>
-            <CardTitle className="text-heading text-sm font-semibold">
+            <CardTitle className="text-sm font-semibold text-white">
               Indicadores principais
             </CardTitle>
-            <CardDescription className="text-muted-custom text-xs">
+            <CardDescription className="text-xs text-slate-300">
               Dados frescos diretamente do /api/admin/stats.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-4 gap-4">
+          <CardContent className="grid gap-4 md:grid-cols-4 text-slate-300">
             {loadingStats ? (
-              <div className="md:col-span-4 text-center text-sm text-muted-custom">
-                A carregar métricas...
+              <div className="md:col-span-4 text-center text-sm text-slate-400">
+                A carregar metricas...
               </div>
             ) : (
               metrics.map((metric) => (
@@ -270,35 +270,35 @@ export default function AdminAnalyticsPage() {
         </Card>
 
         <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="bg-card-custom border-custom">
+          <Card className="border border-white/10 bg-[#05212b]">
             <CardHeader>
-              <CardTitle className="text-heading flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <Globe2 className="h-4 w-4 text-blue-400" />
                 Top blog posts
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <TopList title="Últimos 7 dias" items={safeStats.blog.topPosts.last7d} />
-              <TopList title="Últimos 30 dias" items={safeStats.blog.topPosts.last30d} />
+              <TopList title="Ultimos 7 dias" items={safeStats.blog.topPosts.last7d} />
+              <TopList title="Ultimos 30 dias" items={safeStats.blog.topPosts.last30d} />
             </CardContent>
           </Card>
 
-          <Card className="bg-card-custom border-custom">
+          <Card className="border border-white/10 bg-[#05212b]">
             <CardHeader>
-              <CardTitle className="text-heading">
+              <CardTitle className="text-white">
                 Onboarding pipeline
               </CardTitle>
-              <CardDescription className="text-xs text-muted-custom">
+              <CardDescription className="text-xs text-slate-300">
                 Agrupamento real por estados.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 text-slate-300">
               {onboardingEntries.length > 0 ? (
                 <div className="grid gap-2">
                   {onboardingEntries.map(([status, value]) => (
                     <div
                       key={status}
-                      className="flex items-center justify-between border border-slate-800 rounded-md px-3 py-2 bg-slate-950/60 text-xs"
+                      className="flex items-center justify-between rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-xs text-slate-200"
                     >
                       <span>{status}</span>
                       <span className="font-semibold">{value.toLocaleString('pt-PT')}</span>
@@ -306,67 +306,67 @@ export default function AdminAnalyticsPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-muted-custom">Sem dados</p>
+                <p className="text-xs text-slate-400">Sem dados</p>
               )}
             </CardContent>
           </Card>
 
-          <Card className="bg-card-custom border-custom">
+          <Card className="border border-white/10 bg-[#05212b]">
             <CardHeader>
-              <CardTitle className="text-heading">
+              <CardTitle className="text-white">
                 Houses of Sports
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
-                  <p className="text-muted-custom uppercase text-[11px]">Active</p>
-                  <p className="text-2xl font-semibold text-heading">{safeStats.houses.active.toLocaleString('pt-PT')}</p>
+                <div className="rounded-lg border border-white/10 bg-[#000c12] p-3">
+                  <p className="text-[11px] uppercase text-slate-400">Active</p>
+                  <p className="text-2xl font-semibold text-white">{safeStats.houses.active.toLocaleString('pt-PT')}</p>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
-                  <p className="text-muted-custom uppercase text-[11px]">Building</p>
-                  <p className="text-2xl font-semibold text-heading">{safeStats.houses.building.toLocaleString('pt-PT')}</p>
+                <div className="rounded-lg border border-white/10 bg-[#000c12] p-3">
+                  <p className="text-[11px] uppercase text-slate-400">Building</p>
+                  <p className="text-2xl font-semibold text-white">{safeStats.houses.building.toLocaleString('pt-PT')}</p>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
-                  <p className="text-muted-custom uppercase text-[11px]">Developing</p>
-                  <p className="text-2xl font-semibold text-heading">{safeStats.houses.developing.toLocaleString('pt-PT')}</p>
+                <div className="rounded-lg border border-white/10 bg-[#000c12] p-3">
+                  <p className="text-[11px] uppercase text-slate-400">Developing</p>
+                  <p className="text-2xl font-semibold text-white">{safeStats.houses.developing.toLocaleString('pt-PT')}</p>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
-                  <p className="text-muted-custom uppercase text-[11px]">Total</p>
-                  <p className="text-2xl font-semibold text-heading">{safeStats.houses.total.toLocaleString('pt-PT')}</p>
+                <div className="rounded-lg border border-white/10 bg-[#000c12] p-3">
+                  <p className="text-[11px] uppercase text-slate-400">Total</p>
+                  <p className="text-2xl font-semibold text-white">{safeStats.houses.total.toLocaleString('pt-PT')}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="space-y-3 border-t border-slate-800/70 pt-4">
+        <div className="space-y-3 border-t border-white/10 pt-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
-              Níveis de XP
+            <h2 className="text-xs font-semibold uppercase tracking-[0.4em] text-cyan-300">
+              Niveis de XP
             </h2>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="border border-blue-500/60 text-blue-100 hover:bg-blue-950/40"
+              className="border-white/30 text-white hover:border-cyan-300/40 hover:text-cyan-300"
               onClick={() => router.push('/admin/xp')}
             >
               Ver controle de XP
             </Button>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-          <MetricCard
-            label="XP total (all actions)"
-            value={safeStats.courses.xp?.allActions?.total ?? 0}
-          />
-          <MetricCard
-            label="XP últimas 24h"
-            value={safeStats.courses.xp?.allActions?.last24h ?? 0}
-          />
-          <MetricCard
-            label="XP últimos 30d"
-            value={safeStats.courses.xp?.allActions?.last30d ?? 0}
-          />
+            <MetricCard
+              label="XP total (all actions)"
+              value={safeStats.courses.xp?.allActions?.total ?? 0}
+            />
+            <MetricCard
+              label="XP ultimas 24h"
+              value={safeStats.courses.xp?.allActions?.last24h ?? 0}
+            />
+            <MetricCard
+              label="XP ultimos 30d"
+              value={safeStats.courses.xp?.allActions?.last30d ?? 0}
+            />
           </div>
         </div>
       </section>

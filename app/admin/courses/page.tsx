@@ -46,7 +46,7 @@ type PermissionsResponse = {
   };
 };
 
-// Helpers para título/descrição seguros
+// Helpers para titulo/descricao seguros
 function getCourseTitle(course: Course): string {
   const raw = course.title;
   if (!raw) return 'Untitled course';
@@ -95,7 +95,7 @@ export default function CoursesManagementPage() {
   const isAdmin =
     !!user && (user.role === 'Super Admin' || user.role === 'Admin');
 
-  // Proteção básica por role
+  // Protecao basica por role
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -107,7 +107,7 @@ export default function CoursesManagementPage() {
     }
   }, [user, loading, isAdmin, router]);
 
-  // Buscar permissões finas
+  // Buscar permissoes finas
   useEffect(() => {
     if (loading || !user) return;
 
@@ -261,7 +261,7 @@ export default function CoursesManagementPage() {
   if (loading || !user || !isAdmin || !permissionsLoaded) {
     return (
       <div className="w-full">
-        <p className="text-sm text-blue-100/90">A carregar cursos…</p>
+        <p className="text-sm text-blue-100/90">A carregar cursos...</p>
       </div>
     );
   }
@@ -285,33 +285,32 @@ export default function CoursesManagementPage() {
   const levelLabel = (course: Course) => course.level || 'Beginner';
 
   return (
-    <div className="w-full space-y-8">
-      {/* HERO - consistente com /admin e /admin/users */}
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+    <div className="min-h-screen w-full space-y-8 bg-[#000c12] px-4 py-6 text-white md:px-8">
+      {/* HERO */}
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-10 shadow-2xl shadow-black/40">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+          <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
         </div>
 
-        <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin — Courses
-          </span>
-
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+        <div className="relative z-10 max-w-5xl space-y-4">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+            LEGACY ADMIN - COURSES
+          </p>
+          <h1 className="text-3xl font-semibold text-white md:text-4xl">
             Course Management
           </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Cria, organiza e afina cursos, módulos e lições. Aqui
-            controlas o motor educativo do LEGACY — o que existe,
-            o que está publicado e o que ainda está em draft.
+          <p className="text-sm text-slate-300 md:text-base">
+            Cria, organiza e afina cursos, modulos e licoes. Aqui controlas o
+            motor educativo do LEGACY para saber o que esta publicado e o que
+            ainda esta em draft.
           </p>
 
           {!canManageCourses && (
-            <p className="mt-3 text-xs text-amber-300 flex items-center gap-2">
+            <p className="mt-3 flex items-center gap-2 text-xs text-amber-300">
               <Lock className="h-4 w-4" />
-              Podes ver os cursos, mas não tens permissão para
-              criar ou editar conteúdo.
+              Podes ver os cursos, mas nao tens permissao para criar ou editar
+              conteudo.
             </p>
           )}
         </div>
@@ -320,18 +319,19 @@ export default function CoursesManagementPage() {
       {/* ACTION PANEL */}
       <section>
         <div className="max-w-6xl mx-auto">
-          <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-emerald-800/60 shadow-xl">
+          <Card className="border border-white/10 bg-[#05212b] shadow-xl shadow-black/40">
             <CardHeader className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-emerald-500/20 text-emerald-100 border border-emerald-500/40">
+                <Badge className="border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
                   Playbook
                 </Badge>
-                <CardTitle className="text-heading text-lg">
-                  Ações imediatas para acelerar os cursos
+                <CardTitle className="text-lg text-white">
+                  Acoes imediatas para acelerar os cursos
                 </CardTitle>
               </div>
-              <CardDescription className="text-muted-custom max-w-3xl">
-                Organize lançamentos, mantenha módulos engajando e conecte cada update com XP e impacto real.
+              <CardDescription className="text-slate-300 max-w-3xl">
+                Organiza lancamentos, mantem modulos engajando e conecta cada
+                update com XP e impacto real.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
@@ -353,21 +353,21 @@ export default function CoursesManagementPage() {
                   onClick={() => {
                     if (!canManageCourses) return;
                     toast({
-                      title: 'Adicionar módulo',
+                        title: 'Adicionar modulo',
                       description:
-                        'Abra um curso e use o builder de módulos/lessons para adicionar conteúdo passo a passo.',
+                        'Abra um curso e usa o builder de modulos/lessons para adicionar conteudo passo a passo.',
                     });
                   }}
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
-                  Adicionar módulo
+                  Adicionar modulo
                 </Button>
                 <Button
                   className="flex-1 border border-blue-600 text-blue-100 hover:bg-blue-900 bg-blue-950/50"
                   onClick={() => router.push('/admin/courses')}
                 >
                   <Eye className="h-4 w-4 mr-2" />
-                  Rever portfólio
+                  Rever portfolio
                 </Button>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
@@ -378,19 +378,19 @@ export default function CoursesManagementPage() {
                   <p className="text-sm font-bold mt-1">
                     {publishedCourses.length} publicados
                   </p>
-                  <p className="text-muted-custom text-[11px]">
-                    Foque em transformar 3 deles em experiências multimídia.
+                  <p className="text-slate-300 text-[11px]">
+                    Foque em transformar 3 deles em experiencias multimidia.
                   </p>
                 </div>
                 <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
                   <p className="font-semibold text-[11px] uppercase tracking-wide">
-                    Módulos / lições
+                    Modulos / licoes
                   </p>
                   <p className="text-sm font-bold mt-1">
-                    {totalModules} módulos · {totalLessons} lições
+                    {totalModules} modulos / {totalLessons} licoes
                   </p>
-                  <p className="text-muted-custom text-[11px]">
-                    Cada módulo concluído gera potencial de XP e retenção.
+                  <p className="text-slate-300 text-[11px]">
+                    Cada modulo concluido gera potencial de XP e retencao.
                   </p>
                 </div>
                 <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
@@ -400,7 +400,7 @@ export default function CoursesManagementPage() {
                   <p className="text-sm font-bold mt-1">
                     {draftCourses.length} rascunhos
                   </p>
-                  <p className="text-muted-custom text-[11px]">
+                  <p className="text-slate-300 text-[11px]">
                     Finalize e publique para ativar XP em massa.
                   </p>
                 </div>
@@ -410,18 +410,18 @@ export default function CoursesManagementPage() {
         </div>
       </section>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* CONTEUDO PRINCIPAL */}
       <section className="pb-2">
         <div className="max-w-6xl mx-auto space-y-6">
-          {/* HEADER + BOTÃO */}
+          {/* HEADER + BOTAO */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-heading">
-                Cursos, módulos e lições
+              <h2 className="text-xl font-semibold text-white">
+                Cursos, modulos e licoes
               </h2>
-              <p className="text-sm text-muted-custom">
-                Visão geral rápida do portefólio de cursos e da
-                estrutura de módulos/lessons.
+              <p className="text-sm text-slate-300">
+                Visao geral rapida do portefolio de cursos e da estrutura de
+                modulos/lessons.
               </p>
             </div>
             <Link
@@ -440,22 +440,22 @@ export default function CoursesManagementPage() {
 
           {/* STATS */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   Total Courses
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-heading">
+                <div className="text-3xl font-bold text-white">
                   {courses.length}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   Published
                 </CardTitle>
               </CardHeader>
@@ -466,9 +466,9 @@ export default function CoursesManagementPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   Draft
                 </CardTitle>
               </CardHeader>
@@ -479,17 +479,17 @@ export default function CoursesManagementPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   Modules / Lessons
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-semibold text-heading">
+                <div className="text-lg font-semibold text-white">
                   {totalModules} modules
                 </div>
-                <div className="text-sm text-muted-custom">
+                <div className="text-sm text-slate-300">
                   {totalLessons} lessons
                 </div>
               </CardContent>
@@ -498,23 +498,23 @@ export default function CoursesManagementPage() {
 
           {/* LISTA DE CURSOS */}
           {loadingData ? (
-            <Card className="bg-card-custom border-custom">
-              <CardContent className="text-center py-12 text-body">
+            <Card className="bg-[#05212b] border border-white/10">
+              <CardContent className="text-center py-12 text-slate-200">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-                <p className="mt-4 text-sm text-muted-custom">
+                <p className="mt-4 text-sm text-slate-300">
                   Loading courses...
                 </p>
               </CardContent>
             </Card>
           ) : courses.length === 0 ? (
-            <Card className="bg-card-custom border-custom">
-              <CardContent className="text-center py-12 text-body">
-                <BookOpen className="h-16 w-16 text-muted-custom mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2 text-heading">
+            <Card className="bg-[#05212b] border border-white/10">
+              <CardContent className="text-center py-12 text-slate-200">
+                <BookOpen className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2 text-white">
                   No courses yet
                 </h3>
-                <p className="text-sm text-muted-custom mb-6">
-                  Cria o teu primeiro curso para começar a construir o
+                <p className="text-sm text-slate-300 mb-6">
+                  Cria o teu primeiro curso para comecar a construir o
                   legado educativo.
                 </p>
                 <Link
@@ -550,7 +550,7 @@ export default function CoursesManagementPage() {
                 return (
                   <Card
                     key={course.id}
-                    className="hover:shadow-lg hover:shadow-slate-950/40 transition-shadow bg-card-custom border-custom text-body"
+                    className="border border-white/10 bg-[#05212b] text-slate-200 transition-all hover:border-cyan-300/70"
                   >
                     <CardHeader>
                       {course.image_url && (
@@ -566,7 +566,7 @@ export default function CoursesManagementPage() {
                       )}
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1">
-                          <CardTitle className="text-lg flex items-center gap-2 text-heading">
+                          <CardTitle className="text-lg flex items-center gap-2 text-white">
                             {title}
                             {isCreator && (
                               <Badge
@@ -578,7 +578,7 @@ export default function CoursesManagementPage() {
                             )}
                           </CardTitle>
                           {course.author_name && (
-                            <p className="text-xs text-muted-custom">
+                            <p className="text-xs text-slate-300">
                               By {course.author_name}
                             </p>
                           )}
@@ -593,18 +593,18 @@ export default function CoursesManagementPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-custom mb-4 line-clamp-2">
+                      <p className="text-sm text-slate-300 mb-4 line-clamp-2">
                         {description}
                       </p>
-                      <div className="text-sm text-muted-custom mb-4">
+                      <div className="text-sm text-slate-300 mb-4">
                         Level: {levelLabel(course)}
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs mb-4">
-                        <Badge variant="outline" className="border-custom">
+                        <Badge variant="outline" className="border border-white/10">
                           {xpTotal} XP distributed
                         </Badge>
-                        <Badge variant="outline" className="border-custom">
-                          {modulesCount} modules · {lessonsCount} lessons
+                        <Badge variant="outline" className="border border-white/10">
+                          {modulesCount} modules / {lessonsCount} lessons
                         </Badge>
                         {isCreator && (
                           <Badge

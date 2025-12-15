@@ -371,7 +371,7 @@ export default function AdminDashboardPage() {
           <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Utilizadores
           </h2>
-          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-slate-950/40">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-slate-950/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Users className="h-5 w-5 text-blue-400" />
@@ -433,7 +433,7 @@ export default function AdminDashboardPage() {
           <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Conteúdo educativo
           </h2>
-          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-blue-950/40">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-blue-950/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <BookOpen className="h-5 w-5 text-emerald-400" />
@@ -463,7 +463,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div className="grid md:grid-cols-3 gap-4">
-                <Card className="border-white/10 border-dashed bg-[#05212b]">
+                <Card className="border border-white/10 border-dashed bg-[#05212b]">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2 text-white">
                       <Activity className="h-4 w-4 text-emerald-400" />
@@ -485,7 +485,7 @@ export default function AdminDashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-white/10 border-dashed bg-[#05212b]">
+                <Card className="border border-white/10 border-dashed bg-[#05212b]">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2 text-white">
                       <TrendingUp className="h-4 w-4 text-blue-400" />
@@ -507,7 +507,7 @@ export default function AdminDashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-white/10 border-dashed bg-[#05212b]">
+                <Card className="border border-white/10 border-dashed bg-[#05212b]">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2 text-white">
                       <BarChart3 className="h-4 w-4 text-purple-400" />
@@ -539,7 +539,7 @@ export default function AdminDashboardPage() {
           <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Blog & Educação contínua
           </h2>
-          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-purple-950/40">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-purple-950/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <FileText className="h-5 w-5 text-purple-400" />
@@ -569,7 +569,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div className="grid md:grid-cols-3 gap-4">
-                <Card className="border-white/10 border-dashed bg-[#05212b]">
+                <Card className="border border-white/10 border-dashed bg-[#05212b]">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2 text-white">
                       <BarChart3 className="h-4 w-4 text-slate-300" />
@@ -609,7 +609,7 @@ export default function AdminDashboardPage() {
           <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Onboarding & Leads
           </h2>
-          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-orange-950/40">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-orange-950/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Mail className="h-5 w-5 text-orange-400" />
@@ -639,7 +639,7 @@ export default function AdminDashboardPage() {
                   {onboardingStatusEntries.map(([status, count]) => (
                     <div
                       key={status}
-                      className="rounded border-white/10 bg-[#05212b] p-3"
+                      className="rounded border border-white/10 bg-[#05212b] p-3"
                     >
                       <div className="font-semibold text-white">
                         {status}
@@ -660,7 +660,7 @@ export default function AdminDashboardPage() {
                       ([uid, count]) => (
                         <div
                           key={uid}
-                          className="rounded border-white/10 bg-[#05212b] p-2"
+                          className="rounded border border-white/10 bg-[#05212b] p-2"
                         >
                           <div className="text-[11px] text-slate-300 break-all">
                             {uid}
@@ -683,7 +683,7 @@ export default function AdminDashboardPage() {
           <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             Houses of Sports
           </h2>
-          <Card className="bg-[#05212b] border-white/10 shadow-lg shadow-amber-950/40">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-amber-950/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Building2 className="h-5 w-5 text-amber-400" />
@@ -715,7 +715,7 @@ export default function AdminDashboardPage() {
             <Button
               variant="outline"
               size="sm"
-              className="border-blue-500/60 text-blue-100 hover:bg-blue-950/40"
+              className="border-white/30 text-white hover:border-cyan-300/40 hover:text-cyan-300"
               onClick={() => setShowAdvanced((prev) => !prev)}
             >
               {showAdvanced ? 'Esconder insights' : 'Mostrar insights'}
@@ -729,7 +729,7 @@ export default function AdminDashboardPage() {
               )}
 
               {/* User Growth */}
-              <Card className="bg-[#000c12] border-white/10">
+              <Card className="border border-white/10 bg-[#000c12]">
                 <CardHeader>
                   <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                     User Growth (Monthly)
@@ -756,7 +756,7 @@ export default function AdminDashboardPage() {
               </Card>
 
               {/* Course Engagement */}
-              <Card className="bg-[#000c12] border-white/10">
+              <Card className="border border-white/10 bg-[#000c12]">
                 <CardHeader>
                   <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                     Course Engagement
@@ -774,7 +774,7 @@ export default function AdminDashboardPage() {
               </Card>
 
               {/* Weekly Engagement */}
-              <Card className="bg-[#000c12] border-white/10">
+              <Card className="border border-white/10 bg-[#000c12]">
                 <CardHeader>
                   <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                     User Activity (Weekly)

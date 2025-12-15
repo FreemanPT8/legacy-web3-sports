@@ -98,7 +98,7 @@ export default function AdminBlogPage() {
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
-  // Proteção básica
+  // ProteAAo bAsica
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -110,7 +110,7 @@ export default function AdminBlogPage() {
     }
   }, [user, loading, router]);
 
-  // Buscar permissões
+  // Buscar permissAes
   useEffect(() => {
     if (loading || !user) return;
 
@@ -320,38 +320,38 @@ export default function AdminBlogPage() {
     });
 
   return (
-    <div className="w-full space-y-8">
-      {/* HERO - estilo B (Users) */}
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+    <div className="min-h-screen w-full space-y-8 bg-[#000c12] px-4 py-6 text-white md:px-8">
+      {/* HERO */}
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-10 shadow-2xl shadow-black/40">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+          <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
         </div>
 
         <div className="relative z-10 max-w-5xl space-y-4">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin — Blog
-          </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+            LEGACY ADMIN - BLOG
+          </p>
+          <h1 className="text-3xl font-semibold text-white md:text-4xl">
             Blog Management
           </h1>
-          <p className="text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Gestão centralizada de posts, XP e visualizações do Blog do LEGACY.
-            Filtra, revê e mantém vivo o conteúdo contínuo da comunidade.
+          <p className="text-sm text-slate-300 md:text-base">
+            Gestao centralizada de posts, XP e visualizacoes do blog. Filtra,
+            rev e mantem vivo o conteudo continuo da comunidade.
           </p>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/20 bg-gradient-to-r from-blue-700/40 via-slate-900 to-slate-950 px-4 py-3 text-sm text-white shadow-lg shadow-blue-900/40">
-              <p className="text-[11px] uppercase tracking-[0.35em] text-blue-200">
+            <div className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3 text-sm text-white shadow-lg shadow-black/30">
+              <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-200">
                 Meta XP semanal
               </p>
               <p className="text-xl font-semibold">
                 {xpTotalAll.toLocaleString('pt-PT')} XP
               </p>
-              <p className="text-xs text-blue-100/80">
+              <p className="text-xs text-slate-300">
                 Meta: publicar +3 artigos com 200+ XP cada.
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-xs text-white flex flex-col gap-2">
+            <div className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3 text-xs text-white">
               <div className="flex items-center gap-2 text-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 Trend monitorado
@@ -359,11 +359,11 @@ export default function AdminBlogPage() {
               <p className="text-lg font-semibold">
                 {totalViewsAll.toLocaleString('pt-PT')} views
               </p>
-              <p className="text-xs text-blue-100/80">nos últimos 7 dias</p>
+              <p className="text-xs text-slate-300">nos ultimos 7 dias</p>
             </div>
             <Button
               variant="outline"
-              className={`hfit flex items-center justify-center gap-2 border-emerald-500 text-emerald-100`}
+              className="flex items-center justify-center gap-2 border-white/30 text-white hover:text-cyan-300"
               onClick={() => setFocusMode((prev) => !prev)}
             >
               <Zap className="h-4 w-4" />
@@ -373,7 +373,7 @@ export default function AdminBlogPage() {
         </div>
       </section>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* CONTEUDO PRINCIPAL */}
       <section
         className={`pb-2 ${
           focusMode
@@ -384,19 +384,19 @@ export default function AdminBlogPage() {
         <div className="max-w-6xl mx-auto space-y-6">
           {/* STAT CARDS */}
           <div className="grid gap-4 md:grid-cols-5 mb-2">
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   Total posts
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 text-heading">
+              <CardContent className="pt-0 text-white">
                 <div className="text-2xl font-bold">{posts.length}</div>
               </CardContent>
             </Card>
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   Published
                 </CardTitle>
               </CardHeader>
@@ -406,9 +406,9 @@ export default function AdminBlogPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   Draft
                 </CardTitle>
               </CardHeader>
@@ -418,9 +418,9 @@ export default function AdminBlogPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   XP distributed
                 </CardTitle>
               </CardHeader>
@@ -430,9 +430,9 @@ export default function AdminBlogPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-card-custom border-custom">
+            <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-heading">
+                <CardTitle className="text-sm font-medium text-white">
                   Views (total)
                 </CardTitle>
               </CardHeader>
@@ -447,15 +447,15 @@ export default function AdminBlogPage() {
           {/* TOP LISTS */}
           {posts.length > 0 && (
             <div className="grid md:grid-cols-2 gap-4">
-              <Card className="bg-card-custom border-custom">
+              <Card className="bg-[#05212b] border border-white/10">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-heading">
+                  <CardTitle className="flex items-center gap-2 text-white">
                     Top posts by views
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 text-body">
+                <CardContent className="space-y-2 text-slate-200">
                   {topByViews.length === 0 ? (
-                    <p className="text-sm text-muted-custom">No views yet.</p>
+                    <p className="text-sm text-slate-300">No views yet.</p>
                   ) : (
                     topByViews.map((p, idx) => (
                       <div
@@ -468,22 +468,22 @@ export default function AdminBlogPage() {
                             {resolveLocalizedText(p.title) || 'Untitled'}
                           </span>
                         </div>
-                        <div className="text-muted-custom">{p.views || 0} views</div>
+                        <div className="text-slate-300">{p.views || 0} views</div>
                       </div>
                     ))
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="bg-card-custom border-custom">
+              <Card className="bg-[#05212b] border border-white/10">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-heading">
+                  <CardTitle className="flex items-center gap-2 text-white">
                     Top posts by XP
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 text-body">
+                <CardContent className="space-y-2 text-slate-200">
                   {topByXP.length === 0 ? (
-                    <p className="text-sm text-muted-custom">
+                    <p className="text-sm text-slate-300">
                       No XP distributed yet.
                     </p>
                   ) : (
@@ -498,7 +498,7 @@ export default function AdminBlogPage() {
                             {resolveLocalizedText(p.title) || 'Untitled'}
                           </span>
                         </div>
-                        <div className="text-muted-custom">
+                        <div className="text-slate-300">
                           {p.xp_total_distributed || 0} XP
                         </div>
                       </div>
@@ -509,12 +509,12 @@ export default function AdminBlogPage() {
             </div>
           )}
 
-          {/* FILTROS + BOTÃO NOVO POST */}
-          <Card className="bg-card-custom border-custom">
+          {/* FILTROS + BOTAO NOVO POST */}
+          <Card className="bg-[#05212b] border border-white/10">
             <CardHeader className="pb-0 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
-                <CardTitle className="text-sm text-heading">Filters</CardTitle>
-                <CardDescription className="text-muted-custom">
+                <CardTitle className="text-sm text-white">Filters</CardTitle>
+                <CardDescription className="text-slate-300">
                   Combine status, category, author and ordering.
                 </CardDescription>
               </div>
@@ -530,11 +530,11 @@ export default function AdminBlogPage() {
                 New Post
               </Button>
             </CardHeader>
-            <CardContent className="pt-4 grid md:grid-cols-4 gap-4 text-body">
+            <CardContent className="pt-4 grid md:grid-cols-4 gap-4 text-slate-200">
               <div className="space-y-1">
-                <p className="text-xs text-muted-custom">Status</p>
+                <p className="text-xs text-slate-300">Status</p>
                 <select
-                  className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={statusFilter}
                   onChange={(e) =>
                     setStatusFilter(e.target.value as 'all' | 'published' | 'draft')
@@ -546,27 +546,27 @@ export default function AdminBlogPage() {
                 </select>
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-muted-custom">Category</p>
+                <p className="text-xs text-slate-300">Category</p>
                 <input
-                  className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white placeholder:text-xs placeholder:text-slate-400 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   placeholder="e.g. News"
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-muted-custom">Author</p>
+                <p className="text-xs text-slate-300">Author</p>
                 <input
-                  className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white placeholder:text-xs placeholder:text-slate-400 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={authorFilter}
                   onChange={(e) => setAuthorFilter(e.target.value)}
                   placeholder="name or username"
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-muted-custom">Order by</p>
+                <p className="text-xs text-slate-300">Order by</p>
                 <select
-                  className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={sortBy}
                   onChange={(e) =>
                     setSortBy(e.target.value as 'recent' | 'views' | 'xp')
@@ -581,18 +581,19 @@ export default function AdminBlogPage() {
           </Card>
 
           {/* ACTION PANEL */}
-          <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-blue-800/70 shadow-lg">
+        <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
             <CardHeader className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <Badge className="bg-blue-500/20 text-blue-100 border border-blue-500/40">
+                <Badge className="border border-cyan-400/40 bg-cyan-400/10 text-cyan-200">
                   New
                 </Badge>
-                <CardTitle className="text-heading">
-                  Ações prioritárias de conteúdo
+                <CardTitle className="text-white">
+                  Acoes prioritarias de conteudo
                 </CardTitle>
               </div>
-              <CardDescription className="text-muted-custom">
-                Publique, prepare rascunhos ou dispare revisões mantendo o foco em XP e impacto da comunidade.
+              <CardDescription className="text-slate-300">
+                Publique, prepare rascunhos ou dispare revisoes mantendo o foco em
+                XP e impacto da comunidade.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
@@ -609,7 +610,7 @@ export default function AdminBlogPage() {
                   Publicar agora (ganhe XP)
                 </Button>
                 <Button
-                  className="flex-1 border border-slate-700 text-slate-100 bg-slate-950/60 hover:bg-slate-900 disabled:opacity-60"
+                  className="flex-1 border border-white/30 bg-[#000c12] text-white hover:text-cyan-300 disabled:opacity-60"
                   onClick={() => {
                     if (!canManageBlog) return;
                     toast({
@@ -623,7 +624,7 @@ export default function AdminBlogPage() {
                   Salvar rascunho
                 </Button>
                 <Button
-                  className="flex-1 border border-blue-600 text-blue-100 bg-blue-950/50 hover:bg-blue-900"
+                  className="flex-1 border border-white/30 text-white hover:text-cyan-300"
                   onClick={() => {
                     if (!canManageBlog) return;
                     router.push('/admin/blog');
@@ -635,13 +636,13 @@ export default function AdminBlogPage() {
                 </Button>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2 text-xs">
-                <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-custom">
-                    Top post por visualizações
+                <div className="rounded-2xl border border-white/10 bg-[#05212b] p-3 text-slate-200">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-300">
+                    Top post por visualizaAAes
                   </p>
                   {topByViews[0] ? (
                     <>
-                      <p className="text-sm font-semibold text-heading truncate">
+                      <p className="text-sm font-semibold text-white truncate">
                         {(resolveLocalizedText(topByViews[0].title) ||
                           'Untitled').slice(0, 45)}
                       </p>
@@ -651,7 +652,7 @@ export default function AdminBlogPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="mt-2 w-full"
+                        className="mt-2 w-full border-white/30 text-white hover:text-cyan-300"
                         onClick={() =>
                           router.push(`/blog/${topByViews[0].id}`)
                         }
@@ -660,18 +661,18 @@ export default function AdminBlogPage() {
                       </Button>
                     </>
                   ) : (
-                    <p className="text-[11px] text-muted-custom">
+                    <p className="text-[11px] text-slate-300">
                       Sem posts com views registrados.
                     </p>
                   )}
                 </div>
-                <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-custom">
+                <div className="rounded-2xl border border-white/10 bg-[#05212b] p-3 text-slate-200">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-300">
                     Impacto de XP
                   </p>
                   {topByXP[0] ? (
                     <>
-                      <p className="text-sm font-semibold text-heading truncate">
+                      <p className="text-sm font-semibold text-white truncate">
                         {(resolveLocalizedText(topByXP[0].title) ||
                           'Untitled').slice(0, 45)}
                       </p>
@@ -684,15 +685,15 @@ export default function AdminBlogPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="mt-2 w-full"
+                        className="mt-2 w-full border-white/30 text-white hover:text-cyan-300"
                         onClick={() => router.push(`/admin/blog/${topByXP[0].id}`)}
                       >
                         Ver
                       </Button>
                     </>
                   ) : (
-                    <p className="text-[11px] text-muted-custom">
-                      Ainda não há posts com XP distribuído.
+                    <p className="text-[11px] text-slate-300">
+                      Ainda nAo hA posts com XP distribuAdo.
                     </p>
                   )}
                 </div>
@@ -702,20 +703,20 @@ export default function AdminBlogPage() {
 
           {/* LISTA / ESTADO */}
           {loadingData ? (
-            <Card className="bg-card-custom border-custom">
-              <CardContent className="text-center py-12 text-body">
+            <Card className="bg-[#05212b] border border-white/10">
+              <CardContent className="text-center py-12 text-slate-200">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-                <p className="mt-4 text-muted-custom">Loading posts...</p>
+                <p className="mt-4 text-slate-300">Loading posts...</p>
               </CardContent>
             </Card>
           ) : filteredPosts.length === 0 ? (
-            <Card className="bg-card-custom border-custom">
-              <CardContent className="text-center py-12 text-body">
+            <Card className="bg-[#05212b] border border-white/10">
+              <CardContent className="text-center py-12 text-slate-200">
                 <FileText className="h-16 w-16 text-slate-700 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2 text-heading">
+                <h3 className="text-xl font-semibold mb-2 text-white">
                   No blog posts found
                 </h3>
-                <p className="text-muted-custom mb-6">
+                <p className="text-slate-300 mb-6">
                   Adjust filters or create your first blog post to get started.
                 </p>
                 <Button
@@ -732,13 +733,13 @@ export default function AdminBlogPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-card-custom border-custom shadow-lg shadow-purple-950/40">
+            <Card className="bg-[#05212b] border border-white/10 shadow-lg shadow-purple-950/40">
               <CardHeader>
-                <CardTitle className="text-heading">
+                <CardTitle className="text-white">
                   All posts ({filteredPosts.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-body">
+              <CardContent className="text-slate-200">
                 <div className="space-y-4">
                   {filteredPosts.map((post) => {
                     const title =
@@ -754,12 +755,12 @@ export default function AdminBlogPage() {
                     return (
                       <div
                         key={post.id}
-                        className="p-4 rounded-lg border border-slate-800 bg-slate-950/60 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                        className="flex flex-col gap-4 rounded-xl border border-white/10 bg-[#05212b] p-4 transition-all md:flex-row md:items-center md:justify-between hover:border-cyan-300/70"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-3">
                             {post.image_url && post.image_url.trim() !== '' && (
-                              <div className="w-28 h-20 flex-shrink-0 overflow-hidden rounded-md border border-slate-800 bg-slate-900">
+                              <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded-md border border-white/10 bg-slate-900">
                                 <SafeImage
                                   src={post.image_url ?? ''}
                                   alt={title}
@@ -802,13 +803,13 @@ export default function AdminBlogPage() {
                                   <Badge variant="outline">Members only</Badge>
                                 )}
                               </div>
-                              <h3 className="text-lg font-semibold truncate text-heading">
+                              <h3 className="text-lg font-semibold truncate text-white">
                                 {title}
                               </h3>
-                              <p className="text-sm text-muted-custom line-clamp-2 mb-2">
+                              <p className="text-sm text-slate-300 line-clamp-2 mb-2">
                                 {excerpt}
                               </p>
-                              <div className="flex items-center gap-3 text-xs text-muted-custom flex-wrap">
+                              <div className="flex items-center gap-3 text-xs text-slate-300 flex-wrap">
                                 <span className="flex items-center gap-1">
                                   <User className="h-3 w-3" />
                                   {post.author_name || post.author || 'Admin'}
@@ -830,6 +831,7 @@ export default function AdminBlogPage() {
                           <Button
                             size="sm"
                             variant="outline"
+                            className="border-white/30 text-white hover:text-cyan-300"
                             onClick={() => router.push(`/blog/${post.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
@@ -838,11 +840,9 @@ export default function AdminBlogPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="border-white/30 text-white hover:text-cyan-300 disabled:opacity-60 disabled:cursor-not-allowed"
                             disabled={!canManageBlog}
-                            onClick={() =>
-                              router.push(`/admin/blog/${post.id}`)
-                            }
+                            onClick={() => router.push(`/admin/blog/${post.id}`)}
                           >
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
@@ -850,7 +850,7 @@ export default function AdminBlogPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="border-white/30 text-rose-300 hover:text-rose-400 disabled:opacity-60 disabled:cursor-not-allowed"
                             disabled={!canManageBlog || !isSuperAdmin}
                             onClick={() => handleDelete(post.id)}
                           >

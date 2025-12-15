@@ -34,9 +34,9 @@ import { getMultilingualContent } from '@/lib/i18n';
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
+  { code: 'pt', name: 'Portugues' },
+  { code: 'es', name: 'Espanol' },
+  { code: 'fr', name: 'Francais' },
   { code: 'it', name: 'Italiano' },
   { code: 'de', name: 'Deutsch' },
 ] as const;
@@ -96,7 +96,7 @@ export default function CourseModulesPage() {
   const isAdmin =
     user && (user.role === 'Super Admin' || user.role === 'Admin');
 
-  // Proteção básica por role
+  // Protecao basica por role
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -108,7 +108,7 @@ export default function CourseModulesPage() {
     }
   }, [user, loading, isAdmin, router]);
 
-  // Carregar permissões finas
+  // Carregar permissoes finas
   useEffect(() => {
     if (loading || !user) return;
 
@@ -144,7 +144,7 @@ export default function CourseModulesPage() {
     fetchPermissions();
   }, [user, loading, getToken]);
 
-  // Carregar curso + módulos
+  // Carregar curso + modulos
   useEffect(() => {
     const fetchCourse = async () => {
       setLoadingData(true);
@@ -212,7 +212,7 @@ export default function CourseModulesPage() {
     LANGUAGES.find((l) => l.code === currentLanguage)?.name ||
     currentLanguage;
 
-  // Helpers multi-língua
+  // Helpers multi-lingua
   function updateModuleTitle(
     index: number,
     lang: LangCode,
@@ -498,10 +498,10 @@ export default function CourseModulesPage() {
     loadingData
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-300" />
+          <p className="mt-4 text-slate-300">
             Loading modules...
           </p>
         </div>
@@ -511,8 +511,8 @@ export default function CourseModulesPage() {
 
   if (!course) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <p className="text-gray-600 dark:text-gray-300">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12]">
+        <p className="text-slate-300">
           Course not found.
         </p>
       </div>
@@ -525,7 +525,7 @@ export default function CourseModulesPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+    <div className="min-h-screen bg-[#000c12] px-4 py-8 text-white">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Top bar */}
@@ -540,7 +540,7 @@ export default function CourseModulesPage() {
               <h1 className="text-2xl md:text-3xl font-bold mb-1">
                 Manage Modules
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-slate-300">
                 Course:{' '}
                 <span className="font-semibold">
                   {courseTitle || 'Untitled course'}
@@ -549,7 +549,7 @@ export default function CourseModulesPage() {
               {permissionsLoaded && !canManageCourses && (
                 <div className="flex items-center gap-1 text-[11px] text-amber-700 mt-1">
                   <Lock className="h-3 w-3" />
-                  View only – you don&apos;t have permission to edit modules
+                  View only  you don&apos;t have permission to edit modules
                 </div>
               )}
             </div>
@@ -559,8 +559,8 @@ export default function CourseModulesPage() {
             </Button>
           </div>
 
-          {/* Selector de língua */}
-          <Card>
+          {/* Selector de lingua */}
+          <Card className="border border-white/10 bg-[#05212b]">
             <CardHeader>
               <CardTitle className="text-sm">
                 Language for titles & descriptions
@@ -586,10 +586,10 @@ export default function CourseModulesPage() {
             </CardContent>
           </Card>
 
-          {/* Lista de módulos */}
+          {/* Lista de modulos */}
           {modules.length === 0 ? (
-            <Card>
-              <CardContent className="py-10 text-center text-gray-500">
+            <Card className="border border-white/10 bg-[#05212b]">
+              <CardContent className="py-10 text-center text-slate-400">
                 No modules yet. Click &quot;Add Module&quot; to create the first
                 one.
               </CardContent>
@@ -613,7 +613,7 @@ export default function CourseModulesPage() {
                 return (
                   <Card
                     key={module.id || `new-${index}`}
-                    className="border-blue-100 bg-white dark:bg-gray-900"
+                    className="border border-white/10 bg-[#05212b]"
                   >
                     <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                       <div className="flex-1">
@@ -649,10 +649,10 @@ export default function CourseModulesPage() {
                             )
                           }
                           placeholder={`Module title (${currentLangLabel})`}
-                          className="text-sm font-semibold"
+                          className="text-sm font-semibold bg-[#000c12] border-white/10 text-white placeholder:text-xs placeholder:text-slate-400"
                           disabled={!canManageCourses}
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-slate-400 mt-1">
                           {lessonsCount} lessons in this module
                         </p>
                       </div>
@@ -669,7 +669,7 @@ export default function CourseModulesPage() {
                                 parseInt(e.target.value) || 0,
                               )
                             }
-                            className="h-8 text-xs"
+                            className="h-8 text-xs bg-[#000c12] border-white/10 text-white placeholder:text-xs placeholder:text-slate-400"
                             disabled={!canManageCourses}
                           />
                         </div>
@@ -702,7 +702,7 @@ export default function CourseModulesPage() {
                             )
                           }
                           rows={2}
-                          className="text-xs mt-1"
+                          className="mt-1 text-xs bg-[#000c12] border-white/10 text-white placeholder:text-xs placeholder:text-slate-400"
                           disabled={!canManageCourses}
                         />
                       </div>
@@ -722,7 +722,7 @@ export default function CourseModulesPage() {
                                 parseInt(e.target.value) || 0,
                               )
                             }
-                            className="mt-1"
+                            className="mt-1 bg-[#000c12] border-white/10 text-white placeholder:text-xs placeholder:text-slate-400"
                             disabled={!canManageCourses}
                           />
                         </div>
@@ -740,7 +740,7 @@ export default function CourseModulesPage() {
                                 parseInt(e.target.value) || 0,
                               )
                             }
-                            className="mt-1"
+                            className="mt-1 bg-[#000c12] border-white/10 text-white placeholder:text-xs placeholder:text-slate-400"
                             disabled={!canManageCourses}
                           />
                         </div>
@@ -757,7 +757,7 @@ export default function CourseModulesPage() {
                               )
                             }
                             placeholder="https://..."
-                            className="mt-1"
+                            className="mt-1 bg-[#000c12] border-white/10 text-white placeholder:text-xs placeholder:text-slate-400"
                             disabled={!canManageCourses}
                           />
                         </div>
@@ -802,14 +802,14 @@ export default function CourseModulesPage() {
                         </div>
                       </div>
 
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-slate-400">
                         Marking a module as completed with a positive XP reward
                         will automatically grant that XP to all users who have
                         already finished all lessons in this module (once).
                       </div>
 
                       <div className="flex justify-between gap-2 pt-2 border-t">
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-slate-400">
                           {lessonsCount === 0
                             ? 'No lessons yet.'
                             : `${lessonsCount} lesson${
