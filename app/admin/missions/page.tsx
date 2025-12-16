@@ -329,35 +329,36 @@ export default function AdminMissionsPage() {
             <h2 className="text-xl font-semibold">Mission queue</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-            {(loadingMissions ? Array.from({ length: 3 }) : missions).map(
-              (mission, index) => (
-                <Card
-                  key={mission?.id || index}
-                  className="border border-white/10 bg-[#05212b] p-5 shadow-sm shadow-black/30"
-                >
-                  {mission ? (
-                    <>
-                      <Badge className="border border-white/20 bg-transparent text-cyan-300">
-                        {mission.type.replace(/_/g, ' ')}
-                      </Badge>
-                      <h3 className="mt-3 text-lg font-semibold text-white">
-                        {mission.description}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-300">
-                        Reward: {mission.xp_reward} XP
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        Target: {mission.target_count || 1}
-                      </p>
-                    </>
-                  ) : (
+            {loadingMissions
+              ? Array.from({ length: 3 }).map((_, index) => (
+                  <Card
+                    key={`mission-placeholder-${index}`}
+                    className="border border-white/10 bg-[#05212b] p-5 shadow-sm shadow-black/30"
+                  >
                     <div className="flex h-24 items-center justify-center text-slate-400">
                       Loading...
                     </div>
-                  )}
-                </Card>
-              ),
-            )}
+                  </Card>
+                ))
+              : missions.map((mission) => (
+                  <Card
+                    key={mission.id}
+                    className="border border-white/10 bg-[#05212b] p-5 shadow-sm shadow-black/30"
+                  >
+                    <Badge className="border border-white/20 bg-transparent text-cyan-300">
+                      {mission.type.replace(/_/g, ' ')}
+                    </Badge>
+                    <h3 className="mt-3 text-lg font-semibold text-white">
+                      {mission.description}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-300">
+                      Reward: {mission.xp_reward} XP
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      Target: {mission.target_count || 1}
+                    </p>
+                  </Card>
+                ))}
           </div>
         </section>
       </div>
