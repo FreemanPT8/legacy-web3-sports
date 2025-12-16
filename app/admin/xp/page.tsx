@@ -74,13 +74,19 @@ type ThresholdConfig = {
 };
 
 const MetricCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-    <p className="text-xs uppercase text-muted-custom">{label}</p>
-    <p className="text-3xl font-semibold text-heading">
+  <div className="rounded-xl border border-white/10 bg-[#05212b] p-4">
+    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{label}</p>
+    <p className="mt-2 text-3xl font-semibold text-white">
       {value.toLocaleString('pt-PT')}
     </p>
   </div>
 );
+
+const INPUT_STYLES =
+  'bg-[#000c12] border-white/10 text-white placeholder:text-slate-400';
+
+const getInputClass = (extra?: string) =>
+  extra ? `${INPUT_STYLES} ${extra}` : INPUT_STYLES;
 
 export default function AdminXpPage() {
   const router = useRouter();
@@ -284,9 +290,9 @@ export default function AdminXpPage() {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-custom">
-          <Loader2 className="h-5 w-5 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-300">
+          <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
           A carregar XP...
         </div>
       </div>
@@ -294,387 +300,411 @@ export default function AdminXpPage() {
   }
 
   return (
-    <div className="w-full space-y-8">
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
-        </div>
-        <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin · XP
-          </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Sparkles className="h-7 w-7 text-amber-300" />
-            XP Control Room
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-3xl">
-            Central para editar as regras oficiais de recompensa, limites diários,
-            streaks e thresholds que movem o ecossistema.
-          </p>
-          {(statsError || configError) && (
-            <p className="mt-3 text-xs text-red-400">
-              {statsError || configError}
+    <div className="min-h-screen bg-[#000c12] px-4 py-8 text-white">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-8 shadow-2xl shadow-black/40">
+          <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-cyan-500/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
+          <div className="relative z-10 space-y-3">
+            <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+              LEGACY ADMIN
             </p>
-          )}
-        </div>
-      </section>
+            <h1 className="flex items-center gap-2 text-3xl font-semibold md:text-4xl">
+              <Sparkles className="h-7 w-7 text-amber-300" />
+              XP Control Room
+            </h1>
+            <p className="text-sm text-slate-300 md:text-base max-w-3xl">
+              Controla recompensas, limites diarios e thresholds que movem o XP
+              publico. Todas as alteracoes ficam registadas no sistema.
+            </p>
+            {(statsError || configError) && (
+              <p className="text-xs text-rose-400">
+                {statsError || configError}
+              </p>
+            )}
+          </div>
+        </section>
 
-      {xpConfig && (
-        <section className="space-y-6">
-          <Card className="bg-card-custom border-custom shadow-lg shadow-amber-950/40">
+        {xpConfig && (
+          <section className="space-y-6">
+            <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-amber-950/40">
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border border-white/20 bg-transparent text-cyan-300">
+                    XP Rules
+                  </Badge>
+                  <CardTitle className="text-white text-sm font-semibold">
+                    Recompensas, limites e thresholds
+                  </CardTitle>
+                </div>
+                <CardDescription className="text-xs text-slate-300">
+                  Atualiza com cuidado os valores oficiais usados pelo XP publico.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                      Recompensas
+                    </p>
+                    <div className="mt-3 grid gap-4 md:grid-cols-2">
+                      {xpConfig.rewards.map((reward, index) => (
+                        <div
+                          key={reward.action_type}
+                          className="rounded-xl border border-white/10 bg-[#000c12] p-4"
+                        >
+                          <p className="text-sm font-semibold text-white">
+                            {reward.label}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {reward.description}
+                          </p>
+                          <div className="mt-3 grid gap-2">
+                            <Input
+                              type="number"
+                              value={reward.min_xp}
+                              className={getInputClass()}
+                              onChange={(event) => {
+                                const value = Number(event.target.value);
+                                setXpConfig((prev) => {
+                                  if (!prev) return prev;
+                                  const next = [...prev.rewards];
+                                  next[index] = {
+                                    ...next[index],
+                                    min_xp: Number.isFinite(value)
+                                      ? Math.trunc(value)
+                                      : 0,
+                                  };
+                                  return { ...prev, rewards: next };
+                                });
+                              }}
+                              placeholder="XP minimo"
+                            />
+                            <Input
+                              type="number"
+                              value={reward.max_xp}
+                              className={getInputClass()}
+                              onChange={(event) => {
+                                const value = Number(event.target.value);
+                                setXpConfig((prev) => {
+                                  if (!prev) return prev;
+                                  const next = [...prev.rewards];
+                                  next[index] = {
+                                    ...next[index],
+                                    max_xp: Number.isFinite(value)
+                                      ? Math.trunc(value)
+                                      : 0,
+                                  };
+                                  return { ...prev, rewards: next };
+                                });
+                              }}
+                              placeholder="XP maximo"
+                            />
+                            <Input
+                              type="number"
+                              value={reward.creator_bonus_pct ?? ''}
+                              className={getInputClass()}
+                              onChange={(event) => {
+                                const value = Number(event.target.value);
+                                setXpConfig((prev) => {
+                                  if (!prev) return prev;
+                                  const next = [...prev.rewards];
+                                  next[index] = {
+                                    ...next[index],
+                                    creator_bonus_pct: Number.isFinite(value)
+                                      ? value
+                                      : null,
+                                  };
+                                  return { ...prev, rewards: next };
+                                });
+                              }}
+                              placeholder="Bonus criador (%)"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                      Limites diarios
+                    </p>
+                    <div className="mt-3 grid gap-4 md:grid-cols-2">
+                      {xpConfig.limits.map((limit, index) => (
+                        <div
+                          key={limit.action_type}
+                          className="rounded-xl border border-white/10 bg-[#000c12] p-4"
+                        >
+                          <p className="text-sm font-semibold text-white">
+                            {limit.action_type}
+                          </p>
+                          <div className="mt-2 grid gap-2">
+                            <Input
+                              type="number"
+                              value={limit.xp_earned}
+                              className={getInputClass()}
+                              onChange={(event) => {
+                                const value = Number(event.target.value);
+                                setXpConfig((prev) => {
+                                  if (!prev) return prev;
+                                  const next = [...prev.limits];
+                                  next[index] = {
+                                    ...next[index],
+                                    xp_earned: Number.isFinite(value)
+                                      ? Math.trunc(value)
+                                      : 0,
+                                  };
+                                  return { ...prev, limits: next };
+                                });
+                              }}
+                              placeholder="XP diario"
+                            />
+                            <Input
+                              type="number"
+                              value={limit.count}
+                              className={getInputClass()}
+                              onChange={(event) => {
+                                const value = Number(event.target.value);
+                                setXpConfig((prev) => {
+                                  if (!prev) return prev;
+                                  const next = [...prev.limits];
+                                  next[index] = {
+                                    ...next[index],
+                                    count: Number.isFinite(value)
+                                      ? Math.trunc(value)
+                                      : 0,
+                                  };
+                                  return { ...prev, limits: next };
+                                });
+                              }}
+                              placeholder="Maximo de acoes"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                      Thresholds
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      {xpConfig.thresholds.map((threshold, index) => (
+                        <div
+                          key={threshold.id}
+                          className="rounded-xl border border-white/10 bg-[#000c12] p-4"
+                        >
+                          <Input
+                            type="number"
+                            value={threshold.xp_total}
+                            className={getInputClass()}
+                            onChange={(event) => {
+                              const value = Number(event.target.value);
+                              setXpConfig((prev) => {
+                                if (!prev) return prev;
+                                const next = [...prev.thresholds];
+                                next[index] = {
+                                  ...next[index],
+                                  xp_total: Number.isFinite(value)
+                                    ? Math.trunc(value)
+                                    : 0,
+                                };
+                                return { ...prev, thresholds: next };
+                              });
+                            }}
+                            placeholder="XP total"
+                          />
+                          <Input
+                            className={getInputClass('mt-2')}
+                            value={threshold.feature_name}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              setXpConfig((prev) => {
+                                if (!prev) return prev;
+                                const next = [...prev.thresholds];
+                                next[index] = {
+                                  ...next[index],
+                                  feature_name: value,
+                                };
+                                return { ...prev, thresholds: next };
+                              });
+                            }}
+                            placeholder="Recurso liberado"
+                          />
+                          <Input
+                            className={getInputClass('mt-2')}
+                            value={threshold.description}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              setXpConfig((prev) => {
+                                if (!prev) return prev;
+                                const next = [...prev.thresholds];
+                                next[index] = {
+                                  ...next[index],
+                                  description: value,
+                                };
+                                return { ...prev, thresholds: next };
+                              });
+                            }}
+                            placeholder="Descricao"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    variant="default"
+                    className="gap-2"
+                    onClick={async () => {
+                      if (!xpConfig) return;
+                      setSavingConfig(true);
+                      try {
+                        const token = getToken();
+                        const headers: HeadersInit = {
+                          'Content-Type': 'application/json',
+                        };
+                        if (token) headers.Authorization = `Bearer ${token}`;
+                        const response = await fetch('/api/admin/xp', {
+                          method: 'PUT',
+                          headers,
+                          body: JSON.stringify(xpConfig),
+                        });
+                        const payload = await response.json();
+                        if (!response.ok || !payload.success) {
+                          throw new Error(
+                            payload.error || 'Falha ao salvar regras.',
+                          );
+                        }
+                        toast({
+                          title: 'Configuracao salva',
+                          description:
+                            payload.message || 'Regras de XP atualizadas.',
+                        });
+                      } catch (err: any) {
+                        console.error('Save xp config', err);
+                        setConfigError(err?.message || 'Erro ao salvar.');
+                        toast({
+                          title: 'Erro',
+                          description:
+                            err?.message || 'Nao foi possivel salvar.',
+                          variant: 'destructive',
+                        });
+                      } finally {
+                        setSavingConfig(false);
+                      }
+                    }}
+                    disabled={savingConfig}
+                  >
+                    {savingConfig ? 'A guardar...' : 'Guardar regras oficiais'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        <section className="space-y-4">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-amber-950/40">
             <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-blue-500/20 text-blue-100 border border-blue-500/40">
-                  XP Rules
-                </Badge>
-                <CardTitle className="text-heading text-sm font-semibold">
-                  Recompensas, limites e thresholds
-                </CardTitle>
-              </div>
-              <CardDescription className="text-xs text-muted-custom">
-                Atualize de forma segura os valores oficiais usados pelo XP público.
+              <CardTitle className="text-white text-sm font-semibold">
+                Ajustar XP manualmente
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-300">
+                Escolhe o utilizador e aplica ou remove XP diretamente.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4">
-                <div>
-                  <p className="text-xs uppercase text-muted-custom tracking-[0.4em]">
-                    Recompensas
-                  </p>
-                  <div className="mt-3 grid gap-4 md:grid-cols-2">
-                    {xpConfig.rewards.map((reward, index) => (
-                      <div
-                        key={reward.action_type}
-                        className="rounded-lg border border-slate-800 p-4"
-                      >
-                        <p className="text-sm font-semibold text-heading">
-                          {reward.label}
-                        </p>
-                        <p className="text-xs text-muted-custom">
-                          {reward.description}
-                        </p>
-                        <div className="mt-3 grid gap-2">
-                          <Input
-                            type="number"
-                            value={reward.min_xp}
-                            onChange={(event) => {
-                              const value = Number(event.target.value);
-                              setXpConfig((prev) => {
-                                if (!prev) return prev;
-                                const next = [...prev.rewards];
-                                next[index] = {
-                                  ...next[index],
-                                  min_xp: Number.isFinite(value)
-                                    ? Math.trunc(value)
-                                    : 0,
-                                };
-                                return { ...prev, rewards: next };
-                              });
-                            }}
-                            placeholder="XP mínimo"
-                          />
-                          <Input
-                            type="number"
-                            value={reward.max_xp}
-                            onChange={(event) => {
-                              const value = Number(event.target.value);
-                              setXpConfig((prev) => {
-                                if (!prev) return prev;
-                                const next = [...prev.rewards];
-                                next[index] = {
-                                  ...next[index],
-                                  max_xp: Number.isFinite(value)
-                                    ? Math.trunc(value)
-                                    : 0,
-                                };
-                                return { ...prev, rewards: next };
-                              });
-                            }}
-                            placeholder="XP máximo"
-                          />
-                          <Input
-                            type="number"
-                            value={reward.creator_bonus_pct ?? ''}
-                            onChange={(event) => {
-                              const value = Number(event.target.value);
-                              setXpConfig((prev) => {
-                                if (!prev) return prev;
-                                const next = [...prev.rewards];
-                                next[index] = {
-                                  ...next[index],
-                                  creator_bonus_pct: Number.isFinite(value)
-                                    ? value
-                                    : null,
-                                };
-                                return { ...prev, rewards: next };
-                              });
-                            }}
-                            placeholder="Bônus criador (%)"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs uppercase text-muted-custom tracking-[0.4em]">
-                    Limites diários
-                  </p>
-                  <div className="mt-3 grid gap-4 md:grid-cols-2">
-                    {xpConfig.limits.map((limit, index) => (
-                      <div
-                        key={limit.action_type}
-                        className="rounded-lg border border-slate-800 p-4"
-                      >
-                        <p className="text-sm font-semibold text-heading">
-                          {limit.action_type}
-                        </p>
-                        <div className="mt-2 grid gap-2">
-                          <Input
-                            type="number"
-                            value={limit.xp_earned}
-                            onChange={(event) => {
-                              const value = Number(event.target.value);
-                              setXpConfig((prev) => {
-                                if (!prev) return prev;
-                                const next = [...prev.limits];
-                                next[index] = {
-                                  ...next[index],
-                                  xp_earned: Number.isFinite(value)
-                                    ? Math.trunc(value)
-                                    : 0,
-                                };
-                                return { ...prev, limits: next };
-                              });
-                            }}
-                            placeholder="XP diário"
-                          />
-                          <Input
-                            type="number"
-                            value={limit.count}
-                            onChange={(event) => {
-                              const value = Number(event.target.value);
-                              setXpConfig((prev) => {
-                                if (!prev) return prev;
-                                const next = [...prev.limits];
-                                next[index] = {
-                                  ...next[index],
-                                  count: Number.isFinite(value)
-                                    ? Math.trunc(value)
-                                    : 0,
-                                };
-                                return { ...prev, limits: next };
-                              });
-                            }}
-                            placeholder="Máximo de ações"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs uppercase text-muted-custom tracking-[0.4em]">
-                    Thresholds
-                  </p>
-                  <div className="mt-3 space-y-3">
-                    {xpConfig.thresholds.map((threshold, index) => (
-                      <div
-                        key={threshold.id}
-                        className="rounded-lg border border-slate-800 p-4"
-                      >
-                        <Input
-                          type="number"
-                          value={threshold.xp_total}
-                          onChange={(event) => {
-                            const value = Number(event.target.value);
-                            setXpConfig((prev) => {
-                              if (!prev) return prev;
-                              const next = [...prev.thresholds];
-                              next[index] = {
-                                ...next[index],
-                                xp_total: Number.isFinite(value)
-                                  ? Math.trunc(value)
-                                  : 0,
-                              };
-                              return { ...prev, thresholds: next };
-                            });
-                          }}
-                          placeholder="XP total"
-                        />
-                        <Input
-                          className="mt-2"
-                          value={threshold.feature_name}
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            setXpConfig((prev) => {
-                              if (!prev) return prev;
-                              const next = [...prev.thresholds];
-                              next[index] = { ...next[index], feature_name: value };
-                              return { ...prev, thresholds: next };
-                            });
-                          }}
-                          placeholder="Recurso liberado"
-                        />
-                        <Input
-                          className="mt-2"
-                          value={threshold.description}
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            setXpConfig((prev) => {
-                              if (!prev) return prev;
-                              const next = [...prev.thresholds];
-                              next[index] = { ...next[index], description: value };
-                              return { ...prev, thresholds: next };
-                            });
-                          }}
-                          placeholder="Descrição"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={async () => {
-                    if (!xpConfig) return;
-                    setSavingConfig(true);
-                    try {
-                      const token = getToken();
-                      const headers: HeadersInit = {
-                        'Content-Type': 'application/json',
-                      };
-                      if (token) headers.Authorization = `Bearer ${token}`;
-                      const response = await fetch('/api/admin/xp', {
-                        method: 'PUT',
-                        headers,
-                        body: JSON.stringify(xpConfig),
-                      });
-                      const payload = await response.json();
-                      if (!response.ok || !payload.success) {
-                        throw new Error(payload.error || 'Falha ao salvar regras.');
-                      }
-                      toast({
-                        title: 'Configuração salva',
-                        description: payload.message || 'Regras de XP atualizadas.',
-                      });
-                    } catch (err: any) {
-                      console.error('Save xp config', err);
-                      setConfigError(err?.message || 'Erro ao salvar.');
-                      toast({
-                        title: 'Erro',
-                        description: err?.message || 'Não foi possível salvar.',
-                        variant: 'destructive',
-                      });
-                    } finally {
-                      setSavingConfig(false);
-                    }
-                  }}
-                  disabled={savingConfig}
+            <CardContent className="space-y-4">
+              <UserSelect value={selectedUserId} onChange={setSelectedUserId} />
+              <div className="grid gap-3 md:grid-cols-3">
+                <Input
+                  placeholder="Amount"
+                  type="number"
+                  value={xpValue}
+                  className={getInputClass()}
+                  onChange={(event) => setXpValue(event.target.value)}
+                />
+                <Select
+                  value={xpAction}
+                  onValueChange={(value) =>
+                    setXpAction(value as 'add' | 'remove')
+                  }
                 >
-                  {savingConfig ? 'Salvando...' : 'Salvar regras oficiais'}
+                  <SelectTrigger className={getInputClass()}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="add">Add XP</SelectItem>
+                    <SelectItem value="remove">Remove XP</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder="Reason (optional)"
+                  value={reason}
+                  className={getInputClass()}
+                  onChange={(event) => setReason(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="default"
+                  className="gap-2"
+                  onClick={handleXpAdjustment}
+                  disabled={!selectedUserId || !normalizedAmount || submittingXP}
+                >
+                  {submittingXP ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  Aplicar XP
                 </Button>
+                {isSuperAdminFreeman && (
+                  <Button
+                    variant="outline"
+                    className="border-rose-500 text-rose-300 hover:text-rose-200"
+                    onClick={handleResetXP}
+                    disabled={resettingXP}
+                  >
+                    {resettingXP ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="h-4 w-4" />
+                    )}
+                    Reset global de XP (freemanpt)
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
         </section>
-      )}
 
-      <section className="space-y-4">
-        <Card className="bg-card-custom border-custom shadow-lg shadow-amber-950/40">
-          <CardHeader>
-            <CardTitle className="text-heading text-sm font-semibold">
-              Ajustar XP manualmente
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-custom">
-              Selecione um utilizador e aplique ou remova XP diretamente.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <UserSelect value={selectedUserId} onChange={setSelectedUserId} />
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <Input
-                placeholder="Amount"
-                type="number"
-                value={xpValue}
-                onChange={(event) => setXpValue(event.target.value)}
-              />
-              <Select
-                value={xpAction}
-                onValueChange={(value) => setXpAction(value as 'add' | 'remove')}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="add">Add XP</SelectItem>
-                  <SelectItem value="remove">Remove XP</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Reason (optional)"
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-              />
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                onClick={handleXpAdjustment}
-                disabled={!selectedUserId || !normalizedAmount || submittingXP}
-              >
-                {submittingXP ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Zap className="h-4 w-4 mr-2" />
-                )}
-                Aplicar XP
-              </Button>
-              {isSuperAdminFreeman && (
-                <Button
-                  variant="outline"
-                  className="text-red-400 border-red-500"
-                  onClick={handleResetXP}
-                  disabled={resettingXP}
-                >
-                  {resettingXP ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <RefreshCcw className="h-4 w-4 mr-2" />
-                  )}
-                  Reset global de XP (freemanpt)
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="space-y-6">
-        <Card className="bg-card-custom border-custom shadow-lg shadow-amber-950/40">
-          <CardHeader>
-            <CardTitle className="text-heading text-sm font-semibold">
-              Métricas principais
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-custom">
-              Um painel rápido com números em tempo real do XP.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-4 gap-4">
-            {metrics.map((metric) => (
-              <MetricCard key={metric.label} label={metric.label} value={metric.value} />
-            ))}
-          </CardContent>
-        </Card>
-      </section>
+        <section className="space-y-6">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-amber-950/40">
+            <CardHeader>
+              <CardTitle className="text-white text-sm font-semibold">
+                Metricas principais
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-300">
+                Painel rapido com numeros do XP em tempo real.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-4">
+              {metrics.map((metric) => (
+                <MetricCard
+                  key={metric.label}
+                  label={metric.label}
+                  value={metric.value}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     </div>
   );
 }
