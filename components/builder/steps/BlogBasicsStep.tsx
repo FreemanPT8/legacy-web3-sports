@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBuilderState } from '@/hooks/useBuilderState';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
-import { Library } from 'lucide-react';
+import { Library, ImagePlus } from 'lucide-react';
 import type {
   LangCode,
   BlogBuilderState,
@@ -263,13 +263,41 @@ function CoverImageSection({
   onPick: (asset: any) => void;
   mediaLibrary: ReturnType<typeof useMediaLibrary>;
 }) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const asset = await mediaLibrary.uploadAsset({
+      file,
+      title: file.name,
+    });
+    if (asset) {
+      onPick(asset);
+    }
+    event.target.value = '';
+  };
+
   return (
     <div className="space-y-3">
       <Label>Cover image</Label>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" onClick={() => mediaLibrary.openLibrary()}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => mediaLibrary.openLibrary('library')}
+        >
           <Library className="mr-2 h-4 w-4" />
           Choose from media library
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={mediaLibrary.uploading}
+        >
+          <ImagePlus className="mr-2 h-4 w-4" />
+          {mediaLibrary.uploading ? 'Uploading...' : 'Upload image'}
         </Button>
         {imageUrl && (
           <Button type="button" variant="ghost" onClick={onRemove}>
@@ -293,6 +321,13 @@ function CoverImageSection({
           Recommended 1600x900 image. Supports JPG, PNG, WEBP.
         </p>
       )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
       <MediaLibraryDialog
         open={mediaLibrary.isOpen}
