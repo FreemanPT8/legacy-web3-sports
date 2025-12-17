@@ -134,16 +134,23 @@ export function MediaLibraryDialog({
     }
   };
 
+  const inputClasses =
+    'bg-[#03121a] border border-white/10 text-white placeholder:text-slate-400';
+  const dropZoneClasses =
+    'flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/20 bg-[#03121a] p-4 text-center text-sm text-slate-300';
+  const secondaryButtonClasses =
+    'border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60';
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="max-w-5xl"
+        className="max-w-5xl border border-white/10 bg-[#000c12] text-white"
         aria-describedby={description ? descriptionId : undefined}
       >
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="text-white">{title}</DialogTitle>
           {description && (
-            <p id={descriptionId} className="text-sm text-gray-500">
+            <p id={descriptionId} className="text-sm text-slate-300">
               {description}
             </p>
           )}
@@ -154,27 +161,45 @@ export function MediaLibraryDialog({
           onValueChange={(value) => library.setActiveTab(value as MediaLibraryTab)}
           className="space-y-4"
         >
-          <TabsList>
-            <TabsTrigger value="library">Library</TabsTrigger>
-            <TabsTrigger value="upload">Upload</TabsTrigger>
-            {allowUrl && <TabsTrigger value="url">Insert via URL</TabsTrigger>}
+          <TabsList className="flex flex-wrap gap-2 border border-white/10 bg-[#05212b] p-2">
+            <TabsTrigger
+              value="library"
+              className="flex-1 rounded-xl border border-transparent px-4 py-2 text-sm text-slate-300 data-[state=active]:border-white/20 data-[state=active]:bg-[#000c12] data-[state=active]:text-white"
+            >
+              Library
+            </TabsTrigger>
+            <TabsTrigger
+              value="upload"
+              className="flex-1 rounded-xl border border-transparent px-4 py-2 text-sm text-slate-300 data-[state=active]:border-white/20 data-[state=active]:bg-[#000c12] data-[state=active]:text-white"
+            >
+              Upload
+            </TabsTrigger>
+            {allowUrl && (
+              <TabsTrigger
+                value="url"
+                className="flex-1 rounded-xl border border-transparent px-4 py-2 text-sm text-slate-300 data-[state=active]:border-white/20 data-[state=active]:bg-[#000c12] data-[state=active]:text-white"
+              >
+                Insert via URL
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="library" className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
                 <Input
                   value={library.searchTerm}
                   onChange={(event) => library.setSearchTerm(event.target.value)}
                   placeholder="Search media..."
-                  className="pl-8"
+                  className={`pl-8 ${inputClasses}`}
                 />
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
+                className={secondaryButtonClasses}
                 onClick={() => library.refresh()}
                 disabled={library.loading}
               >
@@ -187,37 +212,37 @@ export function MediaLibraryDialog({
             </div>
 
             {library.error && (
-              <p className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-600">
+              <p className="rounded-md border border-rose-400/40 bg-rose-500/10 p-2 text-sm text-rose-100">
                 {library.error}
               </p>
             )}
 
-            <ScrollArea className="max-h-[420px] rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+            <ScrollArea className="max-h-[420px] rounded-2xl border border-white/10 bg-[#03121a] p-4">
               {library.loading ? (
-                <div className="flex items-center justify-center py-10 text-sm text-gray-500">
+                <div className="flex items-center justify-center py-10 text-sm text-slate-300">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading media...
                 </div>
               ) : mediaItems.length === 0 ? (
-                <div className="py-10 text-center text-sm text-gray-500">
+                <div className="py-10 text-center text-sm text-slate-400">
                   No media files yet. Use the Upload tab to add new items.
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {mediaItems.map((asset) => (
                     <button
-                        key={asset.id}
-                        type="button"
-                    onClick={() => {
-                      onSelect(asset);
-                      handleOpenChange(false);
-                    }}
-                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
-                  >
-                    <div className="relative h-36 w-full overflow-hidden bg-gray-50">
+                      key={asset.id}
+                      type="button"
+                      onClick={() => {
+                        onSelect(asset);
+                        handleOpenChange(false);
+                      }}
+                      className="overflow-hidden rounded-2xl border border-white/10 bg-[#05212b] text-left shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:border-cyan-400/60 focus:outline-none"
+                    >
+                      <div className="relative h-36 w-full overflow-hidden rounded-t-2xl bg-[#03121a]">
                         <button
                           type="button"
-                          className="absolute right-2 top-2 z-10 rounded-full bg-black/60 px-2 py-1 text-xs text-white"
+                          className="absolute right-2 top-2 z-10 rounded-full border border-white/20 bg-black/60 px-2 py-1 text-[11px] text-white"
                           onClick={(event) => {
                             event.stopPropagation();
                             setAssetToDelete(asset);
@@ -226,27 +251,27 @@ export function MediaLibraryDialog({
                         >
                           Eliminar
                         </button>
-                      {asset.thumbnailUrl || asset.url ? (
-                        <div
-                          className="h-full w-full bg-cover bg-center"
-                          style={{
-                            backgroundImage: `url("${
-                              asset.thumbnailUrl || asset.url
-                            }")`,
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sm text-gray-500">
-                          <ImageIcon className="mr-2 h-4 w-4" />
-                          {(asset.type || 'file').toUpperCase()}
-                        </div>
-                      )}
+                        {asset.thumbnailUrl || asset.url ? (
+                          <div
+                            className="h-full w-full bg-cover bg-center"
+                            style={{
+                              backgroundImage: `url("${
+                                asset.thumbnailUrl || asset.url
+                              }")`,
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+                            <ImageIcon className="mr-2 h-4 w-4" />
+                            {(asset.type || 'file').toUpperCase()}
+                          </div>
+                        )}
                       </div>
                       <div className="p-3">
-                        <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold text-white">
                           {asset.title || 'Untitled asset'}
                         </p>
-                        <p className="text-xs uppercase text-gray-500">
+                        <p className="text-xs uppercase text-slate-400">
                           {asset.type}
                         </p>
                       </div>
@@ -257,7 +282,9 @@ export function MediaLibraryDialog({
             </ScrollArea>
             {recentUploads.length > 0 && (
               <div>
-                <h3 className="mt-4 text-xs font-semibold uppercase text-muted-foreground">Recent uploads</h3>
+                <h3 className="mt-4 text-xs font-semibold uppercase text-slate-400">
+                  Recent uploads
+                </h3>
                 <div className="mt-2 grid grid-cols-2 gap-3">
                   {recentUploads.map((asset) => (
                     <button
@@ -267,12 +294,12 @@ export function MediaLibraryDialog({
                         onSelect(asset);
                         handleOpenChange(false);
                       }}
-                      className="overflow-hidden rounded-xl border border-dashed border-gray-300 bg-white px-2 py-2 text-left text-xs text-gray-600 hover:border-sky-500 focus:outline-none"
+                      className="overflow-hidden rounded-xl border border-dashed border-white/20 bg-[#03121a] px-3 py-2 text-left text-xs text-slate-200 hover:border-cyan-400/60 focus:outline-none"
                     >
-                      <div className="font-semibold text-slate-900">
+                      <div className="font-semibold text-white">
                         {asset.title || 'Untitled asset'}
                       </div>
-                      <div className="text-[11px] uppercase text-gray-400">
+                      <div className="text-[11px] uppercase text-slate-400">
                         {asset.type}
                       </div>
                     </button>
@@ -287,16 +314,26 @@ export function MediaLibraryDialog({
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label>File</Label>
-                  <Input
-                    type="file"
-                    accept="image/*,video/*,audio/*,.pdf,.zip,.doc,.docx"
-                    onChange={(event) => {
-                      setFile(event.target.files?.[0] || null);
-                      if (event.target.files?.[0]) {
-                        setUploadTitle(event.target.files[0].name);
-                      }
-                    }}
-                  />
+                  <label className={`${dropZoneClasses} mt-2 cursor-pointer`}>
+                    <Upload className="mb-2 h-5 w-5 text-cyan-300" />
+                    <p className="text-sm font-semibold text-white">
+                      {file ? file.name : 'Arrasta ou clica para selecionar'}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Imagens, video, audio e documentos suportados.
+                    </p>
+                    <Input
+                      type="file"
+                      className="sr-only"
+                      accept="image/*,video/*,audio/*,.pdf,.zip,.doc,.docx"
+                      onChange={(event) => {
+                        setFile(event.target.files?.[0] || null);
+                        if (event.target.files?.[0]) {
+                          setUploadTitle(event.target.files[0].name);
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
                 <div>
                   <Label>Folder</Label>
@@ -304,6 +341,7 @@ export function MediaLibraryDialog({
                     value={folder}
                     onChange={(event) => setFolder(event.target.value)}
                     placeholder="uploads"
+                    className={`${inputClasses} mt-2`}
                   />
                 </div>
               </div>
@@ -315,6 +353,7 @@ export function MediaLibraryDialog({
                     value={uploadTitle}
                     onChange={(event) => setUploadTitle(event.target.value)}
                     placeholder="Asset title"
+                    className={`${inputClasses} mt-2`}
                   />
                 </div>
                 <div>
@@ -323,6 +362,7 @@ export function MediaLibraryDialog({
                     value={uploadAlt}
                     onChange={(event) => setUploadAlt(event.target.value)}
                     placeholder="Describe the asset"
+                    className={`${inputClasses} mt-2`}
                   />
                 </div>
               </div>
@@ -333,12 +373,13 @@ export function MediaLibraryDialog({
                   value={uploadTags}
                   onChange={(event) => setUploadTags(event.target.value)}
                   placeholder="design, cover, hero"
+                  className={`${inputClasses} mt-2`}
                 />
               </div>
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
                 disabled={!file || library.uploading}
               >
                 {library.uploading ? (
@@ -355,12 +396,12 @@ export function MediaLibraryDialog({
               </Button>
               {library.uploadProgress != null && (
                 <div className="mt-2 space-y-1">
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-slate-400">
                     Progresso do upload: {library.uploadProgress}%
                   </div>
-                  <div className="h-1 rounded-full bg-slate-200">
+                  <div className="h-1 rounded-full bg-white/10">
                     <div
-                      className="h-1 rounded-full bg-sky-500 transition-all"
+                      className="h-1 rounded-full bg-cyan-400 transition-all"
                       style={{ width: `${library.uploadProgress}%` }}
                     />
                   </div>
@@ -379,6 +420,7 @@ export function MediaLibraryDialog({
                     onChange={(event) => setUrlValue(event.target.value)}
                     placeholder="https://example.com/asset.png"
                     type="url"
+                    className={`${inputClasses} mt-2`}
                   />
                 </div>
                 <div>
@@ -387,6 +429,7 @@ export function MediaLibraryDialog({
                     value={urlTitle}
                     onChange={(event) => setUrlTitle(event.target.value)}
                     placeholder="Display title (optional)"
+                    className={`${inputClasses} mt-2`}
                   />
                 </div>
                 <div>
@@ -397,10 +440,10 @@ export function MediaLibraryDialog({
                       setUrlType(value as MediaAsset['type'])
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
+                    <SelectTrigger className={`${inputClasses} mt-2`}>
+                      <SelectValue placeholder="Select type" className="text-white" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="border border-white/10 bg-[#03121a] text-white">
                       {MEDIA_TYPES.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -409,7 +452,11 @@ export function MediaLibraryDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" disabled={!urlValue.trim()}>
+                <Button
+                  type="submit"
+                  disabled={!urlValue.trim()}
+                  className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                >
                   <Link2 className="mr-2 h-4 w-4" />
                   Insert media
                 </Button>
@@ -419,17 +466,17 @@ export function MediaLibraryDialog({
         </Tabs>
       </DialogContent>
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md border border-white/10 bg-[#000c12] text-white">
           <DialogHeader>
-            <DialogTitle>Confirmar eliminação</DialogTitle>
-            <p className="text-sm text-gray-500">
-              Tens a certeza que queres eliminar esta imagem do Media Library? Esta ação
-              não pode ser desfeita.
+            <DialogTitle className="text-white">Confirmar eliminacao</DialogTitle>
+            <p className="text-sm text-slate-300">
+              Tens a certeza que queres eliminar esta imagem do Media Library? Esta acao nao pode ser desfeita.
             </p>
           </DialogHeader>
           <div className="mt-4 flex gap-3">
             <Button
               variant="outline"
+              className={secondaryButtonClasses}
               onClick={() => {
                 setConfirmOpen(false);
                 setAssetToDelete(null);
@@ -437,7 +484,10 @@ export function MediaLibraryDialog({
             >
               Cancelar
             </Button>
-            <Button className="bg-red-500 hover:bg-red-600" onClick={handleDeleteConfirm}>
+            <Button
+              className="bg-rose-500 text-white hover:bg-rose-400"
+              onClick={handleDeleteConfirm}
+            >
               Eliminar
             </Button>
           </div>
@@ -446,3 +496,4 @@ export function MediaLibraryDialog({
     </Dialog>
   );
 }
+

@@ -2,13 +2,58 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Settings, Globe, Mail, Database, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Loader2,
+  Settings,
+  Globe,
+  Mail,
+  Database,
+  Shield,
+  ArrowLeft,
+} from 'lucide-react';
+
+const generalSettings = [
+  { label: 'Platform name', value: 'LEGACY' },
+  { label: 'Supported languages', value: '6 languages (EN, PT, ES, FR, IT, DE)' },
+  { label: 'Default language', value: 'English' },
+];
+
+const xpSettings = [
+  { label: 'Profile unlock', value: '99 XP required' },
+  { label: 'Forum access', value: '369 XP required' },
+  { label: '7 day streak bonus', value: '222 XP reward' },
+  { label: 'Daily mission XP', value: '12 XP per mission' },
+];
+
+const emailSettings = [
+  { label: 'Email service', value: 'Resend (if configured)' },
+  { label: 'Welcome emails', value: 'Enabled' },
+  { label: 'Streak bonus emails', value: 'Enabled' },
+];
+
+const databaseSettings = [
+  { label: 'Database provider', value: 'Supabase PostgreSQL' },
+  { label: 'Row level security', value: 'Enabled on all tables' },
+  { label: 'Migrations', value: 'Up to date' },
+];
+
+const notes = [
+  'All configuration changes require a redeploy to take effect.',
+  'Environment variables are managed in the Vercel dashboard.',
+  'Database schema changes must be applied via migrations.',
+  'XP thresholds are defined in lib/xp.ts.',
+  'Always test changes in development before deploying to production.',
+];
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -18,195 +63,166 @@ export default function SettingsPage() {
     if (!loading && !user) {
       router.push('/login');
     }
-    if (!loading && user && user.role !== 'Super Admin' && user.role !== 'Admin') {
+    if (
+      !loading &&
+      user &&
+      user.role !== 'Super Admin' &&
+      user.role !== 'Admin'
+    ) {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
-  if (loading || !user || (user.role !== 'Super Admin' && user.role !== 'Admin')) {
+  if (
+    loading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin')
+  ) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-300">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading settings...</span>
         </div>
       </div>
     );
   }
 
+  const renderList = (items: { label: string; value: string }[]) => (
+    <ul className="divide-y divide-white/5">
+      {items.map((item) => (
+        <li key={item.label} className="py-3">
+          <p className="text-sm font-semibold text-white">{item.label}</p>
+          <p className="text-xs text-slate-300">{item.value}</p>
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-blue-950/20 dark:to-gray-900 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-8">
-              <Link href="/admin">
-                <Button variant="ghost" className="mb-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Admin
-                </Button>
-              </Link>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">Platform Settings</h1>
-              <p className="text-gray-600 dark:text-gray-300">Configure platform settings and integrations</p>
-            </div>
-
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <Globe className="h-8 w-8 text-blue-600 mb-2" />
-                  <CardTitle>General Settings</CardTitle>
-                  <CardDescription>Platform name, description, and basic configuration</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Platform Name</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">LEGACY</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Supported Languages</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">6 languages (EN, PT, ES, FR, IT, DE)</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Default Language</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">English</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <Shield className="h-8 w-8 text-blue-600 mb-2" />
-                  <CardTitle>XP & Gamification</CardTitle>
-                  <CardDescription>Configure XP rewards and thresholds</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Profile Unlock</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">99 XP required</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Forum Access</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">369 XP required</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">7-Day Streak Bonus</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">222 XP reward</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Daily Mission XP</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">12 XP per mission</p>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-4">
-                    To change these values, edit lib/xp.ts and redeploy
+    <div className="min-h-screen bg-[#000c12] text-white px-4 py-10 md:px-10">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#04141c] via-[#03121a] to-[#020b11] p-6 md:p-10 shadow-2xl shadow-black/40">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-4 max-w-3xl">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                ADMIN SETTINGS
+              </p>
+              <div className="flex items-start gap-4">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#05212b]">
+                  <Settings className="h-7 w-7 text-cyan-300" />
+                </span>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-semibold text-white">
+                    Platform settings
+                  </h1>
+                  <p className="text-sm text-slate-300">
+                    Consolida configuracoes criticas da plataforma em seccoes
+                    escuras, dividindo os blocos longos para leitura rapida.
                   </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <Mail className="h-8 w-8 text-blue-600 mb-2" />
-                  <CardTitle>Email Configuration</CardTitle>
-                  <CardDescription>Email service and notifications settings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Email Service</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Resend (if configured)</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Welcome Emails</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Enabled</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Streak Bonus Emails</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Enabled</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-900">
-                      <strong>Configure Email:</strong> Add RESEND_API_KEY to environment variables in Vercel
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <Database className="h-8 w-8 text-blue-600 mb-2" />
-                  <CardTitle>Database & Storage</CardTitle>
-                  <CardDescription>Supabase database configuration</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Database Provider</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Supabase PostgreSQL</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Row Level Security</p>
-                        <p className="text-sm text-green-600">Enabled on all tables</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="font-medium">Migrations</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Up to date</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-yellow-200 bg-yellow-50">
-                <CardHeader>
-                  <CardTitle className="text-yellow-900">Important Notes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="list-disc list-inside space-y-2 text-sm text-yellow-900">
-                    <li>All configuration changes require a redeploy to take effect</li>
-                    <li>Environment variables are managed in Vercel dashboard</li>
-                    <li>Database schema changes must be applied via migrations</li>
-                    <li>XP thresholds are defined in lib/xp.ts</li>
-                    <li>Always test changes in development before deploying to production</li>
-                  </ul>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
+            <Button
+              variant="outline"
+              className="border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60"
+              asChild
+            >
+              <Link href="/admin">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar ao painel
+              </Link>
+            </Button>
           </div>
-        </div>
-      </main>
+        </section>
 
-      <Footer />
+        <section className="grid gap-4 md:grid-cols-2">
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Globe className="h-5 w-5 text-cyan-300" />
+                General settings
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                Nome da plataforma, idiomas suportados e idioma por defeito.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>{renderList(generalSettings)}</CardContent>
+          </Card>
+
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Shield className="h-5 w-5 text-cyan-300" />
+                XP e gamification
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                Thresholds utilizados nas paginas de educacao e comunidade.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderList(xpSettings)}
+              <p className="mt-4 text-[11px] text-slate-400">
+                Para alterar os valores edita <code className="text-cyan-300">lib/xp.ts</code> e
+                faz redeploy.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2">
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Mail className="h-5 w-5 text-cyan-300" />
+                Email configuration
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                Estado atual dos envios transacionais.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderList(emailSettings)}
+              <div className="mt-4 rounded-2xl border border-white/10 bg-[#03121a] p-3 text-xs text-slate-300">
+                <strong className="text-white">Configura Email:</strong> adiciona
+                <span className="mx-1 font-mono text-cyan-300">RESEND_API_KEY</span>
+                ao projeto na Vercel.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Database className="h-5 w-5 text-cyan-300" />
+                Database e storage
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                Estado dos recursos Supabase usados pela app.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>{renderList(databaseSettings)}</CardContent>
+          </Card>
+        </section>
+
+        <section className="space-y-4">
+          <Card className="border border-white/10 bg-[#03121a]">
+            <CardHeader>
+              <CardTitle className="text-white">Notas importantes</CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                Checklist rapido antes de mexer em configuracoes criticas.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc space-y-2 pl-4 text-sm text-slate-300">
+                {notes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     </div>
   );
 }
