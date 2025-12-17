@@ -50,6 +50,25 @@ export const createEmptyCourseState = (): CourseBuilderState => ({
   level: 'beginner',
 });
 
+const buildCurriculumMetadata = (state: CourseBuilderState) => ({
+  overview: state.overview,
+  keyTakeaways: state.keyTakeaways,
+  targetAudience: state.targetAudience,
+  durationMinutes: state.durationMinutes,
+  bonuses: state.bonuses,
+  specialRequirements: state.specialRequirements,
+  seo: state.seo,
+  googleIntegrations: state.googleIntegrations,
+  xpReward: state.xp.reward,
+  xpThreshold: state.xp.threshold,
+  level: state.level,
+  coverAsset: state.coverImage,
+  isCompleted: state.isCompleted,
+  isPaid: state.isPaid,
+  schedule: state.schedule,
+  attachments: state.attachments,
+});
+
 export const buildCourseRequestPayload = (state: CourseBuilderState) => ({
   title: state.title,
   description: state.longDescription,
@@ -65,13 +84,14 @@ export const buildCourseRequestPayload = (state: CourseBuilderState) => ({
   key_takeaways: state.keyTakeaways,
   target_audience: state.targetAudience,
   duration_minutes: state.durationMinutes,
-  bonuses: state.bonuses,
   special_requirements: state.specialRequirements,
   seo: state.seo,
   google_integrations: state.googleIntegrations,
+  cover_asset: state.coverImage,
   curriculum: {
     ...state.curriculum,
     attachments: state.attachments,
+    metadata: buildCurriculumMetadata(state),
   },
 });
 
@@ -86,8 +106,16 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
   const curriculumAttachments = Array.isArray(rawCurriculum?.attachments)
     ? rawCurriculum.attachments
     : base.attachments;
-  const { attachments: _removed, ...curriculumWithoutAttachments } =
-    (rawCurriculum || {}) as Record<string, any>;
+  const {
+    attachments: _removed,
+    metadata: rawMetadata,
+    ...curriculumWithoutAttachments
+  } = (rawCurriculum || {}) as Record<string, any>;
+  const metadata =
+    rawMetadata && typeof rawMetadata === 'object' ? rawMetadata : {};
+  const metadataAttachments = Array.isArray(metadata.attachments)
+    ? metadata.attachments
+    : base.attachments;
   const normalizedCurriculum =
     curriculumWithoutAttachments?.topics &&
     Array.isArray(curriculumWithoutAttachments.topics)
@@ -102,6 +130,40 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
           })),
         }
       : base.curriculum;
+  const attachmentsSource =
+    Array.isArray(course?.attachments) && course.attachments.length > 0
+      ? course.attachments
+      : curriculumAttachments.length > 0
+        ? curriculumAttachments
+        : metadataAttachments;
+  const arrayOr = (value: any, fallback: string[]) =>
+    Array.isArray(value) ? value : fallback;
+  const stringOr = (value: any, fallback = '') =>
+    typeof value === 'string' ? value : fallback;
+  const numberOr = (value: any, fallback = 0) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  const booleanOr = (value: any, fallback = false) =>
+    typeof value === 'boolean' ? value : fallback;
+  const scheduleFromMetadata =
+    metadata && typeof metadata.schedule === 'object'
+      ? metadata.schedule
+      : null;
+  const coverAsset =
+    metadata && metadata.coverAsset ? metadata.coverAsset : null;
+  const metadataSeo =
+    metadata && typeof metadata.seo === 'object' ? metadata.seo : null;
+  const metadataGoogle =
+    metadata && typeof metadata.googleIntegrations === 'object'
+      ? metadata.googleIntegrations
+      : null;
+  const derivedPublishAt =
+    course?.publish_at ?? scheduleFromMetadata?.publishAt ?? null;
+  const derivedExpireAt =
+    course?.expire_at ?? scheduleFromMetadata?.expireAt ?? null;
+  const derivedStatus = deriveScheduleStatus({
+    published: course?.published,
+    publish_at: derivedPublishAt,
+  });
 
   return {
     ...base,
@@ -115,45 +177,54 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
           type: 'image',
           title: course.title?.en || 'Course cover',
         }
-      : null,
+      : coverAsset || null,
     longDescription: description,
     xp: {
       reward:
-        typeof course?.xp_reward === 'number' ? course.xp_reward : base.xp.reward,
+        typeof course?.xp_reward === 'number'
+          ? course.xp_reward
+          : numberOr(metadata?.xpReward, base.xp.reward),
       threshold:
         typeof course?.xp_threshold === 'number'
           ? course.xp_threshold
-          : base.xp.threshold,
+          : numberOr(metadata?.xpThreshold, base.xp.threshold),
     },
     published: Boolean(course?.published),
-    isCompleted: Boolean(course?.is_completed),
-    isPaid: Boolean(course?.is_paid),
-    overview: course?.overview || '',
+    isCompleted: booleanOr(
+      course?.is_completed,
+      booleanOr(metadata?.isCompleted, base.isCompleted),
+    ),
+    isPaid: booleanOr(course?.is_paid, booleanOr(metadata?.isPaid, base.isPaid)),
+    overview:
+      stringOr(course?.overview) || stringOr(metadata?.overview, base.overview),
     keyTakeaways: Array.isArray(course?.key_takeaways)
       ? course.key_takeaways
-      : base.keyTakeaways,
+      : arrayOr(metadata?.keyTakeaways, base.keyTakeaways),
     targetAudience: Array.isArray(course?.target_audience)
       ? course.target_audience
-      : base.targetAudience,
-    durationMinutes: course?.duration_minutes || 0,
-    bonuses: Array.isArray(course?.bonuses) ? course.bonuses : base.bonuses,
+      : arrayOr(metadata?.targetAudience, base.targetAudience),
+    durationMinutes:
+      typeof course?.duration_minutes === 'number'
+        ? course.duration_minutes
+        : numberOr(metadata?.durationMinutes, base.durationMinutes),
+    bonuses: Array.isArray(course?.bonuses)
+      ? course.bonuses
+      : arrayOr(metadata?.bonuses, base.bonuses),
     specialRequirements: Array.isArray(course?.special_requirements)
       ? course.special_requirements
-      : base.specialRequirements,
-    seo: course?.seo || base.seo,
+      : arrayOr(metadata?.specialRequirements, base.specialRequirements),
+    seo: course?.seo || metadataSeo || base.seo,
     schedule: {
-      publishAt: course?.publish_at || null,
-      expireAt: course?.expire_at || null,
-      timezone: 'CET',
-      status: deriveScheduleStatus(course),
+      publishAt: derivedPublishAt,
+      expireAt: derivedExpireAt,
+      timezone: scheduleFromMetadata?.timezone || 'CET',
+      status: scheduleFromMetadata?.status || derivedStatus,
     },
     googleIntegrations:
-      course?.google_integrations || base.googleIntegrations,
+      course?.google_integrations || metadataGoogle || base.googleIntegrations,
     curriculum: normalizedCurriculum,
-    attachments: Array.isArray(course?.attachments)
-      ? course.attachments
-      : curriculumAttachments,
-    level: course?.level || 'beginner',
+    attachments: attachmentsSource,
+    level: course?.level || metadata?.level || 'beginner',
   };
 };
 

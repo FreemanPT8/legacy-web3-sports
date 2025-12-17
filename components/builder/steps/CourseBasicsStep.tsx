@@ -103,10 +103,11 @@ export function CourseBasicsStep() {
     if (mode === 'now') {
       setScheduleError(null);
       patchState({
+        published: true,
         schedule: {
           ...courseState.schedule,
           publishAt: null,
-          status: courseState.published ? 'published' : 'draft',
+          status: 'published',
         },
       });
       return;
@@ -145,7 +146,7 @@ export function CourseBasicsStep() {
             <div className="flex items-center justify-between">
               <Label>Title ({languageLabel})</Label>
               <span className="text-xs text-gray-500">
-                Placeholder: "(NOME DO CURSO)"
+                Placeholder: (NOME DO CURSO)
               </span>
             </div>
               <Input

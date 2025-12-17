@@ -170,6 +170,7 @@ export async function PUT(
       seo,
       google_integrations,
       curriculum,
+      cover_asset,
     } = course;
 
     if (!title) {
@@ -183,7 +184,7 @@ export async function PUT(
     const { data: existing, error: existingError } = await supabase
       .from('courses')
       .select(
-        'id, is_completed, xp_reward, is_paid, overview, key_takeaways, target_audience, duration_minutes, bonuses, special_requirements, seo, google_integrations, curriculum',
+        'id, level, xp_threshold, is_completed, xp_reward, is_paid, overview, key_takeaways, target_audience, duration_minutes, special_requirements, seo, google_integrations, curriculum',
       )
       .eq('id', params.id)
       .maybeSingle();
@@ -219,11 +220,114 @@ export async function PUT(
       curriculum && typeof curriculum === 'object'
         ? curriculum
         : existing.curriculum ?? { topics: [] };
-    const { attachments: _ignoredAttachments, ...restCurriculum } =
-      (baseCurriculum || {}) as Record<string, any>;
+    const {
+      attachments: _ignoredAttachments,
+      metadata: existingMetadataRaw,
+      ...restCurriculum
+    } = (baseCurriculum || {}) as Record<string, any>;
+    const existingMetadata =
+      existingMetadataRaw && typeof existingMetadataRaw === 'object'
+        ? existingMetadataRaw
+        : {};
+    const metadataOverview =
+      typeof overview === 'string'
+        ? overview
+        : typeof existingMetadata.overview === 'string'
+          ? existingMetadata.overview
+          : typeof existing.overview === 'string'
+            ? existing.overview
+            : '';
+    const metadataKeyTakeaways = Array.isArray(key_takeaways)
+      ? key_takeaways
+      : Array.isArray(existingMetadata.keyTakeaways)
+        ? existingMetadata.keyTakeaways
+        : Array.isArray(existing.key_takeaways)
+          ? existing.key_takeaways
+          : [];
+    const metadataTargetAudience = Array.isArray(target_audience)
+      ? target_audience
+      : Array.isArray(existingMetadata.targetAudience)
+        ? existingMetadata.targetAudience
+        : Array.isArray(existing.target_audience)
+          ? existing.target_audience
+          : [];
+    const metadataBonuses = Array.isArray(bonuses)
+      ? bonuses
+      : Array.isArray(existingMetadata.bonuses)
+        ? existingMetadata.bonuses
+        : [];
+    const metadataSpecialRequirements = Array.isArray(special_requirements)
+      ? special_requirements
+      : Array.isArray(existingMetadata.specialRequirements)
+        ? existingMetadata.specialRequirements
+        : Array.isArray(existing.special_requirements)
+          ? existing.special_requirements
+          : [];
+    const metadataDuration =
+      typeof duration_minutes === 'number'
+        ? duration_minutes
+        : typeof existingMetadata.durationMinutes === 'number'
+          ? existingMetadata.durationMinutes
+          : existing.duration_minutes ?? 0;
+    const metadataSeo = seo ?? existingMetadata.seo ?? existing.seo ?? null;
+    const metadataGoogle =
+      google_integrations ??
+      existingMetadata.googleIntegrations ??
+      existing.google_integrations ??
+      null;
+    const metadataSchedule =
+      schedule && typeof schedule === 'object'
+        ? schedule
+        : existingMetadata.schedule ?? null;
+    const metadataCoverAsset =
+      cover_asset ?? existingMetadata.coverAsset ?? null;
+    const metadataXpReward =
+      typeof xp_reward === 'number'
+        ? xp_reward
+        : typeof existingMetadata.xpReward === 'number'
+          ? existingMetadata.xpReward
+          : existing.xp_reward ?? 0;
+    const metadataXpThreshold =
+      typeof xp_threshold === 'number'
+        ? xp_threshold
+        : typeof existingMetadata.xpThreshold === 'number'
+          ? existingMetadata.xpThreshold
+          : existing.xp_threshold ?? 0;
+    const metadataLevel = level || existingMetadata.level || existing.level || 'beginner';
+    const metadataIsCompleted =
+      typeof is_completed === 'boolean'
+        ? is_completed
+        : typeof existingMetadata.isCompleted === 'boolean'
+          ? existingMetadata.isCompleted
+          : existing.is_completed ?? false;
+    const metadataIsPaid =
+      typeof is_paid === 'boolean'
+        ? is_paid
+        : typeof existingMetadata.isPaid === 'boolean'
+          ? existingMetadata.isPaid
+          : existing.is_paid ?? false;
     const nextCurriculum = {
       ...restCurriculum,
       attachments: attachmentsPayload,
+      metadata: {
+        ...existingMetadata,
+        overview: metadataOverview,
+        keyTakeaways: metadataKeyTakeaways,
+        targetAudience: metadataTargetAudience,
+        bonuses: metadataBonuses,
+        specialRequirements: metadataSpecialRequirements,
+        durationMinutes: metadataDuration,
+        seo: metadataSeo,
+        googleIntegrations: metadataGoogle,
+        schedule: metadataSchedule,
+        coverAsset: metadataCoverAsset,
+        attachments: attachmentsPayload,
+        xpReward: metadataXpReward,
+        xpThreshold: metadataXpThreshold,
+        level: metadataLevel,
+        isCompleted: metadataIsCompleted,
+        isPaid: metadataIsPaid,
+      },
     };
 
     const { data: updated, error: updateError } = await supabase
@@ -252,10 +356,6 @@ export async function PUT(
           typeof duration_minutes === 'number'
             ? duration_minutes
             : existing.duration_minutes ?? 0,
-        bonuses: Array.isArray(bonuses) ? bonuses : existing.bonuses ?? [],
-        special_requirements: Array.isArray(special_requirements)
-          ? special_requirements
-          : existing.special_requirements ?? [],
         seo: seo ?? existing.seo ?? null,
         google_integrations:
           google_integrations ?? existing.google_integrations ?? null,

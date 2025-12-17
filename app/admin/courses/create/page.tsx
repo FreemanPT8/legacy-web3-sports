@@ -150,18 +150,22 @@ export default function CreateCoursePage() {
     async (state: CourseBuilderState) => {
       if (!canManageCourses) return;
       const headers = buildAuthHeaders();
-      const res = await fetch('/api/builder/draft', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          entityType,
-          entityId: draftEntityId,
-          state,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to save draft.');
+      try {
+        const res = await fetch('/api/builder/draft', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            entityType,
+            entityId: draftEntityId,
+            state,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          console.warn('Unable to persist course draft:', data.error);
+        }
+      } catch (error) {
+        console.warn('Unable to save course draft:', error);
       }
     },
     [buildAuthHeaders, canManageCourses, draftEntityId, entityType],

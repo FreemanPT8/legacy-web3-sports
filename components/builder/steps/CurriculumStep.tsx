@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type Dispatch,
@@ -340,6 +341,28 @@ function TopicCard({
   onScheduleChange,
   scheduleUtils,
 }: TopicCardProps) {
+  const [isEditingDescription, setIsEditingDescription] = useState(
+    () => topic.description.trim().length === 0,
+  );
+  const [descriptionDraft, setDescriptionDraft] = useState(topic.description);
+
+  useEffect(() => {
+    setDescriptionDraft(topic.description);
+    if (!topic.description.trim()) {
+      setIsEditingDescription(true);
+    }
+  }, [topic.description]);
+
+  const handleSaveDescription = () => {
+    onDescriptionChange(descriptionDraft.trim());
+    setIsEditingDescription(false);
+  };
+
+  const handleCancelDescription = () => {
+    setDescriptionDraft(topic.description);
+    setIsEditingDescription(false);
+  };
+
   return (
     <Card className="border-gray-200 shadow-sm dark:border-gray-800">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -360,12 +383,52 @@ function TopicCard({
               className="mt-1 h-8 border-0 bg-transparent px-0 text-base font-semibold focus-visible:ring-0"
               placeholder="Untitled topic"
             />
-            <Textarea
-              value={topic.description}
-              onChange={(event) => onDescriptionChange(event.target.value)}
-              placeholder="Describe what this topic will cover"
-              className="mt-2 min-h-[70px] border border-gray-200 bg-white text-sm text-gray-700 focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-            />
+            <div className="mt-2">
+              {isEditingDescription ? (
+                <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                  <Textarea
+                    value={descriptionDraft}
+                    onChange={(event) => setDescriptionDraft(event.target.value)}
+                    placeholder="Describe what this topic will cover"
+                    className="min-h-[90px] border-0 bg-transparent text-sm text-gray-700 focus-visible:ring-0 dark:text-gray-100"
+                  />
+                  <div className="mt-3 flex items-center justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelDescription}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleSaveDescription}
+                    >
+                      Save description
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                  <p className="whitespace-pre-wrap">
+                    {topic.description.trim()
+                      ? topic.description
+                      : 'No description for this topic yet.'}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => setIsEditingDescription(true)}
+                  >
+                    Edit description
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <Button

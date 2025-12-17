@@ -29,6 +29,7 @@ interface CoursePayload {
     publishAt?: string | null;
     expireAt?: string | null;
   };
+  cover_asset?: any;
 }
 
 interface LessonPayload {
@@ -47,6 +48,35 @@ interface ModulePayload {
   descriptions: Record<LangCode, string>;
   lessons: LessonPayload[];
 }
+
+const buildCurriculumMetadata = (
+  course: CoursePayload,
+  attachments: any[],
+) => ({
+  overview: course.overview ?? '',
+  keyTakeaways: Array.isArray(course.key_takeaways)
+    ? course.key_takeaways
+    : [],
+  targetAudience: Array.isArray(course.target_audience)
+    ? course.target_audience
+    : [],
+  durationMinutes:
+    typeof course.duration_minutes === 'number' ? course.duration_minutes : 0,
+  bonuses: Array.isArray(course.bonuses) ? course.bonuses : [],
+  specialRequirements: Array.isArray(course.special_requirements)
+    ? course.special_requirements
+    : [],
+  attachments,
+  seo: course.seo ?? null,
+  googleIntegrations: course.google_integrations ?? null,
+  xpReward: typeof course.xp_reward === 'number' ? course.xp_reward : 0,
+  xpThreshold: typeof course.xp_threshold === 'number' ? course.xp_threshold : 0,
+  level: course.level || 'beginner',
+  coverAsset: course.cover_asset ?? null,
+  isCompleted: !!course.is_completed,
+  isPaid: !!course.is_paid,
+  schedule: course.schedule ?? null,
+});
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAdmin(request);
@@ -125,9 +155,19 @@ export async function POST(request: NextRequest) {
       : Array.isArray((course.curriculum as any)?.attachments)
         ? (course.curriculum as any).attachments
         : [];
+    const metadataPayload = buildCurriculumMetadata(
+      course,
+      attachmentsPayload,
+    );
     const curriculumPayload = {
       ...baseCurriculum,
       attachments: attachmentsPayload,
+      metadata: {
+        ...(typeof baseCurriculum.metadata === 'object'
+          ? baseCurriculum.metadata
+          : {}),
+        ...metadataPayload,
+      },
     };
 
     const { data: newCourse, error: courseError } = await supabase
@@ -147,8 +187,6 @@ export async function POST(request: NextRequest) {
         key_takeaways: course.key_takeaways ?? [],
         target_audience: course.target_audience ?? [],
         duration_minutes: course.duration_minutes ?? 0,
-        bonuses: course.bonuses ?? [],
-        special_requirements: course.special_requirements ?? [],
         seo: course.seo ?? null,
         google_integrations: course.google_integrations ?? null,
         curriculum: curriculumPayload,
