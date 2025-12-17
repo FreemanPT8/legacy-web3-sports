@@ -364,7 +364,6 @@ export default function CoursesPage() {
                           </p>
                         )}
                       </CardHeader>
-                      </CardHeader>
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0">
                         <div className="flex flex-col gap-2 text-sm text-slate-300">
