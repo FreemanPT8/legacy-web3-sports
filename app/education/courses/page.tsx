@@ -86,6 +86,27 @@ const getCourseCompletionBonus = (course: Course) => {
   return 0;
 };
 
+const formatTotalXP = (course: Course, modules: Module[]) => {
+  const lessonsXP = modules.reduce((acc, module) => {
+    if (!Array.isArray(module.lessons)) return acc;
+    return (
+      acc +
+      module.lessons.reduce(
+        (sum, lesson) => sum + (lesson.xp_reward || 0),
+        0,
+      )
+    );
+  }, 0);
+
+  const moduleBonusXP = modules.reduce(
+    (acc, module) => acc + getModuleBonusXP(module),
+    0,
+  );
+
+  const courseBonusXP = getCourseCompletionBonus(course);
+  return lessonsXP + moduleBonusXP + courseBonusXP;
+};
+
 const stripHtml = (value: string) =>
   value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -270,25 +291,7 @@ export default function CoursesPage() {
                       0,
                     );
 
-                  const lessonsXP = modulesArray.reduce((acc, m) => {
-                    if (!Array.isArray(m.lessons)) return acc;
-                    return (
-                      acc +
-                      m.lessons.reduce(
-                        (accL, l) => accL + (l.xp_reward || 0),
-                        0,
-                      )
-                    );
-                  }, 0);
-
-                  const moduleBonusXP = modulesArray.reduce(
-                    (acc, module) => acc + getModuleBonusXP(module),
-                    0,
-                  );
-
-                  const courseBonusXP = getCourseCompletionBonus(course);
-                  const computedTotalXP = lessonsXP + moduleBonusXP + courseBonusXP;
-                  const totalXP = computedTotalXP;
+                  const totalXP = formatTotalXP(course, modulesArray);
 
                   const xpDistributed = course.xp_distributed_total ?? 0;
 
@@ -309,29 +312,32 @@ export default function CoursesPage() {
                       className="flex flex-col overflow-hidden border border-white/10 bg-[#000c12] hover:border-primary/70 hover:shadow-[0_0_25px_rgba(45,212,191,0.25)] transition-all"
                     >
                       {/* Thumbnail / Placeholder */}
-                      {imageUrl ? (
-                        <div className="h-40 w-full overflow-hidden border border-white/10 bg-[#000c12]">
+                      <div className="relative overflow-hidden border border-white/10 bg-[#000c12]">
+                        {imageUrl ? (
                           <img
                             src={imageUrl}
                             alt={title}
-                            className="h-full w-full object-cover"
+                            className="h-40 w-full object-cover"
                           />
-                        </div>
-                      ) : (
-                        <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-400">
-                          <div className="flex flex-col items-center text-white">
-                            <div className="mb-1 flex items-center gap-2">
-                              <BookOpen className="h-6 w-6" />
-                              <span className="text-xl font-bold">
-                                {initials}
+                        ) : (
+                          <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-400">
+                            <div className="flex flex-col items-center text-white">
+                              <div className="mb-1 flex items-center gap-2">
+                                <BookOpen className="h-6 w-6" />
+                                <span className="text-xl font-bold">
+                                  {initials}
+                                </span>
+                              </div>
+                              <span className="text-[11px] uppercase tracking-[0.3em] opacity-80">
+                                Legacy Course
                               </span>
                             </div>
-                            <span className="text-[11px] uppercase tracking-[0.3em] opacity-80">
-                              Legacy Course
-                            </span>
                           </div>
+                        )}
+                        <div className="absolute right-3 top-3">
+                          {getLevelBadge(course.level)}
                         </div>
-                      )}
+                      </div>
 
                       <CardHeader className="pb-3 space-y-3">
                         <div>
@@ -348,7 +354,6 @@ export default function CoursesPage() {
                           )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          {getLevelBadge(course.level)}
                           {xpRequired > 0 && (
                             <Badge
                               variant="outline"
