@@ -26,7 +26,6 @@ export interface CourseBuilderWorkspaceProps {
     authorName: string | null;
     xpTotalDistributed: number;
     xpCreatorDistributed: number;
-    onManageModules?: () => void;
   };
 }
 
@@ -66,7 +65,6 @@ export function CourseBuilderWorkspace({
         authorName={metadata.authorName}
         xpCreatorDistributed={metadata.xpCreatorDistributed}
         xpTotalDistributed={metadata.xpTotalDistributed}
-        onManageModules={metadata.onManageModules}
       />
       <CourseQualityChecklist />
       <LegacyPreviewPanel>
@@ -93,12 +91,10 @@ function CourseStatusCard({
   authorName,
   xpTotalDistributed,
   xpCreatorDistributed,
-  onManageModules,
 }: {
   authorName: string | null;
   xpTotalDistributed: number;
   xpCreatorDistributed: number;
-  onManageModules?: () => void;
 }) {
   const { state } = useBuilderContext();
   const course = state as CourseBuilderState;
@@ -170,15 +166,10 @@ function CourseStatusCard({
             />
           </div>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={onManageModules}
-          disabled={!onManageModules}
-        >
-          Manage modules
-        </Button>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Manage the curriculum directly na etapa &ldquo;Curriculum&rdquo;. Topics
+          substituem os antigos módulos como fonte única de verdade.
+        </p>
       </CardContent>
     </Card>
   );

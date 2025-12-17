@@ -4,11 +4,13 @@
 
 import { useEffect, useState } from 'react';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/contexts/AuthContext';
 
 import { useToast } from '@/hooks/use-toast';
+
+import { LegacyModuleNotice } from '@/components/admin/LegacyModuleNotice';
 
 
 
@@ -157,16 +159,34 @@ type PermissionsResponse = {
 
 
 export default function ModuleLessonsPage() {
-
   const params = useParams();
+  const searchParams = useSearchParams();
+  const legacyMode = searchParams.get('legacy') === '1';
+  const courseId = params?.id ? (params.id as string) : '';
+  const moduleId = params?.moduleId ? (params.moduleId as string) : '';
 
+  if (!legacyMode) {
+    return (
+      <LegacyModuleNotice
+        courseId={courseId}
+        legacyHref={
+          courseId && moduleId
+            ? `/admin/courses/${courseId}/modules/${moduleId}/lessons?legacy=1`
+            : undefined
+        }
+        description="Editor legado de modulos/lessons. Usa o Course Builder para gerir o curriculum principal."
+      />
+    );
+  }
+
+  return <LegacyModuleLessonsLegacyView />;
+}
+
+function LegacyModuleLessonsLegacyView() {
+  const params = useParams();
   const router = useRouter();
-
   const courseId = params.id as string;
-
   const moduleId = params.moduleId as string;
-
-
 
   const { user, loading, getToken } = useAuth();
 

@@ -374,8 +374,6 @@ export default function EditCoursePage() {
           authorName,
           xpTotalDistributed,
           xpCreatorDistributed,
-          onManageModules: () =>
-            router.push(`/admin/courses/${courseId}/modules`),
         }}
       />
     </BuilderProvider>

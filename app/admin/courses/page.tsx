@@ -27,6 +27,12 @@ type Course = {
   title: any;
   description: any;
   image_url?: string | null;
+  curriculum?: {
+    topics?: Array<{
+      lessons?: any[];
+      quizzes?: any[];
+    }>;
+  };
   is_published?: boolean;
   published?: boolean;
   level?: string | null;
@@ -35,6 +41,46 @@ type Course = {
   xp_total_distributed?: number | null;
   xp_creator_distributed?: number | null;
   modules?: any[];
+};
+
+type CurriculumSnapshot = {
+  topics: number;
+  lessons: number;
+  quizzes: number;
+};
+
+const getCurriculumSnapshot = (course: Course): CurriculumSnapshot => {
+  const topics = Array.isArray(course.curriculum?.topics)
+    ? course.curriculum!.topics || []
+    : [];
+  let lessons = 0;
+  let quizzes = 0;
+  topics.forEach((topic: any) => {
+    if (Array.isArray(topic?.lessons)) {
+      lessons += topic.lessons.length;
+    }
+    if (Array.isArray(topic?.quizzes)) {
+      quizzes += topic.quizzes.length;
+    }
+  });
+  return {
+    topics: topics.length,
+    lessons,
+    quizzes,
+  };
+};
+
+const getLegacyModuleSnapshot = (course: Course): {
+  modules: number;
+  lessons: number;
+} => {
+  const modules = Array.isArray(course.modules) ? course.modules : [];
+  const lessons = modules.reduce(
+    (sum: number, module: any) =>
+      sum + (Array.isArray(module?.lessons) ? module.lessons.length : 0),
+    0,
+  );
+  return { modules: modules.length, lessons };
 };
 
 type PermissionsResponse = {
@@ -206,7 +252,7 @@ export default function CoursesManagementPage() {
     const title = getCourseTitle(course);
 
     const typed = window.prompt(
-      `To confirm deletion, type the course name exactly:\n\n${title}\n\nThis will permanently delete the course and all its modules and lessons.`,
+      `To confirm deletion, type the course name exactly:\n\n${title}\n\nThis will permanently delete the course and all its topics and lessons.`,
       '',
     );
 
@@ -272,15 +318,22 @@ export default function CoursesManagementPage() {
   const draftCourses = courses.filter(
     (c: any) => !(c.is_published ?? c.published),
   );
-  const totalModules = courses.reduce(
-    (acc, c: any) => acc + ((c.modules || []).length || 0),
-    0,
+  const totalSnapshot = courses.reduce(
+    (acc, course) => {
+      const curriculum = getCurriculumSnapshot(course);
+      const legacy = getLegacyModuleSnapshot(course);
+      const topics = curriculum.topics || legacy.modules;
+      const lessons = curriculum.lessons || legacy.lessons;
+      return {
+        topics: acc.topics + topics,
+        lessons: acc.lessons + lessons,
+        quizzes: acc.quizzes + curriculum.quizzes,
+      };
+    },
+    { topics: 0, lessons: 0, quizzes: 0 },
   );
-  const totalLessons = courses.reduce((acc, c: any) => {
-    const modules = c.modules || [];
-    const lessons = modules.flatMap((m: any) => m.lessons || []);
-    return acc + lessons.length;
-  }, 0);
+  const totalTopics = totalSnapshot.topics;
+  const totalLessons = totalSnapshot.lessons;
 
   const levelLabel = (course: Course) => course.level || 'Beginner';
 
@@ -301,7 +354,7 @@ export default function CoursesManagementPage() {
             Course Management
           </h1>
           <p className="text-sm text-slate-300 md:text-base">
-            Cria, organiza e afina cursos, modulos e licoes. Aqui controlas o
+            Cria, organiza e afina cursos, topicos e licoes. Aqui controlas o
             motor educativo do LEGACY para saber o que esta publicado e o que
             ainda esta em draft.
           </p>
@@ -330,7 +383,7 @@ export default function CoursesManagementPage() {
                 </CardTitle>
               </div>
               <CardDescription className="text-slate-300 max-w-3xl">
-                Organiza lancamentos, mantem modulos engajando e conecta cada
+                Organiza lancamentos, mantem topicos engajando e conecta cada
                 update com XP e impacto real.
               </CardDescription>
             </CardHeader>
@@ -353,14 +406,14 @@ export default function CoursesManagementPage() {
                   onClick={() => {
                     if (!canManageCourses) return;
                     toast({
-                        title: 'Adicionar modulo',
+                        title: 'Adicionar topico',
                       description:
-                        'Abra um curso e usa o builder de modulos/lessons para adicionar conteudo passo a passo.',
+                        'Abra um curso e usa o builder de topicos/licoes para adicionar conteudo passo a passo.',
                     });
                   }}
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
-                  Adicionar modulo
+                  Adicionar topico
                 </Button>
                 <Button
                   className="flex-1 border border-blue-600 text-blue-100 hover:bg-blue-900 bg-blue-950/50"
@@ -384,13 +437,13 @@ export default function CoursesManagementPage() {
                 </div>
                 <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
                   <p className="font-semibold text-[11px] uppercase tracking-wide">
-                    Modulos / licoes
+                    Topicos / licoes
                   </p>
                   <p className="text-sm font-bold mt-1">
-                    {totalModules} modulos / {totalLessons} licoes
+                    {totalTopics} topicos / {totalLessons} licoes
                   </p>
                   <p className="text-slate-300 text-[11px]">
-                    Cada modulo concluido gera potencial de XP e retencao.
+                    Cada topico concluido gera potencial de XP e retencao.
                   </p>
                 </div>
                 <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
@@ -417,11 +470,11 @@ export default function CoursesManagementPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-1">
               <h2 className="text-xl font-semibold text-white">
-                Cursos, modulos e licoes
+                Cursos, topicos e licoes
               </h2>
               <p className="text-sm text-slate-300">
                 Visao geral rapida do portefolio de cursos e da estrutura de
-                modulos/lessons.
+                topicos/licoes.
               </p>
             </div>
             <Link
@@ -487,7 +540,7 @@ export default function CoursesManagementPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-lg font-semibold text-white">
-                  {totalModules} modules
+                  {totalTopics} topics
                 </div>
                 <div className="text-sm text-slate-300">
                   {totalLessons} lessons
@@ -540,12 +593,12 @@ export default function CoursesManagementPage() {
                 const isCreator = !!user && course.author_id === user.id;
                 const xpTotal = course.xp_total_distributed ?? 0;
                 const xpCreator = course.xp_creator_distributed ?? 0;
-                const modulesCount = (course.modules || []).length;
-                const lessonsCount = (course.modules || []).reduce(
-                  (acc: number, m: any) =>
-                    acc + ((m.lessons || []).length || 0),
-                  0,
-                );
+                const curriculumStats = getCurriculumSnapshot(course);
+                const legacyStats = getLegacyModuleSnapshot(course);
+                const topicsCount =
+                  curriculumStats.topics || legacyStats.modules;
+                const lessonsCount =
+                  curriculumStats.lessons || legacyStats.lessons;
 
                 return (
                   <Card
@@ -604,7 +657,7 @@ export default function CoursesManagementPage() {
                           {xpTotal} XP distributed
                         </Badge>
                         <Badge variant="outline" className="border border-white/10">
-                          {modulesCount} modules / {lessonsCount} lessons
+                          {topicsCount} topics / {lessonsCount} lessons
                         </Badge>
                         {isCreator && (
                           <Badge
@@ -622,12 +675,14 @@ export default function CoursesManagementPage() {
                           className="flex-1"
                           onClick={() =>
                             router.push(
-                              `/admin/courses/${course.id}/modules`,
+                              course.id
+                                ? `/education/courses/${course.id}`
+                                : '/education/courses',
                             )
                           }
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          View
+                          Preview
                         </Button>
                         <Button
                           size="sm"

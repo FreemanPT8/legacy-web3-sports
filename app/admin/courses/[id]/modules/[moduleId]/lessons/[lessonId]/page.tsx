@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
+import { LegacyModuleNotice } from '@/components/admin/LegacyModuleNotice';
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -68,6 +69,31 @@ type PermissionsResponse = {
 };
 
 export default function LessonAdvancedEditorPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const legacyMode = searchParams.get('legacy') === '1';
+  const courseId = params?.id ? (params.id as string) : '';
+  const moduleId = params?.moduleId ? (params.moduleId as string) : '';
+  const lessonId = params?.lessonId ? (params.lessonId as string) : '';
+
+  if (!legacyMode) {
+    return (
+      <LegacyModuleNotice
+        courseId={courseId}
+        legacyHref={
+          courseId && moduleId && lessonId
+            ? `/admin/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}?legacy=1`
+            : undefined
+        }
+        description="Editor legado de modulos/lessons. Usa o Course Builder para gerir o curriculum principal."
+      />
+    );
+  }
+
+  return <LegacyLessonAdvancedEditorPage />;
+}
+
+function LegacyLessonAdvancedEditorPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.id as string;

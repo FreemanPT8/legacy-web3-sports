@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
+import { LegacyModuleNotice } from '@/components/admin/LegacyModuleNotice';
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -76,6 +77,19 @@ type PermissionsResponse = {
 };
 
 export default function CourseModulesPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const legacyMode = searchParams.get('legacy') === '1';
+  const courseId = params?.id?.toString() || '';
+
+  if (!legacyMode) {
+    return <LegacyModuleNotice courseId={courseId} />;
+  }
+
+  return <LegacyModulesEditor />;
+}
+
+function LegacyModulesEditor() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.id as string;
