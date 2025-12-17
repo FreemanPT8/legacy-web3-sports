@@ -47,6 +47,7 @@ export const createQuiz = (overrides?: Partial<QuizState>): QuizState => ({
 export const createTopic = (overrides?: Partial<TopicState>): TopicState => ({
   id: randomId('topic'),
   title: 'Untitled topic',
+  description: '',
   lessons: [],
   quizzes: [],
   schedule: cloneSchedule(),

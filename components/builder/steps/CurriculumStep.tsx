@@ -32,6 +32,7 @@ import { useScheduleCET } from '@/hooks/useScheduleCET';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { createLesson, createTopic } from '@/lib/curriculum';
@@ -115,6 +116,14 @@ export function CurriculumStep() {
     updateTopics((current) =>
       current.map((topic) =>
         topic.id === topicId ? { ...topic, title } : topic,
+      ),
+    );
+  };
+
+  const updateTopicDescription = (topicId: string, description: string) => {
+    updateTopics((current) =>
+      current.map((topic) =>
+        topic.id === topicId ? { ...topic, description } : topic,
       ),
     );
   };
@@ -215,16 +224,19 @@ export function CurriculumStep() {
         <SortableContext items={topicItems} strategy={verticalListSortingStrategy}>
           <div className="space-y-4">
             {topics.map((topic, index) => (
-              <SortableTopicCard
-                key={topic.id}
-                topic={topic}
-                index={index}
-                onTitleChange={(value) => updateTopicTitle(topic.id, value)}
-                onRemove={() => removeTopic(topic.id)}
-                onAddLesson={() => addLesson(topic.id)}
-                onRemoveLesson={(lessonId) => removeLesson(topic.id, lessonId)}
-                onLessonChange={(lessonId, updater) =>
-                  updateLesson(topic.id, lessonId, updater)
+            <SortableTopicCard
+              key={topic.id}
+              topic={topic}
+              index={index}
+              onTitleChange={(value) => updateTopicTitle(topic.id, value)}
+              onDescriptionChange={(value) =>
+                updateTopicDescription(topic.id, value)
+              }
+              onRemove={() => removeTopic(topic.id)}
+              onAddLesson={() => addLesson(topic.id)}
+              onRemoveLesson={(lessonId) => removeLesson(topic.id, lessonId)}
+              onLessonChange={(lessonId, updater) =>
+                updateLesson(topic.id, lessonId, updater)
                 }
                 expandedLessonId={expandedLessonId}
                 setExpandedLessonId={setExpandedLessonId}
@@ -279,6 +291,7 @@ interface TopicCardProps {
   topic: TopicState;
   index: number;
   onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
   onRemove: () => void;
   onAddLesson: () => void;
   onRemoveLesson: (lessonId: string) => void;
@@ -314,6 +327,7 @@ function TopicCard({
   topic,
   index,
   onTitleChange,
+  onDescriptionChange,
   onRemove,
   onAddLesson,
   onRemoveLesson,
@@ -345,6 +359,12 @@ function TopicCard({
               onChange={(event) => onTitleChange(event.target.value)}
               className="mt-1 h-8 border-0 bg-transparent px-0 text-base font-semibold focus-visible:ring-0"
               placeholder="Untitled topic"
+            />
+            <Textarea
+              value={topic.description}
+              onChange={(event) => onDescriptionChange(event.target.value)}
+              placeholder="Describe what this topic will cover"
+              className="mt-2 min-h-[70px] border border-gray-200 bg-white text-sm text-gray-700 focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             />
           </div>
         </div>

@@ -110,6 +110,7 @@ export interface QuizState {
 export interface TopicState {
   id: string;
   title: string;
+  description: string;
   lessons: LessonState[];
   quizzes: QuizState[];
   schedule: ScheduleConfig;

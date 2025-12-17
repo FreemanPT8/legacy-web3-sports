@@ -82,10 +82,16 @@ export async function GET(
         ) || 0;
     }
 
+    const attachments =
+      Array.isArray((data as Record<string, any>)?.curriculum?.attachments)
+        ? data.curriculum.attachments
+        : [];
+
     return NextResponse.json({
       success: true,
       course: {
         ...data,
+        attachments,
         author_name: authorName,
         xp_total_distributed: xpTotalDistributed,
         xp_creator_distributed: xpCreatorDistributed,
@@ -177,7 +183,7 @@ export async function PUT(
     const { data: existing, error: existingError } = await supabase
       .from('courses')
       .select(
-        'id, is_completed, xp_reward, is_paid, overview, key_takeaways, target_audience, duration_minutes, bonuses, special_requirements, attachments, seo, google_integrations, curriculum',
+        'id, is_completed, xp_reward, is_paid, overview, key_takeaways, target_audience, duration_minutes, bonuses, special_requirements, seo, google_integrations, curriculum',
       )
       .eq('id', params.id)
       .maybeSingle();
@@ -201,6 +207,24 @@ export async function PUT(
       schedule && typeof schedule.expireAt === 'string'
         ? schedule.expireAt
         : null;
+
+    const attachmentsPayload = Array.isArray(attachments)
+      ? attachments
+      : Array.isArray(curriculum?.attachments)
+        ? curriculum.attachments
+        : Array.isArray(existing.curriculum?.attachments)
+          ? existing.curriculum.attachments
+          : [];
+    const baseCurriculum =
+      curriculum && typeof curriculum === 'object'
+        ? curriculum
+        : existing.curriculum ?? { topics: [] };
+    const { attachments: _ignoredAttachments, ...restCurriculum } =
+      (baseCurriculum || {}) as Record<string, any>;
+    const nextCurriculum = {
+      ...restCurriculum,
+      attachments: attachmentsPayload,
+    };
 
     const { data: updated, error: updateError } = await supabase
       .from('courses')
@@ -232,13 +256,10 @@ export async function PUT(
         special_requirements: Array.isArray(special_requirements)
           ? special_requirements
           : existing.special_requirements ?? [],
-        attachments: Array.isArray(attachments)
-          ? attachments
-          : existing.attachments ?? [],
         seo: seo ?? existing.seo ?? null,
         google_integrations:
           google_integrations ?? existing.google_integrations ?? null,
-        curriculum: curriculum ?? existing.curriculum ?? { topics: [] },
+        curriculum: nextCurriculum,
         publish_at: publish_at ?? null,
         expire_at: expire_at ?? null,
         updated_at: now,

@@ -116,6 +116,20 @@ export async function POST(request: NextRequest) {
         ? course.schedule.expireAt
         : null;
 
+    const baseCurriculum =
+      course.curriculum && typeof course.curriculum === 'object'
+        ? course.curriculum
+        : { topics: [] };
+    const attachmentsPayload = Array.isArray(course.attachments)
+      ? course.attachments
+      : Array.isArray((course.curriculum as any)?.attachments)
+        ? (course.curriculum as any).attachments
+        : [];
+    const curriculumPayload = {
+      ...baseCurriculum,
+      attachments: attachmentsPayload,
+    };
+
     const { data: newCourse, error: courseError } = await supabase
       .from('courses')
       .insert({
@@ -135,10 +149,9 @@ export async function POST(request: NextRequest) {
         duration_minutes: course.duration_minutes ?? 0,
         bonuses: course.bonuses ?? [],
         special_requirements: course.special_requirements ?? [],
-        attachments: course.attachments ?? [],
         seo: course.seo ?? null,
         google_integrations: course.google_integrations ?? null,
-        curriculum: course.curriculum ?? { topics: [] },
+        curriculum: curriculumPayload,
         publish_at,
         expire_at,
         author_id: currentUser.userId,

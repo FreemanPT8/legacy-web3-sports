@@ -67,16 +67,41 @@ export const buildCourseRequestPayload = (state: CourseBuilderState) => ({
   duration_minutes: state.durationMinutes,
   bonuses: state.bonuses,
   special_requirements: state.specialRequirements,
-  attachments: state.attachments,
   seo: state.seo,
   google_integrations: state.googleIntegrations,
-  curriculum: state.curriculum,
+  curriculum: {
+    ...state.curriculum,
+    attachments: state.attachments,
+  },
 });
 
 export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
   const base = createEmptyCourseState();
   const title = normalizeTranslations(course?.title);
   const description = normalizeTranslations(course?.description);
+  const rawCurriculum =
+    course?.curriculum && typeof course.curriculum === 'object'
+      ? course.curriculum
+      : base.curriculum;
+  const curriculumAttachments = Array.isArray(rawCurriculum?.attachments)
+    ? rawCurriculum.attachments
+    : base.attachments;
+  const { attachments: _removed, ...curriculumWithoutAttachments } =
+    (rawCurriculum || {}) as Record<string, any>;
+  const normalizedCurriculum =
+    curriculumWithoutAttachments?.topics &&
+    Array.isArray(curriculumWithoutAttachments.topics)
+      ? {
+          ...curriculumWithoutAttachments,
+          topics: curriculumWithoutAttachments.topics.map((topic: any) => ({
+            ...topic,
+            description:
+              typeof topic?.description === 'string'
+                ? topic.description
+                : '',
+          })),
+        }
+      : base.curriculum;
 
   return {
     ...base,
@@ -127,7 +152,10 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
     },
     googleIntegrations:
       course?.google_integrations || base.googleIntegrations,
-    curriculum: course?.curriculum || base.curriculum,
+    curriculum: normalizedCurriculum,
+    attachments: Array.isArray(course?.attachments)
+      ? course.attachments
+      : curriculumAttachments,
     level: course?.level || 'beginner',
   };
 };
