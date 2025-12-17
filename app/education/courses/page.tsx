@@ -36,6 +36,9 @@ type Module = {
   lessons?: Lesson[];
   xp_reward?: number | null;
   xpReward?: number | null;
+  metadata?: {
+    xpReward?: number;
+  };
 };
 
 type Course = {
@@ -49,6 +52,11 @@ type Course = {
   image_url?: string | null;
   thumbnail_url?: string | null;
   modules?: Module[];
+  curriculum?: {
+    metadata?: {
+      xpReward?: number;
+    };
+  };
   author_id?: string | null;
   author_name?: string | null;
   isCreator?: boolean;
@@ -61,6 +69,9 @@ type Course = {
 const getModuleBonusXP = (module: Module) => {
   if (typeof module?.xp_reward === 'number') return module.xp_reward;
   if (typeof module?.xpReward === 'number') return module.xpReward;
+  if (typeof module?.metadata?.xpReward === 'number') {
+    return module.metadata.xpReward;
+  }
   return 0;
 };
 
@@ -68,6 +79,9 @@ const getCourseCompletionBonus = (course: Course) => {
   if (typeof course?.xp_reward === 'number') return course.xp_reward;
   if (typeof course?.xp_reward_on_complete === 'number') {
     return course.xp_reward_on_complete;
+  }
+  if (typeof course?.curriculum?.metadata?.xpReward === 'number') {
+    return course.curriculum.metadata.xpReward;
   }
   return 0;
 };
@@ -274,10 +288,7 @@ export default function CoursesPage() {
 
                   const courseBonusXP = getCourseCompletionBonus(course);
                   const computedTotalXP = lessonsXP + moduleBonusXP + courseBonusXP;
-                  const totalXP =
-                    typeof course.total_xp === 'number' && course.total_xp > 0
-                      ? course.total_xp
-                      : computedTotalXP;
+                  const totalXP = computedTotalXP;
 
                   const xpDistributed = course.xp_distributed_total ?? 0;
 
@@ -322,36 +333,37 @@ export default function CoursesPage() {
                         </div>
                       )}
 
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="flex items-center gap-2 text-lg text-white line-clamp-2">
-                              {title}
-                              {isCourseCreator && (
-                                <Badge className="flex items-center gap-1 bg-[#14718f] text-white">
-                                  <PenSquare className="h-3 w-3" />
-                                  Creator
-                                </Badge>
-                              )}
-                            </CardTitle>
-                            {description && (
-                              <CardDescription className="mt-1 line-clamp-3 text-slate-300">
-                                {description}
-                              </CardDescription>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            {getLevelBadge(course.level)}
-                            {xpRequired > 0 && (
-                              <Badge
-                                variant="outline"
-                                className="border-primary/70 bg-black/40 text-cyan-100 text-[11px] uppercase tracking-[0.3em]"
-                              >
-                                {xpRequired} XP min
+                      <CardHeader className="pb-3 space-y-3">
+                        <div>
+                          <CardTitle className="text-lg text-white">
+                            {title}
+                          </CardTitle>
+                          {isCourseCreator && (
+                            <div className="mt-2">
+                              <Badge className="flex w-fit items-center gap-1 bg-[#14718f] text-white">
+                                <PenSquare className="h-3 w-3" />
+                                Creator
                               </Badge>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {getLevelBadge(course.level)}
+                          {xpRequired > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="border-primary/70 bg-black/40 text-cyan-100 text-[11px] uppercase tracking-[0.3em]"
+                            >
+                              {xpRequired} XP min
+                            </Badge>
+                          )}
+                        </div>
+                        {description && (
+                          <p className="text-sm text-slate-300 line-clamp-3">
+                            {description}
+                          </p>
+                        )}
+                      </CardHeader>
                       </CardHeader>
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0">
