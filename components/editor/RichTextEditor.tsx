@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import Strike from '@tiptap/extension-strike';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import TextAlign from '@tiptap/extension-text-align';
@@ -61,6 +63,43 @@ interface RichTextEditorProps {
 
 const SPECIAL_CHARACTERS = ['•', '—', '–', '…', '™', '©', '®', '∞'];
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
+type ImageAlignment = 'left' | 'center' | 'right';
+
+const alignmentClassMap: Record<ImageAlignment, string> = {
+  left: 'float-left mr-4 my-2',
+  center: 'mx-auto my-4 block',
+  right: 'float-right ml-4 my-2',
+};
+
+const LegacyImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      alignment: {
+        default: 'center',
+        parseHTML: (element) =>
+          (element.getAttribute('data-alignment') as ImageAlignment) || 'center',
+        renderHTML: (attributes) => {
+          const alignment =
+            (attributes.alignment as ImageAlignment) ?? 'center';
+          const base = 'rounded-2xl border border-slate-200';
+          const className = [base, alignmentClassMap[alignment]]
+            .filter(Boolean)
+            .join(' ');
+
+          return [
+            'img',
+            {
+              ...attributes,
+              class: className,
+              'data-alignment': alignment,
+            },
+          ];
+        },
+      },
+    };
+  },
+});
 
 export function RichTextEditor({
   id,
@@ -74,6 +113,8 @@ export function RichTextEditor({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [specialCharsVisible, setSpecialCharsVisible] = useState(false);
+  const [defaultImageAlignment, setDefaultImageAlignment] =
+    useState<ImageAlignment>('center');
   const mediaLibrary = useMediaLibrary();
 
   const editor = useEditor({
@@ -82,7 +123,11 @@ export function RichTextEditor({
         heading: { levels: [1, 2, 3, 4, 5] },
         link: false,
         horizontalRule: false,
+        underline: false,
+        strike: false,
       }),
+      Underline,
+      Strike,
       TextStyle,
       Color.configure({ types: ['textStyle'] }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
@@ -98,7 +143,7 @@ export function RichTextEditor({
         placeholder: placeholder || 'Start writing…',
       }),
       CharacterCount.configure(),
-      Image.configure({ HTMLAttributes: { class: 'rounded-2xl border border-slate-200' } }),
+      LegacyImage,
       HorizontalRule.configure({ HTMLAttributes: { class: 'legacy-hr' } }),
     ],
     content: value || '',
@@ -160,25 +205,32 @@ export function RichTextEditor({
     (asset: MediaAsset) => {
       if (!editor) return;
       if (asset.type === 'image') {
-        editor
-          .chain()
-          .focus()
-          .setImage({
-            src: asset.url,
-            alt: asset.alt || asset.title || '',
-          })
-          .run();
+        const imagePayload: Record<string, unknown> = {
+          src: asset.url,
+          alt: asset.alt || asset.title || '',
+          alignment: defaultImageAlignment,
+        };
+        editor.chain().focus().setImage(imagePayload as any).run();
         return;
       }
       editor.chain().focus().insertContent(`<p><a href="${asset.url}">${asset.title || asset.url}</a></p>`).run();
     },
-    [editor],
+    [editor, defaultImageAlignment],
   );
 
   const insertReadMore = useCallback(() => {
     if (!editor) return;
     editor.chain().focus().insertContent(READ_MORE_MARKER).run();
   }, [editor]);
+
+  const setImageAlignment = useCallback(
+    (next: ImageAlignment) => {
+      setDefaultImageAlignment(next);
+      if (!editor?.isActive('image')) return;
+      editor.chain().focus().updateAttributes('image', { alignment: next }).run();
+    },
+    [editor],
+  );
 
   const stats = useMemo(
     () => ({
@@ -341,15 +393,6 @@ export function RichTextEditor({
         <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 text-xs text-slate-500 dark:border-slate-800">
           <Button
             type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => editor?.chain().focus().toggleStrike().run()}
-            aria-label="Strikethrough"
-          >
-            <Strikethrough className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
             variant={forcePlainText ? 'secondary' : 'ghost'}
             size="icon"
             onClick={() => setForcePlainText((prev) => !prev)}
@@ -401,6 +444,27 @@ export function RichTextEditor({
           >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
+          <div className="flex items-center gap-1 border-l border-slate-200 pl-2 dark:border-slate-800">
+            {(['left', 'center', 'right'] as ImageAlignment[]).map((alignment) => (
+              <Button
+                key={`image-align-${alignment}`}
+                type="button"
+                variant={
+                  editor?.isActive('image', { alignment }) ||
+                  defaultImageAlignment === alignment
+                    ? 'secondary'
+                    : 'ghost'
+                }
+                size="icon"
+                onClick={() => setImageAlignment(alignment)}
+                aria-label={`Image ${alignment}`}
+              >
+                {alignment === 'left' && <AlignLeft className="h-4 w-4" />}
+                {alignment === 'center' && <AlignCenter className="h-4 w-4" />}
+                {alignment === 'right' && <AlignRight className="h-4 w-4" />}
+              </Button>
+            ))}
+          </div>
           <Button variant="ghost" size="icon" onClick={() => mediaLibrary.openLibrary('library')} aria-label="Add media">
             <ImagePlus className="h-4 w-4" />
           </Button>
