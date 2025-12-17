@@ -276,6 +276,12 @@ export async function GET(request: NextRequest) {
       return 0;
     };
 
+    const getLessonReward = (lesson: any) => {
+      if (typeof lesson?.xp_reward === 'number') return lesson.xp_reward;
+      if (typeof lesson?.xpReward === 'number') return lesson.xpReward;
+      return 0;
+    };
+
     const normalizedCourses = coursesArray.map((course: any) => {
       const topics = (curriculumByCourse[course.id] || []).slice().sort(
         (a: any, b: any) => (a?.order || 0) - (b?.order || 0),
@@ -307,8 +313,7 @@ export async function GET(request: NextRequest) {
           'Admin';
 
         const moduleXpAvailable = moduleLessons.reduce(
-          (sum: number, lesson: any) =>
-            sum + (lesson.xp_reward || 0),
+          (sum: number, lesson: any) => sum + getLessonReward(lesson),
           0,
         );
 
@@ -344,7 +349,7 @@ export async function GET(request: NextRequest) {
         return (
           acc +
           module.lessons.reduce(
-            (sum: number, lesson: any) => sum + (lesson.xp_reward || 0),
+            (sum: number, lesson: any) => sum + getLessonReward(lesson),
             0,
           )
         );

@@ -178,6 +178,12 @@ export async function GET(
     }
 
     // 6) Lições por módulo (enriquecidas)
+    const getLessonReward = (lesson: any) => {
+      if (typeof lesson?.xp_reward === 'number') return lesson.xp_reward;
+      if (typeof lesson?.xpReward === 'number') return lesson.xpReward;
+      return 0;
+    };
+
     const lessonsByModule: Record<string, any[]> = {};
     lessonsArray.forEach((lesson: any) => {
       const moduleId = lesson?.module_id;
@@ -270,7 +276,7 @@ export async function GET(
         // XP disponível no módulo (soma dos xp_reward das lições)
         const moduleXpAvailable = moduleLessons.reduce(
           (sum: number, l: any) =>
-            sum + (l.xp_reward || 0),
+            sum + getLessonReward(l),
           0,
         );
 
@@ -316,7 +322,7 @@ export async function GET(
       return (
         acc +
         m.lessons.reduce(
-          (sum: number, l: any) => sum + (l.xp_reward || 0),
+          (sum: number, l: any) => sum + getLessonReward(l),
           0,
         )
       );

@@ -29,6 +29,7 @@ import {
 type Lesson = {
   id: string;
   xp_reward: number;
+  xpReward?: number | null;
 };
 
 type Module = {
@@ -86,13 +87,19 @@ const getCourseCompletionBonus = (course: Course) => {
   return 0;
 };
 
+const getLessonReward = (lesson: Lesson) => {
+  if (typeof lesson?.xp_reward === 'number') return lesson.xp_reward;
+  if (typeof lesson?.xpReward === 'number') return lesson.xpReward;
+  return 0;
+};
+
 const formatTotalXP = (course: Course, modules: Module[]) => {
   const lessonsXP = modules.reduce((acc, module) => {
     if (!Array.isArray(module.lessons)) return acc;
     return (
       acc +
       module.lessons.reduce(
-        (sum, lesson) => sum + (lesson.xp_reward || 0),
+        (sum, lesson) => sum + getLessonReward(lesson),
         0,
       )
     );
