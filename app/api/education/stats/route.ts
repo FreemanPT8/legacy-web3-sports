@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    // 1) Cursos + módulos + lições publicados
+    // 1) Cursos publicados + curriculum
     const { data: courses, error: coursesError } = await supabase
       .from('courses')
       .select(
@@ -13,10 +13,9 @@ export async function GET(request: NextRequest) {
         description,
         xp_threshold,
         published,
-        modules:modules(
-          id,
-          lessons:lessons(id)
-        )
+        level,
+        image_url,
+        curriculum
       `,
       )
       .eq('published', true);
@@ -28,18 +27,43 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const totalCourses = courses?.length || 0;
-
-    let totalLessons = 0;
-    courses?.forEach((course) => {
-      const modules = Array.isArray(course.modules) ? course.modules : [];
-      modules.forEach((module: any) => {
-        const lessons = Array.isArray(module.lessons)
-          ? module.lessons
+    const enrichedCourses =
+      courses?.map((course: any) => {
+        const topics: any[] = Array.isArray(course.curriculum?.topics)
+          ? course.curriculum!.topics
           : [];
-        totalLessons += lessons.length;
-      });
-    });
+
+        const modules = topics.map((topic: any, topicIndex: number) => ({
+          id: topic?.id || `topic-${topicIndex + 1}`,
+          lessons: Array.isArray(topic?.lessons)
+            ? topic.lessons
+            : [],
+        }));
+
+        const lessonsCount = modules.reduce(
+          (sum: number, module: any) =>
+            sum +
+            (Array.isArray(module.lessons)
+              ? module.lessons.length
+              : 0),
+          0,
+        );
+
+        return {
+          ...course,
+          modules,
+          lessonsCount,
+          topicsCount: modules.length,
+          xp_required: course.xp_threshold ?? 0,
+        };
+      }) || [];
+
+    const totalCourses = enrichedCourses.length;
+    const totalLessons = enrichedCourses.reduce(
+      (sum: number, course: any) =>
+        sum + (course.lessonsCount || 0),
+      0,
+    );
 
     // 2) Utilizadores ativos / totais
     const { count: activeUsers } = await supabase
@@ -70,12 +94,12 @@ export async function GET(request: NextRequest) {
 
     // 4) Top cursos (por nº de módulos)
     const topCourses =
-      courses
+      enrichedCourses
         ?.slice()
         .sort((a, b) => {
-          const aModules = Array.isArray(a.modules) ? a.modules : [];
-          const bModules = Array.isArray(b.modules) ? b.modules : [];
-          return bModules.length - aModules.length;
+          const aModules = a.topicsCount || 0;
+          const bModules = b.topicsCount || 0;
+          return bModules - aModules;
         })
         .slice(0, 3) || [];
 

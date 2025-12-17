@@ -62,18 +62,16 @@ export async function GET(request: NextRequest) {
     }
 
     // --- 1) Dados base ----------------------------------------
-    const [{ data: users }, { data: courses }, { data: lessons }, { data: blogPosts }, { data: completions }] =
+    const [{ data: users }, { data: courses }, { data: blogPosts }, { data: completions }] =
       await Promise.all([
         db.from('users').select('id, created_at'),
-        db.from('courses').select('id, title'),
-        db.from('lessons').select('id, module_id'),
+        db.from('courses').select('id, title, curriculum'),
         db.from('blog_posts').select('id, published'),
         db.from('lesson_completions').select('lesson_id, xp_earned, created_at'),
       ]);
 
     const safeUsers = (users || []) as any[];
     const safeCourses = (courses || []) as any[];
-    const safeLessons = (lessons || []) as any[];
     const safeCompletions = (completions || []) as any[];
 
     // --- 2) User Growth (últimos 6 meses) ---------------------
@@ -95,27 +93,25 @@ export async function GET(request: NextRequest) {
     });
 
     // --- 3) Course Engagement (top 5 por nº de completions) ---
-    // map lesson_id -> module_id
-    const lessonToModule: Record<string, string> = {};
-    safeLessons.forEach((l: any) => {
-      if (l && l.id) {
-        lessonToModule[l.id] = l.module_id;
-      }
-    });
+    // map lesson_id -> course_id via curriculum JSON
+    const lessonToCourse: Record<string, string> = {};
+    safeCourses.forEach((course: any) => {
+      const topics: any[] = Array.isArray(course.curriculum?.topics)
+        ? course.curriculum!.topics
+        : [];
 
-    // map module_id -> course_id
-    // Nota: se não tiveres tabela modules com course_id, isto
-    // pode ficar sempre vazio, mas não quebra nada.
-    const { data: modules } = await db
-      .from('modules')
-      .select('id, course_id');
+      topics.forEach((topic: any, topicIndex: number) => {
+        const moduleId = topic?.id || `topic-${topicIndex + 1}`;
+        const lessons = Array.isArray(topic?.lessons)
+          ? topic.lessons
+          : [];
 
-    const safeModules = (modules || []) as any[];
-    const moduleToCourse: Record<string, string> = {};
-    safeModules.forEach((m: any) => {
-      if (m && m.id) {
-        moduleToCourse[m.id] = m.course_id;
-      }
+        lessons.forEach((lesson: any, lessonIndex: number) => {
+          const lessonId =
+            lesson?.id || `${moduleId}-lesson-${lessonIndex + 1}`;
+          lessonToCourse[lessonId] = course.id;
+        });
+      });
     });
 
     // map course_id -> title
@@ -147,8 +143,7 @@ export async function GET(request: NextRequest) {
       const lessonId = comp.lesson_id;
       if (!lessonId) return;
 
-      const moduleId = lessonToModule[lessonId];
-      const courseId = moduleToCourse[moduleId];
+      const courseId = lessonToCourse[lessonId];
       if (!courseId) return;
 
       completionsByCourse[courseId] =
@@ -198,8 +193,7 @@ export async function GET(request: NextRequest) {
 
       weekCompletions.forEach((c: any) => {
         const lessonId = c.lesson_id;
-        const moduleId = lessonToModule[lessonId];
-        const courseId = moduleToCourse[moduleId];
+        const courseId = lessonToCourse[lessonId];
         if (courseId) {
           courseSet.add(courseId);
         }

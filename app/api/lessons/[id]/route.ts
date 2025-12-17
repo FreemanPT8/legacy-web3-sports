@@ -32,75 +32,94 @@ export async function GET(
     const url = new URL(request.url);
     const userId = url.searchParams.get('userId');
 
-    // 1) Buscar a lição + autor
-    const { data: rawLesson, error: lessonError } = await db
-      .from('lessons')
-      .select(
-        `
-        *,
-        author_user:users!lessons_author_id_fkey (
-          username
-        )
-      `,
-      )
-      .eq('id', id)
-      .maybeSingle();
+    // 1) Procurar a lição dentro do curriculum dos cursos
+    const { data: courses, error: coursesError } = await db
+      .from('courses')
+      .select('id, title, curriculum, author_id');
 
-    if (lessonError) {
-      console.error('Error fetching lesson:', lessonError);
+    if (coursesError) {
+      console.error('Error fetching courses for lesson lookup:', coursesError);
       return NextResponse.json(
         { success: false, error: 'Failed to load lesson' },
         { status: 500 },
       );
     }
 
-    if (!rawLesson) {
+    let matchedCourse: any = null;
+    let matchedTopic: any = null;
+    let matchedLesson: any = null;
+
+    (courses || []).some((course: any) => {
+      const topics: any[] = Array.isArray(course.curriculum?.topics)
+        ? course.curriculum!.topics
+        : [];
+
+      for (let topicIndex = 0; topicIndex < topics.length; topicIndex++) {
+        const topic = topics[topicIndex];
+        const topicId = topic?.id || `topic-${topicIndex + 1}`;
+        const lessons = Array.isArray(topic?.lessons)
+          ? topic.lessons
+          : [];
+
+        for (let lessonIndex = 0; lessonIndex < lessons.length; lessonIndex++) {
+          const lesson = lessons[lessonIndex];
+          if (lesson?.id === id) {
+            matchedCourse = course;
+            matchedTopic = {
+              ...topic,
+              id: topicId,
+            };
+            matchedLesson = {
+              ...lesson,
+              module_id: topicId,
+              order:
+                typeof lesson?.order === 'number'
+                  ? lesson.order
+                  : lessonIndex + 1,
+            };
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    if (!matchedCourse || !matchedLesson) {
       return NextResponse.json(
         { success: false, error: 'Lesson not found' },
         { status: 404 },
       );
     }
 
-    // 2) Tentar buscar o módulo da lição (não fatal se falhar)
-    let rawModule: any = null;
+    const moduleLessons = Array.isArray(matchedTopic?.lessons)
+      ? matchedTopic.lessons.map((lesson: any, idx: number) => ({
+          id: lesson?.id || `${matchedTopic.id}-lesson-${idx + 1}`,
+          title: lesson?.title,
+          order:
+            typeof lesson?.order === 'number'
+              ? lesson.order
+              : idx + 1,
+        }))
+      : [];
 
-    const { data: moduleData, error: moduleError } = await db
-      .from('modules')
-      .select(
-        `
-        id,
-        title,
-        course_id,
-        author_id,
-        author_user:users!modules_author_id_fkey (
-          username
-        )
-      `,
-      )
-      .eq('id', rawLesson.module_id)
-      .maybeSingle();
+    const authorIds = new Set<string>();
+    if (matchedLesson.author_id) authorIds.add(matchedLesson.author_id);
+    if (matchedTopic?.author_id) authorIds.add(matchedTopic.author_id);
 
-    if (moduleError) {
-      console.error('Error fetching module (non-fatal):', moduleError);
-    } else {
-      rawModule = moduleData;
-    }
+    const authorMap: Record<string, string> = {};
 
-    // 3) Buscar TODAS as lições do módulo (para prev/next), se o módulo existir
-    let moduleLessons: any[] = [];
-    if (rawModule?.id) {
-      const { data: lessonsData, error: lessonsError } = await db
-        .from('lessons')
-        .select('id, title, "order"')
-        .eq('module_id', rawModule.id);
+    if (authorIds.size > 0) {
+      const { data: authors, error: authorsError } = await db
+        .from('users')
+        .select('id, username')
+        .in('id', Array.from(authorIds));
 
-      if (lessonsError) {
-        console.error(
-          'Error fetching module lessons (non-fatal):',
-          lessonsError,
-        );
-      } else if (Array.isArray(lessonsData)) {
-        moduleLessons = lessonsData;
+      if (authorsError) {
+        console.error('Error fetching lesson/module authors:', authorsError);
+      } else {
+        (authors || []).forEach((author: any) => {
+          authorMap[author.id] = author.username || 'User';
+        });
       }
     }
 
@@ -129,7 +148,9 @@ export async function GET(
 
     // 5) Flags: criador / completed (criador nunca conta como completed)
     const isCreator =
-      !!userId && !!rawLesson.author_id && rawLesson.author_id === userId;
+      !!userId &&
+      !!matchedLesson.author_id &&
+      matchedLesson.author_id === userId;
 
     const isCompleted =
       !!userId &&
@@ -137,52 +158,48 @@ export async function GET(
       completionsArray.some((c) => c.user_id && c.user_id === userId);
 
     // 6) Normalizar dados da lesson
-    const authorName = rawLesson.author_user?.username || null;
+    const authorName =
+      (matchedLesson.author_id &&
+        authorMap[matchedLesson.author_id]) ||
+      null;
 
-    const rawContent = typeof rawLesson.content === 'string' ? rawLesson.content : '';
+    const rawContent =
+      typeof matchedLesson.content === 'string'
+        ? matchedLesson.content
+        : '';
     const { before: content_preview, hasReadMore: content_has_read_more } =
       splitReadMore(rawContent);
 
     const lesson = {
-      id: rawLesson.id,
-      title: rawLesson.title,
-      description: rawLesson.description,
-      content: rawLesson.content,
+      id: matchedLesson.id,
+      title: matchedLesson.title,
+      description: matchedLesson.description,
+      content: matchedLesson.content,
       content_preview,
       content_has_read_more,
-      xp_reward: rawLesson.xp_reward,
-      estimated_time: rawLesson.estimated_time,
-      order: rawLesson.order,
-      module_id: rawLesson.module_id,
-      author_id: rawLesson.author_id,
+      xp_reward: matchedLesson.xp_reward,
+      estimated_time: matchedLesson.estimated_time,
+      order: matchedLesson.order,
+      module_id: matchedLesson.module_id,
+      author_id: matchedLesson.author_id,
       author_name: authorName,
-      created_at: rawLesson.created_at,
+      created_at: matchedLesson.created_at,
     };
 
     // 7) Normalizar dados do módulo (ou fallback mínimo se falhar)
-    const lessonModule = rawModule
-      ? {
-          id: rawModule.id,
-          title: rawModule.title,
-          course_id: rawModule.course_id,
-          author_id: rawModule.author_id,
-          author_name: rawModule.author_user?.username || null,
-          lessons: Array.isArray(moduleLessons)
-            ? moduleLessons.map((l: any) => ({
-                id: l.id,
-                title: l.title,
-                order: l.order,
-              }))
-            : [],
-        }
-      : {
-          id: rawLesson.module_id,
-          title: { en: 'Module', pt: 'Módulo' },
-          course_id: '',
-          author_id: null,
-          author_name: null,
-          lessons: [],
-        };
+    const moduleAuthorName =
+      (matchedTopic?.author_id &&
+        authorMap[matchedTopic.author_id]) ||
+      null;
+
+    const lessonModule = {
+      id: matchedTopic?.id,
+      title: matchedTopic?.title,
+      course_id: matchedCourse.id,
+      author_id: matchedTopic?.author_id ?? matchedCourse.author_id ?? null,
+      author_name: moduleAuthorName,
+      lessons: moduleLessons,
+    };
 
     const stats = {
       completedCount,

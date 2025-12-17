@@ -47,38 +47,40 @@ export async function GET(request: NextRequest) {
       0;
 
     // COURSES / MODULES / LESSONS
-    type CourseRow = { id: string; published?: boolean | null };
-    type ModuleRow = { id: string };
-    type LessonRow = { id: string };
+    type CourseRow = { id: string; published?: boolean | null; curriculum?: any };
 
-    const [{ data: courses, error: coursesError }, { data: modules, error: modulesError }, { data: lessons, error: lessonsError }] =
-      await Promise.all([
-        db.from('courses').select('id, published') as { data: CourseRow[] | null; error: any },
-        db.from('modules').select('id') as { data: ModuleRow[] | null; error: any },
-        db.from('lessons').select('id') as { data: LessonRow[] | null; error: any },
-      ]);
+    const { data: courses, error: coursesError } = await db
+      .from('courses')
+      .select('id, published, curriculum') as { data: CourseRow[] | null; error: any };
 
-    if (coursesError)
+    if (coursesError) {
       console.error('Error fetching courses in admin stats:', coursesError);
-    if (modulesError)
-      console.error('Error fetching modules in admin stats:', modulesError);
-    if (lessonsError)
-      console.error('Error fetching lessons in admin stats:', lessonsError);
+    }
 
     const totalCourses = courses?.length || 0;
     const activeCourses =
       courses?.filter((c: CourseRow) => !!c.published).length || 0;
-    const totalModules = modules?.length || 0;
-    const totalLessons = lessons?.length || 0;
+
+    let totalModules = 0;
+    let totalLessons = 0;
+
+    (courses || []).forEach((course: CourseRow) => {
+      const topics: any[] = Array.isArray(course.curriculum?.topics)
+        ? course.curriculum!.topics
+        : [];
+      totalModules += topics.length;
+      topics.forEach((topic: any) => {
+        if (Array.isArray(topic?.lessons)) {
+          totalLessons += topic.lessons.length;
+        }
+      });
+    });
 
     // XP DISTRIBUÍDO (via completions para granularidade por tipo)
     const [
       { data: courseCompletions24h },
       { data: courseCompletions30d },
       { data: courseCompletionsAll },
-      { data: moduleCompletions24h },
-      { data: moduleCompletions30d },
-      { data: moduleCompletionsAll },
       { data: lessonCompletions24h },
       { data: lessonCompletions30d },
       { data: lessonCompletionsAll },
@@ -86,9 +88,6 @@ export async function GET(request: NextRequest) {
       db.from('course_completions').select('xp_earned, completed_at').gte('completed_at', window24h),
       db.from('course_completions').select('xp_earned, completed_at').gte('completed_at', window30d),
       db.from('course_completions').select('xp_earned'),
-      db.from('module_completions').select('xp_earned, completed_at').gte('completed_at', window24h),
-      db.from('module_completions').select('xp_earned, completed_at').gte('completed_at', window30d),
-      db.from('module_completions').select('xp_earned'),
       db.from('lesson_completions').select('xp_earned, completed_at').gte('completed_at', window24h),
       db.from('lesson_completions').select('xp_earned, completed_at').gte('completed_at', window30d),
       db.from('lesson_completions').select('xp_earned'),
@@ -98,9 +97,9 @@ export async function GET(request: NextRequest) {
     const xpCourses24h = sumColumn(courseCompletions24h, 'xp_earned');
     const xpCourses30d = sumColumn(courseCompletions30d, 'xp_earned');
 
-    const xpModulesTotal = sumColumn(moduleCompletionsAll, 'xp_earned');
-    const xpModules24h = sumColumn(moduleCompletions24h, 'xp_earned');
-    const xpModules30d = sumColumn(moduleCompletions30d, 'xp_earned');
+    const xpModulesTotal = 0;
+    const xpModules24h = 0;
+    const xpModules30d = 0;
 
     const xpLessonsTotal = sumColumn(lessonCompletionsAll, 'xp_earned');
     const xpLessons24h = sumColumn(lessonCompletions24h, 'xp_earned');
