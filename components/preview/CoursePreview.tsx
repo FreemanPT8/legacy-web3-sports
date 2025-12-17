@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useBuilderContext } from '@/contexts/BuilderContext';
 import type { CourseBuilderState } from '@/types/builder';
+import { getAvailableLanguages } from '@/lib/language';
 
 const CET_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
@@ -49,6 +50,10 @@ export function CoursePreview() {
     0,
   );
   const durationLabel = formatDuration(course.durationMinutes);
+  const availableLanguages = getAvailableLanguages(
+    course.title,
+    course.longDescription,
+  );
 
   return (
     <div className="space-y-4">
@@ -84,6 +89,22 @@ export function CoursePreview() {
         <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-4">
           {description}
         </p>
+        {availableLanguages.length > 0 && (
+          <div className="flex flex-wrap gap-2 text-xs">
+            {availableLanguages.map((lang) => (
+              <Badge
+                key={lang.code}
+                variant="secondary"
+                className="flex items-center gap-1 border border-gray-200 bg-white/80 text-gray-900 dark:border-gray-800 dark:bg-gray-900/70 dark:text-gray-100"
+              >
+                <span aria-hidden className="text-base leading-none">
+                  {lang.flag}
+                </span>
+                <span className="font-semibold uppercase">{lang.code}</span>
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900">

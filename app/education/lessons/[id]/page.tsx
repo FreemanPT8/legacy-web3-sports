@@ -11,6 +11,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
 import { removeReadMoreMarker } from '@/lib/read-more';
 
+import { getAvailableLanguages } from '@/lib/language';
+import type { LangCode } from '@/types/builder';
+
 import {
   Card,
   CardContent,
@@ -19,6 +22,8 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
+import { cn } from '@/lib/utils';
 
 import {
   ArrowLeft,
@@ -205,6 +210,12 @@ export default function LessonPage() {
   );
   const moduleTitle = getMultilingualContent(module.title, language);
 
+  const availableLanguages = getAvailableLanguages(
+    (lesson.title || {}) as Partial<Record<LangCode, string>>,
+    (lesson.description || {}) as Partial<Record<LangCode, string>>,
+    (lesson.content || {}) as Partial<Record<LangCode, string>>,
+  );
+
   const durationMinutes = lesson.estimated_time ?? 10;
   const creatorName =
     lesson.author_name || (lesson.author_id ? 'Creator' : 'Admin');
@@ -262,6 +273,23 @@ export default function LessonPage() {
                     </Badge>
                   ) : null}
                 </div>
+
+                {availableLanguages.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {availableLanguages.map((langMeta) => (
+                      <Badge
+                        key={langMeta.code}
+                        className={cn(
+                          'border border-white/15 bg-[#05212b] text-xs font-semibold uppercase tracking-wide text-slate-200',
+                          langMeta.code === language && 'border-cyan-400 text-cyan-200',
+                        )}
+                      >
+                        <span aria-hidden className="mr-2 text-base">{langMeta.flag}</span>
+                        {langMeta.code}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
 
                 <CardTitle className="text-3xl text-white">
                   {title}

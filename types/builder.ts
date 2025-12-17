@@ -1,13 +1,24 @@
 export const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
 ] as const;
 
+
+
+
 export type LangCode = (typeof LANGUAGES)[number]['code'];
+
+export const LANGUAGE_FLAGS: Record<LangCode, string> = LANGUAGES.reduce(
+  (acc, lang) => {
+    acc[lang.code] = lang.flag;
+    return acc;
+  },
+  {} as Record<LangCode, string>,
+);
 
 export type TranslatedField = Record<LangCode, string>;
 

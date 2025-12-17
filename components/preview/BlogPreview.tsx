@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { useBuilderContext } from '@/contexts/BuilderContext';
 import { splitReadMore } from '@/lib/read-more';
 import type { BlogBuilderState } from '@/types/builder';
+import { getAvailableLanguages } from '@/lib/language';
 
 export function BlogPreview() {
   const { previewData } = useBuilderContext();
@@ -21,6 +22,11 @@ export function BlogPreview() {
     Object.values(blog.content).find((value) => value.trim().length) ||
     'Start writing your article to preview it here.';
   const { before: previewBody, hasReadMore } = splitReadMore(body);
+  const availableLanguages = getAvailableLanguages(
+    blog.title,
+    blog.longDescription,
+    blog.content,
+  );
 
   return (
     <div className="space-y-4">
@@ -44,6 +50,22 @@ export function BlogPreview() {
           </Badge>
           <Badge variant="outline">{blog.readingTimeMinutes} min read</Badge>
         </div>
+        {availableLanguages.length > 0 && (
+          <div className="flex flex-wrap gap-2 text-xs">
+            {availableLanguages.map((lang) => (
+              <Badge
+                key={lang.code}
+                variant="secondary"
+                className="flex items-center gap-1 border border-gray-200 bg-white/80 text-gray-900 dark:border-gray-800 dark:bg-gray-900/70 dark:text-gray-100"
+              >
+                <span aria-hidden className="text-base leading-none">
+                  {lang.flag}
+                </span>
+                <span className="font-semibold uppercase">{lang.code}</span>
+              </Badge>
+            ))}
+          </div>
+        )}
         <h3 className="text-xl font-semibold">{headline}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
           {excerpt}
