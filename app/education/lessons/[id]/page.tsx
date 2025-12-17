@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -9,7 +9,9 @@ import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
+import type { Language } from '@/lib/i18n';
 import { removeReadMoreMarker } from '@/lib/read-more';
+import { TranslationFallbackDialog } from '@/components/language/TranslationFallbackDialog';
 
 import { getAvailableLanguages } from '@/lib/language';
 import type { LangCode } from '@/types/builder';
@@ -74,8 +76,9 @@ interface LessonApiResponse {
 
 export default function LessonPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
-  const { language, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [module, setModule] = useState<ModuleWithLessons | null>(null);
@@ -85,6 +88,7 @@ export default function LessonPage() {
   const [stats, setStats] = useState<LessonStats | null>(null);
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
+  const [dismissedLanguage, setDismissedLanguage] = useState<Language | null>(null);
 
   const tr = (key: string, fallback: string) => {
     const val = t(key);
@@ -156,6 +160,10 @@ export default function LessonPage() {
     if (params.id) fetchLesson();
   }, [params.id, user?.id, t]);
 
+  useEffect(() => {
+    setDismissedLanguage(null);
+  }, [lesson?.id]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
@@ -215,6 +223,12 @@ export default function LessonPage() {
     (lesson.description || {}) as Partial<Record<LangCode, string>>,
     (lesson.content || {}) as Partial<Record<LangCode, string>>,
   );
+
+  const missingCurrentLanguage =
+    availableLanguages.length > 0 &&
+    !availableLanguages.some((lang) => lang.code === language);
+  const showLanguageDialog =
+    missingCurrentLanguage && dismissedLanguage !== language;
 
   const durationMinutes = lesson.estimated_time ?? 10;
   const creatorName =
@@ -455,6 +469,23 @@ export default function LessonPage() {
       </main>
 
       <Footer />
+      {lesson && (
+        <TranslationFallbackDialog
+          open={showLanguageDialog}
+          context="lesson"
+          currentLanguage={language}
+          availableLanguages={availableLanguages}
+          onSelectLanguage={(next) => {
+            setLanguage(next);
+            setDismissedLanguage(null);
+          }}
+          onBack={() => {
+            router.push('/education/courses');
+            setDismissedLanguage(language);
+          }}
+          onClose={() => setDismissedLanguage(language)}
+        />
+      )}
     </div>
   );
 }

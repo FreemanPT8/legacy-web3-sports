@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -24,7 +24,12 @@ import {
 } from 'lucide-react';
 import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { removeReadMoreMarker } from '@/lib/read-more';
+import { getAvailableLanguages } from '@/lib/language';
+import type { Language } from '@/lib/i18n';
+import type { LangCode } from '@/types/builder';
+import { TranslationFallbackDialog } from '@/components/language/TranslationFallbackDialog';
 
 type MultiLang = Record<string, string>;
 
@@ -61,12 +66,14 @@ export default function BlogPostPage() {
   const params = useParams();
   const router = useRouter();
   const { user, getToken } = useAuth();
+  const { language, setLanguage } = useLanguage();
 
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isAuthor, setIsAuthor] = useState(false);
+  const [dismissedLanguage, setDismissedLanguage] = useState<Language | null>(null);
 
   const id = params.id as string;
 
@@ -111,14 +118,62 @@ export default function BlogPostPage() {
     }
   }, [id, getToken]);
 
-  const getTitle = (title: MultiLang | string) => {
-    if (typeof title === 'string') return title;
-    return title.pt || title.en || title.es || 'Untitled post';
+  useEffect(() => {
+    setDismissedLanguage(null);
+  }, [post?.id]);
+
+  const normalizeRecord = (
+    value: MultiLang | string | null | undefined,
+  ): Partial<Record<LangCode, string>> | null => {
+    if (!value || typeof value === 'string') return null;
+    return value as Partial<Record<LangCode, string>>;
   };
 
-  const getContent = (content: MultiLang | string) => {
-    if (typeof content === 'string') return content;
-    return content.pt || content.en || content.es || '';
+  const availableLanguages = useMemo(() => {
+    if (!post) return [];
+    return getAvailableLanguages(
+      normalizeRecord(post.title),
+      normalizeRecord(post.excerpt),
+      normalizeRecord(post.content),
+    );
+  }, [post]);
+
+  const missingCurrentLanguage =
+    post &&
+    availableLanguages.length > 0 &&
+    !availableLanguages.some((lang) => lang.code === language);
+
+  const showLanguageDialog =
+    Boolean(post) &&
+    missingCurrentLanguage &&
+    dismissedLanguage !== language;
+
+  const pickTranslation = (
+    field: MultiLang | string,
+    fallback: string,
+  ) => {
+    if (typeof field === 'string') {
+      return field || fallback;
+    }
+    const preferenceOrder: Language[] = [
+      language,
+      'pt',
+      'en',
+      'es',
+      'fr',
+      'it',
+      'de',
+    ];
+    for (const code of preferenceOrder) {
+      const value = field[code];
+      if (typeof value === 'string' && value.trim().length) {
+        return value;
+      }
+    }
+    const firstValue = Object.values(field).find(
+      (value) => typeof value === 'string' && value.trim().length,
+    );
+    return firstValue || fallback;
   };
 
   if (loading) {
@@ -165,7 +220,9 @@ export default function BlogPostPage() {
     );
   }
 
-  const htmlContent = removeReadMoreMarker(getContent(post.content));
+  const htmlContent = removeReadMoreMarker(
+    pickTranslation(post.content, ''),
+  );
   const xpReward =
     typeof post.xp_reward === 'number' ? post.xp_reward : 0;
   const estimatedMinutes =
@@ -232,16 +289,11 @@ export default function BlogPostPage() {
                 </div>
 
                 <CardTitle className="text-3xl text-white">
-                  {getTitle(post.title)}
+                  {pickTranslation(post.title, 'Untitled post')}
                 </CardTitle>
                 {post.excerpt && (
                   <p className="text-slate-200 text-base mt-3">
-                    {typeof post.excerpt === 'string'
-                      ? post.excerpt
-                      : post.excerpt.pt ||
-                        post.excerpt.en ||
-                        post.excerpt.es ||
-                        ''}
+                    {pickTranslation(post.excerpt, '')}
                   </p>
                 )}
               </CardHeader>
@@ -354,6 +406,23 @@ export default function BlogPostPage() {
       </main>
 
       <Footer />
+      {post && (
+        <TranslationFallbackDialog
+          open={showLanguageDialog}
+          context="blog"
+          currentLanguage={language}
+          availableLanguages={availableLanguages}
+          onSelectLanguage={(next) => {
+            setLanguage(next);
+            setDismissedLanguage(null);
+          }}
+          onBack={() => {
+            router.push('/blog');
+            setDismissedLanguage(language);
+          }}
+          onClose={() => setDismissedLanguage(language)}
+        />
+      )}
     </div>
   );
 }
