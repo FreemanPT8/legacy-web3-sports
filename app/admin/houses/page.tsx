@@ -11,7 +11,6 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -21,7 +20,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Trophy, Loader2, Plus, Building2 } from 'lucide-react';
+import { Loader2, Plus, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SafeImage } from '@/app/components/SafeImage';
 
@@ -50,27 +49,36 @@ interface ApiResponse {
   houses?: AdminHouse[];
 }
 
+const STATUS_LABELS: Record<HouseStatus, string> = {
+  active: 'Active',
+  under_construction: 'Under construction',
+  development: 'In development',
+};
+
+const STATUS_BADGE_CLASSES: Record<HouseStatus, string> = {
+  active:
+    'inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200',
+  under_construction:
+    'inline-flex items-center rounded-full border border-amber-400/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-200',
+  development:
+    'inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-medium text-cyan-200',
+};
+
 const statusOptions: { value: 'all' | HouseStatus; label: string }[] = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All statuses' },
   { value: 'active', label: 'Active' },
   { value: 'under_construction', label: 'Under construction' },
   { value: 'development', label: 'In development' },
 ];
 
+const secondaryButtonClasses =
+  'border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60';
+
 function StatusBadge({ status }: { status: HouseStatus }) {
-  const map: Record<
-    HouseStatus,
-    { label: string; variant: 'default' | 'secondary' | 'outline' }
-  > = {
-    active: { label: 'Active', variant: 'default' },
-    under_construction: { label: 'In construction', variant: 'secondary' },
-    development: { label: 'In development', variant: 'outline' },
-  };
-  const config = map[status];
   return (
-    <Badge variant={config.variant} className="capitalize">
-      {config.label}
-    </Badge>
+    <span className={STATUS_BADGE_CLASSES[status]}>
+      {STATUS_LABELS[status]}
+    </span>
   );
 }
 
@@ -81,7 +89,6 @@ export default function AdminHousesPage() {
   const [houses, setHouses] = useState<AdminHouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | HouseStatus>('all');
 
@@ -156,7 +163,7 @@ export default function AdminHousesPage() {
     (user.role !== 'Super Admin' && user.role !== 'Admin')
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
         <div className="flex items-center gap-2 text-slate-300">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading Houses of Sports...</span>
@@ -175,188 +182,166 @@ export default function AdminHousesPage() {
   ).length;
   const missingHeads = houses.filter((h) => !h.head).length;
 
+  const formatCreatedAt = (value: string | null | undefined) => {
+    if (!value) return 'Unknown date';
+    try {
+      return format(new Date(value), 'dd/MM/yyyy');
+    } catch {
+      return value;
+    }
+  };
+
   return (
-    <div className="w-full space-y-8">
-      {/* HERO — MESMO ESTILO DO /admin */}
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
-        </div>
-
-        <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
-            LEGACY Admin — Houses of Sports
-          </span>
-
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Building2 className="h-7 w-7 text-amber-300" />
-            Houses of Sports
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
-            Visão global das Houses, países, estado de desenvolvimento e
-            liderança. É aqui que percebes se o ecossistema das Houses está a
-            crescer de forma saudável ou se alguma precisa da tua atenção.
-          </p>
-
-          {error && (
-            <p className="mt-3 text-xs text-red-400">{error}</p>
-          )}
-        </div>
-      </section>
-
-      {/* ACTION PANEL */}
-      <section>
-        <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-sky-900/70 shadow-2xl mx-auto max-w-6xl">
-          <CardHeader className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-sky-500/20 text-sky-100 border border-sky-500/40">
-                Operational
-              </Badge>
-              <CardTitle className="text-heading text-lg">
-                Houses pulse check
-              </CardTitle>
+    <div className="min-h-screen bg-[#000c12] text-white px-4 py-10 md:px-10">
+      <div className="mx-auto w-full max-w-6xl space-y-10">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#04141c] via-[#03121a] to-[#020b11] p-6 md:p-10 shadow-2xl shadow-black/40">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-4 max-w-3xl">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                HOUSES ADMIN
+              </p>
+              <div className="flex items-start gap-4">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#05212b]">
+                  <Building2 className="h-7 w-7 text-cyan-300" />
+                </span>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-semibold text-white">
+                    Houses of Sports
+                  </h1>
+                  <p className="text-sm text-slate-300">
+                    Monitoriza o estado de cada house, confirma lideranca e
+                    acelera ativacoes com o mesmo sistema visual da homepage.
+                  </p>
+                </div>
+              </div>
+              {error && <p className="text-sm text-rose-400">{error}</p>}
             </div>
-            <p className="text-muted-custom text-sm max-w-3xl">
-              Os números abaixo refletem o estado atual das Houses trazido direto da API. Use-os para priorizar intervenções ou celebrar tops ativos.
-            </p>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="flex flex-col gap-3 md:flex-row">
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-end lg:w-auto">
               <Button
-                className="flex-1 bg-sky-600 hover:bg-sky-700 text-white"
+                className="flex-1 bg-cyan-500 text-[#000c12] hover:bg-cyan-400 sm:flex-none"
                 onClick={() => router.push('/admin/houses/create')}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Criar House
+                <Plus className="mr-2 h-4 w-4" />
+                Criar house
               </Button>
               <Button
-                className="flex-1 border border-slate-700 text-slate-100 bg-slate-950/60 hover:bg-slate-900"
-                onClick={() => router.push('/admin/houses')}
-                disabled={houses.length === 0}
-              >
-                <Trophy className="h-4 w-4 mr-2" />
-                Revisar House ativa
-              </Button>
-              <Button
-                className="flex-1 border border-emerald-500 text-emerald-100 bg-emerald-950/50 hover:bg-emerald-900"
+                variant="outline"
+                className={secondaryButtonClasses}
                 onClick={() => {
+                  setStatusFilter('active');
                   setSearch('');
-                  setStatusFilter('all');
                 }}
               >
-                <Building2 className="h-4 w-4 mr-2" />
-                Resetar filtros
+                Ver houses ativas
+              </Button>
+              <Button
+                variant="outline"
+                className={secondaryButtonClasses}
+                onClick={() => {
+                  setStatusFilter('all');
+                  setSearch('');
+                }}
+              >
+                Reset filtros
               </Button>
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
-              <div className="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-slate-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Houses totais
-                </p>
-                <p className="text-2xl font-bold mt-1">{totalHouses}</p>
-                <p className="text-muted-custom text-[11px]">
-                  Esse valor vem direto da API em cada carregamento.
-                </p>
-              </div>
-              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Ativas
-                </p>
-                <p className="text-2xl font-bold mt-1">{activeHouses}</p>
-                <p className="text-muted-custom text-[11px]">
-                  Priorize casas sem head ou com status diferente.
-                </p>
-              </div>
-              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100">
-                <p className="font-semibold uppercase tracking-wide text-[11px]">
-                  Sem liderança
-                </p>
-                <p className="text-2xl font-bold mt-1">{missingHeads}</p>
-                <p className="text-muted-custom text-[11px]">
-                  Corresponder estes dados ao diretório de heads ajuda a ativar Houses mais rápido.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
+        </section>
 
-      <section className="space-y-8">
-        {/* RESUMO DAS HOUSES (mesmo padrão de secções do admin) */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
-            Resumo das Houses
-          </h2>
-          <Card className="bg-card-custom border-custom shadow-lg shadow-amber-950/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-heading text-sm">
-                Estado atual do ecossistema
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                TOTAL
+              </p>
+              <CardTitle className="text-3xl font-semibold text-white">
+                {totalHouses}
               </CardTitle>
-              <CardDescription className="text-muted-custom text-xs">
-                Totais e estados das Houses of Sports.
-              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                <div className="rounded-lg border-custom bg-card-custom p-3">
-                  <p className="text-xs text-muted-custom uppercase">
-                    Total Houses
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-heading">
-                    {totalHouses}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-emerald-900/60 bg-emerald-950/40 p-3">
-                  <p className="text-xs font-medium text-emerald-200 uppercase">
-                    Active
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-emerald-400">
-                    {activeHouses}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-amber-900/60 bg-amber-950/40 p-3">
-                  <p className="text-xs font-medium text-amber-200 uppercase">
-                    Under construction
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-amber-400">
-                    {buildingHouses}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-sky-900/60 bg-sky-950/40 p-3">
-                  <p className="text-xs font-medium text-sky-200 uppercase">
-                    In development
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-sky-400">
-                    {developingHouses}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-rose-900/60 bg-rose-950/40 p-3">
-                  <p className="text-xs font-medium text-rose-200 uppercase">
-                    Missing Head
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-rose-400">
-                    {missingHeads}
-                  </p>
-                </div>
-              </div>
+              <p className="text-sm text-slate-300">
+                Houses registadas no ecossistema.
+              </p>
             </CardContent>
           </Card>
-        </div>
 
-        {/* FILTROS (card no mesmo estilo do resto do admin) */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
-            Filtros
-          </h2>
-          <Card className="bg-card-custom border-custom">
-            <CardContent className="pt-6 flex flex-col md:flex-row gap-4 items-center">
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                ATIVAS
+              </p>
+              <CardTitle className="text-3xl font-semibold text-white">
+                {activeHouses}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-300">
+                Houses com comunidade e lideranca operacionais.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                EM OBRAS
+              </p>
+              <CardTitle className="text-3xl font-semibold text-white">
+                {buildingHouses}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-300">
+                Houses under construction a precisar de apoio.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                EM DESENV
+              </p>
+              <CardTitle className="text-3xl font-semibold text-white">
+                {developingHouses}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-300">
+                Casas ainda no plano inicial ou aguardando assets.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                SEM HEAD
+              </p>
+              <CardTitle className="text-3xl font-semibold text-white">
+                {missingHeads}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-300">
+                Houses sem lideranca atribuida neste momento.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+            FILTROS
+          </p>
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardContent className="flex flex-col gap-4 pt-6 md:flex-row md:items-center">
               <div className="flex-1 w-full">
                 <Input
-                  placeholder="Search by sport, country or Head of House..."
+                  placeholder="Procurar por esporte, codigo ou head..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                  className="bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
                 />
               </div>
               <div className="w-full md:w-60">
@@ -366,10 +351,10 @@ export default function AdminHousesPage() {
                     setStatusFilter(val as 'all' | HouseStatus)
                   }
                 >
-                  <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-100">
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className="bg-[#000c12] border-white/10 text-white">
+                    <SelectValue placeholder="Estado" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-[#03121a] text-white">
                     {statusOptions.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
@@ -378,210 +363,186 @@ export default function AdminHousesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex gap-2 w-full md:w-auto justify-end">
+              <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
                 <Button
                   variant="outline"
+                  className={secondaryButtonClasses}
                   onClick={() => {
                     setSearch('');
                     setStatusFilter('all');
                   }}
-                  className="border-slate-700 text-slate-200"
                 >
-                  Clear filters
+                  Limpar filtros
                 </Button>
-                <Link href="/admin/houses/create">
-                  <Button
-                    type="button"
-                    className="bg-sky-600 hover:bg-sky-500 text-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create new House
-                  </Button>
-                </Link>
+                <Button
+                  className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                  onClick={() => router.push('/admin/houses/create')}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova house
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </section>
 
-        {/* LISTA DE HOUSES */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-custom">
-            Houses list
-          </h2>
-          <Card className="bg-card-custom border-custom">
+        <section className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+            LISTA DE HOUSES
+          </p>
+          <Card className="border border-white/10 bg-[#05212b]/50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-heading">
-                <Trophy className="h-5 w-5 text-amber-400" />
-                Houses list
+              <CardTitle className="text-white">
+                Houses encontradas: {filtered.length}
               </CardTitle>
-              <CardDescription className="text-xs text-muted-custom">
-                Showing {filtered.length} of {houses.length} Houses.
+              <CardDescription className="text-sm text-slate-300">
+                Os dados abaixo usam o mesmo layout dos cards de houses
+                publicos mas com mais contexto para o admin.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="flex items-center justify-center py-10 text-muted-custom gap-2">
+                <div className="flex items-center justify-center gap-2 py-12 text-slate-300">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Loading Houses of Sports...
+                  A carregar houses...
                 </div>
               ) : filtered.length === 0 ? (
-                <p className="py-8 text-center text-muted-custom text-sm">
+                <p className="py-10 text-center text-sm text-slate-300">
                   {houses.length === 0
-                    ? 'No Houses found. Create the first House using the button above.'
-                    : 'No Houses match the current filters.'}
+                    ? 'Nenhuma house registada ainda. Cria a primeira usando o botao acima.'
+                    : 'Nenhuma house corresponde aos filtros atuais.'}
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-800 bg-slate-900/60">
-                        <th className="text-left py-2 px-3 text-xs font-medium text-muted-custom">
-                          Sport
-                        </th>
-                        <th className="text-left py-2 px-3 text-xs font-medium text-muted-custom">
-                          Country
-                        </th>
-                        <th className="text-left py-2 px-3 text-xs font-medium text-muted-custom">
-                          Status
-                        </th>
-                        <th className="text-left py-2 px-3 text-xs font-medium text-muted-custom">
-                          Head of House
-                        </th>
-                        <th className="text-left py-2 px-3 text-xs font-medium text-muted-custom">
-                          Moderators
-                        </th>
-                        <th className="text-left py-2 px-3 text-xs font-medium text-muted-custom">
-                          Created
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((house) => (
-                        <tr
-                          key={house.id}
-                          className="border-b border-slate-800 hover:bg-slate-900 cursor-pointer"
-                          onClick={() =>
-                            router.push(`/admin/houses/${house.id}`)
-                          }
-                        >
-                          <td className="py-2 px-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-md overflow-hidden border border-slate-800 bg-slate-900 flex-shrink-0 flex items-center justify-center text-xs text-slate-400">
-                                {house.avatar_url &&
-                                house.avatar_url.trim() !== '' ? (
-                                  <SafeImage
-                                    src={house.avatar_url}
-                                    alt={house.sport_name || 'House'}
-                                    className="w-full h-full object-cover"
-                                    width={64}
-                                    height={64}
-                                  />
-                                ) : (
-                                  <span className="font-semibold">
-                                    {house.sport_code
-                                      ?.slice(0, 3)
-                                      ?.toUpperCase() ||
-                                      house.country_code?.slice(0, 2) ||
-                                      'H'}
-                                  </span>
-                                )}
-                              </div>
+                <div className="space-y-4">
+                  {filtered.map((house) => {
+                    const headName =
+                      house.head?.full_name ||
+                      house.head?.username ||
+                      'Sem head atribuido';
+                    const headUsername = house.head?.username
+                      ? `@${house.head.username}`
+                      : null;
+
+                    return (
+                      <article
+                        key={house.id}
+                        className="rounded-2xl border border-white/10 bg-[#05212b] p-5 shadow-lg shadow-black/20 transition hover:border-cyan-400/50"
+                      >
+                        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="flex flex-1 items-start gap-4">
+                            <div className="h-16 w-16 rounded-2xl border border-white/10 bg-[#03121a] text-center text-sm font-semibold uppercase text-slate-300">
+                              {house.avatar_url &&
+                              house.avatar_url.trim() !== '' ? (
+                                <SafeImage
+                                  src={house.avatar_url}
+                                  alt={house.sport_name || 'House of Sports'}
+                                  className="h-full w-full rounded-2xl object-cover"
+                                  width={64}
+                                  height={64}
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center">
+                                  {house.sport_code
+                                    ?.slice(0, 3)
+                                    ?.toUpperCase() ||
+                                    house.country_code ||
+                                    'HOS'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-1">
                               <Link
                                 href={`/admin/houses/${house.id}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="block"
+                                className="text-lg font-semibold text-white hover:text-cyan-300"
                               >
-                                <div className="font-medium text-sky-400 hover:underline">
-                                  {house.sport_name || 'Unknown sport'}
-                                </div>
-                                <div className="text-xs text-slate-500 uppercase">
-                                  {house.sport_code}
-                                </div>
+                                {house.sport_name || 'House sem nome'}
                               </Link>
+                              <p className="text-xs uppercase text-slate-400">
+                                {house.sport_code || 'Sem codigo'} -{' '}
+                                {house.country_code || 'XX'}
+                              </p>
+                              <p className="text-[11px] text-slate-400">
+                                ID: {house.id}
+                              </p>
                             </div>
-                            <div className="text-[10px] text-slate-500 mt-0.5">
-                              {house.id}
-                            </div>
-                          </td>
-                          <td className="py-2 px-3">
-                            <span className="uppercase text-xs font-mono bg-slate-900 border border-slate-800 px-2 py-1 rounded text-slate-200">
-                              {house.country_code}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3">
-                            <StatusBadge status={house.status} />
-                          </td>
-                          <td className="py-2 px-3">
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-800 bg-slate-900 flex-shrink-0 flex items-center justify-center text-[11px] text-slate-400">
+                          </div>
+                          <div className="flex flex-1 flex-col gap-3 text-sm text-slate-300">
+                            <div className="flex items-center gap-3">
+                              <div className="h-12 w-12 rounded-full border border-white/10 bg-[#03121a] text-xs font-semibold uppercase text-slate-300">
                                 {house.head?.avatar_url &&
                                 house.head.avatar_url.trim() !== '' ? (
                                   <SafeImage
                                     src={house.head.avatar_url}
-                                    alt={
-                                      house.head.full_name ||
-                                      house.head.username ||
-                                      'Head of House'
-                                    }
-                                    className="w-full h-full object-cover"
-                                    width={40}
-                                    height={40}
+                                    alt={headName}
+                                    className="h-full w-full rounded-full object-cover"
+                                    width={48}
+                                    height={48}
                                   />
-                                ) : house.head ? (
-                                  <span className="font-semibold">
-                                    {(house.head.full_name ||
-                                      house.head.username ||
-                                      'Head')
-                                      .slice(0, 2)
-                                      .toUpperCase()}
-                                  </span>
                                 ) : (
-                                  <span className="font-semibold">HH</span>
+                                  <span className="flex h-full w-full items-center justify-center">
+                                    {headName.slice(0, 2).toUpperCase()}
+                                  </span>
                                 )}
                               </div>
-                              <div className="flex flex-col gap-1">
-                                {house.head ? (
-                                  <div className="flex flex-col">
-                                    <span className="font-medium text-slate-100">
-                                      {house.head.full_name ||
-                                        house.head.username ||
-                                        'Head of House'}
-                                    </span>
-                                    {house.head.username && (
-                                      <span className="text-xs text-slate-400">
-                                        @{house.head.username}
-                                      </span>
-                                    )}
-                                  </div>
+                              <div>
+                                <p className="font-semibold text-white">
+                                  {headName}
+                                </p>
+                                {headUsername ? (
+                                  <p className="text-xs text-slate-400">
+                                    {headUsername}
+                                  </p>
                                 ) : (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-rose-300 border-rose-900/70 bg-rose-950/30"
-                                  >
-                                    Missing Head
-                                  </Badge>
+                                  <p className="text-xs text-rose-300">
+                                    Sem username
+                                  </p>
                                 )}
                               </div>
                             </div>
-                          </td>
-                          <td className="py-2 px-3 text-xs text-slate-200">
-                            {house.moderators_count ?? 0}
-                          </td>
-                          <td className="py-2 px-3 text-xs text-slate-400">
-                            {house.created_at
-                              ? format(new Date(house.created_at), 'dd/MM/yyyy')
-                              : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <p className="text-xs text-slate-400">
+                              Moderadores ativos:{' '}
+                              <span className="font-semibold text-white">
+                                {house.moderators_count ?? 0}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="flex flex-1 flex-col gap-3">
+                            <div className="flex items-center gap-2">
+                              <StatusBadge status={house.status} />
+                              <span className="text-xs text-slate-400">
+                                Criada em {formatCreatedAt(house.created_at)}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                                onClick={() =>
+                                  router.push(`/admin/houses/${house.id}`)
+                                }
+                              >
+                                Ver detalhes
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className={secondaryButtonClasses}
+                                onClick={() =>
+                                  router.push(`/admin/houses/${house.id}/roles`)
+                                }
+                              >
+                                Gerir roles
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

@@ -11,16 +11,15 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Trophy,
   Loader2,
   ArrowLeft,
   ExternalLink,
   User,
   Users,
   Shield,
+  Building2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SafeImage } from '@/app/components/SafeImage';
@@ -71,27 +70,29 @@ interface HouseDetailApiResponse {
 }
 
 const STATUS_LABELS: Record<HouseStatus, string> = {
-  development: 'In development',
-  under_construction: 'In construction',
   active: 'Active',
+  under_construction: 'Under construction',
+  development: 'In development',
 };
 
+const STATUS_BADGE_CLASSES: Record<HouseStatus, string> = {
+  active:
+    'inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200',
+  under_construction:
+    'inline-flex items-center rounded-full border border-amber-400/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-200',
+  development:
+    'inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-medium text-cyan-200',
+};
+
+const secondaryButtonClasses =
+  'border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60';
+
 function StatusBadge({ status }: { status: HouseStatus }) {
-  const map: Record<
-    HouseStatus,
-    { label: string; variant: 'default' | 'secondary' | 'outline' }
-  > = {
-    active: { label: 'Active', variant: 'default' },
-    under_construction: { label: 'In construction', variant: 'secondary' },
-    development: { label: 'In development', variant: 'outline' },
-  };
-
-  const config = map[status];
-
+  const safeStatus = status ?? 'development';
   return (
-    <Badge variant={config.variant} className="capitalize">
-      {config.label}
-    </Badge>
+    <span className={STATUS_BADGE_CLASSES[safeStatus]}>
+      {STATUS_LABELS[safeStatus]}
+    </span>
   );
 }
 
@@ -108,7 +109,6 @@ export default function AdminHouseOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Proteção da rota
   useEffect(() => {
     if (authLoading) return;
 
@@ -118,7 +118,6 @@ export default function AdminHouseOverviewPage() {
     }
   }, [authLoading, user, router]);
 
-  // Carregar detalhes para overview
   useEffect(() => {
     const fetchDetail = async () => {
       if (!houseId) return;
@@ -176,10 +175,21 @@ export default function AdminHouseOverviewPage() {
     }
   }, [house?.created_at]);
 
-  if (authLoading) {
+  const publicProfileUrl = house ? `/sports/houses/${house.id}` : '#';
+  const moderatorsCount = moderators.length;
+  const hasHead = !!head;
+  const safeStatus: HouseStatus = house?.status ?? 'development';
+  const heroTitle =
+    house?.name || house?.sport_name || 'House of Sports overview';
+
+  if (
+    authLoading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin')
+  ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-300">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading House overview...</span>
         </div>
@@ -189,8 +199,8 @@ export default function AdminHouseOverviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-300">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading House overview...</span>
         </div>
@@ -200,276 +210,426 @@ export default function AdminHouseOverviewPage() {
 
   if (!house) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-center space-y-3">
-          <p className="text-gray-700 dark:text-gray-200">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white px-4">
+        <div className="rounded-2xl border border-white/10 bg-[#05212b] p-6 text-center space-y-4">
+          <p className="text-sm text-slate-300">
             {error || 'House not found or could not be loaded.'}
           </p>
           <Button
             variant="outline"
+            className={secondaryButtonClasses}
             onClick={() => router.push('/admin/houses')}
-            className="inline-flex items-center"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Houses
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para Houses
           </Button>
         </div>
       </div>
     );
   }
 
-  const publicProfileUrl = `/sports/houses/${house.id}`;
-  const moderatorsCount = moderators.length;
-  const hasHead = !!head;
+  const permissionBadge = (
+    label: string,
+    active: boolean,
+    colorClasses: string,
+  ) =>
+    active ? (
+      <span
+        key={label}
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${colorClasses}`}
+      >
+        {label}
+      </span>
+    ) : null;
+
+  const renderPermissionBadges = (permissions?: ModeratorPermissions | null) => {
+    if (!permissions) {
+      return (
+        <span className="text-xs text-slate-400">Sem permissoes definidas</span>
+      );
+    }
+
+    const badges = [
+      permissionBadge(
+        'Missions',
+        !!permissions.canManageMissions,
+        'border-cyan-400/40 bg-cyan-500/10 text-cyan-200',
+      ),
+      permissionBadge(
+        'Content',
+        !!permissions.canManageContent,
+        'border-emerald-400/40 bg-emerald-500/10 text-emerald-200',
+      ),
+      permissionBadge(
+        'Members',
+        !!permissions.canManageMembers,
+        'border-amber-400/40 bg-amber-500/10 text-amber-200',
+      ),
+    ].filter(Boolean);
+
+    if (badges.length === 0) {
+      return (
+        <span className="text-xs text-slate-400">Sem permissoes definidas</span>
+      );
+    }
+
+    return <div className="flex flex-wrap gap-2">{badges}</div>;
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
-      <main>
-        <div className="container mx-auto px-4 max-w-5xl space-y-6">
-          {/* Back + título */}
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={() => router.push('/admin/houses')}
-              className="mb-1 inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white w-fit"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Houses
-            </button>
-
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center">
-                  <Trophy className="h-6 w-6 text-yellow-500" />
-                </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-                    {house.name || 'House of Sports'}
+    <div className="min-h-screen bg-[#000c12] text-white px-4 py-10 md:px-10">
+      <div className="mx-auto w-full max-w-5xl space-y-8">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#04141c] via-[#03121a] to-[#020b11] p-6 md:p-10 shadow-2xl shadow-black/40 space-y-6">
+          <button
+            onClick={() => router.push('/admin/houses')}
+            className="inline-flex items-center text-sm text-slate-300 hover:text-white"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para Houses
+          </button>
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                HOUSE OVERVIEW
+              </p>
+              <div className="flex items-start gap-4">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#05212b]">
+                  <Building2 className="h-7 w-7 text-cyan-300" />
+                </span>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-semibold text-white">
+                    {heroTitle}
                   </h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Admin overview for this House of Sports. From here tens
-                    acesso rápido à edição, liderança e permissões.
+                  <p className="text-sm text-slate-300">
+                    Painel completo com o mesmo design system da homepage para
+                    acompanhar estado, lideranca, permissoes e estatisticas
+                    desta house.
                   </p>
                 </div>
               </div>
-
-              <div className="flex flex-col items-end gap-2 text-xs text-gray-500 dark:text-gray-300 text-right">
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => window.open(publicProfileUrl, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Public profile
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      router.push(`/admin/houses/${house.id}/edit`)
-                    }
-                  >
-                    Edit House
-                  </Button>
-                </div>
-                <div>ID: {house.id}</div>
-                {createdAtFormatted && <div>Created at: {createdAtFormatted}</div>}
-              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                onClick={() => window.open(publicProfileUrl, '_blank')}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Ver perfil publico
+              </Button>
+              <Button
+                variant="outline"
+                className={secondaryButtonClasses}
+                onClick={() => router.push(`/admin/houses/${house.id}/edit`)}
+              >
+                Editar house
+              </Button>
             </div>
           </div>
+          <div className="flex flex-wrap gap-4 text-xs text-slate-300">
+            <span>ID: {house.id}</span>
+            {createdAtFormatted && <span>Criada em {createdAtFormatted}</span>}
+            <span>Estado atual: {STATUS_LABELS[safeStatus]}</span>
+          </div>
+        </section>
 
-          {/* Mensagem de erro se existir */}
-          {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 px-3 py-2 text-sm text-red-700 dark:text-red-200">
-              {error}
-            </div>
-          )}
+        {error && (
+          <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            {error}
+          </div>
+        )}
 
-          {/* Quick metrics */}
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
-                  Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center gap-2">
-                <StatusBadge status={house.status ?? 'development'} />
-              </CardContent>
-            </Card>
+        <section className="grid gap-4 md:grid-cols-2">
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                STATUS
+              </p>
+              <CardTitle className="text-white">Situacao atual</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <StatusBadge status={safeStatus} />
+              <p className="text-sm text-slate-300">
+                Atualiza o estado para alinhar expectativas com a comunidade.
+              </p>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
-                  Head of House
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {hasHead ? (
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-900 dark:text-gray-100">
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                HEAD
+              </p>
+              <CardTitle className="text-white">Lideranca</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {hasHead ? (
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full border border-white/10 bg-[#03121a]">
+                    {head?.avatar_url ? (
+                      <SafeImage
+                        src={head.avatar_url}
+                        alt={head.full_name || head.username || 'Head'}
+                        className="h-full w-full rounded-full object-cover"
+                        width={48}
+                        height={48}
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-sm font-semibold uppercase text-slate-300">
+                        {(head?.full_name || head?.username || 'HH')
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-white">
                       {head?.full_name || head?.username || 'Head'}
                     </p>
                     {head?.username && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        @{head.username} · {head.role || 'Member'}
+                      <p className="text-xs text-slate-400">
+                        @{head.username} - {head?.role || 'Member'}
                       </p>
                     )}
-                  </div>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="text-red-600 border-red-200 bg-red-50 dark:bg-red-950/30 dark:text-red-200 dark:border-red-900"
-                  >
-                    Missing Head
-                  </Badge>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-gray-600 dark:text-gray-300">
-                  Moderators
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{moderatorsCount}</div>
-                <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                  Users helping to manage missions, content and community tools.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Grid principal: informação + gestão */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Info da House */}
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>House information</CardTitle>
-                <CardDescription>
-                  Sport, country, public profile e breve resumo.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {/* Sport + Country */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
-                      Sport
-                    </p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">
-                      {house.sport_name || 'Unknown sport'}
-                    </p>
-                    {house.sport_code && (
-                      <p className="text-xs text-gray-500 uppercase">
-                        {house.sport_code}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">
-                      Country
-                    </p>
-                    <Badge
-                      variant="outline"
-                      className="uppercase font-mono dark:border-gray-700"
-                    >
-                      {house.country_code || '—'}
-                    </Badge>
                   </div>
                 </div>
+              ) : (
+                <p className="text-sm text-rose-300">
+                  Sem head atribuido. Define um responsavel em Roles.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
-                {/* Public profile preview */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-t pt-4">
-                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                    Este painel é apenas uma visão geral. A edição da House
-                    (sport, país, status, avatar, descrição) é feita em{' '}
-                    <span className="font-mono text-[11px] bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">
-                      /admin/houses/{house.id}/edit
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                MODERATORS
+              </p>
+              <CardTitle className="text-white">Operacao</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-semibold text-white">
+                {moderatorsCount}
+              </p>
+              <p className="text-sm text-slate-300">
+                Utilizadores com funcoes ativas nesta house.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader className="space-y-2 pb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                LOCAL
+              </p>
+              <CardTitle className="text-white">Esporte e pais</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm text-slate-300">
+              <p>
+                <span className="text-white">Esporte:</span>{' '}
+                {house.sport_name || 'Sem nome definido'}
+              </p>
+              <p>
+                <span className="text-white">Codigo:</span>{' '}
+                {house.sport_code || 'N/A'}
+              </p>
+              <p>
+                <span className="text-white">Pais:</span>{' '}
+                {house.country_code || 'N/A'}
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-3">
+          <Card className="md:col-span-2 border border-white/10 bg-[#05212b]">
+            <CardHeader>
+              <CardTitle className="text-white">House information</CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                Perfil publico, descricao, identificadores e avatar.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 rounded-3xl border border-white/10 bg-[#03121a]">
+                  {house.avatar_url ? (
+                    <SafeImage
+                      src={house.avatar_url}
+                      alt={heroTitle}
+                      className="h-full w-full rounded-3xl object-cover"
+                      width={80}
+                      height={80}
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-lg font-semibold uppercase text-slate-300">
+                      {(house.sport_code || house.country_code || 'HOS')
+                        .slice(0, 3)
+                        .toUpperCase()}
                     </span>
-                    . O perfil público está em{' '}
-                    <span className="font-mono text-[11px] bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">
-                      {publicProfileUrl}
-                    </span>
-                    .
-                  </div>
-                  <div className="flex gap-2">
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-slate-300">
+                    Public profile:{' '}
                     <Link
                       href={publicProfileUrl}
                       target="_blank"
-                      className="inline-flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
+                      className="text-cyan-300 hover:text-cyan-200"
                     >
-                      <ExternalLink className="h-3 w-3" />
-                      View public profile
+                      {publicProfileUrl}
                     </Link>
-                    <Link
-                      href="/sports/houses"
-                      target="_blank"
-                      className="inline-flex items-center gap-1 rounded-md border border-gray-200 dark:border-gray-800 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
-                    >
-                      All Houses
-                    </Link>
-                  </div>
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    Edit path:{' '}
+                    <span className="font-mono text-xs text-slate-400">
+                      /admin/houses/{house.id}/edit
+                    </span>
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Gestão rápida: rotas de administração */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  Admin actions
-                </CardTitle>
-                <CardDescription>
-                  Atalhos para editar esta House, a liderança e as permissões.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  className="w-full justify-start gap-2"
-                  variant="outline"
-                  onClick={() =>
-                    router.push(`/admin/houses/${house.id}/edit`)
-                  }
-                >
-                  <Trophy className="h-4 w-4" />
-                  <span>Edit House (sport, country, status, profile)</span>
-                </Button>
-
-                <Button
-                  className="w-full justify-start gap-2"
-                  variant="outline"
-                  onClick={() =>
-                    router.push(`/admin/houses/${house.id}/roles`)
-                  }
-                >
-                  <User className="h-4 w-4" />
-                  <span>Manage Head & moderators</span>
-                </Button>
-
-                <Button
-                  className="w-full justify-start gap-2"
-                  variant="outline"
-                  onClick={() =>
-                    router.push(`/admin/houses/${house.id}/permissions`)
-                  }
-                >
-                  <Shield className="h-4 w-4" />
-                  <span>Manage moderator permissions</span>
-                </Button>
-
-                <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
-                  A gestão detalhada sai deste overview para manter o código
-                  mais limpo. As rotas acima vão usar a mesma API que já existe
-                  hoje, apenas separada por ecrãs.
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                  DESCRICAO
                 </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </main>
+                <p className="mt-2 text-sm text-slate-300">
+                  {house.description?.trim() || 'Sem descricao definida.'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader>
+              <CardTitle className="text-white">Admin actions</CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                Atalhos para gerir papeis, permissoes e conteudo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                variant="outline"
+                className={secondaryButtonClasses}
+                onClick={() => router.push(`/admin/houses/${house.id}/roles`)}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Gerir head e moderadores
+              </Button>
+              <Button
+                variant="outline"
+                className={secondaryButtonClasses}
+                onClick={() =>
+                  router.push(`/admin/houses/${house.id}/permissions`)
+                }
+              >
+                <Shield className="mr-2 h-4 w-4" />
+                Configurar permissoes
+              </Button>
+              <Button
+                variant="outline"
+                className={secondaryButtonClasses}
+                onClick={() => router.push('/admin/missions')}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Abrir missoes
+              </Button>
+              <p className="text-xs text-slate-400">
+                Estas rotas usam o mesmo sistema visual, o que garante
+                consistencia no fluxo de administracao.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+            MODERADORES E PERMISSOES
+          </p>
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader>
+              <CardTitle className="text-white">Lista de moderadores</CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                Tabela escura alinhada com o resto do design system.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {moderators.length === 0 ? (
+                <p className="py-8 text-center text-sm text-slate-300">
+                  Nenhum moderador atribuido ainda. Usa o botao de Roles para
+                  adicionar.
+                </p>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-white/10">
+                  <table className="min-w-full text-left">
+                    <thead>
+                      <tr className="bg-[#05212b] text-xs uppercase tracking-[0.3em] text-slate-300">
+                        <th className="px-4 py-3 font-medium">Membro</th>
+                        <th className="px-4 py-3 font-medium">Funcao</th>
+                        <th className="px-4 py-3 font-medium">Permissoes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {moderators.map((moderator, index) => (
+                        <tr
+                          key={moderator.id}
+                          className={`text-sm ${
+                            index % 2 === 0 ? 'bg-[#000c12]' : 'bg-[#020b11]'
+                          }`}
+                        >
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full border border-white/10 bg-[#03121a]">
+                                {moderator.avatar_url ? (
+                                  <SafeImage
+                                    src={moderator.avatar_url}
+                                    alt={
+                                      moderator.full_name ||
+                                      moderator.username ||
+                                      'Moderator'
+                                    }
+                                    className="h-full w-full rounded-full object-cover"
+                                    width={40}
+                                    height={40}
+                                  />
+                                ) : (
+                                  <span className="flex h-full w-full items-center justify-center text-xs font-semibold uppercase text-slate-300">
+                                    {(moderator.full_name ||
+                                      moderator.username ||
+                                      'MD')
+                                      .slice(0, 2)
+                                      .toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-white">
+                                  {moderator.full_name ||
+                                    moderator.username ||
+                                    'Moderator'}
+                                </p>
+                                {moderator.username && (
+                                  <p className="text-xs text-slate-400">
+                                    @{moderator.username}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-slate-300">
+                            {moderator.role || 'Moderator'}
+                          </td>
+                          <td className="px-4 py-4">
+                            {renderPermissionBadges(moderator.permissions)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     </div>
   );
 }
