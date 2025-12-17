@@ -19,7 +19,8 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Loader2, ArrowLeft, Trophy } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, ArrowLeft, Trophy, Building2 } from 'lucide-react';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -76,6 +77,13 @@ const BASE_COUNTRY_OPTIONS: { code: string; label: string }[] = [
   { code: 'BR', label: 'Brazil' },
 ];
 
+const inputClasses =
+  'bg-[#000c12] border border-white/10 text-white placeholder:text-slate-400 focus-visible:ring-cyan-300 focus-visible:border-cyan-300';
+const helperClasses = 'mt-2 text-xs text-slate-400';
+const labelClasses = 'mb-2 block text-sm font-medium text-slate-200';
+const secondaryButtonClasses =
+  'border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60';
+
 export default function EditHousePage() {
   const router = useRouter();
   const params = useParams<{ houseId: string }>();
@@ -98,7 +106,6 @@ export default function EditHousePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Proteger rota: apenas Admin / Super Admin
   useEffect(() => {
     if (authLoading) return;
 
@@ -108,7 +115,6 @@ export default function EditHousePage() {
     }
   }, [authLoading, user, router]);
 
-  // Carregar sports + dados da House em paralelo
   useEffect(() => {
     const fetchData = async () => {
       if (!houseId) return;
@@ -138,7 +144,6 @@ export default function EditHousePage() {
         const sportsJson: SportsApiResponse = await sportsRes.json();
         const houseJson: HouseDetailApiResponse = await houseRes.json();
 
-        // Sports
         if (!sportsRes.ok || !sportsJson.success) {
           console.error('Error loading sports:', sportsJson.error);
           setError(sportsJson.error || 'Error loading sports.');
@@ -147,7 +152,6 @@ export default function EditHousePage() {
           setSports(sportsJson.sports || []);
         }
 
-        // House
         if (!houseRes.ok || !houseJson.success || !houseJson.house) {
           console.error('Error loading house detail:', houseJson.error);
           setError(
@@ -157,20 +161,15 @@ export default function EditHousePage() {
         } else {
           const h = houseJson.house;
           setHouse(h);
-
-          // status
           setStatus(h.status ?? 'development');
 
-          // country
           if (h.country_code) {
             setCountryCode(h.country_code);
           }
 
-          // avatar & description
           setAvatarUrl(h.avatar_url ?? '');
           setDescription(h.description ?? '');
 
-          // tentar deduzir sportId
           if (h.sport_id) {
             setSportId(h.sport_id);
           } else if (h.sport_code) {
@@ -215,8 +214,8 @@ export default function EditHousePage() {
     return BASE_COUNTRY_OPTIONS;
   }, [countryCode]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setError(null);
 
     if (!houseId || !house) {
@@ -286,10 +285,10 @@ export default function EditHousePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-300">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Loading...</span>
+          <span>Loading House of Sports...</span>
         </div>
       </div>
     );
@@ -297,14 +296,18 @@ export default function EditHousePage() {
 
   if (!isLoading && !house) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-center">
-          <p className="text-gray-700 dark:text-gray-200 mb-4">
+      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white px-4">
+        <div className="rounded-3xl border border-white/10 bg-[#05212b] px-6 py-8 text-center space-y-4">
+          <p className="text-sm text-slate-300">
             {error || 'House not found or could not be loaded.'}
           </p>
-          <Button variant="outline" onClick={goBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+          <Button
+            variant="outline"
+            className={secondaryButtonClasses}
+            onClick={goBack}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar
           </Button>
         </div>
       </div>
@@ -312,189 +315,213 @@ export default function EditHousePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
-      <div className="container mx-auto px-4 max-w-3xl">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-blue-700 dark:text-blue-400">
-          ADMIN · Edit House of Sports
-        </h1>
-
-        <button
-          onClick={goBack}
-          className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to House
-        </button>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center">
-                <Trophy className="h-6 w-6 text-yellow-500" />
-              </div>
-              <div>
-                <CardTitle>
-                  Edit House {house?.name ? `· ${house.name}` : ''}
-                </CardTitle>
-                <CardDescription>
-                  Adjust sport, country, status and public profile fields for
-                  this House.
-                </CardDescription>
+    <div className="min-h-screen bg-[#000c12] text-white px-4 py-10 md:px-10">
+      <div className="mx-auto w-full max-w-4xl space-y-8">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#04141c] via-[#03121a] to-[#020b11] p-6 md:p-10 shadow-2xl shadow-black/40">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                HOUSES EDIT
+              </p>
+              <div className="flex items-start gap-4">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#05212b]">
+                  <Building2 className="h-7 w-7 text-cyan-300" />
+                </span>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-semibold text-white">
+                    Atualizar perfil da House
+                  </h1>
+                  <p className="text-sm text-slate-300">
+                    Define desporto, pais, estado e texto pblico usando o mesmo
+                    design system aplicado no painel das Houses.
+                  </p>
+                </div>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 px-3 py-2 text-sm text-red-700 dark:text-red-200">
-                {error}
+            <Button
+              variant="outline"
+              className={secondaryButtonClasses}
+              onClick={goBack}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para overview
+            </Button>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <Card className="border border-white/10 bg-[#05212b]">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#03121a]">
+                  <Trophy className="h-6 w-6 text-cyan-300" />
+                </div>
+                <div>
+                  <CardTitle className="text-white text-lg">
+                    Editar House {house?.name ? `- ${house.name}` : ''}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-300">
+                    Ajusta rapidamente atributos publicos da House e garante que
+                    os formulrios seguem o design system.
+                  </CardDescription>
+                </div>
               </div>
-            )}
-
-            {isLoading ? (
-              <div className="flex items-center justify-center py-10 text-gray-500 gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading data...
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Sport */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Sport
-                  </label>
-                  <Select
-                    value={sportId}
-                    onValueChange={(value) => setSportId(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a sport" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sports.map((sport) => (
-                        <SelectItem key={sport.id} value={sport.id}>
-                          {sport.name}
-                          {sport.code && (
-                            <span className="ml-2 text-[11px] uppercase text-gray-400">
-                              ({sport.code})
-                            </span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    This defines which discipline this House belongs to.
-                  </p>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <div className="mb-4 rounded-2xl border border-white/10 bg-[#05212b]/70 px-4 py-3 text-sm text-slate-200">
+                  {error}
                 </div>
+              )}
 
-                {/* Country */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Country
-                  </label>
-                  <Select
-                    value={countryCode}
-                    onValueChange={(value) => setCountryCode(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countryOptions.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          {c.label} ({c.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Used for filters and in the generated House name.
-                  </p>
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2 py-10 text-slate-300">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  A carregar dados...
                 </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div>
+                      <label className={labelClasses}>Sport</label>
+                      <Select
+                        value={sportId}
+                        onValueChange={(value) => setSportId(value)}
+                      >
+                        <SelectTrigger className={inputClasses}>
+                          <SelectValue placeholder="Seleciona o desporto" />
+                        </SelectTrigger>
+                        <SelectContent className="border border-white/10 bg-[#03121a] text-white">
+                          {sports.map((sport) => (
+                            <SelectItem key={sport.id} value={sport.id}>
+                              {sport.name}
+                              {sport.code && (
+                                <span className="ml-2 text-[11px] uppercase text-slate-400">
+                                  ({sport.code})
+                                </span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className={helperClasses}>
+                        Define qual a disciplina associada a esta House.
+                      </p>
+                    </div>
 
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Status
-                  </label>
-                  <Select
-                    value={status}
-                    onValueChange={(value) =>
-                      setStatus(value as HouseStatus)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>
-                          {s.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    You can always change this later from the House admin
-                    panel.
-                  </p>
-                </div>
+                    <div>
+                      <label className={labelClasses}>Country</label>
+                      <Select
+                        value={countryCode}
+                        onValueChange={(value) => setCountryCode(value)}
+                      >
+                        <SelectTrigger className={inputClasses}>
+                          <SelectValue placeholder="Seleciona o pais" />
+                        </SelectTrigger>
+                        <SelectContent className="border border-white/10 bg-[#03121a] text-white">
+                          {countryOptions.map((c) => (
+                            <SelectItem key={c.code} value={c.code}>
+                              {c.label} ({c.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className={helperClasses}>
+                        Utilizado em filtros e no nome publico da House.
+                      </p>
+                    </div>
+                  </div>
 
-                {/* Avatar URL */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Avatar URL (optional)
-                  </label>
-                  <Input
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="https://... (House image)"
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    For now, we use a direct image URL. Later this can be
-                    replaced with an upload system.
-                  </p>
-                </div>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div>
+                      <label className={labelClasses}>Status</label>
+                      <Select
+                        value={status}
+                        onValueChange={(value) =>
+                          setStatus(value as HouseStatus)
+                        }
+                      >
+                        <SelectTrigger className={inputClasses}>
+                          <SelectValue placeholder="Estado atual" />
+                        </SelectTrigger>
+                        <SelectContent className="border border-white/10 bg-[#03121a] text-white">
+                          {STATUS_OPTIONS.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className={helperClasses}>
+                        Aparece em todas as listagens e pode ser alterado a
+                        qualquer momento.
+                      </p>
+                    </div>
+                    <div>
+                      <label className={labelClasses}>
+                        Avatar URL (optional)
+                      </label>
+                      <Input
+                        value={avatarUrl}
+                        onChange={(event) => setAvatarUrl(event.target.value)}
+                        placeholder="https://... (House image)"
+                        className={inputClasses}
+                      />
+                      <p className={helperClasses}>
+                        Suporta apenas URL direto para imagem por agora.
+                      </p>
+                    </div>
+                  </div>
 
-                {/* Short description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Short description
-                  </label>
-                  <textarea
-                    rows={4}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="Public description for this House."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    You can write in Portuguese for now. Later this will be
-                    internationalised.
-                  </p>
-                </div>
+                  <div>
+                    <label className={labelClasses}>Short description</label>
+                    <Textarea
+                      rows={4}
+                      value={description}
+                      onChange={(event) => setDescription(event.target.value)}
+                      placeholder="Public description for this House."
+                      className={inputClasses}
+                    />
+                    <p className={helperClasses}>
+                      Usa portugues ou ingles. Futuramente sera traduzido.
+                    </p>
+                  </div>
 
-                {/* Actions */}
-                <div className="pt-2 flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={goBack}
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    Save changes
-                  </Button>
-                </div>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      className="text-xs text-slate-300 hover:text-cyan-300"
+                    >
+                      Voltar sem guardar
+                    </button>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={secondaryButtonClasses}
+                        onClick={goBack}
+                        disabled={submitting}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={submitting}
+                        className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                      >
+                        {submitting && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Guardar alteracoes
+                      </Button>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+        </section>
       </div>
     </div>
   );
