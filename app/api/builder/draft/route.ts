@@ -20,6 +20,31 @@ type DraftResponse = {
 };
 
 const db = supabaseAdmin ?? supabase;
+const BUILDER_DRAFTS_MIGRATION =
+  'supabase/migrations/20251216121500_add_course_curriculum_and_builder_drafts.sql';
+
+const isMissingDraftsTableError = (error: any) => {
+  if (!error) return false;
+  const code = (error as any).code || (error as any).details;
+  const message = (error as any).message || (error as any).hint;
+  return (
+    code === '42P01' ||
+    (typeof message === 'string' &&
+      message.toLowerCase().includes('builder_drafts'))
+  );
+};
+
+const missingDraftsResponse = (extra?: Record<string, unknown>) =>
+  NextResponse.json(
+    {
+      success: false,
+      error:
+        'Builder drafts storage is not configured. Run the course-builder migration to create builder_drafts.',
+      requiresMigration: BUILDER_DRAFTS_MIGRATION,
+      ...extra,
+    },
+    { status: 200 },
+  );
 
 const isValidEntityType = (value: unknown): value is EntityType =>
   value === 'course' || value === 'blog';
@@ -51,6 +76,13 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (error) {
+      if (isMissingDraftsTableError(error)) {
+        console.warn(
+          '[builder-drafts] Missing builder_drafts table. Please run:',
+          BUILDER_DRAFTS_MIGRATION,
+        );
+        return missingDraftsResponse({ draft: null });
+      }
       console.error('Failed to read builder draft:', error);
       return NextResponse.json(
         { success: false, error: 'Could not load draft.' },
@@ -120,6 +152,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      if (isMissingDraftsTableError(error)) {
+        console.warn(
+          '[builder-drafts] Missing builder_drafts table. Please run:',
+          BUILDER_DRAFTS_MIGRATION,
+        );
+        return missingDraftsResponse({ draft: null });
+      }
       console.error('Failed to save builder draft:', error);
       return NextResponse.json(
         { success: false, error: 'Could not save draft.' },
@@ -173,6 +212,13 @@ export async function DELETE(request: NextRequest) {
       .eq('entity_id', body.entityId);
 
     if (error) {
+      if (isMissingDraftsTableError(error)) {
+        console.warn(
+          '[builder-drafts] Missing builder_drafts table. Please run:',
+          BUILDER_DRAFTS_MIGRATION,
+        );
+        return missingDraftsResponse();
+      }
       console.error('Failed to delete builder draft:', error);
       return NextResponse.json(
         { success: false, error: 'Could not delete draft.' },
