@@ -27,15 +27,7 @@ export async function GET(
   try {
     const { data, error } = await supabase
       .from('courses')
-      .select(
-        `
-        *,
-        modules:modules(
-          *,
-          lessons:lessons(*)
-        )
-      `,
-      )
+      .select('*')
       .eq('id', params.id)
       .single();
 
