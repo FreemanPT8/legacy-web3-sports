@@ -34,6 +34,8 @@ type Lesson = {
 type Module = {
   id: string;
   lessons?: Lesson[];
+  xp_reward?: number | null;
+  xpReward?: number | null;
 };
 
 type Course = {
@@ -42,6 +44,8 @@ type Course = {
   description: any;
   level?: string | null;
   xp_threshold: number;
+  xp_reward?: number | null;
+  xp_reward_on_complete?: number | null;
   image_url?: string | null;
   thumbnail_url?: string | null;
   modules?: Module[];
@@ -52,6 +56,20 @@ type Course = {
   total_lessons?: number;
   total_xp?: number;
   xp_distributed_total?: number;
+};
+
+const getModuleBonusXP = (module: Module) => {
+  if (typeof module?.xp_reward === 'number') return module.xp_reward;
+  if (typeof module?.xpReward === 'number') return module.xpReward;
+  return 0;
+};
+
+const getCourseCompletionBonus = (course: Course) => {
+  if (typeof course?.xp_reward === 'number') return course.xp_reward;
+  if (typeof course?.xp_reward_on_complete === 'number') {
+    return course.xp_reward_on_complete;
+  }
+  return 0;
 };
 
 export default function CoursesPage() {
@@ -233,18 +251,28 @@ export default function CoursesPage() {
                       0,
                     );
 
+                  const lessonsXP = modulesArray.reduce((acc, m) => {
+                    if (!Array.isArray(m.lessons)) return acc;
+                    return (
+                      acc +
+                      m.lessons.reduce(
+                        (accL, l) => accL + (l.xp_reward || 0),
+                        0,
+                      )
+                    );
+                  }, 0);
+
+                  const moduleBonusXP = modulesArray.reduce(
+                    (acc, module) => acc + getModuleBonusXP(module),
+                    0,
+                  );
+
+                  const courseBonusXP = getCourseCompletionBonus(course);
+                  const computedTotalXP = lessonsXP + moduleBonusXP + courseBonusXP;
                   const totalXP =
-                    course.total_xp ??
-                    modulesArray.reduce((acc, m) => {
-                      if (!Array.isArray(m.lessons)) return acc;
-                      return (
-                        acc +
-                        m.lessons.reduce(
-                          (accL, l) => accL + (l.xp_reward || 0),
-                          0,
-                        )
-                      );
-                    }, 0);
+                    typeof course.total_xp === 'number' && course.total_xp > 0
+                      ? course.total_xp
+                      : computedTotalXP;
 
                   const xpDistributed = course.xp_distributed_total ?? 0;
 
