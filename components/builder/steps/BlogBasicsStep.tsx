@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBuilderState } from '@/hooks/useBuilderState';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
-import { Library, ImagePlus } from 'lucide-react';
+import { Library, ImagePlus, Sparkles } from 'lucide-react';
 import type {
   LangCode,
   BlogBuilderState,
@@ -26,6 +26,8 @@ import type {
 } from '@/types/builder';
 import { LANGUAGES } from '@/types/builder';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
+import { useToast } from '@/hooks/use-toast';
 
 const CATEGORIES = [
   'Blockchain',
@@ -52,6 +54,8 @@ export function BlogBasicsStep() {
   const [language, setLanguage] = useState<LangCode>('en');
   const [slugTouched, setSlugTouched] = useState(false);
   const mediaLibrary = useMediaLibrary();
+  const { translate, isTranslating } = useAutoTranslate();
+  const { toast } = useToast();
 
   const applyPatch = (patch: Partial<BlogBuilderState>) =>
     patchState(patch as Partial<BuilderState>);
@@ -63,6 +67,53 @@ export function BlogBasicsStep() {
   const excerptValue = blogState.longDescription[language] ?? '';
 
   const suggestedSlug = useMemo(() => slugify(titleValue), [titleValue]);
+  const remainingLanguages = LANGUAGES.map((lang) => lang.code).filter(
+    (code) => code !== language,
+  );
+
+  const handleTranslateField = async (
+    field: 'title' | 'longDescription',
+    value: string,
+  ) => {
+    if (!value.trim()) {
+      toast({
+        title: 'Sem conteúdo',
+        description: 'Escreve algo primeiro antes de traduzir.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const translations = await translate(
+        value,
+        language,
+        remainingLanguages,
+      );
+
+      applyPatch({
+        [field]: {
+          ...blogState[field],
+          ...translations,
+        } as BlogBuilderState[typeof field],
+      });
+
+      toast({
+        title: 'Traduções aplicadas',
+        description: 'Atualizámos as restantes línguas automaticamente.',
+      });
+    } catch (error) {
+      console.error('Blog translation error:', error);
+      toast({
+        title: 'Erro na tradução',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível traduzir este conteúdo.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -106,6 +157,17 @@ export function BlogBasicsStep() {
             <p className="mt-1 text-xs text-gray-500">
               {titleValue.length} characters
             </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              disabled={isTranslating || remainingLanguages.length === 0}
+              onClick={() => handleTranslateField('title', titleValue)}
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-cyan-400" />
+              Traduzir título
+            </Button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -161,6 +223,16 @@ export function BlogBasicsStep() {
               minRows={4}
             />
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isTranslating || remainingLanguages.length === 0}
+            onClick={() => handleTranslateField('longDescription', excerptValue)}
+          >
+            <Sparkles className="mr-2 h-4 w-4 text-cyan-400" />
+            Traduzir excerto
+          </Button>
 
           <CoverImageSection
             imageUrl={blogState.coverImage?.url || ''}

@@ -5,11 +5,16 @@ import { useBuilderState } from '@/hooks/useBuilderState';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Sparkles } from 'lucide-react';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
+import { useToast } from '@/hooks/use-toast';
 
 export function BlogContentStep() {
   const { state, patchState } = useBuilderState();
   const blogState = state as BlogBuilderState;
   const [language, setLanguage] = useState<LangCode>('en');
+  const { translate, isTranslating } = useAutoTranslate();
+  const { toast } = useToast();
 
   const currentLangLabel =
     LANGUAGES.find((lang) => lang.code === language)?.name || language;
@@ -22,6 +27,50 @@ export function BlogContentStep() {
   const wordCount = plainText.length ? plainText.split(' ').length : 0;
   const estimatedMinutes = Math.max(1, Math.ceil(wordCount / 200));
   const canSyncReadingTime = blogState.readingTimeMinutes !== estimatedMinutes;
+  const remainingLanguages = LANGUAGES.map((lang) => lang.code).filter(
+    (code) => code !== language,
+  );
+
+  const handleTranslateContent = async () => {
+    if (!bodyValue.trim()) {
+      toast({
+        title: 'Sem conteúdo',
+        description: 'Escreve algo primeiro antes de traduzir.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const translations = await translate(
+        bodyValue,
+        language,
+        remainingLanguages,
+      );
+
+      patchState({
+        content: {
+          ...blogState.content,
+          ...translations,
+        },
+      });
+
+      toast({
+        title: 'Traduções adicionadas',
+        description: 'Atualizámos automaticamente as restantes línguas.',
+      });
+    } catch (error) {
+      console.error('Blog content translation error:', error);
+      toast({
+        title: 'Erro na tradução',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível traduzir o conteúdo.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -77,6 +126,16 @@ export function BlogContentStep() {
             }
           >
             Use estimate
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isTranslating || remainingLanguages.length === 0}
+            onClick={handleTranslateContent}
+          >
+            <Sparkles className="mr-2 h-4 w-4 text-cyan-400" />
+            Traduzir restantes línguas
           </Button>
         </div>
       </div>

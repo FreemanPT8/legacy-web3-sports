@@ -14,13 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CalendarClock, ImageIcon } from 'lucide-react';
+import { CalendarClock, ImageIcon, Sparkles } from 'lucide-react';
 import { LANGUAGES, type LangCode, type CourseBuilderState } from '@/types/builder';
 import { useBuilderState } from '@/hooks/useBuilderState';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { useScheduleCET } from '@/hooks/useScheduleCET';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
+import { useToast } from '@/hooks/use-toast';
 
 const slugify = (value: string) =>
   value
@@ -43,6 +45,8 @@ export function CourseBasicsStep() {
   const mediaLibrary = useMediaLibrary();
   const { timezone, toInputValues, fromInput, validateFutureDate } =
     useScheduleCET();
+  const { translate, isTranslating } = useAutoTranslate();
+  const { toast } = useToast();
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
   const [scheduleError, setScheduleError] = useState<string | null>(null);
@@ -64,6 +68,9 @@ export function CourseBasicsStep() {
     const parsed = toInputValues(new Date().toISOString());
     return parsed.date;
   }, [toInputValues]);
+  const remainingLanguages = LANGUAGES.map((lang) => lang.code).filter(
+    (code) => code !== language,
+  );
 
   useEffect(() => {
     if (courseState.schedule.publishAt) {
@@ -126,6 +133,53 @@ export function CourseBasicsStep() {
     applySchedule(nextDate, nextTime);
   };
 
+  const handleTranslateField = async (
+    field: 'title' | 'longDescription',
+    value: string,
+  ) => {
+    if (!value.trim()) {
+      toast({
+        title: 'Sem conteúdo',
+        description: 'Escreve algo antes de traduzir.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const translations = await translate(
+        value,
+        language,
+        remainingLanguages,
+      );
+
+      if (field === 'title') {
+        patchState({
+          title: { ...courseState.title, ...translations },
+        });
+      } else {
+        patchState({
+          longDescription: { ...courseState.longDescription, ...translations },
+        });
+      }
+
+      toast({
+        title: 'Traduções aplicadas',
+        description: 'Atualizámos automaticamente as outras línguas.',
+      });
+    } catch (error) {
+      console.error('Course translate error:', error);
+      toast({
+        title: 'Erro na tradução',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível traduzir o conteúdo.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-8">
       <section className="space-y-3">
@@ -161,6 +215,18 @@ export function CourseBasicsStep() {
               placeholder="(NOME DO CURSO)"
               className="text-lg font-semibold"
             />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isTranslating || remainingLanguages.length === 0}
+                onClick={() => handleTranslateField('title', titleValue)}
+              >
+                <Sparkles className="mr-2 h-4 w-4 text-cyan-400" />
+                Traduzir título
+              </Button>
+            </div>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
@@ -209,9 +275,23 @@ export function CourseBasicsStep() {
             placeholder="Use headings, lists, callouts, embeds..."
             minRows={8}
           />
-          <p className="text-xs text-gray-500">
-            A richer editor is coming soon; this version lets you validate content flow.
-          </p>
+          <div className="flex flex-wrap items-center justify-between text-xs text-gray-500">
+            <p>
+              A richer editor is coming soon; this versão permite validar o fluxo do conteúdo.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isTranslating || remainingLanguages.length === 0}
+              onClick={() =>
+                handleTranslateField('longDescription', descriptionValue)
+              }
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-cyan-400" />
+              Traduzir descrição
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-4 rounded-2xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
