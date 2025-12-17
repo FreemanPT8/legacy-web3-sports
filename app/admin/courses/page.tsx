@@ -201,7 +201,7 @@ export default function CoursesManagementPage() {
       try {
         const token = getToken();
         const response = await fetch(
-          '/api/admin/courses?includeModules=true',
+          '/api/admin/courses',
           {
             headers: {
               'Content-Type': 'application/json',
@@ -725,3 +725,4 @@ export default function CoursesManagementPage() {
     </div>
   );
 }
+
