@@ -138,10 +138,11 @@ export default function BlogPostPage() {
     );
   }, [post]);
 
-  const missingCurrentLanguage =
+  const missingCurrentLanguage = Boolean(
     post &&
-    availableLanguages.length > 0 &&
-    !availableLanguages.some((lang) => lang.code === language);
+      availableLanguages.length > 0 &&
+      !availableLanguages.some((lang) => lang.code === language),
+  );
 
   const showLanguageDialog =
     Boolean(post) &&

@@ -224,9 +224,10 @@ export default function LessonPage() {
     (lesson.content || {}) as Partial<Record<LangCode, string>>,
   );
 
-  const missingCurrentLanguage =
+  const missingCurrentLanguage = Boolean(
     availableLanguages.length > 0 &&
-    !availableLanguages.some((lang) => lang.code === language);
+      !availableLanguages.some((lang) => lang.code === language),
+  );
   const showLanguageDialog =
     missingCurrentLanguage && dismissedLanguage !== language;
 
