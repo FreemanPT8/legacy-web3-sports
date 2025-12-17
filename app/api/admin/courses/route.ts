@@ -13,23 +13,12 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    // Se no futuro quisermos: ?includeModules=true ou ?published=true
-    const includeModules = searchParams.get('includeModules') === 'true';
+    // ?published=true para filtrar apenas cursos publicados
     const onlyPublished = searchParams.get('published') === 'true';
-
-    const selectClause = includeModules
-      ? `
-        *,
-        modules:modules(
-          *,
-          lessons:lessons(*)
-        )
-      `
-      : '*';
 
     let query = supabase
       .from('courses')
-      .select(selectClause)
+      .select('*')
       .order('order', { ascending: true });
 
     if (onlyPublished) {
