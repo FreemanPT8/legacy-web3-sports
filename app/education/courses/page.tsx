@@ -72,6 +72,9 @@ const getCourseCompletionBonus = (course: Course) => {
   return 0;
 };
 
+const stripHtml = (value: string) =>
+  value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
 export default function CoursesPage() {
   const router = useRouter();
   const { user, getToken } = useAuth();
@@ -231,9 +234,11 @@ export default function CoursesPage() {
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {courses.map((course) => {
                   const title = getMultilingualContent(course.title, language);
-                  const description = getMultilingualContent(
-                    course.description,
-                    language,
+                  const description = stripHtml(
+                    getMultilingualContent(
+                      course.description,
+                      language,
+                    ),
                   );
 
                   const modulesArray: Module[] = Array.isArray(course.modules)
@@ -319,7 +324,7 @@ export default function CoursesPage() {
 
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-3">
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <CardTitle className="flex items-center gap-2 text-lg text-white line-clamp-2">
                               {title}
                               {isCourseCreator && (
@@ -335,7 +340,7 @@ export default function CoursesPage() {
                               </CardDescription>
                             )}
                           </div>
-                          <div className="flex flex-col items-end gap-1">
+                          <div className="flex flex-col items-end gap-1 shrink-0">
                             {getLevelBadge(course.level)}
                             {xpRequired > 0 && (
                               <Badge

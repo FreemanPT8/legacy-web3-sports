@@ -45,6 +45,27 @@ export async function GET(
       );
     }
 
+    const { data: legacyModules, error: legacyModulesError } = await db
+      .from('modules')
+      .select('xp_reward')
+      .eq('course_id', id);
+
+    if (legacyModulesError) {
+      console.error(
+        'Error fetching legacy module rewards for course detail:',
+        legacyModulesError,
+      );
+    }
+
+    const legacyModuleBonus = (legacyModules || []).reduce(
+      (sum: number, moduleRow: any) =>
+        sum +
+        (typeof moduleRow?.xp_reward === 'number'
+          ? moduleRow.xp_reward
+          : 0),
+      0,
+    );
+
     // 2) Curriculum (tópicos -> lessons)
     const curriculumTopics: any[] = Array.isArray(
       rawCourse.curriculum?.topics,
@@ -167,6 +188,31 @@ export async function GET(
       lessonsByModule[moduleId].push(lesson);
     });
 
+    const extractModuleBonus = (moduleLike: any) => {
+      if (typeof moduleLike?.xp_reward === 'number') return moduleLike.xp_reward;
+      if (typeof moduleLike?.xpReward === 'number') return moduleLike.xpReward;
+      if (
+        moduleLike?.metadata &&
+        typeof moduleLike.metadata.xpReward === 'number'
+      ) {
+        return moduleLike.metadata.xpReward;
+      }
+      return 0;
+    };
+
+    const extractCourseBonus = (courseLike: any) => {
+      if (typeof courseLike?.xp_reward === 'number') return courseLike.xp_reward;
+      if (typeof courseLike?.xp_reward_on_complete === 'number')
+        return courseLike.xp_reward_on_complete;
+      if (
+        courseLike?.curriculum?.metadata &&
+        typeof courseLike.curriculum.metadata.xpReward === 'number'
+      ) {
+        return courseLike.curriculum.metadata.xpReward;
+      }
+      return 0;
+    };
+
     const normalizedModules = curriculumTopics.map(
       (topic: any, topicIndex: number) => {
         const moduleId = topic?.id || `topic-${topicIndex + 1}`;
@@ -246,6 +292,7 @@ export async function GET(
           id: moduleId,
           author_name: moduleAuthorName,
           isCreator: isModuleCreator,
+          xp_reward: extractModuleBonus(topic),
           lessons: moduleLessons,
           xp_available: moduleXpAvailable,
           xp_distributed: moduleXpDistributed,
@@ -264,20 +311,29 @@ export async function GET(
       0,
     );
 
-    const totalXP = normalizedModules.reduce(
-      (acc: number, m: any) => {
-        if (!Array.isArray(m.lessons)) return acc;
-        return (
-          acc +
-          m.lessons.reduce(
-            (sum: number, l: any) =>
-              sum + (l.xp_reward || 0),
-            0,
-          )
-        );
-      },
+    const lessonsXP = normalizedModules.reduce((acc: number, m: any) => {
+      if (!Array.isArray(m.lessons)) return acc;
+      return (
+        acc +
+        m.lessons.reduce(
+          (sum: number, l: any) => sum + (l.xp_reward || 0),
+          0,
+        )
+      );
+    }, 0);
+
+    const moduleBonusesFromCurriculum = normalizedModules.reduce(
+      (acc: number, module: any) => acc + extractModuleBonus(module),
       0,
     );
+
+    const courseCompletionBonus = extractCourseBonus(rawCourse);
+
+    const totalXP =
+      lessonsXP +
+      moduleBonusesFromCurriculum +
+      legacyModuleBonus +
+      courseCompletionBonus;
 
     const courseXpDistributed = normalizedModules.reduce(
       (acc: number, module: any) =>
