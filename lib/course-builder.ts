@@ -121,13 +121,26 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
     Array.isArray(curriculumWithoutAttachments.topics)
       ? {
           ...curriculumWithoutAttachments,
-          topics: curriculumWithoutAttachments.topics.map((topic: any) => ({
-            ...topic,
-            description:
-              typeof topic?.description === 'string'
-                ? topic.description
-                : '',
-          })),
+          topics: curriculumWithoutAttachments.topics.map((topic: any) => {
+            const normalizedLessons = Array.isArray(topic?.lessons)
+              ? topic.lessons.map((lesson: any) => ({
+                  ...lesson,
+                  estimated_time:
+                    typeof lesson?.estimated_time === 'number'
+                      ? lesson.estimated_time
+                      : 10,
+                }))
+              : [];
+
+            return {
+              ...topic,
+              description:
+                typeof topic?.description === 'string'
+                  ? topic.description
+                  : '',
+              lessons: normalizedLessons,
+            };
+          }),
         }
       : base.curriculum;
   const attachmentsSource =

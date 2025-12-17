@@ -4,6 +4,7 @@ import { LANGUAGES, type LangCode, type BlogBuilderState } from '@/types/builder
 import { useBuilderState } from '@/hooks/useBuilderState';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export function BlogContentStep() {
   const { state, patchState } = useBuilderState();
@@ -42,26 +43,42 @@ export function BlogContentStep() {
           </Badge>
         ))}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-gray-200 px-4 py-3 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-dashed border-gray-200 px-4 py-3 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300">
         <div>
           <p className="font-semibold">Content stats</p>
           <p className="text-xs text-gray-500">
-            {wordCount.toLocaleString()} words - ~{estimatedMinutes} min read
+            {wordCount.toLocaleString()} words · estimated {estimatedMinutes} min read
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={wordCount === 0 || !canSyncReadingTime}
-          onClick={() =>
-            patchState({
-              readingTimeMinutes: estimatedMinutes,
-            })
-          }
-        >
-          Apply to reading time
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="space-y-1 text-xs text-gray-500">
+            <p className="font-semibold uppercase">Reading time (min)</p>
+            <Input
+              type="number"
+              min={1}
+              value={blogState.readingTimeMinutes}
+              onChange={(event) =>
+                patchState({
+                  readingTimeMinutes: Math.max(1, Number(event.target.value) || 1),
+                })
+              }
+              className="w-24"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={wordCount === 0 || !canSyncReadingTime}
+            onClick={() =>
+              patchState({
+                readingTimeMinutes: estimatedMinutes,
+              })
+            }
+          >
+            Use estimate
+          </Button>
+        </div>
       </div>
       <RichTextEditor
         value={bodyValue}

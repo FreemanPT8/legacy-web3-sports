@@ -633,7 +633,18 @@ function LessonCard({
             </div>
             <div>
               <p className="text-[11px] uppercase text-gray-500">Duration (min)</p>
-              <Input type="number" placeholder="0" disabled />
+              <Input
+                type="number"
+                min={1}
+                value={lesson.estimated_time ?? 10}
+                onChange={(event) => {
+                  const nextValue = Math.max(1, Number(event.target.value) || 1);
+                  onChange((prev) => ({
+                    ...prev,
+                    estimated_time: nextValue,
+                  }));
+                }}
+              />
             </div>
           </div>
         </div>
@@ -650,6 +661,9 @@ function LessonCard({
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
         <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
           {attachmentCount} attachment{attachmentCount === 1 ? '' : 's'}
+        </Badge>
+        <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+          {lesson.estimated_time || 10} min read
         </Badge>
         {lesson.video?.url && (
           <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">

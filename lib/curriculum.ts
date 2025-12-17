@@ -29,6 +29,7 @@ export const createLesson = (overrides?: Partial<LessonState>): LessonState => (
   title: 'New lesson',
   content: '',
   xpReward: null,
+  estimated_time: 10,
   video: null,
   attachments: [],
   schedule: cloneSchedule(),

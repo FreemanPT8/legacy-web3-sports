@@ -89,6 +89,7 @@ export interface LessonState {
   title: string;
   content: string;
   xpReward?: number | null;
+  estimated_time: number;
   video?: MediaAsset | null;
   attachments: Attachment[];
   schedule: ScheduleConfig;
