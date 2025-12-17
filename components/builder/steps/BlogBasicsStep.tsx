@@ -306,7 +306,7 @@ function CoverImageSection({
         )}
       </div>
       {imageUrl ? (
-        <div className="relative mt-2 h-48 w-full overflow-hidden rounded-xl border">
+        <div className="relative mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-slate-900/40 aspect-[16/9]">
           <Image
             src={imageUrl}
             alt="Blog cover"
