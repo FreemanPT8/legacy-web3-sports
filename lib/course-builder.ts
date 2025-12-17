@@ -140,9 +140,6 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
     specialRequirements: Array.isArray(course?.special_requirements)
       ? course.special_requirements
       : base.specialRequirements,
-    attachments: Array.isArray(course?.attachments)
-      ? course.attachments
-      : base.attachments,
     seo: course?.seo || base.seo,
     schedule: {
       publishAt: course?.publish_at || null,
