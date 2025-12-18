@@ -190,8 +190,8 @@ export default function CreateHousePage() {
                   </SelectTrigger>
                   <SelectContent>
                     {loadingSports ? (
-                      <SelectItem value="">
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                      <SelectItem value="loading" disabled className="pointer-events-none opacity-70">
+                        <Loader2 className="h-3 w-3 animate-spin mr-2" />
                         Loading...
                       </SelectItem>
                     ) : (
