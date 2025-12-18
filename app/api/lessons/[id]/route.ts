@@ -105,6 +105,7 @@ export async function GET(
     const authorIds = new Set<string>();
     if (matchedLesson.author_id) authorIds.add(matchedLesson.author_id);
     if (matchedTopic?.author_id) authorIds.add(matchedTopic.author_id);
+    if (matchedCourse?.author_id) authorIds.add(matchedCourse.author_id);
 
     const authorMap: Record<string, string> = {};
 
@@ -158,9 +159,35 @@ export async function GET(
       completionsArray.some((c) => c.user_id && c.user_id === userId);
 
     // 6) Normalizar dados da lesson
+    const resolveNumber = (value: any, fallback: number | null = null) =>
+      typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+
+    const resolvedAuthorId =
+      matchedLesson.author_id ||
+      matchedTopic?.author_id ||
+      matchedCourse?.author_id ||
+      null;
+
+    const xpReward =
+      resolveNumber(matchedLesson.xp_reward) ??
+      resolveNumber(matchedLesson.xpReward) ??
+      resolveNumber(matchedLesson?.xp?.reward) ??
+      resolveNumber(matchedTopic?.xp_reward) ??
+      resolveNumber(matchedTopic?.xpReward) ??
+      resolveNumber(matchedTopic?.metadata?.xpReward) ??
+      resolveNumber(matchedCourse?.curriculum?.metadata?.xpReward) ??
+      resolveNumber(matchedCourse?.xp_reward) ??
+      resolveNumber(matchedCourse?.xp_reward_on_complete) ??
+      0;
+
+    const estimatedTime =
+      resolveNumber(matchedLesson.estimated_time) ??
+      resolveNumber(matchedLesson.estimatedTime) ??
+      resolveNumber(matchedLesson.duration) ??
+      10;
+
     const authorName =
-      (matchedLesson.author_id &&
-        authorMap[matchedLesson.author_id]) ||
+      (resolvedAuthorId && authorMap[resolvedAuthorId]) ||
       null;
 
     const rawContent =
@@ -177,11 +204,11 @@ export async function GET(
       content: matchedLesson.content,
       content_preview,
       content_has_read_more,
-      xp_reward: matchedLesson.xp_reward,
-      estimated_time: matchedLesson.estimated_time,
+      xp_reward: xpReward,
+      estimated_time: estimatedTime,
       order: matchedLesson.order,
       module_id: matchedLesson.module_id,
-      author_id: matchedLesson.author_id,
+      author_id: resolvedAuthorId,
       author_name: authorName,
       created_at: matchedLesson.created_at,
     };
