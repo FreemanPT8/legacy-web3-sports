@@ -197,25 +197,34 @@ export function RichTextEditor({
     (variant: 'bullet' | 'ordered') => {
       if (!editor) return;
 
-      const commandRan =
+      const toggled =
         variant === 'bullet'
           ? editor.chain().focus().toggleBulletList().run()
           : editor.chain().focus().toggleOrderedList().run();
 
-      if (commandRan) {
-        return;
-      }
+      if (toggled) return;
 
-      const wrapper = variant === 'bullet' ? 'ul' : 'ol';
-      editor
-        .chain()
-        .focus()
-        .insertContent(
-          `<${wrapper}><li>${
-            editor.isEmpty ? 'List item' : ''
-          }</li></${wrapper}>`,
-        )
-        .run();
+      const listNode = {
+        type: variant === 'bullet' ? 'bulletList' : 'orderedList',
+        content: [
+          {
+            type: 'listItem',
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  {
+                    type: 'text',
+                    text: 'List item',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      editor.chain().focus().insertContent(listNode as any).run();
     },
     [editor],
   );
