@@ -23,15 +23,19 @@ import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
 import { LegacyModuleNotice } from '@/components/admin/LegacyModuleNotice';
-import { LANGUAGES, type LangCode as LangCodeUnion } from '@/types/builder';
+import {
+  LANGUAGES,
+  type LangCode as LangCodeUnion,
+  type TranslatedField,
+} from '@/types/builder';
 
 type Lesson = {
   id: string;
   module_id?: string;
   order: number;
-  title: MultiLang;
-  description: MultiLang;
-  content: MultiLang;
+  title: TranslatedField | Record<string, string> | string;
+  description: TranslatedField | Record<string, string> | string;
+  content: TranslatedField | Record<string, string> | string;
   xp_reward: number;
   xp_threshold: number;
   estimated_time: number;
@@ -41,12 +45,12 @@ type Lesson = {
 
 type Module = {
   id: string;
-  title: MultiLang | any;
+  title: TranslatedField | Record<string, string> | string;
 };
 
 type Course = {
   id: string;
-  title: MultiLang | any;
+  title: TranslatedField | Record<string, string> | string;
 };
 
 type PermissionsResponse = {
