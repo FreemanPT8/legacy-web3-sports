@@ -510,6 +510,15 @@ function LegacyLessonAdvancedEditorPage() {
       : (module.title || {}),
     currentLanguage as any,
   );
+  const previewTitle = getTranslationValue(lesson.title, currentLanguage);
+  const previewDescription = getTranslationValue(
+    lesson.description,
+    currentLanguage,
+  );
+  const previewContent = getTranslationValue(
+    lesson.content,
+    currentLanguage,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
@@ -661,6 +670,43 @@ function LegacyLessonAdvancedEditorPage() {
                       className="mt-2"
                     />
                   </div>
+                </CardContent>
+              </Card>
+              <Card className="border border-white/10 bg-[#03141c]">
+                <CardHeader>
+                  <CardTitle>Preview</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Language: {currentLangLabel}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        window.open(`/education/lessons/${lesson.id}`, '_blank')
+                      }
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Open public page
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-white">
+                      {previewTitle || 'Untitled lesson'}
+                    </p>
+                    <p className="text-slate-300 text-sm">
+                      {previewDescription || 'No description yet.'}
+                    </p>
+                  </div>
+                  <div
+                    className="prose prose-invert prose-sm text-slate-200 max-w-none [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>li]:mb-1"
+                    dangerouslySetInnerHTML={{
+                      __html: previewContent?.trim()
+                        ? previewContent
+                        : '<p class="text-slate-500 italic">Start writing the lesson body to preview it here.</p>',
+                    }}
+                  />
                 </CardContent>
               </Card>
             </div>
