@@ -61,6 +61,31 @@ type PermissionsResponse = {
   error?: string;
 };
 
+const BLANK_TRANSLATIONS = LANGUAGES.reduce(
+  (acc, lang) => ({ ...acc, [lang.code]: '' }),
+  {} as Record<LangCodeUnion, string>,
+);
+
+const ensureTranslations = (
+  value: TranslatedField | Record<string, string> | string | undefined,
+  lang: LangCodeUnion,
+) => {
+  if (typeof value === 'string') {
+    return { ...BLANK_TRANSLATIONS, [lang]: value };
+  }
+  return { ...BLANK_TRANSLATIONS, ...(value || {}) };
+};
+
+const getTranslationValue = (
+  value: TranslatedField | Record<string, string> | string | undefined,
+  lang: LangCodeUnion,
+) => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return value?.[lang] || '';
+};
+
 export default function LessonAdvancedEditorPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -243,19 +268,15 @@ function LegacyLessonAdvancedEditorPage() {
             });
             setLesson(null);
           } else {
-            const blankTranslations = LANGUAGES.reduce(
-              (acc, lang) => ({ ...acc, [lang.code]: '' }),
-              {} as Record<string, string>,
+            const safeTitle = ensureTranslations(l.title, currentLanguage);
+            const safeDescription = ensureTranslations(
+              l.description,
+              currentLanguage,
             );
-            const safeTitle = { ...blankTranslations, ...(l.title || {}) };
-            const safeDescription = {
-              ...blankTranslations,
-              ...(l.description || {}),
-            };
-            const safeContent = {
-              ...blankTranslations,
-              ...(l.content || {}),
-            };
+            const safeContent = ensureTranslations(
+              l.content,
+              currentLanguage,
+            );
 
             const normalized: Lesson = {
               id: l.id,
@@ -312,10 +333,11 @@ function LegacyLessonAdvancedEditorPage() {
     value: string,
   ) {
     if (!lesson) return;
+    const existing = ensureTranslations((lesson as any)[field], lang);
     setLesson({
       ...lesson,
       [field]: {
-        ...(lesson as any)[field],
+        ...existing,
         [lang]: value,
       },
     });
@@ -590,7 +612,10 @@ function LegacyLessonAdvancedEditorPage() {
                   <div>
                     <Label>Title ({currentLangLabel})</Label>
                     <Input
-                      value={lesson.title[currentLanguage] || ''}
+                      value={getTranslationValue(
+                        lesson.title,
+                        currentLanguage,
+                      )}
                       onChange={(e) =>
                         updateMLField(
                           'title',
@@ -606,7 +631,10 @@ function LegacyLessonAdvancedEditorPage() {
                   <div>
                     <Label>Description ({currentLangLabel})</Label>
                     <Textarea
-                      value={lesson.description[currentLanguage] || ''}
+                      value={getTranslationValue(
+                        lesson.description,
+                        currentLanguage,
+                      )}
                       onChange={(e) =>
                         updateMLField(
                           'description',
@@ -621,7 +649,10 @@ function LegacyLessonAdvancedEditorPage() {
                   <div>
                     <Label>Body ({currentLangLabel})</Label>
                     <RichTextEditor
-                      value={lesson.content[currentLanguage] || ''}
+                      value={getTranslationValue(
+                        lesson.content,
+                        currentLanguage,
+                      )}
                       onChange={(next) =>
                         updateMLField('content', currentLanguage, next)
                       }
