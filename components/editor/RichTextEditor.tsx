@@ -75,7 +75,7 @@ interface RichTextEditorProps {
   className?: string;
 }
 
-const SPECIAL_CHARACTERS = ['•', '—', '–', '…', '™', '©', '®', '∞'];
+const SPECIAL_CHARACTERS = ['â¢', 'â', 'â', 'â¦', 'â¢', 'Â©', 'Â®', 'â'];
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
 type ImageAlignment = 'left' | 'center' | 'right';
 
@@ -164,7 +164,7 @@ export function RichTextEditor({
           },
         }),
         Placeholder.configure({
-          placeholder: placeholder || 'Start writing�',
+          placeholder: placeholder || 'Start writing...',
         }),
         CharacterCount.configure(),
         LegacyImage,
@@ -525,7 +525,7 @@ export function RichTextEditor({
       />
       <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-slate-800">
         <span>
-          {stats.characters.toLocaleString()} chars · {stats.words.toLocaleString()} words
+          {stats.characters.toLocaleString()} chars Â· {stats.words.toLocaleString()} words
         </span>
         <span>{forcePlainText ? 'Paste as plain text' : 'Rich paste enabled'}</span>
       </div>
