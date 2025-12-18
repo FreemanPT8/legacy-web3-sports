@@ -51,7 +51,7 @@ import {
   Unlink,
 } from 'lucide-react';
 import type { MediaAsset } from '@/types/builder';
-import { type Level } from '@tiptap/extension-heading';
+type Level = 1 | 2 | 3 | 4 | 5;
 
 interface RichTextEditorProps {
   id?: string;
@@ -62,7 +62,7 @@ interface RichTextEditorProps {
   className?: string;
 }
 
-const SPECIAL_CHARACTERS = ["*", "-", "--", "\"", "'", "?", "!", "(c)", "(r)"];
+const SPECIAL_CHARACTERS = ['*', '-', '--', '"', "'", '?', '!', '(c)', '(r)'];
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
 type ImageAlignment = 'left' | 'center' | 'right';
 
@@ -122,13 +122,10 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5] },
-        blockquote: {},
         bulletList: { keepMarks: true, keepAttributes: false },
         orderedList: { keepMarks: true, keepAttributes: false },
         code: false,
         codeBlock: false,
-        dropcursor: false,
-        gapcursor: false,
         horizontalRule: false,
         strike: false,
         underline: false,
