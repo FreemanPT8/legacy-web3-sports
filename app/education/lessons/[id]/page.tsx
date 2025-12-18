@@ -95,6 +95,31 @@ export default function LessonPage() {
     return val === key ? fallback : val;
   };
 
+  const getLocalizedValue = (
+    value: any,
+    fallback = '',
+  ) => {
+    if (!value) return fallback;
+    if (typeof value === 'string') return value;
+    try {
+      return (
+        getMultilingualContent(value as Record<string, string>, language) ||
+        fallback
+      );
+    } catch (_err) {
+      return fallback;
+    }
+  };
+
+  const getLanguageSource = (
+    value: any,
+  ): Partial<Record<LangCode, string>> | null => {
+    if (value && typeof value === 'object') {
+      return value as Partial<Record<LangCode, string>>;
+    }
+    return null;
+  };
+
   useEffect(() => {
     const fetchLesson = async () => {
       setLoading(true);
@@ -211,17 +236,17 @@ export default function LessonPage() {
     );
   }
 
-  const title = getMultilingualContent(lesson.title, language);
-  const description = getMultilingualContent(lesson.description, language);
+  const title = getLocalizedValue(lesson.title);
+  const description = getLocalizedValue(lesson.description);
   const content = removeReadMoreMarker(
-    getMultilingualContent(lesson.content, language),
+    getLocalizedValue(lesson.content),
   );
-  const moduleTitle = getMultilingualContent(module.title, language);
+  const moduleTitle = getLocalizedValue(module.title);
 
   const availableLanguages = getAvailableLanguages(
-    (lesson.title || {}) as Partial<Record<LangCode, string>>,
-    (lesson.description || {}) as Partial<Record<LangCode, string>>,
-    (lesson.content || {}) as Partial<Record<LangCode, string>>,
+    getLanguageSource(lesson.title),
+    getLanguageSource(lesson.description),
+    getLanguageSource(lesson.content),
   );
 
   const missingCurrentLanguage = Boolean(
@@ -432,10 +457,7 @@ export default function LessonPage() {
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     {tr('lessons.previous', 'Anterior')}:{' '}
-                    {getMultilingualContent(
-                      prevLesson.title,
-                      language,
-                    )}
+                    {getLocalizedValue(prevLesson.title)}
                   </Button>
                 </Link>
               ) : (
@@ -449,10 +471,7 @@ export default function LessonPage() {
                 >
                   <Button className="w-full">
                     {tr('lessons.next', 'Seguinte')}:{' '}
-                    {getMultilingualContent(
-                      nextLesson.title,
-                      language,
-                    )}
+                    {getLocalizedValue(nextLesson.title)}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
