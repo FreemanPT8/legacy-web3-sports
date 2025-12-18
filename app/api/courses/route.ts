@@ -169,6 +169,7 @@ export async function GET(request: NextRequest) {
     }
 
     const xpDistributedByCourse: Record<string, number> = {};
+    const completionCountByCourse: Record<string, number> = {};
     const xpByLesson: Record<string, number> = {};
 
     if (lessonIdsAll.length > 0) {
@@ -220,6 +221,8 @@ export async function GET(request: NextRequest) {
           const xp = row.xp_earned || 0;
           xpDistributedByCourse[courseId] =
             (xpDistributedByCourse[courseId] || 0) + xp;
+          completionCountByCourse[courseId] =
+            (completionCountByCourse[courseId] || 0) + 1;
         });
       }
     }
@@ -389,6 +392,7 @@ export async function GET(request: NextRequest) {
         total_lessons: totalLessons,
         total_xp: totalXP,
         xp_distributed_total: xpDistributed,
+        completions_count: completionCountByCourse[course.id] || 0,
       };
     });
 

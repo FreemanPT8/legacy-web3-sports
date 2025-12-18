@@ -298,10 +298,8 @@ export default function CoursesPage() {
                       0,
                     );
 
-                  const totalXP = Math.max(
-                    formatTotalXP(course, modulesArray),
-                    typeof course.total_xp === 'number' ? course.total_xp : 0,
-                  );
+                  const totalXP = formatTotalXP(course, modulesArray);
+                  const completionsCount = course.completions_count ?? 0;
 
                   const xpDistributed = course.xp_distributed_total ?? 0;
 
