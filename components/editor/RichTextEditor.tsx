@@ -122,7 +122,7 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5] },
-        blockquote: true,
+        blockquote: {},
         bulletList: { keepMarks: true, keepAttributes: false },
         orderedList: { keepMarks: true, keepAttributes: false },
         code: false,
