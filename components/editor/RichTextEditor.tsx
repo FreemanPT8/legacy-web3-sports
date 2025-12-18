@@ -53,6 +53,9 @@ import {
 import type { MediaAsset } from '@/types/builder';
 type Level = 1 | 2 | 3 | 4 | 5;
 
+const HEADING_LEVELS: Level[] = [1, 2, 3, 4, 5];
+const SPECIAL_CHARACTERS = ['*', '-', '--', '"', "'", '?', '!', '(c)', '(r)'];
+
 interface RichTextEditorProps {
   id?: string;
   value: string;
@@ -61,8 +64,6 @@ interface RichTextEditorProps {
   minRows?: number;
   className?: string;
 }
-
-const SPECIAL_CHARACTERS = ['*', '-', '--', '"', "'", '?', '!', '(c)', '(r)'];
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
 type ImageAlignment = 'left' | 'center' | 'right';
 
@@ -196,6 +197,19 @@ export function RichTextEditor({
     [editor],
   );
 
+  const toggleList = useCallback(
+    (type: 'bullet' | 'ordered') => {
+      if (!editor) return;
+      const chain = editor.chain().focus();
+      if (type === 'bullet') {
+        chain.toggleBulletList().run();
+      } else {
+        chain.toggleOrderedList().run();
+      }
+    },
+    [editor],
+  );
+
   const insertLink = useCallback(() => {
     if (!editor) return;
     const current = editor.getAttributes('link').href || '';
@@ -291,34 +305,36 @@ export function RichTextEditor({
         >
           <Strikethrough className="h-4 w-4" />
         </Button>
-        <Button
-          type="button"
-          variant={editor?.isActive('bulletList') ? 'secondary' : 'ghost'}
-          size="icon"
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-          aria-label="Bullet list"
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant={editor?.isActive('orderedList') ? 'secondary' : 'ghost'}
-          size="icon"
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-          aria-label="Numbered list"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant={editor?.isActive('blockquote') ? 'secondary' : 'ghost'}
-          size="icon"
-          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-          aria-label="Blockquote"
-        >
-          <Quote className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 border-l border-slate-200 pl-2 dark:border-slate-800">
+          <Button
+            type="button"
+            variant={editor?.isActive('bulletList') ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => toggleList('bullet')}
+            aria-label="Bullet list"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant={editor?.isActive('orderedList') ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => toggleList('ordered')}
+            aria-label="Numbered list"
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-1 border-l border-slate-200 pl-2 dark:border-slate-800">
+          <Button
+            type="button"
+            variant={editor?.isActive('blockquote') ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+            aria-label="Blockquote"
+          >
+            <Quote className="h-4 w-4" />
+          </Button>
           <Button
             type="button"
             variant={editor?.isActive('paragraph') ? 'secondary' : 'ghost'}
@@ -328,7 +344,7 @@ export function RichTextEditor({
           >
             <TextCursor className="h-4 w-4" />
           </Button>
-          {([1, 2, 3, 4, 5] as Level[]).map((level) => (
+          {HEADING_LEVELS.map((level) => (
             <Button
               key={`heading-${level}`}
               type="button"
@@ -508,7 +524,7 @@ export function RichTextEditor({
       />
       <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-slate-800">
         <span>
-          {stats.characters.toLocaleString()} chars Ã‚Â· {stats.words.toLocaleString()} words
+          {stats.characters.toLocaleString()} chars | {stats.words.toLocaleString()} words
         </span>
         <span>{forcePlainText ? 'Paste as plain text' : 'Rich paste enabled'}</span>
       </div>
