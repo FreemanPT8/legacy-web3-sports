@@ -49,9 +49,15 @@ const slugify = (value: string) =>
     .replace(/-+/g, '-');
 
 export function BlogBasicsStep() {
-  const { state, patchState, setCoverImage } = useBuilderState();
+  const {
+    state,
+    patchState,
+    setCoverImage,
+    activeLanguage,
+    setActiveLanguage,
+  } = useBuilderState();
   const blogState = state as BlogBuilderState;
-  const [language, setLanguage] = useState<LangCode>('en');
+  const language = activeLanguage;
   const [slugTouched, setSlugTouched] = useState(false);
   const mediaLibrary = useMediaLibrary();
   const { translate, isTranslating } = useAutoTranslate();
@@ -128,7 +134,7 @@ export function BlogBasicsStep() {
                 key={lang.code}
                 variant={language === lang.code ? 'default' : 'outline'}
                 className="cursor-pointer"
-                onClick={() => setLanguage(lang.code as LangCode)}
+                onClick={() => setActiveLanguage(lang.code as LangCode)}
               >
                 {lang.name}
               </Badge>

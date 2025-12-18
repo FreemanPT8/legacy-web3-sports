@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { userHasPermission, type UserRole } from '@/lib/permissions';
 
-type LangCode = 'en' | 'pt' | 'es' | 'fr' | 'it' | 'de';
+type LangCode = 'pt' | 'es' | 'en';
 
 interface CoursePayload {
   title: Record<LangCode, string>;

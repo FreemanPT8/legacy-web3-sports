@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { LANGUAGES, type LangCode, type BlogBuilderState } from '@/types/builder';
 import { useBuilderState } from '@/hooks/useBuilderState';
@@ -10,9 +10,14 @@ import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import { useToast } from '@/hooks/use-toast';
 
 export function BlogContentStep() {
-  const { state, patchState } = useBuilderState();
+  const {
+    state,
+    patchState,
+    activeLanguage,
+    setActiveLanguage,
+  } = useBuilderState();
   const blogState = state as BlogBuilderState;
-  const [language, setLanguage] = useState<LangCode>('en');
+  const language = activeLanguage;
   const { translate, isTranslating } = useAutoTranslate();
   const { toast } = useToast();
 
@@ -86,7 +91,7 @@ export function BlogContentStep() {
             key={lang.code}
             variant={language === lang.code ? 'default' : 'outline'}
             className="cursor-pointer"
-            onClick={() => setLanguage(lang.code as LangCode)}
+            onClick={() => setActiveLanguage(lang.code as LangCode)}
           >
             {lang.name}
           </Badge>

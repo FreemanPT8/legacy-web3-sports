@@ -30,16 +30,7 @@ import {
   Plus,
 } from 'lucide-react';
 
-const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
-] as const;
-
-export type LangCode = (typeof LANGUAGES)[number]['code'];
+import { LANGUAGES, type LangCode } from '@/types/builder';
 
 export type BlockType =
   | 'heading'

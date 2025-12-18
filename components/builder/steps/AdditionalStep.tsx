@@ -29,6 +29,7 @@ import type {
   BuilderState,
   BlogBuilderState,
 } from '@/types/builder';
+import { LANGUAGES } from '@/types/builder';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 
@@ -50,7 +51,7 @@ type ListField =
   | 'specialRequirements';
 
 export function AdditionalStep() {
-  const { state, patchState } = useBuilderState();
+  const { state, patchState, activeLanguage } = useBuilderState();
   const attachmentLibrary = useMediaLibrary();
   const seoLibrary = useMediaLibrary();
   const [focusedAttachment, setFocusedAttachment] = useState<string | null>(null);
@@ -240,8 +241,21 @@ export function AdditionalStep() {
   const isBlog = state.entityType === 'blog';
   const blogState = isBlog ? (state as BlogBuilderState) : null;
 
+  const languageLabel =
+    LANGUAGES.find((lang) => lang.code === activeLanguage)?.name ||
+    activeLanguage.toUpperCase();
+
   return (
     <div className="space-y-6">
+      <div className="rounded-xl border border-white/10 bg-[#05212b]/60 px-4 py-3 text-xs text-slate-300">
+        <span>
+          Editing language:{' '}
+          <span className="font-semibold text-white">{languageLabel}</span>
+        </span>
+        <p className="mt-1 text-[11px] text-slate-500">
+          Switch languages from the Basics step.
+        </p>
+      </div>
       <ScheduleSection
         schedule={state.schedule}
         published={state.published}
@@ -1111,4 +1125,3 @@ function SeoPreview({
     </Card>
   );
 }
-

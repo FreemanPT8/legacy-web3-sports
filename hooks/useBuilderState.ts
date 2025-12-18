@@ -10,7 +10,12 @@ import type {
 type MutableBuilderState<T> = T | ((previous: T) => T);
 
 export function useBuilderState() {
-  const { state, updateState } = useBuilderContext();
+  const {
+    state,
+    updateState,
+    activeLanguage,
+    setActiveLanguage,
+  } = useBuilderContext();
 
   const patchState = useCallback(
     (patch: Partial<BuilderState>) => {
@@ -82,5 +87,7 @@ export function useBuilderState() {
       (next: MutableBuilderState<BuilderState>) => updateState(next),
       [updateState],
     ),
+    activeLanguage,
+    setActiveLanguage,
   };
 }

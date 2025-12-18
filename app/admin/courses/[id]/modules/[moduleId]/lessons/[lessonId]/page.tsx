@@ -23,18 +23,7 @@ import { ArrowLeft, Save, Eye, Lock } from 'lucide-react';
 
 import { getMultilingualContent } from '@/lib/i18n';
 import { LegacyModuleNotice } from '@/components/admin/LegacyModuleNotice';
-
-const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Português' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
-] as const;
-
-type MultiLang = Record<string, string>;
-type LangCodeUnion = (typeof LANGUAGES)[number]['code'];
+import { LANGUAGES, type LangCode as LangCodeUnion } from '@/types/builder';
 
 type Lesson = {
   id: string;

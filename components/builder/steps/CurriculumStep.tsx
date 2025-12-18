@@ -27,7 +27,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Plus, Trash2, BookOpenCheck, ListChecks, CalendarClock } from 'lucide-react';
 
 import { useBuilderState } from '@/hooks/useBuilderState';
-import type { CourseBuilderState, ScheduleConfig } from '@/types/builder';
+import { LANGUAGES, type CourseBuilderState, type ScheduleConfig } from '@/types/builder';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { useScheduleCET } from '@/hooks/useScheduleCET';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ type ScheduleUtils = ReturnType<typeof useScheduleCET>;
 type DragListenerMap = ReturnType<typeof useSortable>['listeners'];
 
 export function CurriculumStep() {
-  const { state, patchState } = useBuilderState();
+  const { state, patchState, activeLanguage } = useBuilderState();
   const courseState = state as CourseBuilderState;
   const topics = courseState.curriculum.topics;
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
@@ -212,8 +212,21 @@ export function CurriculumStep() {
     lessonLibrary.closeLibrary();
   };
 
+  const currentLanguageLabel =
+    LANGUAGES.find((lang) => lang.code === activeLanguage)?.name ||
+    activeLanguage.toUpperCase();
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between rounded-xl border border-white/10 bg-[#05212b]/60 px-4 py-3 text-xs text-slate-300">
+        <span>
+          Editing language:{' '}
+          <span className="font-semibold text-white">{currentLanguageLabel}</span>
+        </span>
+        <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+          Change this in Basics
+        </span>
+      </div>
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">Curriculum builder</h2>
         <p className="text-sm text-gray-600 dark:text-gray-400">

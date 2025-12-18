@@ -59,28 +59,7 @@ import {
 
 
 import { getMultilingualContent } from '@/lib/i18n';
-
-
-
-const LANGUAGES = [
-
-  { code: 'en', name: 'English' },
-
-  { code: 'pt', name: 'Portugu+s' },
-
-  { code: 'es', name: 'Espa+ol' },
-
-  { code: 'fr', name: 'Fran+oais' },
-
-  { code: 'it', name: 'Italiano' },
-
-  { code: 'de', name: 'Deutsch' },
-
-] as const;
-
-
-
-type LangCode = (typeof LANGUAGES)[number]['code'];
+import { LANGUAGES, type LangCode } from '@/types/builder';
 
 
 

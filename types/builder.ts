@@ -1,10 +1,7 @@
 export const LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'pt', name: 'Português', flag: '🇵🇹' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'pt', name: 'Portuguese (PT)', flag: 'PT' },
+  { code: 'es', name: 'Spanish (ES)', flag: 'ES' },
+  { code: 'en', name: 'English (US)', flag: 'US' },
 ] as const;
 
 

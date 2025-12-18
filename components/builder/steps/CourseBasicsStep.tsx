@@ -38,9 +38,10 @@ export function CourseBasicsStep() {
     updateTranslatedField,
     patchState,
     setCoverImage,
+    activeLanguage,
+    setActiveLanguage,
   } = useBuilderState();
   const courseState = state as CourseBuilderState;
-  const [language, setLanguage] = useState<LangCode>('en');
   const [slugTouched, setSlugTouched] = useState(false);
   const mediaLibrary = useMediaLibrary();
   const { timezone, toInputValues, fromInput, validateFutureDate } =
@@ -52,6 +53,7 @@ export function CourseBasicsStep() {
   const [scheduleError, setScheduleError] = useState<string | null>(null);
 
   const coverUrl = courseState.coverImage?.url;
+  const language = activeLanguage;
   const languageLabel =
     LANGUAGES.find((lang) => lang.code === language)?.name ||
     language;
@@ -189,7 +191,7 @@ export function CourseBasicsStep() {
               key={lang.code}
               variant={lang.code === language ? 'default' : 'outline'}
               className="cursor-pointer"
-              onClick={() => setLanguage(lang.code as LangCode)}
+              onClick={() => setActiveLanguage(lang.code as LangCode)}
             >
               {lang.name}
             </Badge>

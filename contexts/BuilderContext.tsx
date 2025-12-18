@@ -5,6 +5,7 @@ import type {
   BuilderStepKey,
   BuilderEntityType,
 } from '@/types/builder';
+import { LANGUAGES, type LangCode } from '@/types/builder';
 
 type BuilderUpdate =
   | BuilderState
@@ -23,6 +24,8 @@ interface BuilderContextValue {
   autosaveState: BuilderAutosaveState;
   setAutosaveState: (state: BuilderAutosaveState) => void;
   entityType: BuilderEntityType;
+  activeLanguage: LangCode;
+  setActiveLanguage: (lang: LangCode) => void;
 }
 
 const BuilderContext = createContext<BuilderContextValue | null>(null);
@@ -51,6 +54,9 @@ export function BuilderProvider({
       status: 'idle',
       lastSavedAt: undefined,
     });
+  const [activeLanguage, setActiveLanguage] = useState<LangCode>(
+    LANGUAGES[0].code,
+  );
 
   const steps = useMemo(() => {
     if (state.entityType === 'course') {
@@ -93,6 +99,8 @@ export function BuilderProvider({
     autosaveState,
     setAutosaveState,
     entityType: state.entityType,
+    activeLanguage,
+    setActiveLanguage,
   };
 
   return (

@@ -32,17 +32,7 @@ import {
 
 import { getMultilingualContent } from '@/lib/i18n';
 import { LegacyModuleNotice } from '@/components/admin/LegacyModuleNotice';
-
-const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'pt', name: 'Portugues' },
-  { code: 'es', name: 'Espanol' },
-  { code: 'fr', name: 'Francais' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'de', name: 'Deutsch' },
-] as const;
-
-type LangCode = (typeof LANGUAGES)[number]['code'];
+import { LANGUAGES, type LangCode } from '@/types/builder';
 
 type Lesson = {
   id: string;
