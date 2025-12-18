@@ -19,6 +19,7 @@ import {
   Award,
   Clock,
   CheckCircle,
+  Lock,
   PenSquare,
   ArrowRight,
 } from 'lucide-react';
