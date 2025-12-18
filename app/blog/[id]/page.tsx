@@ -368,22 +368,30 @@ export default function BlogPostPage() {
             {/* Conteúdo + ContentTracker */}
             <Card className="mb-6 border border-white/10 bg-[#000c12]">
               <CardContent className="prose prose-invert prose-headings:text-white prose-p:text-slate-200 prose-strong:text-white max-w-none py-8">
-                <ContentTracker
-                  userId={user?.id ?? null}
-                  contentId={post.id}
-                  contentType="blog"
-                  xpReward={xpReward}
-                  estimatedMinutes={estimatedMinutes}
-                  initialCompleted={completedForReader}
-                  isAuthor={isAuthor} // criador nunca tem tracker
-                  onComplete={() => setIsCompleted(true)}
-                >
+                {!isAuthor ? (
+                  <ContentTracker
+                    userId={user?.id ?? null}
+                    contentId={post.id}
+                    contentType="blog"
+                    xpReward={xpReward}
+                    estimatedMinutes={estimatedMinutes}
+                    initialCompleted={completedForReader}
+                    isAuthor={isAuthor}
+                    onComplete={() => setIsCompleted(true)}
+                  >
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: htmlContent,
+                      }}
+                    />
+                  </ContentTracker>
+                ) : (
                   <div
                     dangerouslySetInnerHTML={{
                       __html: htmlContent,
                     }}
                   />
-                </ContentTracker>
+                )}
               </CardContent>
             </Card>
 
