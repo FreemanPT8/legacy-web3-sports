@@ -5,7 +5,7 @@ import { useBuilderState } from '@/hooks/useBuilderState';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sparkles } from 'lucide-react';
+import { Eye, Sparkles } from 'lucide-react';
 import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import { useToast } from '@/hooks/use-toast';
 
@@ -77,6 +77,22 @@ export function BlogContentStep() {
     }
   };
 
+  const handlePreview = () => {
+    if (!blogState.slug) {
+      toast({
+        title: 'Define o slug primeiro',
+        description: 'Preenche o slug em Basics para conseguires abrir o preview.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const href = language
+      ? `/blog/${blogState.slug}?lang=${language}`
+      : `/blog/${blogState.slug}`;
+    window.open(href, '_blank');
+  };
+
+
   return (
     <div className="space-y-4">
       <div>
@@ -141,6 +157,16 @@ export function BlogContentStep() {
           >
             <Sparkles className="mr-2 h-4 w-4 text-cyan-400" />
             Traduzir restantes línguas
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handlePreview}
+            disabled={!blogState.slug}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Preview post
           </Button>
         </div>
       </div>

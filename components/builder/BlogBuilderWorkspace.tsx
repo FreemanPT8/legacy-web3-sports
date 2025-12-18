@@ -55,6 +55,7 @@ export function BlogBuilderWorkspace({
     }
   }, [activeStep]);
 
+  const showGlobalPreview = activeStep !== 'content';
   const previewColumn = (
     <div className="space-y-6">
       <BlogStatusCard authorName={metadata?.authorName || null} />
@@ -71,7 +72,11 @@ export function BlogBuilderWorkspace({
       description="Three unified steps: Basics, Content and Additional settings."
       editor={editor}
       preview={previewColumn}
-      onPreview={onPreview ? () => onPreview(blogState.slug) : undefined}
+      onPreview={
+        onPreview && showGlobalPreview
+          ? () => onPreview(blogState.slug)
+          : undefined
+      }
       onSubmit={() => onSubmit(blogState)}
       submitLabel={saving ? 'Saving...' : 'Publish / Update'}
       submitDisabled={saving}

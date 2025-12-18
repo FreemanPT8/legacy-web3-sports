@@ -32,16 +32,17 @@ export function BuilderActions({
     <div className="flex flex-wrap items-center gap-3">
       <div className="text-xs text-gray-500">{autosaveCopy}</div>
       <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onPreview}
-          disabled={!onPreview}
-          className="flex items-center gap-2"
-        >
-          <Eye className="h-4 w-4" />
-          {previewLabel}
-        </Button>
+        {onPreview && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onPreview}
+            className="flex items-center gap-2"
+          >
+            <Eye className="h-4 w-4" />
+            {previewLabel}
+          </Button>
+        )}
         <Button
           type="button"
           onClick={onSubmit}

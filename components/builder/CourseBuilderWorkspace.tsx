@@ -59,6 +59,7 @@ export function CourseBuilderWorkspace({
     }
   }, [activeStep]);
 
+  const showGlobalPreview = activeStep !== 'curriculum';
   const previewColumn = (
     <div className="space-y-6">
       <CourseStatusCard
@@ -79,7 +80,11 @@ export function CourseBuilderWorkspace({
       description="Tres etapas unificadas: Basics, Curriculum e Additional."
       editor={editor}
       preview={previewColumn}
-      onPreview={onPreview ? () => onPreview(courseState.slug) : undefined}
+      onPreview={
+        onPreview && showGlobalPreview
+          ? () => onPreview(courseState.slug)
+          : undefined
+      }
       onSubmit={() => onSubmit(courseState)}
       submitLabel={saving ? 'Saving...' : 'Save Changes'}
       submitDisabled={saving}
