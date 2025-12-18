@@ -350,7 +350,11 @@ function LegacyLessonAdvancedEditorPage() {
     }
 
     const hasAnyTitle = LANGUAGES.some((l) => {
-      const v = lesson.title[l.code];
+      const raw = lesson.title;
+      if (typeof raw === 'string') {
+        return raw.trim().length > 0;
+      }
+      const v = raw?.[l.code];
       return typeof v === 'string' && v.trim().length > 0;
     });
 
