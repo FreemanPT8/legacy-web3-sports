@@ -477,11 +477,15 @@ function LegacyLessonAdvancedEditorPage() {
   }
 
   const courseTitle = getMultilingualContent(
-    course.title,
+    typeof course.title === 'string'
+      ? { [currentLanguage]: course.title }
+      : (course.title || {}),
     currentLanguage as any,
   );
   const moduleTitle = getMultilingualContent(
-    module.title,
+    typeof module.title === 'string'
+      ? { [currentLanguage]: module.title }
+      : (module.title || {}),
     currentLanguage as any,
   );
 
