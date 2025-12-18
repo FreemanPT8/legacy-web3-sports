@@ -28,6 +28,8 @@ import {
   Bold,
   Clipboard,
   Eraser,
+  List,
+  ListOrdered,
   ImagePlus,
   Italic,
   Link2,
@@ -112,6 +114,8 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: false,
+        bulletList: { keepMarks: true, keepAttributes: false },
+        orderedList: { keepMarks: true, keepAttributes: false },
         code: false,
         codeBlock: false,
         horizontalRule: false,
@@ -123,7 +127,7 @@ export function RichTextEditor({
       TextStyle,
       Color.configure({ types: ['textStyle'] }),
       TextAlign.configure({
-        types: ['paragraph'],
+        types: ['paragraph', 'listItem'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
       Link.configure({
@@ -168,6 +172,19 @@ export function RichTextEditor({
   const toggleAlign = useCallback(
     (direction: 'left' | 'center' | 'right' | 'justify') => {
       editor?.chain().focus().setTextAlign(direction).run();
+    },
+    [editor],
+  );
+
+  const toggleList = useCallback(
+    (variant: 'bullet' | 'ordered') => {
+      if (!editor) return;
+      const chain = editor.chain().focus();
+      if (variant === 'bullet') {
+        chain.toggleBulletList().run();
+      } else {
+        chain.toggleOrderedList().run();
+      }
     },
     [editor],
   );
@@ -267,6 +284,26 @@ export function RichTextEditor({
         >
           <Strikethrough className="h-4 w-4" />
         </Button>
+        <div className="flex items-center gap-1 border-l border-slate-200 pl-2 dark:border-slate-800">
+          <Button
+            type="button"
+            variant={editor?.isActive('bulletList') ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => toggleList('bullet')}
+            aria-label="Bullet list"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant={editor?.isActive('orderedList') ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => toggleList('ordered')}
+            aria-label="Numbered list"
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+        </div>
         <Button
           type="button"
           variant={editor?.isActive('blockquote') ? 'secondary' : 'ghost'}
