@@ -1,13 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
-import Document from '@tiptap/extension-document';
-import Paragraph from '@tiptap/extension-paragraph';
-import Text from '@tiptap/extension-text';
-import History from '@tiptap/extension-history';
-import BoldMark from '@tiptap/extension-bold';
-import ItalicMark from '@tiptap/extension-italic';
+import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Strike from '@tiptap/extension-strike';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -18,14 +13,6 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
-import Blockquote from '@tiptap/extension-blockquote';
-import BulletList from '@tiptap/extension-bullet-list';
-import OrderedList from '@tiptap/extension-ordered-list';
-import ListItem from '@tiptap/extension-list-item';
-import Heading from '@tiptap/extension-heading';
-import Dropcursor from '@tiptap/extension-dropcursor';
-import Gapcursor from '@tiptap/extension-gapcursor';
-import HardBreak from '@tiptap/extension-hard-break';
 import { Button } from '@/components/ui/button';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -75,7 +62,7 @@ interface RichTextEditorProps {
   className?: string;
 }
 
-const SPECIAL_CHARACTERS = ['â¢', 'â', 'â', 'â¦', 'â¢', 'Â©', 'Â®', 'â'];
+const SPECIAL_CHARACTERS = ["*", "-", "--", "\"", "'", "?", "!", "(c)", "(r)"];
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
 type ImageAlignment = 'left' | 'center' | 'right';
 
@@ -133,20 +120,19 @@ export function RichTextEditor({
 
   const editor = useEditor({
     extensions: [
-      Document,
-      Paragraph,
-      Text,
-      History,
-      Dropcursor,
-      Gapcursor,
-      HardBreak.configure({ keepMarks: true }),
-      Heading.configure({ levels: [1, 2, 3, 4, 5] }),
-      Blockquote,
-      BulletList,
-      OrderedList,
-      ListItem,
-      BoldMark,
-      ItalicMark,
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3, 4, 5] },
+        blockquote: true,
+        bulletList: { keepMarks: true, keepAttributes: false },
+        orderedList: { keepMarks: true, keepAttributes: false },
+        code: false,
+        codeBlock: false,
+        dropcursor: true,
+        gapcursor: true,
+        horizontalRule: false,
+        strike: false,
+        underline: false,
+      }),
       Underline,
       Strike,
       TextStyle,
@@ -525,7 +511,7 @@ export function RichTextEditor({
       />
       <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-slate-800">
         <span>
-          {stats.characters.toLocaleString()} chars Â· {stats.words.toLocaleString()} words
+          {stats.characters.toLocaleString()} chars Ã‚Â· {stats.words.toLocaleString()} words
         </span>
         <span>{forcePlainText ? 'Paste as plain text' : 'Rich paste enabled'}</span>
       </div>
