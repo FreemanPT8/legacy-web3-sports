@@ -28,11 +28,6 @@ import {
   Bold,
   Clipboard,
   Eraser,
-  Heading1,
-  Heading2,
-  Heading3,
-  Heading4,
-  Heading5,
   ImagePlus,
   Italic,
   Link2,
@@ -43,15 +38,11 @@ import {
   Redo,
   Slash,
   Strikethrough,
-  TextCursor,
   Underline as UnderlineIcon,
   Undo,
   Unlink,
 } from 'lucide-react';
 import type { MediaAsset } from '@/types/builder';
-type Level = 1 | 2 | 3 | 4 | 5;
-
-const HEADING_LEVELS: Level[] = [1, 2, 3, 4, 5];
 const SPECIAL_CHARACTERS = ['*', '-', '--', '"', "'", '?', '!', '(c)', '(r)'];
 
 interface RichTextEditorProps {
@@ -120,7 +111,7 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4, 5] },
+        heading: false,
         bulletList: false,
         orderedList: false,
         code: false,
@@ -134,7 +125,7 @@ export function RichTextEditor({
       TextStyle,
       Color.configure({ types: ['textStyle'] }),
       TextAlign.configure({
-        types: ['heading', 'paragraph', 'listItem'],
+        types: ['paragraph'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
       Link.configure({
@@ -175,18 +166,6 @@ export function RichTextEditor({
       editor.commands.setContent(value || '');
     }
   }, [value, editor]);
-
-  const applyHeading = useCallback(
-    (level: Level | 'paragraph') => {
-      if (!editor) return;
-      if (level === 'paragraph') {
-        editor.chain().focus().setParagraph().run();
-        return;
-      }
-      editor.chain().focus().toggleHeading({ level }).run();
-    },
-    [editor],
-  );
 
   const toggleAlign = useCallback(
     (direction: 'left' | 'center' | 'right' | 'justify') => {
@@ -290,42 +269,15 @@ export function RichTextEditor({
         >
           <Strikethrough className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-1 border-l border-slate-200 pl-2 dark:border-slate-800">
-          <Button
-            type="button"
-            variant={editor?.isActive('blockquote') ? 'secondary' : 'ghost'}
-            size="icon"
-            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-            aria-label="Blockquote"
-          >
-            <Quote className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant={editor?.isActive('paragraph') ? 'secondary' : 'ghost'}
-            size="icon"
-            onClick={() => applyHeading('paragraph')}
-            aria-label="Paragraph"
-          >
-            <TextCursor className="h-4 w-4" />
-          </Button>
-          {HEADING_LEVELS.map((level) => (
-            <Button
-              key={`heading-${level}`}
-              type="button"
-              variant={editor?.isActive('heading', { level }) ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => applyHeading(level)}
-              aria-label={`Heading ${level}`}
-            >
-              {level === 1 && <Heading1 className="h-4 w-4" />}
-              {level === 2 && <Heading2 className="h-4 w-4" />}
-              {level === 3 && <Heading3 className="h-4 w-4" />}
-              {level === 4 && <Heading4 className="h-4 w-4" />}
-              {level === 5 && <Heading5 className="h-4 w-4" />}
-            </Button>
-          ))}
-        </div>
+        <Button
+          type="button"
+          variant={editor?.isActive('blockquote') ? 'secondary' : 'ghost'}
+          size="icon"
+          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+          aria-label="Blockquote"
+        >
+          <Quote className="h-4 w-4" />
+        </Button>
         <Button type="button" variant="ghost" size="icon" onClick={insertLink} aria-label="Insert link">
           <Link2 className="h-4 w-4" />
         </Button>
