@@ -243,31 +243,17 @@ function LegacyLessonAdvancedEditorPage() {
             });
             setLesson(null);
           } else {
-            const safeTitle: MultiLang = {
-              en: '',
-              pt: '',
-              es: '',
-              fr: '',
-              it: '',
-              de: '',
-              ...(l.title || {}),
-            };
-            const safeDescription: MultiLang = {
-              en: '',
-              pt: '',
-              es: '',
-              fr: '',
-              it: '',
-              de: '',
+            const blankTranslations = LANGUAGES.reduce(
+              (acc, lang) => ({ ...acc, [lang.code]: '' }),
+              {} as Record<string, string>,
+            );
+            const safeTitle = { ...blankTranslations, ...(l.title || {}) };
+            const safeDescription = {
+              ...blankTranslations,
               ...(l.description || {}),
             };
-            const safeContent: MultiLang = {
-              en: '',
-              pt: '',
-              es: '',
-              fr: '',
-              it: '',
-              de: '',
+            const safeContent = {
+              ...blankTranslations,
               ...(l.content || {}),
             };
 
