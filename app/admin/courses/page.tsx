@@ -715,7 +715,10 @@ export default function CoursesManagementPage() {
                   course.xp_total_distributed ??
                   course.xp_distributed_total ??
                   0;
-                const xpCreator = course.xp_creator_distributed ?? 0;
+                const completionsCount =
+                  course.completions_count ??
+                  course.total_completions ??
+                  0;
                 const { totalModules, totalLessons, totalXP } =
                   getCourseStats(course);
                 const curriculumStats = getCurriculumSnapshot(course);
@@ -809,9 +812,12 @@ export default function CoursesManagementPage() {
                         </div>
                         <div className="flex items-center justify-between text-xs text-slate-400">
                           <span>{xpDistributed} XP distribuído</span>
-                          {isCreator && (
-                            <span>Share: {xpCreator} XP</span>
-                          )}
+                          <span>
+                            {completionsCount}{' '}
+                            {completionsCount === 1
+                              ? 'utilizador concluiu'
+                              : 'utilizadores concluíram'}
+                          </span>
                         </div>
                         {xpRequired > 0 && (
                           <p className="text-xs text-slate-400">

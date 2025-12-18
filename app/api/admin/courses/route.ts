@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
     let xpMap: Record<string, number> = {};
     let xpCreatorMap: Record<string, number> = {};
     let authorMap: Record<string, string> = {};
+    let completionsMap: Record<string, number> = {};
 
     if (ids.length > 0) {
       const { data: xpRows, error: xpError } = await supabase
@@ -84,6 +85,28 @@ export async function GET(request: NextRequest) {
             return acc;
           }, {}) || {};
       }
+
+      const { data: completionsRows, error: completionsError } =
+        await supabase
+          .from('course_completions')
+          .select('course_id')
+          .in('course_id', ids);
+      if (completionsError) {
+        console.error(
+          'Error loading course completions for admin:',
+          completionsError,
+        );
+      } else {
+        completionsMap =
+          completionsRows?.reduce(
+            (acc: Record<string, number>, row: any) => {
+              if (!row?.course_id) return acc;
+              acc[row.course_id] = (acc[row.course_id] || 0) + 1;
+              return acc;
+            },
+            {},
+          ) || {};
+      }
     }
 
     if (authorIds.length > 0) {
@@ -109,6 +132,7 @@ export async function GET(request: NextRequest) {
         xp_total_distributed: xpMap[c.id] || 0,
         xp_creator_distributed:
           c.author_id && xpCreatorMap[c.id] ? xpCreatorMap[c.id] : 0,
+        completions_count: completionsMap[c.id] || 0,
       })) || [];
 
     return NextResponse.json({
