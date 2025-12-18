@@ -65,6 +65,7 @@ type Course = {
   total_lessons?: number;
   total_xp?: number;
   xp_distributed_total?: number;
+  completions_count?: number;
 };
 
 const getModuleBonusXP = (module: Module) => {
