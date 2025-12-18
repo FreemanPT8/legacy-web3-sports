@@ -234,15 +234,15 @@ const buildStatsFromLegacyModules = (modules: any[], course: Course) => {
 };
 
 const getCourseStats = (course: Course) => {
-  const topics = Array.isArray(course.curriculum?.topics)
-    ? course.curriculum.topics || []
+  const curriculumTopics = Array.isArray(course?.curriculum?.topics)
+    ? course.curriculum?.topics || []
     : [];
-  if (topics.length > 0) {
-    return buildStatsFromTopics(topics, course);
+  if (curriculumTopics.length > 0) {
+    return buildStatsFromTopics(curriculumTopics, course);
   }
 
-  const legacyModules = Array.isArray(course.modules)
-    ? course.modules
+  const legacyModules = Array.isArray(course?.modules)
+    ? course.modules || []
     : [];
   return buildStatsFromLegacyModules(legacyModules, course);
 };
