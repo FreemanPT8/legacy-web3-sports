@@ -19,9 +19,9 @@ export async function POST(
     const body = await request.json();
     const { userId, xpEarned } = body || {};
 
-    if (!userId || typeof xpEarned !== 'number') {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Missing userId or xpEarned' },
+        { success: false, error: 'Missing userId' },
         { status: 400 },
       );
     }
@@ -29,7 +29,7 @@ export async function POST(
     // 1) Obter autor do artigo
     const { data: post, error: postError } = await db
       .from('blog_posts')
-      .select('id, author_id')
+      .select('id, author_id, xp_reward')
       .eq('id', id)
       .maybeSingle();
 
@@ -48,7 +48,11 @@ export async function POST(
       );
     }
 
-    const authorId = post.author_id as string | null;
+    const authorId = (post.author_id as string | null) || null;
+    const basePostXP =
+      typeof post.xp_reward === 'number' && Number.isFinite(post.xp_reward)
+        ? post.xp_reward
+        : 0;
 
     // 2) Já completou este artigo?
     const alreadyCompleted = await hasCompletedContent(
@@ -67,8 +71,13 @@ export async function POST(
 
     // 3) Definir XP efectivo para o leitor
     //    – criador não ganha XP por ler o próprio artigo
+    const requestedXp =
+      typeof xpEarned === 'number' && Number.isFinite(xpEarned)
+        ? xpEarned
+        : basePostXP;
+    const safeReaderXP = Math.max(0, Math.min(requestedXp, basePostXP));
     const effectiveXpForReader =
-      authorId && authorId === userId ? 0 : xpEarned;
+      authorId && authorId === userId ? 0 : safeReaderXP;
 
     // 4) Registar leitura em blog_reads
     const markResult = await markContentComplete(
@@ -118,8 +127,8 @@ export async function POST(
 
     // 6) Bónus de criador (19% do XP do leitor)
     //    – só se existir autor e não for o próprio leitor
-    if (authorId && authorId !== userId && xpEarned > 0) {
-      const creatorBonus = Math.floor(xpEarned * 0.19);
+    if (authorId && authorId !== userId && effectiveXpForReader > 0) {
+      const creatorBonus = Math.floor(effectiveXpForReader * 0.19);
 
       if (creatorBonus > 0) {
         const creatorResult = await awardXP(

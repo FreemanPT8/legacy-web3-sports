@@ -41,7 +41,7 @@ export async function POST(
     // 1) Obter lição (para saber autor e XP base)
     const { data: lesson, error: lessonError } = await db
       .from('lessons')
-      .select('id, author_id, xp_reward')
+      .select('id, author_id, xp_reward, module_id')
       .eq('id', id)
       .maybeSingle();
 
@@ -60,11 +60,81 @@ export async function POST(
       );
     }
 
-    const authorId = lesson.author_id as string | null;
-    const baseLessonXP =
+    let resolvedAuthorId = (lesson.author_id as string | null) || null;
+    let baseLessonXP =
       typeof lesson.xp_reward === 'number' && Number.isFinite(lesson.xp_reward)
         ? lesson.xp_reward
         : 0;
+
+    if (lesson.module_id) {
+      const { data: moduleRow } = await db
+        .from('modules')
+        .select('id, course_id, author_id')
+        .eq('id', lesson.module_id)
+        .maybeSingle();
+
+      if (moduleRow) {
+        if (!resolvedAuthorId && moduleRow.author_id) {
+          resolvedAuthorId = moduleRow.author_id;
+        }
+
+        if (moduleRow.course_id) {
+          const { data: courseRow } = await db
+            .from('courses')
+            .select('id, author_id, curriculum')
+            .eq('id', moduleRow.course_id)
+            .maybeSingle();
+
+          if (courseRow?.curriculum) {
+            if (!resolvedAuthorId && courseRow.author_id) {
+              resolvedAuthorId = courseRow.author_id;
+            }
+
+            const topics = Array.isArray(courseRow.curriculum?.topics)
+              ? courseRow.curriculum.topics
+              : [];
+
+            topics.some((topic: any) => {
+              const lessons = Array.isArray(topic?.lessons)
+                ? topic.lessons
+                : [];
+              const match = lessons.find((l: any) => l?.id === id);
+
+              if (!match) return false;
+
+              resolvedAuthorId =
+                match.author_id ||
+                topic?.author_id ||
+                courseRow.author_id ||
+                resolvedAuthorId;
+
+              const candidateValues = [
+                match?.xp_reward,
+                match?.xpReward,
+                match?.xp?.reward,
+                topic?.xp_reward,
+                topic?.xpReward,
+                topic?.metadata?.xpReward,
+                courseRow.curriculum?.metadata?.xpReward,
+                courseRow.xp_reward,
+                courseRow.xp_reward_on_complete,
+              ];
+
+              for (const value of candidateValues) {
+                if (typeof value === 'number' && Number.isFinite(value)) {
+                  baseLessonXP = value;
+                  break;
+                }
+              }
+
+              return true;
+            });
+          }
+        }
+      }
+    }
+
+    const authorId = resolvedAuthorId;
 
     // 2) Já completou esta lição?
     const alreadyCompleted = await hasCompletedContent(userId, id, 'lesson');
