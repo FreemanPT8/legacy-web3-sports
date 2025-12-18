@@ -87,6 +87,11 @@ export default function CreateHousePage() {
   }, []);
 
   const sanitizedCountry = countryCode.toUpperCase().trim();
+  const hasValidCountry = countries.some(
+    (country) => country.code === sanitizedCountry,
+  );
+  const selectCountryValue = hasValidCountry ? sanitizedCountry : undefined;
+  const selectSportValue = selectedSport || undefined;
   const isFormValid =
     !!selectedSport && sanitizedCountry.length === 2 && status;
 
@@ -176,7 +181,10 @@ export default function CreateHousePage() {
                 <p className="text-xs font-semibold uppercase text-muted-custom">
                   Select sport
                 </p>
-                <Select value={selectedSport} onValueChange={setSelectedSport}>
+                <Select
+                  value={selectSportValue}
+                  onValueChange={setSelectedSport}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a sport" />
                   </SelectTrigger>
@@ -202,7 +210,10 @@ export default function CreateHousePage() {
                   Country code
                 </p>
                 <div className="grid gap-2 md:grid-cols-2">
-                  <Select value={countryCode} onValueChange={setCountryCode}>
+                  <Select
+                    value={selectCountryValue}
+                    onValueChange={(value) => setCountryCode(value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select country" />
                     </SelectTrigger>
@@ -222,7 +233,7 @@ export default function CreateHousePage() {
                 </div>
                 {countryCode && countryCode.trim().length === 2 && (
                   <p className="text-[11px] text-muted-custom">
-                    País selecionado: {COUNTRIES.find((c) => c.code === countryCode.toUpperCase())?.name || 'Desconhecido'}
+                    País selecionado: {COUNTRIES.find((c) => c.code === sanitizedCountry)?.name || 'Desconhecido'}
                   </p>
                 )}
               </div>
