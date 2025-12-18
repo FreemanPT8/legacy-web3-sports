@@ -1863,7 +1863,7 @@ function LegacyModuleLessonsLegacyView() {
 
                       <div
 
-                        className={`border rounded-lg p-4 bg-[#05212b] space-y-2 ${previewContainer}`}
+                        className={`border rounded-lg p-4 bg-[#05212b] space-y-3 ${previewContainer}`}
 
                       >
 
@@ -1902,6 +1902,22 @@ function LegacyModuleLessonsLegacyView() {
                           </p>
 
                         </div>
+
+                        <div
+
+                          className="prose prose-invert prose-sm text-slate-200 max-w-none [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>li]:mb-1"
+
+                          dangerouslySetInnerHTML={{
+
+                            __html: content?.trim()
+
+                              ? content
+
+                              : '<p class=\"text-slate-400 italic\">Write some content to preview it here.</p>',
+
+                          }}
+
+                        />
 
                       </div>
 
