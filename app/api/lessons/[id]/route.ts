@@ -147,18 +147,7 @@ export async function GET(
       0,
     );
 
-    // 5) Flags: criador / completed (criador nunca conta como completed)
-    const isCreator =
-      !!userId &&
-      !!matchedLesson.author_id &&
-      matchedLesson.author_id === userId;
-
-    const isCompleted =
-      !!userId &&
-      !isCreator &&
-      completionsArray.some((c) => c.user_id && c.user_id === userId);
-
-    // 6) Normalizar dados da lesson
+    // 5) Normalizar dados da lesson
     const resolveNumber = (value: any, fallback: number | null = null) =>
       typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 
@@ -196,6 +185,17 @@ export async function GET(
         : '';
     const { before: content_preview, hasReadMore: content_has_read_more } =
       splitReadMore(rawContent);
+
+    // Flags calculadas apenas depois de conhecermos o autor real da lição
+    const isCreator =
+      !!userId &&
+      !!resolvedAuthorId &&
+      resolvedAuthorId === userId;
+
+    const isCompleted =
+      !!userId &&
+      !isCreator &&
+      completionsArray.some((c) => c.user_id && c.user_id === userId);
 
     const lesson = {
       id: matchedLesson.id,

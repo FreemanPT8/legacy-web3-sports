@@ -27,6 +27,7 @@ export async function GET(
         `
         *,
         author_user:users!blog_posts_author_id_fkey (
+          id,
           username
         )
       `,
@@ -70,10 +71,13 @@ export async function GET(
       0,
     );
 
+    const resolvedAuthorId =
+      rawPost.author_id || rawPost.author_user?.id || null;
+
     const isAuthor =
       !!user &&
-      !!rawPost.author_id &&
-      rawPost.author_id === user.id;
+      !!resolvedAuthorId &&
+      resolvedAuthorId === user.id;
 
     const isCompleted =
       !!user &&
@@ -85,6 +89,7 @@ export async function GET(
 
     const post = {
       ...rawPost,
+      author_id: resolvedAuthorId,
       author: authorName,
       registered_readers: registeredReaders,
       total_xp_distributed: totalXpDistributed,
