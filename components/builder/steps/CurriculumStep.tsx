@@ -487,6 +487,9 @@ function TopicCard({
         </div>
 
         <div className={cn(SCHEDULE_PANEL_CLASSES, 'text-xs text-slate-300')}>
+          <div className="mb-2 flex items-center justify-between text-[11px] text-slate-400">
+            <span>{formatScheduleSummary(topic.schedule, scheduleUtils)}</span>
+          </div>
           <button
             type="button"
             className="flex w-full items-center justify-between font-semibold uppercase tracking-wide text-slate-200"
@@ -794,6 +797,9 @@ function LessonCard({
           </div>
 
           <div className={cn(SCHEDULE_PANEL_CLASSES, 'text-slate-300')}>
+            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-400">
+              <span>{formatScheduleSummary(lesson.schedule, scheduleUtils)}</span>
+            </div>
             <button
               type="button"
               className="flex w-full items-center justify-between text-xs font-semibold uppercase text-slate-100"
@@ -1056,6 +1062,46 @@ function ScheduleInputRow({
       </div>
     </div>
   );
+}
+
+function formatScheduleSummary(
+  schedule: ScheduleConfig,
+  scheduleUtils: ScheduleUtils,
+) {
+  const statusLabel = schedule.status
+    ? schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)
+    : 'Draft';
+
+  const publishInputs = schedule.publishAt
+    ? scheduleUtils.toInputValues(schedule.publishAt)
+    : null;
+  const expireInputs = schedule.expireAt
+    ? scheduleUtils.toInputValues(schedule.expireAt)
+    : null;
+
+  const summaryParts = [statusLabel];
+
+  if (publishInputs?.date) {
+    summaryParts.push(
+      `Publishes ${publishInputs.date}${
+        publishInputs.time ? ` ${publishInputs.time}` : ''
+      }`,
+    );
+  } else {
+    summaryParts.push('No publish date');
+  }
+
+  if (expireInputs?.date) {
+    summaryParts.push(
+      `Expires ${expireInputs.date}${
+        expireInputs.time ? ` ${expireInputs.time}` : ''
+      }`,
+    );
+  } else {
+    summaryParts.push('No expiry');
+  }
+
+  return summaryParts.join(' • ');
 }
 
 function LabelSmall({ children }: { children: ReactNode }) {
