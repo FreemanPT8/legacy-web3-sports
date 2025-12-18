@@ -13,6 +13,11 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import Blockquote from '@tiptap/extension-blockquote';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
+import Heading from '@tiptap/extension-heading';
 import { Button } from '@/components/ui/button';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -23,6 +28,7 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  AlignJustify,
   Asterisk,
   Bold,
   Clipboard,
@@ -120,17 +126,29 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4, 5] },
+        heading: false,
+        blockquote: false,
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
         link: false,
         horizontalRule: false,
         underline: false,
         strike: false,
       }),
+      Heading.configure({ levels: [1, 2, 3, 4, 5] }),
+      Blockquote,
+      BulletList,
+      OrderedList,
+      ListItem,
       Underline,
       Strike,
       TextStyle,
       Color.configure({ types: ['textStyle'] }),
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right', 'justify'],
+      }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -183,7 +201,7 @@ export function RichTextEditor({
   );
 
   const toggleAlign = useCallback(
-    (direction: 'left' | 'center' | 'right') => {
+    (direction: 'left' | 'center' | 'right' | 'justify') => {
       editor?.chain().focus().setTextAlign(direction).run();
     },
     [editor],
@@ -369,15 +387,26 @@ export function RichTextEditor({
           >
             <AlignCenter className="h-4 w-4" />
           </Button>
-          <Button
-            type="button"
-            variant={editor?.isActive({ textAlign: 'right' }) ? 'secondary' : 'ghost'}
-            size="icon"
-            onClick={() => toggleAlign('right')}
-            aria-label="Align right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </Button>
+          <div className="inline-flex">
+            <Button
+              type="button"
+              variant={editor?.isActive({ textAlign: 'right' }) ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => toggleAlign('right')}
+              aria-label="Align right"
+            >
+              <AlignRight className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant={editor?.isActive({ textAlign: 'justify' }) ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => toggleAlign('justify')}
+              aria-label="Align justify"
+            >
+              <AlignJustify className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <Button
           type="button"
