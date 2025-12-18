@@ -8,6 +8,9 @@ import Strike from '@tiptap/extension-strike';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import TextAlign from '@tiptap/extension-text-align';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
@@ -114,20 +117,34 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: false,
-        bulletList: { keepMarks: true, keepAttributes: false },
-        orderedList: { keepMarks: true, keepAttributes: false },
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
         code: false,
         codeBlock: false,
         horizontalRule: false,
         strike: false,
         underline: false,
       }),
+      BulletList.configure({
+        keepMarks: true,
+        keepAttributes: false,
+      }),
+      OrderedList.configure({
+        keepMarks: true,
+        keepAttributes: false,
+      }),
+      ListItem.configure({
+        HTMLAttributes: {
+          class: 'legacy-list-item',
+        },
+      }),
       Underline,
       Strike,
       TextStyle,
       Color.configure({ types: ['textStyle'] }),
       TextAlign.configure({
-        types: ['paragraph', 'listItem'],
+        types: ['paragraph', 'listItem', 'bulletList', 'orderedList'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
       Link.configure({
