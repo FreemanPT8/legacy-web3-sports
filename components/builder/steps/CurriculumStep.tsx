@@ -24,7 +24,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Plus, Trash2, BookOpenCheck, ListChecks, CalendarClock } from 'lucide-react';
+import {
+  GripVertical,
+  Plus,
+  Trash2,
+  BookOpenCheck,
+  ListChecks,
+  CalendarClock,
+  Eye,
+  ChevronDown,
+} from 'lucide-react';
 
 import { useBuilderState } from '@/hooks/useBuilderState';
 import { LANGUAGES, type CourseBuilderState, type ScheduleConfig } from '@/types/builder';
@@ -536,6 +545,20 @@ function LessonCard({
 }: LessonCardProps) {
   const attachmentCount = lesson.attachments.length;
   const videoUrl = lesson.video?.url || '';
+  const [scheduleOpen, setScheduleOpen] = useState<boolean>(() => {
+    const sched = lesson.schedule;
+    if (!sched) return false;
+    return Boolean(
+      sched.publishAt ||
+        sched.expireAt ||
+        (sched.status && sched.status !== 'draft'),
+    );
+  });
+  const previewDisabled = !lesson.id;
+  const handlePreviewClick = () => {
+    if (!lesson.id) return;
+    window.open(`/education/lessons/${lesson.id}`, '_blank');
+  };
 
   const handleVideoChange = (url: string) => {
     const trimmed = url.trim();
@@ -671,7 +694,7 @@ function LessonCard({
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
         <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
           {attachmentCount} attachment{attachmentCount === 1 ? '' : 's'}
         </Badge>
@@ -683,15 +706,27 @@ function LessonCard({
             Video attached
           </Badge>
         )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-blue-600"
-          onClick={onToggle}
-        >
-          {isExpanded ? 'Hide editor' : 'Edit lesson'}
-        </Button>
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-blue-600"
+            onClick={onToggle}
+          >
+            {isExpanded ? 'Hide editor' : 'Edit lesson'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handlePreviewClick}
+            disabled={previewDisabled}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            Preview
+          </Button>
+        </div>
       </div>
       {isExpanded && (
         <div className="mt-4 space-y-4 border-t border-dashed pt-4">
@@ -725,15 +760,36 @@ function LessonCard({
             </Button>
           </div>
 
-          <ScheduleForm
-            heading="Lesson schedule"
-            schedule={lesson.schedule}
-            scheduleUtils={scheduleUtils}
-            onChange={(nextSchedule) =>
-              onChange((prev) => ({ ...prev, schedule: nextSchedule }))
-            }
-            className="bg-gray-50 dark:bg-gray-900"
-          />
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900/60">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between text-xs font-semibold uppercase text-gray-600 dark:text-gray-300"
+              onClick={() => setScheduleOpen((prev) => !prev)}
+            >
+              <span>Lesson schedule</span>
+              <span className="flex items-center gap-1 text-[11px] normal-case text-gray-500">
+                {scheduleUtils.timezone}
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 transition-transform',
+                    scheduleOpen ? 'rotate-180' : 'rotate-0',
+                  )}
+                />
+              </span>
+            </button>
+            {scheduleOpen && (
+              <div className="mt-3">
+                <ScheduleForm
+                  schedule={lesson.schedule}
+                  scheduleUtils={scheduleUtils}
+                  onChange={(nextSchedule) =>
+                    onChange((prev) => ({ ...prev, schedule: nextSchedule }))
+                  }
+                  className="border-none p-0 shadow-none bg-transparent"
+                />
+              </div>
+            )}
+          </div>
 
           <div>
             <LabelSmall>Attachments</LabelSmall>
@@ -805,7 +861,7 @@ function LessonCard({
 }
 
 interface ScheduleFormProps {
-  heading: string;
+  heading?: string;
   schedule: ScheduleConfig;
   scheduleUtils: ScheduleUtils;
   onChange: (schedule: ScheduleConfig) => void;
@@ -873,13 +929,15 @@ function ScheduleForm({
         className,
       )}
     >
-      <div className="mb-3 flex flex-wrap items-center justify-between text-xs text-gray-500">
-        <span className="font-semibold uppercase">{heading}</span>
-        <span className="inline-flex items-center gap-1">
-          <CalendarClock className="h-3 w-3" />
-          {scheduleUtils.timezone}
-        </span>
-      </div>
+      {heading && (
+        <div className="mb-3 flex flex-wrap items-center justify-between text-xs text-gray-500">
+          <span className="font-semibold uppercase">{heading}</span>
+          <span className="inline-flex items-center gap-1">
+            <CalendarClock className="h-3 w-3" />
+            {scheduleUtils.timezone}
+          </span>
+        </div>
+      )}
       <div className="mb-3">
         <Select
           value={schedule.status}
