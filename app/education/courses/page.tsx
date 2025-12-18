@@ -24,6 +24,7 @@ import {
   ArrowRight,
   CheckCircle,
   PenSquare,
+  Users,
 } from 'lucide-react';
 
 type Lesson = {
@@ -300,9 +301,11 @@ export default function CoursesPage() {
                     );
 
                   const totalXP = formatTotalXP(course, modulesArray);
-                  const completionsCount = course.completions_count ?? 0;
-
-                  const xpDistributed = course.xp_distributed_total ?? 0;
+                  const completionsCount =
+                    course.completions_count ??
+                    (course as any)?.completionsCount ??
+                    (course as any)?.total_completions ??
+                    0;
 
                   const xpRequired = course.xp_threshold ?? 0;
                   const isLocked = userXP < xpRequired;
@@ -398,20 +401,24 @@ export default function CoursesPage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <Award className="h-4 w-4 text-cyan-300" />
-                            <span>
-                              {totalXP}{' '}
-                              {tr('courses.totalXP', 'XP disponível')}
-                              {xpDistributed > 0 && (
-                                <>
-                                  {' · '}
-                                  <span className="text-[11px] text-slate-400">
-                                    {xpDistributed} XP já distribuído
-                                  </span>
-                                </>
-                              )}
-                            </span>
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-base text-white">
+                              <Award className="h-4 w-4 text-cyan-300" />
+                              <span>
+                                {totalXP}{' '}
+                                {tr('courses.totalXP', 'XP disponível')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-slate-300">
+                              <Users className="h-4 w-4 text-cyan-300" />
+                              <span>
+                                {completionsCount}{' '}
+                                {tr(
+                                  'courses.completions',
+                                  'utilizadores concluíram',
+                                )}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
