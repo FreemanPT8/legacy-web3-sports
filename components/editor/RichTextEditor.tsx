@@ -196,12 +196,26 @@ export function RichTextEditor({
   const toggleList = useCallback(
     (variant: 'bullet' | 'ordered') => {
       if (!editor) return;
-      const chain = editor.chain().focus();
-      if (variant === 'bullet') {
-        chain.toggleBulletList().run();
-      } else {
-        chain.toggleOrderedList().run();
+
+      const commandRan =
+        variant === 'bullet'
+          ? editor.chain().focus().toggleBulletList().run()
+          : editor.chain().focus().toggleOrderedList().run();
+
+      if (commandRan) {
+        return;
       }
+
+      const wrapper = variant === 'bullet' ? 'ul' : 'ol';
+      editor
+        .chain()
+        .focus()
+        .insertContent(
+          `<${wrapper}><li>${
+            editor.isEmpty ? 'List item' : ''
+          }</li></${wrapper}>`,
+        )
+        .run();
     },
     [editor],
   );
