@@ -10,7 +10,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
+import { removeReadMoreMarker } from '@/lib/read-more';
 
 type Lesson = {
   id: string;
@@ -86,6 +86,30 @@ export default function CourseDetailPage() {
   const tr = (key: string, fallback: string) => {
     const val = t(key);
     return val === key ? fallback : val;
+  };
+
+  const getLocalizedText = (value: any, fallback: string) => {
+    if (!value) return fallback;
+    if (typeof value === 'string') return value;
+    return getMultilingualContent(value, language) || fallback;
+  };
+
+  const getLessonXP = (lesson: Lesson) => {
+    if (typeof lesson?.xp_reward === 'number') return lesson.xp_reward;
+    if (typeof (lesson as any)?.xpReward === 'number') {
+      return (lesson as any).xpReward;
+    }
+    return 0;
+  };
+
+  const getLessonDuration = (lesson: Lesson) => {
+    if (typeof lesson?.estimated_time === 'number') {
+      return lesson.estimated_time;
+    }
+    if (typeof (lesson as any)?.duration_minutes === 'number') {
+      return (lesson as any).duration_minutes;
+    }
+    return 10;
   };
 
   const isAdminUser =
@@ -156,12 +180,18 @@ export default function CourseDetailPage() {
     }
   };
 
-  const getInitials = (text: string) => {
-    if (!text) return 'LG';
-    const words = text.trim().split(' ');
-    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-    return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
-  };
+const getInitials = (text: string) => {
+  if (!text) return 'LG';
+  const words = text.trim().split(' ');
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
+};
+
+const sanitizeCourseDescription = (html: string) =>
+  removeReadMoreMarker(html || '').replace(
+    /<script[\s\S]*?>[\s\S]*?<\/script>/gi,
+    '',
+  );
 
   if (loading) {
     return (
@@ -209,11 +239,16 @@ export default function CourseDetailPage() {
     );
   }
 
-  const title = getMultilingualContent(course.title, language);
-  const description = getMultilingualContent(
-    course.description,
-    language,
+  const title = getLocalizedText(
+    course.title,
+    tr('courses.untitled', 'Curso sem título'),
   );
+  const descriptionRaw = getLocalizedText(
+    course.description,
+    '',
+  );
+  const descriptionHtml = sanitizeCourseDescription(descriptionRaw);
+  const hasDescription = descriptionHtml.trim().length > 0;
 
   const imageUrl = course.image_url || course.thumbnail_url || null;
 
@@ -258,15 +293,15 @@ export default function CourseDetailPage() {
             <Card className="mb-6 overflow-hidden border border-white/10 bg-[#000c12]">
               {/* Thumbnail / Placeholder */}
               {imageUrl ? (
-                <div className="w-full h-56 border-b border-white/10 bg-[#000c12] overflow-hidden">
+                <div className="w-full h-72 md:h-[420px] border-b border-white/10 bg-[#000c12] overflow-hidden">
                   <img
                     src={imageUrl}
                     alt={title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
                   />
                 </div>
               ) : (
-                <div className="w-full h-56 bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 flex items-center justify-center">
+                <div className="w-full h-72 md:h-[420px] bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 flex items-center justify-center">
                   <div className="flex flex-col items-center text-white">
                     <div className="flex items-center gap-2 mb-1">
                       <BookOpen className="h-7 w-7" />
@@ -281,9 +316,9 @@ export default function CourseDetailPage() {
                 </div>
               )}
 
-              <CardHeader>
+              <CardHeader className="space-y-6">
                 <div className="flex flex-wrap justify-between items-start gap-6">
-                  <div className="space-y-3 max-w-3xl">
+                  <div className="space-y-4 max-w-3xl">
                     <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                       {tr('nav.education', 'WEB3 ACADEMY')}
                     </p>
@@ -301,10 +336,11 @@ export default function CourseDetailPage() {
                       {title}
                     </CardTitle>
 
-                    {description && (
-                      <CardDescription className="text-sm text-slate-300">
-                        {description}
-                      </CardDescription>
+                    {hasDescription && (
+                      <div
+                        className="text-sm leading-relaxed text-slate-200 space-y-3 [&_strong]:text-white"
+                        dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                      />
                     )}
 
                     <div className="text-xs text-slate-400">
@@ -314,60 +350,71 @@ export default function CourseDetailPage() {
                       </span>
                     </div>
                   </div>
-
-                  <div className="flex flex-col items-end gap-2 text-sm text-slate-300">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-cyan-300" />
-                      <span>
-                        {totalModules}{' '}
-                        {tr('courses.modules', 'módulos')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-cyan-300" />
-                      <span>
-                        {totalLessons}{' '}
-                        {tr('courses.lessons', 'lições')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Award className="h-4 w-4 text-cyan-300" />
-                      <span>
-                        {totalXP}{' '}
-                        {tr('courses.totalXP', 'XP disponível')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Award className="h-4 w-4 text-cyan-300" />
-                      <span>
-                        {xpDistributed}{' '}
-                        {tr('courses.xpDistributed', 'XP já entregue')}
-                      </span>
-                    </div>
-                    {user && (
-                      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#05212b] px-3 py-1 text-xs text-cyan-100">
-                        <Award className="h-3 w-3 text-cyan-300" />
-                        <span>
-                          {tr(
-                            'courses.yourXPInCourse',
-                            'Tu já ganhaste',
-                          )}{' '}
-                          <strong>{userXpInCourse} XP</strong>{' '}
-                          {tr('courses.inThisCourse', 'neste curso')}
-                        </span>
-                      </div>
-                    )}
-                    {xpRequired > 0 && (
-                      <div className="mt-1 text-xs text-slate-400">
-                        {tr(
-                          'courses.unlockAt',
-                          'XP mínimo recomendado',
-                        )}
-                        : <strong className="text-white">{xpRequired} XP</strong>
-                      </div>
-                    )}
-                  </div>
                 </div>
+
+                <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
+                  {[
+                    {
+                      key: 'modules',
+                      label: tr('courses.modules', 'Módulos'),
+                      value: `${totalModules}`,
+                      icon: <BookOpen className="h-5 w-5 text-cyan-300" />,
+                    },
+                    {
+                      key: 'lessons',
+                      label: tr('courses.lessons', 'Lições'),
+                      value: `${totalLessons}`,
+                      icon: <BookOpen className="h-5 w-5 text-cyan-300" />,
+                    },
+                    {
+                      key: 'availableXP',
+                      label: tr('courses.totalXP', 'XP disponível'),
+                      value: `${totalXP} XP`,
+                      icon: <Award className="h-5 w-5 text-cyan-300" />,
+                    },
+                    {
+                      key: 'distributedXP',
+                      label: tr('courses.xpDistributed', 'XP já entregue'),
+                      value: `${xpDistributed} XP`,
+                      icon: <Award className="h-5 w-5 text-cyan-300" />,
+                    },
+                    {
+                      key: 'userXP',
+                      label: user
+                        ? tr('courses.yourXPInCourse', 'Tu já ganhaste')
+                        : tr('courses.trackProgress', 'Acompanha o teu XP'),
+                      value: user
+                        ? `${userXpInCourse} XP`
+                        : tr('courses.loginToTrack', 'Inicia sessão'),
+                      icon: user ? (
+                        <CheckCircle className="h-5 w-5 text-emerald-400" />
+                      ) : (
+                        <Lock className="h-5 w-5 text-slate-400" />
+                      ),
+                    },
+                  ].map((stat) => (
+                    <div
+                      key={stat.key}
+                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#05212b]/70 px-3 py-3"
+                    >
+                      {stat.icon}
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                          {stat.label}
+                        </p>
+                        <p className="text-base font-semibold text-white">
+                          {stat.value}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {xpRequired > 0 && (
+                  <div className="text-xs text-slate-400">
+                    {tr('courses.unlockAt', 'XP mínimo recomendado')}: <strong className="text-white">{xpRequired} XP</strong>
+                  </div>
+                )}
               </CardHeader>
             </Card>
 
@@ -383,12 +430,13 @@ export default function CourseDetailPage() {
               </Card>
             ) : (
               <div className="space-y-6">
-                {modules.map((mod) => {
-                  const modTitle = getMultilingualContent(
-                    mod.title,
-                    language,
-                  );
-                  const moduleAuthorName = mod.author_name || 'Admin';
+              {modules.map((mod, moduleIndex) => {
+                const moduleLabel = tr('courses.moduleLabel', 'Tópico');
+                const modTitle = getLocalizedText(
+                  mod.title,
+                  `${moduleLabel} ${moduleIndex + 1}`,
+                );
+                const moduleAuthorName = mod.author_name || 'Admin';
 
                   const isModuleCreator =
                     !!mod.isCreator ||
@@ -459,10 +507,14 @@ export default function CourseDetailPage() {
                           </p>
                         ) : (
                           <div className="space-y-3">
-                            {lessons.map((lesson) => {
-                              const lessonTitle = getMultilingualContent(
+                            {lessons.map((lesson, lessonIndex) => {
+                              const lessonLabel = tr(
+                                'courses.lessonLabel',
+                                'Lição',
+                              );
+                              const lessonTitle = getLocalizedText(
                                 lesson.title,
-                                language,
+                                `${lessonLabel} ${lesson.order ?? lessonIndex + 1}`,
                               );
                               const lessonAuthorName =
                                 lesson.author_name || 'Admin';
@@ -479,7 +531,8 @@ export default function CourseDetailPage() {
                                 !!lesson.isCompleted && !isLessonCreator;
 
                               const estimatedMinutes =
-                                lesson.estimated_time ?? 10;
+                                getLessonDuration(lesson);
+                              const lessonXP = getLessonXP(lesson);
                               const lessonHasReadMore =
                                 lesson.content_has_read_more ?? false;
 
@@ -516,10 +569,10 @@ export default function CourseDetailPage() {
                                           {lessonAuthorName}
                                         </span>
                                       </span>
-                                      <span className="flex items-center gap-1">
-                                        <Award className="h-4 w-4 text-cyan-300" />
-                                        {lesson.xp_reward || 0} XP
-                                      </span>
+                                        <span className="flex items-center gap-1">
+                                          <Award className="h-4 w-4 text-cyan-300" />
+                                          {lessonXP} XP
+                                        </span>
                                       <span className="flex items-center gap-1">
                                         <Clock className="h-4 w-4 text-cyan-300" />
                                         {estimatedMinutes} min
