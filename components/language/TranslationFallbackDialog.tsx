@@ -53,7 +53,9 @@ export function TranslationFallbackDialog({
 }: TranslationFallbackDialogProps) {
   const copy = CONTEXT_COPY[context];
   const currentLanguageName =
-    LANGUAGE_META_MAP[currentLanguage]?.name || currentLanguage.toUpperCase();
+    LANGUAGE_META_MAP[
+      (currentLanguage as keyof typeof LANGUAGE_META_MAP) ?? 'pt'
+    ]?.name || currentLanguage.toUpperCase();
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
@@ -114,4 +116,3 @@ export function TranslationFallbackDialog({
     </Dialog>
   );
 }
-
