@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
+import Document from '@tiptap/extension-document';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
+import History from '@tiptap/extension-history';
+import BoldMark from '@tiptap/extension-bold';
+import ItalicMark from '@tiptap/extension-italic';
 import Underline from '@tiptap/extension-underline';
 import Strike from '@tiptap/extension-strike';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -13,6 +18,14 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import Blockquote from '@tiptap/extension-blockquote';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
+import Heading from '@tiptap/extension-heading';
+import Dropcursor from '@tiptap/extension-dropcursor';
+import Gapcursor from '@tiptap/extension-gapcursor';
+import HardBreak from '@tiptap/extension-hard-break';
 import { Button } from '@/components/ui/button';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -120,36 +133,43 @@ export function RichTextEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4, 5] },
-        link: false,
-        horizontalRule: false,
-        underline: false,
-        strike: false,
-      }),
-      Underline,
-      Strike,
-      TextStyle,
-      Color.configure({ types: ['textStyle'] }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-        alignments: ['left', 'center', 'right', 'justify'],
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'legacy-link',
-          rel: 'noreferrer noopener',
-          target: '_blank',
-        },
-      }),
-      Placeholder.configure({
-        placeholder: placeholder || 'Start writingâ€¦',
-      }),
-      CharacterCount.configure(),
-      LegacyImage,
-      HorizontalRule.configure({ HTMLAttributes: { class: 'legacy-hr' } }),
-    ],
+        Document,
+        Paragraph,
+        Text,
+        History,
+        Dropcursor,
+        Gapcursor,
+        HardBreak.configure({ keepMarks: true }),
+        Heading.configure({ levels: [1, 2, 3, 4, 5] }),
+        Blockquote,
+        BulletList,
+        OrderedList,
+        ListItem,
+        BoldMark,
+        ItalicMark,
+        Underline,
+        Strike,
+        TextStyle,
+        Color.configure({ types: ['textStyle'] }),
+        TextAlign.configure({
+          types: ['heading', 'paragraph'],
+          alignments: ['left', 'center', 'right', 'justify'],
+        }),
+        Link.configure({
+          openOnClick: false,
+          HTMLAttributes: {
+            class: 'legacy-link',
+            rel: 'noreferrer noopener',
+            target: '_blank',
+          },
+        }),
+        Placeholder.configure({
+          placeholder: placeholder || 'Start writing…',
+        }),
+        CharacterCount.configure(),
+        LegacyImage,
+        HorizontalRule.configure({ HTMLAttributes: { class: 'legacy-hr' } }),
+      ],
     content: value || '',
     editorProps: {
       handlePaste(view, event) {
