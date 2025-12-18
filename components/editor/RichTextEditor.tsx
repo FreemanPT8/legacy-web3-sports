@@ -13,11 +13,6 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
-import Blockquote from '@tiptap/extension-blockquote';
-import BulletList from '@tiptap/extension-bullet-list';
-import OrderedList from '@tiptap/extension-ordered-list';
-import ListItem from '@tiptap/extension-list-item';
-import Heading from '@tiptap/extension-heading';
 import { Button } from '@/components/ui/button';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -126,21 +121,12 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: false,
-        blockquote: false,
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
+        heading: { levels: [1, 2, 3, 4, 5] },
         link: false,
         horizontalRule: false,
         underline: false,
         strike: false,
       }),
-      Heading.configure({ levels: [1, 2, 3, 4, 5] }),
-      Blockquote,
-      BulletList,
-      OrderedList,
-      ListItem,
       Underline,
       Strike,
       TextStyle,
