@@ -73,21 +73,43 @@
 @layer base {
   .ProseMirror ul,
   .ProseMirror ol {
-    list-style-position: outside;
     margin-left: 1.5rem;
-    padding-left: 1.25rem;
+    margin-bottom: 0.75rem;
+    padding-left: 0;
   }
 
-  .ProseMirror ul {
-    list-style-type: disc;
+  .ProseMirror .legacy-list-item {
+    list-style: none;
+    margin: 0 0 0.35rem;
+    padding-left: 1.25rem;
+    position: relative;
+  }
+
+  .ProseMirror ul .legacy-list-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 0.35rem;
+    height: 0.35rem;
+    transform: translateY(-50%);
+    border-radius: 9999px;
+    background-color: rgb(34 211 238); /* cyan */
+    box-shadow: 0 0 6px rgba(34, 211, 238, 0.45);
   }
 
   .ProseMirror ol {
-    list-style-type: decimal;
+    counter-reset: legacy-ordered;
   }
 
-  .ProseMirror li {
-    margin-bottom: 0.35rem;
+  .ProseMirror ol .legacy-list-item::before {
+    content: counter(legacy-ordered) '.';
+    counter-increment: legacy-ordered;
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    font-weight: 600;
+    color: rgb(148 163 184); /* slate-400 */
   }
 }
 
