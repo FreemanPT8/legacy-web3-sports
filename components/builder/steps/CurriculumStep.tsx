@@ -59,6 +59,8 @@ import {
 
 type ScheduleUtils = ReturnType<typeof useScheduleCET>;
 type DragListenerMap = ReturnType<typeof useSortable>['listeners'];
+const SCHEDULE_PANEL_CLASSES =
+  'rounded-xl border border-white/10 bg-[#031824]/80 p-3 shadow-sm';
 
 export function CurriculumStep() {
   const { state, patchState, activeLanguage } = useBuilderState();
@@ -367,6 +369,15 @@ function TopicCard({
     () => topic.description.trim().length === 0,
   );
   const [descriptionDraft, setDescriptionDraft] = useState(topic.description);
+  const [topicScheduleOpen, setTopicScheduleOpen] = useState<boolean>(() => {
+    const sched = topic.schedule;
+    if (!sched) return false;
+    return Boolean(
+      sched.publishAt ||
+        sched.expireAt ||
+        (sched.status && sched.status !== 'draft'),
+    );
+  });
 
   useEffect(() => {
     setDescriptionDraft(topic.description);
@@ -475,12 +486,34 @@ function TopicCard({
           </Badge>
         </div>
 
-        <ScheduleForm
-          heading="Topic schedule"
-          schedule={topic.schedule}
-          scheduleUtils={scheduleUtils}
-          onChange={onScheduleChange}
-        />
+        <div className={cn(SCHEDULE_PANEL_CLASSES, 'text-xs text-slate-300')}>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between font-semibold uppercase tracking-wide text-slate-200"
+            onClick={() => setTopicScheduleOpen((prev) => !prev)}
+          >
+            <span>Topic schedule</span>
+            <span className="flex items-center gap-1 text-[11px] normal-case text-slate-400">
+              {scheduleUtils.timezone}
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform',
+                  topicScheduleOpen ? 'rotate-180' : 'rotate-0',
+                )}
+              />
+            </span>
+          </button>
+          {topicScheduleOpen && (
+            <div className="mt-3">
+              <ScheduleForm
+                schedule={topic.schedule}
+                scheduleUtils={scheduleUtils}
+                onChange={onScheduleChange}
+                className="border-none bg-transparent p-0 shadow-none"
+              />
+            </div>
+          )}
+        </div>
 
         <div className="space-y-3">
           {topic.lessons.map((lesson, lessonIndex) => (
@@ -760,14 +793,14 @@ function LessonCard({
             </Button>
           </div>
 
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900/60">
+          <div className={cn(SCHEDULE_PANEL_CLASSES, 'text-slate-300')}>
             <button
               type="button"
-              className="flex w-full items-center justify-between text-xs font-semibold uppercase text-gray-600 dark:text-gray-300"
+              className="flex w-full items-center justify-between text-xs font-semibold uppercase text-slate-100"
               onClick={() => setScheduleOpen((prev) => !prev)}
             >
               <span>Lesson schedule</span>
-              <span className="flex items-center gap-1 text-[11px] normal-case text-gray-500">
+              <span className="flex items-center gap-1 text-[11px] normal-case text-slate-400">
                 {scheduleUtils.timezone}
                 <ChevronDown
                   className={cn(
