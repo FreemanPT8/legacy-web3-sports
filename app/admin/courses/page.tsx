@@ -20,6 +20,9 @@ import {
   Edit,
   Trash2,
   Lock,
+  Award,
+  Users,
+  PenSquare,
 } from 'lucide-react';
 
 type Course = {
@@ -126,6 +129,123 @@ function getCourseDescription(course: Course): string {
 
   return 'No description';
 }
+
+const stripHtml = (value: string) =>
+  value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const getLessonReward = (lesson: any) => {
+  if (typeof lesson?.xp_reward === 'number') return lesson.xp_reward;
+  if (typeof lesson?.xpReward === 'number') return lesson.xpReward;
+  return 0;
+};
+
+const getModuleBonus = (moduleLike: any) => {
+  if (typeof moduleLike?.xp_reward === 'number') return moduleLike.xp_reward;
+  if (typeof moduleLike?.xpReward === 'number') return moduleLike.xpReward;
+  if (
+    moduleLike?.metadata &&
+    typeof moduleLike.metadata.xpReward === 'number'
+  ) {
+    return moduleLike.metadata.xpReward;
+  }
+  return 0;
+};
+
+const getCourseCompletionBonus = (course: Course) => {
+  if (typeof (course as any)?.xp_reward === 'number') return (course as any).xp_reward;
+  if (
+    typeof (course as any)?.xp_reward_on_complete === 'number'
+  ) {
+    return (course as any).xp_reward_on_complete;
+  }
+  if (
+    (course as any)?.curriculum?.metadata &&
+    typeof (course as any).curriculum.metadata.xpReward === 'number'
+  ) {
+    return (course as any).curriculum.metadata.xpReward;
+  }
+  return 0;
+};
+
+const buildStatsFromTopics = (topics: any[], course: Course) => {
+  const totalLessons = topics.reduce(
+    (acc, topic) =>
+      acc + (Array.isArray(topic?.lessons) ? topic.lessons.length : 0),
+    0,
+  );
+
+  const lessonsXP = topics.reduce((acc, topic) => {
+    if (!Array.isArray(topic?.lessons)) return acc;
+    return (
+      acc +
+      topic.lessons.reduce(
+        (sum: number, lesson: any) => sum + getLessonReward(lesson),
+        0,
+      )
+    );
+  }, 0);
+
+  const moduleBonus = topics.reduce(
+    (acc, topic) => acc + getModuleBonus(topic),
+    0,
+  );
+
+  const totalXP =
+    lessonsXP + moduleBonus + getCourseCompletionBonus(course);
+
+  return {
+    totalModules: topics.length,
+    totalLessons,
+    totalXP,
+  };
+};
+
+const buildStatsFromLegacyModules = (modules: any[], course: Course) => {
+  const lessonsCount = modules.reduce(
+    (acc, module) =>
+      acc + (Array.isArray(module?.lessons) ? module.lessons.length : 0),
+    0,
+  );
+
+  const lessonsXP = modules.reduce((acc, module) => {
+    if (!Array.isArray(module?.lessons)) return acc;
+    return (
+      acc +
+      module.lessons.reduce(
+        (sum: number, lesson: any) => sum + getLessonReward(lesson),
+        0,
+      )
+    );
+  }, 0);
+
+  const moduleBonus = modules.reduce(
+    (acc, module) => acc + getModuleBonus(module),
+    0,
+  );
+
+  const totalXP =
+    lessonsXP + moduleBonus + getCourseCompletionBonus(course);
+
+  return {
+    totalModules: modules.length,
+    totalLessons: lessonsCount,
+    totalXP,
+  };
+};
+
+const getCourseStats = (course: Course) => {
+  const topics = Array.isArray(course.curriculum?.topics)
+    ? course.curriculum.topics || []
+    : [];
+  if (topics.length > 0) {
+    return buildStatsFromTopics(topics, course);
+  }
+
+  const legacyModules = Array.isArray(course.modules)
+    ? course.modules
+    : [];
+  return buildStatsFromLegacyModules(legacyModules, course);
+};
 
 export default function CoursesManagementPage() {
   const router = useRouter();
@@ -588,86 +708,118 @@ export default function CoursesManagementPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.map((course: any) => {
                 const title = getCourseTitle(course);
-                const description = getCourseDescription(course);
+                const description = stripHtml(getCourseDescription(course));
                 const isPublished = course.is_published ?? course.published;
                 const isCreator = !!user && course.author_id === user.id;
-                const xpTotal = course.xp_total_distributed ?? 0;
+                const xpDistributed =
+                  course.xp_total_distributed ??
+                  course.xp_distributed_total ??
+                  0;
                 const xpCreator = course.xp_creator_distributed ?? 0;
+                const { totalModules, totalLessons, totalXP } =
+                  getCourseStats(course);
                 const curriculumStats = getCurriculumSnapshot(course);
                 const legacyStats = getLegacyModuleSnapshot(course);
                 const topicsCount =
                   curriculumStats.topics || legacyStats.modules;
                 const lessonsCount =
                   curriculumStats.lessons || legacyStats.lessons;
+                const level = levelLabel(course);
+                const imageUrl = course.image_url || null;
+                const xpRequired = course.xp_threshold ?? 0;
 
                 return (
                   <Card
                     key={course.id}
-                    className="border border-white/10 bg-[#05212b] text-slate-200 transition-all hover:border-cyan-300/70"
+                    className="flex flex-col overflow-hidden border border-white/10 bg-[#000c12] text-slate-200 transition-all hover:border-cyan-300/70"
                   >
-                    <CardHeader>
-                      {course.image_url && (
-                        <div className="w-full h-40 rounded-lg mb-4 overflow-hidden bg-slate-900/60">
-                          <SafeImage
-                            src={course.image_url}
-                            alt={title}
-                            className="w-full h-full object-cover"
-                            width={800}
-                            height={200}
-                          />
+                    <div className="relative overflow-hidden border-b border-white/10 bg-[#05212b]">
+                      {imageUrl ? (
+                        <SafeImage
+                          src={imageUrl}
+                          alt={title}
+                          width={800}
+                          height={320}
+                          className="h-40 w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-400">
+                          <div className="flex flex-col items-center text-white">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-6 w-6" />
+                              <span className="text-lg font-semibold">
+                                Legacy Course
+                              </span>
+                            </div>
+                            <p className="text-[11px] uppercase tracking-[0.3em] opacity-80">
+                              Curriculum
+                            </p>
+                          </div>
                         </div>
                       )}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1">
-                          <CardTitle className="text-lg flex items-center gap-2 text-white">
-                            {title}
-                            {isCreator && (
-                              <Badge
-                                variant="outline"
-                                className="border-blue-500 text-blue-400"
-                              >
-                                Creator
-                              </Badge>
-                            )}
-                          </CardTitle>
-                          {course.author_name && (
-                            <p className="text-xs text-slate-300">
-                              By {course.author_name}
-                            </p>
-                          )}
-                        </div>
+                      <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                        <Badge className="border border-white/30 bg-black/50 text-[11px] uppercase tracking-[0.3em]">
+                          {level}
+                        </Badge>
+                        {isCreator && (
+                          <Badge className="bg-[#14718f] text-white flex items-center gap-1">
+                            <PenSquare className="h-3 w-3" />
+                            Creator
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="absolute right-3 top-3">
                         <Badge
                           className={
-                            isPublished ? 'bg-emerald-600' : 'bg-amber-500'
+                            isPublished ? 'bg-emerald-500 text-black' : 'bg-amber-400 text-black'
                           }
                         >
                           {isPublished ? 'Published' : 'Draft'}
                         </Badge>
                       </div>
+                    </div>
+
+                    <CardHeader className="space-y-2 pb-0">
+                      <CardTitle className="text-xl text-white">
+                        {title}
+                      </CardTitle>
+                      {course.author_name && (
+                        <p className="text-xs text-slate-400">
+                          By {course.author_name}
+                        </p>
+                      )}
+                      {description && (
+                        <p className="text-sm text-slate-300 line-clamp-3">
+                          {description}
+                        </p>
+                      )}
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-slate-300 mb-4 line-clamp-2">
-                        {description}
-                      </p>
-                      <div className="text-sm text-slate-300 mb-4">
-                        Level: {levelLabel(course)}
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs mb-4">
-                        <Badge variant="outline" className="border border-white/10">
-                          {xpTotal} XP distributed
-                        </Badge>
-                        <Badge variant="outline" className="border border-white/10">
-                          {topicsCount} topics / {lessonsCount} lessons
-                        </Badge>
-                        {isCreator && (
-                          <Badge
-                            variant="outline"
-                            className="border-blue-500 text-blue-400"
-                          >
-                            Creator share: {xpCreator} XP
-                          </Badge>
+                    <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-4">
+                      <div className="space-y-3 text-sm text-slate-300">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 text-base text-white">
+                            <Award className="h-4 w-4 text-cyan-300" />
+                            {totalXP} XP disponível
+                          </span>
+                          <span className="flex items-center gap-2 text-xs text-slate-400">
+                            <Users className="h-4 w-4 text-cyan-300" />
+                            {(topicsCount || totalModules) || 0} módulos /{' '}
+                            {(lessonsCount || totalLessons) || 0} lições
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                          <span>{xpDistributed} XP distribuído</span>
+                          {isCreator && (
+                            <span>Share: {xpCreator} XP</span>
+                          )}
+                        </div>
+                        {xpRequired > 0 && (
+                          <p className="text-xs text-slate-400">
+                            XP mínimo recomendado: {xpRequired} XP
+                          </p>
                         )}
                       </div>
+
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -725,4 +877,3 @@ export default function CoursesManagementPage() {
     </div>
   );
 }
-
