@@ -112,8 +112,6 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: false,
-        bulletList: false,
-        orderedList: false,
         code: false,
         codeBlock: false,
         horizontalRule: false,
