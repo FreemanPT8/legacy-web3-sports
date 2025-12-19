@@ -14,6 +14,14 @@ import { useBuilderContext } from '@/contexts/BuilderContext';
 import type { CourseBuilderState } from '@/types/builder';
 import { getAvailableLanguages } from '@/lib/language';
 
+const ensureHtmlBlock = (value?: string, fallback = '') => {
+  const base =
+    value && value.trim().length > 0 ? value : fallback || 'Content not defined yet.';
+  const trimmed = base.trim();
+  if (trimmed.startsWith('<')) return trimmed;
+  return `<p>${trimmed}</p>`;
+};
+
 const CET_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
   month: 'short',
@@ -32,12 +40,16 @@ export function CoursePreview() {
     Object.values(course.title).find((value) => value.trim().length) ||
     'Untitled course';
 
-  const description =
+  const descriptionHtml = ensureHtmlBlock(
     course.longDescription.en ||
-    Object.values(course.longDescription).find((value) => value.trim().length) ||
-    'Descrição ainda não definida.';
+      Object.values(course.longDescription).find((value) => value.trim().length),
+    'Descrição ainda não definida.',
+  );
 
-  const overview = course.overview || 'Overview ainda não definida.';
+  const overviewHtml = ensureHtmlBlock(
+    course.overview,
+    'Overview ainda não definida.',
+  );
   const publishInfo = formatSchedule(course.schedule.publishAt);
   const keyTakeaways = course.keyTakeaways.filter((item) => item.trim().length);
   const targetAudience = course.targetAudience.filter(
@@ -86,9 +98,10 @@ export function CoursePreview() {
           </Badge>
         </div>
         <h3 className="text-xl font-semibold">{headline}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-4">
-          {description}
-        </p>
+        <div
+          className="prose prose-slate prose-sm max-w-none text-gray-600 dark:prose-invert dark:text-gray-300"
+          dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+        />
         {availableLanguages.length > 0 && (
           <div className="flex flex-wrap gap-2 text-xs">
             {availableLanguages.map((lang) => (
@@ -135,7 +148,7 @@ export function CoursePreview() {
           />
       </div>
 
-      <SectionCard title="Overview" description={overview} />
+      <SectionCard title="Overview" descriptionHtml={overviewHtml} />
 
       <ListCard
         title="Key takeaways"
@@ -205,17 +218,20 @@ function PreviewStat({
 
 function SectionCard({
   title,
-  description,
+  descriptionHtml,
 }: {
   title: string;
-  description: string;
+  descriptionHtml: string;
 }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
       <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
         {title}
       </h4>
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{description}</p>
+      <div
+        className="prose prose-slate prose-sm mt-2 max-w-none text-gray-600 dark:prose-invert dark:text-gray-300"
+        dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+      />
     </div>
   );
 }
