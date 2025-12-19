@@ -223,7 +223,7 @@ export default function BlogPostPage() {
     );
   }
 
-  const normalizeXpReward = (value: unknown) => {
+  const normalizeXpReward = (value: unknown): number => {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return value;
     }
