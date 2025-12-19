@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import {
@@ -256,6 +257,21 @@ export default function BlogPostPage() {
               Voltar ao blog
             </button>
 
+            {post.image_url && (
+              <div className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-[#03151d]">
+                <div className="relative w-full pb-[45%]">
+                  <Image
+                    src={post.image_url}
+                    alt={pickTranslation(post.title, 'Blog cover')}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 768px"
+                    priority
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Header do artigo */}
             <Card className="mb-4 border border-white/10 bg-[#000c12]">
               <CardHeader>
@@ -293,9 +309,12 @@ export default function BlogPostPage() {
                   {pickTranslation(post.title, 'Untitled post')}
                 </CardTitle>
                 {post.excerpt && (
-                  <p className="text-slate-200 text-base mt-3">
-                    {pickTranslation(post.excerpt, '')}
-                  </p>
+                  <div
+                    className="text-slate-200 text-base mt-3 prose prose-invert prose-p:text-slate-200"
+                    dangerouslySetInnerHTML={{
+                      __html: pickTranslation(post.excerpt, ''),
+                    }}
+                  />
                 )}
               </CardHeader>
               <CardContent>
@@ -339,20 +358,31 @@ export default function BlogPostPage() {
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
                     <span className="block text-[11px] uppercase text-slate-400 mb-1">
+                      Leituras totais
+                    </span>
+                    <span className="font-semibold text-white flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-cyan-300" />
+                      {typeof post.views === 'number' ? post.views : 0}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] uppercase text-slate-400 mb-1">
                       Leitores registados
                     </span>
                     <span className="font-semibold text-white">
                       {registeredReaders}
                     </span>
                   </div>
-                  <div>
-                    <span className="block text-[11px] uppercase text-slate-400 mb-1">
-                      XP distribuído
-                    </span>
-                    <span className="font-semibold text-white">
-                      {totalXpDistributed} XP
-                    </span>
-                  </div>
+                  {user && (
+                    <div>
+                      <span className="block text-[11px] uppercase text-slate-400 mb-1">
+                        XP distribuido
+                      </span>
+                      <span className="font-semibold text-white">
+                        {totalXpDistributed} XP
+                      </span>
+                    </div>
+                  )}
                   <div>
                     <span className="block text-[11px] uppercase text-slate-400 mb-1">
                       Categoria
