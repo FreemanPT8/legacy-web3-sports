@@ -11,7 +11,6 @@ import TextAlign from '@tiptap/extension-text-align';
 import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
 import ListItem from '@tiptap/extension-list-item';
-import Heading from '@tiptap/extension-heading';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
@@ -124,7 +123,7 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: false,
+        heading: { levels: HEADING_LEVELS },
         bulletList: false,
         orderedList: false,
         listItem: false,
@@ -146,9 +145,6 @@ export function RichTextEditor({
         HTMLAttributes: {
           class: 'legacy-list-item',
         },
-      }),
-      Heading.configure({
-        levels: HEADING_LEVELS,
       }),
       Underline,
       Strike,
