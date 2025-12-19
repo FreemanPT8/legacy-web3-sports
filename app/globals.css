@@ -169,6 +169,33 @@
     color: rgb(148 163 184);
   }
 
+  .legacy-editor-content img,
+  .prose img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .legacy-editor-content img[data-size='sm'],
+  .prose img[data-size='sm'] {
+    max-width: 220px;
+  }
+
+  .legacy-editor-content img[data-size='md'],
+  .prose img[data-size='md'] {
+    max-width: 360px;
+  }
+
+  .legacy-editor-content img[data-size='lg'],
+  .prose img[data-size='lg'] {
+    max-width: 520px;
+  }
+
+  .legacy-editor-content img[data-size='xl'],
+  .prose img[data-size='xl'] {
+    max-width: 100%;
+  }
+
   .legacy-editor-toolbar {
     position: sticky;
     top: 70px;

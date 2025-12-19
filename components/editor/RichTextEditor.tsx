@@ -67,11 +67,19 @@ interface RichTextEditorProps {
 }
 const COLOR_SWATCHES = ['#2563EB', '#10B981', '#F97316', '#EF4444', '#A855F7', '#FACC15', '#0EA5E9'];
 type ImageAlignment = 'left' | 'center' | 'right';
+type ImageSize = 'sm' | 'md' | 'lg' | 'xl';
 
 const alignmentClassMap: Record<ImageAlignment, string> = {
   left: 'float-left mr-4 my-2',
   center: 'mx-auto my-4 block',
   right: 'float-right ml-4 my-2',
+};
+
+const sizeClassMap: Record<ImageSize, string> = {
+  sm: 'max-w-[220px]',
+  md: 'max-w-[360px]',
+  lg: 'max-w-[520px]',
+  xl: 'max-w-full',
 };
 
 const LegacyImage = Image.extend({
@@ -85,8 +93,9 @@ const LegacyImage = Image.extend({
         renderHTML: (attributes) => {
           const alignment =
             (attributes.alignment as ImageAlignment) ?? 'center';
-          const base = 'rounded-2xl border border-slate-200';
-          const className = [base, alignmentClassMap[alignment]]
+          const size = (attributes.size as ImageSize) ?? 'lg';
+          const base = 'legacy-editor-image rounded-2xl border border-slate-200';
+          const className = [base, alignmentClassMap[alignment], sizeClassMap[size]]
             .filter(Boolean)
             .join(' ');
 
@@ -96,9 +105,15 @@ const LegacyImage = Image.extend({
               ...attributes,
               class: className,
               'data-alignment': alignment,
+              'data-size': size,
             },
           ];
         },
+      },
+      size: {
+        default: 'lg',
+        parseHTML: (element) =>
+          (element.getAttribute('data-size') as ImageSize) || 'lg',
       },
     };
   },
@@ -118,6 +133,7 @@ export function RichTextEditor({
   const [specialCharsVisible, setSpecialCharsVisible] = useState(false);
   const [defaultImageAlignment, setDefaultImageAlignment] =
     useState<ImageAlignment>('center');
+  const [defaultImageSize, setDefaultImageSize] = useState<ImageSize>('lg');
   const mediaLibrary = useMediaLibrary();
 
   const editor = useEditor({
@@ -284,11 +300,16 @@ export function RichTextEditor({
   const openMedia = useCallback(
     (asset: MediaAsset) => {
       if (!editor) return;
-      if (asset.type === 'image') {
+      const isImageAsset =
+        asset.type === 'image' ||
+        /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(asset.url.split('?')[0] || '');
+
+      if (isImageAsset) {
         const imagePayload: Record<string, unknown> = {
           src: asset.url,
           alt: asset.alt || asset.title || '',
           alignment: defaultImageAlignment,
+          size: defaultImageSize,
         };
         editor.chain().focus().setImage(imagePayload as any).run();
         return;
@@ -308,6 +329,15 @@ export function RichTextEditor({
       setDefaultImageAlignment(next);
       if (!editor?.isActive('image')) return;
       editor.chain().focus().updateAttributes('image', { alignment: next }).run();
+    },
+    [editor],
+  );
+
+  const setImageSize = useCallback(
+    (next: ImageSize) => {
+      setDefaultImageSize(next);
+      if (!editor?.isActive('image')) return;
+      editor.chain().focus().updateAttributes('image', { size: next }).run();
     },
     [editor],
   );
@@ -554,6 +584,25 @@ export function RichTextEditor({
                 {alignment === 'left' && <AlignLeft className="h-4 w-4" />}
                 {alignment === 'center' && <AlignCenter className="h-4 w-4" />}
                 {alignment === 'right' && <AlignRight className="h-4 w-4" />}
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 border-l border-slate-200 pl-2 dark:border-slate-800">
+            {(['sm', 'md', 'lg', 'xl'] as ImageSize[]).map((size) => (
+              <Button
+                key={`image-size-${size}`}
+                type="button"
+                variant={
+                  editor?.isActive('image', { size }) || defaultImageSize === size
+                    ? 'secondary'
+                    : 'ghost'
+                }
+                size="icon"
+                onClick={() => setImageSize(size)}
+                aria-label={`Image size ${size.toUpperCase()}`}
+                className="text-[11px] font-semibold"
+              >
+                {size.toUpperCase()}
               </Button>
             ))}
           </div>
