@@ -311,7 +311,7 @@ export default function BlogPostPage() {
                 </CardTitle>
                 {post.excerpt && (
                   <div
-                    className="text-slate-200 text-base mt-3 prose prose-invert prose-p:text-slate-200"
+                    className="text-slate-200 text-base mt-3 prose prose-invert prose-p:text-slate-200 max-w-none"
                     dangerouslySetInnerHTML={{
                       __html: pickTranslation(post.excerpt, ''),
                     }}
