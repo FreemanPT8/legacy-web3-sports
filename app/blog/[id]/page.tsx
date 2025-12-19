@@ -260,12 +260,12 @@ export default function BlogPostPage() {
 
             {post.image_url && (
               <div className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-[#03151d]">
-                <div className="relative w-full pb-[45%]">
+                <div className="relative w-full pb-[56.25%]">
                   <Image
                     src={post.image_url}
                     alt={pickTranslation(post.title, 'Blog cover')}
                     fill
-                    className="object-cover"
+                    className="object-cover object-center"
                     sizes="(max-width: 768px) 100vw, 768px"
                     priority
                   />

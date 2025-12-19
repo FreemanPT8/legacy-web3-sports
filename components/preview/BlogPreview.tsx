@@ -46,15 +46,17 @@ export function BlogPreview() {
   return (
     <div className="space-y-4">
       {blog.coverImage?.url && (
-        <div className="relative h-40 w-full overflow-hidden rounded-2xl border border-gray-200 shadow-sm dark:border-gray-800">
-          <Image
-            src={blog.coverImage.url}
-            alt={blog.coverImage.alt || headline}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 320px"
-            unoptimized
-          />
+        <div className="w-full overflow-hidden rounded-2xl border border-gray-200 shadow-sm dark:border-gray-800">
+          <div className="relative w-full pb-[56.25%]">
+            <Image
+              src={blog.coverImage.url}
+              alt={blog.coverImage.alt || headline}
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 768px) 100vw, 320px"
+              unoptimized
+            />
+          </div>
         </div>
       )}
       <div className="space-y-2">
