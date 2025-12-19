@@ -1,9 +1,12 @@
 import type {
+  LangCode,
   LessonState,
   QuizState,
   ScheduleConfig,
   TopicState,
+  TranslatedField,
 } from '@/types/builder';
+import { LANGUAGES } from '@/types/builder';
 
 const CET_SCHEDULE: ScheduleConfig = {
   publishAt: null,
@@ -11,6 +14,15 @@ const CET_SCHEDULE: ScheduleConfig = {
   timezone: 'CET',
   status: 'draft',
 };
+
+const createBlankTranslations = (): TranslatedField =>
+  LANGUAGES.reduce(
+    (acc, lang) => {
+      acc[lang.code as LangCode] = '';
+      return acc;
+    },
+    {} as TranslatedField,
+  );
 
 const randomId = (prefix: string) => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -24,10 +36,12 @@ const cloneSchedule = (overrides?: Partial<ScheduleConfig>): ScheduleConfig => (
   ...overrides,
 });
 
-export const createLesson = (overrides?: Partial<LessonState>): LessonState => ({
+export const createLesson = (
+  overrides?: Partial<LessonState>,
+): LessonState => ({
   id: randomId('lesson'),
-  title: 'New lesson',
-  content: '',
+  title: createBlankTranslations(),
+  content: createBlankTranslations(),
   xpReward: null,
   estimated_time: 10,
   video: null,
@@ -38,7 +52,7 @@ export const createLesson = (overrides?: Partial<LessonState>): LessonState => (
 
 export const createQuiz = (overrides?: Partial<QuizState>): QuizState => ({
   id: randomId('quiz'),
-  title: 'New quiz',
+  title: createBlankTranslations(),
   questions: [],
   xpReward: null,
   schedule: cloneSchedule(),
@@ -47,8 +61,8 @@ export const createQuiz = (overrides?: Partial<QuizState>): QuizState => ({
 
 export const createTopic = (overrides?: Partial<TopicState>): TopicState => ({
   id: randomId('topic'),
-  title: 'Untitled topic',
-  description: '',
+  title: createBlankTranslations(),
+  description: createBlankTranslations(),
   lessons: [],
   quizzes: [],
   schedule: cloneSchedule(),

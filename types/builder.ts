@@ -94,8 +94,8 @@ export interface BuilderStateBase {
 
 export interface LessonState {
   id: string;
-  title: string;
-  content: string;
+  title: TranslatedField;
+  content: TranslatedField;
   xpReward?: number | null;
   estimated_time: number;
   video?: MediaAsset | null;
@@ -105,7 +105,7 @@ export interface LessonState {
 
 export interface QuizState {
   id: string;
-  title: string;
+  title: TranslatedField;
   questions: Array<{
     id: string;
     prompt: string;
@@ -118,8 +118,8 @@ export interface QuizState {
 
 export interface TopicState {
   id: string;
-  title: string;
-  description: string;
+  title: TranslatedField;
+  description: TranslatedField;
   lessons: LessonState[];
   quizzes: QuizState[];
   schedule: ScheduleConfig;

@@ -10,6 +10,7 @@ import { BuilderProvider } from '@/contexts/BuilderContext';
 import type { CourseBuilderState } from '@/types/builder';
 import {
   buildCourseRequestPayload,
+  ensureCurriculumTranslations,
   mapCourseToBuilderState,
 } from '@/lib/course-builder';
 import { CourseBuilderWorkspace } from '@/components/builder/CourseBuilderWorkspace';
@@ -149,7 +150,7 @@ export default function EditCoursePage() {
           console.warn('Unable to restore course draft', draftError);
         }
 
-        setBuilderState(nextState);
+        setBuilderState(ensureCurriculumTranslations(nextState));
         setAuthorName(data.course.author_name || null);
         setXpTotalDistributed(data.course.xp_total_distributed || 0);
         setXpCreatorDistributed(data.course.xp_creator_distributed || 0);

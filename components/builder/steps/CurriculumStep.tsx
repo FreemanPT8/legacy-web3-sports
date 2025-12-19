@@ -41,7 +41,9 @@ import {
   type CourseBuilderState,
   type LangCode,
   type ScheduleConfig,
+  type TranslatedField,
 } from '@/types/builder';
+import { createEmptyTranslations } from '@/lib/course-builder';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { useScheduleCET } from '@/hooks/useScheduleCET';
 import { Button } from '@/components/ui/button';
@@ -66,6 +68,25 @@ type ScheduleUtils = ReturnType<typeof useScheduleCET>;
 type DragListenerMap = ReturnType<typeof useSortable>['listeners'];
 const SCHEDULE_PANEL_CLASSES =
   'rounded-xl border border-white/10 bg-[#031824]/80 p-3 shadow-sm';
+
+const emptyTranslations = () => createEmptyTranslations();
+
+const getTranslationValue = (
+  field: TranslatedField | undefined,
+  lang: LangCode,
+) => (field ?? emptyTranslations())[lang] ?? '';
+
+const setTranslationValue = (
+  field: TranslatedField | undefined,
+  lang: LangCode,
+  value: string,
+) => ({
+  ...(field ?? emptyTranslations()),
+  [lang]: value,
+});
+
+const getAnyTranslation = (field: TranslatedField | undefined) =>
+  field ? Object.values(field).find((value) => value.trim().length) || '' : '';
 
 export function CurriculumStep() {
   const { state, patchState, activeLanguage, setActiveLanguage } =
@@ -130,18 +151,36 @@ export function CurriculumStep() {
     updateTopics((current) => current.filter((topic) => topic.id !== topicId));
   };
 
-  const updateTopicTitle = (topicId: string, title: string) => {
+  const updateTopicTitle = (
+    topicId: string,
+    lang: LangCode,
+    value: string,
+  ) => {
     updateTopics((current) =>
       current.map((topic) =>
-        topic.id === topicId ? { ...topic, title } : topic,
+        topic.id === topicId
+          ? {
+              ...topic,
+              title: setTranslationValue(topic.title, lang, value),
+            }
+          : topic,
       ),
     );
   };
 
-  const updateTopicDescription = (topicId: string, description: string) => {
+  const updateTopicDescription = (
+    topicId: string,
+    lang: LangCode,
+    value: string,
+  ) => {
     updateTopics((current) =>
       current.map((topic) =>
-        topic.id === topicId ? { ...topic, description } : topic,
+        topic.id === topicId
+          ? {
+              ...topic,
+              description: setTranslationValue(topic.description, lang, value),
+            }
+          : topic,
       ),
     );
   };
@@ -208,7 +247,9 @@ export function CurriculumStep() {
           url: asset.url,
           thumbnailUrl: asset.thumbnailUrl || asset.url,
           type: asset.type,
-          title: asset.title || `${prev.title} video`,
+          title:
+            asset.title ||
+            `${getAnyTranslation(prev.title) || 'Lesson'} video`,
         },
       }));
     } else {
@@ -275,9 +316,11 @@ export function CurriculumStep() {
               key={topic.id}
               topic={topic}
               index={index}
-              onTitleChange={(value) => updateTopicTitle(topic.id, value)}
+              onTitleChange={(value) =>
+                updateTopicTitle(topic.id, activeLanguage, value)
+              }
               onDescriptionChange={(value) =>
-                updateTopicDescription(topic.id, value)
+                updateTopicDescription(topic.id, activeLanguage, value)
               }
               onRemove={() => removeTopic(topic.id)}
               onAddLesson={() => addLesson(topic.id)}
@@ -294,6 +337,7 @@ export function CurriculumStep() {
                   updateTopicSchedule(topic.id, nextSchedule)
                 }
                 scheduleUtils={scheduleUtils}
+                activeLanguage={activeLanguage}
               />
             ))}
           </div>
@@ -353,6 +397,7 @@ interface TopicCardProps {
   scheduleUtils: ScheduleUtils;
   dragAttributes?: DraggableAttributes;
   dragListeners?: DragListenerMap;
+  activeLanguage: LangCode;
 }
 
 function SortableTopicCard(props: TopicCardProps) {
@@ -386,11 +431,18 @@ function TopicCard({
   onPickMedia,
   onScheduleChange,
   scheduleUtils,
+  activeLanguage,
 }: TopicCardProps) {
-  const [isEditingDescription, setIsEditingDescription] = useState(
-    () => topic.description.trim().length === 0,
+  const titleValue = getTranslationValue(topic.title, activeLanguage);
+  const currentDescription = getTranslationValue(
+    topic.description,
+    activeLanguage,
   );
-  const [descriptionDraft, setDescriptionDraft] = useState(topic.description);
+  const [isEditingDescription, setIsEditingDescription] = useState(
+    () => currentDescription.trim().length === 0,
+  );
+  const [descriptionDraft, setDescriptionDraft] =
+    useState(currentDescription);
   const [topicScheduleOpen, setTopicScheduleOpen] = useState<boolean>(() => {
     const sched = topic.schedule;
     if (!sched) return false;
@@ -402,11 +454,15 @@ function TopicCard({
   });
 
   useEffect(() => {
-    setDescriptionDraft(topic.description);
-    if (!topic.description.trim()) {
+    const nextDescription = getTranslationValue(
+      topic.description,
+      activeLanguage,
+    );
+    setDescriptionDraft(nextDescription);
+    if (!nextDescription.trim()) {
       setIsEditingDescription(true);
     }
-  }, [topic.description]);
+  }, [topic.description, activeLanguage]);
 
   const handleSaveDescription = () => {
     onDescriptionChange(descriptionDraft.trim());
@@ -414,7 +470,9 @@ function TopicCard({
   };
 
   const handleCancelDescription = () => {
-    setDescriptionDraft(topic.description);
+    setDescriptionDraft(
+      getTranslationValue(topic.description, activeLanguage),
+    );
     setIsEditingDescription(false);
   };
 
@@ -433,7 +491,7 @@ function TopicCard({
           <div>
             <p className="text-xs text-gray-500">Topic {index + 1}</p>
             <Input
-              value={topic.title}
+              value={titleValue}
               onChange={(event) => onTitleChange(event.target.value)}
               className="mt-1 h-8 border-0 bg-transparent px-0 text-base font-semibold focus-visible:ring-0"
               placeholder="Untitled topic"
@@ -468,8 +526,8 @@ function TopicCard({
               ) : (
                 <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
                   <p className="whitespace-pre-wrap">
-                    {topic.description.trim()
-                      ? topic.description
+                    {currentDescription.trim()
+                      ? currentDescription
                       : 'No description for this topic yet.'}
                   </p>
                   <Button
@@ -556,6 +614,7 @@ function TopicCard({
               }
               onPickMedia={(mode) => onPickMedia(lesson.id, mode)}
               scheduleUtils={scheduleUtils}
+              activeLanguage={activeLanguage}
             />
           ))}
           {topic.lessons.length === 0 && (
@@ -589,6 +648,7 @@ interface LessonCardProps {
   onToggle: () => void;
   onPickMedia: (mode: 'video' | 'attachment') => void;
   scheduleUtils: ScheduleUtils;
+  activeLanguage: LangCode;
 }
 
 function LessonCard({
@@ -600,9 +660,18 @@ function LessonCard({
   onToggle,
   onPickMedia,
   scheduleUtils,
+  activeLanguage,
 }: LessonCardProps) {
   const attachmentCount = lesson.attachments.length;
   const videoUrl = lesson.video?.url || '';
+  const lessonTitleValue = getTranslationValue(
+    lesson.title,
+    activeLanguage,
+  );
+  const lessonContentValue = getTranslationValue(
+    lesson.content,
+    activeLanguage,
+  );
   const [scheduleOpen, setScheduleOpen] = useState<boolean>(() => {
     const sched = lesson.schedule;
     if (!sched) return false;
@@ -628,7 +697,9 @@ function LessonCard({
             url: trimmed,
             thumbnailUrl: prev.video?.thumbnailUrl || null,
             type: 'video',
-            title: prev.video?.title || `${prev.title} video`,
+            title:
+              prev.video?.title ||
+              `${getAnyTranslation(prev.title) || 'Lesson'} video`,
           }
         : null,
     }));
@@ -703,9 +774,16 @@ function LessonCard({
             </Badge>
           </div>
           <Input
-            value={lesson.title}
+            value={lessonTitleValue}
             onChange={(event) =>
-              onChange((prev) => ({ ...prev, title: event.target.value }))
+              onChange((prev) => ({
+                ...prev,
+                title: setTranslationValue(
+                  prev.title,
+                  activeLanguage,
+                  event.target.value,
+                ),
+              }))
             }
             placeholder="Lesson title"
             className="text-sm font-medium"
@@ -791,9 +869,16 @@ function LessonCard({
           <div>
             <LabelSmall>Lesson content</LabelSmall>
             <RichTextEditor
-              value={lesson.content}
+              value={lessonContentValue}
               onChange={(next) =>
-                onChange((prev) => ({ ...prev, content: next }))
+                onChange((prev) => ({
+                  ...prev,
+                  content: setTranslationValue(
+                    prev.content,
+                    activeLanguage,
+                    next,
+                  ),
+                }))
               }
               placeholder="Add lesson details, embeds, links..."
               minRows={8}

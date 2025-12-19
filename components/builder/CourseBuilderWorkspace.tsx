@@ -15,7 +15,11 @@ import { BuilderShell } from '@/components/builder/BuilderShell';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useLivePreview } from '@/hooks/useLivePreview';
 import { useBuilderContext } from '@/contexts/BuilderContext';
-import type { CourseBuilderState } from '@/types/builder';
+import type {
+  CourseBuilderState,
+  LessonState,
+  TopicState,
+} from '@/types/builder';
 
 export interface CourseBuilderWorkspaceProps {
   saving: boolean;
@@ -183,6 +187,10 @@ function CourseStatusCard({
 function CourseQualityChecklist() {
   const { state } = useBuilderContext();
   const course = state as CourseBuilderState;
+  const resolveTopicTitle = (topic: TopicState) =>
+    Object.values(topic.title ?? {}).find(
+      (value) => value.trim().length > 0,
+    ) || 'Untitled topic';
   const topics = course.curriculum.topics;
   const totalLessons = topics.reduce(
     (sum, topic) => sum + topic.lessons.length,
@@ -195,10 +203,12 @@ function CourseQualityChecklist() {
   const topicsWithoutLessons = topics.filter(
     (topic) => topic.lessons.length === 0,
   );
+  const lessonHasContent = (lesson: LessonState) =>
+    Object.values(lesson.content ?? {}).some(
+      (value) => typeof value === 'string' && value.trim().length > 0,
+    );
   const lessonsMissingContent = topics.flatMap((topic) =>
-    topic.lessons.filter(
-      (lesson) => !lesson.content || lesson.content.trim().length === 0,
-    ),
+    topic.lessons.filter((lesson) => !lessonHasContent(lesson)),
   );
   const hasTitle = Object.values(course.title || {}).some(
     (value) => value.trim().length > 0,
@@ -306,7 +316,7 @@ function CourseQualityChecklist() {
                   </p>
                   <ul className="list-inside list-disc">
                     {topicsWithoutLessons.slice(0, 3).map((topic) => (
-                      <li key={topic.id}>{topic.title || 'Untitled topic'}</li>
+                      <li key={topic.id}>{resolveTopicTitle(topic)}</li>
                     ))}
                     {topicsWithoutLessons.length > 3 && <li>...</li>}
                   </ul>

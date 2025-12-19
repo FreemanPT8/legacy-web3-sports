@@ -11,6 +11,7 @@ import { BuilderProvider } from '@/contexts/BuilderContext';
 import {
   createEmptyCourseState,
   buildCourseRequestPayload,
+  ensureCurriculumTranslations,
 } from '@/lib/course-builder';
 import { CourseBuilderWorkspace } from '@/components/builder/CourseBuilderWorkspace';
 import type { CourseBuilderState } from '@/types/builder';
@@ -130,7 +131,7 @@ export default function CreateCoursePage() {
       } catch (error) {
         console.warn('Unable to load course draft', error);
       } finally {
-        setInitialState(nextState);
+        setInitialState(ensureCurriculumTranslations(nextState));
       }
     };
 

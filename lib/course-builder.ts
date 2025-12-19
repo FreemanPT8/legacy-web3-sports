@@ -1,10 +1,32 @@
-import { LANGUAGES, type CourseBuilderState, type TranslatedField } from '@/types/builder';
+import {
+  LANGUAGES,
+  type CourseBuilderState,
+  type TranslatedField,
+} from '@/types/builder';
 
 export const createEmptyTranslations = (): TranslatedField =>
   LANGUAGES.reduce(
     (acc, lang) => ({ ...acc, [lang.code]: '' }),
     {} as TranslatedField,
   );
+
+const ensureTranslatedField = (raw: any): TranslatedField => {
+  const base = createEmptyTranslations();
+  if (!raw) {
+    return base;
+  }
+  if (typeof raw === 'string') {
+    LANGUAGES.forEach((lang) => {
+      base[lang.code] = raw;
+    });
+    return base;
+  }
+  LANGUAGES.forEach((lang) => {
+    const value = raw[lang.code];
+    base[lang.code] = typeof value === 'string' ? value : '';
+  });
+  return base;
+};
 
 export const createEmptyCourseState = (): CourseBuilderState => ({
   entityType: 'course',
@@ -125,6 +147,8 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
             const normalizedLessons = Array.isArray(topic?.lessons)
               ? topic.lessons.map((lesson: any) => ({
                   ...lesson,
+                  title: ensureTranslatedField(lesson?.title),
+                  content: ensureTranslatedField(lesson?.content),
                   estimated_time:
                     typeof lesson?.estimated_time === 'number'
                       ? lesson.estimated_time
@@ -132,13 +156,19 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
                 }))
               : [];
 
+            const normalizedQuizzes = Array.isArray(topic?.quizzes)
+              ? topic.quizzes.map((quiz: any) => ({
+                  ...quiz,
+                  title: ensureTranslatedField(quiz?.title),
+                }))
+              : [];
+
             return {
               ...topic,
-              description:
-                typeof topic?.description === 'string'
-                  ? topic.description
-                  : '',
+              title: ensureTranslatedField(topic?.title),
+              description: ensureTranslatedField(topic?.description),
               lessons: normalizedLessons,
+              quizzes: normalizedQuizzes,
             };
           }),
         }
@@ -178,7 +208,7 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
     publish_at: derivedPublishAt,
   });
 
-  return {
+  const mappedState: CourseBuilderState = {
     ...base,
     title,
     slug: course?.slug || course?.id?.toString() || '',
@@ -238,6 +268,34 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
     curriculum: normalizedCurriculum,
     attachments: attachmentsSource,
     level: course?.level || metadata?.level || 'beginner',
+  };
+  return ensureCurriculumTranslations(mappedState);
+};
+
+export const ensureCurriculumTranslations = (
+  state: CourseBuilderState,
+): CourseBuilderState => {
+  const normalizedTopics = state.curriculum.topics.map((topic) => ({
+    ...topic,
+    title: ensureTranslatedField(topic.title),
+    description: ensureTranslatedField(topic.description),
+    lessons: topic.lessons.map((lesson) => ({
+      ...lesson,
+      title: ensureTranslatedField(lesson.title),
+      content: ensureTranslatedField(lesson.content),
+    })),
+    quizzes: (topic.quizzes || []).map((quiz) => ({
+      ...quiz,
+      title: ensureTranslatedField(quiz.title),
+    })),
+  }));
+
+  return {
+    ...state,
+    curriculum: {
+      ...state.curriculum,
+      topics: normalizedTopics,
+    },
   };
 };
 
