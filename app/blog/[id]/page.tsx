@@ -39,6 +39,7 @@ type BlogPost = {
   title: MultiLang | string;
   excerpt: MultiLang | string;
   content: MultiLang | string;
+  image_url?: string | null;
   category?: string | null;
   author?: string | null;
   author_id?: string | null;
