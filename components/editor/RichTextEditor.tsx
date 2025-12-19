@@ -147,6 +147,9 @@ export function RichTextEditor({
           class: 'legacy-list-item',
         },
       }),
+      Heading.configure({
+        levels: HEADING_LEVELS,
+      }),
       Underline,
       Strike,
       TextStyle,
@@ -585,6 +588,3 @@ export function RichTextEditor({
     </div>
   );
 }
-      Heading.configure({
-        levels: HEADING_LEVELS,
-      }),
