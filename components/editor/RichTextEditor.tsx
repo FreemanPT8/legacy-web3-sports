@@ -200,7 +200,23 @@ export function RichTextEditor({
         editor.chain().focus().setParagraph().run();
         return;
       }
-      editor.chain().focus().toggleHeading({ level }).run();
+      const applied = editor.chain().focus().toggleHeading({ level }).run();
+      if (applied) return;
+
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'heading',
+          attrs: { level },
+          content: [
+            {
+              type: 'text',
+              text: editor.isEmpty ? 'Heading' : '',
+            },
+          ],
+        } as any)
+        .run();
     },
     [editor],
   );
