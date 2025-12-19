@@ -36,7 +36,12 @@ import {
 } from 'lucide-react';
 
 import { useBuilderState } from '@/hooks/useBuilderState';
-import { LANGUAGES, type CourseBuilderState, type ScheduleConfig } from '@/types/builder';
+import {
+  LANGUAGES,
+  type CourseBuilderState,
+  type LangCode,
+  type ScheduleConfig,
+} from '@/types/builder';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { useScheduleCET } from '@/hooks/useScheduleCET';
 import { Button } from '@/components/ui/button';
@@ -63,7 +68,8 @@ const SCHEDULE_PANEL_CLASSES =
   'rounded-xl border border-white/10 bg-[#031824]/80 p-3 shadow-sm';
 
 export function CurriculumStep() {
-  const { state, patchState, activeLanguage } = useBuilderState();
+  const { state, patchState, activeLanguage, setActiveLanguage } =
+    useBuilderState();
   const courseState = state as CourseBuilderState;
   const topics = courseState.curriculum.topics;
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
@@ -229,14 +235,30 @@ export function CurriculumStep() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between rounded-xl border border-white/10 bg-[#05212b]/60 px-4 py-3 text-xs text-slate-300">
-        <span>
-          Editing language:{' '}
-          <span className="font-semibold text-white">{currentLanguageLabel}</span>
-        </span>
-        <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-          Change this in Basics
-        </span>
+      <div className="space-y-3 rounded-xl border border-white/10 bg-[#05212b]/60 p-4">
+        <div className="flex flex-wrap items-center justify-between text-xs text-slate-300">
+          <span>
+            Editing language:{' '}
+            <span className="font-semibold text-white">
+              {currentLanguageLabel}
+            </span>
+          </span>
+          <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+            Escolhe a lÍngua que queres editar
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {LANGUAGES.map((lang) => (
+            <Badge
+              key={lang.code}
+              variant={lang.code === activeLanguage ? 'default' : 'outline'}
+              className="cursor-pointer text-xs"
+              onClick={() => setActiveLanguage(lang.code as LangCode)}
+            >
+              {lang.name}
+            </Badge>
+          ))}
+        </div>
       </div>
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">Curriculum builder</h2>
