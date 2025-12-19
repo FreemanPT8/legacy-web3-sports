@@ -204,7 +204,12 @@ export function RichTextEditor({
         editor.chain().focus().setParagraph().run();
         return;
       }
-      const applied = editor.chain().focus().toggleHeading({ level }).run();
+      if (editor.isActive('heading', { level })) {
+        editor.chain().focus().setParagraph().run();
+        return;
+      }
+
+      const applied = editor.chain().focus().setHeading({ level }).run();
       if (applied) return;
 
       editor
