@@ -68,7 +68,7 @@ export default function BlogPostPage() {
   const params = useParams();
   const router = useRouter();
   const { user, getToken } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, setLanguageUnsafe } = useLanguage();
 
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
