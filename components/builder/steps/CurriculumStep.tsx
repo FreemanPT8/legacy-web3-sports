@@ -33,6 +33,7 @@ import {
   CalendarClock,
   Eye,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 
 import { useBuilderState } from '@/hooks/useBuilderState';
@@ -56,6 +57,8 @@ import { createLesson, createTopic } from '@/lib/curriculum';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import type { LessonState, TopicState, MediaAsset } from '@/types/builder';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -91,6 +94,8 @@ const getAnyTranslation = (field: TranslatedField | undefined) =>
 export function CurriculumStep() {
   const { state, patchState, activeLanguage, setActiveLanguage } =
     useBuilderState();
+  const { translate, isTranslating } = useAutoTranslate();
+  const { toast } = useToast();
   const courseState = state as CourseBuilderState;
   const topics = courseState.curriculum.topics;
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
@@ -101,6 +106,12 @@ export function CurriculumStep() {
     mode: 'video' | 'attachment';
   } | null>(null);
   const scheduleUtils = useScheduleCET();
+  const [translatingTopicId, setTranslatingTopicId] = useState<string | null>(
+    null,
+  );
+  const [translatingLessonId, setTranslatingLessonId] = useState<
+    string | null
+  >(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -193,6 +204,184 @@ export function CurriculumStep() {
           : topic,
       ),
     );
+  };
+
+  const mergeTranslations = (
+    existing: TranslatedField | undefined,
+    translations: Record<string, string>,
+  ): TranslatedField => ({
+    ...(existing ?? emptyTranslations()),
+    ...translations,
+  });
+
+  const translateTopicFields = async (topicId: string) => {
+    const targetLangs = LANGUAGES.map((lang) => lang.code).filter(
+      (code) => code !== activeLanguage,
+    );
+    if (targetLangs.length === 0) {
+      toast({
+        title: 'Sem destinos',
+        description: 'Todas as línguas já estão alinhadas com a atual.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const topic = topics.find((t) => t.id === topicId);
+    if (!topic) return;
+
+    const titleSource = getTranslationValue(topic.title, activeLanguage).trim();
+    const descriptionSource = getTranslationValue(
+      topic.description,
+      activeLanguage,
+    ).trim();
+
+    if (!titleSource && !descriptionSource) {
+      toast({
+        title: 'Nada para traduzir',
+        description:
+          'Preenche título ou descrição nesta língua antes de traduzir.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setTranslatingTopicId(topicId);
+    try {
+      if (titleSource) {
+        const translations = await translate(
+          titleSource,
+          activeLanguage,
+          targetLangs,
+        );
+        updateTopics((current) =>
+          current.map((item) =>
+            item.id === topicId
+              ? {
+                  ...item,
+                  title: mergeTranslations(item.title, translations),
+                }
+              : item,
+          ),
+        );
+      }
+
+      if (descriptionSource) {
+        const translations = await translate(
+          descriptionSource,
+          activeLanguage,
+          targetLangs,
+        );
+        updateTopics((current) =>
+          current.map((item) =>
+            item.id === topicId
+              ? {
+                  ...item,
+                  description: mergeTranslations(item.description, translations),
+                }
+              : item,
+          ),
+        );
+      }
+
+      toast({
+        title: 'Traduções atualizadas',
+        description: 'Este tópico foi sincronizado nas restantes línguas.',
+      });
+    } catch (error) {
+      console.error('Topic translation error:', error);
+      toast({
+        title: 'Erro na tradução',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível traduzir o tópico.',
+        variant: 'destructive',
+      });
+    } finally {
+      setTranslatingTopicId(null);
+    }
+  };
+
+  const translateLessonFields = async (
+    topicId: string,
+    lessonId: string,
+  ) => {
+    const targetLangs = LANGUAGES.map((lang) => lang.code).filter(
+      (code) => code !== activeLanguage,
+    );
+    if (targetLangs.length === 0) {
+      toast({
+        title: 'Sem destinos',
+        description: 'Todas as línguas já estão alinhadas com a atual.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const topic = topics.find((t) => t.id === topicId);
+    const lesson = topic?.lessons.find((l) => l.id === lessonId);
+    if (!lesson) return;
+
+    const titleSource = getTranslationValue(lesson.title, activeLanguage).trim();
+    const contentSource = getTranslationValue(
+      lesson.content,
+      activeLanguage,
+    ).trim();
+
+    if (!titleSource && !contentSource) {
+      toast({
+        title: 'Nada para traduzir',
+        description:
+          'Escreve o título ou conteúdo desta lição antes de traduzir.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setTranslatingLessonId(lessonId);
+    try {
+      if (titleSource) {
+        const translations = await translate(
+          titleSource,
+          activeLanguage,
+          targetLangs,
+        );
+        updateLesson(topicId, lessonId, (prev) => ({
+          ...prev,
+          title: mergeTranslations(prev.title, translations),
+        }));
+      }
+
+      if (contentSource) {
+        const translations = await translate(
+          contentSource,
+          activeLanguage,
+          targetLangs,
+        );
+        updateLesson(topicId, lessonId, (prev) => ({
+          ...prev,
+          content: mergeTranslations(prev.content, translations),
+        }));
+      }
+
+      toast({
+        title: 'Lição traduzida',
+        description: 'Atualizámos esta lição nas restantes línguas.',
+      });
+    } catch (error) {
+      console.error('Lesson translation error:', error);
+      toast({
+        title: 'Erro na tradução',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível traduzir a lição.',
+        variant: 'destructive',
+      });
+    } finally {
+      setTranslatingLessonId(null);
+    }
   };
 
   const removeLesson = (topicId: string, lessonId: string) => {
@@ -333,12 +522,20 @@ export function CurriculumStep() {
                 onPickMedia={(lessonId, mode) =>
                   handleOpenMediaPicker(topic.id, lessonId, mode)
                 }
-                onScheduleChange={(nextSchedule) =>
-                  updateTopicSchedule(topic.id, nextSchedule)
-                }
-                scheduleUtils={scheduleUtils}
-                activeLanguage={activeLanguage}
-              />
+              onScheduleChange={(nextSchedule) =>
+                updateTopicSchedule(topic.id, nextSchedule)
+              }
+              scheduleUtils={scheduleUtils}
+              activeLanguage={activeLanguage}
+              onTranslateTopic={() => translateTopicFields(topic.id)}
+              translatingTopic={
+                translatingTopicId === topic.id || isTranslating
+              }
+              onTranslateLesson={(lessonId) =>
+                translateLessonFields(topic.id, lessonId)
+              }
+              translatingLessonId={translatingLessonId}
+            />
             ))}
           </div>
         </SortableContext>
@@ -398,6 +595,10 @@ interface TopicCardProps {
   dragAttributes?: DraggableAttributes;
   dragListeners?: DragListenerMap;
   activeLanguage: LangCode;
+  onTranslateTopic: () => void;
+  translatingTopic: boolean;
+  onTranslateLesson: (lessonId: string) => void;
+  translatingLessonId: string | null;
 }
 
 function SortableTopicCard(props: TopicCardProps) {
@@ -432,6 +633,10 @@ function TopicCard({
   onScheduleChange,
   scheduleUtils,
   activeLanguage,
+  onTranslateTopic,
+  translatingTopic,
+  onTranslateLesson,
+  translatingLessonId,
 }: TopicCardProps) {
   const titleValue = getTranslationValue(topic.title, activeLanguage);
   const currentDescription = getTranslationValue(
@@ -479,80 +684,95 @@ function TopicCard({
   return (
     <Card className="border-gray-200 shadow-sm dark:border-gray-800">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-dashed border-gray-300 p-1 text-gray-400 hover:text-gray-600"
-            {...dragAttributes}
-            {...dragListeners}
-          >
-            <GripVertical className="h-4 w-4" />
-          </button>
-          <div>
-            <p className="text-xs text-gray-500">Topic {index + 1}</p>
-            <Input
-              value={titleValue}
-              onChange={(event) => onTitleChange(event.target.value)}
-              className="mt-1 h-8 border-0 bg-transparent px-0 text-base font-semibold focus-visible:ring-0"
-              placeholder="Untitled topic"
-            />
-            <div className="mt-2">
-              {isEditingDescription ? (
-                <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                  <Textarea
-                    value={descriptionDraft}
-                    onChange={(event) => setDescriptionDraft(event.target.value)}
-                    placeholder="Describe what this topic will cover"
-                    className="min-h-[90px] border-0 bg-transparent text-sm text-gray-700 focus-visible:ring-0 dark:text-gray-100"
-                  />
-                  <div className="mt-3 flex items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="rounded-md border border-dashed border-gray-300 p-1 text-gray-400 hover:text-gray-600"
+              {...dragAttributes}
+              {...dragListeners}
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+            <div>
+              <p className="text-xs text-gray-500">Topic {index + 1}</p>
+              <Input
+                value={titleValue}
+                onChange={(event) => onTitleChange(event.target.value)}
+                className="mt-1 h-8 border-0 bg-transparent px-0 text-base font-semibold focus-visible:ring-0"
+                placeholder="Untitled topic"
+              />
+              <div className="mt-2">
+                {isEditingDescription ? (
+                  <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <Textarea
+                      value={descriptionDraft}
+                      onChange={(event) => setDescriptionDraft(event.target.value)}
+                      placeholder="Describe what this topic will cover"
+                      className="min-h-[90px] border-0 bg-transparent text-sm text-gray-700 focus-visible:ring-0 dark:text-gray-100"
+                    />
+                    <div className="mt-3 flex items-center justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelDescription}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveDescription}
+                      >
+                        Save description
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                    <p className="whitespace-pre-wrap">
+                      {currentDescription.trim()
+                        ? currentDescription
+                        : 'No description for this topic yet.'}
+                    </p>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={handleCancelDescription}
+                      className="mt-2"
+                      onClick={() => setIsEditingDescription(true)}
                     >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={handleSaveDescription}
-                    >
-                      Save description
+                      Edit description
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
-                  <p className="whitespace-pre-wrap">
-                    {currentDescription.trim()
-                      ? currentDescription
-                      : 'No description for this topic yet.'}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => setIsEditingDescription(true)}
-                  >
-                    Edit description
-                  </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
+          <div className="flex flex-1 items-start justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={onTranslateTopic}
+              disabled={translatingTopic}
+            >
+              <Sparkles className="mr-2 h-3.5 w-3.5" />
+              Traduzir restantes línguas
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onRemove}
+              className="text-gray-500 hover:text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onRemove}
-          className="text-gray-500 hover:text-red-600"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
@@ -615,6 +835,8 @@ function TopicCard({
               onPickMedia={(mode) => onPickMedia(lesson.id, mode)}
               scheduleUtils={scheduleUtils}
               activeLanguage={activeLanguage}
+              onTranslateLesson={() => onTranslateLesson(lesson.id)}
+              translatingLesson={translatingLessonId === lesson.id}
             />
           ))}
           {topic.lessons.length === 0 && (
@@ -649,6 +871,8 @@ interface LessonCardProps {
   onPickMedia: (mode: 'video' | 'attachment') => void;
   scheduleUtils: ScheduleUtils;
   activeLanguage: LangCode;
+  onTranslateLesson: () => void;
+  translatingLesson: boolean;
 }
 
 function LessonCard({
@@ -661,6 +885,8 @@ function LessonCard({
   onPickMedia,
   scheduleUtils,
   activeLanguage,
+  onTranslateLesson,
+  translatingLesson,
 }: LessonCardProps) {
   const attachmentCount = lesson.attachments.length;
   const videoUrl = lesson.video?.url || '';
@@ -851,6 +1077,16 @@ function LessonCard({
             onClick={onToggle}
           >
             {isExpanded ? 'Hide editor' : 'Edit lesson'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onTranslateLesson}
+            disabled={translatingLesson}
+          >
+            <Sparkles className="h-4 w-4 mr-1 text-cyan-400" />
+            Traduzir línguas
           </Button>
           <Button
             type="button"
