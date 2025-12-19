@@ -300,8 +300,9 @@ export function RichTextEditor({
   const openMedia = useCallback(
     (asset: MediaAsset) => {
       if (!editor) return;
+      const normalizedType = asset.type?.toLowerCase();
       const isImageAsset =
-        asset.type === 'image' ||
+        normalizedType === 'image' ||
         /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(asset.url.split('?')[0] || '');
 
       if (isImageAsset) {
@@ -316,7 +317,7 @@ export function RichTextEditor({
       }
       editor.chain().focus().insertContent(`<p><a href="${asset.url}">${asset.title || asset.url}</a></p>`).run();
     },
-    [editor, defaultImageAlignment],
+    [editor, defaultImageAlignment, defaultImageSize],
   );
 
   const insertReadMore = useCallback(() => {
