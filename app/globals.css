@@ -222,10 +222,14 @@
     box-shadow: 0 10px 40px rgba(14, 165, 233, 0.35);
   }
 
-  .legacy-editor-toolbar {
+  .legacy-toolbar-stack {
     position: sticky;
     top: 70px;
-    z-index: 30;
+    z-index: 40;
+  }
+
+  .legacy-editor-toolbar {
+    position: relative;
     background: linear-gradient(
         180deg,
         rgba(4, 8, 11, 0.9) 0%,
@@ -234,6 +238,7 @@
       ),
       rgb(4 8 11 / 0.95);
     backdrop-filter: blur(6px);
+    z-index: 1;
   }
 }
 

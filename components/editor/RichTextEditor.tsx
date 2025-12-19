@@ -377,15 +377,6 @@ export function RichTextEditor({
     [editor],
   );
 
-  const setImageSize = useCallback(
-    (next: ImageSize) => {
-      setDefaultImageSize(next);
-      if (!editor?.isActive('image')) return;
-      editor.chain().focus().updateAttributes('image', { size: next }).run();
-    },
-    [editor],
-  );
-
   const stats = useMemo(
     () => ({
       characters: editor?.storage.characterCount.characters ?? 0,
@@ -401,7 +392,8 @@ export function RichTextEditor({
         className,
       )}
     >
-      <div className="legacy-editor-toolbar flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 dark:border-slate-800">
+      <div className="legacy-toolbar-stack space-y-1">
+        <div className="legacy-editor-toolbar flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 dark:border-slate-800">
         <Button
           type="button"
           variant={editor?.isActive('bold') ? 'secondary' : 'ghost'}
@@ -627,9 +619,9 @@ export function RichTextEditor({
             </Button>
           </PopoverContent>
         </Popover>
-      </div>
-      {advancedOpen && (
-        <div className="legacy-editor-toolbar flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 text-xs text-slate-500 dark:border-slate-800">
+        </div>
+        {advancedOpen && (
+          <div className="legacy-editor-toolbar flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 text-xs text-slate-500 dark:border-slate-800">
           <Button
             type="button"
             variant={forcePlainText ? 'secondary' : 'ghost'}
@@ -770,7 +762,8 @@ export function RichTextEditor({
             allowUrl
           />
         </div>
-      )}
+        )}
+      </div>
       <EditorContent
         editor={editor}
         className={cn(
