@@ -78,7 +78,7 @@ export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, setLanguageUnsafe, t } = useLanguage();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [module, setModule] = useState<ModuleWithLessons | null>(null);
