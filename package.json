@@ -45,6 +45,7 @@
     "@radix-ui/react-tooltip": "^1.1.2",
     "@react-email/render": "^1.4.0",
     "@supabase/supabase-js": "^2.58.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@tiptap/extension-blockquote": "^3.13.0",
     "@tiptap/extension-bold": "^3.13.0",
     "@tiptap/extension-bullet-list": "^3.13.0",
