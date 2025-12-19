@@ -301,13 +301,19 @@ export function RichTextEditor({
     (asset: MediaAsset) => {
       if (!editor) return;
       const normalizedType = asset.type?.toLowerCase();
+      const urlToUse = asset.url || asset.thumbnailUrl || '';
+      const baseUrl = urlToUse.split('?')[0] || '';
+      const looksLikeImage = /\.(png|jpg|jpeg|gif|webp|svg|avif|bmp)$/i.test(baseUrl);
+      const nonImageTypes = ['video', 'audio', 'document', 'other'];
+
       const isImageAsset =
         normalizedType === 'image' ||
-        /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(asset.url.split('?')[0] || '');
+        (looksLikeImage && !nonImageTypes.includes(normalizedType || '')) ||
+        (!normalizedType && looksLikeImage);
 
-      if (isImageAsset) {
+      if (isImageAsset && urlToUse) {
         const imagePayload: Record<string, unknown> = {
-          src: asset.url,
+          src: urlToUse,
           alt: asset.alt || asset.title || '',
           alignment: defaultImageAlignment,
           size: defaultImageSize,
@@ -315,7 +321,13 @@ export function RichTextEditor({
         editor.chain().focus().setImage(imagePayload as any).run();
         return;
       }
-      editor.chain().focus().insertContent(`<p><a href="${asset.url}">${asset.title || asset.url}</a></p>`).run();
+
+      const linkTarget = asset.url || urlToUse;
+      editor
+        .chain()
+        .focus()
+        .insertContent(`<p><a href="${linkTarget}">${asset.title || linkTarget}</a></p>`)
+        .run();
     },
     [editor, defaultImageAlignment, defaultImageSize],
   );
