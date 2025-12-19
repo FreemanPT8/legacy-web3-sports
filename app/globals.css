@@ -168,6 +168,20 @@
     letter-spacing: 0.08em;
     color: rgb(148 163 184);
   }
+
+  .legacy-editor-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: linear-gradient(
+        180deg,
+        rgba(4, 8, 11, 0.9) 0%,
+        rgba(4, 8, 11, 0.65) 80%,
+        rgba(4, 8, 11, 0)
+      ),
+      rgb(4 8 11 / 0.95);
+    backdrop-filter: blur(6px);
+  }
 }
 
 @layer utilities {

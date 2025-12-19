@@ -327,7 +327,7 @@ export function RichTextEditor({
         className,
       )}
     >
-      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 dark:border-slate-800">
+      <div className="legacy-editor-toolbar flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 dark:border-slate-800">
         <Button
           type="button"
           variant={editor?.isActive('bold') ? 'secondary' : 'ghost'}
@@ -482,7 +482,7 @@ export function RichTextEditor({
         </Button>
       </div>
       {advancedOpen && (
-        <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 text-xs text-slate-500 dark:border-slate-800">
+        <div className="legacy-editor-toolbar flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 text-xs text-slate-500 dark:border-slate-800">
           <Button
             type="button"
             variant={forcePlainText ? 'secondary' : 'ghost'}
