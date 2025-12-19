@@ -767,7 +767,7 @@ export function RichTextEditor({
       <EditorContent
         editor={editor}
         className={cn(
-          'legacy-editor-content prose prose-slate prose-sm min-h-[8rem] px-4 py-3 leading-relaxed focus:outline-none dark:prose-invert',
+          'legacy-editor-content prose prose-slate prose-sm max-w-none w-full min-h-[8rem] px-4 py-3 leading-relaxed focus:outline-none dark:prose-invert',
           `min-h-[${minRows * 32}px]`,
         )}
         data-placeholder={placeholder}

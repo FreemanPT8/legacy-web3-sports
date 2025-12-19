@@ -140,6 +140,17 @@
     color: rgb(148 163 184); /* slate-400 */
   }
 
+  .legacy-editor-content {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .legacy-editor-content p,
+  .legacy-editor-content li {
+    text-align: justify;
+    text-justify: inter-word;
+  }
+
   .legacy-editor-content h1,
   .legacy-editor-content h2,
   .legacy-editor-content h3,
