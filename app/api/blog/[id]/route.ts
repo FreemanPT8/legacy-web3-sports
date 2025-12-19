@@ -10,6 +10,26 @@ interface RouteContext {
 // e caímos para o client normal se não houver service role.
 const db = supabaseAdmin ?? supabase;
 
+const normalizeXpReward = (value: unknown): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    if (obj.xp_reward !== undefined) {
+      return normalizeXpReward(obj.xp_reward);
+    }
+    if (obj.reward !== undefined) {
+      return normalizeXpReward(obj.reward);
+    }
+  }
+  return 0;
+};
+
 export async function GET(
   request: NextRequest,
   context: RouteContext,
@@ -93,6 +113,7 @@ export async function GET(
       author: authorName,
       registered_readers: registeredReaders,
       total_xp_distributed: totalXpDistributed,
+      xp_reward: normalizeXpReward(rawPost.xp_reward),
     };
 
     return NextResponse.json({

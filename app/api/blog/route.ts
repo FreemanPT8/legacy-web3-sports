@@ -5,6 +5,25 @@ import { verifyAuth } from '@/lib/auth';
 
 const db = supabaseAdmin ?? supabase;
 
+const normalizeXpReward = (value: unknown): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (value && typeof value === 'object') {
+    const maybeReward =
+      (value as Record<string, unknown>).xp_reward ??
+      (value as Record<string, unknown>).reward;
+    if (maybeReward !== undefined) {
+      return normalizeXpReward(maybeReward);
+    }
+  }
+  return 0;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -115,9 +134,11 @@ export async function GET(request: NextRequest) {
           : false;
 
       const excerptRaw = typeof p.excerpt === 'string' ? p.excerpt : '';
+      const xpReward = normalizeXpReward(p.xp_reward);
       const { before: excerpt_preview, hasReadMore } = splitReadMore(excerptRaw);
       return {
         ...p,
+        xp_reward: xpReward,
         excerpt_preview,
         excerpt_has_read_more: hasReadMore,
         author: authorName,

@@ -223,11 +223,30 @@ export default function BlogPostPage() {
     );
   }
 
+  const normalizeXpReward = (value: unknown) => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    if (value && typeof value === 'object') {
+      const obj = value as Record<string, unknown>;
+      if (obj.xp_reward !== undefined) {
+        return normalizeXpReward(obj.xp_reward);
+      }
+      if (obj.reward !== undefined) {
+        return normalizeXpReward(obj.reward);
+      }
+    }
+    return 0;
+  };
+
   const htmlContent = removeReadMoreMarker(
     pickTranslation(post.content, ''),
   );
-  const xpReward =
-    typeof post.xp_reward === 'number' ? post.xp_reward : 0;
+  const xpReward = normalizeXpReward(post.xp_reward);
   const estimatedMinutes =
     typeof post.reading_time === 'number' ? post.reading_time : 5;
 

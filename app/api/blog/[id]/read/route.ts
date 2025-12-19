@@ -9,6 +9,26 @@ interface RouteContext {
 // Usamos o client admin sempre que existir (produção)
 const db = supabaseAdmin ?? supabase;
 
+const normalizeXpReward = (value: unknown): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    if (obj.xp_reward !== undefined) {
+      return normalizeXpReward(obj.xp_reward);
+    }
+    if (obj.reward !== undefined) {
+      return normalizeXpReward(obj.reward);
+    }
+  }
+  return 0;
+};
+
 export async function POST(
   request: NextRequest,
   context: RouteContext,
@@ -49,10 +69,7 @@ export async function POST(
     }
 
     const authorId = (post.author_id as string | null) || null;
-    const basePostXP =
-      typeof post.xp_reward === 'number' && Number.isFinite(post.xp_reward)
-        ? post.xp_reward
-        : 0;
+    const basePostXP = normalizeXpReward(post.xp_reward);
 
     // 2) Já completou este artigo?
     const alreadyCompleted = await hasCompletedContent(
@@ -71,10 +88,9 @@ export async function POST(
 
     // 3) Definir XP efectivo para o leitor
     //    – criador não ganha XP por ler o próprio artigo
-    const requestedXp =
-      typeof xpEarned === 'number' && Number.isFinite(xpEarned)
-        ? xpEarned
-        : basePostXP;
+    const requestedXp = normalizeXpReward(
+      typeof xpEarned === 'undefined' ? basePostXP : xpEarned,
+    );
     const safeReaderXP = Math.max(0, Math.min(requestedXp, basePostXP));
     const effectiveXpForReader =
       authorId && authorId === userId ? 0 : safeReaderXP;

@@ -24,6 +24,26 @@ import {
 
 type MultiLang = Record<string, string>;
 
+const normalizeXpReward = (value: unknown): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    if (obj.xp_reward !== undefined) {
+      return normalizeXpReward(obj.xp_reward);
+    }
+    if (obj.reward !== undefined) {
+      return normalizeXpReward(obj.reward);
+    }
+  }
+  return 0;
+};
+
 type BlogPost = {
   id: string;
   title: MultiLang | string;
@@ -121,7 +141,7 @@ export default function BlogPage() {
 
     const totalArticles = posts.length;
     const totalXpAvailable = posts.reduce((sum, p) => {
-      const xp = typeof p.xp_reward === 'number' ? p.xp_reward : 0;
+      const xp = normalizeXpReward(p.xp_reward);
       return sum + xp;
     }, 0);
 
@@ -255,8 +275,7 @@ export default function BlogPage() {
                     post.excerpt_preview ?? undefined,
                   );
 
-                  const xpReward =
-                    typeof post.xp_reward === 'number' ? post.xp_reward : 0;
+                  const xpReward = normalizeXpReward(post.xp_reward);
 
                   const readingMinutes =
                     typeof post.reading_time === 'number'
