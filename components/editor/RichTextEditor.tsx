@@ -98,10 +98,21 @@ const LegacyImage = Image.extend({
           const alignment =
             (attributes.alignment as ImageAlignment) ?? 'center';
           const size = (attributes.size as ImageSize) ?? 'lg';
+          const widthPercent =
+            typeof attributes.widthPercent === 'number'
+              ? attributes.widthPercent
+              : Number(attributes.widthPercent) || 100;
           const base = 'legacy-editor-image rounded-2xl border border-slate-200';
           const className = [base, alignmentClassMap[alignment], sizeClassMap[size]]
             .filter(Boolean)
             .join(' ');
+          const style = [
+            attributes.style,
+            `width:${widthPercent}%`,
+            'max-width:100%',
+          ]
+            .filter(Boolean)
+            .join(';');
 
           return [
             'img',
@@ -109,10 +120,17 @@ const LegacyImage = Image.extend({
               ...attributes,
               class: className,
               'data-alignment': alignment,
+              'data-width-percent': widthPercent,
               'data-size': size,
+              style,
             },
           ];
         },
+      },
+      widthPercent: {
+        default: 100,
+        parseHTML: (element) =>
+          Number(element.getAttribute('data-width-percent')) || 100,
       },
       size: {
         default: 'lg',
@@ -138,6 +156,7 @@ export function RichTextEditor({
   const [defaultImageAlignment, setDefaultImageAlignment] =
     useState<ImageAlignment>('center');
   const [defaultImageSize, setDefaultImageSize] = useState<ImageSize>('lg');
+  const [defaultImageWidth, setDefaultImageWidth] = useState(100);
   const [imageSizePopoverOpen, setImageSizePopoverOpen] = useState(false);
   const [ctaPopoverOpen, setCtaPopoverOpen] = useState(false);
   const [ctaConfig, setCtaConfig] = useState({
@@ -330,6 +349,7 @@ export function RichTextEditor({
           alt: asset.alt || asset.title || '',
           alignment: defaultImageAlignment,
           size: defaultImageSize,
+          widthPercent: defaultImageWidth,
         };
         editor.chain().focus().setImage(imagePayload as any).run();
         return;
@@ -373,6 +393,15 @@ export function RichTextEditor({
       setDefaultImageSize(next);
       if (!editor?.isActive('image')) return;
       editor.chain().focus().updateAttributes('image', { size: next }).run();
+    },
+    [editor],
+  );
+
+  const setImageWidthPercent = useCallback(
+    (next: number) => {
+      setDefaultImageWidth(next);
+      if (!editor?.isActive('image')) return;
+      editor.chain().focus().updateAttributes('image', { widthPercent: next }).run();
     },
     [editor],
   );
@@ -749,6 +778,21 @@ export function RichTextEditor({
               </div>
             </PopoverContent>
           </Popover>
+          <div className="flex flex-col gap-1 border-l border-slate-200 pl-2 pr-2 text-[11px] uppercase tracking-wide text-slate-500 dark:border-slate-800">
+            <span>
+              Largura ({defaultImageWidth}
+              %)
+            </span>
+            <input
+              type="range"
+              min={30}
+              max={100}
+              step={1}
+              value={defaultImageWidth}
+              onChange={(event) => setImageWidthPercent(Number(event.target.value))}
+              className="h-1 w-28 cursor-pointer accent-cyan-400"
+            />
+          </div>
           <Button variant="ghost" size="icon" onClick={() => mediaLibrary.openLibrary('library')} aria-label="Add media">
             <ImagePlus className="h-4 w-4" />
           </Button>
