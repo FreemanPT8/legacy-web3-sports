@@ -359,15 +359,6 @@ export function RichTextEditor({
     [editor],
   );
 
-  const setImageSize = useCallback(
-    (next: ImageSize) => {
-      setDefaultImageSize(next);
-      if (!editor?.isActive('image')) return;
-      editor.chain().focus().updateAttributes('image', { size: next }).run();
-    },
-    [editor],
-  );
-
   const insertCTAButton = useCallback(() => {
     if (!editor) return;
     const safeText = ctaConfig.text.trim() || 'Quero fazer onboarding';
@@ -376,6 +367,15 @@ export function RichTextEditor({
     editor.chain().focus().insertContent(finalHtml).run();
     setCtaPopoverOpen(false);
   }, [editor, ctaConfig]);
+
+  const setImageSize = useCallback(
+    (next: ImageSize) => {
+      setDefaultImageSize(next);
+      if (!editor?.isActive('image')) return;
+      editor.chain().focus().updateAttributes('image', { size: next }).run();
+    },
+    [editor],
+  );
 
   const setImageSize = useCallback(
     (next: ImageSize) => {
