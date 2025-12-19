@@ -31,6 +31,10 @@ import {
   Bold,
   Clipboard,
   Eraser,
+  Heading1,
+  Heading2,
+  Heading3,
+  Heading4,
   List,
   ListOrdered,
   ImagePlus,
@@ -43,12 +47,15 @@ import {
   Redo,
   Slash,
   Strikethrough,
+  TextCursor,
   Underline as UnderlineIcon,
   Undo,
   Unlink,
 } from 'lucide-react';
 import type { MediaAsset } from '@/types/builder';
 const SPECIAL_CHARACTERS = ['*', '-', '--', '"', "'", '?', '!', '(c)', '(r)'];
+type Level = 1 | 2 | 3 | 4;
+const HEADING_LEVELS: Level[] = [1, 2, 3, 4];
 
 interface RichTextEditorProps {
   id?: string;
@@ -116,7 +123,7 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: false,
+        heading: { levels: HEADING_LEVELS },
         bulletList: false,
         orderedList: false,
         listItem: false,
@@ -144,7 +151,7 @@ export function RichTextEditor({
       TextStyle,
       Color.configure({ types: ['textStyle'] }),
       TextAlign.configure({
-        types: ['paragraph', 'listItem', 'bulletList', 'orderedList'],
+        types: ['paragraph', 'heading', 'listItem', 'bulletList', 'orderedList'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
       Link.configure({
@@ -185,6 +192,18 @@ export function RichTextEditor({
       editor.commands.setContent(value || '');
     }
   }, [value, editor]);
+
+  const applyHeading = useCallback(
+    (level: Level | 'paragraph') => {
+      if (!editor) return;
+      if (level === 'paragraph') {
+        editor.chain().focus().setParagraph().run();
+        return;
+      }
+      editor.chain().focus().toggleHeading({ level }).run();
+    },
+    [editor],
+  );
 
   const toggleAlign = useCallback(
     (direction: 'left' | 'center' | 'right' | 'justify') => {
@@ -343,6 +362,32 @@ export function RichTextEditor({
           >
             <ListOrdered className="h-4 w-4" />
           </Button>
+        </div>
+        <div className="flex items-center gap-1 border-l border-slate-200 pl-2 dark:border-slate-800">
+          <Button
+            type="button"
+            variant={editor?.isActive('paragraph') ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => applyHeading('paragraph')}
+            aria-label="Paragraph"
+          >
+            <TextCursor className="h-4 w-4" />
+          </Button>
+          {HEADING_LEVELS.map((level) => (
+            <Button
+              key={`heading-${level}`}
+              type="button"
+              variant={editor?.isActive('heading', { level }) ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => applyHeading(level)}
+              aria-label={`Heading ${level}`}
+            >
+              {level === 1 && <Heading1 className="h-4 w-4" />}
+              {level === 2 && <Heading2 className="h-4 w-4" />}
+              {level === 3 && <Heading3 className="h-4 w-4" />}
+              {level === 4 && <Heading4 className="h-4 w-4" />}
+            </Button>
+          ))}
         </div>
         <Button
           type="button"
