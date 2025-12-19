@@ -36,7 +36,7 @@ export function BlogPreview() {
     'Start writing your article to preview it here.',
   );
   const excerptHtml = ensureHtml(excerpt, 'Excerpt not defined yet.');
-  const snippetOverflow = previewPlainLength > 800 || hasReadMore;
+  const snippetOverflow = previewPlainLength > 600 || hasReadMore;
   const availableLanguages = getAvailableLanguages(
     blog.title,
     blog.longDescription,
