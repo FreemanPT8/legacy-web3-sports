@@ -453,7 +453,7 @@ export default function BlogPostPage() {
           currentLanguage={language}
           availableLanguages={availableLanguages}
           onSelectLanguage={(next) => {
-            setLanguage(next);
+            setLanguageUnsafe?.(next);
             setDismissedLanguage(null);
           }}
           onBack={() => {

@@ -502,7 +502,7 @@ export default function LessonPage() {
           currentLanguage={language}
           availableLanguages={availableLanguages}
           onSelectLanguage={(next) => {
-            setLanguage(next);
+            setLanguageUnsafe?.(next);
             setDismissedLanguage(null);
           }}
           onBack={() => {

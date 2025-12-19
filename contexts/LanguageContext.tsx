@@ -16,6 +16,7 @@ const isSupportedLanguage = (lang: unknown): lang is SupportedLanguage =>
 interface LanguageContextType {
   language: SupportedLanguage;
   setLanguage: (lang: SupportedLanguage) => void;
+  setLanguageUnsafe?: (lang: Language) => void; // legacy support
   t: (key: string) => string;
 }
 
@@ -52,12 +53,20 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const setLanguageUnsafe = (lang: Language) => {
+    if (isSupportedLanguage(lang)) {
+      setLanguage(lang);
+    }
+  };
+
   const t = (key: string) => {
     return getTranslation(language as Language, key);
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider
+      value={{ language, setLanguage, setLanguageUnsafe, t }}
+    >
       {children}
     </LanguageContext.Provider>
   );
