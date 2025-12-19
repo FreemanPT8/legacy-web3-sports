@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { LANGUAGES, Language } from '@/lib/i18n';
+import { useLanguage, SUPPORTED_LANGUAGES } from '@/contexts/LanguageContext';
+import { LANGUAGES } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -38,6 +38,10 @@ export const Header = memo(function Header() {
   const { language, setLanguage, t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const selectableLanguages = SUPPORTED_LANGUAGES.map((code) => ({
+    code,
+    label: LANGUAGES[code] ?? code.toUpperCase(),
+  }));
 
   useEffect(() => {
     if (!user) return;
@@ -225,17 +229,17 @@ export const Header = memo(function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="text-gray-200">
                 <Globe className="h-4 w-4 mr-2" />
-                {LANGUAGES[language]}
+                {LANGUAGES[language] ?? language.toUpperCase()}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-gray-950 border border-gray-800">
-              {Object.entries(LANGUAGES).map(([code, name]) => (
+              {selectableLanguages.map(({ code, label }) => (
                 <DropdownMenuItem
                   key={code}
-                  onClick={() => setLanguage(code as Language)}
+                  onClick={() => setLanguage(code)}
                   className={language === code ? 'bg-gray-900 text-white' : 'text-gray-200'}
                 >
-                  {name}
+                  {label}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

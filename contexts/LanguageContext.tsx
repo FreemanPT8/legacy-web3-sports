@@ -3,16 +3,26 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Language, getTranslation } from '@/lib/i18n';
 
+const SUPPORTED_LANGUAGE_CODES = ['pt', 'es', 'en'] as const;
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGE_CODES)[number];
+
+export const SUPPORTED_LANGUAGES = SUPPORTED_LANGUAGE_CODES;
+
+const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
+
+const isSupportedLanguage = (lang: unknown): lang is SupportedLanguage =>
+  typeof lang === 'string' && SUPPORTED_LANGUAGE_CODES.includes(lang as SupportedLanguage);
+
 interface LanguageContextType {
-  language: Language;
-  setLanguage: (lang: Language) => void;
+  language: SupportedLanguage;
+  setLanguage: (lang: SupportedLanguage) => void;
   t: (key: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en');
+  const [language, setLanguageState] = useState<SupportedLanguage>(DEFAULT_LANGUAGE);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -20,29 +30,30 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined') return;
 
     try {
-      const stored = localStorage.getItem('language') as Language;
-      if (stored && ['en', 'pt', 'es', 'fr', 'it', 'de'].includes(stored)) {
+      const stored = localStorage.getItem('language');
+      if (isSupportedLanguage(stored)) {
         setLanguageState(stored);
       } else {
-        const browserLang = navigator.language.split('-')[0] as Language;
-        if (['en', 'pt', 'es', 'fr', 'it', 'de'].includes(browserLang)) {
+        const browserLang = navigator.language.split('-')[0];
+        if (isSupportedLanguage(browserLang)) {
           setLanguageState(browserLang);
         }
       }
     } catch (error) {
-      setLanguageState('en');
+      setLanguageState(DEFAULT_LANGUAGE);
     }
   }, []);
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
+  const setLanguage = (lang: SupportedLanguage) => {
+    const nextLang = isSupportedLanguage(lang) ? lang : DEFAULT_LANGUAGE;
+    setLanguageState(nextLang);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('language', lang);
+      localStorage.setItem('language', nextLang);
     }
   };
 
   const t = (key: string) => {
-    return getTranslation(language, key);
+    return getTranslation(language as Language, key);
   };
 
   return (
