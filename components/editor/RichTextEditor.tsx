@@ -17,6 +17,8 @@ import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -40,7 +42,9 @@ import {
   ImagePlus,
   Italic,
   Link2,
+  MousePointerClick,
   Minus,
+  MoveHorizontal,
   MoreHorizontal,
   Palette,
   Quote,
@@ -134,6 +138,15 @@ export function RichTextEditor({
   const [defaultImageAlignment, setDefaultImageAlignment] =
     useState<ImageAlignment>('center');
   const [defaultImageSize, setDefaultImageSize] = useState<ImageSize>('lg');
+  const [imageSizePopoverOpen, setImageSizePopoverOpen] = useState(false);
+  const [ctaPopoverOpen, setCtaPopoverOpen] = useState(false);
+  const [ctaConfig, setCtaConfig] = useState({
+    text: 'Quero fazer onboarding',
+    href: '/sports/onboarding',
+    textColor: '#001014',
+    bg: '#06b6d4',
+    hover: '#0ea5e9',
+  });
   const mediaLibrary = useMediaLibrary();
 
   const editor = useEditor({
@@ -355,6 +368,24 @@ export function RichTextEditor({
     [editor],
   );
 
+  const insertCTAButton = useCallback(() => {
+    if (!editor) return;
+    const safeText = ctaConfig.text.trim() || 'Quero fazer onboarding';
+    const safeHref = ctaConfig.href.trim() || '/sports/onboarding';
+    const finalHtml = `<p><a class="legacy-cta-button" href="${safeHref}" target="_blank" rel="noopener" style="--legacy-cta-bg:${ctaConfig.bg};--legacy-cta-hover:${ctaConfig.hover};--legacy-cta-text:${ctaConfig.textColor};">${safeText}</a></p>`;
+    editor.chain().focus().insertContent(finalHtml).run();
+    setCtaPopoverOpen(false);
+  }, [editor, ctaConfig]);
+
+  const setImageSize = useCallback(
+    (next: ImageSize) => {
+      setDefaultImageSize(next);
+      if (!editor?.isActive('image')) return;
+      editor.chain().focus().updateAttributes('image', { size: next }).run();
+    },
+    [editor],
+  );
+
   const stats = useMemo(
     () => ({
       characters: editor?.storage.characterCount.characters ?? 0,
@@ -523,6 +554,79 @@ export function RichTextEditor({
         >
           <Slash className="h-4 w-4" />
         </Button>
+        <Popover open={ctaPopoverOpen} onOpenChange={setCtaPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Insert onboarding CTA"
+            >
+              <MousePointerClick className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-lg dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <Label className="text-xs uppercase text-slate-500">Texto do botão</Label>
+              <Input
+                value={ctaConfig.text}
+                onChange={(event) =>
+                  setCtaConfig((prev) => ({ ...prev, text: event.target.value }))
+                }
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs uppercase text-slate-500">Destino</Label>
+              <Input
+                value={ctaConfig.href}
+                onChange={(event) =>
+                  setCtaConfig((prev) => ({ ...prev, href: event.target.value }))
+                }
+                className="mt-1"
+                placeholder="/sports/onboarding"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <label className="flex flex-col text-xs uppercase text-slate-500">
+                Texto
+                <input
+                  type="color"
+                  value={ctaConfig.textColor}
+                  onChange={(event) =>
+                    setCtaConfig((prev) => ({ ...prev, textColor: event.target.value }))
+                  }
+                  className="mt-1 h-8 w-full cursor-pointer rounded border border-slate-200"
+                />
+              </label>
+              <label className="flex flex-col text-xs uppercase text-slate-500">
+                Fundo
+                <input
+                  type="color"
+                  value={ctaConfig.bg}
+                  onChange={(event) =>
+                    setCtaConfig((prev) => ({ ...prev, bg: event.target.value }))
+                  }
+                  className="mt-1 h-8 w-full cursor-pointer rounded border border-slate-200"
+                />
+              </label>
+              <label className="flex flex-col text-xs uppercase text-slate-500">
+                Hover
+                <input
+                  type="color"
+                  value={ctaConfig.hover}
+                  onChange={(event) =>
+                    setCtaConfig((prev) => ({ ...prev, hover: event.target.value }))
+                  }
+                  className="mt-1 h-8 w-full cursor-pointer rounded border border-slate-200"
+                />
+              </label>
+            </div>
+            <Button className="w-full" onClick={insertCTAButton}>
+              Inserir botão
+            </Button>
+          </PopoverContent>
+        </Popover>
       </div>
       {advancedOpen && (
         <div className="legacy-editor-toolbar flex flex-wrap items-center gap-1 border-b border-slate-200 px-2 py-2 text-xs text-slate-500 dark:border-slate-800">
@@ -619,6 +723,40 @@ export function RichTextEditor({
               </Button>
             ))}
           </div>
+          <Popover open={imageSizePopoverOpen} onOpenChange={setImageSizePopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={!editor?.isActive('image')}
+                aria-label="Resize image"
+              >
+                <MoveHorizontal className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-lg dark:border-slate-800 dark:bg-slate-900">
+              <p className="text-xs font-semibold uppercase text-slate-500">
+                Dimensão da imagem
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['sm', 'md', 'lg', 'xl'] as ImageSize[]).map((size) => (
+                  <Button
+                    key={`img-size-${size}`}
+                    type="button"
+                    variant={
+                      editor?.isActive('image', { size }) || defaultImageSize === size
+                        ? 'secondary'
+                        : 'outline'
+                    }
+                    onClick={() => setImageSize(size)}
+                  >
+                    {size.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button variant="ghost" size="icon" onClick={() => mediaLibrary.openLibrary('library')} aria-label="Add media">
             <ImagePlus className="h-4 w-4" />
           </Button>

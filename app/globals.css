@@ -196,6 +196,32 @@
     max-width: 100%;
   }
 
+  .legacy-editor-content .legacy-cta-button,
+  .prose .legacy-cta-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background-color: var(--legacy-cta-bg, #06b6d4);
+    color: var(--legacy-cta-text, #001014);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 35px rgba(6, 182, 212, 0.25);
+    transition: background-color 150ms ease, transform 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .legacy-editor-content .legacy-cta-button:hover,
+  .prose .legacy-cta-button:hover {
+    background-color: var(--legacy-cta-hover, #0ea5e9);
+    color: var(--legacy-cta-text, #001014);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 40px rgba(14, 165, 233, 0.35);
+  }
+
   .legacy-editor-toolbar {
     position: sticky;
     top: 70px;
