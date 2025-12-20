@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const { data: rawCourses, error: courseError } = await db
       .from('courses')
       .select('*')
-      .eq('published', true)
+      .or('published.eq.true,is_published.eq.true')
       .order('order', { ascending: true });
 
     if (courseError) {
