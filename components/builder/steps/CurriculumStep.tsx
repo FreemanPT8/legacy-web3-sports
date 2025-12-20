@@ -118,6 +118,16 @@ export function CurriculumStep() {
     }),
   );
 
+  const availableLanguages = LANGUAGES.map((lang) => lang.code as LangCode);
+
+  const getMissingLanguages = useCallback(
+    (selector: (code: LangCode) => string) =>
+      availableLanguages.filter(
+        (code) => code !== activeLanguage && !selector(code).trim(),
+      ),
+    [availableLanguages, activeLanguage],
+  );
+
   const updateTopics = useCallback(
     (updater: (current: TopicState[]) => TopicState[]) => {
       updateState((prev) => {
@@ -222,18 +232,6 @@ export function CurriculumStep() {
   });
 
   const translateTopicFields = async (topicId: string) => {
-    const targetLangs = LANGUAGES.map((lang) => lang.code).filter(
-      (code) => code !== activeLanguage,
-    );
-    if (targetLangs.length === 0) {
-      toast({
-        title: 'Sem destinos',
-        description: 'Todas as línguas já estão alinhadas com a atual.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     const topic = topics.find((t) => t.id === topicId);
     if (!topic) return;
 
@@ -255,11 +253,21 @@ export function CurriculumStep() {
 
     setTranslatingTopicId(topicId);
     try {
+      let translatedSomething = false;
       if (titleSource) {
+        const titleTargets = getMissingLanguages((code) =>
+          getTranslationValue(topic.title, code),
+        );
+        if (titleTargets.length === 0) {
+          toast({
+            title: 'Sem destinos para o título',
+            description: 'Todas as línguas já possuem título.',
+          });
+        } else {
         const translations = await translate(
           titleSource,
           activeLanguage,
-          targetLangs,
+            titleTargets,
         );
         updateTopics((current) =>
           current.map((item) =>
@@ -271,13 +279,24 @@ export function CurriculumStep() {
               : item,
           ),
         );
+          translatedSomething = true;
+        }
       }
 
       if (descriptionSource) {
+        const descriptionTargets = getMissingLanguages((code) =>
+          getTranslationValue(topic.description, code),
+        );
+        if (descriptionTargets.length === 0) {
+          toast({
+            title: 'Sem destinos para a descrição',
+            description: 'Todas as línguas já possuem descrição.',
+          });
+        } else {
         const translations = await translate(
           descriptionSource,
           activeLanguage,
-          targetLangs,
+            descriptionTargets,
         );
         updateTopics((current) =>
           current.map((item) =>
@@ -289,12 +308,21 @@ export function CurriculumStep() {
               : item,
           ),
         );
+          translatedSomething = true;
+        }
       }
 
-      toast({
-        title: 'Traduções atualizadas',
-        description: 'Este tópico foi sincronizado nas restantes línguas.',
-      });
+      if (translatedSomething) {
+        toast({
+          title: 'Traduções atualizadas',
+          description: 'Este tópico foi sincronizado nas línguas em falta.',
+        });
+      } else {
+        toast({
+          title: 'Nenhuma língua precisava de tradução',
+          description: 'Todos os campos já estavam preenchidos.',
+        });
+      }
     } catch (error) {
       console.error('Topic translation error:', error);
       toast({
@@ -310,22 +338,7 @@ export function CurriculumStep() {
     }
   };
 
-  const translateLessonFields = async (
-    topicId: string,
-    lessonId: string,
-  ) => {
-    const targetLangs = LANGUAGES.map((lang) => lang.code).filter(
-      (code) => code !== activeLanguage,
-    );
-    if (targetLangs.length === 0) {
-      toast({
-        title: 'Sem destinos',
-        description: 'Todas as línguas já estão alinhadas com a atual.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+  const translateLessonFields = async (topicId: string, lessonId: string) => {
     const topic = topics.find((t) => t.id === topicId);
     const lesson = topic?.lessons.find((l) => l.id === lessonId);
     if (!lesson) return;
@@ -348,34 +361,65 @@ export function CurriculumStep() {
 
     setTranslatingLessonId(lessonId);
     try {
+      let translatedSomething = false;
+
       if (titleSource) {
+        const titleTargets = getMissingLanguages((code) =>
+          getTranslationValue(lesson.title, code),
+        );
+        if (titleTargets.length === 0) {
+          toast({
+            title: 'Sem destinos para o título',
+            description: 'Todas as línguas já possuem título.',
+          });
+        } else {
         const translations = await translate(
           titleSource,
           activeLanguage,
-          targetLangs,
+            titleTargets,
         );
         updateLesson(topicId, lessonId, (prev) => ({
           ...prev,
           title: mergeTranslations(prev.title, translations),
         }));
+          translatedSomething = true;
+        }
       }
 
       if (contentSource) {
+        const contentTargets = getMissingLanguages((code) =>
+          getTranslationValue(lesson.content, code),
+        );
+        if (contentTargets.length === 0) {
+          toast({
+            title: 'Sem destinos para o conteúdo',
+            description: 'Todas as línguas já possuem conteúdo.',
+          });
+        } else {
         const translations = await translate(
           contentSource,
           activeLanguage,
-          targetLangs,
+            contentTargets,
         );
         updateLesson(topicId, lessonId, (prev) => ({
           ...prev,
           content: mergeTranslations(prev.content, translations),
         }));
+          translatedSomething = true;
+        }
       }
 
-      toast({
-        title: 'Lição traduzida',
-        description: 'Atualizámos esta lição nas restantes línguas.',
-      });
+      if (translatedSomething) {
+        toast({
+          title: 'Lição traduzida',
+          description: 'Atualizámos esta lição nas línguas em falta.',
+        });
+      } else {
+        toast({
+          title: 'Nenhuma língua precisava de tradução',
+          description: 'Todos os campos já estavam preenchidos.',
+        });
+      }
     } catch (error) {
       console.error('Lesson translation error:', error);
       toast({
