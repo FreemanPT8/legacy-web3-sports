@@ -92,7 +92,8 @@ const getAnyTranslation = (field: TranslatedField | undefined) =>
   field ? Object.values(field).find((value) => value.trim().length) || '' : '';
 
 export function CurriculumStep() {
-  const { state, updateState, activeLanguage } = useBuilderState();
+  const { state, updateState, activeLanguage, setActiveLanguage } =
+    useBuilderState();
   const { translate, isTranslating } = useAutoTranslate();
   const { toast } = useToast();
   const courseState = state as CourseBuilderState;
@@ -514,17 +515,41 @@ export function CurriculumStep() {
     LANGUAGES.find((lang) => lang.code === activeLanguage)?.name ||
     activeLanguage.toUpperCase();
 
+  const handleLanguageSelect = (code: LangCode) => {
+    if (code === activeLanguage) return;
+    setActiveLanguage(code);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2 rounded-xl border border-white/10 bg-[#05212b]/60 p-4 text-xs text-slate-300">
-        <p>
-          A editar:{' '}
-          <span className="font-semibold text-white">
-            {currentLanguageLabel}
-          </span>
-        </p>
+      <div className="space-y-3 rounded-xl border border-white/10 bg-[#05212b]/60 p-4 text-xs text-slate-300">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase text-slate-400">Língua ativa</p>
+            <p className="text-base font-semibold text-white">{currentLanguageLabel}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {LANGUAGES.map((lang) => (
+              <Button
+                key={lang.code}
+                type="button"
+                size="sm"
+                variant={lang.code === activeLanguage ? 'default' : 'outline'}
+                className={cn(
+                  'border-white/20 text-xs font-semibold',
+                  lang.code === activeLanguage
+                    ? 'bg-cyan-500/80 text-white hover:bg-cyan-500'
+                    : 'text-slate-200 hover:text-white',
+                )}
+                onClick={() => handleLanguageSelect(lang.code as LangCode)}
+              >
+                {lang.name}
+              </Button>
+            ))}
+          </div>
+        </div>
         <p className="text-slate-400">
-          Para preencher noutra língua, vai a <strong>Basics</strong> e selecciona a língua desejada.
+          Os tópicos, lições e quizzes desta etapa refletem apenas a língua selecionada.
         </p>
       </div>
       <div className="flex flex-col gap-2">
