@@ -71,7 +71,8 @@ export function ContentTracker({
   useEffect(() => {
     if (!canTrack) return;
 
-    const totalMs = Math.max(estimatedMinutes, 1) * 60_000;
+    const effectiveMinutes = Math.max(estimatedMinutes * 0.2, 0.5);
+    const totalMs = effectiveMinutes * 60_000;
     const start = Date.now();
 
     const interval = setInterval(() => {
@@ -170,24 +171,24 @@ export function ContentTracker({
 
   if (noUser) {
     inlineBanner = (
-      <div className="mb-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-700 flex items-start gap-3">
-        <Info className="h-4 w-4 mt-0.5 text-gray-500" />
+      <div className="mb-4 rounded-xl border border-white/10 bg-[#031824] p-4 text-sm text-slate-100 flex items-start gap-3">
+        <Info className="h-4 w-4 mt-0.5 text-cyan-300" />
         <div>
-          <p className="font-medium">Reading tracker disponível apenas para utilizadores com login.</p>
-          <p className="mt-1 text-xs text-gray-500">Podes ler tudo, mas o XP só é registado quando tens sessão iniciada.</p>
+          <p className="font-semibold text-white">Inicia sessão para registar o progresso.</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Podes ler tudo, mas o XP só é registado quando tens sessão iniciada.
+          </p>
         </div>
       </div>
     );
   } else if (isCreator) {
     inlineBanner = (
-      <div className="mb-4 rounded-lg border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 flex items-start gap-3">
-        <Info className="h-4 w-4 mt-0.5 text-amber-600" />
+      <div className="mb-4 rounded-xl border border-white/10 bg-[#2c1800] p-4 text-sm text-amber-100 flex items-start gap-3">
+        <Info className="h-4 w-4 mt-0.5 text-amber-400" />
         <div>
-          <p className="font-medium">És o criador deste conteúdo.</p>
-          <p className="mt-1 text-xs">
-            Não ganhas XP ao consumir o teu próprio conteúdo.
-            <br />
-            Ganas 19% do XP que cada utilizador recebe pela primeira leitura concluída.
+          <p className="font-semibold text-white">És o criador deste conteúdo.</p>
+          <p className="mt-1 text-xs text-amber-200/80">
+            Não ganhas XP ao consumir o teu próprio conteúdo. Recebes 19% do XP que cada utilizador ganha na primeira conclusão.
           </p>
         </div>
       </div>
@@ -216,11 +217,11 @@ export function ContentTracker({
     if (completed) {
       floatingWidget = (
         <div className={widgetPosition}>
-          <div className="rounded-lg border border-green-300 bg-green-50 p-3 shadow-lg text-xs md:text-sm flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-green-700" />
+          <div className="rounded-xl border border-white/15 bg-[#031824] p-3 shadow-[0_10px_35px_rgba(16,185,129,0.25)] text-xs md:text-sm flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-300" />
             <div>
-              <p className="font-semibold text-green-900">Conteúdo concluído</p>
-              <p className="mt-0.5 text-[11px] text-green-700">
+              <p className="font-semibold text-white">Conteúdo concluído</p>
+              <p className="mt-0.5 text-[11px] text-emerald-100">
                 O XP desta leitura já foi registado.
               </p>
             </div>
@@ -232,36 +233,36 @@ export function ContentTracker({
 
       floatingWidget = (
         <div className={widgetPosition}>
-          <div className="rounded-lg border border-blue-300 bg-blue-50 p-3 shadow-lg text-xs md:text-sm space-y-2">
+          <div className="rounded-xl border border-white/10 bg-[#031824] p-4 shadow-[0_12px_40px_rgba(8,145,178,0.25)] text-xs md:text-sm space-y-3 text-slate-100">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-blue-900 flex items-center gap-2">
-                <Timer className="h-4 w-4 text-blue-600" />
+              <span className="font-semibold text-white flex items-center gap-2 tracking-wide">
+                <Timer className="h-4 w-4 text-cyan-300" />
                 Leitura em progresso
               </span>
-              <span className="flex items-center gap-1 text-blue-900">
+              <span className="flex items-center gap-1 text-cyan-200">
                 <Award className="h-4 w-4" />
                 +{xpReward} XP
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-blue-800 text-[11px]">
+            <div className="flex items-center justify-between text-[11px] text-slate-300">
               <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
+                <Clock className="h-3 w-3 text-cyan-300" />
                 ~{estimatedMinutes} min
               </span>
-              <span>{Math.round(overall)}%</span>
+              <span className="text-white">{Math.round(overall)}%</span>
             </div>
 
-            <div className="h-2 w-full bg-blue-100 rounded-full overflow-hidden">
+            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
               <div
-                className="h-2 bg-blue-600 rounded-full transition-all"
+                className="h-2 rounded-full transition-all bg-gradient-to-r from-cyan-400 to-emerald-400"
                 style={{ width: `${overall}%` }}
               />
             </div>
 
-            <p className="text-[11px] text-blue-800">
-              O XP será registado automaticamente…
-              {isAwarding && ' A atribuir XP…'}
+            <p className="text-[11px] text-slate-400">
+              O XP será registado automaticamente
+              {isAwarding && ' · a atribuir XP'}
             </p>
           </div>
         </div>
