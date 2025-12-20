@@ -11,7 +11,10 @@ import {
   Paperclip,
 } from 'lucide-react';
 import { useBuilderContext } from '@/contexts/BuilderContext';
-import type { CourseBuilderState } from '@/types/builder';
+import type {
+  CourseBuilderState,
+  TranslatedField,
+} from '@/types/builder';
 import { getAvailableLanguages } from '@/lib/language';
 
 const ensureHtmlBlock = (value?: string, fallback = '') => {
@@ -31,8 +34,25 @@ const CET_OPTIONS: Intl.DateTimeFormatOptions = {
   timeZone: 'Europe/Paris',
 };
 
+const getLocalizedField = (
+  field?: TranslatedField,
+  activeLanguage?: string,
+) => {
+  if (!field) return '';
+  if (activeLanguage) {
+    const localized = field[activeLanguage as keyof TranslatedField];
+    if (typeof localized === 'string' && localized.trim().length > 0) {
+      return localized.trim();
+    }
+  }
+  const fallback = Object.values(field).find(
+    (value) => typeof value === 'string' && value.trim().length > 0,
+  );
+  return (fallback || '').trim();
+};
+
 export function CoursePreview() {
-  const { previewData } = useBuilderContext();
+  const { previewData, activeLanguage } = useBuilderContext();
   const course = previewData as CourseBuilderState;
 
   const headline =
@@ -66,6 +86,27 @@ export function CoursePreview() {
     course.title,
     course.longDescription,
   );
+  const topicSummaries = course.curriculum.topics
+    .map((topic, index) => {
+      const description = getLocalizedField(
+        topic.description,
+        activeLanguage,
+      );
+      if (!description) return null;
+      const title =
+        getLocalizedField(topic.title, activeLanguage) ||
+        `Topic ${index + 1}`;
+      return {
+        id: topic.id,
+        title,
+        descriptionHtml: ensureHtmlBlock(description),
+      };
+    })
+    .filter(Boolean) as {
+    id: string;
+    title: string;
+    descriptionHtml: string;
+  }[];
 
   return (
     <div className="space-y-4">
@@ -169,6 +210,37 @@ export function CoursePreview() {
         items={bonuses}
         emptyLabel="Lista os assets extra incluídos."
       />
+
+      {topicSummaries.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+              Curriculum overview
+            </h4>
+            <Badge variant="outline" className="text-xs">
+              {topicSummaries.length} topics
+            </Badge>
+          </div>
+          <div className="mt-4 space-y-4">
+            {topicSummaries.map((topic, idx) => (
+              <div
+                key={topic.id || idx}
+                className="rounded-xl border border-gray-100 bg-gray-50/70 p-3 dark:border-gray-800 dark:bg-gray-900/60"
+              >
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+                  {topic.title}
+                </p>
+                <div
+                  className="prose prose-slate prose-xs mt-2 max-w-none text-gray-600 dark:prose-invert dark:text-gray-300"
+                  dangerouslySetInnerHTML={{
+                    __html: topic.descriptionHtml,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {course.attachments.length > 0 && (
         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">

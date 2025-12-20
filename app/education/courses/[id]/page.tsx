@@ -44,6 +44,7 @@ type Lesson = {
 type Module = {
   id: string;
   title: any;
+  description?: any;
   order?: number | null;
   author_id?: string | null;
   author_name?: string | null;
@@ -433,11 +434,20 @@ const sanitizeCourseDescription = (html: string) =>
               <div className="space-y-6">
               {modules.map((mod, moduleIndex) => {
                 const moduleLabel = tr('courses.moduleLabel', 'Tópico');
-                const modTitle = getLocalizedText(
-                  mod.title,
-                  `${moduleLabel} ${moduleIndex + 1}`,
-                );
-                const moduleAuthorName = mod.author_name || 'Admin';
+                  const modTitle = getLocalizedText(
+                    mod.title,
+                    `${moduleLabel} ${moduleIndex + 1}`,
+                  );
+                  const moduleDescriptionRaw = getLocalizedText(
+                    mod.description,
+                    '',
+                  );
+                  const moduleDescriptionHtml = sanitizeCourseDescription(
+                    moduleDescriptionRaw,
+                  );
+                  const hasModuleDescription =
+                    moduleDescriptionHtml.trim().length > 0;
+                  const moduleAuthorName = mod.author_name || 'Admin';
 
                   const isModuleCreator =
                     !!mod.isCreator ||
@@ -498,7 +508,15 @@ const sanitizeCourseDescription = (html: string) =>
                         </div>
                       </CardHeader>
 
-                      <CardContent className="pt-0">
+                      <CardContent className="pt-0 space-y-4">
+                        {hasModuleDescription && (
+                          <div
+                            className="rounded-2xl border border-white/10 bg-[#000c12]/70 p-4 text-sm leading-relaxed text-slate-200 [&_strong]:text-white"
+                            dangerouslySetInnerHTML={{
+                              __html: moduleDescriptionHtml,
+                            }}
+                          />
+                        )}
                         {lessons.length === 0 ? (
                           <p className="text-xs text-slate-400">
                             {tr(
