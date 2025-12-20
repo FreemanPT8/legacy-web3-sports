@@ -54,9 +54,27 @@ export function BuilderProvider({
       status: 'idle',
       lastSavedAt: undefined,
     });
-  const [activeLanguage, setActiveLanguage] = useState<LangCode>(
-    LANGUAGES[0].code,
-  );
+  const [activeLanguage, setActiveLanguageState] = useState<LangCode>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.sessionStorage.getItem(
+        'builder-active-language',
+      );
+      if (
+        stored &&
+        LANGUAGES.some((lang) => lang.code === stored)
+      ) {
+        return stored as LangCode;
+      }
+    }
+    return LANGUAGES[0].code as LangCode;
+  });
+
+  const setActiveLanguage = (lang: LangCode) => {
+    setActiveLanguageState(lang);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('builder-active-language', lang);
+    }
+  };
 
   const steps = useMemo(() => {
     if (state.entityType === 'course') {
