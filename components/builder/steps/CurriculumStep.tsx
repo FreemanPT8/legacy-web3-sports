@@ -92,8 +92,7 @@ const getAnyTranslation = (field: TranslatedField | undefined) =>
   field ? Object.values(field).find((value) => value.trim().length) || '' : '';
 
 export function CurriculumStep() {
-  const { state, updateState, activeLanguage, setActiveLanguage } =
-    useBuilderState();
+  const { state, updateState, activeLanguage } = useBuilderState();
   const { translate, isTranslating } = useAutoTranslate();
   const { toast } = useToast();
   const courseState = state as CourseBuilderState;
@@ -485,18 +484,9 @@ export function CurriculumStep() {
             Escolhe que versão queres preencher
           </span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {LANGUAGES.map((lang) => (
-            <Badge
-              key={lang.code}
-              variant={lang.code === activeLanguage ? 'default' : 'outline'}
-              className="cursor-pointer text-xs"
-              onClick={() => setActiveLanguage(lang.code as LangCode)}
-            >
-              {lang.name}
-            </Badge>
-          ))}
-        </div>
+        <p className="text-slate-400">
+          Para preencher noutra língua, vai a <strong>Basics</strong> e seleciona a língua desejada.
+        </p>
       </div>
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">Curriculum builder</h2>
