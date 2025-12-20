@@ -139,6 +139,7 @@ export async function GET(request: NextRequest) {
       return {
         ...p,
         xp_reward: xpReward,
+        views: p.views ?? 0,
         excerpt_preview,
         excerpt_has_read_more: hasReadMore,
         author: authorName,

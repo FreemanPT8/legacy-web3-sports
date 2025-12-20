@@ -262,6 +262,29 @@ export default function BlogPostPage() {
 
   const completedForReader = isCompleted && !isAuthor;
 
+  const handleTrackerCompletion = () => {
+    setIsCompleted(true);
+    setPost((prev) => {
+      if (!prev) return prev;
+      const currentRegistered =
+        typeof prev.registered_readers === 'number'
+          ? prev.registered_readers
+          : prev.registered_readers_count || 0;
+      const currentXp =
+        typeof prev.total_xp_distributed === 'number'
+          ? prev.total_xp_distributed
+          : prev.total_xp_given || 0;
+
+      return {
+        ...prev,
+        registered_readers: currentRegistered + 1,
+        registered_readers_count: currentRegistered + 1,
+        total_xp_distributed: currentXp + xpReward,
+        total_xp_given: currentXp + xpReward,
+      };
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
@@ -427,7 +450,7 @@ export default function BlogPostPage() {
                     estimatedMinutes={estimatedMinutes}
                     initialCompleted={completedForReader}
                     isAuthor={isAuthor}
-                    onComplete={() => setIsCompleted(true)}
+                    onComplete={handleTrackerCompletion}
                   >
                     <div
                       dangerouslySetInnerHTML={{

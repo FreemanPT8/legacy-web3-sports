@@ -70,6 +70,26 @@ export async function GET(
       );
     }
 
+    // Incrementar contagem de visualizações totais
+    let updatedViews = rawPost.views ?? 0;
+    try {
+      const currentViews = rawPost.views ?? 0;
+      const { data: viewRow, error: viewError } = await db
+        .from('blog_posts')
+        .update({ views: currentViews + 1 })
+        .eq('id', id)
+        .select('views')
+        .maybeSingle();
+
+      if (!viewError && viewRow?.views !== undefined) {
+        updatedViews = viewRow.views as number;
+      } else {
+        updatedViews = currentViews + 1;
+      }
+    } catch (viewUpdateError) {
+      console.error('Error incrementing blog views:', viewUpdateError);
+    }
+
     // 2) Estatísticas de leituras registadas (blog_reads)
     const { data: reads, error: readsError } = await db
       .from('blog_reads')
@@ -114,6 +134,7 @@ export async function GET(
       registered_readers: registeredReaders,
       total_xp_distributed: totalXpDistributed,
       xp_reward: normalizeXpReward(rawPost.xp_reward),
+      views: updatedViews,
     };
 
     return NextResponse.json({
