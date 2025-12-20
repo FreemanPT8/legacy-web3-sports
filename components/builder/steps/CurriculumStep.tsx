@@ -472,20 +472,15 @@ export function CurriculumStep() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3 rounded-xl border border-white/10 bg-[#05212b]/60 p-4 text-xs text-slate-300">
-        <div className="flex flex-wrap items-center justify-between">
-          <span>
-            A editar:{' '}
-            <span className="font-semibold text-white">
-              {currentLanguageLabel}
-            </span>
+      <div className="space-y-2 rounded-xl border border-white/10 bg-[#05212b]/60 p-4 text-xs text-slate-300">
+        <p>
+          A editar:{' '}
+          <span className="font-semibold text-white">
+            {currentLanguageLabel}
           </span>
-          <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            Escolhe que versão queres preencher
-          </span>
-        </div>
+        </p>
         <p className="text-slate-400">
-          Para preencher noutra língua, vai a <strong>Basics</strong> e seleciona a língua desejada.
+          Para preencher noutra língua, vai a <strong>Basics</strong> e selecciona a língua desejada.
         </p>
       </div>
       <div className="flex flex-col gap-2">
