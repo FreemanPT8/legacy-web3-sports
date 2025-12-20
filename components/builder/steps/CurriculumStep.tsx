@@ -1105,6 +1105,8 @@ function LessonCard({
     lesson.content,
     activeLanguage,
   );
+  const lessonXpRequired =
+    typeof lesson.xp_required === 'number' ? lesson.xp_required : 0;
   const previewDisabled = !lesson.id;
   const handlePreviewClick = () => {
     if (!lesson.id) return;
