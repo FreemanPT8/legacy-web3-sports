@@ -149,6 +149,10 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
                   ...lesson,
                   title: ensureTranslatedField(lesson?.title),
                   content: ensureTranslatedField(lesson?.content),
+                  xp_required:
+                    typeof lesson?.xp_required === 'number'
+                      ? lesson.xp_required
+                      : null,
                   estimated_time:
                     typeof lesson?.estimated_time === 'number'
                       ? lesson.estimated_time
@@ -167,6 +171,10 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
               ...topic,
               title: ensureTranslatedField(topic?.title),
               description: ensureTranslatedField(topic?.description),
+              xp_required:
+                typeof topic?.xp_required === 'number'
+                  ? topic.xp_required
+                  : null,
               lessons: normalizedLessons,
               quizzes: normalizedQuizzes,
             };
@@ -283,6 +291,8 @@ export const ensureCurriculumTranslations = (
       ...lesson,
       title: ensureTranslatedField(lesson.title),
       content: ensureTranslatedField(lesson.content),
+      xp_required:
+        typeof lesson.xp_required === 'number' ? lesson.xp_required : null,
     })),
     quizzes: (topic.quizzes || []).map((quiz) => ({
       ...quiz,

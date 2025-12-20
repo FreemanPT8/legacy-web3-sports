@@ -97,6 +97,7 @@ export interface LessonState {
   title: TranslatedField;
   content: TranslatedField;
   xpReward?: number | null;
+  xp_required?: number | null;
   estimated_time: number;
   video?: MediaAsset | null;
   attachments: Attachment[];
@@ -120,6 +121,7 @@ export interface TopicState {
   id: string;
   title: TranslatedField;
   description: TranslatedField;
+  xp_required?: number | null;
   lessons: LessonState[];
   quizzes: QuizState[];
   schedule: ScheduleConfig;

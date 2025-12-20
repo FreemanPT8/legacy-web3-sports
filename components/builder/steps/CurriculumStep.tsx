@@ -220,6 +220,19 @@ export function CurriculumStep() {
     );
   };
 
+  const updateTopicXpRequired = (topicId: string, value: number) => {
+    updateTopics((current) =>
+      current.map((topic) =>
+        topic.id === topicId
+          ? {
+              ...topic,
+              xp_required: value,
+            }
+          : topic,
+      ),
+    );
+  };
+
   const addLesson = (topicId: string) => {
     updateTopics((current) =>
       current.map((topic) =>
@@ -621,6 +634,9 @@ export function CurriculumStep() {
               onDescriptionChange={(value) =>
                 updateTopicDescription(topic.id, activeLanguage, value)
               }
+              onXpRequiredChange={(value) =>
+                updateTopicXpRequired(topic.id, value)
+              }
               onRemove={() => removeTopic(topic.id)}
               onAddLesson={() => addLesson(topic.id)}
               onRemoveLesson={(lessonId) => removeLesson(topic.id, lessonId)}
@@ -696,6 +712,7 @@ interface TopicCardProps {
   index: number;
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
+  onXpRequiredChange: (value: number) => void;
   onRemove: () => void;
   onAddLesson: () => void;
   onRemoveLesson: (lessonId: string) => void;
@@ -745,6 +762,7 @@ function TopicCard({
   index,
   onTitleChange,
   onDescriptionChange,
+  onXpRequiredChange,
   onRemove,
   onAddLesson,
   onRemoveLesson,
@@ -777,6 +795,8 @@ function TopicCard({
   );
   const [descriptionDraft, setDescriptionDraft] =
     useState(currentDescription);
+  const xpRequiredValue =
+    typeof topic.xp_required === 'number' ? topic.xp_required : 0;
   const [topicScheduleOpen, setTopicScheduleOpen] = useState<boolean>(() => {
     const sched = topic.schedule;
     if (!sched) return false;
@@ -945,6 +965,28 @@ function TopicCard({
               />
             </div>
           )}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <p className="text-[11px] uppercase text-gray-500">
+              XP required to unlock
+            </p>
+            <Input
+              type="number"
+              min={0}
+              value={xpRequiredValue}
+              onChange={(event) =>
+                onXpRequiredChange(
+                  Math.max(0, Number(event.target.value) || 0),
+                )
+              }
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Define how much total XP a learner must have before this topic
+              becomes available.
+            </p>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -1170,7 +1212,7 @@ function LessonCard({
             placeholder="Lesson title"
             className="text-sm font-medium"
           />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div>
               <p className="text-[11px] uppercase text-gray-500">XP Reward</p>
               <Input
@@ -1196,6 +1238,26 @@ function LessonCard({
                   onChange((prev) => ({
                     ...prev,
                     estimated_time: nextValue,
+                  }));
+                }}
+              />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-gray-500">
+                XP required to unlock
+              </p>
+              <Input
+                type="number"
+                min={0}
+                value={lessonXpRequired}
+                onChange={(event) => {
+                  const nextValue = Math.max(
+                    0,
+                    Number(event.target.value) || 0,
+                  );
+                  onChange((prev) => ({
+                    ...prev,
+                    xp_required: nextValue,
                   }));
                 }}
               />
