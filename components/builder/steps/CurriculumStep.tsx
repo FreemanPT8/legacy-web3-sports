@@ -535,7 +535,6 @@ export function CurriculumStep() {
                 updateTopicSchedule(topic.id, nextSchedule)
               }
               scheduleUtils={scheduleUtils}
-              activeLanguage={activeLanguage}
               onTranslateTopic={() => translateTopicFields(topic.id)}
               translatingTopic={
                 translatingTopicId === topic.id || isTranslating
