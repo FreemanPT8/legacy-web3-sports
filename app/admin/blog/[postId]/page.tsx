@@ -265,9 +265,8 @@ export default function EditBlogPostPage() {
         await clearDraft();
         toast({
           title: 'Post updated',
-          description: 'The blog post was updated successfully.',
+          description: 'Changes saved successfully.',
         });
-        router.push('/admin/blog');
       } catch (error) {
         console.error('Failed to update post:', error);
         toast({
@@ -279,7 +278,7 @@ export default function EditBlogPostPage() {
         setSaving(false);
       }
     },
-    [user, canManageBlog, postId, persistPost, clearDraft, router, toast],
+    [user, canManageBlog, postId, persistPost, clearDraft, toast],
   );
 
   const handleAutosave = useCallback(

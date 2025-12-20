@@ -267,9 +267,8 @@ export default function EditCoursePage() {
         await clearDraft();
         toast({
           title: 'Course updated',
-          description: 'The course was updated successfully.',
+          description: 'Changes saved successfully.',
         });
-        router.push('/admin/courses');
       } catch (error) {
         console.error('Failed to update course:', error);
         toast({
@@ -287,7 +286,6 @@ export default function EditCoursePage() {
       courseId,
       persistCourse,
       clearDraft,
-      router,
       toast,
     ],
   );
