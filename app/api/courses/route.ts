@@ -20,7 +20,6 @@ export async function GET(request: NextRequest) {
     const { data: rawCourses, error: courseError } = await db
       .from('courses')
       .select('*')
-      .or('published.eq.true,is_published.eq.true')
       .order('order', { ascending: true });
 
     if (courseError) {
@@ -31,7 +30,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!rawCourses || rawCourses.length === 0) {
+    if (rawCourses.length === 0) {
       return NextResponse.json({
         success: true,
         courses: [],
@@ -396,9 +395,27 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    const shouldDisplay = (course: any) => {
+      if (course?.published === true) return true;
+      if (course?.is_published === true) return true;
+      const scheduleStatus =
+        course?.schedule?.status ||
+        course?.curriculum?.metadata?.schedule?.status;
+      if (scheduleStatus === 'published' || scheduleStatus === 'scheduled') {
+        return true;
+      }
+      if (
+        course?.published === false &&
+        course?.is_published === false
+      ) {
+        return false;
+      }
+      return true;
+    };
+
     return NextResponse.json({
       success: true,
-      courses: normalizedCourses,
+      courses: normalizedCourses.filter(shouldDisplay),
     });
   } catch (error) {
     console.error('Error in GET /api/courses:', error);
