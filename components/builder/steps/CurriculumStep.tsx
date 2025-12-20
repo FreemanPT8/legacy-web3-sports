@@ -92,8 +92,7 @@ const getAnyTranslation = (field: TranslatedField | undefined) =>
   field ? Object.values(field).find((value) => value.trim().length) || '' : '';
 
 export function CurriculumStep() {
-  const { state, updateState, activeLanguage, setActiveLanguage } =
-    useBuilderState();
+  const { state, updateState, activeLanguage } = useBuilderState();
   const { translate, isTranslating } = useAutoTranslate();
   const { toast } = useToast();
   const courseState = state as CourseBuilderState;
@@ -473,30 +472,15 @@ export function CurriculumStep() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3 rounded-xl border border-white/10 bg-[#05212b]/60 p-4">
-        <div className="flex flex-wrap items-center justify-between text-xs text-slate-300">
-          <span>
-            Estás a editar:{' '}
-            <span className="font-semibold text-white">
-              {currentLanguageLabel}
-            </span>
-          </span>
-          <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            Escolhe a língua dos campos visíveis
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {LANGUAGES.map((lang) => (
-            <Badge
-              key={lang.code}
-              variant={lang.code === activeLanguage ? 'default' : 'outline'}
-              className="cursor-pointer text-xs"
-              onClick={() => setActiveLanguage(lang.code as LangCode)}
-            >
-              {lang.name}
-            </Badge>
-          ))}
-        </div>
+      <div className="space-y-2 rounded-xl border border-white/10 bg-[#05212b]/60 p-4 text-xs text-slate-300">
+        <p>
+          Estás a editar o curso em{' '}
+          <span className="font-semibold text-white">{currentLanguageLabel}</span>.
+        </p>
+        <p className="text-slate-400">
+          Para trocar de língua vai a <strong>Basics</strong> e seleciona a nova língua. Todos
+          os campos aqui representam apenas essa versão.
+        </p>
       </div>
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">Curriculum builder</h2>
