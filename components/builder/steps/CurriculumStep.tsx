@@ -66,7 +66,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type ScheduleUtils = ReturnType<typeof useScheduleCET>;
 type DragListenerMap = ReturnType<typeof useSortable>['listeners'];
@@ -477,13 +476,13 @@ export function CurriculumStep() {
       <div className="space-y-3 rounded-xl border border-white/10 bg-[#05212b]/60 p-4">
         <div className="flex flex-wrap items-center justify-between text-xs text-slate-300">
           <span>
-            Língua base para traduzir:{' '}
+            Estás a editar:{' '}
             <span className="font-semibold text-white">
               {currentLanguageLabel}
             </span>
           </span>
           <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            Escolhe a origem para o botão “Traduzir”
+            Escolhe a língua dos campos visíveis
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -514,11 +513,11 @@ export function CurriculumStep() {
               key={topic.id}
               topic={topic}
               index={index}
-              onTitleChange={(lang, value) =>
-                updateTopicTitle(topic.id, lang, value)
+              onTitleChange={(value) =>
+                updateTopicTitle(topic.id, activeLanguage, value)
               }
-              onDescriptionChange={(lang, value) =>
-                updateTopicDescription(topic.id, lang, value)
+              onDescriptionChange={(value) =>
+                updateTopicDescription(topic.id, activeLanguage, value)
               }
               onRemove={() => removeTopic(topic.id)}
               onAddLesson={() => addLesson(topic.id)}
@@ -535,6 +534,7 @@ export function CurriculumStep() {
                 updateTopicSchedule(topic.id, nextSchedule)
               }
               scheduleUtils={scheduleUtils}
+              activeLanguage={activeLanguage}
               onTranslateTopic={() => translateTopicFields(topic.id)}
               translatingTopic={
                 translatingTopicId === topic.id || isTranslating
@@ -586,8 +586,8 @@ export function CurriculumStep() {
 interface TopicCardProps {
   topic: TopicState;
   index: number;
-  onTitleChange: (lang: LangCode, value: string) => void;
-  onDescriptionChange: (lang: LangCode, value: string) => void;
+  onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
   onRemove: () => void;
   onAddLesson: () => void;
   onRemoveLesson: (lessonId: string) => void;
@@ -602,6 +602,7 @@ interface TopicCardProps {
   scheduleUtils: ScheduleUtils;
   dragAttributes?: DraggableAttributes;
   dragListeners?: DragListenerMap;
+  activeLanguage: LangCode;
   onTranslateTopic: () => void;
   translatingTopic: boolean;
   onTranslateLesson: (lessonId: string) => void;
@@ -639,11 +640,22 @@ function TopicCard({
   onPickMedia,
   onScheduleChange,
   scheduleUtils,
+  activeLanguage,
   onTranslateTopic,
   translatingTopic,
   onTranslateLesson,
   translatingLessonId,
 }: TopicCardProps) {
+  const titleValue = getTranslationValue(topic.title, activeLanguage);
+  const currentDescription = getTranslationValue(
+    topic.description,
+    activeLanguage,
+  );
+  const [isEditingDescription, setIsEditingDescription] = useState(
+    () => currentDescription.trim().length === 0,
+  );
+  const [descriptionDraft, setDescriptionDraft] =
+    useState(currentDescription);
   const [topicScheduleOpen, setTopicScheduleOpen] = useState<boolean>(() => {
     const sched = topic.schedule;
     if (!sched) return false;
@@ -653,6 +665,29 @@ function TopicCard({
         (sched.status && sched.status !== 'draft'),
     );
   });
+
+  useEffect(() => {
+    const nextDescription = getTranslationValue(
+      topic.description,
+      activeLanguage,
+    );
+    setDescriptionDraft(nextDescription);
+    if (!nextDescription.trim()) {
+      setIsEditingDescription(true);
+    }
+  }, [topic.description, activeLanguage]);
+
+  const handleSaveDescription = () => {
+    onDescriptionChange(descriptionDraft.trim());
+    setIsEditingDescription(false);
+  };
+
+  const handleCancelDescription = () => {
+    setDescriptionDraft(
+      getTranslationValue(topic.description, activeLanguage),
+    );
+    setIsEditingDescription(false);
+  };
 
   return (
     <Card className="border-gray-200 shadow-sm dark:border-gray-800">
@@ -669,42 +704,57 @@ function TopicCard({
             </button>
             <div>
               <p className="text-xs text-gray-500">Topic {index + 1}</p>
-              <div className="mt-2 grid gap-3">
-                {LANGUAGES.map((lang) => (
-                  <div key={`${topic.id}-title-${lang.code}`} className="space-y-1">
-                    <LabelSmall>
-                      Título ({lang.name})
-                    </LabelSmall>
-                    <Input
-                      value={getTranslationValue(topic.title, lang.code)}
-                      onChange={(event) =>
-                        onTitleChange(lang.code as LangCode, event.target.value)
-                      }
-                      placeholder={`Título em ${lang.name}`}
-                      className="text-sm font-semibold"
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 grid gap-3">
-                {LANGUAGES.map((lang) => (
-                  <div key={`${topic.id}-description-${lang.code}`} className="space-y-1">
-                    <LabelSmall>
-                      Objetivo ({lang.name})
-                    </LabelSmall>
+              <Input
+                value={titleValue}
+                onChange={(event) => onTitleChange(event.target.value)}
+                className="mt-1 h-8 border-0 bg-transparent px-0 text-base font-semibold focus-visible:ring-0"
+                placeholder="Untitled topic"
+              />
+              <div className="mt-2">
+                {isEditingDescription ? (
+                  <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <Textarea
-                      value={getTranslationValue(topic.description, lang.code)}
-                      onChange={(event) =>
-                        onDescriptionChange(
-                          lang.code as LangCode,
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Describe o foco deste tópico"
-                      className="min-h-[90px] text-sm"
+                      value={descriptionDraft}
+                      onChange={(event) => setDescriptionDraft(event.target.value)}
+                      placeholder="Describe what this topic will cover"
+                      className="min-h-[90px] border-0 bg-transparent text-sm text-gray-700 focus-visible:ring-0 dark:text-gray-100"
                     />
+                    <div className="mt-3 flex items-center justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelDescription}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveDescription}
+                      >
+                        Save description
+                      </Button>
+                    </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                    <p className="whitespace-pre-wrap">
+                      {currentDescription.trim()
+                        ? currentDescription
+                        : 'No description for this topic yet.'}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => setIsEditingDescription(true)}
+                    >
+                      Edit description
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -792,6 +842,7 @@ function TopicCard({
               }
               onPickMedia={(mode) => onPickMedia(lesson.id, mode)}
               scheduleUtils={scheduleUtils}
+              activeLanguage={activeLanguage}
               onTranslateLesson={() => onTranslateLesson(lesson.id)}
               translatingLesson={translatingLessonId === lesson.id}
             />
@@ -827,6 +878,7 @@ interface LessonCardProps {
   onToggle: () => void;
   onPickMedia: (mode: 'video' | 'attachment') => void;
   scheduleUtils: ScheduleUtils;
+  activeLanguage: LangCode;
   onTranslateLesson: () => void;
   translatingLesson: boolean;
 }
@@ -840,6 +892,7 @@ function LessonCard({
   onToggle,
   onPickMedia,
   scheduleUtils,
+  activeLanguage,
   onTranslateLesson,
   translatingLesson,
 }: LessonCardProps) {
@@ -854,8 +907,13 @@ function LessonCard({
         (sched.status && sched.status !== 'draft'),
     );
   });
-  const [contentLanguage, setContentLanguage] = useState<LangCode>(
-    LANGUAGES[0].code as LangCode,
+  const lessonTitleValue = getTranslationValue(
+    lesson.title,
+    activeLanguage,
+  );
+  const lessonContentValue = getTranslationValue(
+    lesson.content,
+    activeLanguage,
   );
   const previewDisabled = !lesson.id;
   const handlePreviewClick = () => {
@@ -949,30 +1007,21 @@ function LessonCard({
               {lesson.schedule.status}
             </Badge>
           </div>
-          <div className="grid gap-3">
-            {LANGUAGES.map((lang) => (
-              <div key={`${lesson.id}-title-${lang.code}`} className="space-y-1">
-                <LabelSmall>
-                  Título ({lang.name})
-                </LabelSmall>
-                <Input
-                  value={getTranslationValue(lesson.title, lang.code)}
-                  onChange={(event) =>
-                    onChange((prev) => ({
-                      ...prev,
-                      title: setTranslationValue(
-                        prev.title,
-                        lang.code as LangCode,
-                        event.target.value,
-                      ),
-                    }))
-                  }
-                  placeholder={`Título em ${lang.name}`}
-                  className="text-sm"
-                />
-              </div>
-            ))}
-          </div>
+          <Input
+            value={lessonTitleValue}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                title: setTranslationValue(
+                  prev.title,
+                  activeLanguage,
+                  event.target.value,
+                ),
+              }))
+            }
+            placeholder="Lesson title"
+            className="text-sm font-medium"
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <p className="text-[11px] uppercase text-gray-500">XP Reward</p>
@@ -1063,41 +1112,21 @@ function LessonCard({
         <div className="mt-4 space-y-4 border-t border-dashed pt-4">
           <div>
             <LabelSmall>Lesson content</LabelSmall>
-            <Tabs
-              value={contentLanguage}
-              onValueChange={(val) => setContentLanguage(val as LangCode)}
-            >
-              <TabsList className="flex flex-wrap gap-2">
-                {LANGUAGES.map((lang) => (
-                  <TabsTrigger key={`${lesson.id}-content-tab-${lang.code}`} value={lang.code}>
-                    {lang.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {LANGUAGES.map((lang) => (
-                <TabsContent
-                  key={`${lesson.id}-content-${lang.code}`}
-                  value={lang.code}
-                  className="mt-4"
-                >
-                  <RichTextEditor
-                    value={getTranslationValue(lesson.content, lang.code)}
-                    onChange={(next) =>
-                      onChange((prev) => ({
-                        ...prev,
-                        content: setTranslationValue(
-                          prev.content,
-                          lang.code as LangCode,
-                          next,
-                        ),
-                      }))
-                    }
-                    placeholder={`Conteúdo em ${lang.name}`}
-                    minRows={8}
-                  />
-                </TabsContent>
-              ))}
-            </Tabs>
+            <RichTextEditor
+              value={lessonContentValue}
+              onChange={(next) =>
+                onChange((prev) => ({
+                  ...prev,
+                  content: setTranslationValue(
+                    prev.content,
+                    activeLanguage,
+                    next,
+                  ),
+                }))
+              }
+              placeholder="Add lesson details, embeds, links..."
+              minRows={8}
+            />
           </div>
 
           <div>
