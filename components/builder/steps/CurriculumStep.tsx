@@ -513,6 +513,7 @@ export function CurriculumStep() {
               key={topic.id}
               topic={topic}
               index={index}
+              activeLanguage={activeLanguage}
               onTitleChange={(value) =>
                 updateTopicTitle(topic.id, activeLanguage, value)
               }
