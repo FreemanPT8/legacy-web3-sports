@@ -53,9 +53,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { createLesson, createTopic } from '@/lib/curriculum';
+import { createLesson, createQuiz, createTopic } from '@/lib/curriculum';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
-import type { LessonState, TopicState, MediaAsset } from '@/types/builder';
+import type {
+  LessonState,
+  TopicState,
+  MediaAsset,
+  QuizState,
+} from '@/types/builder';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import { useToast } from '@/hooks/use-toast';
@@ -99,6 +104,7 @@ export function CurriculumStep() {
   const courseState = state as CourseBuilderState;
   const topics = courseState.curriculum.topics;
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
+  const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
   const lessonLibrary = useMediaLibrary();
   const [mediaPicker, setMediaPicker] = useState<{
     topicId: string;
@@ -221,6 +227,47 @@ export function CurriculumStep() {
           ? { ...topic, lessons: [...topic.lessons, createLesson()] }
           : topic,
       ),
+    );
+  };
+
+  const addQuiz = (topicId: string) => {
+    updateTopics((current) =>
+      current.map((topic) =>
+        topic.id === topicId
+          ? { ...topic, quizzes: [...topic.quizzes, createQuiz()] }
+          : topic,
+      ),
+    );
+  };
+
+  const removeQuiz = (topicId: string, quizId: string) => {
+    updateTopics((current) =>
+      current.map((topic) =>
+        topic.id === topicId
+          ? {
+              ...topic,
+              quizzes: topic.quizzes.filter((quiz) => quiz.id !== quizId),
+            }
+          : topic,
+      ),
+    );
+  };
+
+  const updateQuiz = (
+    topicId: string,
+    quizId: string,
+    updater: (quiz: QuizState) => QuizState,
+  ) => {
+    updateTopics((current) =>
+      current.map((topic) => {
+        if (topic.id !== topicId) return topic;
+        return {
+          ...topic,
+          quizzes: topic.quizzes.map((quiz) =>
+            quiz.id === quizId ? updater(quiz) : quiz,
+          ),
+        };
+      }),
     );
   };
 
@@ -582,6 +629,8 @@ export function CurriculumStep() {
                 }
                 expandedLessonId={expandedLessonId}
                 setExpandedLessonId={setExpandedLessonId}
+                expandedQuizId={expandedQuizId}
+                setExpandedQuizId={setExpandedQuizId}
                 onPickMedia={(lessonId, mode) =>
                   handleOpenMediaPicker(topic.id, lessonId, mode)
                 }
@@ -597,6 +646,11 @@ export function CurriculumStep() {
                 translateLessonFields(topic.id, lessonId)
               }
               translatingLessonId={translatingLessonId}
+              onAddQuiz={() => addQuiz(topic.id)}
+              onRemoveQuiz={(quizId) => removeQuiz(topic.id, quizId)}
+              onQuizChange={(quizId, updater) =>
+                updateQuiz(topic.id, quizId, updater)
+              }
             />
             ))}
           </div>
@@ -649,8 +703,16 @@ interface TopicCardProps {
     lessonId: string,
     updater: (lesson: LessonState) => LessonState,
   ) => void;
+  onAddQuiz: () => void;
+  onRemoveQuiz: (quizId: string) => void;
+  onQuizChange: (
+    quizId: string,
+    updater: (quiz: QuizState) => QuizState,
+  ) => void;
   expandedLessonId: string | null;
   setExpandedLessonId: Dispatch<SetStateAction<string | null>>;
+  expandedQuizId: string | null;
+  setExpandedQuizId: Dispatch<SetStateAction<string | null>>;
   onPickMedia: (lessonId: string, mode: 'video' | 'attachment') => void;
   onScheduleChange: (schedule: ScheduleConfig) => void;
   scheduleUtils: ScheduleUtils;
@@ -908,15 +970,42 @@ function TopicCard({
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onAddLesson}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add lesson
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled>
-            <Plus className="mr-2 h-4 w-4" />
-            Add quiz (soon)
-          </Button>
+        <div className="mt-5 border-t border-dashed pt-4">
+          <div className="space-y-3">
+            {topic.quizzes.map((quiz, quizIndex) => (
+              <QuizCard
+                key={quiz.id}
+                quiz={quiz}
+                index={quizIndex}
+                activeLanguage={activeLanguage}
+                scheduleUtils={scheduleUtils}
+                onChange={(updater) => onQuizChange(quiz.id, updater)}
+                onRemove={() => onRemoveQuiz(quiz.id)}
+                isExpanded={expandedQuizId === quiz.id}
+                onToggle={() =>
+                  setExpandedQuizId((prev) =>
+                    prev === quiz.id ? null : quiz.id,
+                  )
+                }
+              />
+            ))}
+            {topic.quizzes.length === 0 && (
+              <p className="text-sm text-gray-500">
+                No quizzes yet. Use the button below to add interactive checkpoints for this topic.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={onAddLesson}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add lesson
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onAddQuiz}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add quiz
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1297,6 +1386,355 @@ function LessonCard({
             >
               + Attach from media library
             </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface QuizCardProps {
+  quiz: QuizState;
+  index: number;
+  activeLanguage: LangCode;
+  scheduleUtils: ScheduleUtils;
+  onChange: (updater: (quiz: QuizState) => QuizState) => void;
+  onRemove: () => void;
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+function QuizCard({
+  quiz,
+  index,
+  activeLanguage,
+  scheduleUtils,
+  onChange,
+  onRemove,
+  isExpanded,
+  onToggle,
+}: QuizCardProps) {
+  const quizTitleValue = getTranslationValue(quiz.title, activeLanguage);
+  const [scheduleOpen, setScheduleOpen] = useState<boolean>(() => {
+    const sched = quiz.schedule;
+    if (!sched) return false;
+    return Boolean(
+      sched.publishAt ||
+        sched.expireAt ||
+        (sched.status && sched.status !== 'draft'),
+    );
+  });
+
+  const handleQuestionChange = (
+    questionId: string,
+    updater: (question: QuizState['questions'][number]) => QuizState['questions'][number],
+  ) => {
+    onChange((prev) => ({
+      ...prev,
+      questions: prev.questions.map((question) =>
+        question.id === questionId ? updater(question) : question,
+      ),
+    }));
+  };
+
+  const addQuestion = () => {
+    onChange((prev) => ({
+      ...prev,
+      questions: [
+        ...prev.questions,
+        {
+          id: generateLocalId('quiz-question'),
+          prompt: '',
+          choices: ['', ''],
+          answerIndex: 0,
+        },
+      ],
+    }));
+  };
+
+  const removeQuestion = (questionId: string) => {
+    onChange((prev) => ({
+      ...prev,
+      questions: prev.questions.filter(
+        (question) => question.id !== questionId,
+      ),
+    }));
+  };
+
+  const handleChoiceChange = (
+    questionId: string,
+    choiceIndex: number,
+    value: string,
+  ) => {
+    handleQuestionChange(questionId, (question) => {
+      const nextChoices = [...question.choices];
+      nextChoices[choiceIndex] = value;
+      return { ...question, choices: nextChoices };
+    });
+  };
+
+  const addChoice = (questionId: string) => {
+    handleQuestionChange(questionId, (question) => ({
+      ...question,
+      choices: [...question.choices, ''],
+    }));
+  };
+
+  const removeChoice = (questionId: string, choiceIndex: number) => {
+    handleQuestionChange(questionId, (question) => {
+      if (question.choices.length <= 2) {
+        return question;
+      }
+      const nextChoices = question.choices.filter(
+        (_, index) => index !== choiceIndex,
+      );
+      const nextAnswerIndex =
+        question.answerIndex >= nextChoices.length
+          ? Math.max(0, nextChoices.length - 1)
+          : question.answerIndex;
+      return {
+        ...question,
+        choices: nextChoices,
+        answerIndex: nextAnswerIndex,
+      };
+    });
+  };
+
+  const setCorrectAnswer = (questionId: string, answerIndex: number) => {
+    handleQuestionChange(questionId, (question) => ({
+      ...question,
+      answerIndex,
+    }));
+  };
+
+  return (
+    <div className="rounded-xl border border-purple-200/60 bg-white/80 p-4 shadow-sm dark:border-purple-900/60 dark:bg-gray-950/70">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase text-purple-500">
+              Quiz {index + 1}
+            </p>
+            <Badge variant="outline" className="text-[11px] uppercase">
+              {quiz.schedule.status}
+            </Badge>
+          </div>
+          <Input
+            value={quizTitleValue}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                title: setTranslationValue(
+                  prev.title,
+                  activeLanguage,
+                  event.target.value,
+                ),
+              }))
+            }
+            placeholder="Quiz title"
+            className="text-sm font-medium"
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-[11px] uppercase text-gray-500">XP Reward</p>
+              <Input
+                type="number"
+                min={0}
+                value={quiz.xpReward ?? 0}
+                onChange={(event) =>
+                  onChange((prev) => ({
+                    ...prev,
+                    xpReward: Number(event.target.value) || 0,
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-gray-500">
+                Questions
+              </p>
+              <Input value={quiz.questions.length} readOnly />
+            </div>
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          className="text-gray-500 hover:text-red-600"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-300">
+        <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200">
+          {quiz.questions.length} question{quiz.questions.length === 1 ? '' : 's'}
+        </Badge>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="ml-auto text-blue-600"
+          onClick={onToggle}
+        >
+          {isExpanded ? 'Hide quiz editor' : 'Edit quiz'}
+        </Button>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-4 space-y-4 border-t border-dashed pt-4">
+          <div className={cn(SCHEDULE_PANEL_CLASSES, 'text-slate-300')}>
+            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-400">
+              <span>{formatScheduleSummary(quiz.schedule, scheduleUtils)}</span>
+            </div>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between text-xs font-semibold uppercase text-slate-100"
+              onClick={() => setScheduleOpen((prev) => !prev)}
+            >
+              <span>Quiz schedule</span>
+              <span className="flex items-center gap-1 text-[11px] normal-case text-slate-400">
+                {scheduleUtils.timezone}
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 transition-transform',
+                    scheduleOpen ? 'rotate-180' : 'rotate-0',
+                  )}
+                />
+              </span>
+            </button>
+            {scheduleOpen && (
+              <div className="mt-3">
+                <ScheduleForm
+                  schedule={quiz.schedule}
+                  scheduleUtils={scheduleUtils}
+                  onChange={(nextSchedule) =>
+                    onChange((prev) => ({ ...prev, schedule: nextSchedule }))
+                  }
+                  className="border-none p-0 shadow-none bg-transparent"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <LabelSmall>Questions</LabelSmall>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addQuestion}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add question
+              </Button>
+            </div>
+
+            {quiz.questions.length === 0 && (
+              <p className="text-sm text-gray-500">
+                No questions yet. Add at least one question to make this quiz available.
+              </p>
+            )}
+
+            {quiz.questions.map((question, questionIndex) => (
+              <div
+                key={question.id}
+                className="rounded-lg border border-purple-200/60 p-4 dark:border-purple-900/40"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase text-purple-500">
+                    Question {questionIndex + 1}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeQuestion(question.id)}
+                    className="text-gray-500 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <Textarea
+                  value={question.prompt}
+                  onChange={(event) =>
+                    handleQuestionChange(question.id, (prevQuestion) => ({
+                      ...prevQuestion,
+                      prompt: event.target.value,
+                    }))
+                  }
+                  placeholder="Question prompt..."
+                  rows={3}
+                  className="mb-3"
+                />
+
+                <div className="space-y-2">
+                  {question.choices.map((choice, choiceIndex) => (
+                    <div
+                      key={`${question.id}-${choiceIndex}`}
+                      className="flex items-center gap-2"
+                    >
+                      <Button
+                        type="button"
+                        variant={
+                          question.answerIndex === choiceIndex
+                            ? 'default'
+                            : 'outline'
+                        }
+                        size="sm"
+                        className={
+                          question.answerIndex === choiceIndex
+                            ? 'bg-emerald-600 hover:bg-emerald-600 text-white'
+                            : ''
+                        }
+                        onClick={() => setCorrectAnswer(question.id, choiceIndex)}
+                      >
+                        {question.answerIndex === choiceIndex
+                          ? 'Correct'
+                          : 'Mark correct'}
+                      </Button>
+                      <Input
+                        value={choice}
+                        onChange={(event) =>
+                          handleChoiceChange(
+                            question.id,
+                            choiceIndex,
+                            event.target.value,
+                          )
+                        }
+                        placeholder={`Choice ${choiceIndex + 1}`}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeChoice(question.id, choiceIndex)}
+                        disabled={question.choices.length <= 2}
+                        className="text-gray-500 hover:text-red-600 disabled:text-gray-400"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addChoice(question.id)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add choice
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
