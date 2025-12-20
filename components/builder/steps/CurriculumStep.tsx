@@ -92,7 +92,7 @@ const getAnyTranslation = (field: TranslatedField | undefined) =>
   field ? Object.values(field).find((value) => value.trim().length) || '' : '';
 
 export function CurriculumStep() {
-  const { state, patchState, activeLanguage, setActiveLanguage } =
+  const { state, updateState, activeLanguage, setActiveLanguage } =
     useBuilderState();
   const { translate, isTranslating } = useAutoTranslate();
   const { toast } = useToast();
@@ -121,14 +121,22 @@ export function CurriculumStep() {
 
   const updateTopics = useCallback(
     (updater: (current: TopicState[]) => TopicState[]) => {
-      patchState({
-        curriculum: {
-          ...courseState.curriculum,
-          topics: updater(courseState.curriculum.topics),
-        },
+      updateState((prev) => {
+        if (prev.entityType !== 'course') {
+          return prev;
+        }
+        const course = prev as CourseBuilderState;
+        const nextTopics = updater(course.curriculum.topics);
+        return {
+          ...course,
+          curriculum: {
+            ...course.curriculum,
+            topics: nextTopics,
+          },
+        };
       });
     },
-    [patchState, courseState.curriculum],
+    [updateState],
   );
 
   const updateTopicSchedule = useCallback(
