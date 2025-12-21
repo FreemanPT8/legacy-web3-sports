@@ -43,14 +43,14 @@ const heroHighlights = [
     icon: ShieldCheck,
   },
   {
-    label: '7 dias consecutivos com XP ganho',
+    label: '7 dias com XP ganho',
     value: '222 XP',
     detail:
       'Streak curto: exige XP confirmado todos os dias. Login não basta; faltar um dia reinicia a contagem.',
     icon: Flame,
   },
   {
-    label: '30 dias consecutivos com XP ganho',
+    label: '30 dias com XP ganho',
     value: '1.111 XP',
     detail:
       'Streak longo: recompensa quem mantém XP real todos os dias durante 30 dias consecutivos.',
@@ -191,7 +191,7 @@ export default async function EducationXpPage() {
                         <Icon className="h-4 w-4 text-cyan-300" />
                         {highlight.label}
                       </div>
-                      <p className="text-2xl font-bold text-white">{highlight.value}</p>
+                      <p className="text-3xl font-bold text-white">{highlight.value}</p>
                       <p className="text-sm text-slate-300">{highlight.detail}</p>
                     </CardContent>
                   </Card>
