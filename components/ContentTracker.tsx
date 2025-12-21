@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 export interface ContentTrackerProps {
   contentId: string;
@@ -47,6 +46,7 @@ export function ContentTracker({
   const [isAwarding, setIsAwarding] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const hasAwardedRef = useRef(!!initialCompleted);
+  const retryAttemptsRef = useRef(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshUser } = useAuth();
 
@@ -155,6 +155,7 @@ export function ContentTracker({
       }
 
       if (result.alreadyCompleted) {
+        retryAttemptsRef.current = 0;
         setCompleted(true);
         setTimeProgress(100);
         setScrollProgress(100);
@@ -164,6 +165,7 @@ export function ContentTracker({
       }
 
       persistUserXP(result.newTotal);
+      retryAttemptsRef.current = 0;
       setCompleted(true);
       setTimeProgress(100);
       setScrollProgress(100);
@@ -173,6 +175,15 @@ export function ContentTracker({
     } catch (error) {
       console.error('Failed to complete content:', error);
       hasAwardedRef.current = false;
+      setErrorMessage('Não foi possível registar o XP. Estamos a tentar novamente...');
+      if (retryAttemptsRef.current < 3) {
+        retryAttemptsRef.current += 1;
+        setTimeout(() => {
+          if (!hasAwardedRef.current) {
+            void handleComplete();
+          }
+        }, 2000);
+      }
     } finally {
       setIsAwarding(false);
     }
@@ -307,24 +318,13 @@ export function ContentTracker({
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <p className="text-[11px] text-slate-400">
-                O XP será registado automaticamente
-                {isAwarding && ' · a atribuir XP'}
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
-                disabled={isAwarding}
-                onClick={() => void handleComplete()}
-              >
-                {isAwarding ? 'A registar XP...' : 'Registar XP agora'}
-              </Button>
-              {errorMessage && (
-                <p className="text-[11px] text-rose-300">{errorMessage}</p>
-              )}
-            </div>
+            <p className="text-[11px] text-slate-400">
+              O XP será registado automaticamente
+              {isAwarding && ' · a atribuir XP'}
+            </p>
+            {errorMessage && (
+              <p className="text-[11px] text-rose-300">{errorMessage}</p>
+            )}
           </div>
         </div>
       );
