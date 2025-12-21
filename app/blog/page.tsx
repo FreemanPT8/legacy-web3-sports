@@ -12,6 +12,13 @@ import { splitReadMore } from '@/lib/read-more';
 import { getMultilingualContent } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Calendar,
   User,
@@ -78,6 +85,12 @@ export default function BlogPage() {
 
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewPost, setPreviewPost] = useState<{
+    post: BlogPost;
+    content: string;
+    title: string;
+    imageUrl: string | null;
+  } | null>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -270,14 +283,19 @@ export default function BlogPage() {
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {posts.map((post) => {
                   const title = resolveTitle(post.title);
-                  const { before: excerpt, hasReadMore } = resolveExcerpt(
+                  const {
+                    before: excerptPreview,
+                    after: excerptAfter,
+                    hasReadMore,
+                  } = resolveExcerpt(
                     post.excerpt,
                     post.excerpt_preview ?? undefined,
                   );
                   const normalizedExcerpt =
-                    excerpt && excerpt.trim().length > 0
-                      ? excerpt
+                    excerptPreview && excerptPreview.trim().length > 0
+                      ? excerptPreview
                       : 'Ainda sem descrição detalhada para este artigo.';
+                  const fullExcerpt = `${excerptPreview}${excerptAfter}`;
 
                   const xpReward = normalizeXpReward(post.xp_reward);
 
@@ -377,11 +395,34 @@ export default function BlogPage() {
                           {normalizedExcerpt}
                         </p>
 
-                        {hasReadMore && (
-                          <span className="inline-flex text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300">
-                            Continuar a ler
-                          </span>
-                        )}
+                        <div className="flex items-center justify-between">
+                          {hasReadMore && (
+                            <span className="inline-flex text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300">
+                              Continuar a ler
+                            </span>
+                          )}
+                          {(hasReadMore || fullExcerpt.trim().length > normalizedExcerpt.trim().length) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs text-cyan-200 hover:text-cyan-100"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setPreviewPost({
+                                  post,
+                                  content:
+                                    fullExcerpt.trim().length > 0
+                                      ? fullExcerpt
+                                      : normalizedExcerpt,
+                                  title,
+                                  imageUrl: imageUrl,
+                                });
+                              }}
+                            >
+                              Ver mais
+                            </Button>
+                          )}
+                        </div>
 
                         <div className="mt-2 space-y-2 text-[11px] text-slate-400">
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-white/5 pb-2">
@@ -436,6 +477,62 @@ export default function BlogPage() {
           </div>
         </section>
       </main>
+
+      {previewPost && (
+        <Dialog open={!!previewPost} onOpenChange={(open) => !open && setPreviewPost(null)}>
+          <DialogContent className="max-w-2xl border border-white/10 bg-[#000c12] text-white">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-white">
+                {previewPost.title}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {previewPost.imageUrl && (
+                <div className="overflow-hidden rounded-2xl border border-white/5">
+                  <Image
+                    src={previewPost.imageUrl}
+                    alt={previewPost.title}
+                    width={800}
+                    height={360}
+                    className="h-[220px] w-full object-cover"
+                    unoptimized
+                  />
+                </div>
+              )}
+              <div className="space-y-2 rounded-2xl border border-white/10 bg-[#051620] p-4 text-sm text-slate-300">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                  {previewPost.post.author && (
+                    <span className="inline-flex items-center gap-1">
+                      <User className="h-3 w-3 text-cyan-300" />
+                      {previewPost.post.author}
+                    </span>
+                  )}
+                  {previewPost.post.created_at && (
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-cyan-300" />
+                      {formatDate(previewPost.post.created_at)}
+                    </span>
+                  )}
+                  {typeof previewPost.post.reading_time === 'number' && (
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-cyan-300" />
+                      {previewPost.post.reading_time} min
+                    </span>
+                  )}
+                </div>
+                <div
+                  className="prose prose-invert max-w-none text-slate-200"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      previewPost.content ||
+                      'Ainda sem descrição detalhada para este artigo.',
+                  }}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Footer />
     </div>
