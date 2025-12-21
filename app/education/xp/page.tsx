@@ -351,27 +351,36 @@ export default async function EducationXpPage() {
                   </CardContent>
                 </Card>
               ) : (
-                thresholdTable.map((threshold) => (
-                  <Card
-                    key={`${threshold.xp_total}-${threshold.feature_name}`}
-                    className="bg-[#05212b] border border-white/10"
-                  >
-                    <CardContent className="space-y-2 py-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">{threshold.xp_total} XP</span>
-                        <Badge variant="outline" className="text-slate-100 border-white/30">
-                          Desbloqueia
-                        </Badge>
-                      </div>
-                      <p className="text-lg font-semibold text-white">
-                        {threshold.feature_name}
-                      </p>
-                      {threshold.description && (
-                        <p className="text-sm text-slate-300">{threshold.description}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))
+                thresholdTable.map((threshold) => {
+                  const needsXpText = `Precisas de ${threshold.xp_total} XP totais`;
+                  const featureTitle = threshold.feature_name;
+                  const extraHint =
+                    !threshold.description && /competição nacional/i.test(featureTitle)
+                      ? 'Acesso às provas oficiais do Legacy em representação da tua casa ou país.'
+                      : threshold.description;
+
+                  return (
+                    <Card
+                      key={`${threshold.xp_total}-${threshold.feature_name}`}
+                      className="bg-[#05212b] border border-white/10 hover:border-cyan-400/50 transition"
+                    >
+                      <CardContent className="space-y-3 py-5">
+                        <div className="flex items-center justify-between text-sm text-slate-300">
+                          <span>{needsXpText}</span>
+                          <Badge variant="outline" className="text-white border-white/30">
+                            Desbloqueio
+                          </Badge>
+                        </div>
+                        <p className="text-lg font-semibold text-cyan-100">
+                          {featureTitle}
+                        </p>
+                        {extraHint && (
+                          <p className="text-sm text-slate-200">{extraHint}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </div>
             <Card className="bg-[#05212b] border border-white/10">
