@@ -3,7 +3,14 @@ import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
-import { CalendarCheck, Flame, ShieldCheck, Sparkles, Trophy } from 'lucide-react';
+import {
+  CalendarCheck,
+  Flame,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  Target,
+} from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,43 +149,83 @@ export default async function EducationXpPage() {
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
       <main className="flex-1 py-12">
-        <div className="container mx-auto px-4 space-y-10 max-w-5xl">
+        <div className="container mx-auto px-4 space-y-10 max-w-6xl">
           {/* Hero */}
-          <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#000c12] to-[#020b16] px-6 py-10 shadow-xl shadow-black/60">
-            <div className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">XP SYSTEM</p>
-              <h1 className="text-3xl md:text-4xl font-semibold text-white">XP da Legacy</h1>
-              <p className="text-sm text-slate-300">
-                O Legacy recompensa aprendizagem, criação e participação real. O modelo completo está
-                documentado aqui e explica, passo a passo, como cada ação é creditada.
-              </p>
-              <p className="text-sm text-slate-300">
-                Nenhum XP é creditado apenas pelo login; é preciso ganhar crédito legítimo
-                completando lições, lendo conteúdos ou contribuindo no fórum.
-              </p>
-              <Badge className="bg-cyan-500/10 text-cyan-100 border border-cyan-400/40">
-                Legacy XP — Sistema oficial
-              </Badge>
-            </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {heroHighlights.map((highlight) => {
-                const Icon = highlight.icon;
-                return (
-                  <Card
-                    key={highlight.label}
-                    className="flex flex-col bg-[#05212b] border border-white/10 shadow-lg shadow-black/60 transition hover:-translate-y-0.5 hover:border-cyan-400/60"
-                  >
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                        <Icon className="h-4 w-4 text-cyan-300" />
-                        {highlight.label}
+          <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-12 shadow-2xl shadow-black/40">
+            <div className="grid gap-10 lg:grid-cols-[1.15fr,0.85fr] items-center">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">XP SYSTEM</p>
+                  <h1 className="text-4xl font-semibold text-white md:text-5xl">XP do Legacy</h1>
+                  <p className="text-base text-slate-100/90 leading-relaxed">
+                    O Legacy recompensa aprendizagem, criação e participação real. O modelo completo
+                    está documentado aqui e explica, passo a passo, como cada ação é creditada.
+                  </p>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Nenhum XP é creditado apenas pelo login; é preciso ganhar crédito legítimo
+                    completando lições, lendo conteúdos ou contribuindo no fórum.
+                  </p>
+                </div>
+                <Badge className="bg-cyan-500/10 text-cyan-100 border border-cyan-400/40">
+                  Legacy XP — Sistema oficial
+                </Badge>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  {heroHighlights.map((highlight) => {
+                    const Icon = highlight.icon;
+                    return (
+                      <Card
+                        key={highlight.label}
+                        className="flex flex-col bg-[#03141d]/80 border border-white/10 shadow-lg shadow-black/60 transition hover:-translate-y-0.5 hover:border-cyan-400/60"
+                      >
+                        <CardContent className="space-y-2 py-6">
+                          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+                            <Icon className="h-4 w-4 text-cyan-300" />
+                            {highlight.label}
+                          </div>
+                          <p className="text-2xl font-bold text-white">{highlight.value}</p>
+                          <p className="text-sm text-slate-300">{highlight.detail}</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="relative h-full w-full">
+                <div className="relative h-full w-full overflow-hidden rounded-3xl border border-white/15 bg-[#010b11] shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.3),transparent_55%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_rgba(16,185,129,0.25),transparent_45%)]" />
+                  <div className="relative z-10 flex h-full flex-col justify-between p-8 text-white">
+                    <div className="space-y-3">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.3em] text-slate-200">
+                        <Target className="h-3.5 w-3.5 text-cyan-300" />
+                        XP TRACKER
                       </div>
-                      <p className="text-2xl font-bold text-white">{highlight.value}</p>
-                      <p className="text-sm text-slate-300">{highlight.detail}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      <p className="text-2xl font-semibold leading-snug">
+                        Ganha XP por cada ação real dentro do Legacy.
+                      </p>
+                      <p className="text-sm text-slate-200/80">
+                        As métricas são auditadas automaticamente e alimentam o ranking, desbloqueios
+                        e streaks globais.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-300">XP disponível hoje</span>
+                        <span className="text-2xl font-bold text-cyan-200">369 XP</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-white/10">
+                        <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400" />
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        O limite renova todos os dias às 00:00 UTC. Todo XP acima disso é ignorado,
+                        garantindo justiça para toda a comunidade.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
