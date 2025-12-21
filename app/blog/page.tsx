@@ -414,26 +414,22 @@ export default function BlogPage() {
                               Continuar a ler
                             </span>
                           )}
-                          {(hasReadMore ||
-                            stripHtml(resolvedFullExcerpt).length >
-                              stripHtml(normalizedExcerpt).length) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs text-cyan-200 hover:text-cyan-100"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setPreviewPost({
-                                  post,
-                                  content: resolvedFullExcerpt,
-                                  title,
-                                  imageUrl: imageUrl,
-                                });
-                              }}
-                            >
-                              Ver mais
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-cyan-200 hover:text-cyan-100"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setPreviewPost({
+                                post,
+                                content: resolvedFullExcerpt,
+                                title,
+                                imageUrl: imageUrl,
+                              });
+                            }}
+                          >
+                            Ver mais
+                          </Button>
                         </div>
 
                         <div className="mt-2 space-y-2 text-[11px] text-slate-400">
