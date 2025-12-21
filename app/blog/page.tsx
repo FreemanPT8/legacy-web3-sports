@@ -76,6 +76,13 @@ type BlogPost = {
   total_xp_distributed?: number | null;
 
   is_completed?: boolean | null;
+  seo?: {
+    imageSettings?: {
+      zoom: number;
+      offsetY: number;
+    };
+    [key: string]: unknown;
+  };
 };
 
 export default function BlogPage() {
@@ -90,6 +97,7 @@ export default function BlogPage() {
     content: string;
     title: string;
     imageUrl: string | null;
+    imageSettings: { zoom: number; offsetY: number };
   } | null>(null);
 
   useEffect(() => {
@@ -337,6 +345,8 @@ export default function BlogPage() {
                   const isCompleted = !!post.is_completed && !isAuthor;
 
                   const imageUrl = post.image_url || null;
+                  const imageSettings =
+                    post.seo?.imageSettings ?? { zoom: 1, offsetY: 0 };
                   const initials = title
                     .split(' ')
                     .map((word) => word[0] || '')
@@ -357,8 +367,12 @@ export default function BlogPage() {
                             alt={title}
                             width={640}
                             height={240}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-cover transition-transform duration-300"
                             unoptimized
+                            style={{
+                              transform: `scale(${imageSettings.zoom})`,
+                              objectPosition: `center ${imageSettings.offsetY}%`,
+                            }}
                           />
                         </div>
                       ) : (
@@ -420,14 +434,15 @@ export default function BlogPage() {
                             className="text-xs text-cyan-200 hover:text-cyan-100"
                             onClick={(event) => {
                               event.stopPropagation();
-                              setPreviewPost({
-                                post,
-                                content: resolvedFullExcerpt,
-                                title,
-                                imageUrl: imageUrl,
-                              });
-                            }}
-                          >
+                                setPreviewPost({
+                                  post,
+                                  content: resolvedFullExcerpt,
+                                  title,
+                                  imageUrl: imageUrl,
+                                  imageSettings,
+                                });
+                              }}
+                            >
                             Ver mais
                           </Button>
                         </div>
@@ -487,7 +502,10 @@ export default function BlogPage() {
       </main>
 
       {previewPost && (
-        <Dialog open={!!previewPost} onOpenChange={(open) => !open && setPreviewPost(null)}>
+        <Dialog
+          open={!!previewPost}
+          onOpenChange={(open) => !open && setPreviewPost(null)}
+        >
           <DialogContent className="max-w-2xl border border-white/10 bg-[#000c12] text-white">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-white">
@@ -502,8 +520,12 @@ export default function BlogPage() {
                     alt={previewPost.title}
                     width={800}
                     height={360}
-                    className="h-[220px] w-full object-cover"
+                    className="h-[220px] w-full object-cover transition-transform duration-300"
                     unoptimized
+                    style={{
+                      transform: `scale(${previewPost.imageSettings.zoom})`,
+                      objectPosition: `center ${previewPost.imageSettings.offsetY}%`,
+                    }}
                   />
                 </div>
               )}
