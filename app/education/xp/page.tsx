@@ -152,7 +152,7 @@ export default async function EducationXpPage() {
             <div className="grid gap-10 lg:grid-cols-2 items-center">
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">XP SYSTEM</p>
+                  <p className="text-xs uppercase tracking-[0.6em] text-amber-300">XP SYSTEM</p>
                   <h1 className="text-4xl font-semibold text-white md:text-5xl">XP do Legacy</h1>
                   <p className="text-base text-slate-100/90 leading-relaxed">
                     O Legacy recompensa aprendizagem, criação e participação real. O modelo completo
@@ -217,7 +217,7 @@ export default async function EducationXpPage() {
           {/* Rewards */}
           <section className="space-y-5">
             <div className="flex flex-col gap-3">
-              <p className="text-sm font-semibold text-slate-400 uppercase tracking-[0.2em]">
+              <p className="text-sm font-semibold text-amber-300 uppercase tracking-[0.2em]">
                 Recompensas
               </p>
               <h2 className="text-2xl font-bold text-white">
@@ -286,7 +286,7 @@ export default async function EducationXpPage() {
             <Card className="bg-[#05212b] border border-white/10">
               <CardContent className="grid gap-6 py-6 md:grid-cols-2">
                 <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">
+                  <p className="text-xs uppercase tracking-[0.2em] text-amber-300">
                     Streaks & consistência
                   </p>
                   <p className="text-sm text-slate-200">
@@ -329,7 +329,7 @@ export default async function EducationXpPage() {
           {/* Thresholds */}
           <section className="space-y-4">
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold text-slate-400 uppercase tracking-[0.2em]">
+              <p className="text-sm font-semibold text-amber-300 uppercase tracking-[0.2em]">
                 Progressão e thresholds
               </p>
               <h2 className="text-2xl font-bold text-white">
