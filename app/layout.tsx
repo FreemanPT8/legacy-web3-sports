@@ -19,13 +19,13 @@ const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: 'LEGACY - Gamified Web3 Education Platform',
+    default: 'LEGACY - Gamified Web3 Academy Platform',
     template: '%s | LEGACY',
   },
   description:
     'Master Web3 on Apertum Blockchain. Earn XP, unlock content, and lead the leaderboard.',
   openGraph: {
-    title: 'LEGACY - Gamified Web3 Education Platform',
+    title: 'LEGACY - Gamified Web3 Academy Platform',
     description:
       'Master Web3 on Apertum Blockchain. Earn XP, unlock content, and lead the leaderboard.',
     url: appUrl,
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'LEGACY - Gamified Web3 Education Platform',
+    title: 'LEGACY - Gamified Web3 Academy Platform',
     description:
       'Master Web3 on Apertum Blockchain. Earn XP, unlock content, and lead the leaderboard.',
     images: [defaultOgImage],

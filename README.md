@@ -1,4 +1,4 @@
-# LEGACY - Gamified Web3 Education Platform
+# LEGACY - Gamified Web3 Academy Platform
 
 A comprehensive gamified education platform for sports professionals learning about Web3 and blockchain technology. Built with Next.js, TypeScript, Supabase, and shadcn/ui.
 

@@ -425,4 +425,4 @@ LIMIT 20;
 
 **Last Updated**: November 2025
 **Version**: 1.0
-**Platform**: LEGACY - Gamified Web3 Education
+**Platform**: LEGACY - Gamified Web3 Academy
