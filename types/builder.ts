@@ -55,12 +55,18 @@ export interface ScheduleConfig {
   status: 'draft' | 'scheduled' | 'published';
 }
 
+export interface ImageSettings {
+  zoom: number;
+  offsetY: number;
+}
+
 export interface SeoConfig {
   metaTitle: string;
   metaDescription: string;
   ogImageUrl?: string | null;
   keywords: string[];
   slug: string;
+  imageSettings?: ImageSettings;
 }
 
 export interface BuilderStateBase {

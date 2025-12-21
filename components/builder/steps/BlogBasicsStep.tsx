@@ -28,6 +28,7 @@ import { LANGUAGES } from '@/types/builder';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import { useToast } from '@/hooks/use-toast';
+import { Slider } from '@/components/ui/slider';
 
 const CATEGORIES = [
   'Blockchain',
@@ -242,12 +243,23 @@ export function BlogBasicsStep() {
 
           <CoverImageSection
             imageUrl={blogState.coverImage?.url || ''}
-            onRemove={() => applyPatch({ coverImage: null })}
             mediaLibrary={mediaLibrary}
             onPick={(asset) => {
               setCoverImage(asset);
               mediaLibrary.closeLibrary();
             }}
+            onRemove={() => applyPatch({ coverImage: null })}
+            imageSettings={
+              blogState.seo.imageSettings ?? { zoom: 1, offsetY: 0 }
+            }
+            onUpdateSettings={(settings) =>
+              applyPatch({
+                seo: {
+                  ...blogState.seo,
+                  imageSettings: settings,
+                },
+              })
+            }
           />
         </CardContent>
       </Card>
@@ -330,18 +342,29 @@ export function BlogBasicsStep() {
   );
 }
 
+type ImageSettings = {
+  zoom: number;
+  offsetY: number;
+};
+
 function CoverImageSection({
   imageUrl,
   onRemove,
   onPick,
   mediaLibrary,
+  imageSettings,
+  onUpdateSettings,
 }: {
   imageUrl: string;
   onRemove: () => void;
   onPick: (asset: any) => void;
   mediaLibrary: ReturnType<typeof useMediaLibrary>;
+  imageSettings: ImageSettings;
+  onUpdateSettings: (settings: ImageSettings) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const zoomValue = imageSettings.zoom ?? 1;
+  const offsetYValue = imageSettings.offsetY ?? 0;
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -389,15 +412,63 @@ function CoverImageSection({
             src={imageUrl}
             alt="Blog cover"
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-200"
             sizes="(max-width: 768px) 100vw, 480px"
             unoptimized
+            style={{
+              objectPosition: `center ${offsetYValue}%`,
+              transform: `scale(${zoomValue})`,
+            }}
           />
         </div>
       ) : (
         <p className="text-xs text-gray-500">
           Recommended 1600x900 image. Supports JPG, PNG, WEBP.
         </p>
+      )}
+      {imageUrl && (
+        <div className="rounded-xl border border-white/10 bg-[#010d12] p-4 space-y-4">
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+              <span>Zoom</span>
+              <span className="font-semibold text-slate-200">
+                {zoomValue.toFixed(2)}x
+              </span>
+            </div>
+            <Slider
+              min={1}
+              max={1.5}
+              step={0.01}
+              value={[zoomValue]}
+              onValueChange={([value]) =>
+                onUpdateSettings({
+                  ...imageSettings,
+                  zoom: Number(value.toFixed(2)),
+                })
+              }
+            />
+          </div>
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+              <span>Posição vertical</span>
+              <span className="font-semibold text-slate-200">
+                {offsetYValue}%
+              </span>
+            </div>
+            <Slider
+              min={-50}
+              max={50}
+              step={1}
+              value={[offsetYValue]}
+              onValueChange={([value]) =>
+                onUpdateSettings({
+                  ...imageSettings,
+                  offsetY: Math.round(value),
+                })
+              }
+            />
+          </div>
+        </div>
       )}
       <input
         ref={fileInputRef}

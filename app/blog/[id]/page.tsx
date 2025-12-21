@@ -55,6 +55,13 @@ type BlogPost = {
   registered_only?: boolean | null;
   xp_reward?: number | null;
   reading_time?: number | null;
+  seo?: {
+    imageSettings?: {
+      zoom: number;
+      offsetY: number;
+    };
+    [key: string]: unknown;
+  };
 };
 
 interface BlogApiResponse {
@@ -307,9 +314,17 @@ export default function BlogPostPage() {
                     src={post.image_url}
                     alt={pickTranslation(post.title, 'Blog cover')}
                     fill
-                    className="object-cover object-center"
+                    className="object-cover object-center transition-transform duration-300"
                     sizes="(max-width: 768px) 100vw, 768px"
                     priority
+                    style={{
+                      transform: `scale(${
+                        post.seo?.imageSettings?.zoom ?? 1
+                      })`,
+                      objectPosition: `center ${
+                        post.seo?.imageSettings?.offsetY ?? 0
+                      }%`,
+                    }}
                   />
                 </div>
               </div>

@@ -42,6 +42,7 @@ export function BlogPreview() {
     blog.longDescription,
     blog.content,
   );
+  const imageSettings = blog.seo?.imageSettings ?? { zoom: 1, offsetY: 0 };
 
   return (
     <div className="space-y-4">
@@ -55,6 +56,10 @@ export function BlogPreview() {
               className="object-cover object-center"
               sizes="(max-width: 768px) 100vw, 320px"
               unoptimized
+              style={{
+                transform: `scale(${imageSettings.zoom})`,
+                objectPosition: `center ${imageSettings.offsetY}%`,
+              }}
             />
           </div>
         </div>

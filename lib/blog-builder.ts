@@ -29,6 +29,10 @@ export const createEmptyBlogState = (): BlogBuilderState => ({
     ogImageUrl: null,
     keywords: [],
     slug: '',
+    imageSettings: {
+      zoom: 1,
+      offsetY: 0,
+    },
   },
   schedule: {
     publishAt: null,
@@ -68,7 +72,10 @@ export const buildBlogRequestPayload = (state: BlogBuilderState) => ({
   bonuses: state.bonuses,
   special_requirements: state.specialRequirements,
   attachments: state.attachments,
-  seo: state.seo,
+  seo: {
+    ...state.seo,
+    imageSettings: state.seo.imageSettings ?? { zoom: 1, offsetY: 0 },
+  },
   google_integrations: state.googleIntegrations,
   schedule: state.schedule,
 });
@@ -113,7 +120,13 @@ export const mapBlogToBuilderState = (blog: any): BlogBuilderState => {
     bonuses: blog?.bonuses || [],
     specialRequirements: blog?.special_requirements || [],
     attachments: blog?.attachments || [],
-    seo: blog?.seo || base.seo,
+    seo: blog?.seo
+      ? {
+          ...base.seo,
+          ...blog.seo,
+          imageSettings: blog.seo.imageSettings ?? base.seo.imageSettings,
+        }
+      : base.seo,
     googleIntegrations: blog?.google_integrations || base.googleIntegrations,
     schedule: {
       publishAt: blog?.publish_at || null,
