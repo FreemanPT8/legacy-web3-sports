@@ -115,15 +115,17 @@ export const Header = memo(function Header() {
                         </NavigationMenuLink>
                       </Link>
                     </li>
-                    <li>
-                      <Link href="/education/xp" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-md bg-gray-900 p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-800">
-                          <div className="text-sm font-medium text-gray-100">
-                            {t('nav.xp')}
-                          </div>
-                        </NavigationMenuLink>
-                      </Link>
-                    </li>
+                    {user && (
+                      <li>
+                        <Link href="/education/xp" legacyBehavior passHref>
+                          <NavigationMenuLink className="block select-none space-y-1 rounded-md bg-gray-900 p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-800">
+                            <div className="text-sm font-medium text-gray-100">
+                              {t('nav.xp')}
+                            </div>
+                          </NavigationMenuLink>
+                        </Link>
+                      </li>
+                    )}
                     <li>
                       <Link
                         href="/education/leaderboard"
@@ -387,13 +389,15 @@ export const Header = memo(function Header() {
                   >
                     {t('nav.courses')}
                   </Link>
-                  <Link
-                    href="/education/xp"
-                    onClick={() => setMobileOpen(false)}
-                    className="text-lg pl-4 block mb-2"
-                  >
-                    {t('nav.xp')}
-                  </Link>
+                  {user && (
+                    <Link
+                      href="/education/xp"
+                      onClick={() => setMobileOpen(false)}
+                      className="text-lg pl-4 block mb-2"
+                    >
+                      {t('nav.xp')}
+                    </Link>
+                  )}
                   <Link
                     href="/education/leaderboard"
                     onClick={() => setMobileOpen(false)}

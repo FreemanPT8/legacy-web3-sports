@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   CalendarCheck,
   Flame,
@@ -341,6 +344,7 @@ const getRewardMeta = (
 };
 
 export default function EducationXpPage() {
+  const { user } = useAuth();
   const { language } = useLanguage();
   const copy = XP_COPY[language] ?? XP_COPY.en;
   const [xpData, setXpData] = useState<EducationXpData | null>(null);
@@ -349,6 +353,12 @@ export default function EducationXpPage() {
 
   useEffect(() => {
     let active = true;
+    if (!user) {
+      setXpData(null);
+      setLoading(false);
+      return;
+    }
+
     const fetchXp = async () => {
       try {
         setLoading(true);
@@ -376,7 +386,7 @@ export default function EducationXpPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [user]);
 
   const visibleRewards = useMemo(() => {
     const hiddenActions = new Set([
@@ -392,6 +402,57 @@ export default function EducationXpPage() {
   }, [xpData?.rewards]);
 
   const thresholdTable = xpData?.thresholds ?? [];
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
+        <Header />
+        <main className="flex-1 flex items-center">
+          <div className="container mx-auto max-w-3xl px-4">
+            <Card className="border border-white/10 bg-[#03141d] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+              <CardContent className="py-10 space-y-4 text-center">
+                <h1 className="text-3xl font-semibold text-white">
+                  {language === 'es'
+                    ? 'Inicia sesión para ver tu XP'
+                    : language === 'pt'
+                    ? 'Inicia sessão para ver o teu XP'
+                    : 'Sign in to view your XP'}
+                </h1>
+                <p className="text-sm text-slate-300">
+                  {language === 'es'
+                    ? 'El modelo XP es exclusivo para miembros conectados. Entra para seguir tu progreso real.'
+                    : language === 'pt'
+                    ? 'O modelo XP é exclusivo para membros autenticados. Entra para acompanhar o teu progresso real.'
+                    : 'The XP model is exclusive to signed-in members. Log in to track your real progress.'}
+                </p>
+                <div className="flex justify-center gap-4">
+                  <Link href="/login">
+                    <Button className="px-8">
+                      {language === 'es'
+                        ? 'Iniciar sesión'
+                        : language === 'pt'
+                        ? 'Iniciar sessão'
+                        : 'Log in'}
+                    </Button>
+                  </Link>
+                  <Link href="/signup">
+                    <Button variant="outline" className="px-8 border-white/40 text-white">
+                      {language === 'es'
+                        ? 'Crear cuenta'
+                        : language === 'pt'
+                        ? 'Criar conta'
+                        : 'Create account'}
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
