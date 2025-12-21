@@ -17,8 +17,17 @@ type XPTransaction = {
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    const user = authHeader ? await verifyAuth(authHeader) : null;
+    const headerToken = request.headers.get('Authorization');
+    const cookieToken =
+      request.cookies.get('sb-access-token')?.value ||
+      request.cookies.get('token')?.value ||
+      null;
+
+    const bearerToken =
+      headerToken ||
+      (cookieToken ? `Bearer ${cookieToken}` : null);
+
+    const user = bearerToken ? await verifyAuth(bearerToken) : null;
 
     if (!user) {
       return NextResponse.json(
@@ -63,17 +72,26 @@ export async function GET(request: NextRequest) {
       .eq('id', userId)
       .maybeSingle();
 
-    if (userError || !userRow) {
+    const fallbackUserRow = {
+      id: user.id,
+      username: user.username,
+      xp_total: user.xp_total ?? 0,
+      streak_count: user.streak_count ?? 0,
+      streak_updated_at: null,
+      streak_long_count: 0,
+      streak_long_updated_at: null,
+      created_at: user.created_at ?? null,
+    };
+
+    const hydratedUser = userRow ?? fallbackUserRow;
+
+    if (userError) {
       console.error('Error fetching user for XP summary:', userError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load user XP data' },
-        { status: 500 },
-      );
     }
 
-    const safeXpTotal = Number(userRow.xp_total ?? 0);
-    const streakCount = Number(userRow.streak_count ?? 0);
-    const longStreakCount = Number(userRow.streak_long_count ?? 0);
+    const safeXpTotal = Number(hydratedUser.xp_total ?? 0);
+    const streakCount = Number(hydratedUser.streak_count ?? 0);
+    const longStreakCount = Number(hydratedUser.streak_long_count ?? 0);
 
     // 2) Transações dos últimos 30 dias
     const { data: txData, error: txError } = await db
@@ -138,14 +156,14 @@ export async function GET(request: NextRequest) {
       {
         success: true,
         xp: {
-          xp_total: safeXpTotal,
-          xp_today: xpToday,
-          xp_last_7_days: xpLast7,
-          xp_last_30_days: xpLast30,
-          streak_count: streakCount,
-          streak_updated_at: userRow.streak_updated_at,
-          streak_long_count: longStreakCount,
-          streak_long_updated_at: userRow.streak_long_updated_at,
+      xp_total: safeXpTotal,
+      xp_today: xpToday,
+      xp_last_7_days: xpLast7,
+      xp_last_30_days: xpLast30,
+      streak_count: streakCount,
+      streak_updated_at: hydratedUser.streak_updated_at,
+      streak_long_count: longStreakCount,
+      streak_long_updated_at: hydratedUser.streak_long_updated_at,
           action_breakdown: actionBreakdown,
           recent_transactions: recentTransactions,
         },
