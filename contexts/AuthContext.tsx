@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [lastSyncId, setLastSyncId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -65,6 +66,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    if (!isHydrated || !user) return;
+    if (user.id === lastSyncId) return;
+    if (typeof window === 'undefined') return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const controller = new AbortController();
+
+    const syncXp = async () => {
+      try {
+        const response = await fetch('/api/me/xp', {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (response.ok && data?.success && data?.xp) {
+          const xpFromServer = Number(data.xp.xp_total ?? data?.xp_total);
+          if (Number.isFinite(xpFromServer) && xpFromServer !== user.xp_total) {
+            const updatedUser = { ...user, xp_total: xpFromServer };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          }
+          setLastSyncId(user.id);
+        }
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          console.error('AuthProvider sync XP error:', error);
+        }
+      }
+    };
+
+    void syncXp();
+
+    return () => controller.abort();
+  }, [isHydrated, user?.id, lastSyncId]);
+
   const login = async (username: string, password: string) => {
     try {
       const response = await fetch('/api/auth/login', {
@@ -76,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (data.success && data.user && data.token) {
+        setLastSyncId(null);
         setUser(data.user);
         if (typeof window !== 'undefined') {
           localStorage.setItem('user', JSON.stringify(data.user));
@@ -108,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (data.success && data.user && data.token) {
+        setLastSyncId(null);
         setUser(data.user);
         if (typeof window !== 'undefined') {
           localStorage.setItem('user', JSON.stringify(data.user));
@@ -125,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser(null);
+    setLastSyncId(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
