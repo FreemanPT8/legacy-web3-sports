@@ -274,6 +274,10 @@ export default function BlogPage() {
                     post.excerpt,
                     post.excerpt_preview ?? undefined,
                   );
+                  const normalizedExcerpt =
+                    excerpt && excerpt.trim().length > 0
+                      ? excerpt
+                      : 'Ainda sem descrição detalhada para este artigo.';
 
                   const xpReward = normalizeXpReward(post.xp_reward);
 
@@ -370,7 +374,7 @@ export default function BlogPage() {
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pb-5">
                         <p className="line-clamp-3 text-sm text-slate-300">
-                          {excerpt}
+                          {normalizedExcerpt}
                         </p>
 
                         {hasReadMore && (
@@ -400,12 +404,19 @@ export default function BlogPage() {
                           </div>
 
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                            {xpReward > 0 && (
+                              <span className="inline-flex items-center gap-1 text-cyan-200">
+                                <Award className="h-3 w-3 text-cyan-300" />
+                                {xpReward} XP disponível
+                              </span>
+                            )}
                             <span className="inline-flex items-center gap-1">
                               <Eye className="h-3 w-3 text-cyan-300" />
-                              {post.views ?? 0}
+                              {post.views ?? 0} views
                             </span>
                             {totalXp > 0 && (
-                              <span className="text-[10px] text-slate-300">
+                              <span className="inline-flex items-center gap-1 text-slate-300">
+                                <Award className="h-3 w-3 text-cyan-300" />
                                 {totalXp} XP já distribuído
                               </span>
                             )}
