@@ -2,12 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { splitReadMore } from '@/lib/read-more';
+import { fetchLessonContext } from '@/lib/lesson-context';
 
 interface RouteContext {
   params: { id: string };
 }
 
-// Usamos o client admin quando existir (bypass RLS)
 const db = supabaseAdmin ?? supabase;
 
 type CompletionRow = {
@@ -32,80 +32,32 @@ export async function GET(
     const url = new URL(request.url);
     const userId = url.searchParams.get('userId');
 
-    // 1) Procurar a lição dentro do curriculum dos cursos
-    const { data: courses, error: coursesError } = await db
-      .from('courses')
-      .select('id, title, curriculum, author_id');
+    const { context: lessonContext, error: contextError } =
+      await fetchLessonContext(id);
 
-    if (coursesError) {
-      console.error('Error fetching courses for lesson lookup:', coursesError);
+    if (!lessonContext || contextError) {
+      console.error('Lesson context error:', contextError);
       return NextResponse.json(
-        { success: false, error: 'Failed to load lesson' },
-        { status: 500 },
+        { success: false, error: contextError || 'Lesson not found' },
+        { status: contextError ? 500 : 404 },
       );
     }
 
-    let matchedCourse: any = null;
-    let matchedTopic: any = null;
-    let matchedLesson: any = null;
-
-    (courses || []).some((course: any) => {
-      const topics: any[] = Array.isArray(course.curriculum?.topics)
-        ? course.curriculum!.topics
-        : [];
-
-      for (let topicIndex = 0; topicIndex < topics.length; topicIndex++) {
-        const topic = topics[topicIndex];
-        const topicId = topic?.id || `topic-${topicIndex + 1}`;
-        const lessons = Array.isArray(topic?.lessons)
-          ? topic.lessons
-          : [];
-
-        for (let lessonIndex = 0; lessonIndex < lessons.length; lessonIndex++) {
-          const lesson = lessons[lessonIndex];
-          if (lesson?.id === id) {
-            matchedCourse = course;
-            matchedTopic = {
-              ...topic,
-              id: topicId,
-            };
-            matchedLesson = {
-              ...lesson,
-              module_id: topicId,
-              order:
-                typeof lesson?.order === 'number'
-                  ? lesson.order
-                  : lessonIndex + 1,
-            };
-            return true;
-          }
-        }
-      }
-      return false;
-    });
-
-    if (!matchedCourse || !matchedLesson) {
-      return NextResponse.json(
-        { success: false, error: 'Lesson not found' },
-        { status: 404 },
-      );
-    }
-
-    const moduleLessons = Array.isArray(matchedTopic?.lessons)
-      ? matchedTopic.lessons.map((lesson: any, idx: number) => ({
-          id: lesson?.id || `${matchedTopic.id}-lesson-${idx + 1}`,
-          title: lesson?.title,
-          order:
-            typeof lesson?.order === 'number'
-              ? lesson.order
-              : idx + 1,
-        }))
-      : [];
+    const {
+      course: matchedCourse,
+      topic: matchedTopic,
+      lesson: matchedLesson,
+      moduleLessons,
+      resolvedAuthorId,
+      resolvedXP,
+      resolvedEstimatedTime,
+    } = lessonContext;
 
     const authorIds = new Set<string>();
     if (matchedLesson.author_id) authorIds.add(matchedLesson.author_id);
     if (matchedTopic?.author_id) authorIds.add(matchedTopic.author_id);
     if (matchedCourse?.author_id) authorIds.add(matchedCourse.author_id);
+    if (resolvedAuthorId) authorIds.add(resolvedAuthorId);
 
     const authorMap: Record<string, string> = {};
 
@@ -124,7 +76,6 @@ export async function GET(
       }
     }
 
-    // 4) Buscar completions desta lição em lesson_completions
     const { data: completions, error: completionsError } = await db
       .from('lesson_completions')
       .select('user_id, xp_earned')
@@ -141,43 +92,13 @@ export async function GET(
       ((completions || []) as CompletionRow[]) || [];
 
     const completedCount = completionsArray.length;
-
     const totalXpDistributed = completionsArray.reduce(
       (sum: number, row: CompletionRow) => sum + (row.xp_earned ?? 0),
       0,
     );
 
-    // 5) Normalizar dados da lesson
-    const resolveNumber = (value: any, fallback: number | null = null) =>
-      typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-
-    const resolvedAuthorId =
-      matchedLesson.author_id ||
-      matchedTopic?.author_id ||
-      matchedCourse?.author_id ||
-      null;
-
-    const xpReward =
-      resolveNumber(matchedLesson.xp_reward) ??
-      resolveNumber(matchedLesson.xpReward) ??
-      resolveNumber(matchedLesson?.xp?.reward) ??
-      resolveNumber(matchedTopic?.xp_reward) ??
-      resolveNumber(matchedTopic?.xpReward) ??
-      resolveNumber(matchedTopic?.metadata?.xpReward) ??
-      resolveNumber(matchedCourse?.curriculum?.metadata?.xpReward) ??
-      resolveNumber(matchedCourse?.xp_reward) ??
-      resolveNumber(matchedCourse?.xp_reward_on_complete) ??
-      0;
-
-    const estimatedTime =
-      resolveNumber(matchedLesson.estimated_time) ??
-      resolveNumber(matchedLesson.estimatedTime) ??
-      resolveNumber(matchedLesson.duration) ??
-      10;
-
-    const authorName =
-      (resolvedAuthorId && authorMap[resolvedAuthorId]) ||
-      null;
+    const resolvedAuthorName =
+      (resolvedAuthorId && authorMap[resolvedAuthorId]) || null;
 
     const rawContent =
       typeof matchedLesson.content === 'string'
@@ -186,7 +107,6 @@ export async function GET(
     const { before: content_preview, hasReadMore: content_has_read_more } =
       splitReadMore(rawContent);
 
-    // Flags calculadas apenas depois de conhecermos o autor real da lição
     const isCreator =
       !!userId &&
       !!resolvedAuthorId &&
@@ -204,16 +124,19 @@ export async function GET(
       content: matchedLesson.content,
       content_preview,
       content_has_read_more,
-      xp_reward: xpReward,
-      estimated_time: estimatedTime,
+      xp_reward: resolvedXP,
+      xp_required:
+        typeof matchedLesson.xp_required === 'number'
+          ? matchedLesson.xp_required
+          : null,
+      estimated_time: resolvedEstimatedTime,
       order: matchedLesson.order,
       module_id: matchedLesson.module_id,
       author_id: resolvedAuthorId,
-      author_name: authorName,
+      author_name: resolvedAuthorName,
       created_at: matchedLesson.created_at,
     };
 
-    // 7) Normalizar dados do módulo (ou fallback mínimo se falhar)
     const moduleAuthorName =
       (matchedTopic?.author_id &&
         authorMap[matchedTopic.author_id]) ||
