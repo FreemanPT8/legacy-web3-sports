@@ -394,8 +394,8 @@ export default async function EducationXpPage() {
                 <div className="flex items-center gap-3">
                   <Trophy className="h-5 w-5 text-emerald-300" />
                   <p>
-                    O ranking global usa <code className="text-xs">xp_transactions</code> para
-                    alimentar desafios e gamificação.
+                    Quando atinges novos marcos, desbloqueias acesso a casas, fóruns, conteúdo
+                    avançado e desafios especiais.
                   </p>
                 </div>
               </CardContent>
