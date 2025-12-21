@@ -216,15 +216,17 @@ export default async function EducationXpPage() {
 
           {/* Rewards */}
           <section className="space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-400 uppercase tracking-[0.2em]">
-                  Recompensas
-                </p>
-                <h2 className="text-2xl font-bold text-white">
-                  Cada ação devolve um intervalo oficial de XP
-                </h2>
-              </div>
+            <div className="flex flex-col gap-3">
+              <p className="text-sm font-semibold text-slate-400 uppercase tracking-[0.2em]">
+                Recompensas
+              </p>
+              <h2 className="text-2xl font-bold text-white">
+                Cada ação devolve XP em troca de esforço real
+              </h2>
+              <p className="text-sm text-slate-300">
+                O XP foi desenhado para reconhecer quem aprende, cria e participa de verdade. Cada
+                conclusão, leitura ou contribuição é um passo público rumo à tua reputação no Legacy.
+              </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {visibleRewards.length === 0 ? (
@@ -262,10 +264,9 @@ export default async function EducationXpPage() {
                       <CardContent className="space-y-3 text-sm text-slate-200 py-5">
                         <div className="flex justify-between items-center gap-4">
                           <div>
-                            <h3 className="text-base font-semibold text-white">{title}</h3>
-                            <p className="text-xs text-slate-400">Intervalo oficial</p>
+                            <h3 className="text-base font-semibold text-cyan-100">{title}</h3>
                           </div>
-                          <span className="rounded-full border border-white/20 px-3 py-1 text-xs uppercase tracking-wide text-slate-100">
+                          <span className="rounded-full border border-white/20 px-3 py-1 text-xs uppercase tracking-wide text-white">
                             {range}
                           </span>
                         </div>
@@ -301,22 +302,25 @@ export default async function EducationXpPage() {
                     </li>
                   </ul>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-[#000c12]/80 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                        Última ação registada
-                      </p>
-                      <p className="text-sm text-slate-300">
-                        Autentica-te no painel admin para acompanhar o histórico em tempo real.
-                      </p>
-                    </div>
-                    <Sparkles className="h-6 w-6 text-amber-300" />
+                <div className="rounded-2xl border border-white/10 bg-[#000c12]/80 p-4 space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      Como monitorizamos
+                    </p>
+                    <p className="text-sm text-slate-300">
+                      Leituras e lições só contam uma vez por utilizador. Criadores não recebem XP ao
+                      consumir o próprio conteúdo; recebem 19% quando outros completam.
+                    </p>
                   </div>
-                  <p className="mt-2 text-xs text-slate-400">
-                    Notificações via Resend são disparadas quando os streaks de 7 ou 30 dias são
-                    concluídos.
-                  </p>
+                  <div className="border-t border-white/10 pt-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      Alertas automáticos
+                    </p>
+                    <p className="text-sm text-slate-300">
+                      Quando um streak fecha, o Legacy envia uma notificação oficial para registar a
+                      conquista e atualizar o teu histórico.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
