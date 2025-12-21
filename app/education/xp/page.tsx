@@ -371,7 +371,7 @@ export default async function EducationXpPage() {
                             Desbloqueio
                           </Badge>
                         </div>
-                        <p className="text-lg font-semibold text-cyan-100">
+                        <p className="text-lg font-semibold text-primary">
                           {featureTitle}
                         </p>
                         {extraHint && (
