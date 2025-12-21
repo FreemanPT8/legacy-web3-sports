@@ -305,6 +305,9 @@ export default function BlogPage() {
                     stripHtml(fullExcerpt).length > 0
                       ? fullExcerpt
                       : normalizedExcerpt;
+                  const plainExcerpt = stripHtml(resolvedFullExcerpt);
+                  const excerptToShow =
+                    plainExcerpt.length > 0 ? plainExcerpt : fallbackExcerpt;
 
                   const xpReward = normalizeXpReward(post.xp_reward);
 
@@ -400,12 +403,9 @@ export default function BlogPage() {
                       </CardHeader>
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pb-5">
-                        <div
-                          className="prose prose-invert line-clamp-3 text-sm text-slate-300"
-                          dangerouslySetInnerHTML={{
-                            __html: normalizedExcerpt,
-                          }}
-                        />
+                        <p className="line-clamp-3 text-sm text-slate-300">
+                          {excerptToShow}
+                        </p>
 
                         <div className="flex items-center justify-between">
                           {hasReadMore && (
