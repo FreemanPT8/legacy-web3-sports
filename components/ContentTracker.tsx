@@ -175,7 +175,7 @@ export function ContentTracker({
     } catch (error) {
       console.error('Failed to complete content:', error);
       hasAwardedRef.current = false;
-      setErrorMessage('Não foi possível registar o XP. Estamos a tentar novamente...');
+      setErrorMessage('Não foi possível registar o XP. Nova tentativa automática...');
       if (retryAttemptsRef.current < 3) {
         retryAttemptsRef.current += 1;
         setTimeout(() => {
@@ -183,6 +183,8 @@ export function ContentTracker({
             void handleComplete();
           }
         }, 2000);
+      } else {
+        setErrorMessage('Não conseguimos registar o XP. Volta a carregar a página para tentar novamente.');
       }
     } finally {
       setIsAwarding(false);
@@ -273,7 +275,7 @@ export function ContentTracker({
       floatingWidget = isCollapsed ? (
         <div className={widgetPosition}>
           <button
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-100 shadow-lg backdrop-blur"
+            className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-semibold text-cyan-100 shadow-lg backdrop-blur flex items-center gap-1"
             onClick={() => setIsCollapsed(false)}
           >
             <Timer className="h-4 w-4" />
@@ -283,27 +285,27 @@ export function ContentTracker({
         </div>
       ) : (
         <div className={widgetPosition}>
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-[#031824]/90 px-4 py-4 text-xs text-slate-100 shadow-[0_12px_40px_rgba(8,145,178,0.25)] backdrop-blur">
+          <div className="space-y-2 rounded-xl border border-white/10 bg-[#031824]/90 px-3 py-3 text-[11px] text-slate-100 shadow-[0_10px_30px_rgba(8,145,178,0.25)] backdrop-blur">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-white flex items-center gap-2 tracking-wide text-sm">
-                <Timer className="h-4 w-4 text-cyan-300" />
+              <span className="font-semibold text-white flex items-center gap-2">
+                <Timer className="h-3.5 w-3.5 text-cyan-300" />
                 Leitura em progresso
               </span>
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-cyan-200 font-semibold text-xs">
-                  <Award className="h-4 w-4" />+{xpReward} XP
+              <div className="flex items-center gap-1">
+                <span className="flex items-center gap-1 text-cyan-200 font-semibold">
+                  <Award className="h-3.5 w-3.5" />+{xpReward} XP
                 </span>
                 <button
                   className="text-slate-300 hover:text-white"
                   onClick={() => setIsCollapsed(true)}
                   aria-label="Minimizar tracker"
                 >
-                  <Minimize2 className="h-4 w-4" />
+                  <Minimize2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-300">
+            <div className="flex items-center justify-between text-[10px] text-slate-300">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3 text-cyan-300" />
                 ~{estimatedMinutes} min
@@ -311,19 +313,19 @@ export function ContentTracker({
               <span className="text-white font-semibold">{Math.round(overall)}%</span>
             </div>
 
-            <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+            <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
               <div
-                className="h-2 rounded-full transition-all bg-gradient-to-r from-cyan-400 to-emerald-400"
+                className="h-1.5 rounded-full transition-all bg-gradient-to-r from-cyan-400 to-emerald-400"
                 style={{ width: `${overall}%` }}
               />
             </div>
 
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[10px] text-slate-400">
               O XP será registado automaticamente
               {isAwarding && ' · a atribuir XP'}
             </p>
             {errorMessage && (
-              <p className="text-[11px] text-rose-300">{errorMessage}</p>
+              <p className="text-[10px] text-rose-300">{errorMessage}</p>
             )}
           </div>
         </div>
