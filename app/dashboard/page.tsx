@@ -25,6 +25,7 @@ type XpTransaction = {
   action: string;
   xp_earned: number;
   created_at: string;
+  reference_label?: string | null;
 };
 
 type XpSummary = {
@@ -544,7 +545,14 @@ export default function DashboardPage() {
                       className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] p-4"
                     >
                       <div>
-                        <p className="font-medium text-white">{tx.action}</p>
+                        <p className="font-medium text-white">
+                          {tx.reference_label || tx.action}
+                        </p>
+                        {tx.reference_label && (
+                          <p className="text-xs text-slate-400">
+                            {tx.action}
+                          </p>
+                        )}
                         <p className="text-sm text-slate-400">
                           {new Date(tx.created_at).toLocaleString()}
                         </p>

@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+import {
+  buildLessonIdVariants,
+  normalizeLessonIdForStorage,
+} from '@/lib/lesson-id';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -14,6 +18,94 @@ type XPTransaction = {
   reference_type: string | null;
   created_at: string;
 };
+
+const LANGUAGE_KEYS = ['pt', 'en', 'es', 'fr', 'it', 'de'];
+
+const resolveMultilingualText = (raw: any, fallback: string) => {
+  if (!raw) return fallback;
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object') {
+    for (const key of LANGUAGE_KEYS) {
+      if (typeof raw[key] === 'string' && raw[key].trim().length > 0) {
+        return raw[key];
+      }
+    }
+  }
+  return fallback;
+};
+
+async function resolveLessonLabels(
+  ids: string[],
+): Promise<Record<string, string>> {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (uniqueIds.length === 0) return {};
+
+  const { data: courses, error } = await db
+    .from('courses')
+    .select('id, title, curriculum');
+
+  if (error || !courses) {
+    console.error('Failed to resolve lesson titles:', error);
+    return {};
+  }
+
+  const labelMap: Record<string, string> = {};
+
+  courses.forEach((course: any) => {
+    const topics: any[] = Array.isArray(course?.curriculum?.topics)
+      ? course.curriculum.topics
+      : [];
+
+    topics.forEach((topic: any, topicIndex: number) => {
+      const moduleId = topic?.id || `topic-${topicIndex + 1}`;
+      const lessons = Array.isArray(topic?.lessons)
+        ? topic.lessons
+        : [];
+
+      lessons.forEach((lesson: any, lessonIndex: number) => {
+        const lessonId =
+          lesson?.id || `${moduleId}-lesson-${lessonIndex + 1}`;
+        const lessonTitle = resolveMultilingualText(
+          lesson?.title,
+          'Lesson',
+        );
+
+        const variants = buildLessonIdVariants(lessonId);
+        if (variants.length === 0) {
+          labelMap[lessonId] = lessonTitle;
+        } else {
+          variants.forEach((variant) => {
+            labelMap[variant] = lessonTitle;
+          });
+        }
+      });
+    });
+  });
+
+  return labelMap;
+}
+
+async function resolveBlogLabels(
+  ids: string[],
+): Promise<Record<string, string>> {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (uniqueIds.length === 0) return {};
+
+  const { data: posts, error } = await db
+    .from('blog_posts')
+    .select('id, title')
+    .in('id', uniqueIds);
+
+  if (error || !posts) {
+    console.error('Failed to resolve blog titles:', error);
+    return {};
+  }
+
+  return posts.reduce((acc: Record<string, string>, post: any) => {
+    acc[post.id] = resolveMultilingualText(post.title, 'Artigo');
+    return acc;
+  }, {});
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -128,7 +220,6 @@ export async function GET(request: NextRequest) {
     let xpLast30 = 0;
 
     transactions.forEach((tx) => {
-      const ts = new Date(tx.created_at).getTime();
       const createdISO = tx.created_at;
 
       if (createdISO >= startTodayISO && createdISO <= nowISO) {
@@ -142,7 +233,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 4) Opcional: breakdown simples por tipo de ação
+    // 4) Breakdown por tipo de ação
     const actionBreakdown: Record<string, number> = {};
     transactions.forEach((tx) => {
       const key = tx.action || 'other';
@@ -152,20 +243,74 @@ export async function GET(request: NextRequest) {
     // Últimas 20 transações para mostrar na dashboard
     const recentTransactions = transactions.slice(0, 20);
 
+    const lessonReferenceIds = recentTransactions
+      .filter(
+        (tx) =>
+          tx.reference_id &&
+          tx.reference_type &&
+          tx.reference_type.startsWith('lesson'),
+      )
+      .map((tx) => tx.reference_id as string);
+
+    const blogReferenceIds = recentTransactions
+      .filter(
+        (tx) => tx.reference_id && tx.reference_type === 'blog',
+      )
+      .map((tx) => tx.reference_id as string);
+
+    const [lessonLabels, blogLabels] = await Promise.all([
+      resolveLessonLabels(lessonReferenceIds),
+      resolveBlogLabels(blogReferenceIds),
+    ]);
+
+    const transactionsWithLabels = recentTransactions.map((tx) => {
+      let referenceLabel: string | null = null;
+
+      if (
+        tx.reference_id &&
+        tx.reference_type &&
+        tx.reference_type.startsWith('lesson')
+      ) {
+        const candidates = buildLessonIdVariants(tx.reference_id);
+        for (const candidate of candidates) {
+          if (lessonLabels[candidate]) {
+            referenceLabel = lessonLabels[candidate];
+            break;
+          }
+        }
+        if (!referenceLabel) {
+          const normalized =
+            normalizeLessonIdForStorage(tx.reference_id) ||
+            tx.reference_id;
+          referenceLabel = lessonLabels[normalized] || null;
+        }
+      } else if (
+        tx.reference_id &&
+        tx.reference_type === 'blog'
+      ) {
+        referenceLabel = blogLabels[tx.reference_id] || null;
+      }
+
+      return {
+        ...tx,
+        reference_label: referenceLabel,
+      };
+    });
+
     return NextResponse.json(
       {
         success: true,
         xp: {
-      xp_total: safeXpTotal,
-      xp_today: xpToday,
-      xp_last_7_days: xpLast7,
-      xp_last_30_days: xpLast30,
-      streak_count: streakCount,
-      streak_updated_at: hydratedUser.streak_updated_at,
-      streak_long_count: longStreakCount,
-      streak_long_updated_at: hydratedUser.streak_long_updated_at,
+          xp_total: safeXpTotal,
+          xp_today: xpToday,
+          xp_last_7_days: xpLast7,
+          xp_last_30_days: xpLast30,
+          streak_count: streakCount,
+          streak_updated_at: hydratedUser.streak_updated_at,
+          streak_long_count: longStreakCount,
+          streak_long_updated_at: hydratedUser.streak_long_updated_at,
           action_breakdown: actionBreakdown,
-          recent_transactions: recentTransactions,
+          recent_transactions: transactionsWithLabels,
         },
       },
       { status: 200 },
