@@ -11,6 +11,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 export interface ContentTrackerProps {
   contentId: string;
@@ -25,7 +26,7 @@ export interface ContentTrackerProps {
   children: React.ReactNode;
 }
 
-const MIN_TIMER_RATIO = 0.2; // 20% do tempo estimado
+const MIN_TIMER_RATIO = 0.2;
 
 export function ContentTracker({
   contentId,
@@ -39,12 +40,12 @@ export function ContentTracker({
   isAuthor = false,
   children,
 }: ContentTrackerProps) {
-  const [completed, setCompleted] = useState<boolean>(!!initialCompleted);
-  const [timeProgress, setTimeProgress] = useState<number>(initialCompleted ? 100 : 0);
-  const [scrollProgress, setScrollProgress] = useState<number>(initialCompleted ? 100 : 0);
+  const [completed, setCompleted] = useState(!!initialCompleted);
+  const [timeProgress, setTimeProgress] = useState(initialCompleted ? 100 : 0);
+  const [scrollProgress, setScrollProgress] = useState(initialCompleted ? 100 : 0);
   const [isAwarding, setIsAwarding] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const hasAwardedRef = useRef<boolean>(!!initialCompleted);
+  const hasAwardedRef = useRef(!!initialCompleted);
   const { refreshUser } = useAuth();
 
   const noUser = !userId;
@@ -120,9 +121,7 @@ export function ContentTracker({
   }, [canTrack]);
 
   useEffect(() => {
-    if (!canTrack) return;
-    if (hasAwardedRef.current) return;
-
+    if (!canTrack || hasAwardedRef.current) return;
     if (timeProgress >= 90 && scrollProgress >= 90) {
       void handleComplete();
     }
@@ -156,7 +155,8 @@ export function ContentTracker({
         setCompleted(true);
         setTimeProgress(100);
         setScrollProgress(100);
-        if (onComplete) onComplete();
+        setIsCollapsed(false);
+        onComplete?.();
         return;
       }
 
@@ -164,8 +164,8 @@ export function ContentTracker({
       setCompleted(true);
       setTimeProgress(100);
       setScrollProgress(100);
-
-      if (onComplete) onComplete();
+      setIsCollapsed(false);
+      onComplete?.();
     } catch (error) {
       console.error('Failed to complete content:', error);
     } finally {
@@ -211,8 +211,8 @@ export function ContentTracker({
   }, []);
 
   const widgetPosition = isMobile
-    ? 'fixed left-1/2 -translate-x-1/2 top-16 z-40 w-[90%] max-w-md'
-    : 'fixed bottom-4 right-4 z-40 w-full max-w-sm';
+    ? 'fixed left-1/2 -translate-x-1/2 top-16 z-40 w-[90%] max-w-xs'
+    : 'fixed bottom-4 right-4 z-40 w-[320px]';
 
   let floatingWidget: React.ReactNode = null;
 
@@ -223,7 +223,7 @@ export function ContentTracker({
       floatingWidget = isCollapsed ? (
         <div className={widgetPosition}>
           <button
-            className="rounded-full border border-emerald-400/40 bg-emerald-400/20 px-4 py-2 text-xs font-semibold text-emerald-100 shadow-lg backdrop-blur flex items-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 shadow-lg backdrop-blur"
             onClick={() => setIsCollapsed(false)}
           >
             <CheckCircle2 className="h-4 w-4" />
@@ -233,11 +233,11 @@ export function ContentTracker({
         </div>
       ) : (
         <div className={widgetPosition}>
-          <div className="rounded-xl border border-white/15 bg-[#032026]/90 p-3 shadow-[0_10px_35px_rgba(16,185,129,0.25)] text-xs md:text-sm flex items-center justify-between gap-3 backdrop-blur">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-[#032026]/90 px-3 py-3 text-xs text-slate-100 shadow-[0_10px_35px_rgba(16,185,129,0.25)] backdrop-blur">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5 text-emerald-300" />
               <div>
-                <p className="font-semibold text-white">Conteúdo concluído</p>
+                <p className="font-semibold text-white text-sm">Conteúdo concluído</p>
                 <p className="mt-0.5 text-[11px] text-emerald-100">
                   O XP desta leitura já foi registado.
                 </p>
@@ -257,7 +257,7 @@ export function ContentTracker({
       floatingWidget = isCollapsed ? (
         <div className={widgetPosition}>
           <button
-            className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-xs font-semibold text-cyan-100 shadow-lg backdrop-blur flex items-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-100 shadow-lg backdrop-blur"
             onClick={() => setIsCollapsed(false)}
           >
             <Timer className="h-4 w-4" />
@@ -267,14 +267,14 @@ export function ContentTracker({
         </div>
       ) : (
         <div className={widgetPosition}>
-          <div className="rounded-xl border border-white/10 bg-[#031824]/85 p-4 shadow-[0_12px_40px_rgba(8,145,178,0.25)] text-xs md:text-sm space-y-3 text-slate-100 backdrop-blur">
+          <div className="space-y-3 rounded-2xl border border-white/10 bg-[#031824]/90 px-4 py-4 text-xs text-slate-100 shadow-[0_12px_40px_rgba(8,145,178,0.25)] backdrop-blur">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-white flex items-center gap-2 tracking-wide">
+              <span className="font-semibold text-white flex items-center gap-2 tracking-wide text-sm">
                 <Timer className="h-4 w-4 text-cyan-300" />
                 Leitura em progresso
               </span>
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-cyan-200">
+                <span className="flex items-center gap-1 text-cyan-200 font-semibold text-xs">
                   <Award className="h-4 w-4" />+{xpReward} XP
                 </span>
                 <button
@@ -292,10 +292,10 @@ export function ContentTracker({
                 <Clock className="h-3 w-3 text-cyan-300" />
                 ~{estimatedMinutes} min
               </span>
-              <span className="text-white">{Math.round(overall)}%</span>
+              <span className="text-white font-semibold">{Math.round(overall)}%</span>
             </div>
 
-            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
               <div
                 className="h-2 rounded-full transition-all bg-gradient-to-r from-cyan-400 to-emerald-400"
                 style={{ width: `${overall}%` }}
@@ -303,7 +303,8 @@ export function ContentTracker({
             </div>
 
             <p className="text-[11px] text-slate-400">
-              O XP será registado automaticamente{isAwarding && ' · a atribuir XP'}
+              O XP será registado automaticamente
+              {isAwarding && ' · a atribuir XP'}
             </p>
           </div>
         </div>
@@ -314,7 +315,7 @@ export function ContentTracker({
   return (
     <>
       {inlineBanner}
-      <div>{children}</div>
+      <div className={cn(!trackerDisabled && 'pb-28')}>{children}</div>
       {floatingWidget}
     </>
   );
