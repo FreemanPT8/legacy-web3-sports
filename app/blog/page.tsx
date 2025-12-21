@@ -537,6 +537,26 @@ export default function BlogPage() {
                   }}
                 />
               </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <Button
+                  variant="ghost"
+                  className="text-sm text-slate-300 hover:text-white"
+                  onClick={() => setPreviewPost(null)}
+                >
+                  Voltar atrás
+                </Button>
+                <Button
+                  className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                  onClick={() => {
+                    if (previewPost?.post?.id) {
+                      router.push(`/blog/${previewPost.post.id}`);
+                      setPreviewPost(null);
+                    }
+                  }}
+                >
+                  Ver blog post
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
