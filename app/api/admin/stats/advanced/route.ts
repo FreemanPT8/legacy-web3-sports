@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+import {
+  buildLessonIdVariants,
+  normalizeLessonIdForStorage,
+} from '@/lib/lesson-id';
 
 type JwtUser = {
   id: string;
@@ -109,7 +113,14 @@ export async function GET(request: NextRequest) {
         lessons.forEach((lesson: any, lessonIndex: number) => {
           const lessonId =
             lesson?.id || `${moduleId}-lesson-${lessonIndex + 1}`;
-          lessonToCourse[lessonId] = course.id;
+          const storageLessonId =
+            normalizeLessonIdForStorage(lessonId) || lessonId;
+          lessonToCourse[storageLessonId] = course.id;
+          buildLessonIdVariants(lessonId).forEach((variant) => {
+            if (variant) {
+              lessonToCourse[variant] = course.id;
+            }
+          });
         });
       });
     });
@@ -143,7 +154,11 @@ export async function GET(request: NextRequest) {
       const lessonId = comp.lesson_id;
       if (!lessonId) return;
 
-      const courseId = lessonToCourse[lessonId];
+      const normalizedLessonId =
+        normalizeLessonIdForStorage(lessonId) || lessonId;
+
+      const courseId =
+        lessonToCourse[lessonId] || lessonToCourse[normalizedLessonId];
       if (!courseId) return;
 
       completionsByCourse[courseId] =
@@ -193,7 +208,10 @@ export async function GET(request: NextRequest) {
 
       weekCompletions.forEach((c: any) => {
         const lessonId = c.lesson_id;
-        const courseId = lessonToCourse[lessonId];
+        const normalizedLessonId =
+          normalizeLessonIdForStorage(lessonId) || lessonId;
+        const courseId =
+          lessonToCourse[lessonId] || lessonToCourse[normalizedLessonId];
         if (courseId) {
           courseSet.add(courseId);
         }

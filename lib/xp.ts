@@ -1,5 +1,10 @@
 // lib/xp.ts
 import { supabase, supabaseAdmin } from './supabase';
+import {
+  buildLessonIdVariants,
+  normalizeLessonIdForStorage,
+  extractUuid,
+} from './lesson-id';
 
 // Usamos sempre o client admin quando existir (bypass RLS)
 // e caímos para o client normal em dev/local se faltar a service role.
@@ -61,13 +66,25 @@ export async function awardXP(
       return { success: false, error: 'User not found' };
     }
 
-    const { error: txError } = await db.from('xp_transactions').insert({
+    const normalizedReferenceId =
+      referenceId && referenceId.length > 0
+        ? extractUuid(referenceId) ?? null
+        : null;
+
+    const transactionPayload: Record<string, any> = {
       user_id: userId,
       action,
       xp_earned: xpAmount,
-      reference_id: referenceId,
       reference_type: referenceType,
-    });
+    };
+
+    if (normalizedReferenceId) {
+      transactionPayload.reference_id = normalizedReferenceId;
+    }
+
+    const { error: txError } = await db
+      .from('xp_transactions')
+      .insert(transactionPayload);
 
     if (txError) {
       return { success: false, error: 'Failed to record transaction' };
@@ -181,12 +198,26 @@ export async function hasCompletedContent(
     const idField =
       contentType === 'lesson' ? 'lesson_id' : 'blog_post_id';
 
-    const { data, error } = await db
+    const query = db
       .from(table)
       .select('id')
       .eq('user_id', userId)
-      .eq(idField, contentId)
-      .maybeSingle();
+      .limit(1);
+
+    if (contentType === 'lesson') {
+      const variants = buildLessonIdVariants(contentId);
+      if (variants.length === 0) {
+        query.eq(idField, contentId);
+      } else if (variants.length === 1) {
+        query.eq(idField, variants[0]);
+      } else {
+        query.in(idField, variants);
+      }
+    } else {
+      query.eq(idField, contentId);
+    }
+
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       // Em caso de erro inesperado, assumimos "não completado", mas logaríamos em server
@@ -212,9 +243,18 @@ export async function markContentComplete(
     const idField =
       contentType === 'lesson' ? 'lesson_id' : 'blog_post_id';
 
+    const storageId =
+      contentType === 'lesson'
+        ? normalizeLessonIdForStorage(contentId)
+        : contentId;
+
+    if (!storageId) {
+      return { success: false, error: 'Invalid content identifier' };
+    }
+
     const { error } = await db.from(table).insert({
       user_id: userId,
-      [idField]: contentId,
+      [idField]: storageId,
       xp_earned: xpEarned,
     });
 

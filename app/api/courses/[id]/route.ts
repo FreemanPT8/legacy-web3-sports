@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
 import { splitReadMore } from '@/lib/read-more';
+import {
+  buildLessonIdVariants,
+  normalizeLessonIdForStorage,
+} from '@/lib/lesson-id';
 
 interface RouteContext {
   params: { id: string };
@@ -99,15 +103,24 @@ export async function GET(
       .map((l: any) => l.id)
       .filter((lid: any) => !!lid);
 
+    const lessonIdQuerySet = new Set<string>();
+    lessonIds.forEach((lessonId: any) => {
+      buildLessonIdVariants(lessonId).forEach((variant) => {
+        if (variant) {
+          lessonIdQuerySet.add(variant);
+        }
+      });
+    });
+
     let completionsAll: any[] = [];
     let completedSetForUser = new Set<string>();
     let userXpInCourse = 0;
 
-    if (lessonIds.length > 0) {
+    if (lessonIdQuerySet.size > 0) {
       const { data: completions, error: compError } = await db
         .from('lesson_completions')
         .select('lesson_id, xp_earned, user_id')
-        .in('lesson_id', lessonIds);
+        .in('lesson_id', Array.from(lessonIdQuerySet));
 
       if (compError) {
         console.error(
@@ -230,6 +243,8 @@ export async function GET(
             (a: any, b: any) => (a.order || 0) - (b.order || 0),
           )
           .map((l: any) => {
+            const lessonStorageId =
+              normalizeLessonIdForStorage(l.id) ?? l.id;
             const contentRaw =
               typeof l.content === 'string' ? l.content : '';
             const { before: content_preview, hasReadMore: content_has_read_more } =
@@ -242,7 +257,7 @@ export async function GET(
             const isCompleted =
               !!user &&
               !isLessonCreator &&
-              completedSetForUser.has(l.id);
+              completedSetForUser.has(lessonStorageId);
 
             const lessonAuthorName =
               (l.author_id && authorMap[l.author_id]) ||
@@ -283,7 +298,9 @@ export async function GET(
         // XP distribuído no módulo (soma do xpByLesson das lições)
         const moduleXpDistributed = moduleLessons.reduce(
           (sum: number, l: any) =>
-            sum + (xpByLesson[l.id] || 0),
+            sum +
+            (xpByLesson[normalizeLessonIdForStorage(l.id) ?? l.id] ||
+              0),
           0,
         );
 

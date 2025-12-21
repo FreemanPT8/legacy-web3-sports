@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { splitReadMore } from '@/lib/read-more';
 import { fetchLessonContext } from '@/lib/lesson-context';
+import { buildLessonIdVariants } from '@/lib/lesson-id';
 
 interface RouteContext {
   params: { id: string };
@@ -13,6 +14,7 @@ const db = supabaseAdmin ?? supabase;
 type CompletionRow = {
   user_id: string | null;
   xp_earned: number | null;
+  lesson_id?: string | null;
 };
 
 export async function GET(
@@ -76,10 +78,21 @@ export async function GET(
       }
     }
 
-    const { data: completions, error: completionsError } = await db
+    const lessonIdVariants = buildLessonIdVariants(id);
+    const completionQuery = db
       .from('lesson_completions')
-      .select('user_id, xp_earned')
-      .eq('lesson_id', id);
+      .select('user_id, xp_earned, lesson_id');
+
+    if (lessonIdVariants.length === 0) {
+      completionQuery.eq('lesson_id', id);
+    } else if (lessonIdVariants.length === 1) {
+      completionQuery.eq('lesson_id', lessonIdVariants[0]);
+    } else {
+      completionQuery.in('lesson_id', lessonIdVariants);
+    }
+
+    const { data: completions, error: completionsError } =
+      await completionQuery;
 
     if (completionsError) {
       console.error(
@@ -112,10 +125,19 @@ export async function GET(
       !!resolvedAuthorId &&
       resolvedAuthorId === userId;
 
+    const completionIdSet = new Set(
+      lessonIdVariants.length > 0 ? lessonIdVariants : [id],
+    );
+
     const isCompleted =
       !!userId &&
       !isCreator &&
-      completionsArray.some((c) => c.user_id && c.user_id === userId);
+      completionsArray.some(
+        (c) =>
+          c.user_id &&
+          c.user_id === userId &&
+          (c.lesson_id ? completionIdSet.has(c.lesson_id) : true),
+      );
 
     const lesson = {
       id: matchedLesson.id,

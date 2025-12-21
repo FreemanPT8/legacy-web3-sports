@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+import {
+  buildLessonIdVariants,
+  normalizeLessonIdForStorage,
+} from '@/lib/lesson-id';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -99,7 +103,7 @@ export async function GET(request: NextRequest) {
     const lessonsByCourse: Record<string, any[]> = {};
     const lessonToCourse: Record<string, string> = {};
     const authorIdsSet = new Set<string>();
-    const lessonIdsAll: string[] = [];
+    const lessonIdQuerySet = new Set<string>();
 
     coursesArray.forEach((course: any) => {
       if (course.author_id) {
@@ -124,6 +128,8 @@ export async function GET(request: NextRequest) {
         lessons.forEach((lesson: any, lessonIndex: number) => {
           const lessonId =
             lesson?.id || `${moduleId}-lesson-${lessonIndex + 1}`;
+          const storageLessonId =
+            normalizeLessonIdForStorage(lessonId) || lessonId;
           const normalizedLesson = {
             ...lesson,
             id: lessonId,
@@ -139,8 +145,13 @@ export async function GET(request: NextRequest) {
           }
           lessonsByCourse[course.id].push(normalizedLesson);
 
-          lessonToCourse[lessonId] = course.id;
-          lessonIdsAll.push(lessonId);
+          buildLessonIdVariants(lessonId).forEach((variant) => {
+            if (variant) {
+              lessonIdQuerySet.add(variant);
+              lessonToCourse[variant] = course.id;
+            }
+          });
+          lessonToCourse[storageLessonId] = course.id;
 
           if (normalizedLesson.author_id) {
             authorIdsSet.add(normalizedLesson.author_id);
@@ -171,12 +182,12 @@ export async function GET(request: NextRequest) {
     const completionCountByCourse: Record<string, number> = {};
     const xpByLesson: Record<string, number> = {};
 
-    if (lessonIdsAll.length > 0) {
+    if (lessonIdQuerySet.size > 0) {
       const { data: lessonCompletions, error: lessonCompError } =
         await db
           .from('lesson_completions')
           .select('lesson_id, xp_earned')
-          .in('lesson_id', lessonIdsAll);
+          .in('lesson_id', Array.from(lessonIdQuerySet));
 
       if (lessonCompError) {
         console.error(
@@ -319,11 +330,13 @@ export async function GET(request: NextRequest) {
           0,
         );
 
-        const moduleXpDistributed = moduleLessons.reduce(
-          (sum: number, lesson: any) =>
-            sum + (xpByLesson[lesson.id] || 0),
-          0,
-        );
+      const moduleXpDistributed = moduleLessons.reduce(
+        (sum: number, lesson: any) =>
+          sum +
+          (xpByLesson[normalizeLessonIdForStorage(lesson.id) ?? lesson.id] ||
+            0),
+        0,
+      );
 
         return {
           ...topic,
