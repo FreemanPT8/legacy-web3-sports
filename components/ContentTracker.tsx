@@ -1,7 +1,16 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Clock, CheckCircle2, Award, Info, Timer } from 'lucide-react';
+import {
+  Clock,
+  CheckCircle2,
+  Award,
+  Info,
+  Timer,
+  Minimize2,
+  Maximize2,
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface ContentTrackerProps {
   contentId: string;
@@ -10,13 +19,13 @@ export interface ContentTrackerProps {
   estimatedMinutes: number;
   initialCompleted?: boolean;
   onComplete?: () => void;
-
   userId?: string | null;
   disabled?: boolean;
-  isAuthor?: boolean; // backend determines this
-
+  isAuthor?: boolean;
   children: React.ReactNode;
 }
+
+const MIN_TIMER_RATIO = 0.2; // 20% do tempo estimado
 
 export function ContentTracker({
   contentId,
@@ -30,48 +39,51 @@ export function ContentTracker({
   isAuthor = false,
   children,
 }: ContentTrackerProps) {
-  // --- STATES ----------------------------------------------------------
-
   const [completed, setCompleted] = useState<boolean>(!!initialCompleted);
   const [timeProgress, setTimeProgress] = useState<number>(initialCompleted ? 100 : 0);
   const [scrollProgress, setScrollProgress] = useState<number>(initialCompleted ? 100 : 0);
   const [isAwarding, setIsAwarding] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const hasAwardedRef = useRef<boolean>(!!initialCompleted);
+  const { refreshUser } = useAuth();
 
   const noUser = !userId;
   const isCreator = !!isAuthor && !!userId;
-
-  // se for autor → tracking desativado SEMPRE
   const trackerDisabled = isCreator || disabled || noUser;
   const canTrack = !trackerDisabled && !completed;
 
-  // -----------------------------------------------------------------------
-  // SYNC inicial do completed vindo do backend
-  // -----------------------------------------------------------------------
+  const persistUserXP = (newTotal?: number) => {
+    if (typeof newTotal !== 'number' || typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('user');
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      parsed.xp_total = newTotal;
+      localStorage.setItem('user', JSON.stringify(parsed));
+      refreshUser();
+    } catch (error) {
+      console.error('Failed to persist XP locally:', error);
+    }
+  };
+
   useEffect(() => {
     if (initialCompleted) {
       hasAwardedRef.current = true;
       setCompleted(true);
       setTimeProgress(100);
       setScrollProgress(100);
-    } else {
-      // forçar completed = false para autores
-      if (isCreator) {
-        hasAwardedRef.current = true;
-        setCompleted(false);
-        setTimeProgress(0);
-        setScrollProgress(0);
-      }
+    } else if (isCreator) {
+      hasAwardedRef.current = true;
+      setCompleted(false);
+      setTimeProgress(0);
+      setScrollProgress(0);
     }
   }, [initialCompleted, isCreator]);
 
-  // -----------------------------------------------------------------------
-  // TIMER PROGRESS
-  // -----------------------------------------------------------------------
   useEffect(() => {
     if (!canTrack) return;
 
-    const effectiveMinutes = Math.max(estimatedMinutes * 0.2, 0.5);
+    const effectiveMinutes = Math.max(estimatedMinutes * MIN_TIMER_RATIO, 0.5);
     const totalMs = effectiveMinutes * 60_000;
     const start = Date.now();
 
@@ -85,9 +97,6 @@ export function ContentTracker({
     return () => clearInterval(interval);
   }, [canTrack, estimatedMinutes]);
 
-  // -----------------------------------------------------------------------
-  // SCROLL PROGRESS
-  // -----------------------------------------------------------------------
   useEffect(() => {
     if (!canTrack) return;
 
@@ -110,9 +119,6 @@ export function ContentTracker({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [canTrack]);
 
-  // -----------------------------------------------------------------------
-  // AUTO-COMPLETE
-  // -----------------------------------------------------------------------
   useEffect(() => {
     if (!canTrack) return;
     if (hasAwardedRef.current) return;
@@ -122,16 +128,8 @@ export function ContentTracker({
     }
   }, [canTrack, timeProgress, scrollProgress]);
 
-  // -----------------------------------------------------------------------
-  // HANDLE COMPLETE: regista XP (não para autores)
-  // -----------------------------------------------------------------------
   async function handleComplete() {
-    if (!canTrack) return;
-    if (!userId) return;
-    if (hasAwardedRef.current) return;
-
-    // autores nunca registam, nunca ganham XP → bloqueio TOTAL
-    if (isCreator) return;
+    if (!canTrack || !userId || hasAwardedRef.current || isCreator) return;
 
     hasAwardedRef.current = true;
     setIsAwarding(true);
@@ -142,15 +140,27 @@ export function ContentTracker({
           ? `/api/blog/${contentId}/read`
           : `/api/lessons/${contentId}/complete`;
 
-      await fetch(endpoint, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          xpEarned: xpReward,
-        }),
+        body: JSON.stringify({ userId, xpEarned: xpReward }),
       });
 
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result?.error || 'Failed to register completion');
+      }
+
+      if (result.alreadyCompleted) {
+        setCompleted(true);
+        setTimeProgress(100);
+        setScrollProgress(100);
+        if (onComplete) onComplete();
+        return;
+      }
+
+      persistUserXP(result.newTotal);
       setCompleted(true);
       setTimeProgress(100);
       setScrollProgress(100);
@@ -158,15 +168,11 @@ export function ContentTracker({
       if (onComplete) onComplete();
     } catch (error) {
       console.error('Failed to complete content:', error);
-      // mesmo se falhar, não repetimos
     } finally {
       setIsAwarding(false);
     }
   }
 
-  // -----------------------------------------------------------------------
-  // UI BANNERS PARA CRIADOR & NÃO-AUTENTICADO
-  // -----------------------------------------------------------------------
   let inlineBanner: React.ReactNode = null;
 
   if (noUser) {
@@ -188,18 +194,15 @@ export function ContentTracker({
         <div>
           <p className="font-semibold text-white">És o criador deste conteúdo.</p>
           <p className="mt-1 text-xs text-amber-200/80">
-            Não ganhas XP ao consumir o teu próprio conteúdo. Recebes 19% do XP que cada utilizador ganha na primeira conclusão.
+            Não ganhas XP ao consumir o teu próprio conteúdo. Recebes 19% do XP que cada utilizador
+            ganha na primeira conclusão.
           </p>
         </div>
       </div>
     );
   }
 
-  // -----------------------------------------------------------------------
-  // FLOATING WIDGET (apenas leitores)
-  // -----------------------------------------------------------------------
   const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -214,35 +217,74 @@ export function ContentTracker({
   let floatingWidget: React.ReactNode = null;
 
   if (!noUser && !isCreator) {
+    const overall = (timeProgress + scrollProgress) / 2;
+
     if (completed) {
-      floatingWidget = (
+      floatingWidget = isCollapsed ? (
         <div className={widgetPosition}>
-          <div className="rounded-xl border border-white/15 bg-[#031824] p-3 shadow-[0_10px_35px_rgba(16,185,129,0.25)] text-xs md:text-sm flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-300" />
-            <div>
-              <p className="font-semibold text-white">Conteúdo concluído</p>
-              <p className="mt-0.5 text-[11px] text-emerald-100">
-                O XP desta leitura já foi registado.
-              </p>
+          <button
+            className="rounded-full border border-emerald-400/40 bg-emerald-400/20 px-4 py-2 text-xs font-semibold text-emerald-100 shadow-lg backdrop-blur flex items-center gap-2"
+            onClick={() => setIsCollapsed(false)}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            XP registado
+            <Maximize2 className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <div className={widgetPosition}>
+          <div className="rounded-xl border border-white/15 bg-[#032026]/90 p-3 shadow-[0_10px_35px_rgba(16,185,129,0.25)] text-xs md:text-sm flex items-center justify-between gap-3 backdrop-blur">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+              <div>
+                <p className="font-semibold text-white">Conteúdo concluído</p>
+                <p className="mt-0.5 text-[11px] text-emerald-100">
+                  O XP desta leitura já foi registado.
+                </p>
+              </div>
             </div>
+            <button
+              className="text-slate-300 hover:text-white"
+              onClick={() => setIsCollapsed(true)}
+              aria-label="Minimizar tracker"
+            >
+              <Minimize2 className="h-4 w-4" />
+            </button>
           </div>
         </div>
       );
     } else if (canTrack) {
-      const overall = (timeProgress + scrollProgress) / 2;
-
-      floatingWidget = (
+      floatingWidget = isCollapsed ? (
         <div className={widgetPosition}>
-          <div className="rounded-xl border border-white/10 bg-[#031824] p-4 shadow-[0_12px_40px_rgba(8,145,178,0.25)] text-xs md:text-sm space-y-3 text-slate-100">
+          <button
+            className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-xs font-semibold text-cyan-100 shadow-lg backdrop-blur flex items-center gap-2"
+            onClick={() => setIsCollapsed(false)}
+          >
+            <Timer className="h-4 w-4" />
+            {Math.round(overall)}%
+            <Maximize2 className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <div className={widgetPosition}>
+          <div className="rounded-xl border border-white/10 bg-[#031824]/85 p-4 shadow-[0_12px_40px_rgba(8,145,178,0.25)] text-xs md:text-sm space-y-3 text-slate-100 backdrop-blur">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-white flex items-center gap-2 tracking-wide">
                 <Timer className="h-4 w-4 text-cyan-300" />
                 Leitura em progresso
               </span>
-              <span className="flex items-center gap-1 text-cyan-200">
-                <Award className="h-4 w-4" />
-                +{xpReward} XP
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-cyan-200">
+                  <Award className="h-4 w-4" />+{xpReward} XP
+                </span>
+                <button
+                  className="text-slate-300 hover:text-white"
+                  onClick={() => setIsCollapsed(true)}
+                  aria-label="Minimizar tracker"
+                >
+                  <Minimize2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-slate-300">
@@ -261,8 +303,7 @@ export function ContentTracker({
             </div>
 
             <p className="text-[11px] text-slate-400">
-              O XP será registado automaticamente
-              {isAwarding && ' · a atribuir XP'}
+              O XP será registado automaticamente{isAwarding && ' · a atribuir XP'}
             </p>
           </div>
         </div>

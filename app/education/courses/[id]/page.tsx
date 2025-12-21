@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -27,6 +27,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
 import { removeReadMoreMarker } from '@/lib/read-more';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 type Lesson = {
   id: string;
@@ -39,6 +48,7 @@ type Lesson = {
   isCompleted?: boolean;
   isCreator?: boolean;
   content_has_read_more?: boolean;
+  xp_required?: number | null;
 };
 
 type Module = {
@@ -74,16 +84,59 @@ type Course = {
   xp_earned_by_user?: number;
 };
 
+type LockedLessonInfo = {
+  title: string;
+  requiredXp: number;
+  missingXp: number;
+};
+
+const LOCKED_DIALOG_COPY = {
+  pt: {
+    title: 'Conteúdo bloqueado',
+    description: (missing: number) =>
+      `Ainda te faltam ${missing} XP para desbloqueares esta lição. Continua a acumular XP noutros conteúdos e volta mais tarde.`,
+    close: 'Voltar ao curso',
+    cta: 'Saber como ganhar XP',
+    stats: (required: number, missing: number) =>
+      `Requer ${required} XP · faltam ${missing} XP`,
+  },
+  es: {
+    title: 'Contenido bloqueado',
+    description: (missing: number) =>
+      `Todavía te faltan ${missing} XP para desbloquear esta lección. Suma más XP en otros contenidos y regresa después.`,
+    close: 'Volver al curso',
+    cta: 'Cómo ganar XP',
+    stats: (required: number, missing: number) =>
+      `Requiere ${required} XP · faltan ${missing} XP`,
+  },
+  en: {
+    title: 'Content locked',
+    description: (missing: number) =>
+      `You still need ${missing} XP to unlock this lesson. Earn more XP in other content and come back later.`,
+    close: 'Back to course',
+    cta: 'How to earn XP',
+    stats: (required: number, missing: number) =>
+      `Requires ${required} XP · missing ${missing} XP`,
+  },
+} as const;
+
 export default function CourseDetailPage() {
   const params = useParams();
   const courseId = params.id as string;
+  const router = useRouter();
 
   const { user, getToken } = useAuth();
   const { language, t } = useLanguage();
+  const userXP = user?.xp_total || 0;
+  const lockedCopy =
+    LOCKED_DIALOG_COPY[
+      (['pt', 'es', 'en'].includes(language) ? (language as 'pt' | 'es' | 'en') : 'en')
+    ];
 
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [lockedLesson, setLockedLesson] = useState<LockedLessonInfo | null>(null);
 
   const tr = (key: string, fallback: string) => {
     const val = t(key);
@@ -447,7 +500,8 @@ const sanitizeCourseDescription = (html: string) =>
                   );
                   const hasModuleDescription =
                     moduleDescriptionHtml.trim().length > 0;
-                  const moduleAuthorName = mod.author_name || 'Admin';
+                  const moduleAuthorName =
+                    mod.author_name || course.author_name || 'Admin';
 
                   const isModuleCreator =
                     !!mod.isCreator ||
@@ -536,7 +590,10 @@ const sanitizeCourseDescription = (html: string) =>
                                 `${lessonLabel} ${lesson.order ?? lessonIndex + 1}`,
                               );
                               const lessonAuthorName =
-                                lesson.author_name || 'Admin';
+                                lesson.author_name ||
+                                moduleAuthorName ||
+                                course.author_name ||
+                                'Admin';
 
                               const isLessonCreator =
                                 !!lesson.isCreator ||
@@ -554,6 +611,16 @@ const sanitizeCourseDescription = (html: string) =>
                               const lessonXP = getLessonXP(lesson);
                               const lessonHasReadMore =
                                 lesson.content_has_read_more ?? false;
+                              const requiredXP =
+                                typeof lesson.xp_required === 'number'
+                                  ? lesson.xp_required
+                                  : 0;
+                              const isLocked =
+                                !isLessonCreator && requiredXP > userXP;
+                              const missingXp = Math.max(
+                                0,
+                                requiredXP - userXP,
+                              );
 
                               return (
                                 <div
@@ -565,23 +632,29 @@ const sanitizeCourseDescription = (html: string) =>
                                       <span className="font-medium text-white">
                                         {lessonTitle}
                                       </span>
-                                      {isLessonCreator && (
-                                        <Badge className="bg-purple-600 text-white flex items-center gap-1">
-                                          <PenSquare className="h-3 w-3" />
-                                          Creator
-                                        </Badge>
-                                      )}
-                                      {isCompleted && (
-                                        <Badge className="bg-green-600 text-white flex items-center gap-1">
-                                          <CheckCircle className="h-3 w-3" />
-                                          Completed
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                                      <span>
-                                        {tr(
-                                          'courses.by',
+                                       {isLessonCreator && (
+                                         <Badge className="bg-purple-600 text-white flex items-center gap-1">
+                                           <PenSquare className="h-3 w-3" />
+                                           Creator
+                                         </Badge>
+                                       )}
+                                       {isCompleted && (
+                                         <Badge className="bg-green-600 text-white flex items-center gap-1">
+                                           <CheckCircle className="h-3 w-3" />
+                                           Completed
+                                         </Badge>
+                                       )}
+                                       {isLocked && (
+                                         <Badge className="bg-slate-700 text-white flex items-center gap-1">
+                                           <Lock className="h-3 w-3" />
+                                           {tr('courses.locked', 'Bloqueado')}
+                                         </Badge>
+                                       )}
+                                     </div>
+                                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                       <span>
+                                         {tr(
+                                           'courses.by',
                                           'Criado por',
                                         )}{' '}
                                         <span className="font-semibold">
@@ -592,11 +665,17 @@ const sanitizeCourseDescription = (html: string) =>
                                           <Award className="h-4 w-4 text-cyan-300" />
                                           {lessonXP} XP
                                         </span>
-                                      <span className="flex items-center gap-1">
-                                        <Clock className="h-4 w-4 text-cyan-300" />
-                                        {estimatedMinutes} min
-                                      </span>
-                                    </div>
+                                       <span className="flex items-center gap-1">
+                                         <Clock className="h-4 w-4 text-cyan-300" />
+                                         {estimatedMinutes} min
+                                       </span>
+                                       {requiredXP > 0 && (
+                                         <span className="flex items-center gap-1 text-amber-300">
+                                           <Lock className="h-4 w-4" />
+                                           {requiredXP} XP
+                                         </span>
+                                       )}
+                                     </div>
                                     {lessonHasReadMore && (
                                       <div className="text-[11px] text-cyan-300 uppercase tracking-wide">
                                         Continue reading
@@ -605,15 +684,32 @@ const sanitizeCourseDescription = (html: string) =>
                                   </div>
 
                                   <div className="flex items-center justify-end">
-                                    <Link href={`/education/lessons/${lesson.id}`}>
-                                      <Button size="sm" className="bg-primary hover:bg-primary/90">
-                                        {tr(
-                                          'courses.openLesson',
-                                          'Abrir lição',
-                                        )}
-                                        <ArrowRight className="h-3 w-3 ml-1" />
-                                      </Button>
-                                    </Link>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      disabled={isLocked}
+                                      className={cn(
+                                        'bg-primary hover:bg-primary/90',
+                                        isLocked &&
+                                          'cursor-not-allowed border border-white/10 bg-white/5 text-slate-400 hover:bg-white/5',
+                                      )}
+                                      onClick={() => {
+                                        if (isLocked) {
+                                          setLockedLesson({
+                                            title: lessonTitle,
+                                            requiredXp: requiredXP,
+                                            missingXp,
+                                          });
+                                          return;
+                                        }
+                                        router.push(`/education/lessons/${lesson.id}`);
+                                      }}
+                                    >
+                                      {isLocked
+                                        ? tr('courses.locked', 'Bloqueado')
+                                        : tr('courses.openLesson', 'Abrir lição')}
+                                      <ArrowRight className="h-3 w-3 ml-1" />
+                                    </Button>
                                   </div>
                                 </div>
                               );
@@ -631,6 +727,47 @@ const sanitizeCourseDescription = (html: string) =>
       </main>
 
       <Footer />
+      {lockedLesson && (
+        <Dialog
+          open={!!lockedLesson}
+          onOpenChange={(open) => {
+            if (!open) setLockedLesson(null);
+          }}
+        >
+          <DialogContent className="border border-white/10 bg-[#000c12] text-white">
+            <DialogHeader>
+              <DialogTitle>{lockedCopy.title}</DialogTitle>
+              <DialogDescription className="text-slate-300">
+                {lockedCopy.description(lockedLesson.missingXp)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="rounded-xl border border-white/10 bg-[#031420] p-4 text-sm text-slate-300">
+              <p className="mb-1 font-semibold text-white">{lockedLesson.title}</p>
+              <p className="text-xs text-slate-400">
+                {lockedCopy.stats(lockedLesson.requiredXp, lockedLesson.missingXp)}
+              </p>
+            </div>
+            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setLockedLesson(null)}
+                className="border-white/20 text-white hover:bg-white/10"
+              >
+                {lockedCopy.close}
+              </Button>
+              <Button
+                onClick={() => {
+                  router.push('/education/xp');
+                  setLockedLesson(null);
+                }}
+                className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+              >
+                {lockedCopy.cta}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
