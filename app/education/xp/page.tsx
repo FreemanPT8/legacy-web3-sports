@@ -379,8 +379,15 @@ export default function EducationXpPage() {
   }, []);
 
   const visibleRewards = useMemo(() => {
+    const hiddenActions = new Set([
+      'streak_7',
+      'streak_30',
+      'forum_post',
+      'forum_topic',
+      'forum_comment',
+    ]);
     return (xpData?.rewards ?? []).filter(
-      (reward) => !['streak_7', 'streak_30'].includes(reward.action_type),
+      (reward) => !hiddenActions.has(reward.action_type),
     );
   }, [xpData?.rewards]);
 
