@@ -1,16 +1,10 @@
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
-import {
-  CalendarCheck,
-  Flame,
-  ShieldCheck,
-  Sparkles,
-  Trophy,
-  Target,
-} from 'lucide-react';
+import { CalendarCheck, Flame, ShieldCheck, Sparkles, Trophy } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +59,9 @@ const heroHighlights = [
 ];
 
 const levelFormula = 'Nível = XP total / 100 (arredondado para baixo)';
+const heroImageUrl =
+  process.env.NEXT_PUBLIC_XP_HERO_IMAGE ||
+  'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80';
 
 const rewardMetadata: Record<string, { title: string; creatorBonus?: string }> = {
   lesson_complete: {
@@ -152,7 +149,7 @@ export default async function EducationXpPage() {
         <div className="container mx-auto px-4 space-y-10 max-w-6xl">
           {/* Hero */}
           <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-12 shadow-2xl shadow-black/40">
-            <div className="grid gap-10 lg:grid-cols-[1.15fr,0.85fr] items-center">
+            <div className="grid gap-10 lg:grid-cols-2 items-center">
               <div className="space-y-6">
                 <div className="space-y-3">
                   <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">XP SYSTEM</p>
@@ -169,63 +166,37 @@ export default async function EducationXpPage() {
                 <Badge className="bg-cyan-500/10 text-cyan-100 border border-cyan-400/40">
                   Legacy XP — Sistema oficial
                 </Badge>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  {heroHighlights.map((highlight) => {
-                    const Icon = highlight.icon;
-                    return (
-                      <Card
-                        key={highlight.label}
-                        className="flex flex-col bg-[#03141d]/80 border border-white/10 shadow-lg shadow-black/60 transition hover:-translate-y-0.5 hover:border-cyan-400/60"
-                      >
-                        <CardContent className="space-y-2 py-6">
-                          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
-                            <Icon className="h-4 w-4 text-cyan-300" />
-                            {highlight.label}
-                          </div>
-                          <p className="text-2xl font-bold text-white">{highlight.value}</p>
-                          <p className="text-sm text-slate-300">{highlight.detail}</p>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
               </div>
-
-              <div className="relative h-full w-full">
-                <div className="relative h-full w-full overflow-hidden rounded-3xl border border-white/15 bg-[#010b11] shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.3),transparent_55%)]" />
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_rgba(16,185,129,0.25),transparent_45%)]" />
-                  <div className="relative z-10 flex h-full flex-col justify-between p-8 text-white">
-                    <div className="space-y-3">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.3em] text-slate-200">
-                        <Target className="h-3.5 w-3.5 text-cyan-300" />
-                        XP TRACKER
-                      </div>
-                      <p className="text-2xl font-semibold leading-snug">
-                        Ganha XP por cada ação real dentro do Legacy.
-                      </p>
-                      <p className="text-sm text-slate-200/80">
-                        As métricas são auditadas automaticamente e alimentam o ranking, desbloqueios
-                        e streaks globais.
-                      </p>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-300">XP disponível hoje</span>
-                        <span className="text-2xl font-bold text-cyan-200">369 XP</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-white/10">
-                        <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400" />
-                      </div>
-                      <p className="text-xs text-slate-400">
-                        O limite renova todos os dias às 00:00 UTC. Todo XP acima disso é ignorado,
-                        garantindo justiça para toda a comunidade.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
+                <Image
+                  src={heroImageUrl}
+                  alt="XP Hero"
+                  fill
+                  priority
+                  className="object-cover opacity-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#000c12]/80 via-[#031821]/20 to-transparent" />
               </div>
+            </div>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {heroHighlights.map((highlight) => {
+                const Icon = highlight.icon;
+                return (
+                  <Card
+                    key={highlight.label}
+                    className="flex flex-col bg-[#03141d]/80 border border-white/10 shadow-lg shadow-black/60 transition hover:-translate-y-0.5 hover:border-cyan-400/60"
+                  >
+                    <CardContent className="space-y-2 py-6">
+                      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+                        <Icon className="h-4 w-4 text-cyan-300" />
+                        {highlight.label}
+                      </div>
+                      <p className="text-2xl font-bold text-white">{highlight.value}</p>
+                      <p className="text-sm text-slate-300">{highlight.detail}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </section>
 
