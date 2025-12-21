@@ -270,6 +270,32 @@ export default function LessonPage() {
     ? `/education/courses/${module.course_id}`
     : '/education/courses';
 
+  const handleLessonCompleted = (alreadyCompleted: boolean) => {
+    if (alreadyCompleted && isCompleted) {
+      // ensure badge visible even if reloaded
+      setIsCompleted(true);
+      return;
+    }
+
+    setIsCompleted(true);
+    setLesson((prev) =>
+      prev
+        ? {
+            ...prev,
+            isCompleted: true,
+          }
+        : prev,
+    );
+    setStats((prev) =>
+      prev
+        ? {
+            completedCount: prev.completedCount + (alreadyCompleted ? 0 : 1),
+            totalXpDistributed: prev.totalXpDistributed + (alreadyCompleted ? 0 : lesson.xp_reward),
+          }
+        : prev,
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
@@ -421,7 +447,7 @@ export default function LessonPage() {
                     estimatedMinutes={durationMinutes}
                     initialCompleted={isCompleted && !isCreator}
                     isAuthor={isCreator}
-                    onComplete={() => setIsCompleted(true)}
+                    onComplete={handleLessonCompleted}
                   >
                     <div
                       dangerouslySetInnerHTML={{ __html: content }}

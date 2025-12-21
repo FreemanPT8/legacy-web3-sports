@@ -269,8 +269,9 @@ export default function BlogPostPage() {
 
   const completedForReader = isCompleted && !isAuthor;
 
-  const handleTrackerCompletion = () => {
+  const handleTrackerCompletion = (alreadyCompleted: boolean) => {
     setIsCompleted(true);
+    if (alreadyCompleted) return;
     setPost((prev) => {
       if (!prev) return prev;
       const currentRegistered =
