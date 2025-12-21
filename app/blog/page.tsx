@@ -334,9 +334,9 @@ export default function BlogPage() {
                         </div>
                       )}
 
-                      <CardHeader className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                      <CardHeader className="space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Badge
                               variant="outline"
                               className="border-white/30 bg-[#000c12] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.35em] text-cyan-100"
@@ -357,7 +357,7 @@ export default function BlogPage() {
                             )}
                           </div>
                           {xpReward > 0 && (
-                            <span className="text-xs font-semibold text-cyan-300">
+                            <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold text-cyan-200">
                               +{xpReward} XP
                             </span>
                           )}
@@ -379,8 +379,8 @@ export default function BlogPage() {
                           </span>
                         )}
 
-                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-                          <div className="flex items-center gap-3">
+                        <div className="mt-2 space-y-2 text-[11px] text-slate-400">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-white/5 pb-2">
                             {post.author && (
                               <span className="inline-flex items-center gap-1">
                                 <User className="h-3 w-3 text-cyan-300" />
@@ -399,18 +399,18 @@ export default function BlogPage() {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                             <span className="inline-flex items-center gap-1">
                               <Eye className="h-3 w-3 text-cyan-300" />
                               {post.views ?? 0}
                             </span>
                             {totalXp > 0 && (
-                              <span className="text-[10px] text-slate-400">
+                              <span className="text-[10px] text-slate-300">
                                 {totalXp} XP já distribuído
                               </span>
                             )}
                             {registeredReaders > 0 && (
-                              <span className="text-[10px] text-slate-400">
+                              <span className="text-[10px] text-slate-300">
                                 {registeredReaders} leituras
                               </span>
                             )}
