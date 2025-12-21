@@ -127,12 +127,13 @@ export default function BlogPage() {
     typeof title === 'string' ? title : getMultilingualContent(title, language);
 
   const resolveExcerpt = (excerpt: MultiLang | string, preview?: string) => {
-    const text =
-      preview ??
-      (typeof excerpt === 'string'
+    const baseText =
+      preview && preview.trim().length > 0
+        ? preview
+        : typeof excerpt === 'string'
         ? excerpt
-        : getMultilingualContent(excerpt, language));
-    return splitReadMore(text);
+        : getMultilingualContent(excerpt, language);
+    return splitReadMore(baseText || '');
   };
 
   const stripHtml = (value?: string) =>
