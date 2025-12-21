@@ -135,6 +135,9 @@ export default function BlogPage() {
     return splitReadMore(text);
   };
 
+  const stripHtml = (value?: string) =>
+    value ? value.replace(/<[^>]*>/g, '').trim() : '';
+
   const formatDate = (iso?: string) => {
     if (!iso) return '-';
     const d = new Date(iso);
@@ -291,11 +294,17 @@ export default function BlogPage() {
                     post.excerpt,
                     post.excerpt_preview ?? undefined,
                   );
+                  const fallbackExcerpt =
+                    'Ainda sem descrição detalhada para este artigo.';
                   const normalizedExcerpt =
-                    excerptPreview && excerptPreview.trim().length > 0
+                    stripHtml(excerptPreview).length > 0
                       ? excerptPreview
-                      : 'Ainda sem descrição detalhada para este artigo.';
+                      : fallbackExcerpt;
                   const fullExcerpt = `${excerptPreview}${excerptAfter}`;
+                  const resolvedFullExcerpt =
+                    stripHtml(fullExcerpt).length > 0
+                      ? fullExcerpt
+                      : normalizedExcerpt;
 
                   const xpReward = normalizeXpReward(post.xp_reward);
 
@@ -391,9 +400,12 @@ export default function BlogPage() {
                       </CardHeader>
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pb-5">
-                        <p className="line-clamp-3 text-sm text-slate-300">
-                          {normalizedExcerpt}
-                        </p>
+                        <div
+                          className="prose prose-invert line-clamp-3 text-sm text-slate-300"
+                          dangerouslySetInnerHTML={{
+                            __html: normalizedExcerpt,
+                          }}
+                        />
 
                         <div className="flex items-center justify-between">
                           {hasReadMore && (
@@ -401,7 +413,9 @@ export default function BlogPage() {
                               Continuar a ler
                             </span>
                           )}
-                          {(hasReadMore || fullExcerpt.trim().length > normalizedExcerpt.trim().length) && (
+                          {(hasReadMore ||
+                            stripHtml(resolvedFullExcerpt).length >
+                              stripHtml(normalizedExcerpt).length) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -410,10 +424,7 @@ export default function BlogPage() {
                                 event.stopPropagation();
                                 setPreviewPost({
                                   post,
-                                  content:
-                                    fullExcerpt.trim().length > 0
-                                      ? fullExcerpt
-                                      : normalizedExcerpt,
+                                  content: resolvedFullExcerpt,
                                   title,
                                   imageUrl: imageUrl,
                                 });
