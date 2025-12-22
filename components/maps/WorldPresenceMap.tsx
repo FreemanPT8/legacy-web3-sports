@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import worldData from '@/data/countries.geojson';
+import worldData from '@/data/countries.json';
 
 type GeoFeature = {
   type: 'Feature';
@@ -119,4 +119,3 @@ export function WorldPresenceMap({ stats }: Props) {
     </div>
   );
 }
-
