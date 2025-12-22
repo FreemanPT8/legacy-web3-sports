@@ -54,7 +54,7 @@ export function WorldPresenceMap({ stats }: Props) {
 
         <rect width={WIDTH} height={HEIGHT} fill="url(#map-glow)" rx={32} />
 
-        {[...Array(6).keys()].map((index) => {
+        {Array.from({ length: 6 }, (_, index) => {
           const x = ((index + 1) / 7) * WIDTH;
           return (
             <line
@@ -68,7 +68,7 @@ export function WorldPresenceMap({ stats }: Props) {
             />
           );
         })}
-        {[...Array(3).keys()].map((index) => {
+        {Array.from({ length: 3 }, (_, index) => {
           const y = ((index + 1) / 4) * HEIGHT;
           return (
             <line
