@@ -237,6 +237,19 @@ export async function updateUserPermissions(
     };
   }
 
+  const columnMap: Record<PermissionKey, string> = {
+    canManageUsers: 'can_manage_users',
+    canManageHouses: 'can_manage_houses',
+    canManageHeads: 'can_manage_heads',
+    canManageOnboarding: 'can_manage_onboarding',
+    canManageCourses: 'can_manage_courses',
+    canManageBlog: 'can_manage_blog',
+    canManageForum: 'can_manage_forum',
+    canManageXP: 'can_manage_xp',
+    canManageAnalytics: 'can_manage_analytics',
+    canManageSettings: 'can_manage_settings',
+  };
+
   try {
     // Transformar partial { canManageUsers: true } em campos snake_case
     const updatePayload: Record<string, boolean> = {};
@@ -244,43 +257,7 @@ export async function updateUserPermissions(
       if (value === undefined) continue;
       const camelKey = key as PermissionKey;
       if (!PERMISSION_KEYS.includes(camelKey)) continue;
-
-      let col: string;
-      switch (camelKey) {
-        case 'canManageUsers':
-          col = 'can_manage_users';
-          break;
-        case 'canManageHouses':
-          col = 'can_manage_houses';
-          break;
-        case 'canManageHeads':
-          col = 'can_manage_heads';
-          break;
-        case 'canManageOnboarding':
-          col = 'can_manage_onboarding';
-          break;
-        case 'canManageCourses':
-          col = 'can_manage_courses';
-          break;
-        case 'canManageBlog':
-          col = 'can_manage_blog';
-          break;
-        case 'canManageForum':
-          col = 'can_manage_forum';
-          break;
-        case 'canManageXP':
-          col = 'can_manage_xp';
-          break;
-        case 'canManageAnalytics':
-          col = 'can_manage_analytics';
-          break;
-        case 'canManageSettings':
-          col = 'can_manage_settings';
-          break;
-        default:
-          col = camelKey;
-      }
-
+      const col = columnMap[camelKey] ?? camelKey;
       updatePayload[col] = !!value;
     }
 
@@ -288,19 +265,43 @@ export async function updateUserPermissions(
       return { success: true };
     }
 
-    // upsert por user_id
-    const { error } = await supabaseAdmin
+    // Verificar se já existe um registo para este utilizador
+    const { data: existingRow, error: fetchError } = await supabaseAdmin
       .from('admin_permissions')
-      .upsert(
-        {
-          user_id: userId,
-          ...updatePayload,
-        },
-        { onConflict: 'user_id' },
-      );
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (error) {
-      console.error('Error updating admin_permissions:', error);
+    if (fetchError) {
+      console.error('Error checking admin_permissions row:', fetchError);
+      return { success: false, error: 'Failed to update permissions.' };
+    }
+
+    let dbError = null;
+
+    if (existingRow) {
+      const { error } = await supabaseAdmin
+        .from('admin_permissions')
+        .update(updatePayload)
+        .eq('user_id', userId);
+      dbError = error ?? null;
+    } else {
+      const baseInsertPayload: Record<string, boolean> = {};
+      for (const key of PERMISSION_KEYS) {
+        const col = columnMap[key] ?? key;
+        baseInsertPayload[col] = false;
+      }
+
+      const { error } = await supabaseAdmin.from('admin_permissions').insert({
+        user_id: userId,
+        ...baseInsertPayload,
+        ...updatePayload,
+      });
+      dbError = error ?? null;
+    }
+
+    if (dbError) {
+      console.error('Error updating admin_permissions:', dbError);
       return { success: false, error: 'Failed to update permissions.' };
     }
 
