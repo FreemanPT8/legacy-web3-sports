@@ -19,6 +19,127 @@ const projectPoint = ([lon, lat]: [number, number]) => {
   return [x, y] as const;
 };
 
+type Shape = {
+  id: string;
+  rings: [number, number][][];
+};
+
+const CONTINENT_SHAPES: Shape[] = [
+  {
+    id: 'north-america',
+    rings: [
+      [
+        [-168, 72],
+        [-150, 71],
+        [-130, 65],
+        [-115, 58],
+        [-100, 52],
+        [-95, 45],
+        [-90, 35],
+        [-100, 25],
+        [-112, 20],
+        [-130, 25],
+        [-145, 35],
+        [-156, 50],
+        [-168, 60],
+        [-168, 72],
+      ],
+    ],
+  },
+  {
+    id: 'south-america',
+    rings: [
+      [
+        [-82, 13],
+        [-74, 5],
+        [-70, -5],
+        [-60, -10],
+        [-55, -20],
+        [-60, -35],
+        [-67, -50],
+        [-73, -55],
+        [-78, -45],
+        [-82, -25],
+        [-83, -5],
+        [-82, 13],
+      ],
+    ],
+  },
+  {
+    id: 'eurafrica',
+    rings: [
+      [
+        [-15, 35],
+        [0, 60],
+        [20, 65],
+        [40, 70],
+        [55, 60],
+        [60, 45],
+        [52, 30],
+        [40, 20],
+        [30, 10],
+        [25, -5],
+        [15, -25],
+        [5, -35],
+        [-10, -30],
+        [-15, -5],
+        [-15, 35],
+      ],
+    ],
+  },
+  {
+    id: 'asia',
+    rings: [
+      [
+        [20, 60],
+        [35, 75],
+        [70, 75],
+        [115, 65],
+        [150, 60],
+        [150, 45],
+        [130, 25],
+        [115, 5],
+        [100, -5],
+        [80, -5],
+        [60, 5],
+        [45, 20],
+        [30, 35],
+        [20, 60],
+      ],
+    ],
+  },
+  {
+    id: 'australia',
+    rings: [
+      [
+        [110, -10],
+        [150, -10],
+        [155, -25],
+        [148, -35],
+        [135, -40],
+        [125, -35],
+        [115, -20],
+        [110, -10],
+      ],
+    ],
+  },
+  {
+    id: 'antarctica',
+    rings: [
+      [
+        [-180, -60],
+        [-130, -70],
+        [-60, -75],
+        [0, -78],
+        [60, -75],
+        [120, -70],
+        [180, -65],
+        [-180, -60],
+      ],
+    ],
+  },
+];
+
 const getColor = (members: number) => {
   if (members >= 50) return '#fbbf24';
   if (members > 0) return '#06b6d4';
@@ -53,6 +174,26 @@ export function WorldPresenceMap({ stats }: Props) {
         </defs>
 
         <rect width={WIDTH} height={HEIGHT} fill="url(#map-glow)" rx={32} />
+
+        {CONTINENT_SHAPES.map((shape) => (
+          <path
+            key={shape.id}
+            d={shape.rings
+              .map((ring) =>
+                ring
+                  .map(([lon, lat], index) => {
+                    const [x, y] = projectPoint([lon, lat]);
+                    return `${index === 0 ? 'M' : 'L'}${x} ${y}`;
+                  })
+                  .join(' ') + ' Z',
+              )
+              .join(' ')}
+            fill="#051c29"
+            stroke="#0b2a3b"
+            strokeWidth={1}
+            opacity={0.75}
+          />
+        ))}
 
         {Array.from({ length: 6 }, (_, index) => {
           const x = ((index + 1) / 7) * WIDTH;
