@@ -8,24 +8,74 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Medal, Crown } from 'lucide-react';
+import { WorldPresenceMap } from '@/components/maps/WorldPresenceMap';
+import { getCountryCodeFromName, getCountryName } from '@/lib/countries';
+
+type UserEntry = {
+  id: string;
+  username: string;
+  country: string | null;
+  xp_total: number;
+  created_at: string;
+};
+
+type CountryEntry = {
+  code: string;
+  name: string;
+  memberCount: number;
+  totalXP: number;
+};
 
 export default function LeaderboardPage() {
   const { t } = useLanguage();
-  const [leaderboardData, setLeaderboardData] = useState<any>(null);
+  const [globalLeaders, setGlobalLeaders] = useState<UserEntry[]>([]);
+  const [countryLeaders, setCountryLeaders] = useState<CountryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
+      setLoading(true);
       try {
-        const response = await fetch('/api/leaderboard');
-        const data = await response.json();
-        if (data.success) {
-          setLeaderboardData(data);
+        const [globalRes, countryRes] = await Promise.all([
+          fetch('/api/leaderboard?type=global&limit=100'),
+          fetch('/api/leaderboard?type=country'),
+        ]);
+
+        const globalJson = await globalRes.json();
+        const countryJson = await countryRes.json();
+
+        if (globalJson.success) {
+          setGlobalLeaders(globalJson.leaderboard || []);
+        } else {
+          setError(globalJson.error || 'Failed to load leaderboard');
         }
-      } catch (error) {
-        console.error('Failed to fetch leaderboard:', error);
+
+        if (countryJson.success) {
+          const normalized: CountryEntry[] = (countryJson.leaderboard || [])
+            .map((entry: any) => {
+              const candidate = entry.country || '';
+              const isoGuess =
+                candidate.length === 2
+                  ? candidate.toUpperCase()
+                  : getCountryCodeFromName(candidate)?.toUpperCase();
+              if (!isoGuess) return null;
+              return {
+                code: isoGuess,
+                name: getCountryName(isoGuess),
+                memberCount: entry.memberCount || entry.membercount || entry.user_count || 0,
+                totalXP: entry.totalXP ?? entry.totalXp ?? entry.totalxp ?? entry.totalXP ?? 0,
+              };
+            })
+            .filter(Boolean);
+          setCountryLeaders(normalized);
+        }
+      } catch (err) {
+        console.error('Failed to fetch leaderboard:', err);
+        setError('Failed to load leaderboard');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchLeaderboard();
@@ -46,8 +96,15 @@ export default function LeaderboardPage() {
     );
   }
 
-  const topThree = leaderboardData?.global?.slice(0, 3) || [];
-  const restOfGlobal = leaderboardData?.global?.slice(3) || [];
+  const topThree = globalLeaders.slice(0, 3);
+  const restOfGlobal = globalLeaders.slice(3);
+  const mapStats = countryLeaders
+    .filter((entry) => entry.code)
+    .map((entry) => ({
+      code: entry.code,
+      memberCount: entry.memberCount,
+    }));
+
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
@@ -65,6 +122,16 @@ export default function LeaderboardPage() {
               <p className="text-sm text-slate-300">
                 {t('leaderboard.subtitle')}
               </p>
+            </div>
+
+            {error && (
+              <div className="mb-6 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {error}
+              </div>
+            )}
+
+            <div className="mb-8">
+              <WorldPresenceMap stats={mapStats} />
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -162,16 +229,16 @@ export default function LeaderboardPage() {
                     <CardDescription className="text-slate-300">{t('leaderboard.countryRankingsDesc')}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {!leaderboardData?.country || leaderboardData.country.length === 0 ? (
+                    {countryLeaders.length === 0 ? (
                       <div className="text-center py-12">
                         <Trophy className="h-16 w-16 text-cyan-300 mx-auto mb-4" />
                         <p className="text-slate-300">{t('leaderboard.noCountryRankings')}</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {leaderboardData.country.map((item: any, i: number) => (
+                        {countryLeaders.map((item, i) => (
                           <div
-                            key={i}
+                            key={`${item.code}-${i}`}
                             className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] p-4 transition-colors hover:bg-[#05212b]"
                           >
                             <div className="flex items-center gap-4">
@@ -179,13 +246,13 @@ export default function LeaderboardPage() {
                                 #{i + 1}
                               </div>
                               <div>
-                                <p className="font-semibold">{item.country}</p>
+                                <p className="font-semibold">{item.name}</p>
                                 <p className="text-sm text-slate-300">
-                                  {item.user_count} {t('leaderboard.members')}
+                                  {item.memberCount} {t('leaderboard.members')}
                                 </p>
                               </div>
                             </div>
-                            <Badge className="bg-green-600">{item.total_xp} XP</Badge>
+                            <Badge className="bg-green-600">{item.totalXP} XP</Badge>
                           </div>
                         ))}
                       </div>
