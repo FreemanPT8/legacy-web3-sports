@@ -516,11 +516,11 @@ export default function AdminUsersPage() {
   const handleSaveUserPermissions = async () => {
     if (!selectedUser || !selectedUserRole) return;
 
-    if (!canEditUsers || !isSuperAdmin) {
+    if (!canEditUsers) {
       toast({
         title: 'Not allowed',
         description:
-          'Only Super Admins with user management permission can update extra permissions.',
+          'You do not have permission to update admin extra permissions.',
         variant: 'destructive',
       });
       return;

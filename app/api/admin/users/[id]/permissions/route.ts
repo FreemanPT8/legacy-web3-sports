@@ -1,6 +1,6 @@
 // app/api/admin/users/[id]/permissions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/middleware';
+import { requirePermission } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import {
   type UserRole,
@@ -30,15 +30,14 @@ interface PatchPermissionsResponse {
 }
 
 // GET /api/admin/users/[id]/permissions
-// Devolve permissões efetivas de um utilizador
+// Devolve as permissões efetivas de um utilizador
 export async function GET(
   request: NextRequest,
   { params }: RouteParams,
 ) {
-  const authResult = await requireAdmin(request);
-  if (!authResult.success) return authResult.response!;
+  const permResult = await requirePermission(request, 'canManageUsers');
+  if (!permResult.success) return permResult.response!;
 
-  const currentUser = authResult.user!;
   const targetUserId = params.id;
 
   try {
@@ -72,8 +71,6 @@ export async function GET(
         : ('Member' as UserRole);
 
     const permissions = await getUserPermissions(targetUserId, role);
-
-    // Só faz sentido editar extra-permissões se o user for Admin
     const editable = role === 'Admin';
 
     return NextResponse.json<GetPermissionsResponse>(
@@ -104,31 +101,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: RouteParams,
 ) {
-  const authResult = await requireAdmin(request);
-  if (!authResult.success) return authResult.response!;
+  const permResult = await requirePermission(request, 'canManageUsers');
+  if (!permResult.success) return permResult.response!;
 
-  const currentUser = authResult.user!;
   const targetUserId = params.id;
-
-  const currentRole: UserRole =
-    currentUser.role === 'Super Admin' || currentUser.role === 'Admin'
-      ? (currentUser.role as UserRole)
-      : 'Member';
-
-  // Só Super Admin com canManageUsers pode alterar permissões
-  // Reutilizamos userHasPermission via hasGlobalPermission no middleware,
-  // mas aqui vamos simplesmente exigir Super Admin (porque canManageUsers
-  // já é default true para Super Admin).
-  if (currentRole !== 'Super Admin') {
-    return NextResponse.json<PatchPermissionsResponse>(
-      {
-        success: false,
-        error:
-          'Only Super Admins can update admin extra permissions for a user.',
-      },
-      { status: 403 },
-    );
-  }
 
   try {
     const body = await request.json().catch(() => ({} as any));
@@ -146,7 +122,6 @@ export async function PATCH(
       );
     }
 
-    // Verificar role do utilizador alvo (só faz sentido para Admin)
     const { data: target, error: targetError } = await supabaseAdmin
       .from('users')
       .select('id, role')
@@ -187,9 +162,7 @@ export async function PATCH(
       );
     }
 
-    // Filtrar apenas chaves válidas e toggláveis
     const partial: Partial<AdminPermissions> = {};
-
     for (const key of Object.keys(permissions) as PermissionKey[]) {
       if (!ADMIN_TOGGLABLE_PERMISSIONS.includes(key)) continue;
       partial[key] = !!permissions[key];
