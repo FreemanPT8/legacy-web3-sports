@@ -1084,19 +1084,17 @@ export default function AdminUsersPage() {
                       </th>
                       <th
                         className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('email')}
-                      >
-                        <span className="inline-flex items-center">
-                          Email{renderSortIcon('email')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('role')}
                       >
                         <span className="inline-flex items-center">
                           Role{renderSortIcon('role')}
                         </span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-200">
+                        Change Role
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-200">
+                        Permissions
                       </th>
                       <th
                         className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
@@ -1104,22 +1102,6 @@ export default function AdminUsersPage() {
                       >
                         <span className="inline-flex items-center">
                           Country{renderSortIcon('country')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('xp_total')}
-                      >
-                        <span className="inline-flex items-center">
-                          XP{renderSortIcon('xp_total')}
-                        </span>
-                      </th>
-                      <th
-                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
-                        onClick={() => handleSort('created_at')}
-                      >
-                        <span className="inline-flex items-center">
-                          Created{renderSortIcon('created_at')}
                         </span>
                       </th>
                       <th
@@ -1132,17 +1114,27 @@ export default function AdminUsersPage() {
                       </th>
                       <th
                         className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('xp_total')}
+                      >
+                        <span className="inline-flex items-center">
+                          XP{renderSortIcon('xp_total')}
+                        </span>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                         onClick={() => handleSort('last_xp_at')}
                       >
                         <span className="inline-flex items-center">
                           Last XP{renderSortIcon('last_xp_at')}
                         </span>
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-200">
-                        Change Role
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-200">
-                        Permissions
+                      <th
+                        className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
+                        onClick={() => handleSort('email')}
+                      >
+                        <span className="inline-flex items-center">
+                          Email{renderSortIcon('email')}
+                        </span>
                       </th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-200">
                         Actions
@@ -1188,32 +1180,12 @@ export default function AdminUsersPage() {
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            {u.email || (
-                              <span className="text-slate-300">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
                             <Badge
                               variant="outline"
                               className={getRoleBadgeStyle(u.role)}
                             >
                               {u.role}
                             </Badge>
-                          </td>
-                          <td className="px-4 py-3">
-                            {u.country || (
-                              <span className="text-slate-300">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">{u.xp_total ?? 0}</td>
-                          <td className="px-4 py-3">
-                            {u.created_at ? formatDate(u.created_at) : '-'}
-                          </td>
-                          <td className="px-4 py-3 text-xs">
-                            {u.last_login ? formatDate(u.last_login) : '--'}
-                          </td>
-                          <td className="px-4 py-3 text-xs">
-                            {u.last_xp_at ? formatDate(u.last_xp_at) : '--'}
                           </td>
                           <td className="px-4 py-3">
                             {canEditUsers ? (
@@ -1260,6 +1232,23 @@ export default function AdminUsersPage() {
                             >
                               View / Edit
                             </Button>
+                          </td>
+                          <td className="px-4 py-3">
+                            {u.country || (
+                              <span className="text-slate-300">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-xs">
+                            {u.last_login ? formatDate(u.last_login) : '--'}
+                          </td>
+                          <td className="px-4 py-3">{u.xp_total ?? 0}</td>
+                          <td className="px-4 py-3 text-xs">
+                            {u.last_xp_at ? formatDate(u.last_xp_at) : '--'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {u.email || (
+                              <span className="text-slate-300">-</span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             {canEditUsers && isSuperAdmin ? (
