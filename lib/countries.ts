@@ -74,6 +74,18 @@ export function getCountryName(code: string): string {
   return found ? found.name : code.toUpperCase();
 }
 
+export function getCountryCodeFromName(name?: string | null): string | null {
+  if (!name) return null;
+  const normalized = name.trim().toLowerCase();
+  const found = COUNTRIES.find((c) => c.name.toLowerCase() === normalized);
+  if (found) return found.code;
+  // try partial match (e.g., "United States" vs "United States of America")
+  const loose = COUNTRIES.find((c) =>
+    normalized.includes(c.name.toLowerCase()),
+  );
+  return loose ? loose.code : null;
+}
+
 // helper para ter lista ordenada por nome (para dropdowns)
 export function getSortedCountries(): Country[] {
   return [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
