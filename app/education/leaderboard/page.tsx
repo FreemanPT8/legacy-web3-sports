@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Medal, Crown } from 'lucide-react';
-import { WorldPresenceMap } from '@/components/maps/WorldPresenceMap';
 import { getCountryCodeFromName, getCountryName } from '@/lib/countries';
 
 type UserEntry = {
@@ -98,12 +97,7 @@ export default function LeaderboardPage() {
 
   const topThree = globalLeaders.slice(0, 3);
   const restOfGlobal = globalLeaders.slice(3);
-  const mapStats = countryLeaders
-    .filter((entry) => entry.code)
-    .map((entry) => ({
-      code: entry.code,
-      memberCount: entry.memberCount,
-    }));
+  const heroRankIcons = [Crown, Medal, Medal];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
@@ -111,30 +105,97 @@ export default function LeaderboardPage() {
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-8 text-center space-y-3">
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
-                {t('nav.leaderboard')}
-              </p>
-              <h1 className="text-3xl md:text-4xl font-semibold text-white">
-                {t('leaderboard.title')}
-              </h1>
-              <p className="text-sm text-slate-300">
-                {t('leaderboard.subtitle')}
-              </p>
-            </div>
+          <div className="max-w-6xl mx-auto space-y-8">
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-2xl shadow-black/40">
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-20 -right-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+                <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+              </div>
+              <div className="relative grid gap-10 lg:grid-cols-2">
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                      {t('nav.leaderboard')}
+                    </p>
+                    <h1 className="text-3xl font-semibold text-white md:text-4xl">
+                      {t('leaderboard.title')}
+                    </h1>
+                    <p className="text-sm text-slate-300 md:text-base">
+                      {t('leaderboard.subtitle')}
+                    </p>
+                  </div>
+                  <Badge className="w-fit border border-white/10 bg-cyan-500/15 text-cyan-100">
+                    {t('leaderboard.globalRankings')}
+                  </Badge>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-4 shadow-lg shadow-black/40">
+                      <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                        {t('leaderboard.globalRankings')}
+                      </p>
+                      <p className="text-3xl font-semibold text-white">
+                        {globalLeaders.length.toLocaleString()}
+                      </p>
+                      <p className="text-sm text-slate-300">
+                        {t('leaderboard.globalRankingsDesc')}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-4 shadow-lg shadow-black/40">
+                      <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                        {t('leaderboard.countryRankings')}
+                      </p>
+                      <p className="text-3xl font-semibold text-white">
+                        {countryLeaders.length.toLocaleString()}
+                      </p>
+                      <p className="text-sm text-slate-300">
+                        {t('leaderboard.countryRankingsDesc')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {heroRankIcons.map((Icon, index) => {
+                    const player = topThree[index];
+                    const rankKey = `leaderboard.rank${index + 1}` as const;
+                    return (
+                      <Card
+                        key={index}
+                        className="border border-white/15 bg-[#03141d]/80 shadow-xl shadow-black/50"
+                      >
+                        <CardContent className="flex items-center justify-between gap-4 py-4">
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-full border border-white/20 bg-[#000c12]/70 flex items-center justify-center">
+                              <Icon className={index === 0 ? 'h-6 w-6 text-amber-300' : 'h-6 w-6 text-slate-200'} />
+                            </div>
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+                                {t(rankKey)}
+                              </p>
+                              <p className="text-lg font-semibold text-white">
+                                {player?.username || t('leaderboard.noRankings')}
+                              </p>
+                              <p className="text-sm text-slate-300">
+                                {player?.country || '--'}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge className="bg-cyan-500 text-black">
+                            {(player?.xp_total ?? 0).toLocaleString()} XP
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
 
             {error && (
-              <div className="mb-6 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {error}
               </div>
             )}
 
-            <div className="mb-8">
-              <WorldPresenceMap stats={mapStats} />
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid md:grid-cols-3 gap-6">
               <Card className="border border-white/10 bg-[#05212b]">
                 <CardHeader className="text-center pb-3">
                   <Crown className="h-12 w-12 text-cyan-300 mx-auto mb-2" />
