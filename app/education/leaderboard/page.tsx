@@ -114,6 +114,24 @@ export default function LeaderboardPage() {
   const heroMedia = useManagedMediaSetting('leaderboard', {
     fallbackUrl: HERO_IMAGE_FALLBACK,
   });
+  const matchesCurrentUser = (entryId?: string | null, entryUsername?: string | null) => {
+    if (!user) return false;
+    const normalizedEntryId = entryId?.toString().trim();
+    const normalizedUserId = user.id?.toString().trim();
+    if (normalizedEntryId && normalizedUserId && normalizedEntryId === normalizedUserId) {
+      return true;
+    }
+    const normalizedEntryUsername = entryUsername?.trim().toLowerCase();
+    const normalizedUserUsername = user.username?.trim().toLowerCase();
+    if (
+      normalizedEntryUsername &&
+      normalizedUserUsername &&
+      normalizedEntryUsername === normalizedUserUsername
+    ) {
+      return true;
+    }
+    return false;
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -321,8 +339,7 @@ export default function LeaderboardPage() {
       flag: getFlagEmoji(countryCode),
       value: member.xp_total ?? 0,
       extra: '',
-      highlight:
-        user && ((member.id && member.id === user.id) || member.username === user.username),
+      highlight: matchesCurrentUser(member.id, member.username),
     };
   });
 
@@ -458,10 +475,12 @@ type RankingEntry = {
     key: userEntry.id || `member-${index}`,
     rank: index + 1,
     title: userEntry.username,
-    subtitle: formatSubtitle(normalizeCountryCode(userEntry.country), userEntry.country || t('leaderboard.globalRankings')),
+    subtitle: formatSubtitle(
+      normalizeCountryCode(userEntry.country),
+      userEntry.country || t('leaderboard.globalRankings'),
+    ),
     valueLabel: `${formatNumber(userEntry.xp_total ?? 0)} XP`,
-    highlight:
-      user && ((userEntry.id && userEntry.id === user.id) || userEntry.username === user.username),
+    highlight: matchesCurrentUser(userEntry.id, userEntry.username),
   }));
 
   const houseEntries: RankingEntry[] = houseLeaderboard.map((house, index) => ({
