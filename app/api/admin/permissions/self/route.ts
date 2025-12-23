@@ -2,10 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/middleware';
 import {
-  getUserPermissions,
   type AdminPermissions,
   type UserRole,
 } from '@/lib/permissions';
+import { getUserPermissions } from '@/lib/server/permissions';
 
 interface SelfPermissionsResponse {
   success: boolean;

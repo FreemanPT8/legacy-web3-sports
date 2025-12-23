@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
-import { userHasPermission, type UserRole } from '@/lib/permissions';
+import { type UserRole } from '@/lib/permissions';
+import { userHasPermission } from '@/lib/server/permissions';
 
 type MultiLang = Record<string, string>;
 

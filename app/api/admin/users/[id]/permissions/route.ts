@@ -7,9 +7,11 @@ import {
   type PermissionKey,
   type AdminPermissions,
   ADMIN_TOGGLABLE_PERMISSIONS,
+} from '@/lib/permissions';
+import {
   getUserPermissions,
   updateUserPermissions,
-} from '@/lib/permissions';
+} from '@/lib/server/permissions';
 
 interface RouteParams {
   params: { id: string };

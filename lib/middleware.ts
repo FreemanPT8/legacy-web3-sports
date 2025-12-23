@@ -2,11 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractTokenFromHeader, JWTPayload } from './jwt';
 import { supabase } from './supabase';
-import {
-  userHasPermission,
-  type PermissionKey,
-  type UserRole,
-} from './permissions';
+import { type PermissionKey, type UserRole } from './permissions';
+import { userHasPermission } from './server/permissions';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: JWTPayload;

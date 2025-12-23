@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
-import { userHasPermission, type UserRole } from '@/lib/permissions';
+import { type UserRole } from '@/lib/permissions';
+import { userHasPermission } from '@/lib/server/permissions';
 
 const db = supabaseAdmin;
 
