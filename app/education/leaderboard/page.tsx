@@ -475,8 +475,8 @@ export default function LeaderboardPage() {
             <Tabs defaultValue="individual" className="w-full">
               <TabsList className="grid w-full max-w-xl mx-auto grid-cols-4">
                 <TabsTrigger value="individual">{t('leaderboard.individual')}</TabsTrigger>
-                <TabsTrigger value="country">{t('leaderboard.country')}</TabsTrigger>
-                <TabsTrigger value="houses">{t('leaderboard.housesRankings')}</TabsTrigger>
+                <TabsTrigger value="houses">Casas de Desporto</TabsTrigger>
+                <TabsTrigger value="country">País</TabsTrigger>
                 <TabsTrigger value="national">{t('leaderboard.national')}</TabsTrigger>
               </TabsList>
 
@@ -513,61 +513,6 @@ export default function LeaderboardPage() {
                         ))}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="country" className="mt-6">
-                <Card className="border border-white/10 bg-[#000c12]">
-                  <CardHeader>
-                    <CardTitle className="text-white text-lg">{t('leaderboard.countryRankings')}</CardTitle>
-                    <CardDescription className="text-slate-300">{t('leaderboard.countryRankingsDesc')}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {countryLeaders.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Trophy className="h-16 w-16 text-cyan-300 mx-auto mb-4" />
-                        <p className="text-slate-300">{t('leaderboard.noCountryRankings')}</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {countryLeaders.map((item, i) => (
-                          <div
-                            key={`${item.code}-${i}`}
-                            className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] p-4 transition-colors hover:bg-[#05212b]"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
-                                #{i + 1}
-                              </div>
-                              <div>
-                                <p className="font-semibold">{item.name}</p>
-                                <p className="text-sm text-slate-300">
-                                  {item.memberCount} {t('leaderboard.members')}
-                                </p>
-                              </div>
-                            </div>
-                            <Badge className="bg-green-600">{item.totalXP} XP</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="national" className="mt-6">
-                <Card className="border border-white/10 bg-[#000c12]">
-                  <CardHeader>
-                    <CardTitle className="text-white text-lg">{t('leaderboard.nationalCompetitions')}</CardTitle>
-                    <CardDescription className="text-slate-300">{t('leaderboard.nationalCompetitionsDesc')}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12">
-                      <Trophy className="h-16 w-16 text-cyan-300 mx-auto mb-4" />
-                      <p className="text-lg font-semibold mb-2">{t('leaderboard.noNationalActive')}</p>
-                      <p className="text-slate-300">{t('leaderboard.noNationalActiveDesc')}</p>
-                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -619,6 +564,64 @@ export default function LeaderboardPage() {
                         ))}
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="country" className="mt-6">
+                <Card className="border border-white/10 bg-[#000c12]">
+                  <CardHeader>
+                    <CardTitle className="text-white text-lg">{t('leaderboard.countryRankings')}</CardTitle>
+                    <CardDescription className="text-slate-300">{t('leaderboard.countryRankingsDesc')}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {countryLeaders.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Trophy className="h-16 w-16 text-cyan-300 mx-auto mb-4" />
+                        <p className="text-slate-300">{t('leaderboard.noCountryRankings')}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {countryLeaders.map((item, i) => (
+                          <div
+                            key={`${item.code}-${i}`}
+                            className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] p-4 transition-colors hover:bg-[#05212b]"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+                                #{i + 1}
+                              </div>
+                              <div>
+                                <p className="font-semibold">{item.name}</p>
+                                <p className="text-sm text-slate-300">
+                                  {item.memberCount} {t('leaderboard.members')}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge className="bg-green-600">{item.totalXP} XP</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="national" className="mt-6">
+                <Card className="border border-white/10 bg-[#000c12]">
+                  <CardHeader>
+                    <CardTitle className="text-white text-lg">{t('leaderboard.nationalCompetitions')}</CardTitle>
+                    <CardDescription className="text-slate-300">
+                      {t('leaderboard.nationalCompetitionsDesc')} — abre quando cada país tiver
+                      50 utilizadores com XP.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <Trophy className="h-16 w-16 text-cyan-300 mx-auto mb-4" />
+                      <p className="text-lg font-semibold mb-2">{t('leaderboard.noNationalActive')}</p>
+                      <p className="text-slate-300">{t('leaderboard.noNationalActiveDesc')}</p>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
