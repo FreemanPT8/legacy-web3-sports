@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
+import { CourseHubV2 } from '@/components/education/CourseHubV2';
 import {
   BookOpen,
   Award,
@@ -119,13 +120,16 @@ const formatTotalXP = (course: Course, modules: Module[]) => {
 const stripHtml = (value: string) =>
   value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
+const USE_COURSE_HUB_V2 =
+  process.env.NEXT_PUBLIC_EDU_COURSE_HUB_V2 === 'true';
+
 export default function CoursesPage() {
   const router = useRouter();
   const { user, getToken } = useAuth();
   const { language, t } = useLanguage();
 
   const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!USE_COURSE_HUB_V2);
 
   const userXP = user?.xp_total || 0;
 
@@ -135,6 +139,9 @@ export default function CoursesPage() {
   };
 
   useEffect(() => {
+    if (USE_COURSE_HUB_V2) {
+      return;
+    }
     const fetchCourses = async () => {
       setLoading(true);
       try {
@@ -204,7 +211,7 @@ export default function CoursesPage() {
     return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
   };
 
-  if (loading) {
+  if (!USE_COURSE_HUB_V2 && loading) {
     return (
       <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
@@ -265,7 +272,9 @@ export default function CoursesPage() {
               </div>
             </div>
 
-            {courses.length === 0 ? (
+            {USE_COURSE_HUB_V2 ? (
+              <CourseHubV2 />
+            ) : courses.length === 0 ? (
               <Card className="border border-white/10 bg-[#000c12]">
                 <CardContent className="py-10 text-center text-slate-300">
                   {tr(
