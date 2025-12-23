@@ -14,6 +14,8 @@ import { getCountryCodeFromName, getCountryName } from '@/lib/countries';
 import { Button } from '@/components/ui/button';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
+import { useToast } from '@/hooks/use-toast';
+import type { MediaAsset } from '@/types/builder';
 
 type UserEntry = {
   id: string;
@@ -36,12 +38,15 @@ const HERO_IMAGE_FALLBACK =
 
 export default function LeaderboardPage() {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
+  const { toast } = useToast();
   const [globalLeaders, setGlobalLeaders] = useState<UserEntry[]>([]);
   const [countryLeaders, setCountryLeaders] = useState<CountryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [heroImageUrl, setHeroImageUrl] = useState(HERO_IMAGE_FALLBACK);
+  const [heroAssetId, setHeroAssetId] = useState<string | null>(null);
+  const [savingHeroImage, setSavingHeroImage] = useState(false);
   const mediaLibrary = useMediaLibrary();
   const isSuperAdmin = user?.role === 'Super Admin';
 
@@ -92,6 +97,94 @@ export default function LeaderboardPage() {
 
     fetchLeaderboard();
   }, []);
+
+  useEffect(() => {
+    const fetchHeroImage = async () => {
+      try {
+        const res = await fetch('/api/media/settings');
+        if (!res.ok) return;
+        const data = await res.json();
+        const leaderboardSetting = data?.settings?.leaderboard;
+        if (data?.success && leaderboardSetting?.asset?.url) {
+          setHeroImageUrl(leaderboardSetting.asset.url);
+          setHeroAssetId(leaderboardSetting.asset.id ?? null);
+        }
+      } catch (err) {
+        console.error('Failed to load leaderboard hero image:', err);
+      }
+    };
+
+    fetchHeroImage();
+  }, []);
+
+  const persistHeroImage = async (assetId: string | null) => {
+    if (!isSuperAdmin) return false;
+    try {
+      setSavingHeroImage(true);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      const token = getToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const res = await fetch('/api/admin/media/settings', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          section: 'leaderboard',
+          assetId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to save leaderboard hero image.');
+      }
+      toast({
+        title: 'Leaderboard hero updated',
+        description: 'The hero image was saved successfully.',
+      });
+      return true;
+    } catch (err) {
+      console.error('Error saving leaderboard hero image:', err);
+      toast({
+        title: 'Error saving hero image',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Could not save the leaderboard hero image.',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setSavingHeroImage(false);
+    }
+  };
+
+  const handleHeroImageSelect = async (asset: MediaAsset) => {
+    if (!asset?.url) return;
+    if (!asset.id) {
+      toast({
+        title: 'Unsupported image',
+        description:
+          'Please select an uploaded media asset to save it as the leaderboard hero.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const previousUrl = heroImageUrl;
+    const previousAssetId = heroAssetId;
+    setHeroImageUrl(asset.url);
+    setHeroAssetId(asset.id);
+    mediaLibrary.closeLibrary();
+    const success = await persistHeroImage(asset.id);
+    if (!success) {
+      setHeroImageUrl(previousUrl);
+      setHeroAssetId(previousAssetId);
+    }
+  };
 
   if (loading) {
     return (
@@ -179,8 +272,9 @@ export default function LeaderboardPage() {
                         variant="outline"
                         className="border-white/50 bg-black/40 text-white hover:bg-black/60"
                         onClick={() => mediaLibrary.openLibrary()}
+                        disabled={savingHeroImage}
                       >
-                        Edit hero image
+                        {savingHeroImage ? 'Saving...' : 'Edit hero image'}
                       </Button>
                     </div>
                   )}
@@ -195,12 +289,7 @@ export default function LeaderboardPage() {
                   open ? mediaLibrary.openLibrary(mediaLibrary.activeTab) : mediaLibrary.closeLibrary()
                 }
                 library={mediaLibrary}
-                onSelect={(asset) => {
-                  if (asset?.url) {
-                    setHeroImageUrl(asset.url);
-                  }
-                  mediaLibrary.closeLibrary();
-                }}
+                onSelect={handleHeroImageSelect}
                 title="Select leaderboard hero image"
                 description="Choose an image from the media library or upload a new one."
                 allowUrl

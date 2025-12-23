@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 
-type SectionKey = 'hero' | 'web3Academy' | 'web3Sports';
-const VALID_SECTIONS: SectionKey[] = ['hero', 'web3Academy', 'web3Sports'];
+type SectionKey = 'hero' | 'web3Academy' | 'web3Sports' | 'leaderboard';
+const VALID_SECTIONS: SectionKey[] = [
+  'hero',
+  'web3Academy',
+  'web3Sports',
+  'leaderboard',
+];
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAdmin(request);

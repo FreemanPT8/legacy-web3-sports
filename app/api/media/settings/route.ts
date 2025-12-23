@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 import type { MediaAsset } from '@/types/builder';
 import { supabase } from '@/lib/supabase';
 
-type SectionKey = 'hero' | 'web3Academy' | 'web3Sports';
-const SECTION_KEYS: SectionKey[] = ['hero', 'web3Academy', 'web3Sports'];
+type SectionKey = 'hero' | 'web3Academy' | 'web3Sports' | 'leaderboard';
+const SECTION_KEYS: SectionKey[] = [
+  'hero',
+  'web3Academy',
+  'web3Sports',
+  'leaderboard',
+];
 
 function detectAssetType(mime?: string | null) {
   if (!mime) return 'other';
@@ -14,13 +19,11 @@ function detectAssetType(mime?: string | null) {
   return 'other';
 }
 
-const DEFAULT_SETTINGS: Record<
-  SectionKey,
-  { asset: null; offset: number }
-> = {
+const DEFAULT_SETTINGS: Record<SectionKey, { asset: null; offset: number }> = {
   hero: { asset: null, offset: 0 },
   web3Academy: { asset: null, offset: 0 },
   web3Sports: { asset: null, offset: 0 },
+  leaderboard: { asset: null, offset: 0 },
 };
 
 export async function GET() {
@@ -50,7 +53,7 @@ export async function GET() {
           )
         `,
       )
-      .in('section', ['hero', 'web3Academy', 'web3Sports']);
+      .in('section', ['hero', 'web3Academy', 'web3Sports', 'leaderboard']);
 
     if (error) {
       console.error('Failed to load media settings:', error);
