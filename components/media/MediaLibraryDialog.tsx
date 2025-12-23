@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState, useId, useEffect } from 'react';
+import { useMemo, useState, useId, useEffect, useRef } from 'react';
 import { Upload, Link2, Search, RefreshCw, Loader2, ImageIcon } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -38,8 +38,6 @@ const MEDIA_TYPES = [
   { value: 'other', label: 'Other' },
 ] as const;
 
-const LIBRARY_PAGE_SIZE = 50;
-
 export function MediaLibraryDialog({
   open,
   onOpenChange,
@@ -60,30 +58,13 @@ export function MediaLibraryDialog({
   const [urlType, setUrlType] = useState<MediaAsset['type']>('image');
   const descriptionId = useId();
 
-  const [page, setPage] = useState(1);
   const mediaItems = useMemo(() => library.items, [library.items]);
-  const effectivePageSize = library.pageSize ?? LIBRARY_PAGE_SIZE;
-  const totalPages = Math.max(
-    1,
-    Math.ceil(mediaItems.length / effectivePageSize),
-  );
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [totalPages, page]);
-
-  const paginatedItems = useMemo(() => {
-    const start = (page - 1) * effectivePageSize;
-    return mediaItems.slice(start, start + effectivePageSize);
-  }, [mediaItems, page, effectivePageSize]);
-
   const recentUploads = useMemo(() => library.allItems.slice(0, 4), [library.allItems]);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const loadingMoreRef = useRef(false);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
-      setPage(1);
       library.openLibrary(library.activeTab);
     } else {
       library.closeLibrary();
@@ -93,21 +74,41 @@ export function MediaLibraryDialog({
   };
 
   useEffect(() => {
-    if (
-      page * effectivePageSize > mediaItems.length &&
-      library.hasMore &&
-      !library.loading
-    ) {
-      void library.loadMore();
-    }
-  }, [
-    page,
-    effectivePageSize,
-    mediaItems.length,
-    library.hasMore,
-    library.loading,
-    library.loadMore,
-  ]);
+    const root = scrollAreaRef.current;
+    if (!root) return;
+
+    const viewport = root.querySelector(
+      '[data-radix-scroll-area-viewport]',
+    ) as HTMLDivElement | null;
+    if (!viewport) return;
+
+    const handleScroll = () => {
+      if (
+        !library.hasMore ||
+        library.loading ||
+        loadingMoreRef.current
+      ) {
+        return;
+      }
+
+      const threshold = 160;
+      const distanceToBottom =
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+
+      if (distanceToBottom <= threshold) {
+        loadingMoreRef.current = true;
+        void library.loadMore().finally(() => {
+          loadingMoreRef.current = false;
+        });
+      }
+    };
+
+    viewport.addEventListener('scroll', handleScroll);
+
+    return () => {
+      viewport.removeEventListener('scroll', handleScroll);
+    };
+  }, [library.hasMore, library.loading, library.loadMore]);
 
   const [assetToDelete, setAssetToDelete] = useState<MediaAsset | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -239,7 +240,6 @@ export function MediaLibraryDialog({
                 size="icon"
                 className={secondaryButtonClasses}
                 onClick={() => {
-                  setPage(1);
                   library.refresh();
                 }}
                 disabled={library.loading}
@@ -258,9 +258,12 @@ export function MediaLibraryDialog({
               </p>
             )}
 
-            <ScrollArea className="h-[520px] rounded-2xl border border-white/10 bg-[#03121a]">
+            <ScrollArea
+              ref={scrollAreaRef}
+              className="h-[520px] rounded-2xl border border-white/10 bg-[#03121a]"
+            >
               <div className="p-4">
-                {library.loading ? (
+                {library.loading && mediaItems.length === 0 ? (
                   <div className="flex items-center justify-center py-10 text-sm text-slate-300">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading media...
@@ -271,7 +274,7 @@ export function MediaLibraryDialog({
                   </div>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {paginatedItems.map((asset) => (
+                    {mediaItems.map((asset) => (
                       <button
                         key={asset.id}
                         type="button"
@@ -323,35 +326,28 @@ export function MediaLibraryDialog({
                 )}
               </div>
             </ScrollArea>
-            {(mediaItems.length > effectivePageSize || library.hasMore) && (
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#03121a] px-4 py-2 text-sm text-slate-200">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className={secondaryButtonClasses}
-                  disabled={page === 1}
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                >
-                  Previous
-                </Button>
-                <p>
-                  Page {page} of {totalPages}
-                </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={secondaryButtonClasses}
-                disabled={!library.hasMore && page === totalPages}
-                onClick={() =>
-                  setPage((prev) => Math.min(totalPages + 1, prev + 1))
-                }
-              >
-                Next
-              </Button>
-            </div>
-          )}
+            {library.hasMore && mediaItems.length > 0 && (
+              <div className="rounded-2xl border border-white/10 bg-[#03121a] px-4 py-2 text-center text-sm text-slate-200">
+                {library.loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading more media...
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-cyan-300 hover:text-cyan-200"
+                    onClick={() => {
+                      loadingMoreRef.current = true;
+                      void library.loadMore().finally(() => {
+                        loadingMoreRef.current = false;
+                      });
+                    }}
+                  >
+                    Load more
+                  </button>
+                )}
+              </div>
+            )}
             {recentUploads.length > 0 && (
               <div>
                 <h3 className="mt-4 text-xs font-semibold uppercase text-slate-400">
