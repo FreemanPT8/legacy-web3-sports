@@ -126,6 +126,10 @@ export default function HomePage() {
   const [heroAsset, setHeroAsset] = useState<MediaAsset | null>(null);
   const [heroOffset, setHeroOffset] = useState(0);
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
+  const openHeroMediaLibrary = () => {
+    setHeroDialogOpen(true);
+    void mediaLibrary.openLibrary();
+  };
 
   const heroButtons = useMemo(() => {
     if (user) {
@@ -219,7 +223,7 @@ export default function HomePage() {
               ></div>
               {user?.role === 'Super Admin' && (
                 <div className="absolute right-4 -top-4 flex items-center gap-3 rounded-full border border-white/40 bg-black/80 px-4 py-2 text-xs text-white">
-                  <Button size="sm" variant="ghost" onClick={() => setHeroDialogOpen(true)}>
+                  <Button size="sm" variant="ghost" onClick={openHeroMediaLibrary}>
                     Editar imagem
                   </Button>
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.4em] text-slate-200">
@@ -443,7 +447,7 @@ export default function HomePage() {
               />
               {user?.role === 'Super Admin' && (
                 <div className="mt-4 flex items-center justify-between text-xs text-slate-200">
-                  <Button size="sm" variant="ghost" onClick={() => setHeroDialogOpen(true)}>
+                  <Button size="sm" variant="ghost" onClick={openHeroMediaLibrary}>
                     Editar imagem
                   </Button>
                   <span>Offset {heroOffset}px</span>
