@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -24,6 +25,10 @@ type CountryEntry = {
   memberCount: number;
   totalXP: number;
 };
+
+const HERO_IMAGE_FALLBACK =
+  process.env.NEXT_PUBLIC_LEADERBOARD_HERO_IMAGE ||
+  'https://images.unsplash.com/photo-1505843267-3ff30ae28fd7?auto=format&fit=crop&w=1600&q=80';
 
 export default function LeaderboardPage() {
   const { t } = useLanguage();
@@ -97,8 +102,6 @@ export default function LeaderboardPage() {
 
   const topThree = globalLeaders.slice(0, 3);
   const restOfGlobal = globalLeaders.slice(3);
-  const heroRankIcons = [Crown, Medal, Medal];
-
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
@@ -152,39 +155,15 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  {heroRankIcons.map((Icon, index) => {
-                    const player = topThree[index];
-                    const rankKey = `leaderboard.rank${index + 1}` as const;
-                    return (
-                      <Card
-                        key={index}
-                        className="border border-white/15 bg-[#03141d]/80 shadow-xl shadow-black/50"
-                      >
-                        <CardContent className="flex items-center justify-between gap-4 py-4">
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-full border border-white/20 bg-[#000c12]/70 flex items-center justify-center">
-                              <Icon className={index === 0 ? 'h-6 w-6 text-amber-300' : 'h-6 w-6 text-slate-200'} />
-                            </div>
-                            <div>
-                              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-                                {t(rankKey)}
-                              </p>
-                              <p className="text-lg font-semibold text-white">
-                                {player?.username || t('leaderboard.noRankings')}
-                              </p>
-                              <p className="text-sm text-slate-300">
-                                {player?.country || '--'}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge className="bg-cyan-500 text-black">
-                            {(player?.xp_total ?? 0).toLocaleString()} XP
-                          </Badge>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
+                  <Image
+                    src={HERO_IMAGE_FALLBACK}
+                    alt="Global leaderboard spotlight"
+                    fill
+                    priority
+                    className="object-cover opacity-90"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-[#000c12]/80 via-[#031821]/20 to-transparent" />
                 </div>
               </div>
             </section>
