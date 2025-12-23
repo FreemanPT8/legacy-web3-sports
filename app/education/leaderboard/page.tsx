@@ -32,6 +32,32 @@ type CountryEntry = {
   totalXP: number;
 };
 
+type HouseLeaderboardEntry = {
+  houseId: string;
+  name: string;
+  sportCode: string | null;
+  sportName: string | null;
+  countryCode: string | null;
+  status: 'ACTIVE' | 'UNDER_CONSTRUCTION' | 'IN_DEVELOPMENT';
+  totalXp: number;
+  memberCount: number;
+  headCount: number;
+  moderatorCount: number;
+};
+
+type HousesSummary = {
+  totalHouses: number;
+  activeHouses: number;
+  totalMembers: number;
+  totalXp: number;
+  totalCountries: number;
+  topCountry: {
+    code: string;
+    totalXp: number;
+    houses: number;
+  } | null;
+};
+
 const HERO_IMAGE_FALLBACK =
   process.env.NEXT_PUBLIC_LEADERBOARD_HERO_IMAGE ||
   'https://images.unsplash.com/photo-1505843267-3ff30ae28fd7?auto=format&fit=crop&w=1600&q=80';
@@ -45,7 +71,15 @@ export default function LeaderboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [totalCountriesCount, setTotalCountriesCount] = useState(0);
-  const [activeHousesCount, setActiveHousesCount] = useState(0);
+  const [houseLeaderboard, setHouseLeaderboard] = useState<HouseLeaderboardEntry[]>([]);
+  const [houseSummary, setHouseSummary] = useState<HousesSummary>({
+    totalHouses: 0,
+    activeHouses: 0,
+    totalMembers: 0,
+    totalXp: 0,
+    totalCountries: 0,
+    topCountry: null,
+  });
   const mediaLibrary = useMediaLibrary();
   const isSuperAdmin = user?.role === 'Super Admin';
   const heroMedia = useManagedMediaSetting('leaderboard', {
@@ -59,7 +93,7 @@ export default function LeaderboardPage() {
         const [globalRes, countryRes, housesRes] = await Promise.all([
           fetch('/api/leaderboard?type=global&limit=100'),
           fetch('/api/leaderboard?type=country&limit=5000'),
-          fetch('/api/sports/houses'),
+          fetch('/api/leaderboard/houses?limit=200'),
         ]);
 
         const [globalJson, countryJson, housesJson] = await Promise.all([
@@ -109,13 +143,35 @@ export default function LeaderboardPage() {
           setError(countryJson.error || 'Failed to load country leaderboard');
         }
 
-        if (housesJson.success && Array.isArray(housesJson.houses)) {
-          const activeCount = housesJson.houses.filter(
-            (house: { status?: string | null }) => house?.status === 'ACTIVE'
-          ).length;
-          setActiveHousesCount(activeCount);
+        if (housesJson.success) {
+          const leaderboardEntries: HouseLeaderboardEntry[] = Array.isArray(housesJson.leaderboard)
+            ? housesJson.leaderboard
+            : [];
+          setHouseLeaderboard(leaderboardEntries);
+
+          const summaryPayload = (housesJson.summary ?? {}) as Partial<HousesSummary>;
+          setHouseSummary({
+            totalHouses: summaryPayload.totalHouses ?? leaderboardEntries.length,
+            activeHouses:
+              summaryPayload.activeHouses ??
+              leaderboardEntries.filter((entry) => entry.status === 'ACTIVE').length,
+            totalMembers:
+              summaryPayload.totalMembers ??
+              leaderboardEntries.reduce((acc, entry) => acc + (entry.memberCount ?? 0), 0),
+            totalXp:
+              summaryPayload.totalXp ??
+              leaderboardEntries.reduce((acc, entry) => acc + (entry.totalXp ?? 0), 0),
+            totalCountries:
+              summaryPayload.totalCountries ??
+              new Set(
+                leaderboardEntries
+                  .map((entry) => entry.countryCode)
+                  .filter((code): code is string => !!code),
+              ).size,
+            topCountry: summaryPayload.topCountry ?? null,
+          });
         } else {
-          console.error('Error loading houses stats for leaderboard:', housesJson);
+          console.error('Error loading houses leaderboard data:', housesJson);
           setError((prev) => prev ?? 'Failed to load houses data');
         }
       } catch (err) {
@@ -135,6 +191,11 @@ export default function LeaderboardPage() {
     mediaLibrary.closeLibrary();
   };
 
+  const formatNumber = (value: number | null | undefined) => {
+    const safeValue = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    return safeValue.toLocaleString();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
@@ -152,6 +213,16 @@ export default function LeaderboardPage() {
 
   const topThree = globalLeaders.slice(0, 3);
   const restOfGlobal = globalLeaders.slice(3);
+  const topMember = globalLeaders[0] ?? null;
+  const topHouse = houseLeaderboard[0] ?? null;
+  const topCountryFromHouses = houseSummary.topCountry
+    ? {
+        code: houseSummary.topCountry.code,
+        name: getCountryName(houseSummary.topCountry.code) || houseSummary.topCountry.code,
+        totalXp: houseSummary.topCountry.totalXp,
+      }
+    : null;
+
   const heroHighlights = [
     {
       key: 'global',
@@ -174,8 +245,34 @@ export default function LeaderboardPage() {
     {
       key: 'houses',
       label: t('leaderboard.housesRankings'),
-      description: t('leaderboard.housesRankingsDesc'),
-      value: activeHousesCount.toLocaleString(),
+      description: `${t('leaderboard.housesRankingsDesc')} · ${formatNumber(houseSummary.totalXp)} XP`,
+      value: formatNumber(houseSummary.activeHouses),
+    },
+  ];
+
+  const highlightTiles = [
+    {
+      key: 'member',
+      label: 'Top Member',
+      value: topMember ? topMember.username : '—',
+      description: topMember ? `${formatNumber(topMember.xp_total)} XP` : 'No data available',
+      caption: topMember?.country || t('leaderboard.globalRankings'),
+    },
+    {
+      key: 'country',
+      label: 'Top Country',
+      value: topCountryFromHouses ? topCountryFromHouses.name : '—',
+      description: topCountryFromHouses
+        ? `${formatNumber(topCountryFromHouses.totalXp)} XP acumulado`
+        : t('leaderboard.noCountryRankings'),
+      caption: topCountryFromHouses ? topCountryFromHouses.code : '',
+    },
+    {
+      key: 'house',
+      label: 'Top House',
+      value: topHouse ? topHouse.name : '—',
+      description: topHouse ? `${formatNumber(topHouse.totalXp)} XP` : t('leaderboard.housesRankingsDesc'),
+      caption: topHouse?.sportName || topHouse?.sportCode || '',
     },
   ];
   return (
@@ -245,6 +342,21 @@ export default function LeaderboardPage() {
                   )}
                 </div>
               </div>
+            </section>
+            <section className="grid gap-4 md:grid-cols-3">
+              {highlightTiles.map((tile) => (
+                <div
+                  key={tile.key}
+                  className="rounded-2xl border border-white/10 bg-[#04131b] p-5 shadow-lg shadow-black/40"
+                >
+                  <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">{tile.label}</p>
+                  <p className="mt-3 text-2xl font-semibold text-[#5af3ff]">{tile.value}</p>
+                  <p className="text-sm text-slate-300">{tile.description}</p>
+                  {tile.caption && (
+                    <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">{tile.caption}</p>
+                  )}
+                </div>
+              ))}
             </section>
 
             {isSuperAdmin && (
