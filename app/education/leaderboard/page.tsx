@@ -196,7 +196,7 @@ export default function LeaderboardPage() {
                     <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                       {t('nav.leaderboard')}
                     </p>
-                    <h1 className="text-3xl font-semibold text-white md:text-4xl">
+                    <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
                       {t('leaderboard.title')}
                     </h1>
                     <p className="text-sm text-slate-300 md:text-base">
@@ -212,10 +212,10 @@ export default function LeaderboardPage() {
                         key={highlight.key}
                         className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-4 shadow-lg shadow-black/40"
                       >
-                        <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
                           {highlight.label}
                         </p>
-                        <p className="text-3xl font-semibold text-white">{highlight.value}</p>
+                        <p className="text-3xl font-semibold text-[#5af3ff]">{highlight.value}</p>
                         <p className="text-sm text-slate-300">{highlight.description}</p>
                       </div>
                     ))}
