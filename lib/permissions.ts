@@ -296,13 +296,40 @@ export async function updateUserPermissions(
       upsertPayload.can_manage_xp = existingRow?.can_manage_xp ?? false;
     }
 
-    const { error } = await supabaseAdmin
-      .from('admin_permissions')
-      .upsert(upsertPayload, { onConflict: 'user_id' });
+    if (existingRow) {
+      const updatePayload: Record<string, any> = {
+        permissions: permissionsArray,
+      };
+      if (xpOverride !== undefined) {
+        updatePayload.can_manage_xp = xpOverride;
+      }
 
-    if (error) {
-      console.error('Error updating admin_permissions:', error);
-      return { success: false, error: 'Failed to update permissions.' };
+      const { error } = await supabaseAdmin
+        .from('admin_permissions')
+        .update(updatePayload)
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error updating admin_permissions:', error);
+        return { success: false, error: 'Failed to update permissions.' };
+      }
+    } else {
+      const insertPayload: Record<string, any> = {
+        user_id: userId,
+        permissions: permissionsArray,
+      };
+      if (xpOverride !== undefined) {
+        insertPayload.can_manage_xp = xpOverride;
+      }
+
+      const { error } = await supabaseAdmin
+        .from('admin_permissions')
+        .insert(insertPayload);
+
+      if (error) {
+        console.error('Error inserting admin_permissions:', error);
+        return { success: false, error: 'Failed to update permissions.' };
+      }
     }
 
     return { success: true };
