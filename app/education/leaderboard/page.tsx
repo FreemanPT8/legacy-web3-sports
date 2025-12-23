@@ -321,6 +321,8 @@ export default function LeaderboardPage() {
       flag: getFlagEmoji(countryCode),
       value: member.xp_total ?? 0,
       extra: '',
+      highlight:
+        user && ((member.id && member.id === user.id) || member.username === user.username),
     };
   });
 
@@ -369,15 +371,16 @@ export default function LeaderboardPage() {
     },
   ];
 
-  type RankingEntry = {
-    key: string;
-    rank: number;
-    title: string;
-    subtitle?: string;
-    valueLabel: string;
-    valueClass?: string;
-    extra?: string;
-  };
+type RankingEntry = {
+  key: string;
+  rank: number;
+  title: string;
+  subtitle?: string;
+  valueLabel: string;
+  valueClass?: string;
+  extra?: string;
+  highlight?: boolean;
+};
 
   const RankingCard = ({
     title,
@@ -406,14 +409,24 @@ export default function LeaderboardPage() {
             {entries.map((entry) => (
               <div
                 key={entry.key}
-                className="flex items-center justify-between rounded-xl border border-white/10 bg-[#04131b] p-4"
+                className={`flex items-center justify-between rounded-xl border p-4 transition
+                  ${entry.highlight
+                    ? 'border-cyan-400/70 bg-cyan-500/10 shadow-[0_0_20px_rgba(0,255,255,0.25)]'
+                    : 'border-white/10 bg-[#04131b]'}`}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full border border-white/20 text-xs font-semibold text-[#fdd87c] flex items-center justify-center">
                     #{entry.rank}
                   </div>
                   <div>
-                    <p className="font-semibold text-white">{entry.title}</p>
+                    <p className="font-semibold text-white flex items-center gap-2">
+                      {entry.title}
+                      {entry.highlight && (
+                        <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                          {t('leaderboard.you')}
+                        </span>
+                      )}
+                    </p>
                     {entry.subtitle && (
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{entry.subtitle}</p>
                     )}
@@ -447,6 +460,8 @@ export default function LeaderboardPage() {
     title: userEntry.username,
     subtitle: formatSubtitle(normalizeCountryCode(userEntry.country), userEntry.country || t('leaderboard.globalRankings')),
     valueLabel: `${formatNumber(userEntry.xp_total ?? 0)} XP`,
+    highlight:
+      user && ((userEntry.id && userEntry.id === user.id) || userEntry.username === user.username),
   }));
 
   const houseEntries: RankingEntry[] = houseLeaderboard.map((house, index) => ({
@@ -551,7 +566,12 @@ export default function LeaderboardPage() {
                       section.items.map((item, index) => (
                         <div
                           key={item.key ?? `${section.key}-${index}`}
-                          className="flex items-center justify-between rounded-xl border border-white/10 bg-[#000c12]/60 p-3"
+                          className={`flex items-center justify-between rounded-xl border p-3 transition
+                            ${
+                              item.highlight
+                                ? 'border-cyan-400/70 bg-cyan-500/10 text-white shadow-[0_0_15px_rgba(0,255,255,0.25)]'
+                                : 'border-white/10 bg-[#000c12]/60'
+                            }`}
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full border border-white/20 text-xs font-semibold text-[#fdd87c] flex items-center justify-center">
@@ -562,7 +582,14 @@ export default function LeaderboardPage() {
                                 {item.flag}
                               </span>
                               <div>
-                                <p className="font-semibold text-white">{item.name}</p>
+                                <p className="font-semibold text-white flex items-center gap-2">
+                                  {item.name}
+                                  {item.highlight && (
+                                    <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                                      {t('leaderboard.you')}
+                                    </span>
+                                  )}
+                                </p>
                                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                                   {item.subtitle}
                                 </p>
