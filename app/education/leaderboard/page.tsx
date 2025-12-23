@@ -472,50 +472,6 @@ export default function LeaderboardPage() {
               </div>
             )}
 
-            <div className="grid md:grid-cols-3 gap-6">
-              <Card className="border border-white/10 bg-[#05212b]">
-                <CardHeader className="text-center pb-3">
-                  <Crown className="h-12 w-12 text-cyan-300 mx-auto mb-2" />
-                  <CardTitle className="text-2xl">{t('leaderboard.rank1')}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-xl font-bold mb-1">{topThree[0]?.username || 'N/A'}</p>
-                  <p className="text-sm text-slate-300 mb-2">{topThree[0]?.country || 'N/A'}</p>
-                  <Badge className="bg-cyan-500 text-black text-lg px-4 py-1">
-                    {topThree[0]?.xp_total || 0} XP
-                  </Badge>
-                </CardContent>
-              </Card>
-
-              <Card className="border border-white/10 bg-[#05212b]">
-                <CardHeader className="text-center pb-3">
-                  <Medal className="h-12 w-12 text-slate-300 mx-auto mb-2" />
-                  <CardTitle className="text-2xl">{t('leaderboard.rank2')}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-xl font-bold mb-1">{topThree[1]?.username || 'N/A'}</p>
-                  <p className="text-sm text-slate-300 mb-2">{topThree[1]?.country || 'N/A'}</p>
-                  <Badge variant="secondary" className="text-lg px-4 py-1">
-                    {topThree[1]?.xp_total || 0} XP
-                  </Badge>
-                </CardContent>
-              </Card>
-
-              <Card className="border border-white/10 bg-[#05212b]">
-                <CardHeader className="text-center pb-3">
-                  <Medal className="h-12 w-12 text-slate-300 mx-auto mb-2" />
-                  <CardTitle className="text-2xl">{t('leaderboard.rank3')}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-xl font-bold mb-1">{topThree[2]?.username || 'N/A'}</p>
-                  <p className="text-sm text-slate-300 mb-2">{topThree[2]?.country || 'N/A'}</p>
-                  <Badge variant="secondary" className="text-lg px-4 py-1">
-                    {topThree[2]?.xp_total || 0} XP
-                  </Badge>
-                </CardContent>
-              </Card>
-            </div>
-
             <Tabs defaultValue="individual" className="w-full">
               <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
                 <TabsTrigger value="individual">{t('leaderboard.individual')}</TabsTrigger>
