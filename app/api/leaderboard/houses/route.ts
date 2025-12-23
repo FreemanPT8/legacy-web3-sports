@@ -174,23 +174,23 @@ export async function GET(request: NextRequest) {
     }
 
     const totalsMap = new Map<string, HouseTotalsRow>();
-    (totalsData ?? []).forEach((row) => {
-      totalsMap.set(row.house_id, row as HouseTotalsRow);
+    (totalsData ?? []).forEach((row: HouseTotalsRow) => {
+      totalsMap.set(row.house_id, row);
     });
 
     const sportsMap = new Map<string, SportRow>();
-    (sportsData ?? []).forEach((sport) => {
-      sportsMap.set(sport.id, sport as SportRow);
+    (sportsData ?? []).forEach((sport: SportRow) => {
+      sportsMap.set(sport.id, sport);
     });
 
     const headCountMap = new Map<string, number>();
-    (headRows ?? []).forEach((row) => {
+    (headRows ?? []).forEach((row: HouseRoleRow) => {
       const current = headCountMap.get(row.house_id) ?? 0;
       headCountMap.set(row.house_id, current + 1);
     });
 
     const moderatorCountMap = new Map<string, number>();
-    (moderatorRows ?? []).forEach((row) => {
+    (moderatorRows ?? []).forEach((row: HouseRoleRow) => {
       const current = moderatorCountMap.get(row.house_id) ?? 0;
       moderatorCountMap.set(row.house_id, current + 1);
     });

@@ -1,8 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const client = supabaseAdmin ?? supabase;
 
 const staticRoutes = [
   '/',
@@ -21,6 +19,45 @@ function mapDate(row: DbRow) {
   return raw ? new Date(raw) : new Date();
 }
 
+type SupabaseModule = typeof import('@supabase/supabase-js/dist/module/index.js');
+type SupabaseClient = ReturnType<SupabaseModule['createClient']>;
+
+let cachedClient: SupabaseClient | null = null;
+
+async function getServerSupabaseClient(): Promise<SupabaseClient | null> {
+  if (cachedClient) return cachedClient;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || (!serviceRole && !anonKey)) {
+    console.warn(
+      'Sitemap: missing Supabase configuration, only static routes will be included.',
+    );
+    return null;
+  }
+
+  const { createClient } = await import(
+    '@supabase/supabase-js/dist/module/index.js'
+  );
+
+  cachedClient = createClient(
+    supabaseUrl,
+    serviceRole ?? anonKey!,
+    serviceRole
+      ? {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      : undefined,
+  );
+
+  return cachedClient;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
@@ -30,6 +67,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly',
     priority: path === '/' ? 1.0 : 0.6,
   }));
+
+  const client = await getServerSupabaseClient();
+  if (!client) {
+    return entries;
+  }
 
   try {
     // Blog posts publicados
