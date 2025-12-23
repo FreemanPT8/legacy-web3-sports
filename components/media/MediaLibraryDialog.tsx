@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState, useId } from 'react';
+import { useMemo, useState, useId, useEffect } from 'react';
 import { Upload, Link2, Search, RefreshCw, Loader2, ImageIcon } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -38,6 +38,8 @@ const MEDIA_TYPES = [
   { value: 'other', label: 'Other' },
 ] as const;
 
+const LIBRARY_PAGE_SIZE = 50;
+
 export function MediaLibraryDialog({
   open,
   onOpenChange,
@@ -58,7 +60,21 @@ export function MediaLibraryDialog({
   const [urlType, setUrlType] = useState<MediaAsset['type']>('image');
   const descriptionId = useId();
 
+  const [page, setPage] = useState(1);
   const mediaItems = useMemo(() => library.items, [library.items]);
+  const totalPages = Math.max(1, Math.ceil(mediaItems.length / LIBRARY_PAGE_SIZE));
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [totalPages, page]);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * LIBRARY_PAGE_SIZE;
+    return mediaItems.slice(start, start + LIBRARY_PAGE_SIZE);
+  }, [mediaItems, page]);
+
   const recentUploads = useMemo(() => library.allItems.slice(0, 4), [library.allItems]);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -217,7 +233,7 @@ export function MediaLibraryDialog({
               </p>
             )}
 
-            <ScrollArea className="max-h-[420px] rounded-2xl border border-white/10 bg-[#03121a] p-4">
+            <ScrollArea className="max-h-[520px] rounded-2xl border border-white/10 bg-[#03121a] p-4">
               {library.loading ? (
                 <div className="flex items-center justify-center py-10 text-sm text-slate-300">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -229,7 +245,7 @@ export function MediaLibraryDialog({
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {mediaItems.map((asset) => (
+                  {paginatedItems.map((asset) => (
                     <button
                       key={asset.id}
                       type="button"
@@ -280,6 +296,33 @@ export function MediaLibraryDialog({
                 </div>
               )}
             </ScrollArea>
+            {mediaItems.length > LIBRARY_PAGE_SIZE && (
+              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#03121a] px-4 py-2 text-sm text-slate-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={secondaryButtonClasses}
+                  disabled={page === 1}
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                >
+                  Previous
+                </Button>
+                <p>
+                  Page {page} of {totalPages}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={secondaryButtonClasses}
+                  disabled={page === totalPages}
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
             {recentUploads.length > 0 && (
               <div>
                 <h3 className="mt-4 text-xs font-semibold uppercase text-slate-400">
