@@ -473,9 +473,10 @@ export default function LeaderboardPage() {
             )}
 
             <Tabs defaultValue="individual" className="w-full">
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
+              <TabsList className="grid w-full max-w-xl mx-auto grid-cols-4">
                 <TabsTrigger value="individual">{t('leaderboard.individual')}</TabsTrigger>
                 <TabsTrigger value="country">{t('leaderboard.country')}</TabsTrigger>
+                <TabsTrigger value="houses">{t('leaderboard.housesRankings')}</TabsTrigger>
                 <TabsTrigger value="national">{t('leaderboard.national')}</TabsTrigger>
               </TabsList>
 
@@ -567,6 +568,57 @@ export default function LeaderboardPage() {
                       <p className="text-lg font-semibold mb-2">{t('leaderboard.noNationalActive')}</p>
                       <p className="text-slate-300">{t('leaderboard.noNationalActiveDesc')}</p>
                     </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="houses" className="mt-6">
+                <Card className="border border-white/10 bg-[#000c12]">
+                  <CardHeader>
+                    <CardTitle className="text-white text-lg">{t('leaderboard.housesRankings')}</CardTitle>
+                    <CardDescription className="text-slate-300">
+                      {t('leaderboard.housesRankingsDesc')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {houseLeaderboard.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Trophy className="h-16 w-16 text-amber-300 mx-auto mb-4" />
+                        <p className="text-slate-300">{t('leaderboard.housesRankingsDesc')}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {houseLeaderboard.map((house, index) => (
+                          <div
+                            key={house.houseId}
+                            className="flex items-center justify-between rounded-xl border border-white/10 bg-[#04131b] p-4"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full border border-white/15 text-xs font-semibold text-[#fdd87c] flex items-center justify-center">
+                                #{index + 1}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-white">
+                                  {stripCountryFromName(house.name, house.countryCode)}
+                                </p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 flex items-center gap-1">
+                                  <span aria-hidden>{getFlagEmoji(house.countryCode)}</span>
+                                  {house.countryCode ? getCountryName(house.countryCode) : t('leaderboard.countryRankings')}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-[#5af3ff]">
+                                {formatNumber(house.totalXp ?? 0)} XP
+                              </p>
+                              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
+                                {house.sportName || house.sportCode || ''}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
