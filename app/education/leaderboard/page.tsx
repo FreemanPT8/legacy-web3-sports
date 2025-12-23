@@ -330,7 +330,24 @@ export default function LeaderboardPage() {
     },
   ];
 
-  const topMemberItems = topThree.map((member) => {
+  type HighlightItem = {
+    key: string;
+    name: string;
+    subtitle: string;
+    flag: string;
+    value: number;
+    extra?: string;
+    highlight?: boolean;
+  };
+
+  type HighlightSection = {
+    key: string;
+    label: string;
+    items: HighlightItem[];
+    emptyLabel: string;
+  };
+
+  const topMemberItems: HighlightItem[] = topThree.map((member) => {
     const countryCode = normalizeCountryCode(member.country);
     return {
       key: member.id,
@@ -343,7 +360,7 @@ export default function LeaderboardPage() {
     };
   });
 
-  const topCountryItems = [...countryLeaders]
+  const topCountryItems: HighlightItem[] = [...countryLeaders]
     .sort((a, b) => b.memberCount - a.memberCount || (b.totalXP ?? 0) - (a.totalXP ?? 0))
     .slice(0, 3)
     .map((country) => ({
@@ -355,7 +372,7 @@ export default function LeaderboardPage() {
       extra: '',
     }));
 
-  const topHouseItems = [...houseLeaderboard]
+  const topHouseItems: HighlightItem[] = [...houseLeaderboard]
     .sort((a, b) => (b.totalXp ?? 0) - (a.totalXp ?? 0))
     .slice(0, 3)
     .map((house) => ({
@@ -367,7 +384,7 @@ export default function LeaderboardPage() {
       extra: house.sportName || house.sportCode || '',
     }));
 
-  const highlightSections = [
+  const highlightSections: HighlightSection[] = [
     {
       key: 'members',
       label: t('leaderboard.topMembers'),
