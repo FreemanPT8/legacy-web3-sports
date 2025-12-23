@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ArrowRight, CheckCircle } from 'lucide-react';
+import { type LevelCourseSummary } from '@/lib/education/unlockEngine';
 
 type UnlockStateResponse = {
   success: boolean;
