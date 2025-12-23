@@ -15,6 +15,9 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   output: 'standalone',
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js', '@supabase/realtime-js'],
+  },
 
   async headers() {
     return [
