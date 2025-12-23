@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
@@ -91,10 +92,11 @@ const normalizeCountryCode = (value?: string | null) => {
 
 export default function LeaderboardPage() {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [globalLeaders, setGlobalLeaders] = useState<UserEntry[]>([]);
   const [countryLeaders, setCountryLeaders] = useState<CountryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [totalCountriesCount, setTotalCountriesCount] = useState(0);
@@ -114,8 +116,17 @@ export default function LeaderboardPage() {
   });
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+
     const fetchLeaderboard = async () => {
-      setLoading(true);
+      setLeaderboardLoading(true);
+      setError(null);
       try {
         const [globalRes, countryRes, housesRes] = await Promise.all([
           fetch('/api/leaderboard?type=global&limit=100'),
@@ -138,7 +149,7 @@ export default function LeaderboardPage() {
               : leaderboard.length;
           setTotalUsersCount(totalUsersValue);
         } else {
-          setError(globalJson.error || 'Failed to load leaderboard');
+          setError(globalJson.error || 'leaderboard.errorLoadingGeneral');
         }
 
         if (countryJson.success) {
@@ -164,10 +175,11 @@ export default function LeaderboardPage() {
               ? countryJson.totalCountries
               : normalized.length;
           setTotalCountriesCount(totalCountriesValue);
-        }
-
-        if (!countryJson.success) {
-          setError(countryJson.error || 'Failed to load country leaderboard');
+        } else {
+          setError(
+            (prev) =>
+              prev ?? (countryJson.error || 'leaderboard.errorLoadingCountry'),
+          );
         }
 
         if (housesJson.success) {
@@ -199,18 +211,18 @@ export default function LeaderboardPage() {
           });
         } else {
           console.error('Error loading houses leaderboard data:', housesJson);
-          setError((prev) => prev ?? 'Failed to load houses data');
+          setError((prev) => prev ?? 'leaderboard.errorLoadingHouses');
         }
       } catch (err) {
         console.error('Failed to fetch leaderboard:', err);
-        setError('Failed to load leaderboard');
+        setError('leaderboard.errorLoadingGeneral');
       } finally {
-        setLoading(false);
+        setLeaderboardLoading(false);
       }
     };
 
     fetchLeaderboard();
-  }, []);
+  }, [user]);
 
   const handleHeroImageSelect = async (asset: MediaAsset) => {
     if (!asset?.url) return;
@@ -223,7 +235,30 @@ export default function LeaderboardPage() {
     return safeValue.toLocaleString();
   };
 
-  if (loading) {
+  const resolvedError = error
+    ? error.startsWith('leaderboard.')
+      ? t(error)
+      : error
+    : null;
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto" />
+            <p className="mt-4 text-sm text-slate-300">
+              {authLoading ? t('leaderboard.loading') : t('leaderboard.loginRequired')}
+            </p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (leaderboardLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
@@ -316,19 +351,19 @@ export default function LeaderboardPage() {
   const highlightSections = [
     {
       key: 'members',
-      label: 'Top Members',
+      label: t('leaderboard.topMembers'),
       items: topMemberItems,
       emptyLabel: t('leaderboard.noRankings'),
     },
     {
       key: 'countries',
-      label: 'Top Countries',
+      label: t('leaderboard.topCountries'),
       items: topCountryItems,
       emptyLabel: t('leaderboard.noCountryRankings'),
     },
     {
       key: 'houses',
-      label: 'Top Houses',
+      label: t('leaderboard.topHouses'),
       items: topHouseItems,
       emptyLabel: t('leaderboard.housesRankingsDesc'),
     },
@@ -478,9 +513,9 @@ export default function LeaderboardPage() {
                   </div>
                 </div>
                 <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
-                    <Image
+                  <Image
                     src={heroMedia.assetUrl || HERO_IMAGE_FALLBACK}
-                    alt="Global leaderboard spotlight"
+                    alt={t('leaderboard.heroAlt')}
                     fill
                     priority
                     className="object-cover opacity-90"
@@ -495,7 +530,7 @@ export default function LeaderboardPage() {
                         onClick={() => mediaLibrary.openLibrary()}
                         disabled={heroMedia.saving}
                       >
-                        {heroMedia.saving ? 'Saving...' : 'Edit hero image'}
+                        {heroMedia.saving ? t('leaderboard.saving') : t('leaderboard.editHeroImage')}
                       </Button>
                     </div>
                   )}
@@ -560,23 +595,23 @@ export default function LeaderboardPage() {
                 }
                 library={mediaLibrary}
                 onSelect={handleHeroImageSelect}
-                title="Select leaderboard hero image"
-                description="Choose an image from the media library or upload a new one."
+                title={t('leaderboard.heroDialogTitle')}
+                description={t('leaderboard.heroDialogDescription')}
                 allowUrl
               />
             )}
 
-            {error && (
+            {resolvedError && (
               <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                {error}
+                {resolvedError}
               </div>
             )}
 
             <Tabs defaultValue="individual" className="w-full">
               <TabsList className="grid w-full max-w-xl mx-auto grid-cols-4">
                 <TabsTrigger value="individual">{t('leaderboard.individual')}</TabsTrigger>
-                <TabsTrigger value="houses">Casas de Desporto</TabsTrigger>
-                <TabsTrigger value="country">País</TabsTrigger>
+                <TabsTrigger value="houses">{t('leaderboard.housesTab')}</TabsTrigger>
+                <TabsTrigger value="country">{t('leaderboard.country')}</TabsTrigger>
                 <TabsTrigger value="national">{t('leaderboard.national')}</TabsTrigger>
               </TabsList>
 
@@ -610,7 +645,7 @@ export default function LeaderboardPage() {
               <TabsContent value="national" className="mt-6">
                 <RankingCard
                   title={t('leaderboard.nationalCompetitions')}
-                  description={`${t('leaderboard.nationalCompetitionsDesc')} — abre quando cada país tiver 50 utilizadores com XP.`}
+                  description={t('leaderboard.nationalCompetitionsDesc')}
                   entries={nationalEntries}
                   emptyLabel={t('leaderboard.noNationalActive')}
                 />
