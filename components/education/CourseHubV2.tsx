@@ -150,7 +150,7 @@ export function CourseHubV2() {
         const isCompleted = level.isCompleted;
         const isExpanded = expandedLevel === level.slug;
         const statusLabel = isCompleted
-          ? 'Conclu?do'
+          ? 'Concluído'
           : isLocked
             ? 'Bloqueado'
             : 'Desbloqueado';
@@ -202,7 +202,7 @@ export function CourseHubV2() {
                     isExpanded ? 'rotate-90' : 'rotate-0',
                   )}
                 >
-                  ?
+                  →
                 </span>
               </div>
 
@@ -217,7 +217,7 @@ export function CourseHubV2() {
                       'h-2 rounded-full transition-all',
                       styles.bg.replace('bg-', 'bg-'),
                     )}
-                    style={{ width: ${Math.min(level.progressPercent, 100)}% }}
+                    style={{ width: `${Math.min(level.progressPercent, 100)}%` }}
                   />
                 </div>
               </div>
@@ -227,14 +227,14 @@ export function CourseHubV2() {
                   <div className="flex items-center gap-2 text-slate-300">
                     <span className="text-slate-200">{LOCK_ICON}</span>
                     <p className="text-xs text-slate-300">
-                      {level.lockedReason || 'Completa o n?vel anterior.'}
+                      {level.lockedReason || 'Completa o nível anterior.'}
                     </p>
                   </div>
                 ) : (
                   <span className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition hover:border-white/30 hover:bg-white/10">
                     Ver cursos
                     <span className="inline-block transition group-hover:translate-x-1">
-                      ?
+                      →
                     </span>
                   </span>
                 )}
@@ -251,15 +251,15 @@ export function CourseHubV2() {
               <div className="mt-4 rounded-3xl border border-white/10 bg-black/40 p-4 text-sm text-white">
                 {courses.length === 0 ? (
                   <div className="rounded-2xl border border-white/5 bg-white/5 p-4 text-center text-slate-300">
-                    Ainda n?o existem cursos atribu?dos a este n?vel.
+                    Ainda não existem cursos atribuídos a este nível.
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {courses.map((course) => {
                       const isCourseLocked = isLocked;
                       const coursePath = course.slug
-                        ? /education/courses/
-                        : /education/courses/;
+                        ? `/education/courses/${course.slug}`
+                        : `/education/courses/${course.id}`;
 
                       return (
                         <div
@@ -276,7 +276,7 @@ export function CourseHubV2() {
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300">
                               {course.isRequired && (
                                 <span className="rounded-full border border-slate-500/70 px-2 py-0.5">
-                                  Obrigat?rio
+                                  Obrigatório
                                 </span>
                               )}
                               {course.isStartCourse && (
@@ -296,7 +296,7 @@ export function CourseHubV2() {
                           {isCourseLocked ? (
                             <div className="flex items-center gap-2 text-xs text-slate-300">
                               {LOCK_ICON}
-                              <span>N?vel bloqueado</span>
+                              <span>Nível bloqueado</span>
                             </div>
                           ) : (
                             <Link
