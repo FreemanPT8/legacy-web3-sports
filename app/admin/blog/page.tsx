@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { SafeImage } from '@/app/components/SafeImage';
 
 type BlogPost = {
@@ -80,10 +81,461 @@ function resolveLocalizedText(value: any): string {
   return String(value);
 }
 
+type SupportedCopyLang = 'en' | 'pt' | 'es';
+
+type BlogCopy = {
+  locale: string;
+  loadingAdmin: string;
+  hero: {
+    badge: string;
+    title: string;
+    description: string;
+    xpLabel: string;
+    xpDescription: string;
+    trendLabel: string;
+    trendDescription: string;
+    focusButtonActive: string;
+    focusButtonInactive: string;
+  };
+  stats: {
+    total: string;
+    published: string;
+    draft: string;
+    xp: string;
+    views: string;
+  };
+  topLists: {
+    viewsTitle: string;
+    viewsEmpty: string;
+    xpTitle: string;
+    xpEmpty: string;
+    viewsSuffix: string;
+    xpSuffix: string;
+  };
+  filters: {
+    title: string;
+    description: string;
+    statusLabel: string;
+    categoryLabel: string;
+    authorLabel: string;
+    orderLabel: string;
+    categoryPlaceholder: string;
+    authorPlaceholder: string;
+    newPost: string;
+    statusOptions: {
+      all: string;
+      published: string;
+      draft: string;
+    };
+    sortOptions: {
+      recent: string;
+      views: string;
+      xp: string;
+    };
+  };
+  actions: {
+    badge: string;
+    title: string;
+    description: string;
+    publishButton: string;
+    saveDraftButton: string;
+    reviewButton: string;
+    topViewsCardTitle: string;
+    topViewsEmpty: string;
+    topViewsButton: string;
+    topXpCardTitle: string;
+    topXpEmpty: string;
+    topXpButton: string;
+    draftSavedTitle: string;
+    draftSavedDescription: string;
+  };
+  list: {
+    loading: string;
+    emptyTitle: string;
+    emptySubtitle: string;
+    emptyButton: string;
+  };
+  table: {
+    listTitle: string;
+    untitledPost: string;
+    noExcerpt: string;
+    viewsSuffix: string;
+    viewButton: string;
+    editButton: string;
+    badges: {
+      creator: string;
+      membersOnly: string;
+      xpLabel: string;
+      xpCreatorLabel: string;
+    };
+    statusLabels: {
+      published: string;
+      draft: string;
+    };
+  };
+  prompts: {
+    deleteConfirm: string;
+  };
+  toasts: {
+    loadPostsErrorTitle: string;
+    loadPostsErrorDescription: string;
+    networkErrorTitle: string;
+    networkErrorDescription: string;
+    deleteErrorTitle: string;
+    deleteErrorDescription: string;
+    deleteSuccessTitle: string;
+    deleteSuccessDescription: string;
+    deleteNetworkErrorDescription: string;
+  };
+};
+
+const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
+  en: {
+    locale: 'en-US',
+    loadingAdmin: 'Loading blog admin...',
+    hero: {
+      badge: 'LEGACY ADMIN - BLOG',
+      title: 'Blog Management',
+      description:
+        'Centralized management of posts, XP and blog analytics. Filter, review and keep the LEGACY story updated.',
+      xpLabel: 'Weekly XP goal',
+      xpDescription: 'Goal: publish 3+ articles awarding at least 200 XP each.',
+      trendLabel: 'Trend monitored',
+      trendDescription: 'in the last 7 days',
+      focusButtonActive: 'Focus mode on',
+      focusButtonInactive: 'Enable focus mode',
+    },
+    stats: {
+      total: 'Total posts',
+      published: 'Published',
+      draft: 'Draft',
+      xp: 'XP distributed',
+      views: 'Views (total)',
+    },
+    topLists: {
+      viewsTitle: 'Top posts by views',
+      viewsEmpty: 'No views yet.',
+      xpTitle: 'Top posts by XP',
+      xpEmpty: 'No XP distributed yet.',
+      viewsSuffix: 'views',
+      xpSuffix: 'XP',
+    },
+    filters: {
+      title: 'Filters',
+      description: 'Combine status, category, author and ordering.',
+      statusLabel: 'Status',
+      categoryLabel: 'Category',
+      authorLabel: 'Author',
+      orderLabel: 'Order by',
+      categoryPlaceholder: 'e.g. News',
+      authorPlaceholder: 'name or username',
+      newPost: 'New Post',
+      statusOptions: {
+        all: 'All',
+        published: 'Published',
+        draft: 'Draft',
+      },
+      sortOptions: {
+        recent: 'Most recent',
+        views: 'Views',
+        xp: 'XP distributed',
+      },
+    },
+    actions: {
+      badge: 'New',
+      title: 'Priority content actions',
+      description:
+        'Publish, prepare drafts or trigger reviews while keeping XP impact in sight.',
+      publishButton: 'Publish now (earn XP)',
+      saveDraftButton: 'Save draft',
+      reviewButton: 'Review performance',
+      topViewsCardTitle: 'Top post by views',
+      topViewsEmpty: 'No posts with tracked views yet.',
+      topViewsButton: 'Open post',
+      topXpCardTitle: 'XP impact',
+      topXpEmpty: 'No posts with distributed XP yet.',
+      topXpButton: 'View',
+      draftSavedTitle: 'Draft saved',
+      draftSavedDescription:
+        'The draft was stored temporarily so you can continue later.',
+    },
+    list: {
+      loading: 'Loading posts...',
+      emptyTitle: 'No blog posts found',
+      emptySubtitle:
+        'Adjust filters or create your first blog post to get started.',
+      emptyButton: 'Create Post',
+    },
+    table: {
+      listTitle: 'All posts ({{count}})',
+      untitledPost: 'Untitled post',
+      noExcerpt: 'No excerpt',
+      viewsSuffix: 'views',
+      viewButton: 'View',
+      editButton: 'Edit',
+      badges: {
+        creator: 'Creator',
+        membersOnly: 'Members only',
+        xpLabel: 'XP:',
+        xpCreatorLabel: 'Creator XP:',
+      },
+      statusLabels: {
+        published: 'published',
+        draft: 'draft',
+      },
+    },
+    prompts: {
+      deleteConfirm:
+        'Are you sure you want to permanently delete this blog post?',
+    },
+    toasts: {
+      loadPostsErrorTitle: 'Error loading posts',
+      loadPostsErrorDescription: 'Failed to load blog posts.',
+      networkErrorTitle: 'Network error',
+      networkErrorDescription:
+        'Could not load posts. Please try again.',
+      deleteErrorTitle: 'Error deleting post',
+      deleteErrorDescription: 'Failed to delete blog post.',
+      deleteSuccessTitle: 'Post deleted',
+      deleteSuccessDescription: 'The blog post was deleted successfully.',
+      deleteNetworkErrorDescription:
+        'Could not delete blog post. Please try again.',
+    },
+  },
+  pt: {
+    locale: 'pt-PT',
+    loadingAdmin: 'A carregar area de blog...',
+    hero: {
+      badge: 'LEGACY ADMIN - BLOG',
+      title: 'Gestao do Blog',
+      description:
+        'Gestao centralizada de posts, XP e metricas do blog. Filtra, reve e mantem viva a narrativa LEGACY.',
+      xpLabel: 'Meta semanal de XP',
+      xpDescription: 'Meta: publicar +3 artigos com 200+ XP cada.',
+      trendLabel: 'Tendencia monitorizada',
+      trendDescription: 'nos ultimos 7 dias',
+      focusButtonActive: 'Modo foco ativo',
+      focusButtonInactive: 'Ativar modo foco',
+    },
+    stats: {
+      total: 'Total de posts',
+      published: 'Publicados',
+      draft: 'Rascunhos',
+      xp: 'XP distribuido',
+      views: 'Visualizacoes (total)',
+    },
+    topLists: {
+      viewsTitle: 'Top posts por visualizacoes',
+      viewsEmpty: 'Ainda sem visualizacoes.',
+      xpTitle: 'Top posts por XP',
+      xpEmpty: 'Ainda sem XP distribuido.',
+      viewsSuffix: 'visualizacoes',
+      xpSuffix: 'XP',
+    },
+    filters: {
+      title: 'Filtros',
+      description: 'Combina estado, categoria, autor e ordenacao.',
+      statusLabel: 'Estado',
+      categoryLabel: 'Categoria',
+      authorLabel: 'Autor',
+      orderLabel: 'Ordenar por',
+      categoryPlaceholder: 'ex: Noticias',
+      authorPlaceholder: 'nome ou username',
+      newPost: 'Novo post',
+      statusOptions: {
+        all: 'Todos',
+        published: 'Publicado',
+        draft: 'Rascunho',
+      },
+      sortOptions: {
+        recent: 'Mais recente',
+        views: 'Visualizacoes',
+        xp: 'XP distribuido',
+      },
+    },
+    actions: {
+      badge: 'Novo',
+      title: 'Acoes prioritarias de conteudo',
+      description:
+        'Publica, prepara rascunhos ou dispara revisoes mantendo o foco no impacto de XP.',
+      publishButton: 'Publicar agora (ganha XP)',
+      saveDraftButton: 'Guardar rascunho',
+      reviewButton: 'Rever desempenho',
+      topViewsCardTitle: 'Top post por visualizacoes',
+      topViewsEmpty: 'Sem posts com visualizacoes registadas.',
+      topViewsButton: 'Abrir post',
+      topXpCardTitle: 'Impacto de XP',
+      topXpEmpty: 'Ainda nao ha posts com XP distribuido.',
+      topXpButton: 'Ver',
+      draftSavedTitle: 'Rascunho guardado',
+      draftSavedDescription:
+        'O rascunho foi guardado temporariamente para continuares mais tarde.',
+    },
+    list: {
+      loading: 'A carregar posts...',
+      emptyTitle: 'Sem posts de blog',
+      emptySubtitle:
+        'Ajusta os filtros ou cria o primeiro artigo para comecar.',
+      emptyButton: 'Criar post',
+    },
+    table: {
+      listTitle: 'Todos os posts ({{count}})',
+      untitledPost: 'Post sem titulo',
+      noExcerpt: 'Sem excerto',
+      viewsSuffix: 'visualizacoes',
+      viewButton: 'Ver',
+      editButton: 'Editar',
+      badges: {
+        creator: 'Autor',
+        membersOnly: 'So para membros',
+        xpLabel: 'XP:',
+        xpCreatorLabel: 'XP do autor:',
+      },
+      statusLabels: {
+        published: 'publicado',
+        draft: 'rascunho',
+      },
+    },
+    prompts: {
+      deleteConfirm: 'Tens a certeza de que queres apagar este post do blog?',
+    },
+    toasts: {
+      loadPostsErrorTitle: 'Erro ao carregar posts',
+      loadPostsErrorDescription: 'Nao foi possivel carregar os posts do blog.',
+      networkErrorTitle: 'Erro de rede',
+      networkErrorDescription:
+        'Nao conseguimos carregar os posts. Tenta novamente.',
+      deleteErrorTitle: 'Erro ao apagar post',
+      deleteErrorDescription: 'Nao foi possivel apagar o post.',
+      deleteSuccessTitle: 'Post apagado',
+      deleteSuccessDescription: 'O post foi removido com sucesso.',
+      deleteNetworkErrorDescription:
+        'Nao foi possivel apagar o post. Tenta novamente.',
+    },
+  },
+  es: {
+    locale: 'es-ES',
+    loadingAdmin: 'Cargando administracion del blog...',
+    hero: {
+      badge: 'LEGACY ADMIN - BLOG',
+      title: 'Gestion del Blog',
+      description:
+        'Gestion centralizada de publicaciones, XP y metricas del blog. Filtra, revisa y mantiene viva la narrativa de LEGACY.',
+      xpLabel: 'Meta semanal de XP',
+      xpDescription:
+        'Meta: publicar 3+ articulos con al menos 200 XP cada uno.',
+      trendLabel: 'Tendencia monitorizada',
+      trendDescription: 'en los ultimos 7 dias',
+      focusButtonActive: 'Modo foco activo',
+      focusButtonInactive: 'Activar modo foco',
+    },
+    stats: {
+      total: 'Total de posts',
+      published: 'Publicados',
+      draft: 'Borradores',
+      xp: 'XP distribuido',
+      views: 'Visualizaciones (total)',
+    },
+    topLists: {
+      viewsTitle: 'Top posts por visualizaciones',
+      viewsEmpty: 'Aun sin visualizaciones.',
+      xpTitle: 'Top posts por XP',
+      xpEmpty: 'Aun sin XP distribuido.',
+      viewsSuffix: 'visualizaciones',
+      xpSuffix: 'XP',
+    },
+    filters: {
+      title: 'Filtros',
+      description: 'Combina estado, categoria, autor y ordenacion.',
+      statusLabel: 'Estado',
+      categoryLabel: 'Categoria',
+      authorLabel: 'Autor',
+      orderLabel: 'Ordenar por',
+      categoryPlaceholder: 'ej: Noticias',
+      authorPlaceholder: 'nombre o usuario',
+      newPost: 'Nuevo post',
+      statusOptions: {
+        all: 'Todos',
+        published: 'Publicado',
+        draft: 'Borrador',
+      },
+      sortOptions: {
+        recent: 'Mas reciente',
+        views: 'Visualizaciones',
+        xp: 'XP distribuido',
+      },
+    },
+    actions: {
+      badge: 'Nuevo',
+      title: 'Acciones prioritarias de contenido',
+      description:
+        'Publica, prepara borradores o lanza revisiones manteniendo el impacto de XP.',
+      publishButton: 'Publicar ahora (ganar XP)',
+      saveDraftButton: 'Guardar borrador',
+      reviewButton: 'Revisar rendimiento',
+      topViewsCardTitle: 'Top post por visualizaciones',
+      topViewsEmpty: 'Sin posts con visualizaciones registradas.',
+      topViewsButton: 'Abrir post',
+      topXpCardTitle: 'Impacto de XP',
+      topXpEmpty: 'Aun no hay posts con XP distribuido.',
+      topXpButton: 'Ver',
+      draftSavedTitle: 'Borrador guardado',
+      draftSavedDescription:
+        'El borrador se guardo temporalmente para continuar despues.',
+    },
+    list: {
+      loading: 'Cargando posts...',
+      emptyTitle: 'No hay posts del blog',
+      emptySubtitle:
+        'Ajusta los filtros o crea la primera publicacion para empezar.',
+      emptyButton: 'Crear post',
+    },
+    table: {
+      listTitle: 'Todos los posts ({{count}})',
+      untitledPost: 'Post sin titulo',
+      noExcerpt: 'Sin extracto',
+      viewsSuffix: 'visualizaciones',
+      viewButton: 'Ver',
+      editButton: 'Editar',
+      badges: {
+        creator: 'Autor',
+        membersOnly: 'Solo miembros',
+        xpLabel: 'XP:',
+        xpCreatorLabel: 'XP del autor:',
+      },
+      statusLabels: {
+        published: 'publicado',
+        draft: 'borrador',
+      },
+    },
+    prompts: {
+      deleteConfirm:
+        'Seguro que quieres eliminar este post del blog de forma permanente?',
+    },
+    toasts: {
+      loadPostsErrorTitle: 'Error al cargar posts',
+      loadPostsErrorDescription:
+        'No se pudieron cargar los posts del blog.',
+      networkErrorTitle: 'Error de red',
+      networkErrorDescription:
+        'No pudimos cargar los posts. Intentalo de nuevo.',
+      deleteErrorTitle: 'Error al eliminar post',
+      deleteErrorDescription: 'No se pudo eliminar el post.',
+      deleteSuccessTitle: 'Post eliminado',
+      deleteSuccessDescription: 'El post se elimino correctamente.',
+      deleteNetworkErrorDescription:
+        'No se pudo eliminar el post. Intentalo de nuevo.',
+    },
+  },
+};
+
 export default function AdminBlogPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
+  const { language } = useLanguage();
+  const copy = BLOG_COPY[language as SupportedCopyLang];
+  const formatNumber = (value: number) => value.toLocaleString(copy.locale);
 
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -170,16 +622,16 @@ export default function AdminBlogPage() {
         } else {
           console.error('Error loading posts:', data);
           toast({
-            title: 'Error loading posts',
-            description: data.error || 'Failed to load posts.',
+            title: copy.toasts.loadPostsErrorTitle,
+            description: data.error || copy.toasts.loadPostsErrorDescription,
             variant: 'destructive',
           });
         }
       } catch (error) {
         console.error('Failed to fetch posts:', error);
         toast({
-          title: 'Network error',
-          description: 'Could not load posts. Please try again.',
+          title: copy.toasts.networkErrorTitle,
+          description: copy.toasts.networkErrorDescription,
           variant: 'destructive',
         });
       } finally {
@@ -190,15 +642,13 @@ export default function AdminBlogPage() {
     if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
       fetchPosts();
     }
-  }, [user, toast, getToken]);
+  }, [user, toast, getToken, copy]);
 
   // Apagar post
   const handleDelete = async (postId: string) => {
     if (!user || !canManageBlog || !isSuperAdmin) return;
 
-    const confirmed = window.confirm(
-      'Are you sure you want to permanently delete this blog post?',
-    );
+    const confirmed = window.confirm(copy.prompts.deleteConfirm);
     if (!confirmed) return;
 
     try {
@@ -216,8 +666,8 @@ export default function AdminBlogPage() {
       if (!res.ok || !data.success) {
         console.error('Error deleting blog post:', data);
         toast({
-          title: 'Error deleting post',
-          description: data.error || 'Failed to delete blog post.',
+          title: copy.toasts.deleteErrorTitle,
+          description: data.error || copy.toasts.deleteErrorDescription,
           variant: 'destructive',
         });
         return;
@@ -226,14 +676,14 @@ export default function AdminBlogPage() {
       setPosts((prev) => prev.filter((p) => p.id !== postId));
 
       toast({
-        title: 'Post deleted',
-        description: 'The blog post was deleted successfully.',
+        title: copy.toasts.deleteSuccessTitle,
+        description: copy.toasts.deleteSuccessDescription,
       });
     } catch (err) {
       console.error('Network error deleting blog post:', err);
       toast({
-        title: 'Network error',
-        description: 'Could not delete blog post. Please try again.',
+        title: copy.toasts.networkErrorTitle,
+        description: copy.toasts.deleteNetworkErrorDescription,
         variant: 'destructive',
       });
     }
@@ -250,7 +700,7 @@ export default function AdminBlogPage() {
         <div className="text-center">
           <Loader2 className="h-8 w-8 mx-auto animate-spin text-blue-600" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">
-            Loading blog admin...
+            {copy.loadingAdmin}
           </p>
         </div>
       </div>
@@ -330,36 +780,37 @@ export default function AdminBlogPage() {
 
         <div className="relative z-10 max-w-5xl space-y-4">
           <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
-            LEGACY ADMIN - BLOG
+            {copy.hero.badge}
           </p>
           <h1 className="text-3xl font-semibold text-white md:text-4xl">
-            Blog Management
+            {copy.hero.title}
           </h1>
           <p className="text-sm text-slate-300 md:text-base">
-            Gestao centralizada de posts, XP e visualizacoes do blog. Filtra,
-            rev e mantem vivo o conteudo continuo da comunidade.
+            {copy.hero.description}
           </p>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3 text-sm text-white shadow-lg shadow-black/30">
               <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-200">
-                Meta XP semanal
+                {copy.hero.xpLabel}
               </p>
               <p className="text-xl font-semibold">
-                {xpTotalAll.toLocaleString('pt-PT')} XP
+                {formatNumber(xpTotalAll)} XP
               </p>
               <p className="text-xs text-slate-300">
-                Meta: publicar +3 artigos com 200+ XP cada.
+                {copy.hero.xpDescription}
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3 text-xs text-white">
               <div className="flex items-center gap-2 text-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                Trend monitorado
+                {copy.hero.trendLabel}
               </div>
               <p className="text-lg font-semibold">
-                {totalViewsAll.toLocaleString('pt-PT')} views
+                {formatNumber(totalViewsAll)} {copy.topLists.viewsSuffix}
               </p>
-              <p className="text-xs text-slate-300">nos ultimos 7 dias</p>
+              <p className="text-xs text-slate-300">
+                {copy.hero.trendDescription}
+              </p>
             </div>
             <Button
               variant="outline"
@@ -367,7 +818,9 @@ export default function AdminBlogPage() {
               onClick={() => setFocusMode((prev) => !prev)}
             >
               <Zap className="h-4 w-4" />
-              {focusMode ? 'Modo foco ativo' : 'Ativar modo foco'}
+              {focusMode
+                ? copy.hero.focusButtonActive
+                : copy.hero.focusButtonInactive}
             </Button>
           </div>
         </div>
@@ -387,58 +840,60 @@ export default function AdminBlogPage() {
             <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
-                  Total posts
+                  {copy.stats.total}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 text-white">
-                <div className="text-2xl font-bold">{posts.length}</div>
+                <div className="text-2xl font-bold">
+                  {formatNumber(posts.length)}
+                </div>
               </CardContent>
             </Card>
             <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
-                  Published
+                  {copy.stats.published}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="text-2xl font-bold text-emerald-400">
-                  {publishedPosts.length}
+                  {formatNumber(publishedPosts.length)}
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
-                  Draft
+                  {copy.stats.draft}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="text-2xl font-bold text-amber-400">
-                  {draftPosts.length}
+                  {formatNumber(draftPosts.length)}
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
-                  XP distributed
+                  {copy.stats.xp}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="text-2xl font-bold text-blue-400">
-                  {xpTotalAll}
+                  {formatNumber(xpTotalAll)}
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-[#05212b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
-                  Views (total)
+                  {copy.stats.views}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="text-2xl font-bold text-purple-400">
-                  {totalViewsAll}
+                  {formatNumber(totalViewsAll)}
                 </div>
               </CardContent>
             </Card>
@@ -450,12 +905,14 @@ export default function AdminBlogPage() {
               <Card className="bg-[#05212b] border border-white/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
-                    Top posts by views
+                    {copy.topLists.viewsTitle}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-slate-200">
                   {topByViews.length === 0 ? (
-                    <p className="text-sm text-slate-300">No views yet.</p>
+                    <p className="text-sm text-slate-300">
+                      {copy.topLists.viewsEmpty}
+                    </p>
                   ) : (
                     topByViews.map((p, idx) => (
                       <div
@@ -465,10 +922,12 @@ export default function AdminBlogPage() {
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">#{idx + 1}</Badge>
                           <span className="font-semibold truncate max-w-[200px]">
-                            {resolveLocalizedText(p.title) || 'Untitled'}
+                            {resolveLocalizedText(p.title) || copy.table.untitledPost}
                           </span>
                         </div>
-                        <div className="text-slate-300">{p.views || 0} views</div>
+                        <div className="text-slate-300">
+                          {formatNumber(p.views || 0)} {copy.topLists.viewsSuffix}
+                        </div>
                       </div>
                     ))
                   )}
@@ -478,13 +937,13 @@ export default function AdminBlogPage() {
               <Card className="bg-[#05212b] border border-white/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
-                    Top posts by XP
+                    {copy.topLists.xpTitle}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-slate-200">
                   {topByXP.length === 0 ? (
                     <p className="text-sm text-slate-300">
-                      No XP distributed yet.
+                      {copy.topLists.xpEmpty}
                     </p>
                   ) : (
                     topByXP.map((p, idx) => (
@@ -495,11 +954,11 @@ export default function AdminBlogPage() {
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">#{idx + 1}</Badge>
                           <span className="font-semibold truncate max-w-[200px]">
-                            {resolveLocalizedText(p.title) || 'Untitled'}
+                            {resolveLocalizedText(p.title) || copy.table.untitledPost}
                           </span>
                         </div>
                         <div className="text-slate-300">
-                          {p.xp_total_distributed || 0} XP
+                          {formatNumber(p.xp_total_distributed || 0)} {copy.topLists.xpSuffix}
                         </div>
                       </div>
                     ))
@@ -513,9 +972,11 @@ export default function AdminBlogPage() {
           <Card className="bg-[#05212b] border border-white/10">
             <CardHeader className="pb-0 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
-                <CardTitle className="text-sm text-white">Filters</CardTitle>
+                <CardTitle className="text-sm text-white">
+                  {copy.filters.title}
+                </CardTitle>
                 <CardDescription className="text-slate-300">
-                  Combine status, category, author and ordering.
+                  {copy.filters.description}
                 </CardDescription>
               </div>
               <Button
@@ -527,12 +988,14 @@ export default function AdminBlogPage() {
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                New Post
+                {copy.filters.newPost}
               </Button>
             </CardHeader>
             <CardContent className="pt-4 grid md:grid-cols-4 gap-4 text-slate-200">
               <div className="space-y-1">
-                <p className="text-xs text-slate-300">Status</p>
+                <p className="text-xs text-slate-300">
+                  {copy.filters.statusLabel}
+                </p>
                 <select
                   className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={statusFilter}
@@ -540,31 +1003,41 @@ export default function AdminBlogPage() {
                     setStatusFilter(e.target.value as 'all' | 'published' | 'draft')
                   }
                 >
-                  <option value="all">All</option>
-                  <option value="published">Published</option>
-                  <option value="draft">Draft</option>
+                  <option value="all">{copy.filters.statusOptions.all}</option>
+                  <option value="published">
+                    {copy.filters.statusOptions.published}
+                  </option>
+                  <option value="draft">
+                    {copy.filters.statusOptions.draft}
+                  </option>
                 </select>
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-slate-300">Category</p>
+                <p className="text-xs text-slate-300">
+                  {copy.filters.categoryLabel}
+                </p>
                 <input
                   className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white placeholder:text-xs placeholder:text-slate-400 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  placeholder="e.g. News"
+                  placeholder={copy.filters.categoryPlaceholder}
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-slate-300">Author</p>
+                <p className="text-xs text-slate-300">
+                  {copy.filters.authorLabel}
+                </p>
                 <input
                   className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white placeholder:text-xs placeholder:text-slate-400 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={authorFilter}
                   onChange={(e) => setAuthorFilter(e.target.value)}
-                  placeholder="name or username"
+                  placeholder={copy.filters.authorPlaceholder}
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-slate-300">Order by</p>
+                <p className="text-xs text-slate-300">
+                  {copy.filters.orderLabel}
+                </p>
                 <select
                   className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={sortBy}
@@ -572,9 +1045,13 @@ export default function AdminBlogPage() {
                     setSortBy(e.target.value as 'recent' | 'views' | 'xp')
                   }
                 >
-                  <option value="recent">Most recent</option>
-                  <option value="views">Views</option>
-                  <option value="xp">XP distributed</option>
+                  <option value="recent">
+                    {copy.filters.sortOptions.recent}
+                  </option>
+                  <option value="views">
+                    {copy.filters.sortOptions.views}
+                  </option>
+                  <option value="xp">{copy.filters.sortOptions.xp}</option>
                 </select>
               </div>
             </CardContent>
@@ -585,15 +1062,14 @@ export default function AdminBlogPage() {
             <CardHeader className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <Badge className="border border-cyan-400/40 bg-cyan-400/10 text-cyan-200">
-                  New
+                  {copy.actions.badge}
                 </Badge>
                 <CardTitle className="text-white">
-                  Acoes prioritarias de conteudo
+                  {copy.actions.title}
                 </CardTitle>
               </div>
               <CardDescription className="text-slate-300">
-                Publique, prepare rascunhos ou dispare revisoes mantendo o foco em
-                XP e impacto da comunidade.
+                {copy.actions.description}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
@@ -607,21 +1083,21 @@ export default function AdminBlogPage() {
                   disabled={!canManageBlog}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Publicar agora (ganhe XP)
+                  {copy.actions.publishButton}
                 </Button>
                 <Button
                   className="flex-1 border border-white/30 bg-[#000c12] text-white hover:text-cyan-300 disabled:opacity-60"
                   onClick={() => {
                     if (!canManageBlog) return;
                     toast({
-                      title: 'Rascunho salvo',
-                      description: 'O rascunho foi armazenado temporariamente para continuidade.',
+                      title: copy.actions.draftSavedTitle,
+                      description: copy.actions.draftSavedDescription,
                     });
                   }}
                   disabled={!canManageBlog}
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Salvar rascunho
+                  {copy.actions.saveDraftButton}
                 </Button>
                 <Button
                   className="flex-1 border border-white/30 text-white hover:text-cyan-300"
@@ -632,22 +1108,23 @@ export default function AdminBlogPage() {
                   disabled={!canManageBlog}
                 >
                   <Eye className="h-4 w-4 mr-2" />
-                  Revisar desempenho
+                  {copy.actions.reviewButton}
                 </Button>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2 text-xs">
                 <div className="rounded-2xl border border-white/10 bg-[#05212b] p-3 text-slate-200">
                   <p className="text-[11px] uppercase tracking-wide text-slate-300">
-                    Top post por visualizaAAes
+                    {copy.actions.topViewsCardTitle}
                   </p>
                   {topByViews[0] ? (
                     <>
                       <p className="text-sm font-semibold text-white truncate">
                         {(resolveLocalizedText(topByViews[0].title) ||
-                          'Untitled').slice(0, 45)}
+                          copy.table.untitledPost).slice(0, 45)}
                       </p>
                       <p className="text-[11px] text-purple-200">
-                        {topByViews[0].views?.toLocaleString('pt-PT') || 0} views
+                        {formatNumber(topByViews[0].views || 0)}{' '}
+                        {copy.topLists.viewsSuffix}
                       </p>
                       <Button
                         size="sm"
@@ -657,30 +1134,28 @@ export default function AdminBlogPage() {
                           router.push(`/blog/${topByViews[0].id}`)
                         }
                       >
-                        Abrir post
+                        {copy.actions.topViewsButton}
                       </Button>
                     </>
                   ) : (
                     <p className="text-[11px] text-slate-300">
-                      Sem posts com views registrados.
+                      {copy.actions.topViewsEmpty}
                     </p>
                   )}
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-[#05212b] p-3 text-slate-200">
                   <p className="text-[11px] uppercase tracking-wide text-slate-300">
-                    Impacto de XP
+                    {copy.actions.topXpCardTitle}
                   </p>
                   {topByXP[0] ? (
                     <>
                       <p className="text-sm font-semibold text-white truncate">
                         {(resolveLocalizedText(topByXP[0].title) ||
-                          'Untitled').slice(0, 45)}
+                          copy.table.untitledPost).slice(0, 45)}
                       </p>
                       <p className="text-[11px] text-emerald-200">
-                        {topByXP[0].xp_total_distributed?.toLocaleString(
-                          'pt-PT',
-                        ) || 0}{' '}
-                        XP
+                        {formatNumber(topByXP[0].xp_total_distributed || 0)}{' '}
+                        {copy.topLists.xpSuffix}
                       </p>
                       <Button
                         size="sm"
@@ -688,12 +1163,12 @@ export default function AdminBlogPage() {
                         className="mt-2 w-full border-white/30 text-white hover:text-cyan-300"
                         onClick={() => router.push(`/admin/blog/${topByXP[0].id}`)}
                       >
-                        Ver
+                        {copy.actions.topXpButton}
                       </Button>
                     </>
                   ) : (
                     <p className="text-[11px] text-slate-300">
-                      Ainda nAo hA posts com XP distribuAdo.
+                      {copy.actions.topXpEmpty}
                     </p>
                   )}
                 </div>
@@ -706,7 +1181,7 @@ export default function AdminBlogPage() {
             <Card className="bg-[#05212b] border border-white/10">
               <CardContent className="text-center py-12 text-slate-200">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-                <p className="mt-4 text-slate-300">Loading posts...</p>
+                <p className="mt-4 text-slate-300">{copy.list.loading}</p>
               </CardContent>
             </Card>
           ) : filteredPosts.length === 0 ? (
@@ -714,10 +1189,10 @@ export default function AdminBlogPage() {
               <CardContent className="text-center py-12 text-slate-200">
                 <FileText className="h-16 w-16 text-slate-700 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2 text-white">
-                  No blog posts found
+                  {copy.list.emptyTitle}
                 </h3>
                 <p className="text-slate-300 mb-6">
-                  Adjust filters or create your first blog post to get started.
+                  {copy.list.emptySubtitle}
                 </p>
                 <Button
                   className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -728,7 +1203,7 @@ export default function AdminBlogPage() {
                   }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Post
+                  {copy.list.emptyButton}
                 </Button>
               </CardContent>
             </Card>
@@ -736,19 +1211,28 @@ export default function AdminBlogPage() {
             <Card className="bg-[#05212b] border border-white/10 shadow-lg shadow-purple-950/40">
               <CardHeader>
                 <CardTitle className="text-white">
-                  All posts ({filteredPosts.length})
+                  {copy.table.listTitle.replace(
+                    '{{count}}',
+                    formatNumber(filteredPosts.length),
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-slate-200">
                 <div className="space-y-4">
                   {filteredPosts.map((post) => {
                     const title =
-                      resolveLocalizedText(post.title) || 'Untitled post';
+                      resolveLocalizedText(post.title) ||
+                      copy.table.untitledPost;
                     const excerpt =
-                      resolveLocalizedText(post.excerpt) || 'No excerpt';
+                      resolveLocalizedText(post.excerpt) ||
+                      copy.table.noExcerpt;
                     const views = post.views ?? 0;
+                    const statusKey = (
+                      post.status || (post.published ? 'published' : 'draft')
+                    ) as 'published' | 'draft';
                     const statusLabel =
-                      post.status || (post.published ? 'published' : 'draft');
+                      copy.table.statusLabels[statusKey] || statusKey;
+                    const isPublished = statusKey === 'published';
                     const isCreator = user && post.author_id === user.id;
                     const xpTotal = post.xp_total_distributed || 0;
                     const xpCreator = post.xp_creator_distributed || 0;
@@ -772,35 +1256,41 @@ export default function AdminBlogPage() {
                             )}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <Badge
-                                  className={
-                                    statusLabel === 'published'
-                                      ? 'bg-emerald-600'
-                                      : 'bg-amber-600'
-                                  }
-                                >
-                                  {statusLabel}
-                                </Badge>
+                              <Badge
+                                className={
+                                  isPublished
+                                    ? 'bg-emerald-600'
+                                    : 'bg-amber-600'
+                                }
+                              >
+                                {statusLabel}
+                              </Badge>
                                 {post.category && (
                                   <Badge variant="outline">
                                     {post.category}
                                   </Badge>
                                 )}
                                 {isCreator && (
-                                  <Badge variant="outline">Creator</Badge>
+                                  <Badge variant="outline">
+                                    {copy.table.badges.creator}
+                                  </Badge>
                                 )}
                                 {xpTotal > 0 && (
                                   <Badge variant="outline" className="gap-1">
-                                    XP: {xpTotal}
+                                    {copy.table.badges.xpLabel}{' '}
+                                    {formatNumber(xpTotal)}
                                   </Badge>
                                 )}
                                 {xpCreator > 0 && (
                                   <Badge variant="outline" className="gap-1">
-                                    Creator XP: {xpCreator}
+                                    {copy.table.badges.xpCreatorLabel}{' '}
+                                    {formatNumber(xpCreator)}
                                   </Badge>
                                 )}
                                 {post.registered_only && (
-                                  <Badge variant="outline">Members only</Badge>
+                                  <Badge variant="outline">
+                                    {copy.table.badges.membersOnly}
+                                  </Badge>
                                 )}
                               </div>
                               <h3 className="text-lg font-semibold truncate text-white">
@@ -822,7 +1312,12 @@ export default function AdminBlogPage() {
                                       ).toLocaleDateString()
                                     : '-'}
                                 </span>
-                                {views > 0 && <span>{views} views</span>}
+                                {views > 0 && (
+                                  <span>
+                                    {formatNumber(views)}{' '}
+                                    {copy.table.viewsSuffix}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -835,7 +1330,7 @@ export default function AdminBlogPage() {
                             onClick={() => router.push(`/blog/${post.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            View
+                            {copy.table.viewButton}
                           </Button>
                           <Button
                             size="sm"
@@ -845,7 +1340,7 @@ export default function AdminBlogPage() {
                             onClick={() => router.push(`/admin/blog/${post.id}`)}
                           >
                             <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            {copy.table.editButton}
                           </Button>
                           <Button
                             size="sm"
