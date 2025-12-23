@@ -62,6 +62,15 @@ const HERO_IMAGE_FALLBACK =
   process.env.NEXT_PUBLIC_LEADERBOARD_HERO_IMAGE ||
   'https://images.unsplash.com/photo-1505843267-3ff30ae28fd7?auto=format&fit=crop&w=1600&q=80';
 
+const stripCountryFromName = (name: string, countryCode?: string | null) => {
+  if (!countryCode) return name;
+  const countryName = getCountryName(countryCode);
+  if (!countryName) return name;
+  const trimmed = name.trim();
+  const regex = new RegExp(`\\s*${countryName}$`, 'i');
+  return trimmed.replace(regex, '').trim();
+};
+
 const getFlagEmoji = (code?: string | null) => {
   if (!code) return '🌐';
   const trimmed = code.trim();
@@ -297,7 +306,7 @@ export default function LeaderboardPage() {
     .slice(0, 3)
     .map((house) => ({
       key: house.houseId,
-      name: house.name,
+      name: stripCountryFromName(house.name, house.countryCode),
       subtitle: house.countryCode ? getCountryName(house.countryCode) : t('leaderboard.countryRankings'),
       flag: getFlagEmoji(house.countryCode),
       value: house.totalXp ?? 0,
