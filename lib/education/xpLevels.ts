@@ -13,7 +13,7 @@ export type XpLevel = (typeof XP_LEVELS)[number];
 export type XpLevelKey = XpLevel['key'];
 
 export function getXpLevelByXp(xp: number): XpLevel {
-  let current = XP_LEVELS[0];
+  let current: XpLevel = XP_LEVELS[0];
 
   for (const level of XP_LEVELS) {
     if (xp >= level.min) {
@@ -32,4 +32,3 @@ export function getXpLevelLabelByKey(key: XpLevelKey): string {
   const level = XP_LEVELS.find((item) => item.key === key);
   return level ? level.label : '';
 }
-
