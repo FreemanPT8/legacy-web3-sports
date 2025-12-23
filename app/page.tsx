@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Activity, ArrowRight, BookOpen, CircleDot, GraduationCap, ShieldCheck, Users } from 'lucide-react';
 
 import { Header } from '@/components/layout/Header';
@@ -12,6 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
+import { useManagedMediaSetting } from '@/hooks/useManagedMediaSetting';
 import { useAuth } from '@/contexts/AuthContext';
 import type { MediaAsset } from '@/types/builder';
 
@@ -123,8 +124,12 @@ const CTA_SUBTITLE = 'Para membros Legacy ou quem quer fazer parte da comunidade
 export default function HomePage() {
   const { user } = useAuth();
   const mediaLibrary = useMediaLibrary();
-  const [heroAsset, setHeroAsset] = useState<MediaAsset | null>(null);
-  const [heroOffset, setHeroOffset] = useState(0);
+  const heroMedia = useManagedMediaSetting('hero', {
+    fallbackUrl:
+      'https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?auto=format&fit=crop&w=1600&q=80',
+    initialOffset: 0,
+    enableOffset: true,
+  });
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
   const openHeroMediaLibrary = () => {
     setHeroDialogOpen(true);
@@ -138,53 +143,20 @@ export default function HomePage() {
     return [GUEST_PRIMARY, GUEST_SECONDARY];
   }, [user]);
 
-  const heroImageUrl = heroAsset?.url || 'https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?auto=format&fit=crop&w=1600&q=80';
+  const heroImageUrl =
+    heroMedia.assetUrl ||
+    'https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?auto=format&fit=crop&w=1600&q=80';
+  const heroOffset = heroMedia.offset ?? 0;
   const heroActionDescription = user
     ? 'Explora cursos e liga-te a Houses globais.'
     : 'Começa a tua jornada Web3 com onboarding personalizado.';
-
-  useEffect(() => {
-    const fetchHero = async () => {
-      try {
-        const res = await fetch('/api/media/settings');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data?.success) return;
-        const hero = data.settings?.hero;
-        if (hero?.asset) {
-          setHeroAsset(hero.asset);
-        }
-        if (typeof hero?.offset === 'number') {
-          setHeroOffset(hero.offset);
-        }
-      } catch (error) {
-        console.error('Unable to load hero settings', error);
-      }
-    };
-    fetchHero();
-  }, []);
-
-  const persistHeroSetting = async (assetId: string | null, offset?: number) => {
-    try {
-      await fetch('/api/admin/media/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'hero', assetId, offset }),
-      });
-    } catch (error) {
-      console.error('Unable to persist hero setting', error);
-    }
-  };
-
   const handleHeroSelect = async (asset: MediaAsset) => {
-    setHeroAsset(asset);
-    await persistHeroSetting(asset.id, heroOffset);
+    await heroMedia.setAsset(asset);
   };
 
   const handleOffsetChange = async (value: number[]) => {
     const next = value[0];
-    setHeroOffset(next);
-    await persistHeroSetting(heroAsset?.id ?? null, next);
+    await heroMedia.setOffset(next);
   };
 
   return (
