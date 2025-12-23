@@ -233,68 +233,70 @@ export function MediaLibraryDialog({
               </p>
             )}
 
-            <ScrollArea className="max-h-[520px] rounded-2xl border border-white/10 bg-[#03121a] p-4">
-              {library.loading ? (
-                <div className="flex items-center justify-center py-10 text-sm text-slate-300">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading media...
-                </div>
-              ) : mediaItems.length === 0 ? (
-                <div className="py-10 text-center text-sm text-slate-400">
-                  No media files yet. Use the Upload tab to add new items.
-                </div>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {paginatedItems.map((asset) => (
-                    <button
-                      key={asset.id}
-                      type="button"
-                      onClick={() => {
-                        onSelect(asset);
-                        handleOpenChange(false);
-                      }}
-                      className="overflow-hidden rounded-2xl border border-white/10 bg-[#05212b] text-left shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:border-cyan-400/60 focus:outline-none"
-                    >
-                      <div className="relative h-36 w-full overflow-hidden rounded-t-2xl bg-[#03121a]">
-                        <button
-                          type="button"
-                          className="absolute right-2 top-2 z-10 rounded-full border border-white/20 bg-black/60 px-2 py-1 text-[11px] text-white"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setAssetToDelete(asset);
-                            setConfirmOpen(true);
-                          }}
-                        >
-                          Eliminar
-                        </button>
-                        {asset.thumbnailUrl || asset.url ? (
-                          <div
-                            className="h-full w-full bg-cover bg-center"
-                            style={{
-                              backgroundImage: `url("${
-                                asset.thumbnailUrl || asset.url
-                              }")`,
+            <ScrollArea className="h-[520px] rounded-2xl border border-white/10 bg-[#03121a]">
+              <div className="p-4">
+                {library.loading ? (
+                  <div className="flex items-center justify-center py-10 text-sm text-slate-300">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading media...
+                  </div>
+                ) : mediaItems.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-slate-400">
+                    No media files yet. Use the Upload tab to add new items.
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {paginatedItems.map((asset) => (
+                      <button
+                        key={asset.id}
+                        type="button"
+                        onClick={() => {
+                          onSelect(asset);
+                          handleOpenChange(false);
+                        }}
+                        className="overflow-hidden rounded-2xl border border-white/10 bg-[#05212b] text-left shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:border-cyan-400/60 focus:outline-none"
+                      >
+                        <div className="relative h-36 w-full overflow-hidden rounded-t-2xl bg-[#03121a]">
+                          <button
+                            type="button"
+                            className="absolute right-2 top-2 z-10 rounded-full border border-white/20 bg-black/60 px-2 py-1 text-[11px] text-white"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setAssetToDelete(asset);
+                              setConfirmOpen(true);
                             }}
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
-                            <ImageIcon className="mr-2 h-4 w-4" />
-                            {(asset.type || 'file').toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3">
-                        <p className="text-sm font-semibold text-white">
-                          {asset.title || 'Untitled asset'}
-                        </p>
-                        <p className="text-xs uppercase text-slate-400">
-                          {asset.type}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                          >
+                            Eliminar
+                          </button>
+                          {asset.thumbnailUrl || asset.url ? (
+                            <div
+                              className="h-full w-full bg-cover bg-center"
+                              style={{
+                                backgroundImage: `url("${
+                                  asset.thumbnailUrl || asset.url
+                                }")`,
+                              }}
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+                              <ImageIcon className="mr-2 h-4 w-4" />
+                              {(asset.type || 'file').toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm font-semibold text-white">
+                            {asset.title || 'Untitled asset'}
+                          </p>
+                          <p className="text-xs uppercase text-slate-400">
+                            {asset.type}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </ScrollArea>
             {mediaItems.length > LIBRARY_PAGE_SIZE && (
               <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#03121a] px-4 py-2 text-sm text-slate-200">
