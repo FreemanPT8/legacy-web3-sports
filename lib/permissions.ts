@@ -145,18 +145,10 @@ export function getDefaultPermissionsForRole(
 
 // Estrutura esperada em admin_permissions (se usarmos colunas por-permissão no futuro)
 interface AdminPermissionsRow {
-  id: string;
+  id?: string;
   user_id: string;
-  can_manage_users: boolean | null;
-  can_manage_houses: boolean | null;
-  can_manage_heads: boolean | null;
-  can_manage_onboarding: boolean | null;
-  can_manage_courses: boolean | null;
-  can_manage_blog: boolean | null;
-  can_manage_forum: boolean | null;
+  permissions: string[] | null;
   can_manage_xp: boolean | null;
-  can_manage_analytics: boolean | null;
-  can_manage_settings: boolean | null;
 }
 
 // Converte row da BD + defaults do role em objeto AdminPermissions (flags)
@@ -165,23 +157,42 @@ function mapRowToPermissions(
   role: UserRole,
 ): AdminPermissions {
   const base = getRoleBasePermissions(role);
-
   if (!row) return { ...base };
 
+  const overrides = new Set<string>(
+    (row.permissions || []).filter((key): key is PermissionKey =>
+      PERMISSION_KEYS.includes(key as PermissionKey),
+    ),
+  );
+
+  const withOverrides = (key: PermissionKey, fallback: boolean) => {
+    if (key === 'canManageXP' && row.can_manage_xp !== null) {
+      return row.can_manage_xp;
+    }
+    if (overrides.has(key)) return true;
+    return fallback;
+  };
+
   return {
-    canManageUsers: row.can_manage_users ?? base.canManageUsers,
-    canManageHouses: row.can_manage_houses ?? base.canManageHouses,
-    canManageHeads: row.can_manage_heads ?? base.canManageHeads,
-    canManageOnboarding:
-      row.can_manage_onboarding ?? base.canManageOnboarding,
-    canManageCourses: row.can_manage_courses ?? base.canManageCourses,
-    canManageBlog: row.can_manage_blog ?? base.canManageBlog,
-    canManageForum: row.can_manage_forum ?? base.canManageForum,
-    canManageXP: row.can_manage_xp ?? base.canManageXP,
-    canManageAnalytics:
-      row.can_manage_analytics ?? base.canManageAnalytics,
-    canManageSettings:
-      row.can_manage_settings ?? base.canManageSettings,
+    canManageUsers: withOverrides('canManageUsers', base.canManageUsers),
+    canManageHouses: withOverrides('canManageHouses', base.canManageHouses),
+    canManageHeads: withOverrides('canManageHeads', base.canManageHeads),
+    canManageOnboarding: withOverrides(
+      'canManageOnboarding',
+      base.canManageOnboarding,
+    ),
+    canManageCourses: withOverrides('canManageCourses', base.canManageCourses),
+    canManageBlog: withOverrides('canManageBlog', base.canManageBlog),
+    canManageForum: withOverrides('canManageForum', base.canManageForum),
+    canManageXP: withOverrides('canManageXP', base.canManageXP),
+    canManageAnalytics: withOverrides(
+      'canManageAnalytics',
+      base.canManageAnalytics,
+    ),
+    canManageSettings: withOverrides(
+      'canManageSettings',
+      base.canManageSettings,
+    ),
   };
 }
 
@@ -204,9 +215,7 @@ export async function getUserPermissions(
   try {
     const { data, error } = await supabaseAdmin
       .from('admin_permissions')
-      .select(
-        'id, user_id, can_manage_users, can_manage_houses, can_manage_heads, can_manage_onboarding, can_manage_courses, can_manage_blog, can_manage_forum, can_manage_xp, can_manage_analytics, can_manage_settings',
-      )
+      .select('id, user_id, permissions, can_manage_xp')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -237,38 +246,10 @@ export async function updateUserPermissions(
     };
   }
 
-  const columnMap: Record<PermissionKey, string> = {
-    canManageUsers: 'can_manage_users',
-    canManageHouses: 'can_manage_houses',
-    canManageHeads: 'can_manage_heads',
-    canManageOnboarding: 'can_manage_onboarding',
-    canManageCourses: 'can_manage_courses',
-    canManageBlog: 'can_manage_blog',
-    canManageForum: 'can_manage_forum',
-    canManageXP: 'can_manage_xp',
-    canManageAnalytics: 'can_manage_analytics',
-    canManageSettings: 'can_manage_settings',
-  };
-
   try {
-    // Transformar partial { canManageUsers: true } em campos snake_case
-    const updatePayload: Record<string, boolean> = {};
-    for (const [key, value] of Object.entries(partial)) {
-      if (value === undefined) continue;
-      const camelKey = key as PermissionKey;
-      if (!PERMISSION_KEYS.includes(camelKey)) continue;
-      const col = columnMap[camelKey] ?? camelKey;
-      updatePayload[col] = !!value;
-    }
-
-    if (Object.keys(updatePayload).length === 0) {
-      return { success: true };
-    }
-
-    // Verificar se já existe um registo para este utilizador
     const { data: existingRow, error: fetchError } = await supabaseAdmin
       .from('admin_permissions')
-      .select('id')
+      .select('id, permissions, can_manage_xp')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -277,31 +258,62 @@ export async function updateUserPermissions(
       return { success: false, error: 'Failed to update permissions.' };
     }
 
-    let dbError = null;
+    const overrideSet = new Set<string>(
+      ((existingRow?.permissions || []) as string[]).filter((key) =>
+        PERMISSION_KEYS.includes(key as PermissionKey),
+      ),
+    );
 
-    if (existingRow) {
-      const { error } = await supabaseAdmin
-        .from('admin_permissions')
-        .update(updatePayload)
-        .eq('user_id', userId);
-      dbError = error ?? null;
-    } else {
-      const baseInsertPayload: Record<string, boolean> = {};
-      for (const key of PERMISSION_KEYS) {
-        const col = columnMap[key] ?? key;
-        baseInsertPayload[col] = false;
+    let xpOverride: boolean | undefined;
+
+    for (const [key, value] of Object.entries(partial)) {
+      if (value === undefined) continue;
+      const permKey = key as PermissionKey;
+      if (!PERMISSION_KEYS.includes(permKey)) continue;
+
+      if (permKey === 'canManageXP') {
+        xpOverride = !!value;
+        continue;
       }
 
-      const { error } = await supabaseAdmin.from('admin_permissions').insert({
-        user_id: userId,
-        ...baseInsertPayload,
-        ...updatePayload,
-      });
-      dbError = error ?? null;
+      if (value) {
+        overrideSet.add(permKey);
+      } else {
+        overrideSet.delete(permKey);
+      }
     }
 
-    if (dbError) {
-      console.error('Error updating admin_permissions:', dbError);
+    const permissionsArray = Array.from(overrideSet).sort();
+    const payload: Record<string, any> = {
+      permissions: permissionsArray,
+    };
+
+    if (xpOverride !== undefined) {
+      payload.can_manage_xp = xpOverride;
+    }
+
+    if (!existingRow) {
+      const { error } = await supabaseAdmin.from('admin_permissions').insert({
+        user_id: userId,
+        permissions: permissionsArray,
+        ...(xpOverride !== undefined ? { can_manage_xp: xpOverride } : {}),
+      });
+
+      if (error) {
+        console.error('Error inserting admin_permissions:', error);
+        return { success: false, error: 'Failed to update permissions.' };
+      }
+
+      return { success: true };
+    }
+
+    const { error } = await supabaseAdmin
+      .from('admin_permissions')
+      .update(payload)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error updating admin_permissions:', error);
       return { success: false, error: 'Failed to update permissions.' };
     }
 

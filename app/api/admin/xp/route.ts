@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+import { userHasPermission, type UserRole } from '@/lib/permissions';
 
 const db = supabaseAdmin;
 
@@ -8,12 +9,11 @@ async function hasXpPermission(authHeader?: string | null) {
   if (!authHeader) return false;
   const user = await verifyAuth(authHeader);
   if (!user) return false;
-  const { data } = await db
-    .from('admin_permissions')
-    .select('can_manage_xp')
-    .eq('user_id', user.id)
-    .maybeSingle();
-  return !!(data?.can_manage_xp || user.role === 'Super Admin');
+  const role: UserRole =
+    user.role === 'Super Admin' || user.role === 'Admin'
+      ? user.role
+      : 'Member';
+  return userHasPermission(user.id, role, 'canManageXP');
 }
 
 export async function GET(request: NextRequest) {
