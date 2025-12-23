@@ -43,6 +43,9 @@ export default function LeaderboardPage() {
   const [countryLeaders, setCountryLeaders] = useState<CountryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [totalCountriesCount, setTotalCountriesCount] = useState(0);
+  const [activeHousesCount, setActiveHousesCount] = useState(0);
   const mediaLibrary = useMediaLibrary();
   const isSuperAdmin = user?.role === 'Super Admin';
   const heroMedia = useManagedMediaSetting('leaderboard', {
@@ -53,16 +56,26 @@ export default function LeaderboardPage() {
     const fetchLeaderboard = async () => {
       setLoading(true);
       try {
-        const [globalRes, countryRes] = await Promise.all([
+        const [globalRes, countryRes, housesRes] = await Promise.all([
           fetch('/api/leaderboard?type=global&limit=100'),
-          fetch('/api/leaderboard?type=country'),
+          fetch('/api/leaderboard?type=country&limit=5000'),
+          fetch('/api/sports/houses'),
         ]);
 
-        const globalJson = await globalRes.json();
-        const countryJson = await countryRes.json();
+        const [globalJson, countryJson, housesJson] = await Promise.all([
+          globalRes.json(),
+          countryRes.json(),
+          housesRes.json(),
+        ]);
 
         if (globalJson.success) {
-          setGlobalLeaders(globalJson.leaderboard || []);
+          const leaderboard = globalJson.leaderboard || [];
+          setGlobalLeaders(leaderboard);
+          const totalUsersValue =
+            typeof globalJson.totalUsers === 'number'
+              ? globalJson.totalUsers
+              : leaderboard.length;
+          setTotalUsersCount(totalUsersValue);
         } else {
           setError(globalJson.error || 'Failed to load leaderboard');
         }
@@ -85,6 +98,25 @@ export default function LeaderboardPage() {
             })
             .filter(Boolean);
           setCountryLeaders(normalized);
+          const totalCountriesValue =
+            typeof countryJson.totalCountries === 'number'
+              ? countryJson.totalCountries
+              : normalized.length;
+          setTotalCountriesCount(totalCountriesValue);
+        }
+
+        if (!countryJson.success) {
+          setError(countryJson.error || 'Failed to load country leaderboard');
+        }
+
+        if (housesJson.success && Array.isArray(housesJson.houses)) {
+          const activeCount = housesJson.houses.filter(
+            (house: { status?: string | null }) => house?.status === 'ACTIVE'
+          ).length;
+          setActiveHousesCount(activeCount);
+        } else {
+          console.error('Error loading houses stats for leaderboard:', housesJson);
+          setError((prev) => prev ?? 'Failed to load houses data');
         }
       } catch (err) {
         console.error('Failed to fetch leaderboard:', err);
@@ -120,6 +152,32 @@ export default function LeaderboardPage() {
 
   const topThree = globalLeaders.slice(0, 3);
   const restOfGlobal = globalLeaders.slice(3);
+  const heroHighlights = [
+    {
+      key: 'global',
+      label: t('leaderboard.globalRankings'),
+      description: t('leaderboard.globalRankingsDesc'),
+      value:
+        totalUsersCount > 0
+          ? totalUsersCount.toLocaleString()
+          : globalLeaders.length.toLocaleString(),
+    },
+    {
+      key: 'country',
+      label: t('leaderboard.countryRankings'),
+      description: t('leaderboard.countryRankingsDesc'),
+      value:
+        totalCountriesCount > 0
+          ? totalCountriesCount.toLocaleString()
+          : countryLeaders.length.toLocaleString(),
+    },
+    {
+      key: 'houses',
+      label: t('leaderboard.housesRankings'),
+      description: t('leaderboard.housesRankingsDesc'),
+      value: activeHousesCount.toLocaleString(),
+    },
+  ];
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
@@ -148,29 +206,19 @@ export default function LeaderboardPage() {
                   <Badge className="w-fit border border-white/10 bg-cyan-500/15 text-cyan-100">
                     {t('leaderboard.globalRankings')}
                   </Badge>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-4 shadow-lg shadow-black/40">
-                      <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
-                        {t('leaderboard.globalRankings')}
-                      </p>
-                      <p className="text-3xl font-semibold text-white">
-                        {globalLeaders.length.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-slate-300">
-                        {t('leaderboard.globalRankingsDesc')}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-4 shadow-lg shadow-black/40">
-                      <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
-                        {t('leaderboard.countryRankings')}
-                      </p>
-                      <p className="text-3xl font-semibold text-white">
-                        {countryLeaders.length.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-slate-300">
-                        {t('leaderboard.countryRankingsDesc')}
-                      </p>
-                    </div>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {heroHighlights.map((highlight) => (
+                      <div
+                        key={highlight.key}
+                        className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-4 shadow-lg shadow-black/40"
+                      >
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                          {highlight.label}
+                        </p>
+                        <p className="text-3xl font-semibold text-white">{highlight.value}</p>
+                        <p className="text-sm text-slate-300">{highlight.description}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.65)]">

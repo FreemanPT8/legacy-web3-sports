@@ -9,9 +9,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     if (type === 'global') {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from('users')
-        .select('id, username, country, xp_total, created_at')
+        .select('id, username, country, xp_total, created_at', {
+          count: 'exact',
+        })
         .order('xp_total', { ascending: false })
         .limit(limit);
 
@@ -22,7 +24,11 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      return NextResponse.json({ success: true, leaderboard: data });
+      return NextResponse.json({
+        success: true,
+        leaderboard: data ?? [],
+        totalUsers: count ?? (data?.length ?? 0),
+      });
     }
 
     if (type === 'country') {
@@ -37,20 +43,38 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const countryTotals = countries.reduce((acc: any, user: any) => {
-        if (!acc[user.country]) {
-          acc[user.country] = { country: user.country, totalXP: 0, memberCount: 0 };
-        }
-        acc[user.country].totalXP += user.xp_total;
-        acc[user.country].memberCount += 1;
-        return acc;
-      }, {});
+      const countryTotals = (countries || []).reduce(
+        (acc: Record<string, { country: string; totalXP: number; memberCount: number }>, user: any) => {
+          const normalizedCountry =
+            typeof user.country === 'string' ? user.country.trim() : '';
+          if (!normalizedCountry) return acc;
 
-      const leaderboard = Object.values(countryTotals)
+          if (!acc[normalizedCountry]) {
+            acc[normalizedCountry] = {
+              country: normalizedCountry,
+              totalXP: 0,
+              memberCount: 0,
+            };
+          }
+          acc[normalizedCountry].totalXP += user.xp_total ?? 0;
+          acc[normalizedCountry].memberCount += 1;
+          return acc;
+        },
+        {}
+      );
+
+      const totalsArray = Object.values(countryTotals);
+      const totalCountries = totalsArray.length;
+
+      const leaderboard = totalsArray
         .sort((a: any, b: any) => b.totalXP - a.totalXP)
         .slice(0, limit);
 
-      return NextResponse.json({ success: true, leaderboard });
+      return NextResponse.json({
+        success: true,
+        leaderboard,
+        totalCountries,
+      });
     }
 
     if (type === 'national' && country) {
