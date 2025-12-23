@@ -32,17 +32,23 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Number(searchParams.get('limit')) || 20, 50);
   const search = (searchParams.get('search') || '').trim();
   const tag = (searchParams.get('tag') || '').trim();
-  const cursor = searchParams.get('cursor') || null; // created_at cursor
+  const cursor = searchParams.get('cursor') || null; // created_at__id cursor
+  const [cursorCreatedAt, cursorId] = cursor ? cursor.split('__') : [null, null];
 
   try {
     let query = supabaseAdmin
       .from('media_files')
       .select('*')
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(limit);
 
-    if (cursor) {
-      query = query.lt('created_at', cursor);
+    if (cursorCreatedAt && cursorId) {
+      query = query.or(
+        `created_at.lt.${cursorCreatedAt},and(created_at.eq.${cursorCreatedAt},id.lt.${cursorId})`,
+      );
+    } else if (cursorCreatedAt) {
+      query = query.lt('created_at', cursorCreatedAt);
     }
 
     if (search) {
@@ -64,7 +70,9 @@ export async function GET(request: NextRequest) {
     }
 
     const nextCursor =
-      data && data.length === limit ? data[data.length - 1]?.created_at : null;
+      data && data.length === limit
+        ? `${data[data.length - 1]?.created_at}__${data[data.length - 1]?.id}`
+        : null;
 
     return NextResponse.json({
       success: true,
