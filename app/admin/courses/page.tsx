@@ -286,7 +286,7 @@ export default function CoursesManagementPage() {
     const fetchPermissions = async () => {
       try {
         const token = getToken();
-        const res = await fetch('/api/admin/permissions', {
+        const res = await fetch('/api/admin/permissions/self', {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),

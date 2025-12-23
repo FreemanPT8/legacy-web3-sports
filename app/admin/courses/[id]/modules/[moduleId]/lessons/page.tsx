@@ -285,7 +285,7 @@ function LegacyModuleLessonsLegacyView() {
 
         const token = getToken();
 
-        const res = await fetch('/api/admin/permissions', {
+        const res = await fetch('/api/admin/permissions/self', {
 
           headers: {
 
