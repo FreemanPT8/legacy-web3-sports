@@ -276,6 +276,7 @@ export default function LeaderboardPage() {
       subtitle: member.country || t('leaderboard.globalRankings'),
       flag: getFlagEmoji(countryCode),
       value: member.xp_total ?? 0,
+      extra: '',
     };
   });
 
@@ -288,6 +289,7 @@ export default function LeaderboardPage() {
       subtitle: `${formatNumber(country.memberCount)} ${t('leaderboard.members')}`,
       flag: getFlagEmoji(country.code),
       value: country.totalXP ?? 0,
+      extra: '',
     }));
 
   const topHouseItems = [...houseLeaderboard]

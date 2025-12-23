@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js/dist/module/index.js';
+import { supabase } from '@/lib/supabase';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL ou Anon Key em falta nas env vars.');
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function POST(req: NextRequest) {
   try {

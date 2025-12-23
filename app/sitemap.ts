@@ -19,14 +19,16 @@ function mapDate(row: DbRow) {
   return raw ? new Date(raw) : new Date();
 }
 
-type SupabaseModule = typeof import('@supabase/supabase-js/dist/module/index.js');
-type SupabaseClient = ReturnType<SupabaseModule['createClient']>;
+let clientPromise: Promise<any> | null = null;
+let clientUnavailable = false;
 
-let cachedClient: SupabaseClient | null = null;
-
-async function getServerSupabaseClient(): Promise<SupabaseClient | null> {
-  if (cachedClient) return cachedClient;
-
+async function getServerSupabaseClient() {
+  if (clientUnavailable) {
+    return null;
+  }
+  if (clientPromise) {
+    return clientPromise;
+  }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -35,27 +37,27 @@ async function getServerSupabaseClient(): Promise<SupabaseClient | null> {
     console.warn(
       'Sitemap: missing Supabase configuration, only static routes will be included.',
     );
+    clientUnavailable = true;
     return null;
   }
 
-  const { createClient } = await import(
-    '@supabase/supabase-js/dist/module/index.js'
+  clientPromise = import('@supabase/supabase-js/dist/module/index.js').then(
+    ({ createClient }) =>
+      createClient(
+        supabaseUrl,
+        serviceRole ?? anonKey!,
+        serviceRole
+          ? {
+              auth: {
+                autoRefreshToken: false,
+                persistSession: false,
+              },
+            }
+          : undefined,
+      ),
   );
 
-  cachedClient = createClient(
-    supabaseUrl,
-    serviceRole ?? anonKey!,
-    serviceRole
-      ? {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        }
-      : undefined,
-  );
-
-  return cachedClient;
+  return clientPromise;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
