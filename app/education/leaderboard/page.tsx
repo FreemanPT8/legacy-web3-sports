@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Medal, Crown } from 'lucide-react';
 import { getCountryCodeFromName, getCountryName } from '@/lib/countries';
+import { Button } from '@/components/ui/button';
+import { useMediaLibrary } from '@/hooks/useMediaLibrary';
+import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 
 type UserEntry = {
   id: string;
@@ -32,10 +36,14 @@ const HERO_IMAGE_FALLBACK =
 
 export default function LeaderboardPage() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [globalLeaders, setGlobalLeaders] = useState<UserEntry[]>([]);
   const [countryLeaders, setCountryLeaders] = useState<CountryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [heroImageUrl, setHeroImageUrl] = useState(HERO_IMAGE_FALLBACK);
+  const mediaLibrary = useMediaLibrary();
+  const isSuperAdmin = user?.role === 'Super Admin';
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -157,16 +165,47 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
                   <Image
-                    src={HERO_IMAGE_FALLBACK}
+                    src={heroImageUrl}
                     alt="Global leaderboard spotlight"
                     fill
                     priority
                     className="object-cover opacity-90"
                   />
                   <div className="absolute inset-0 bg-gradient-to-tr from-[#000c12]/80 via-[#031821]/20 to-transparent" />
+                  {isSuperAdmin && (
+                    <div className="absolute right-4 top-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-white/50 bg-black/40 text-white hover:bg-black/60"
+                        onClick={() => mediaLibrary.openLibrary()}
+                      >
+                        Edit hero image
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
+
+            {isSuperAdmin && (
+              <MediaLibraryDialog
+                open={mediaLibrary.isOpen}
+                onOpenChange={(open) =>
+                  open ? mediaLibrary.openLibrary(mediaLibrary.activeTab) : mediaLibrary.closeLibrary()
+                }
+                library={mediaLibrary}
+                onSelect={(asset) => {
+                  if (asset?.url) {
+                    setHeroImageUrl(asset.url);
+                  }
+                  mediaLibrary.closeLibrary();
+                }}
+                title="Select leaderboard hero image"
+                description="Choose an image from the media library or upload a new one."
+                allowUrl
+              />
+            )}
 
             {error && (
               <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
