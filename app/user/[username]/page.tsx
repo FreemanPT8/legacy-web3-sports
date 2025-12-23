@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getXpLevelLabel } from '@/lib/education/xpLevels';
 import {
   User,
   Award,
@@ -69,16 +70,7 @@ export default function UserProfilePage() {
     setLoading(false);
   };
 
-  const getLevel = (xp: number) => {
-    if (xp >= 10000) return 'Legend';
-    if (xp >= 5000) return 'Master';
-    if (xp >= 3333) return 'Hall of Fame';
-    if (xp >= 1000) return 'Expert';
-    if (xp >= 555) return 'Advanced';
-    if (xp >= 369) return 'Intermediate';
-    if (xp >= 99) return 'Beginner';
-    return 'Newcomer';
-  };
+  const getLevel = (xp: number) => getXpLevelLabel(xp);
 
   const getTimeSince = (date: string) => {
     const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);

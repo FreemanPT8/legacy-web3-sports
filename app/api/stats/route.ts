@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+import { getXpLevelLabel } from '@/lib/education/xpLevels';
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,23 +88,12 @@ export async function GET(request: NextRequest) {
         xp: tx.amount,
       }));
 
-    const getLevel = (xp: number) => {
-      if (xp >= 10000) return 'Legend';
-      if (xp >= 5000) return 'Master';
-      if (xp >= 3333) return 'Hall of Fame';
-      if (xp >= 1000) return 'Expert';
-      if (xp >= 555) return 'Advanced';
-      if (xp >= 369) return 'Intermediate';
-      if (xp >= 99) return 'Beginner';
-      return 'Newcomer';
-    };
-
     return NextResponse.json({
       success: true,
       stats: {
         overview: {
           totalXP: user.xp_total || 0,
-          level: getLevel(user.xp_total || 0),
+          level: getXpLevelLabel(user.xp_total || 0),
           rank,
           streakCount: user.streak_count || 0,
           joinDate: user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A',

@@ -7,6 +7,10 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
+import {
+  XP_LEVELS,
+  getXpLevelLabel,
+} from '@/lib/education/xpLevels';
 import { cn } from '@/lib/utils';
 import {
   Card,
@@ -81,16 +85,7 @@ export default function EducationPage() {
     }
   };
 
-  const getLevel = (xp: number) => {
-    if (xp >= 10000) return t('education.level.legend');
-    if (xp >= 5000) return t('education.level.master');
-    if (xp >= 3333) return t('education.level.hallOfFame');
-    if (xp >= 1000) return t('education.level.expert');
-    if (xp >= 555) return t('education.level.advanced');
-    if (xp >= 369) return t('education.level.intermediate');
-    if (xp >= 99) return t('education.level.beginner');
-    return t('education.level.newcomer');
-  };
+  const getLevel = (xp: number) => getXpLevelLabel(xp);
 
   const formatStat = (value?: number | null) => {
     if (value === null || value === undefined) {
@@ -489,25 +484,16 @@ export default function EducationPage() {
                     {t('education.xpLevels')}
                   </h3>
                 <div className="space-y-3 text-sm">
-                  {[
-                    { levelKey: 'newcomer', xp: '0-98 XP' },
-                    { levelKey: 'beginner', xp: '99-368 XP' },
-                    { levelKey: 'intermediate', xp: '369-554 XP' },
-                    { levelKey: 'advanced', xp: '555-999 XP' },
-                    { levelKey: 'expert', xp: '1,000-3,332 XP' },
-                    { levelKey: 'hallOfFame', xp: '3,333-4,999 XP' },
-                    { levelKey: 'master', xp: '5,000-9,999 XP' },
-                    { levelKey: 'legend', xp: '10,000+ XP' },
-                  ].map((item) => (
+                  {XP_LEVELS.map((item) => (
                     <div
-                      key={item.levelKey}
+                      key={item.key}
                       className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] px-4 py-3"
                     >
-                        <span className="font-semibold text-white">
-                        {t(`education.level.${item.levelKey}`)}
+                      <span className="font-semibold text-white">
+                        {item.label}
                       </span>
                       <span className="text-sm text-cyan-100">
-                        {item.xp}
+                        {item.range}
                       </span>
                     </div>
                   ))}
