@@ -9,12 +9,19 @@ interface UseMediaLibraryOptions {
 
 export type MediaLibraryTab = 'library' | 'upload' | 'url';
 
+const DEFAULT_PAGE_SIZE = 50;
+
 type UploadPayload = {
   file: File;
   title?: string;
   alt?: string;
   tags?: string[];
   folder?: string;
+};
+
+type FetchOptions = {
+  cursor?: string | null;
+  reset?: boolean;
 };
 
 export function useMediaLibrary({
@@ -29,6 +36,8 @@ export function useMediaLibrary({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const { getToken } = useAuth();
 
   const registerAsset = useCallback((asset: MediaAsset) => {
@@ -36,11 +45,16 @@ export function useMediaLibrary({
   }, []);
 
   const fetchItems = useCallback(
-    async (search?: string) => {
+    async ({ cursor = null, reset = false }: FetchOptions = {}) => {
       setLoading(true);
       setError(null);
       try {
-        const query = search ? `?search=${encodeURIComponent(search)}` : '';
+        const params = new URLSearchParams();
+        params.set('limit', String(DEFAULT_PAGE_SIZE));
+        if (cursor) {
+          params.set('cursor', cursor);
+        }
+        const query = params.toString() ? `?${params.toString()}` : '';
         const headers: Record<string, string> = {};
         const token = getToken();
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -61,7 +75,14 @@ export function useMediaLibrary({
           const normalizedType = mime.split('/')[0] || 'file';
           return { ...file, type: normalizedType } as MediaAsset;
         });
-        setItems(normalized);
+        setItems((prev) => {
+          if (reset) return normalized;
+          const existingIds = new Set(prev.map((item) => item.id));
+          const appended = normalized.filter((asset) => !existingIds.has(asset.id));
+          return [...prev, ...appended];
+        });
+        setNextCursor(data.nextCursor ?? null);
+        setHasMore(Boolean(data.nextCursor));
       } catch (err) {
         setError(
           err instanceof Error
@@ -72,14 +93,14 @@ export function useMediaLibrary({
         setLoading(false);
       }
     },
-    [listEndpoint],
+    [getToken, listEndpoint],
   );
 
   const openLibrary = useCallback(
     async (tab: MediaLibraryTab = 'library') => {
       setActiveTab(tab);
       setIsOpen(true);
-      await fetchItems();
+      await fetchItems({ reset: true, cursor: null });
     },
     [fetchItems],
   );
@@ -190,6 +211,19 @@ export function useMediaLibrary({
     });
   }, [items, searchTerm]);
 
+  const refresh = useCallback(
+    () => fetchItems({ reset: true, cursor: null }),
+    [fetchItems],
+  );
+
+  const loadMore = useCallback(() => {
+    if (!nextCursor) return Promise.resolve();
+    return fetchItems({
+      cursor: nextCursor,
+      reset: false,
+    });
+  }, [fetchItems, nextCursor]);
+
   return {
     items: filteredItems,
     allItems: items,
@@ -204,9 +238,12 @@ export function useMediaLibrary({
     setActiveTab,
     openLibrary,
     closeLibrary,
-    refresh: fetchItems,
+    refresh,
     uploadAsset,
     registerAsset,
     deleteAsset,
+    loadMore,
+    hasMore,
+    pageSize: DEFAULT_PAGE_SIZE,
   };
 }

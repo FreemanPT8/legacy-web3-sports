@@ -62,7 +62,11 @@ export function MediaLibraryDialog({
 
   const [page, setPage] = useState(1);
   const mediaItems = useMemo(() => library.items, [library.items]);
-  const totalPages = Math.max(1, Math.ceil(mediaItems.length / LIBRARY_PAGE_SIZE));
+  const effectivePageSize = library.pageSize ?? LIBRARY_PAGE_SIZE;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(mediaItems.length / effectivePageSize),
+  );
 
   useEffect(() => {
     if (page > totalPages) {
@@ -71,14 +75,15 @@ export function MediaLibraryDialog({
   }, [totalPages, page]);
 
   const paginatedItems = useMemo(() => {
-    const start = (page - 1) * LIBRARY_PAGE_SIZE;
-    return mediaItems.slice(start, start + LIBRARY_PAGE_SIZE);
-  }, [mediaItems, page]);
+    const start = (page - 1) * effectivePageSize;
+    return mediaItems.slice(start, start + effectivePageSize);
+  }, [mediaItems, page, effectivePageSize]);
 
   const recentUploads = useMemo(() => library.allItems.slice(0, 4), [library.allItems]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
+      setPage(1);
       library.openLibrary(library.activeTab);
     } else {
       library.closeLibrary();
@@ -86,6 +91,23 @@ export function MediaLibraryDialog({
     }
     onOpenChange(nextOpen);
   };
+
+  useEffect(() => {
+    if (
+      page * effectivePageSize > mediaItems.length &&
+      library.hasMore &&
+      !library.loading
+    ) {
+      void library.loadMore();
+    }
+  }, [
+    page,
+    effectivePageSize,
+    mediaItems.length,
+    library.hasMore,
+    library.loading,
+    library.loadMore,
+  ]);
 
   const [assetToDelete, setAssetToDelete] = useState<MediaAsset | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -216,7 +238,10 @@ export function MediaLibraryDialog({
                 variant="outline"
                 size="icon"
                 className={secondaryButtonClasses}
-                onClick={() => library.refresh()}
+                onClick={() => {
+                  setPage(1);
+                  library.refresh();
+                }}
                 disabled={library.loading}
               >
                 {library.loading ? (
@@ -298,7 +323,7 @@ export function MediaLibraryDialog({
                 )}
               </div>
             </ScrollArea>
-            {mediaItems.length > LIBRARY_PAGE_SIZE && (
+            {(mediaItems.length > effectivePageSize || library.hasMore) && (
               <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#03121a] px-4 py-2 text-sm text-slate-200">
                 <Button
                   type="button"
@@ -313,18 +338,20 @@ export function MediaLibraryDialog({
                 <p>
                   Page {page} of {totalPages}
                 </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className={secondaryButtonClasses}
-                  disabled={page === totalPages}
-                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={secondaryButtonClasses}
+                disabled={!library.hasMore && page === totalPages}
+                onClick={() =>
+                  setPage((prev) => Math.min(totalPages + 1, prev + 1))
+                }
+              >
+                Next
+              </Button>
+            </div>
+          )}
             {recentUploads.length > 0 && (
               <div>
                 <h3 className="mt-4 text-xs font-semibold uppercase text-slate-400">
