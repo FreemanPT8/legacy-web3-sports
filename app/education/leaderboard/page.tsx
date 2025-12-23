@@ -62,6 +62,24 @@ const HERO_IMAGE_FALLBACK =
   process.env.NEXT_PUBLIC_LEADERBOARD_HERO_IMAGE ||
   'https://images.unsplash.com/photo-1505843267-3ff30ae28fd7?auto=format&fit=crop&w=1600&q=80';
 
+const getFlagEmoji = (code?: string | null) => {
+  if (!code) return '🌐';
+  const trimmed = code.trim();
+  if (trimmed.length !== 2) return '🌐';
+  const upper = trimmed.toUpperCase();
+  const OFFSET = 127397;
+  return upper.replace(/./g, (char) =>
+    String.fromCodePoint(char.charCodeAt(0) + OFFSET),
+  );
+};
+
+const normalizeCountryCode = (value?: string | null) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (trimmed.length === 2) return trimmed.toUpperCase();
+  return getCountryCodeFromName(trimmed);
+};
+
 export default function LeaderboardPage() {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -250,31 +268,61 @@ export default function LeaderboardPage() {
     },
   ];
 
-  const highlightTiles = [
+  const topMemberItems = topThree.map((member) => {
+    const countryCode = normalizeCountryCode(member.country);
+    return {
+      key: member.id,
+      name: member.username,
+      subtitle: member.country || t('leaderboard.globalRankings'),
+      flag: getFlagEmoji(countryCode),
+      value: member.xp_total ?? 0,
+    };
+  });
+
+  const topCountryItems = [...countryLeaders]
+    .sort((a, b) => b.memberCount - a.memberCount || (b.totalXP ?? 0) - (a.totalXP ?? 0))
+    .slice(0, 3)
+    .map((country) => ({
+      key: country.code,
+      name: country.name,
+      subtitle: `${formatNumber(country.memberCount)} ${t('leaderboard.members')}`,
+      flag: getFlagEmoji(country.code),
+      value: country.totalXP ?? 0,
+    }));
+
+  const topHouseItems = [...houseLeaderboard]
+    .sort((a, b) => (b.totalXp ?? 0) - (a.totalXp ?? 0))
+    .slice(0, 3)
+    .map((house) => ({
+      key: house.houseId,
+      name: house.name,
+      subtitle: house.countryCode ? getCountryName(house.countryCode) : t('leaderboard.countryRankings'),
+      flag: getFlagEmoji(house.countryCode),
+      value: house.totalXp ?? 0,
+      extra: house.sportName || house.sportCode || '',
+    }));
+
+  const highlightSections = [
     {
-      key: 'member',
-      label: 'Top Member',
-      value: topMember ? topMember.username : '—',
-      description: topMember ? `${formatNumber(topMember.xp_total)} XP` : 'No data available',
-      caption: topMember?.country || t('leaderboard.globalRankings'),
+      key: 'members',
+      label: 'Top Members',
+      items: topMemberItems,
+      emptyLabel: t('leaderboard.noRankings'),
     },
     {
-      key: 'country',
-      label: 'Top Country',
-      value: topCountryFromHouses ? topCountryFromHouses.name : '—',
-      description: topCountryFromHouses
-        ? `${formatNumber(topCountryFromHouses.totalXp)} XP acumulado`
-        : t('leaderboard.noCountryRankings'),
-      caption: topCountryFromHouses ? topCountryFromHouses.code : '',
+      key: 'countries',
+      label: 'Top Countries',
+      items: topCountryItems,
+      emptyLabel: t('leaderboard.noCountryRankings'),
     },
     {
-      key: 'house',
-      label: 'Top House',
-      value: topHouse ? topHouse.name : '—',
-      description: topHouse ? `${formatNumber(topHouse.totalXp)} XP` : t('leaderboard.housesRankingsDesc'),
-      caption: topHouse?.sportName || topHouse?.sportCode || '',
+      key: 'houses',
+      label: 'Top Houses',
+      items: topHouseItems,
+      emptyLabel: t('leaderboard.housesRankingsDesc'),
     },
   ];
+
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
@@ -344,17 +392,51 @@ export default function LeaderboardPage() {
               </div>
             </section>
             <section className="grid gap-4 md:grid-cols-3">
-              {highlightTiles.map((tile) => (
+              {highlightSections.map((section) => (
                 <div
-                  key={tile.key}
+                  key={section.key}
                   className="rounded-2xl border border-white/10 bg-[#04131b] p-5 shadow-lg shadow-black/40"
                 >
-                  <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">{tile.label}</p>
-                  <p className="mt-3 text-2xl font-semibold text-[#5af3ff]">{tile.value}</p>
-                  <p className="text-sm text-slate-300">{tile.description}</p>
-                  {tile.caption && (
-                    <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">{tile.caption}</p>
-                  )}
+                  <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">{section.label}</p>
+                  <div className="mt-4 space-y-3">
+                    {section.items.length === 0 ? (
+                      <p className="text-sm text-slate-400">{section.emptyLabel}</p>
+                    ) : (
+                      section.items.map((item, index) => (
+                        <div
+                          key={item.key ?? `${section.key}-${index}`}
+                          className="flex items-center justify-between rounded-xl border border-white/10 bg-[#000c12]/60 p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full border border-white/20 text-xs font-semibold text-[#fdd87c] flex items-center justify-center">
+                              #{index + 1}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl" aria-hidden>
+                                {item.flag}
+                              </span>
+                              <div>
+                                <p className="font-semibold text-white">{item.name}</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                                  {item.subtitle}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-[#5af3ff]">
+                              {formatNumber(item.value)} XP
+                            </p>
+                            {item.extra && (
+                              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
+                                {item.extra}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               ))}
             </section>
