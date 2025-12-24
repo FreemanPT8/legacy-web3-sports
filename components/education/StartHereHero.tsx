@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, Globe, ArrowRight, CheckCircle, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import type { ProgressFetchState } from '@/components/education/LevelTimeline';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { XP_LEVELS } from '@/lib/education/xpLevels';
 
 const LANGUAGE_METADATA: Record<
   string,
@@ -51,6 +52,7 @@ export function StartHereHero({
   }, [availableLanguages, preferredLanguage, startCourse?.primary_language]);
 
   const [activeLanguage, setActiveLanguage] = useState(defaultLanguage);
+  const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
 
   useEffect(() => {
     setActiveLanguage(defaultLanguage);
@@ -62,18 +64,17 @@ export function StartHereHero({
   const isFallback = state === 'fallback';
 
   const completionPercent = startHere?.progressPercent ?? 0;
+  const hasStarted = (startHere?.completedLessons ?? 0) > 0;
+  const isCompleted = Boolean(startHere?.isCompleted);
   const heroTitle =
     getContentByLanguage(startCourse?.title, activeLanguage) || 'COMEÇA AQUI';
   const heroDescription =
     getContentByLanguage(startCourse?.description, activeLanguage) ||
     'O teu ponto de partida obrigatório na Academia Legacy.';
 
-  const ctaHref =
-    startHere?.isCompleted && startHere?.slug
-      ? '/education/courses'
-      : `/education/courses/${startHere?.slug || 'comeca-aqui'}`;
+  const ctaHref = `/education/courses/${startHere?.slug || 'comeca-aqui'}`;
 
-  const ctaLabel = startHere?.isCompleted ? 'Explorar cursos' : 'Continuar curso';
+  const ctaLabel = !hasStarted ? 'Começar Curso' : !isCompleted ? 'Continuar Curso' : 'Rever Curso';
   const progressLabel = startHere
     ? `${startHere.completedLessons}/${startHere.totalLessons} lições`
     : '0 lições concluídas';
@@ -157,35 +158,31 @@ export function StartHereHero({
                   .join(', ')}
               </span>
             </div>
-            {startHere?.isCompleted ? (
+            {startHere?.isCompleted && (
               <div className="flex items-center gap-2 text-emerald-300">
                 <CheckCircle className="h-4 w-4" />
                 <span>Curso concluído · podes avançar para Cadetes</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="border-cyan-300/50 bg-transparent text-[10px] uppercase tracking-[0.4em] text-cyan-200">
-                  Passo 1
-                </Badge>
-                <span>Completa este curso para desbloquear Cadetes</span>
               </div>
             )}
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href={ctaHref}>
-              <Button size="lg" className="gap-2">
-                {ctaLabel}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            {!startHere?.isCompleted && (
-              <Link href="/education/courses">
-                <Button variant="ghost" className="text-slate-200">
-                  Ver Percursos
+            {!isCompleted && (
+              <Link href={ctaHref}>
+                <Button size="lg" className="gap-2">
+                  {hasStarted ? 'Continuar Curso' : 'Começar Curso'}
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             )}
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-slate-200"
+              onClick={() => setIsRoadmapOpen(true)}
+            >
+              Ver Percursos
+            </Button>
           </div>
 
           {isFallback && (
@@ -222,7 +219,181 @@ export function StartHereHero({
           )}
         </div>
       </div>
+      <RoadmapDialog
+        open={isRoadmapOpen}
+        onOpenChange={setIsRoadmapOpen}
+        summary={summary}
+        startCourseSlug={startHere?.slug || 'comeca-aqui'}
+      />
     </div>
+  );
+}
+
+type RoadmapDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  summary: ProgressSummary | null;
+  startCourseSlug: string;
+};
+
+type ModalLevel = {
+  slug: string;
+  title: string;
+  minXp?: number | null;
+  maxXp?: number | null;
+  isUnlocked: boolean;
+  progressPercent: number;
+  lockedReason?: string | null;
+};
+
+function RoadmapDialog({ open, onOpenChange, summary, startCourseSlug }: RoadmapDialogProps) {
+  const xpTotal = summary?.xp?.total ?? 0;
+  const currentLevelKey = summary?.xp?.currentLevel?.key ?? null;
+  const levels = useMemo<ModalLevel[]>(() => {
+    if (summary?.levels?.length) {
+      return summary.levels
+        .filter((level) => level.isVisible)
+        .map((level) => ({
+          slug: level.slug,
+          title: level.title,
+          minXp: level.minXp,
+          maxXp: level.maxXp,
+          isUnlocked: level.isUnlocked,
+          progressPercent: level.progressPercent,
+          lockedReason: level.lockedReason,
+        }));
+    }
+    return XP_LEVELS.map((level) => {
+      const maxXp = (level as { max?: number }).max ?? null;
+      const unlocked = xpTotal >= level.min;
+      const progressPercent =
+        unlocked && typeof maxXp === 'number'
+          ? Math.min(
+              100,
+              Math.round(
+                ((Math.min(xpTotal, maxXp) - level.min) / Math.max((maxXp ?? level.min + 1) - level.min, 1)) *
+                  100,
+              ),
+            )
+          : unlocked
+            ? 5
+            : 0;
+
+      return {
+        slug: level.key,
+        title: level.label,
+        minXp: level.min,
+        maxXp,
+        isUnlocked: unlocked,
+        progressPercent,
+        lockedReason: unlocked ? null : 'Ganha mais XP para desbloquear.',
+      };
+    });
+  }, [summary, xpTotal]);
+
+  const tips = [
+    {
+      label: 'Explorar Cursos',
+      href: '/education/courses',
+      description: 'Escolhe novos módulos para acumular XP rapidamente.',
+    },
+    {
+      label: 'Voltar ao COMEÇA AQUI',
+      href: `/education/courses/${startCourseSlug}`,
+      description: 'Completa lições em falta para desbloquear Cadetes.',
+    },
+    {
+      label: 'Ler o Blog',
+      href: '/blog',
+      description: 'Aprende diariamente e garante XP adicional por atividade.',
+    },
+  ];
+
+  const currentLevel = summary?.xp?.currentLevel;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-[#01050b] text-white border border-white/10 max-w-2xl">
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="text-2xl font-semibold text-white">Mapa de Percursos</DialogTitle>
+          <p className="text-sm text-slate-300">
+            Visualiza os níveis disponíveis, acompanha o teu XP e descobre como ganhar mais pontos.
+          </p>
+        </DialogHeader>
+        <div className="space-y-6 text-sm text-slate-200">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">O teu XP</p>
+            <div className="mt-1 text-3xl font-semibold text-white">{xpTotal.toLocaleString()} XP</div>
+            <p className="text-xs text-slate-300">
+              {currentLevel?.label || 'Cadete'}
+              {currentLevel?.nextLevelLabel && typeof currentLevel?.xpToNext === 'number'
+                ? ` · ${currentLevel.xpToNext} XP para ${currentLevel.nextLevelLabel}`
+                : ''}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {levels.map((level) => {
+              const isCurrent = currentLevelKey ? currentLevelKey === level.slug : false;
+              const minText =
+                typeof level.minXp === 'number' ? level.minXp.toLocaleString() : '0';
+              const maxText =
+                typeof level.maxXp === 'number' ? level.maxXp.toLocaleString() : '∞';
+              const rangeText =
+                typeof level.maxXp === 'number' ? `${minText}-${maxText} XP` : `${minText}+ XP`;
+              return (
+                <div
+                  key={level.slug}
+                  className={cn(
+                    'rounded-2xl border border-white/10 bg-[#02060d] p-4 transition',
+                    isCurrent && 'border-cyan-300 bg-cyan-300/10 shadow-[0_0_25px_rgba(34,211,238,0.25)]',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{level.title}</p>
+                      <p className="text-xs text-slate-400">{rangeText}</p>
+                    </div>
+                    <span className="text-xs text-slate-300">
+                      {Math.min(level.progressPercent ?? 0, 100)}%
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 rounded-full bg-white/10">
+                    <div
+                      className="h-2 rounded-full bg-cyan-300 transition-all"
+                      style={{ width: `${Math.min(level.progressPercent ?? 0, 100)}%` }}
+                    />
+                  </div>
+                  {!level.isUnlocked && (
+                    <p className="mt-2 text-xs text-slate-400">{level.lockedReason}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-sm font-semibold text-white">Dicas para subir XP</p>
+            <div className="mt-3 flex flex-col gap-2 text-sm">
+              {tips.map((tip) => (
+                <Link
+                  key={tip.label}
+                  href={tip.href}
+                  onClick={() => onOpenChange(false)}
+                  className="flex items-center justify-between rounded-xl border border-white/10 bg-[#000c12] px-4 py-3 text-left hover:border-cyan-300 transition"
+                >
+                  <div>
+                    <p className="font-semibold text-white">{tip.label}</p>
+                    <p className="text-xs text-slate-400">{tip.description}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-cyan-300" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
