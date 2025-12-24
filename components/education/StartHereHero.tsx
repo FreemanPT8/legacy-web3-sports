@@ -9,6 +9,7 @@ import type { ProgressSummary } from '@/lib/education/progressSummary';
 import type { ProgressFetchState } from '@/components/education/LevelTimeline';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { XP_LEVELS } from '@/lib/education/xpLevels';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LANGUAGE_METADATA: Record<
   string,
@@ -51,6 +52,7 @@ export function StartHereHero({
     return availableLanguages[0] || 'pt';
   }, [availableLanguages, preferredLanguage, startCourse?.primary_language]);
 
+  const { getToken } = useAuth();
   const [activeLanguage, setActiveLanguage] = useState(defaultLanguage);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [courseStats, setCourseStats] = useState<{ totalLessons?: number; completedLessons?: number } | null>(null);
@@ -115,7 +117,9 @@ export function StartHereHero({
     const needsRemoteStats =
       !!courseTarget && (summaryLessons <= 0 || summaryCompleted <= 0);
 
-    if (!needsRemoteStats) {
+    const token = getToken?.();
+
+    if (!needsRemoteStats || !token) {
       setCourseStats(null);
       setIsCourseStatsLoading(false);
       return;
@@ -125,8 +129,12 @@ export function StartHereHero({
     const fetchStats = async () => {
       setIsCourseStatsLoading(true);
       try {
+        const headers: HeadersInit = {
+          Authorization: `Bearer ${token}`,
+        };
         const response = await fetch(`/api/courses/${courseTarget}`, {
           signal: controller.signal,
+          headers,
         });
         const data = await response.json();
         if (response.ok && data?.success && data?.course) {
@@ -162,7 +170,7 @@ export function StartHereHero({
 
     void fetchStats();
     return () => controller.abort();
-  }, [courseTarget, startHere?.totalLessons, startHere?.completedLessons]);
+  }, [courseTarget, startHere?.totalLessons, startHere?.completedLessons, getToken]);
 
   if (isAnonymous) {
     return (
