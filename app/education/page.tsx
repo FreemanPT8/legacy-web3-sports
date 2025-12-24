@@ -14,6 +14,7 @@ import {
 import { LevelTimeline, type ProgressFetchState } from '@/components/education/LevelTimeline';
 import { StartHereHero } from '@/components/education/StartHereHero';
 import { LevelSections } from '@/components/education/LevelSections';
+import { NextUnlockCTA } from '@/components/education/NextUnlockCTA';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 const XP_LEVEL_BLOCK_COPY: Record<
   'pt' | 'es' | 'en',
@@ -405,7 +406,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        <section className="bg-[#01050b] py-12">
+        <section id="levels" className="bg-[#01050b] py-12">
           <div className="mx-auto max-w-6xl px-6">
             <div className="mb-8">
               <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">Evolução</p>
@@ -773,6 +774,8 @@ export default function EducationPage() {
           </div>
         </section>
       </main>
+
+      <NextUnlockCTA summary={progressSummary} state={progressState} />
 
       <Footer />
     </div>

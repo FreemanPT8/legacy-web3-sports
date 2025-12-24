@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Lock, CheckCircle } from 'lucide-react';
+import { ArrowRight, Lock, CheckCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
@@ -12,6 +13,32 @@ type Props = {
 };
 
 export function LevelSections({ summary }: Props) {
+  const levels = summary?.levels || [];
+  const coursesByLevel = summary?.coursesByLevel || {};
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setExpandedSlug(null);
+      return;
+    }
+    if (!expandedSlug && levels.length > 0) {
+      setExpandedSlug(levels[0].slug);
+    }
+  }, [isMobile, levels, expandedSlug]);
+
   if (!summary) {
     return (
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
@@ -20,14 +47,22 @@ export function LevelSections({ summary }: Props) {
     );
   }
 
-  const { levels, coursesByLevel } = summary;
-
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
       {levels.map((level) => {
         const courses = coursesByLevel[level.slug] || [];
+        const expanded = !isMobile || expandedSlug === level.slug;
         return (
-          <LevelSection key={level.slug} level={level} courses={courses} />
+          <LevelSection
+            key={level.slug}
+            level={level}
+            courses={courses}
+            isMobile={isMobile}
+            expanded={expanded}
+            onToggle={() =>
+              setExpandedSlug((prev) => (prev === level.slug ? null : level.slug))
+            }
+          />
         );
       })}
     </div>
@@ -37,9 +72,18 @@ export function LevelSections({ summary }: Props) {
 type LevelSectionProps = {
   level: ProgressSummary['levels'][number];
   courses: LevelCourseSummary[];
+  isMobile: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 };
 
-function LevelSection({ level, courses }: LevelSectionProps) {
+function LevelSection({
+  level,
+  courses,
+  isMobile,
+  expanded,
+  onToggle,
+}: LevelSectionProps) {
   const accent = level.accentColor || '#1ccfdd';
   const isLocked = !level.isUnlocked;
 
@@ -49,19 +93,42 @@ function LevelSection({ level, courses }: LevelSectionProps) {
         'rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 px-6 py-8 shadow-[0_20px_60px_rgba(2,6,12,0.55)]',
         isLocked && 'opacity-70',
       )}
-      style={{
-        borderColor: `${accent}33`,
-      }}
+      style={{ borderColor: `${accent}33` }}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {isMobile && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+        >
+          <div>
+            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+              {level.shortLabel || level.title}
+            </p>
+            <p className="text-lg font-semibold">{level.title}</p>
+            <p className="text-xs text-slate-400">{formatRange(level.minXp, level.maxXp)}</p>
+          </div>
+          <ChevronDown
+            className={cn(
+              'h-5 w-5 text-slate-300 transition-transform',
+              expanded ? 'rotate-180' : 'rotate-0',
+            )}
+          />
+        </button>
+      )}
+
+      <div
+        className={cn(
+          'mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between',
+          isMobile && !expanded && 'hidden',
+        )}
+      >
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
             {level.shortLabel || level.title}
           </p>
           <h3 className="mt-1 text-3xl font-semibold text-white">{level.title}</h3>
-          <p className="text-sm text-slate-300">
-            {formatRange(level.minXp, level.maxXp)}
-          </p>
+          <p className="text-sm text-slate-300">{formatRange(level.minXp, level.maxXp)}</p>
         </div>
         <div className="flex flex-col gap-2 text-sm text-slate-300 md:items-end">
           <div className="flex items-center gap-2">
@@ -84,7 +151,12 @@ function LevelSection({ level, courses }: LevelSectionProps) {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div
+        className={cn(
+          'mt-6 grid gap-4 md:grid-cols-2',
+          isMobile && !expanded && 'hidden',
+        )}
+      >
         {courses.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 bg-transparent p-4 text-sm text-slate-300">
             Ainda não existem cursos atribuídos a este nível.
@@ -118,12 +190,10 @@ function CourseCard({
   return (
     <div
       className={cn(
-        'flex flex-col rounded-2xl border border-white/10 bg-[#050b12] p-4 transition hover:border-white/30',
+        'flex flex-col rounded-2xl border border-white/10 bg-[#050b12] p-4 transition hover:border-white/30 focus-within:border-cyan-200/60',
         isLocked && 'opacity-60',
       )}
-      style={{
-        borderColor: `${accent}33`,
-      }}
+      style={{ borderColor: `${accent}33` }}
     >
       <div className="flex items-center justify-between gap-2">
         <div>
@@ -147,9 +217,7 @@ function CourseCard({
             )}
           </div>
         </div>
-        <div className="text-xs text-slate-400">
-          {course.slug ? `/${course.slug}` : ''}
-        </div>
+        <div className="text-xs text-slate-400">{course.slug ? `/${course.slug}` : ''}</div>
       </div>
 
       <div className="mt-4 flex items-center justify-between">
@@ -159,11 +227,8 @@ function CourseCard({
             <span>Nível bloqueado</span>
           </div>
         ) : (
-          <Link href={course.slug ? `/education/courses/${course.slug}` : '#'}>
-            <Button
-              variant="ghost"
-              className="text-white hover:text-cyan-300"
-            >
+          <Link href={course.slug ? `/education/courses/${course.slug}` : '#'} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+            <Button variant="ghost" className="text-white hover:text-cyan-300">
               Aceder curso
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
