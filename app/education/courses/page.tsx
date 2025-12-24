@@ -18,6 +18,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
 import { CourseHubV2 } from '@/components/education/CourseHubV2';
+import { StartHereHero } from '@/components/education/StartHereHero';
+import { LevelTimeline, type ProgressFetchState } from '@/components/education/LevelTimeline';
+import { LevelSections } from '@/components/education/LevelSections';
+import { NextUnlockCTA } from '@/components/education/NextUnlockCTA';
+import type { ProgressSummary } from '@/lib/education/progressSummary';
 import {
   BookOpen,
   Award,
@@ -130,6 +135,8 @@ export default function CoursesPage() {
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(!USE_COURSE_HUB_V2);
+  const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
+  const [progressState, setProgressState] = useState<ProgressFetchState>('idle');
 
   const userXP = user?.xp_total || 0;
 
@@ -171,6 +178,42 @@ export default function CoursesPage() {
 
     fetchCourses();
   }, [getToken]);
+
+  useEffect(() => {
+    if (!user) {
+      setProgressSummary(null);
+      setProgressState('anonymous');
+      return;
+    }
+    const controller = new AbortController();
+    const fetchSummary = async () => {
+      setProgressState('loading');
+      try {
+        const token = getToken();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const response = await fetch('/api/education/progress', {
+          method: 'GET',
+          headers,
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error('Failed to load progress summary');
+        const data = await response.json();
+        if (!data.success || !data.summary) {
+          throw new Error('Invalid progress response');
+        }
+        setProgressSummary(data.summary as ProgressSummary);
+        setProgressState('success');
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          console.error('Failed to load progress summary', error);
+          setProgressState('error');
+        }
+      }
+    };
+    void fetchSummary();
+    return () => controller.abort();
+  }, [user, getToken]);
 
   const getLevelBadge = (level?: string | null) => {
     const baseClass =
@@ -231,7 +274,29 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
-      <main className="flex-1 py-10">
+      <main className="flex-1 py-10 space-y-16">
+        <section className="bg-[#01050b] py-10">
+          <div className="container mx-auto px-4">
+            <StartHereHero
+              summary={progressSummary}
+              state={progressState}
+              preferredLanguage={language}
+            />
+          </div>
+        </section>
+
+        <section className="bg-[#000c12]">
+          <div className="container mx-auto px-4">
+            <LevelTimeline summary={progressSummary} state={progressState} />
+          </div>
+        </section>
+
+        <section id="levels" className="bg-[#01050b] py-8">
+          <div className="container mx-auto px-4">
+            <LevelSections summary={progressSummary} />
+          </div>
+        </section>
+
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl">
             {/* Hero */}
@@ -473,6 +538,7 @@ export default function CoursesPage() {
             )}
           </div>
         </div>
+        <NextUnlockCTA summary={progressSummary} state={progressState} />
       </main>
       <Footer />
     </div>

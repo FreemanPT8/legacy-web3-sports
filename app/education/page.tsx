@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -11,11 +11,6 @@ import {
   XP_LEVELS,
   getXpLevelLabel,
 } from '@/lib/education/xpLevels';
-import { LevelTimeline, type ProgressFetchState } from '@/components/education/LevelTimeline';
-import { StartHereHero } from '@/components/education/StartHereHero';
-import { LevelSections } from '@/components/education/LevelSections';
-import { NextUnlockCTA } from '@/components/education/NextUnlockCTA';
-import type { ProgressSummary } from '@/lib/education/progressSummary';
 const XP_LEVEL_BLOCK_COPY: Record<
   'pt' | 'es' | 'en',
   { title: string; range: string }[]
@@ -74,39 +69,12 @@ import {
 } from 'lucide-react';
 
 export default function EducationPage() {
-  const { user, getToken } = useAuth();
+  const { user } = useAuth();
   const { language, t } = useLanguage();
   const [stats, setStats] = useState<any>(null);
   const [topCourses, setTopCourses] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
-  const [progressState, setProgressState] = useState<ProgressFetchState>('idle');
-
-  const courseUnlockMap = useMemo(() => {
-    if (!progressSummary) return {};
-    const map: Record<
-      string,
-      { levelSlug: string; levelTitle: string; isUnlocked: boolean; isCompleted: boolean }
-    > = {};
-
-    progressSummary.levels.forEach((level) => {
-      const courses = progressSummary.coursesByLevel[level.slug] || [];
-      courses.forEach((course) => {
-        if (course.slug) {
-          map[course.slug] = {
-            levelSlug: level.slug,
-            levelTitle: level.title,
-            isUnlocked: level.isUnlocked,
-            isCompleted: course.isCompleted,
-          };
-        }
-      });
-    });
-
-    return map;
-  }, [progressSummary]);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -127,46 +95,25 @@ export default function EducationPage() {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      setProgressSummary(null);
-      setProgressState('anonymous');
-      return;
-    }
-
-    const controller = new AbortController();
-    const fetchSummary = async () => {
-      setProgressState('loading');
+    const fetchData = async () => {
       try {
-        const token = getToken();
-        const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
-        }
-        const response = await fetch('/api/education/progress', {
-          method: 'GET',
-          headers,
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          throw new Error('Failed to load progress summary');
-        }
+        const response = await fetch('/api/education/stats');
         const data = await response.json();
-        if (!data.success || !data.summary) {
-          throw new Error('Invalid progress response');
+        if (data.success) {
+          setStats(data.stats);
+          setTopCourses(data.topCourses);
+          setLeaderboard(data.topLeaderboard);
         }
-        setProgressSummary(data.summary as ProgressSummary);
-        setProgressState('success');
-      } catch (error: any) {
-        if (error?.name !== 'AbortError') {
-          console.error('Failed to load /api/education/progress', error);
-          setProgressState('error');
-        }
+      } catch (error) {
+        console.error('Failed to fetch education stats:', error);
       }
+      setLoading(false);
     };
 
-    void fetchSummary();
-    return () => controller.abort();
-  }, [user, getToken]);
+    fetchData();
+  }, []);
+
+
 
   const getLevelBadge = (level: string) => {
     switch (level) {
@@ -287,20 +234,59 @@ export default function EducationPage() {
                   </CardHeader>
                 </Card>
               </div>
-              <div className="mt-10">
-                <LevelTimeline summary={progressSummary} state={progressState} />
-              </div>
             </div>
           </div>
         </section>
 
-        <section className="bg-[#01050b] py-10">
-          <div className="mx-auto max-w-6xl px-6">
-            <StartHereHero
-              summary={progressSummary}
-              state={progressState}
-              preferredLanguage={language}
-            />
+        <section className="bg-[#01050b] py-12">
+          <div className="mx-auto max-w-6xl px-6 grid gap-10 md:grid-cols-2">
+            <div>
+              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
+                {t('education.hero.subtitle')}
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold text-white">
+                {t('education.cta.title')}
+              </h2>
+              <p className="mt-3 text-sm text-slate-300">
+                Acede a conteúdos exclusivos, missões e badges quando crias uma conta e entras na Academia Web3.
+              </p>
+              <div className="mt-6 space-y-3 text-sm text-slate-200">
+                <p>1. {t('education.step.join') || 'Regista-te gratuitamente.'}</p>
+                <p>2. {t('education.step.startHere') || 'Completa o curso COMEÇA AQUI.'}</p>
+                <p>3. {t('education.step.unlock') || 'Desbloqueia níveis e badges.'}</p>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/signup">
+                  <Button size="lg">{t('cta.startJourney')}</Button>
+                </Link>
+                {!user && (
+                  <Link href="/login">
+                    <Button size="lg" variant="outline" className="border-white/40 text-white">
+                      {t('auth.login')}
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                {t('education.previewLevels') || 'Pré-visualização dos níveis'}
+              </h3>
+              <div className="space-y-3 text-sm">
+                {XP_LEVELS.slice(0, 4).map((item) => (
+                  <div
+                    key={item.key}
+                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3"
+                  >
+                    <span className="font-semibold text-white">{item.label}</span>
+                    <span className="text-slate-300">{item.range}</span>
+                  </div>
+                ))}
+                <p className="text-xs text-slate-400">
+                  {t('education.previewHint') || 'Regista-te para ver a timeline completa, badges e cursos disponíveis em cada nível.'}
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -406,16 +392,29 @@ export default function EducationPage() {
           </div>
         </section>
 
-        <section id="levels" className="bg-[#01050b] py-12">
+        <section className="bg-[#020b14] py-12" id="levels">
           <div className="mx-auto max-w-6xl px-6">
-            <div className="mb-8">
-              <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">Evolução</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Percursos por Nível</h2>
+            <div className="text-center mb-8">
+              <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">Academia em níveis</p>
+              <h2 className="mt-2 text-3xl font-semibold text-white">Desbloqueia conteúdos progressivos</h2>
               <p className="mt-2 text-sm text-slate-300">
-                Cada bloco desbloqueia novos cursos assim que cumpres os requisitos de XP e conclusão.
+                Vê um sneak peek dos caminhos disponíveis. Depois de entrares, poderás acompanhar o teu progresso em tempo real.
               </p>
             </div>
-            <LevelSections summary={progressSummary} />
+            <div className="grid gap-4 md:grid-cols-4">
+              {XP_LEVELS.slice(0, 4).map((item) => (
+                <div
+                  key={item.key}
+                  className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-6 text-center text-white"
+                >
+                  <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{item.label}</p>
+                  <p className="mt-2 text-sm text-slate-300">{item.range}</p>
+                  <p className="mt-4 text-xs text-slate-400">
+                    {t('education.previewcta') || 'Disponível após login.'}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -457,14 +456,8 @@ export default function EducationPage() {
                       course.description,
                       language,
                     );
-                    const levelMeta =
-                      typeof course.slug === 'string'
-                        ? courseUnlockMap[course.slug]
-                        : null;
-                    const xpLocked =
-                      course.xp_required > (user?.xp_total || 0);
                     const isLocked =
-                      levelMeta ? !levelMeta.isUnlocked : xpLocked;
+                      course.xp_required > (user?.xp_total || 0);
                     const modulesArray = Array.isArray(course.modules)
                       ? course.modules
                       : [];
@@ -481,12 +474,7 @@ export default function EducationPage() {
                     return (
                         <Card
                           key={course.id}
-                          className={cn(
-                            'border bg-[#000c12] transition-all',
-                            isLocked
-                              ? 'border-white/10 opacity-70'
-                              : 'border-cyan-300/30 shadow-[0_0_25px_rgba(34,211,238,0.25)] hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]',
-                          )}
+                          className="border border-white/10 bg-[#000c12] hover:border-primary/70 hover:shadow-[0_0_25px_rgba(45,212,191,0.25)] transition-all"
                         >
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
@@ -520,11 +508,8 @@ export default function EducationPage() {
                                 className="w-full border-white/30 text-slate-300"
                                 disabled
                               >
-                                {levelMeta && !levelMeta.isUnlocked
-                                  ? `Desbloqueia ${levelMeta.levelTitle}`
-                                  : `${t('education.unlockAt') || 'Unlock at'} ${
-                                      course.xp_required
-                                    } XP`}
+                                {t('education.unlockAt') || 'Unlock at'}{' '}
+                                {course.xp_required} XP
                               </Button>
                             ) : (
                               <Link href={`/education/courses/${course.id}`}>
@@ -774,8 +759,6 @@ export default function EducationPage() {
           </div>
         </section>
       </main>
-
-      <NextUnlockCTA summary={progressSummary} state={progressState} />
 
       <Footer />
     </div>
