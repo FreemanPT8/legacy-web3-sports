@@ -1,0 +1,237 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Sparkles, Globe, ArrowRight, CheckCircle, Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import type { ProgressSummary } from '@/lib/education/progressSummary';
+import type { ProgressFetchState } from '@/components/education/LevelTimeline';
+
+const LANGUAGE_METADATA: Record<
+  string,
+  {
+    label: string;
+    code: string;
+  }
+> = {
+  pt: { label: 'Português', code: 'PT' },
+  es: { label: 'Español', code: 'ES' },
+  en: { label: 'English', code: 'EN' },
+};
+
+type StartHereHeroProps = {
+  summary: ProgressSummary | null;
+  state: ProgressFetchState;
+  preferredLanguage?: string;
+};
+
+export function StartHereHero({
+  summary,
+  state,
+  preferredLanguage,
+}: StartHereHeroProps) {
+  const startHere = summary?.startHere;
+  const startCourse = summary?.startCourse;
+
+  const availableLanguages = useMemo(() => {
+    if (!startCourse?.available_languages) {
+      return ['pt', 'es', 'en'];
+    }
+    return startCourse.available_languages.map((lang) => lang.toLowerCase());
+  }, [startCourse]);
+
+  const defaultLanguage = useMemo(() => {
+    const preference = (preferredLanguage || startCourse?.primary_language || 'pt').toLowerCase();
+    if (availableLanguages.includes(preference)) {
+      return preference;
+    }
+    return availableLanguages[0] || 'pt';
+  }, [availableLanguages, preferredLanguage, startCourse?.primary_language]);
+
+  const [activeLanguage, setActiveLanguage] = useState(defaultLanguage);
+
+  useEffect(() => {
+    setActiveLanguage(defaultLanguage);
+  }, [defaultLanguage]);
+
+  const isLoading = state === 'idle' || state === 'loading';
+  const hasError = state === 'error';
+  const isAnonymous = state === 'anonymous';
+
+  const completionPercent = startHere?.progressPercent ?? 0;
+  const heroTitle =
+    getContentByLanguage(startCourse?.title, activeLanguage) || 'COMEÇA AQUI';
+  const heroDescription =
+    getContentByLanguage(startCourse?.description, activeLanguage) ||
+    'O teu ponto de partida obrigatório na Academia Legacy.';
+
+  const ctaHref =
+    startHere?.isCompleted && startHere?.slug
+      ? '/education/courses'
+      : `/education/courses/${startHere?.slug || 'comeca-aqui'}`;
+
+  const ctaLabel = startHere?.isCompleted ? 'Explorar cursos' : 'Continuar curso';
+  const progressLabel = startHere
+    ? `${startHere.completedLessons}/${startHere.totalLessons} lições`
+    : '0 lições concluídas';
+
+  const languagesToRender = Object.keys(LANGUAGE_METADATA);
+
+  if (isAnonymous) {
+    return (
+      <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#03121c] to-[#02070d] p-8 text-white shadow-[0_35px_80px_rgba(2,7,13,0.65)]">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Primeiro passo</p>
+            <h2 className="mt-2 text-3xl font-semibold">COMEÇA AQUI está bloqueado</h2>
+            <p className="mt-2 text-sm text-slate-300 max-w-xl">
+              Cria conta ou autentica-te para desbloquear o curso obrigatório em Português, Espanhol e Inglês.
+            </p>
+          </div>
+          <Link href="/login">
+            <Button size="lg" className="gap-2">
+              Iniciar sessão
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="rounded-3xl border border-rose-500/40 bg-rose-500/10 p-8 text-sm text-rose-100">
+        Não foi possível carregar o estado do curso inicial. Tenta novamente mais tarde.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#03121c] via-[#020b14] to-[#050d18] p-8 text-white shadow-[0_35px_80px_rgba(2,7,13,0.65)]">
+      <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+        <div className="flex-1">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-200">
+            <Shield className="h-3 w-3 text-cyan-300" />
+            curso obrigatório
+          </div>
+          <h2 className="mt-4 text-4xl font-semibold">{heroTitle}</h2>
+          <p className="mt-3 text-sm text-slate-300 max-w-2xl">{heroDescription}</p>
+
+          <div className="mt-6 flex flex-wrap gap-3 text-xs">
+            {languagesToRender.map((code) => {
+              const meta = LANGUAGE_METADATA[code];
+              const isAvailable = availableLanguages.includes(code);
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => isAvailable && setActiveLanguage(code)}
+                  disabled={!isAvailable}
+                  className={cn(
+                    'flex items-center gap-2 rounded-full border px-4 py-2 transition',
+                    isAvailable
+                      ? activeLanguage === code
+                        ? 'border-cyan-300 bg-cyan-300/10 text-white'
+                        : 'border-white/20 text-slate-200 hover:border-cyan-200 hover:text-white'
+                      : 'border-white/10 text-slate-500 cursor-not-allowed',
+                  )}
+                >
+                  <Globe className="h-3 w-3" />
+                  <span>{meta?.label || code.toUpperCase()}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex flex-col gap-4 text-sm text-slate-300 md:flex-row md:items-center">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-cyan-300" />
+              <span>
+                Conteúdo disponível em{' '}
+                {availableLanguages
+                  .map((code) => LANGUAGE_METADATA[code]?.label || code.toUpperCase())
+                  .join(', ')}
+              </span>
+            </div>
+            {startHere?.isCompleted ? (
+              <div className="flex items-center gap-2 text-emerald-300">
+                <CheckCircle className="h-4 w-4" />
+                <span>Curso concluído · podes avançar para Cadetes</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="border-cyan-300/50 bg-transparent text-[10px] uppercase tracking-[0.4em] text-cyan-200">
+                  Passo 1
+                </Badge>
+                <span>Completa este curso para desbloquear Cadetes</span>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href={ctaHref}>
+              <Button size="lg" className="gap-2">
+                {ctaLabel}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            {!startHere?.isCompleted && (
+              <Link href="/education/courses">
+                <Button variant="ghost" className="text-slate-200">
+                  Ver Percursos
+                </Button>
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div className="flex w-full max-w-sm flex-col items-center justify-center">
+          <div className="relative h-48 w-48">
+            <div
+              className="absolute inset-0 rounded-full border border-white/10 bg-white/5"
+              style={{
+                background: `conic-gradient(#22d3ee ${Math.min(
+                  completionPercent,
+                  100,
+                )}%, rgba(255,255,255,0.08) 0)`,
+              }}
+            />
+            <div className="absolute inset-[18px] rounded-full bg-[#02070d] flex flex-col items-center justify-center text-center">
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Progresso</p>
+              <p className="mt-1 text-3xl font-semibold text-white">
+                {Math.min(completionPercent, 100)}%
+              </p>
+              <p className="text-xs text-slate-400">{progressLabel}</p>
+            </div>
+          </div>
+          {isLoading && (
+            <p className="mt-4 text-sm text-slate-400">
+              A carregar progresso do curso...
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getContentByLanguage(value: any, lang: string): string {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    const normalized = lang.toLowerCase();
+    if (typeof value[normalized] === 'string') {
+      return value[normalized];
+    }
+    const fallbackOrder = ['pt', 'en', 'es'];
+    for (const key of fallbackOrder) {
+      if (typeof value[key] === 'string') {
+        return value[key];
+      }
+    }
+  }
+  return '';
+}

@@ -36,6 +36,14 @@ export type BadgeSummary = {
   earnedAt?: string | null;
 };
 
+type StartCourseMeta = {
+  slug: string;
+  title: any;
+  description: any;
+  available_languages: string[];
+  primary_language: string | null;
+};
+
 export type ProgressSummary = {
   xp: {
     total: number;
@@ -50,6 +58,7 @@ export type ProgressSummary = {
     };
   };
   startHere: StartHereState;
+  startCourse: StartCourseMeta | null;
   levels: AcademyLevelState[];
   coursesByLevel: Record<string, LevelCourseSummary[]>;
   badges: {
@@ -78,6 +87,7 @@ export async function getEducationProgressSummary(
   const xpTotal = userRow.xp_total ?? 0;
 
   const unlockState = await computeUnlockState(userId, { xpTotal });
+  const startCourseMeta = await fetchStartCourseMeta();
 
   const [badgesResult, userBadgesResult] = await Promise.all([
     db
@@ -150,6 +160,7 @@ export async function getEducationProgressSummary(
       },
     },
     startHere: unlockState.startHere,
+    startCourse: startCourseMeta,
     levels: unlockState.levels,
     coursesByLevel: unlockState.coursesByLevel,
     badges: {
@@ -172,5 +183,28 @@ function formatBadgeSummary(
     accentColor: badge.accent_color || null,
     xpBonus: badge.xp_bonus ?? 0,
     earnedAt: earnedAt ?? undefined,
+  };
+}
+
+async function fetchStartCourseMeta(): Promise<StartCourseMeta | null> {
+  const { data, error } = await db
+    .from('courses')
+    .select('slug, title, description, available_languages, primary_language')
+    .eq('slug', 'comeca-aqui')
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error('getEducationProgressSummary: failed to load start course metadata', error);
+    return null;
+  }
+
+  return {
+    slug: data.slug,
+    title: data.title,
+    description: data.description,
+    available_languages: Array.isArray(data.available_languages)
+      ? data.available_languages
+      : ['pt', 'es', 'en'],
+    primary_language: data.primary_language ?? 'pt',
   };
 }

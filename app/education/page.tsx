@@ -11,7 +11,9 @@ import {
   XP_LEVELS,
   getXpLevelLabel,
 } from '@/lib/education/xpLevels';
-import { LevelTimeline } from '@/components/education/LevelTimeline';
+import { LevelTimeline, type ProgressFetchState } from '@/components/education/LevelTimeline';
+import { StartHereHero } from '@/components/education/StartHereHero';
+import type { ProgressSummary } from '@/lib/education/progressSummary';
 const XP_LEVEL_BLOCK_COPY: Record<
   'pt' | 'es' | 'en',
   { title: string; range: string }[]
@@ -70,12 +72,14 @@ import {
 } from 'lucide-react';
 
 export default function EducationPage() {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const { language, t } = useLanguage();
   const [stats, setStats] = useState<any>(null);
   const [topCourses, setTopCourses] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
+  const [progressState, setProgressState] = useState<ProgressFetchState>('idle');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,6 +99,48 @@ export default function EducationPage() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setProgressSummary(null);
+      setProgressState('anonymous');
+      return;
+    }
+
+    const controller = new AbortController();
+    const fetchSummary = async () => {
+      setProgressState('loading');
+      try {
+        const token = getToken();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        const response = await fetch('/api/education/progress', {
+          method: 'GET',
+          headers,
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error('Failed to load progress summary');
+        }
+        const data = await response.json();
+        if (!data.success || !data.summary) {
+          throw new Error('Invalid progress response');
+        }
+        setProgressSummary(data.summary as ProgressSummary);
+        setProgressState('success');
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          console.error('Failed to load /api/education/progress', error);
+          setProgressState('error');
+        }
+      }
+    };
+
+    void fetchSummary();
+    return () => controller.abort();
+  }, [user, getToken]);
 
   const getLevelBadge = (level: string) => {
     switch (level) {
@@ -216,9 +262,19 @@ export default function EducationPage() {
                 </Card>
               </div>
               <div className="mt-10">
-                <LevelTimeline />
+                <LevelTimeline summary={progressSummary} state={progressState} />
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="bg-[#01050b] py-10">
+          <div className="mx-auto max-w-6xl px-6">
+            <StartHereHero
+              summary={progressSummary}
+              state={progressState}
+              preferredLanguage={language}
+            />
           </div>
         </section>
 

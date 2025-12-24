@@ -1,14 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Sparkles, Trophy, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/AuthContext';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import { XP_LEVELS } from '@/lib/education/xpLevels';
 
-type FetchState = 'idle' | 'loading' | 'success' | 'error' | 'anonymous';
+export type ProgressFetchState =
+  | 'idle'
+  | 'loading'
+  | 'success'
+  | 'error'
+  | 'anonymous';
 
 const FALLBACK_ACCENTS = [
   '#38bdf8',
@@ -19,56 +23,13 @@ const FALLBACK_ACCENTS = [
   '#f97316',
 ];
 
-export function LevelTimeline({ className }: { className?: string }) {
-  const { user, getToken } = useAuth();
-  const [summary, setSummary] = useState<ProgressSummary | null>(null);
-  const [state, setState] = useState<FetchState>('idle');
+type LevelTimelineProps = {
+  summary: ProgressSummary | null;
+  state: ProgressFetchState;
+  className?: string;
+};
 
-  useEffect(() => {
-    if (!user) {
-      setState('anonymous');
-      setSummary(null);
-      return;
-    }
-
-    const controller = new AbortController();
-    const fetchSummary = async () => {
-      setState('loading');
-      try {
-        const token = getToken();
-        const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
-        }
-
-        const response = await fetch('/api/education/progress', {
-          method: 'GET',
-          headers,
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to load progress summary: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data.success || !data.summary) {
-          throw new Error('Invalid response payload for progress summary.');
-        }
-
-        setSummary(data.summary as ProgressSummary);
-        setState('success');
-      } catch (error: any) {
-        if (error.name === 'AbortError') return;
-        console.error('LevelTimeline fetch error:', error);
-        setState('error');
-      }
-    };
-
-    void fetchSummary();
-    return () => controller.abort();
-  }, [user, getToken]);
-
+export function LevelTimeline({ summary, state, className }: LevelTimelineProps) {
   const levelsToRender = useMemo(() => {
     if (summary?.levels) {
       return summary.levels.filter((level) => level.isVisible);
@@ -99,7 +60,13 @@ export function LevelTimeline({ className }: { className?: string }) {
     return { earned, upcoming };
   }, [summary]);
 
-  const timelineStatus = state === 'anonymous' ? 'Faz login para desbloquear o mapa dinâmico.' : null;
+  const timelineStatus =
+    state === 'anonymous'
+      ? 'Faz login para desbloquear o mapa dinâmico.'
+      : null;
+
+  const isLoading = state === 'idle' || state === 'loading';
+  const hasError = state === 'error';
 
   return (
     <div
@@ -110,7 +77,9 @@ export function LevelTimeline({ className }: { className?: string }) {
     >
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">Academia Legacy</p>
+          <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">
+            Academia Legacy
+          </p>
           <h2 className="mt-2 text-3xl font-semibold">Linha Temporal de XP</h2>
           <p className="mt-1 text-sm text-slate-300">
             Visualiza cada nível, o XP necessário e os badges que desbloqueias ao longo da jornada.
@@ -119,7 +88,9 @@ export function LevelTimeline({ className }: { className?: string }) {
         {summary?.xp && (
           <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm">
             <p className="text-xs uppercase tracking-[0.4em] text-slate-400">XP atual</p>
-            <div className="mt-1 text-2xl font-semibold text-white">{summary.xp.total.toLocaleString()} XP</div>
+            <div className="mt-1 text-2xl font-semibold text-white">
+              {summary.xp.total.toLocaleString()} XP
+            </div>
             <p className="text-xs text-slate-300">
               {summary.xp.currentLevel.label}
               {summary.xp.currentLevel.nextLevelLabel
@@ -130,13 +101,13 @@ export function LevelTimeline({ className }: { className?: string }) {
         )}
       </div>
 
-      {state === 'loading' && (
+      {isLoading && (
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
           A sincronizar o teu nível atual...
         </div>
       )}
 
-      {state === 'error' && (
+      {hasError && (
         <div className="mt-6 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">
           Não foi possível carregar a timeline neste momento. Tenta novamente mais tarde.
         </div>
@@ -169,7 +140,7 @@ export function LevelTimeline({ className }: { className?: string }) {
         {summary ? (
           <BadgeStrip earned={badgeStrip.earned} upcoming={badgeStrip.upcoming} />
         ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-transparent p-4 text-sm text-slate-300">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
             Ganha XP e participa na comunidade para desbloquear badges exclusivos.
           </div>
         )}
@@ -198,7 +169,8 @@ function LevelCard({
   position: number;
   total: number;
 }) {
-  const accent = level.accentColor || FALLBACK_ACCENTS[position % FALLBACK_ACCENTS.length];
+  const accent =
+    level.accentColor || FALLBACK_ACCENTS[position % FALLBACK_ACCENTS.length];
   const isLocked = !level.isUnlocked;
   const isDone = level.isCompleted;
 
@@ -221,9 +193,7 @@ function LevelCard({
       </div>
 
       <h3 className="mt-4 text-2xl font-semibold">{level.title}</h3>
-      <p className="text-sm text-slate-400">
-        {formatXpRange(level.minXp, level.maxXp)}
-      </p>
+      <p className="text-sm text-slate-400">{formatXpRange(level.minXp, level.maxXp)}</p>
 
       <div className="mt-6">
         <div className="flex items-center justify-between text-xs text-slate-400">
@@ -245,7 +215,9 @@ function LevelCard({
         {isLocked ? (
           <>
             <Lock className="h-4 w-4 text-slate-400" />
-            <p className="text-slate-300 text-xs">{level.lockedReason || 'Completa o nível anterior.'}</p>
+            <p className="text-slate-300 text-xs">
+              {level.lockedReason || 'Completa o nível anterior.'}
+            </p>
           </>
         ) : (
           <>
