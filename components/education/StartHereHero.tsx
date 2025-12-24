@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, Globe, ArrowRight, CheckCircle, Shield } from 'lucide-react';
+import { Sparkles, Globe, ArrowRight, CheckCircle, Shield, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
@@ -53,6 +53,8 @@ export function StartHereHero({
 
   const [activeLanguage, setActiveLanguage] = useState(defaultLanguage);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
+  const [courseStats, setCourseStats] = useState<{ totalLessons: number } | null>(null);
+  const [isCourseStatsLoading, setIsCourseStatsLoading] = useState(false);
 
   useEffect(() => {
     setActiveLanguage(defaultLanguage);
@@ -63,8 +65,21 @@ export function StartHereHero({
   const isAnonymous = state === 'anonymous';
   const isFallback = state === 'fallback';
 
-  const completionPercent = startHere?.progressPercent ?? 0;
-  const hasStarted = (startHere?.completedLessons ?? 0) > 0;
+  const totalLessonsFromSummary = startHere?.totalLessons ?? 0;
+  const totalLessonsDerived =
+    courseStats?.totalLessons && courseStats.totalLessons > 0
+      ? courseStats.totalLessons
+      : totalLessonsFromSummary;
+  const completedLessonsRaw = startHere?.completedLessons ?? 0;
+  const completedLessons = Math.min(
+    completedLessonsRaw,
+    totalLessonsDerived || completedLessonsRaw,
+  );
+  const completionPercent =
+    totalLessonsDerived > 0
+      ? Math.min(100, Math.round((completedLessons / totalLessonsDerived) * 100))
+      : startHere?.progressPercent ?? 0;
+  const hasStarted = completedLessons > 0;
   const isCompleted = Boolean(startHere?.isCompleted);
   const heroTitle =
     getContentByLanguage(startCourse?.title, activeLanguage) || 'COMEÇA AQUI';
@@ -80,11 +95,60 @@ export function StartHereHero({
   const ctaHref = `/education/courses/${courseTarget}`;
 
   const ctaLabel = !hasStarted ? 'Começar Curso' : !isCompleted ? 'Continuar Curso' : 'Rever Curso';
-  const progressLabel = startHere
-    ? `${startHere.completedLessons}/${startHere.totalLessons} lições`
-    : '0 lições concluídas';
+  const progressLabel =
+    totalLessonsDerived > 0
+      ? `${completedLessons}/${totalLessonsDerived} lições`
+      : isCourseStatsLoading
+        ? 'A sincronizar lições...'
+        : '0 lições registadas';
+  const levelSummary = summary?.xp?.currentLevel;
+  const levelHint =
+    levelSummary?.nextLevelLabel && typeof levelSummary?.xpToNext === 'number'
+      ? `${levelSummary.xpToNext} XP para ${levelSummary.nextLevelLabel}`
+      : 'Nível máximo desbloqueado';
 
   const languagesToRender = Object.keys(LANGUAGE_METADATA);
+
+  useEffect(() => {
+    const summaryLessons = startHere?.totalLessons ?? 0;
+    if (!courseTarget || summaryLessons > 0) {
+      setCourseStats(null);
+      setIsCourseStatsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const fetchStats = async () => {
+      setIsCourseStatsLoading(true);
+      try {
+        const response = await fetch(`/api/courses/${courseTarget}`, {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (response.ok && data?.success && data?.course) {
+          const modules = Array.isArray(data.course.modules) ? data.course.modules : [];
+          const lessons = modules.reduce((acc: number, mod: any) => {
+            if (!Array.isArray(mod?.lessons)) return acc;
+            return acc + mod.lessons.length;
+          }, 0);
+          if (lessons > 0) {
+            setCourseStats({ totalLessons: lessons });
+          }
+        }
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          console.error('StartHereHero: failed to fetch course stats', error);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsCourseStatsLoading(false);
+        }
+      }
+    };
+
+    void fetchStats();
+    return () => controller.abort();
+  }, [courseTarget, startHere?.totalLessons]);
 
   if (isAnonymous) {
     return (
@@ -163,13 +227,23 @@ export function StartHereHero({
                   .join(', ')}
               </span>
             </div>
-            {startHere?.isCompleted && (
-              <div className="flex items-center gap-2 text-emerald-300">
-                <CheckCircle className="h-4 w-4" />
-                <span>Curso concluído · podes avançar para Cadetes</span>
+            {levelSummary && (
+              <div className="flex items-center gap-2 text-slate-200">
+                <Target className="h-4 w-4 text-cyan-300" />
+                <span>
+                  Nível atual: <strong>{levelSummary.label}</strong>{' '}
+                  <span className="text-slate-400">· {levelHint}</span>
+                </span>
               </div>
             )}
           </div>
+
+          {startHere?.isCompleted && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">
+              <CheckCircle className="h-4 w-4" />
+              <span>Curso concluído · podes avançar para Cadetes</span>
+            </div>
+          )}
 
           <div className="mt-8 flex flex-wrap gap-3">
             {!isCompleted && (
