@@ -23,7 +23,7 @@ import { LevelTimeline, type ProgressFetchState } from '@/components/education/L
 import { LevelSections } from '@/components/education/LevelSections';
 import { NextUnlockCTA } from '@/components/education/NextUnlockCTA';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
-import { buildFallbackProgressSummary } from '@/lib/education/fallbackSummary';
+import { buildFallbackProgressSummary, START_HERE_FALLBACK_PATH } from '@/lib/education/fallbackSummary';
 import {
   BookOpen,
   Award,
@@ -213,7 +213,7 @@ export default function CoursesPage() {
         setProgressSummary(
           buildFallbackProgressSummary({
             xpTotal: user.xp_total,
-            startCourseSlug: 'comeca-aqui',
+            startCourseSlug: START_HERE_FALLBACK_PATH,
           }),
         );
         setProgressState('fallback');

@@ -1,13 +1,15 @@
 import { XP_LEVELS, getXpLevelByXp } from '@/lib/education/xpLevels';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 
+export const START_HERE_FALLBACK_PATH = 'eda38083-c8f2-4573-b2d1-3f96cf73539e';
+
 type FallbackOptions = {
   xpTotal?: number;
   startCourseSlug?: string;
 };
 
 const DEFAULT_START_COURSE = {
-  slug: 'comeca-aqui',
+  slug: START_HERE_FALLBACK_PATH,
   title: {
     pt: 'COMECA AQUI',
     es: 'EMPIEZA AQUI',

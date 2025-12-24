@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getEducationProgressSummary } from '@/lib/education/progressSummary';
-import { buildFallbackProgressSummary } from '@/lib/education/fallbackSummary';
+import { buildFallbackProgressSummary, START_HERE_FALLBACK_PATH } from '@/lib/education/fallbackSummary';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 
 export async function GET(request: NextRequest) {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       );
       summary = buildFallbackProgressSummary({
         xpTotal: user.xp_total,
-        startCourseSlug: 'comeca-aqui',
+        startCourseSlug: START_HERE_FALLBACK_PATH,
       });
     }
 
