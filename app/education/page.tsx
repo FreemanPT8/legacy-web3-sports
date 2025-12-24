@@ -11,6 +11,41 @@ import {
   XP_LEVELS,
   getXpLevelLabel,
 } from '@/lib/education/xpLevels';
+const XP_LEVEL_BLOCK_COPY: Record<
+  'pt' | 'es' | 'en',
+  { title: string; range: string }[]
+> = {
+  pt: [
+    { title: 'Novato', range: '0-98 XP' },
+    { title: 'Cadete', range: '99-368 XP' },
+    { title: 'Juvenil', range: '369-999 XP' },
+    { title: 'Junior', range: '1,000-2,221 XP' },
+    { title: 'Sénior', range: '2,222-3,332 XP' },
+    { title: 'Hall da Fama', range: '3,333-4,999 XP' },
+    { title: 'Master', range: '5,000-9,999 XP' },
+    { title: 'Lenda', range: '10,000+ XP' },
+  ],
+  es: [
+    { title: 'Novato', range: '0-98 XP' },
+    { title: 'Cadete', range: '99-368 XP' },
+    { title: 'Juvenil', range: '369-999 XP' },
+    { title: 'Junior', range: '1,000-2,221 XP' },
+    { title: 'Sénior', range: '2,222-3,332 XP' },
+    { title: 'Salón de la Fama', range: '3,333-4,999 XP' },
+    { title: 'Maestro', range: '5,000-9,999 XP' },
+    { title: 'Leyenda', range: '10,000+ XP' },
+  ],
+  en: [
+    { title: 'Novice', range: '0-98 XP' },
+    { title: 'Cadet', range: '99-368 XP' },
+    { title: 'Youth', range: '369-999 XP' },
+    { title: 'Junior', range: '1,000-2,221 XP' },
+    { title: 'Senior', range: '2,222-3,332 XP' },
+    { title: 'Hall of Fame', range: '3,333-4,999 XP' },
+    { title: 'Master', range: '5,000-9,999 XP' },
+    { title: 'Legend', range: '10,000+ XP' },
+  ],
+};
 import { cn } from '@/lib/utils';
 import {
   Card,
@@ -484,13 +519,16 @@ export default function EducationPage() {
                     {t('education.xpLevels')}
                   </h3>
                 <div className="space-y-3 text-sm">
-                  {XP_LEVELS.map((item) => (
+                  {(language === 'pt' || language === 'es' || language === 'en'
+                    ? XP_LEVEL_BLOCK_COPY[language]
+                    : XP_LEVEL_BLOCK_COPY.en
+                  ).map((item) => (
                     <div
-                      key={item.key}
+                      key={`${item.title}-${item.range}`}
                       className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] px-4 py-3"
                     >
                       <span className="font-semibold text-white">
-                        {item.label}
+                        {item.title}
                       </span>
                       <span className="text-sm text-cyan-100">
                         {item.range}
