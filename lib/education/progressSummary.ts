@@ -7,7 +7,7 @@ import {
   type StartHereState,
 } from '@/lib/education/unlockEngine';
 import { XP_LEVELS, getXpLevelByXp } from '@/lib/education/xpLevels';
-import { START_HERE_SLUG } from '@/lib/education/unlockLogic';
+import { START_HERE_SLUG, START_HERE_FALLBACK_ID } from '@/lib/education/unlockLogic';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -202,6 +202,21 @@ async function fetchStartCourseMeta(): Promise<StartCourseMeta | null> {
     let data = dataResult.data;
 
     if (!data) {
+      const idResult = await db
+        .from('courses')
+        .select('id, slug, title, description, available_languages, primary_language')
+        .eq('id', START_HERE_FALLBACK_ID)
+        .maybeSingle();
+
+      if (idResult.data) {
+        console.warn('fetchStartCourseMeta: using fallback course id for start course metadata.');
+        data = idResult.data;
+      } else if (idResult.error) {
+        console.error('fetchStartCourseMeta: failed to load metadata by fallback id', idResult.error);
+      }
+    }
+
+    if (!data) {
       const fallbackResult = await db
         .from('courses')
         .select('id, slug, title, description, available_languages, primary_language')
@@ -210,7 +225,7 @@ async function fetchStartCourseMeta(): Promise<StartCourseMeta | null> {
         .maybeSingle();
 
       if (fallbackResult.data) {
-        console.warn('fetchStartCourseMeta: START_HERE_SLUG not found, using first course flagged as start.');
+        console.warn('fetchStartCourseMeta: START_HERE not found by slug/id, using first course flagged as start.');
         data = fallbackResult.data;
       } else if (fallbackResult.error) {
         console.error('fetchStartCourseMeta: fallback query failed', fallbackResult.error);

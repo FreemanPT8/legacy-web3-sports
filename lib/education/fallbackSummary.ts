@@ -1,7 +1,6 @@
 import { XP_LEVELS, getXpLevelByXp } from '@/lib/education/xpLevels';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
-
-export const START_HERE_FALLBACK_PATH = 'eda38083-c8f2-4573-b2d1-3f96cf73539e';
+import { START_HERE_FALLBACK_ID } from '@/lib/education/unlockLogic';
 
 type FallbackOptions = {
   xpTotal?: number;
@@ -9,7 +8,7 @@ type FallbackOptions = {
 };
 
 const DEFAULT_START_COURSE = {
-  slug: START_HERE_FALLBACK_PATH,
+  slug: START_HERE_FALLBACK_ID,
   title: {
     pt: 'COMECA AQUI',
     es: 'EMPIEZA AQUI',
@@ -92,7 +91,7 @@ export function buildFallbackProgressSummary(options: FallbackOptions = {}): Pro
       },
     },
     startHere: {
-      courseId: null,
+      courseId: START_HERE_FALLBACK_ID,
       slug: startCourseSlug,
       totalLessons: 0,
       completedLessons: 0,

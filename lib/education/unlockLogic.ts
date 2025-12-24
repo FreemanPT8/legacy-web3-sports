@@ -1,4 +1,5 @@
 export const START_HERE_SLUG = 'comeca-aqui';
+export const START_HERE_FALLBACK_ID = 'eda38083-c8f2-4573-b2d1-3f96cf73539e';
 
 export type UnlockCondition = Record<string, any> | null | undefined;
 

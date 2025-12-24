@@ -5,6 +5,7 @@ import {
 } from '@/lib/lesson-id';
 import {
   START_HERE_SLUG,
+  START_HERE_FALLBACK_ID,
   evaluateUnlockCondition,
   type UnlockCondition,
   type UnlockConditionContext,
@@ -157,6 +158,21 @@ async function fetchStartCourseRecord(): Promise<RawCourse | null> {
       console.warn('fetchStartCourseRecord: failed to load start course by slug', slugResult.error);
     }
 
+    const idResult = await db
+      .from('courses')
+      .select('id, slug, title, curriculum, published')
+      .eq('id', START_HERE_FALLBACK_ID)
+      .maybeSingle();
+
+    if (idResult.data) {
+      console.warn('fetchStartCourseRecord: using fallback course id for start course.');
+      return idResult.data as RawCourse;
+    }
+
+    if (idResult.error) {
+      console.warn('fetchStartCourseRecord: failed to load start course by fallback id', idResult.error);
+    }
+
     const fallbackResult = await db
       .from('courses')
       .select('id, slug, title, curriculum, published')
@@ -165,7 +181,7 @@ async function fetchStartCourseRecord(): Promise<RawCourse | null> {
       .maybeSingle();
 
     if (fallbackResult.data) {
-      console.warn('fetchStartCourseRecord: START_HERE_SLUG not found, using first course flagged as start.');
+      console.warn('fetchStartCourseRecord: START_HERE not found by slug/id, using first course flagged as start.');
       return fallbackResult.data as RawCourse;
     }
 
