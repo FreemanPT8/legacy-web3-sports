@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -81,6 +81,30 @@ export default function EducationPage() {
   const [loading, setLoading] = useState(true);
   const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
   const [progressState, setProgressState] = useState<ProgressFetchState>('idle');
+
+  const courseUnlockMap = useMemo(() => {
+    if (!progressSummary) return {};
+    const map: Record<
+      string,
+      { levelSlug: string; levelTitle: string; isUnlocked: boolean; isCompleted: boolean }
+    > = {};
+
+    progressSummary.levels.forEach((level) => {
+      const courses = progressSummary.coursesByLevel[level.slug] || [];
+      courses.forEach((course) => {
+        if (course.slug) {
+          map[course.slug] = {
+            levelSlug: level.slug,
+            levelTitle: level.title,
+            isUnlocked: level.isUnlocked,
+            isCompleted: course.isCompleted,
+          };
+        }
+      });
+    });
+
+    return map;
+  }, [progressSummary]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -432,8 +456,14 @@ export default function EducationPage() {
                       course.description,
                       language,
                     );
-                    const isLocked =
+                    const levelMeta =
+                      typeof course.slug === 'string'
+                        ? courseUnlockMap[course.slug]
+                        : null;
+                    const xpLocked =
                       course.xp_required > (user?.xp_total || 0);
+                    const isLocked =
+                      levelMeta ? !levelMeta.isUnlocked : xpLocked;
                     const modulesArray = Array.isArray(course.modules)
                       ? course.modules
                       : [];
@@ -450,7 +480,12 @@ export default function EducationPage() {
                     return (
                         <Card
                           key={course.id}
-                          className="border border-white/10 bg-[#000c12] hover:border-primary/70 hover:shadow-[0_0_25px_rgba(45,212,191,0.25)] transition-all"
+                          className={cn(
+                            'border bg-[#000c12] transition-all',
+                            isLocked
+                              ? 'border-white/10 opacity-70'
+                              : 'border-cyan-300/30 shadow-[0_0_25px_rgba(34,211,238,0.25)] hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]',
+                          )}
                         >
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
@@ -484,8 +519,11 @@ export default function EducationPage() {
                                 className="w-full border-white/30 text-slate-300"
                                 disabled
                               >
-                                {t('education.unlockAt') || 'Unlock at'}{' '}
-                                {course.xp_required} XP
+                                {levelMeta && !levelMeta.isUnlocked
+                                  ? `Desbloqueia ${levelMeta.levelTitle}`
+                                  : `${t('education.unlockAt') || 'Unlock at'} ${
+                                      course.xp_required
+                                    } XP`}
                               </Button>
                             ) : (
                               <Link href={`/education/courses/${course.id}`}>
