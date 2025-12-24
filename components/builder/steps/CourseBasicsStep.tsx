@@ -23,7 +23,51 @@ import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import { useToast } from '@/hooks/use-toast';
-import { ACADEMY_LEVELS } from '@/lib/education/academyLevels';
+
+type AcademyLevelOption = {
+  slug: string;
+  label: string;
+  xpRange: string;
+};
+
+const FALLBACK_ACADEMY_LEVELS: AcademyLevelOption[] = [
+  { slug: 'novato', label: 'Cadete', xpRange: '0-98 XP' },
+  { slug: 'cadets', label: 'Infantil', xpRange: '99-368 XP' },
+  { slug: 'juveniles', label: 'Juvenil', xpRange: '369-999 XP' },
+  { slug: 'juniors', label: 'Junior', xpRange: '1,000-2,221 XP' },
+  { slug: 'seniors', label: 'Sénior', xpRange: '2,222-3,332 XP' },
+  { slug: 'hall-of-fame', label: 'Hall da Fama', xpRange: '3,333-4,999 XP' },
+  { slug: 'master', label: 'Master', xpRange: '5,000-9,999 XP' },
+  { slug: 'legend', label: 'Lenda', xpRange: '10,000+ XP' },
+];
+
+const formatRange = (min?: number | null, max?: number | null) => {
+  if (typeof min === 'number' && typeof max === 'number') {
+    return `${min.toLocaleString()}-${max.toLocaleString()} XP`;
+  }
+  if (typeof min === 'number') {
+    return `${min.toLocaleString()}+ XP`;
+  }
+  if (typeof max === 'number') {
+    return `0-${max.toLocaleString()} XP`;
+  }
+  return 'XP variável';
+};
+
+const resolveLevelLabel = (title?: Record<string, string> | string | null) => {
+  if (!title) return '';
+  if (typeof title === 'string') return title;
+  const preferred = ['pt', 'es', 'en'];
+  for (const lang of preferred) {
+    if (title[lang] && title[lang]?.trim()) {
+      return title[lang];
+    }
+  }
+  const first = Object.values(title).find(
+    (value) => typeof value === 'string' && value.trim().length > 0,
+  );
+  return first || '';
+};
 
 const slugify = (value: string) =>
   value
@@ -52,6 +96,7 @@ export function CourseBasicsStep() {
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [academyLevels, setAcademyLevels] = useState<AcademyLevelOption[]>(FALLBACK_ACADEMY_LEVELS);
 
   const coverUrl = courseState.coverImage?.url;
   const language = activeLanguage;
@@ -87,6 +132,35 @@ export function CourseBasicsStep() {
       setScheduleError(null);
     }
   }, [courseState.schedule.publishAt, toInputValues]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLevels = async () => {
+      try {
+        const response = await fetch('/api/admin/academy-levels');
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (!payload?.success || !Array.isArray(payload.levels)) {
+          return;
+        }
+        const normalized: AcademyLevelOption[] = payload.levels.map((level: any) => ({
+          slug: level.slug,
+          label: resolveLevelLabel(level.title_i18n) || level.slug,
+          xpRange: formatRange(level.min_xp, level.max_xp),
+        }));
+        if (isMounted && normalized.length > 0) {
+          setAcademyLevels(normalized);
+        }
+      } catch (error) {
+        console.warn('Unable to load academy levels for builder', error);
+      }
+    };
+
+    fetchLevels();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const applySchedule = (nextDate: string, nextTime: string) => {
     if (!nextDate || !nextTime) {
@@ -384,9 +458,9 @@ export function CourseBasicsStep() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">Sem nível atribuído</SelectItem>
-              {ACADEMY_LEVELS.map((level) => (
+              {academyLevels.map((level) => (
                 <SelectItem key={level.slug} value={level.slug}>
-                  {level.labels.pt} · {level.xpRange}
+                  {level.label} · {level.xpRange}
                 </SelectItem>
               ))}
             </SelectContent>
