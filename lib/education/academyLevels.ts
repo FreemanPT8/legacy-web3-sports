@@ -11,12 +11,12 @@ export interface AcademyLevelOption {
 export const ACADEMY_LEVELS: AcademyLevelOption[] = [
   {
     slug: 'novato',
-    labels: { pt: 'Novato', es: 'Novato', en: 'Novice' },
+    labels: { pt: 'Cadete', es: 'Cadete', en: 'Cadet' },
     xpRange: '0-98 XP',
   },
   {
     slug: 'cadets',
-    labels: { pt: 'Cadete', es: 'Cadete', en: 'Cadet' },
+    labels: { pt: 'Infantil', es: 'Infantil', en: 'Youth' },
     xpRange: '99-368 XP',
   },
   {
