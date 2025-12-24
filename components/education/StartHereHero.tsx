@@ -72,7 +72,8 @@ export function StartHereHero({
     getContentByLanguage(startCourse?.description, activeLanguage) ||
     'O teu ponto de partida obrigatório na Academia Legacy.';
 
-  const ctaHref = `/education/courses/${startHere?.slug || 'comeca-aqui'}`;
+  const courseTarget = startHere?.courseId || startHere?.slug || 'comeca-aqui';
+  const ctaHref = `/education/courses/${courseTarget}`;
 
   const ctaLabel = !hasStarted ? 'Começar Curso' : !isCompleted ? 'Continuar Curso' : 'Rever Curso';
   const progressLabel = startHere
