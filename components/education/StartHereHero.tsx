@@ -71,10 +71,7 @@ export function StartHereHero({
       ? courseStats.totalLessons
       : totalLessonsFromSummary;
   const completedLessonsRaw = startHere?.completedLessons ?? 0;
-  const completedLessons = Math.min(
-    completedLessonsRaw,
-    totalLessonsDerived || completedLessonsRaw,
-  );
+  const completedLessons = completedLessonsRaw;
   const completionPercent =
     totalLessonsDerived > 0
       ? Math.min(100, Math.round((completedLessons / totalLessonsDerived) * 100))
