@@ -53,7 +53,7 @@ export function StartHereHero({
 
   const [activeLanguage, setActiveLanguage] = useState(defaultLanguage);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
-  const [courseStats, setCourseStats] = useState<{ totalLessons: number } | null>(null);
+  const [courseStats, setCourseStats] = useState<{ totalLessons?: number; completedLessons?: number } | null>(null);
   const [isCourseStatsLoading, setIsCourseStatsLoading] = useState(false);
 
   useEffect(() => {
@@ -67,11 +67,14 @@ export function StartHereHero({
 
   const totalLessonsFromSummary = startHere?.totalLessons ?? 0;
   const totalLessonsDerived =
-    courseStats?.totalLessons && courseStats.totalLessons > 0
+    typeof courseStats?.totalLessons === 'number' && courseStats.totalLessons > 0
       ? courseStats.totalLessons
       : totalLessonsFromSummary;
-  const completedLessonsRaw = startHere?.completedLessons ?? 0;
-  const completedLessons = completedLessonsRaw;
+  const completedLessonsFromSummary = startHere?.completedLessons ?? 0;
+  const completedLessons =
+    typeof courseStats?.completedLessons === 'number'
+      ? courseStats.completedLessons
+      : completedLessonsFromSummary;
   const completionPercent =
     totalLessonsDerived > 0
       ? Math.min(100, Math.round((completedLessons / totalLessonsDerived) * 100))
@@ -108,7 +111,11 @@ export function StartHereHero({
 
   useEffect(() => {
     const summaryLessons = startHere?.totalLessons ?? 0;
-    if (!courseTarget || summaryLessons > 0) {
+    const summaryCompleted = startHere?.completedLessons ?? 0;
+    const needsRemoteStats =
+      !!courseTarget && (summaryLessons <= 0 || summaryCompleted <= 0);
+
+    if (!needsRemoteStats) {
       setCourseStats(null);
       setIsCourseStatsLoading(false);
       return;
@@ -128,8 +135,18 @@ export function StartHereHero({
             if (!Array.isArray(mod?.lessons)) return acc;
             return acc + mod.lessons.length;
           }, 0);
-          if (lessons > 0) {
-            setCourseStats({ totalLessons: lessons });
+          const completed = modules.reduce((acc: number, mod: any) => {
+            if (!Array.isArray(mod?.lessons)) return acc;
+            return (
+              acc +
+              mod.lessons.filter((lesson: any) => lesson?.isCompleted).length
+            );
+          }, 0);
+          if (lessons > 0 || completed > 0) {
+            setCourseStats({
+              totalLessons: lessons > 0 ? lessons : undefined,
+              completedLessons: completed > 0 ? completed : undefined,
+            });
           }
         }
       } catch (error: any) {
@@ -145,7 +162,7 @@ export function StartHereHero({
 
     void fetchStats();
     return () => controller.abort();
-  }, [courseTarget, startHere?.totalLessons]);
+  }, [courseTarget, startHere?.totalLessons, startHere?.completedLessons]);
 
   if (isAnonymous) {
     return (
