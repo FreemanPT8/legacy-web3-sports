@@ -59,6 +59,7 @@ export function StartHereHero({
   const isLoading = state === 'idle' || state === 'loading';
   const hasError = state === 'error';
   const isAnonymous = state === 'anonymous';
+  const isFallback = state === 'fallback';
 
   const completionPercent = startHere?.progressPercent ?? 0;
   const heroTitle =
@@ -186,6 +187,13 @@ export function StartHereHero({
               </Link>
             )}
           </div>
+
+          {isFallback && (
+            <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
+              Estamos a mostrar o progresso deste curso com base no teu XP local. Assim que o servidor sincronizar vais ver detalhes completos.
+            </div>
+          )}
+
         </div>
 
         <div className="flex w-full max-w-sm flex-col items-center justify-center">

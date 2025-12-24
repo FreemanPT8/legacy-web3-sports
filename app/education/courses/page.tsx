@@ -23,6 +23,7 @@ import { LevelTimeline, type ProgressFetchState } from '@/components/education/L
 import { LevelSections } from '@/components/education/LevelSections';
 import { NextUnlockCTA } from '@/components/education/NextUnlockCTA';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
+import { buildFallbackProgressSummary } from '@/lib/education/fallbackSummary';
 import {
   BookOpen,
   Award,
@@ -205,10 +206,17 @@ export default function CoursesPage() {
         setProgressSummary(data.summary as ProgressSummary);
         setProgressState('success');
       } catch (error: any) {
-        if (error?.name !== 'AbortError') {
-          console.error('Failed to load progress summary', error);
-          setProgressState('error');
+        if (error?.name === 'AbortError') {
+          return;
         }
+        console.error('Failed to load progress summary', error);
+        setProgressSummary(
+          buildFallbackProgressSummary({
+            xpTotal: user.xp_total,
+            startCourseSlug: 'comeca-aqui',
+          }),
+        );
+        setProgressState('fallback');
       }
     };
     void fetchSummary();

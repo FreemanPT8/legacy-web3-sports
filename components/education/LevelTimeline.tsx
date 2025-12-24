@@ -11,6 +11,7 @@ export type ProgressFetchState =
   | 'idle'
   | 'loading'
   | 'success'
+  | 'fallback'
   | 'error'
   | 'anonymous';
 
@@ -67,6 +68,7 @@ export function LevelTimeline({ summary, state, className }: LevelTimelineProps)
 
   const isLoading = state === 'idle' || state === 'loading';
   const hasError = state === 'error';
+  const isFallback = state === 'fallback';
 
   return (
     <div
@@ -110,6 +112,13 @@ export function LevelTimeline({ summary, state, className }: LevelTimelineProps)
       {hasError && (
         <div className="mt-6 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">
           Não foi possível carregar a timeline neste momento. Tenta novamente mais tarde.
+        </div>
+      )}
+
+
+      {isFallback && (
+        <div className="mt-6 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+          A mostrar um resumo estimado com base no teu XP local. Assim que o servidor sincronizar, vais ver dados completos.
         </div>
       )}
 

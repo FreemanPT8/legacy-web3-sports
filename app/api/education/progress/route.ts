@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getEducationProgressSummary } from '@/lib/education/progressSummary';
+import { buildFallbackProgressSummary } from '@/lib/education/fallbackSummary';
+import type { ProgressSummary } from '@/lib/education/progressSummary';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +30,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const summary = await getEducationProgressSummary(user.id);
+    let summary: ProgressSummary;
+    try {
+      summary = await getEducationProgressSummary(user.id);
+    } catch (summaryErr) {
+      console.error(
+        'getEducationProgressSummary failed, falling back to default summary:',
+        summaryErr,
+      );
+      summary = buildFallbackProgressSummary({
+        xpTotal: user.xp_total,
+        startCourseSlug: 'comeca-aqui',
+      });
+    }
 
     return NextResponse.json(
       { success: true, summary },
