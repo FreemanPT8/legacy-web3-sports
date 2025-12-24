@@ -7,45 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
-import {
-  XP_LEVELS,
-  getXpLevelLabel,
-} from '@/lib/education/xpLevels';
-const XP_LEVEL_BLOCK_COPY: Record<
-  'pt' | 'es' | 'en',
-  { title: string; range: string }[]
-> = {
-  pt: [
-    { title: 'Novato', range: '0-98 XP' },
-    { title: 'Cadete', range: '99-368 XP' },
-    { title: 'Juvenil', range: '369-999 XP' },
-    { title: 'Junior', range: '1,000-2,221 XP' },
-    { title: 'Sénior', range: '2,222-3,332 XP' },
-    { title: 'Hall da Fama', range: '3,333-4,999 XP' },
-    { title: 'Master', range: '5,000-9,999 XP' },
-    { title: 'Lenda', range: '10,000+ XP' },
-  ],
-  es: [
-    { title: 'Novato', range: '0-98 XP' },
-    { title: 'Cadete', range: '99-368 XP' },
-    { title: 'Juvenil', range: '369-999 XP' },
-    { title: 'Junior', range: '1,000-2,221 XP' },
-    { title: 'Sénior', range: '2,222-3,332 XP' },
-    { title: 'Salón de la Fama', range: '3,333-4,999 XP' },
-    { title: 'Master', range: '5,000-9,999 XP' },
-    { title: 'Leyenda', range: '10,000+ XP' },
-  ],
-  en: [
-    { title: 'Novice', range: '0-98 XP' },
-    { title: 'Cadet', range: '99-368 XP' },
-    { title: 'Youth', range: '369-999 XP' },
-    { title: 'Junior', range: '1,000-2,221 XP' },
-    { title: 'Senior', range: '2,222-3,332 XP' },
-    { title: 'Hall of Fame', range: '3,333-4,999 XP' },
-    { title: 'Master', range: '5,000-9,999 XP' },
-    { title: 'Legend', range: '10,000+ XP' },
-  ],
-};
+import { getXpLevelLabel } from '@/lib/education/xpLevels';
 import { cn } from '@/lib/utils';
 import {
   Card,
@@ -68,6 +30,77 @@ import {
   Zap,
 } from 'lucide-react';
 
+const EDUCATION_LANGUAGES = ['pt', 'es', 'en'] as const;
+type EducationLanguage = (typeof EDUCATION_LANGUAGES)[number];
+
+const XP_LEVEL_BLOCK_COPY: Record<
+  EducationLanguage,
+  { title: string; range: string }[]
+> = {
+  pt: [
+    { title: 'Cadete', range: '0-98 XP' },
+    { title: 'Infantil', range: '99-368 XP' },
+    { title: 'Juvenil', range: '369-999 XP' },
+    { title: 'Junior', range: '1,000-2,221 XP' },
+    { title: 'Sénior', range: '2,222-3,332 XP' },
+    { title: 'Hall da Fama', range: '3,333-4,999 XP' },
+    { title: 'Master', range: '5,000-9,999 XP' },
+    { title: 'Lenda', range: '10,000+ XP' },
+  ],
+  es: [
+    { title: 'Cadete', range: '0-98 XP' },
+    { title: 'Infantil', range: '99-368 XP' },
+    { title: 'Juvenil', range: '369-999 XP' },
+    { title: 'Junior', range: '1,000-2,221 XP' },
+    { title: 'Sénior', range: '2,222-3,332 XP' },
+    { title: 'Salón de la Fama', range: '3,333-4,999 XP' },
+    { title: 'Master', range: '5,000-9,999 XP' },
+    { title: 'Leyenda', range: '10,000+ XP' },
+  ],
+  en: [
+    { title: 'Cadet', range: '0-98 XP' },
+    { title: 'Infant', range: '99-368 XP' },
+    { title: 'Juvenile', range: '369-999 XP' },
+    { title: 'Junior', range: '1,000-2,221 XP' },
+    { title: 'Senior', range: '2,222-3,332 XP' },
+    { title: 'Hall of Fame', range: '3,333-4,999 XP' },
+    { title: 'Master', range: '5,000-9,999 XP' },
+    { title: 'Legend', range: '10,000+ XP' },
+  ],
+};
+
+const PREVIEW_LEVELS: Record<
+  EducationLanguage,
+  { title: string; range: string }[]
+> = {
+  pt: XP_LEVEL_BLOCK_COPY.pt.slice(0, 4),
+  es: XP_LEVEL_BLOCK_COPY.es.slice(0, 4),
+  en: XP_LEVEL_BLOCK_COPY.en.slice(0, 4),
+};
+
+const BADGE_TIER_THRESHOLD = 2222;
+
+const XP_BADGE_NOTE_COPY: Record<EducationLanguage, string> = {
+  pt: 'A partir dos 2 222 XP (nível Sénior) ganhas badges apenas para ranking; já tens acesso a todos os cursos.',
+  es: 'Desde los 2 222 XP (nivel Sénior) solo recibes badges para el ranking; todos los cursos ya están desbloqueados.',
+  en: 'From 2,222 XP (Senior level) you only collect badges for ranking; every course is already unlocked.',
+};
+
+const BADGE_ICON_HINT_COPY: Record<EducationLanguage, string> = {
+  pt: 'Ícone dourado = zona de badges/ranking',
+  es: 'Icono dorado = zona de badges/ranking',
+  en: 'Gold icon = badge/ranking tier',
+};
+
+const resolveEducationLanguage = (lang: string): EducationLanguage => {
+  if (EDUCATION_LANGUAGES.includes(lang as EducationLanguage)) {
+    return lang as EducationLanguage;
+  }
+  return 'en';
+};
+
+const isBadgeTier = (xp: number) => xp >= BADGE_TIER_THRESHOLD;
+
 export default function EducationPage() {
   const { user } = useAuth();
   const { language, t } = useLanguage();
@@ -75,6 +108,11 @@ export default function EducationPage() {
   const [topCourses, setTopCourses] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const educationLanguage = resolveEducationLanguage(language);
+  const xpLevelsCopy = XP_LEVEL_BLOCK_COPY[educationLanguage];
+  const previewLevels = PREVIEW_LEVELS[educationLanguage];
+  const badgesNoteCopy = XP_BADGE_NOTE_COPY[educationLanguage];
+  const badgeIconHint = BADGE_ICON_HINT_COPY[educationLanguage];
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -273,12 +311,12 @@ export default function EducationPage() {
                 {t('education.previewLevels') || 'Pré-visualização dos níveis'}
               </h3>
               <div className="space-y-3 text-sm">
-                {XP_LEVELS.slice(0, 4).map((item) => (
+                {previewLevels.map((item) => (
                   <div
-                    key={item.key}
+                    key={`${item.title}-${item.range}`}
                     className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3"
                   >
-                    <span className="font-semibold text-white">{item.label}</span>
+                    <span className="font-semibold text-white">{item.title}</span>
                     <span className="text-slate-300">{item.range}</span>
                   </div>
                 ))}
@@ -402,12 +440,12 @@ export default function EducationPage() {
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-4">
-              {XP_LEVELS.slice(0, 4).map((item) => (
+              {previewLevels.map((item) => (
                 <div
-                  key={item.key}
+                  key={`${item.title}-${item.range}-grid`}
                   className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-6 text-center text-white"
                 >
-                  <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{item.label}</p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{item.title}</p>
                   <p className="mt-2 text-sm text-slate-300">{item.range}</p>
                   <p className="mt-4 text-xs text-slate-400">
                     {t('education.previewcta') || 'Disponível após login.'}
@@ -617,10 +655,7 @@ export default function EducationPage() {
                     {t('education.xpLevels')}
                   </h3>
                 <div className="space-y-3 text-sm">
-                  {(language === 'pt' || language === 'es' || language === 'en'
-                    ? XP_LEVEL_BLOCK_COPY[language]
-                    : XP_LEVEL_BLOCK_COPY.en
-                  ).map((item) => (
+                  {xpLevelsCopy.map((item) => (
                     <div
                       key={`${item.title}-${item.range}`}
                       className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] px-4 py-3"
@@ -633,6 +668,10 @@ export default function EducationPage() {
                       </span>
                     </div>
                   ))}
+                </div>
+                <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-100">
+                  <Award className="h-4 w-4 text-amber-300" />
+                  <p className="text-left text-amber-50">{badgesNoteCopy}</p>
                 </div>
               </div>
             </div>
@@ -650,6 +689,10 @@ export default function EducationPage() {
                   <p className="text-lg text-slate-300">
                     See who's leading the way in Web3 education
                   </p>
+                </div>
+                <div className="mb-6 flex items-center justify-center gap-2 text-sm text-slate-300">
+                  <Award className="h-4 w-4 text-amber-300" />
+                  <span>{badgeIconHint}</span>
                 </div>
 
                 {loading ? (
@@ -699,8 +742,18 @@ export default function EducationPage() {
                             </div>
                           </div>
                             <div className="text-right">
-                            <div className="text-2xl font-bold text-primary">
-                              {learner.xp_total}
+                            <div className="flex items-center justify-end gap-2">
+                              {isBadgeTier(learner.xp_total) && (
+                                <span className="inline-flex" title={badgeIconHint}>
+                                  <Award
+                                    className="h-4 w-4 text-amber-300"
+                                    aria-label="Badge tier"
+                                  />
+                                </span>
+                              )}
+                              <div className="text-2xl font-bold text-primary">
+                                {learner.xp_total}
+                              </div>
                             </div>
                             <div className="text-sm text-slate-300">
                               XP
