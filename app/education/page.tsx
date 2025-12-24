@@ -13,6 +13,7 @@ import {
 } from '@/lib/education/xpLevels';
 import { LevelTimeline, type ProgressFetchState } from '@/components/education/LevelTimeline';
 import { StartHereHero } from '@/components/education/StartHereHero';
+import { LevelSections } from '@/components/education/LevelSections';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 const XP_LEVEL_BLOCK_COPY: Record<
   'pt' | 'es' | 'en',
@@ -377,6 +378,19 @@ export default function EducationPage() {
                 </Card>
               )}
             </div>
+          </div>
+        </section>
+
+        <section className="bg-[#01050b] py-12">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="mb-8">
+              <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">Evolução</p>
+              <h2 className="mt-2 text-3xl font-semibold text-white">Percursos por Nível</h2>
+              <p className="mt-2 text-sm text-slate-300">
+                Cada bloco desbloqueia novos cursos assim que cumpres os requisitos de XP e conclusão.
+              </p>
+            </div>
+            <LevelSections summary={progressSummary} />
           </div>
         </section>
 
