@@ -32,7 +32,7 @@ const XP_LEVEL_BLOCK_COPY: Record<
     { title: 'Junior', range: '1,000-2,221 XP' },
     { title: 'Sénior', range: '2,222-3,332 XP' },
     { title: 'Salón de la Fama', range: '3,333-4,999 XP' },
-    { title: 'Maestro', range: '5,000-9,999 XP' },
+    { title: 'Master', range: '5,000-9,999 XP' },
     { title: 'Leyenda', range: '10,000+ XP' },
   ],
   en: [
