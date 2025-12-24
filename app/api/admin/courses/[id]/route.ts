@@ -146,6 +146,7 @@ export async function PUT(
       title,
       description,
       level,
+      academy_level_slug,
       xp_threshold,
       published,
       image_url,
@@ -177,7 +178,7 @@ export async function PUT(
     const { data: existing, error: existingError } = await supabase
       .from('courses')
       .select(
-        'id, level, xp_threshold, is_completed, xp_reward, is_paid, overview, key_takeaways, target_audience, duration_minutes, special_requirements, seo, google_integrations, curriculum',
+        'id, level, academy_level_slug, xp_threshold, is_completed, xp_reward, is_paid, overview, key_takeaways, target_audience, duration_minutes, special_requirements, seo, google_integrations, curriculum',
       )
       .eq('id', params.id)
       .maybeSingle();
@@ -287,6 +288,14 @@ export async function PUT(
           ? existingMetadata.xpThreshold
           : existing.xp_threshold ?? 0;
     const metadataLevel = level || existingMetadata.level || existing.level || 'beginner';
+    const metadataAcademyLevelSlug =
+      typeof academy_level_slug === 'string' && academy_level_slug.length > 0
+        ? academy_level_slug
+        : typeof existingMetadata.academyLevelSlug === 'string'
+          ? existingMetadata.academyLevelSlug
+          : typeof existing.academy_level_slug === 'string'
+            ? existing.academy_level_slug
+            : null;
     const metadataIsCompleted =
       typeof is_completed === 'boolean'
         ? is_completed
@@ -318,6 +327,7 @@ export async function PUT(
         xpReward: metadataXpReward,
         xpThreshold: metadataXpThreshold,
         level: metadataLevel,
+        academyLevelSlug: metadataAcademyLevelSlug,
         isCompleted: metadataIsCompleted,
         isPaid: metadataIsPaid,
       },
@@ -329,6 +339,7 @@ export async function PUT(
         title,
         description,
         level: level || 'beginner',
+        academy_level_slug: metadataAcademyLevelSlug,
         xp_threshold: typeof xp_threshold === 'number' ? xp_threshold : 0,
         published: !!published,
         image_url: image_url ?? null,

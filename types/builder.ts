@@ -141,6 +141,7 @@ export interface CourseBuilderState extends BuilderStateBase {
   entityType: 'course';
   curriculum: CurriculumState;
   level: 'beginner' | 'intermediate' | 'advanced';
+  academyLevelSlug: string | null;
 }
 
 export interface BlogBuilderState extends BuilderStateBase {

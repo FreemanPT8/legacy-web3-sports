@@ -10,6 +10,7 @@ interface CoursePayload {
   title: Record<LangCode, string>;
   description: Record<LangCode, string>;
   level?: string;
+  academy_level_slug?: string | null;
   xp_threshold?: number;
   xp_reward?: number;
   published?: boolean;
@@ -73,6 +74,7 @@ const buildCurriculumMetadata = (
   xpReward: typeof course.xp_reward === 'number' ? course.xp_reward : 0,
   xpThreshold: typeof course.xp_threshold === 'number' ? course.xp_threshold : 0,
   level: course.level || 'beginner',
+  academyLevelSlug: course.academy_level_slug ?? null,
   coverAsset: course.cover_asset ?? null,
   isCompleted: !!course.is_completed,
   isPaid: !!course.is_paid,
@@ -193,6 +195,7 @@ export async function POST(request: NextRequest) {
         curriculum: curriculumPayload,
         publish_at,
         expire_at,
+        academy_level_slug: course.academy_level_slug ?? null,
         author_id: currentUser.userId,
       })
       .select()

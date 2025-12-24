@@ -23,6 +23,7 @@ import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import { useToast } from '@/hooks/use-toast';
+import { ACADEMY_LEVELS } from '@/lib/education/academyLevels';
 
 const slugify = (value: string) =>
   value
@@ -64,6 +65,7 @@ export function CourseBasicsStep() {
   const xpReward = courseState.xp.reward;
   const xpThreshold = courseState.xp.threshold;
   const isScheduled = Boolean(courseState.schedule.publishAt);
+  const academyLevelValue = courseState.academyLevelSlug ?? 'unassigned';
 
   const suggestedSlug = useMemo(() => slugify(titleValue), [titleValue]);
   const minDate = useMemo(() => {
@@ -366,6 +368,32 @@ export function CourseBasicsStep() {
               <SelectItem value="advanced">Advanced</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div>
+          <Label>Academy Level</Label>
+          <Select
+            value={academyLevelValue}
+            onValueChange={(value) =>
+              patchState({
+                academyLevelSlug: value === 'unassigned' ? null : value,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Escolhe o nível da Academia" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned">Sem nível atribuído</SelectItem>
+              {ACADEMY_LEVELS.map((level) => (
+                <SelectItem key={level.slug} value={level.slug}>
+                  {level.labels.pt} · {level.xpRange}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Define onde o curso aparece na jornada gamificada.
+          </p>
         </div>
         <div>
           <Label>XP Reward (course completion)</Label>

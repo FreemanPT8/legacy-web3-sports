@@ -70,6 +70,7 @@ export const createEmptyCourseState = (): CourseBuilderState => ({
     topics: [],
   },
   level: 'beginner',
+  academyLevelSlug: null,
 });
 
 const buildCurriculumMetadata = (state: CourseBuilderState) => ({
@@ -84,6 +85,7 @@ const buildCurriculumMetadata = (state: CourseBuilderState) => ({
   xpReward: state.xp.reward,
   xpThreshold: state.xp.threshold,
   level: state.level,
+  academyLevelSlug: state.academyLevelSlug,
   coverAsset: state.coverImage,
   isCompleted: state.isCompleted,
   isPaid: state.isPaid,
@@ -95,6 +97,7 @@ export const buildCourseRequestPayload = (state: CourseBuilderState) => ({
   title: state.title,
   description: state.longDescription,
   level: state.level,
+  academy_level_slug: state.academyLevelSlug,
   xp_threshold: state.xp.threshold,
   xp_reward: state.xp.reward,
   image_url: state.coverImage?.url ?? null,
@@ -276,6 +279,12 @@ export const mapCourseToBuilderState = (course: any): CourseBuilderState => {
     curriculum: normalizedCurriculum,
     attachments: attachmentsSource,
     level: course?.level || metadata?.level || 'beginner',
+    academyLevelSlug:
+      typeof course?.academy_level_slug === 'string'
+        ? course.academy_level_slug
+        : typeof metadata?.academyLevelSlug === 'string'
+          ? metadata.academyLevelSlug
+          : null,
   };
   return ensureCurriculumTranslations(mappedState);
 };
