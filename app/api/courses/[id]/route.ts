@@ -28,11 +28,33 @@ export async function GET(
       (user.role === 'Super Admin' || user.role === 'Admin');
 
     // 1) Curso
-    const { data: rawCourse, error: courseError } = await db
+    let rawCourse: any = null;
+    let courseError = null;
+    const { data: courseById, error: byIdError } = await db
       .from('courses')
       .select('*')
       .eq('id', id)
       .maybeSingle();
+
+    if (byIdError) {
+      courseError = byIdError;
+    } else {
+      rawCourse = courseById;
+    }
+
+    if (!rawCourse) {
+      const { data: courseBySlug, error: bySlugError } = await db
+        .from('courses')
+        .select('*')
+        .eq('slug', id)
+        .maybeSingle();
+
+      if (bySlugError) {
+        courseError = bySlugError;
+      } else {
+        rawCourse = courseBySlug;
+      }
+    }
 
     if (courseError) {
       console.error('Error fetching course:', courseError);
@@ -49,10 +71,12 @@ export async function GET(
       );
     }
 
+    const courseRecordId = rawCourse.id;
+
     const { data: legacyModules, error: legacyModulesError } = await db
       .from('modules')
       .select('xp_reward')
-      .eq('course_id', id);
+      .eq('course_id', courseRecordId);
 
     if (legacyModulesError) {
       console.error(
