@@ -11,6 +11,7 @@ import {
   XP_LEVELS,
   getXpLevelLabel,
 } from '@/lib/education/xpLevels';
+import { LevelTimeline } from '@/components/education/LevelTimeline';
 const XP_LEVEL_BLOCK_COPY: Record<
   'pt' | 'es' | 'en',
   { title: string; range: string }[]
@@ -213,6 +214,9 @@ export default function EducationPage() {
                     </CardDescription>
                   </CardHeader>
                 </Card>
+              </div>
+              <div className="mt-10">
+                <LevelTimeline />
               </div>
             </div>
           </div>
