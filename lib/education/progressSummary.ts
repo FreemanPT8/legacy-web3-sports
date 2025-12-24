@@ -7,6 +7,7 @@ import {
   type StartHereState,
 } from '@/lib/education/unlockEngine';
 import { XP_LEVELS, getXpLevelByXp } from '@/lib/education/xpLevels';
+import { START_HERE_SLUG } from '@/lib/education/unlockLogic';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -190,24 +191,50 @@ function formatBadgeSummary(
 }
 
 async function fetchStartCourseMeta(): Promise<StartCourseMeta | null> {
-  const { data, error } = await db
-    .from('courses')
-    .select('slug, title, description, available_languages, primary_language')
-    .eq('slug', 'comeca-aqui')
-    .maybeSingle();
+  try {
+    const baseQuery = db
+      .from('courses')
+      .select('id, slug, title, description, available_languages, primary_language')
+      .eq('slug', START_HERE_SLUG)
+      .maybeSingle();
 
-  if (error || !data) {
-    console.error('getEducationProgressSummary: failed to load start course metadata', error);
+    let dataResult = await baseQuery;
+    let data = dataResult.data;
+
+    if (!data) {
+      const fallbackResult = await db
+        .from('courses')
+        .select('id, slug, title, description, available_languages, primary_language')
+        .eq('is_start_course', true)
+        .order('created_at', { ascending: true })
+        .maybeSingle();
+
+      if (fallbackResult.data) {
+        console.warn('fetchStartCourseMeta: START_HERE_SLUG not found, using first course flagged as start.');
+        data = fallbackResult.data;
+      } else if (fallbackResult.error) {
+        console.error('fetchStartCourseMeta: fallback query failed', fallbackResult.error);
+      }
+    }
+
+    if (!data) {
+      if (dataResult.error) {
+        console.error('fetchStartCourseMeta: failed to load metadata by slug', dataResult.error);
+      }
+      return null;
+    }
+
+    return {
+      slug: data.slug || data.id,
+      title: data.title,
+      description: data.description,
+      available_languages: Array.isArray(data.available_languages)
+        ? data.available_languages
+        : ['pt', 'es', 'en'],
+      primary_language: data.primary_language ?? 'pt',
+    };
+  } catch (error) {
+    console.error('fetchStartCourseMeta error:', error);
     return null;
   }
-
-  return {
-    slug: data.slug,
-    title: data.title,
-    description: data.description,
-    available_languages: Array.isArray(data.available_languages)
-      ? data.available_languages
-      : ['pt', 'es', 'en'],
-    primary_language: data.primary_language ?? 'pt',
-  };
 }

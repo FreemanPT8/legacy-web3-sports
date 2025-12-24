@@ -86,18 +86,14 @@ export async function computeUnlockState(
     throw new Error('computeUnlockState: userId is required');
   }
 
-  const [levelsResult, startCourseResult, coursesResult, xpTotal] = await Promise.all([
+  const [levelsResult, startCourseRecord, coursesResult, xpTotal] = await Promise.all([
     db
       .from('academy_levels')
       .select(
         'slug, order_index, title_i18n, unlock_condition, visibility_condition, min_xp, max_xp, accent_color, badge_icon, short_label',
       )
       .order('order_index', { ascending: true }),
-    db
-      .from('courses')
-      .select('id, slug, title, curriculum, published')
-      .eq('slug', START_HERE_SLUG)
-      .maybeSingle(),
+    fetchStartCourseRecord(),
     db
       .from('courses')
       .select(
@@ -120,7 +116,7 @@ export async function computeUnlockState(
   const publishedCourses = (coursesResult.data || []) as RawCourse[];
 
   const startHere = await computeStartHereState(
-    startCourseResult.data as Nullable<RawCourse>,
+    startCourseRecord,
     userId,
   );
 
@@ -143,6 +139,43 @@ export async function computeUnlockState(
     levels: levelStates,
     coursesByLevel,
   };
+}
+
+async function fetchStartCourseRecord(): Promise<RawCourse | null> {
+  try {
+    const slugResult = await db
+      .from('courses')
+      .select('id, slug, title, curriculum, published')
+      .eq('slug', START_HERE_SLUG)
+      .maybeSingle();
+
+    if (slugResult.data) {
+      return slugResult.data as RawCourse;
+    }
+
+    if (slugResult.error) {
+      console.warn('fetchStartCourseRecord: failed to load start course by slug', slugResult.error);
+    }
+
+    const fallbackResult = await db
+      .from('courses')
+      .select('id, slug, title, curriculum, published')
+      .eq('is_start_course', true)
+      .order('created_at', { ascending: true })
+      .maybeSingle();
+
+    if (fallbackResult.data) {
+      console.warn('fetchStartCourseRecord: START_HERE_SLUG not found, using first course flagged as start.');
+      return fallbackResult.data as RawCourse;
+    }
+
+    if (fallbackResult.error) {
+      console.error('fetchStartCourseRecord: failed to load fallback start course', fallbackResult.error);
+    }
+  } catch (error) {
+    console.error('fetchStartCourseRecord error:', error);
+  }
+  return null;
 }
 
 async function computeStartHereState(
