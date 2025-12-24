@@ -250,17 +250,16 @@ function BadgeStrip({
   return (
     <div className="flex flex-wrap gap-3">
       {earned.map((badge) => (
-        <div
-          key={badge.slug}
-          className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-4 py-2 text-sm"
-        >
-          <Badge
-            variant="outline"
-            className="border-white/30 bg-transparent text-[10px] uppercase tracking-[0.4em]"
-          >
-            Ganho
+        <div key={badge.slug} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+          <Badge variant="outline" className={cn(
+            'border-white/30 text-[10px] uppercase tracking-[0.4em]',
+            badge.tier === 'legendary' && 'border-amber-300 text-amber-200',
+            badge.tier === 'rare' && 'border-cyan-300 text-cyan-200',
+            badge.tier === 'uncommon' && 'border-emerald-300 text-emerald-200',
+          )}>
+            {badge.tier ? badge.tier : 'ganho'}
           </Badge>
-          <div>
+          <div className="text-sm">
             <p className="font-semibold text-white">{badge.title}</p>
             <p className="text-xs text-slate-300">{badge.description}</p>
           </div>

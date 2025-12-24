@@ -18,6 +18,7 @@ type RawBadge = {
   icon?: string | null;
   accent_color?: string | null;
   xp_bonus?: number | null;
+  badge_tier?: string | null;
 };
 
 type UserBadgeRow = {
@@ -33,6 +34,7 @@ export type BadgeSummary = {
   icon: string | null;
   accentColor: string | null;
   xpBonus: number;
+  tier: string | null;
   earnedAt?: string | null;
 };
 
@@ -93,7 +95,7 @@ export async function getEducationProgressSummary(
     db
       .from('achievement_badges')
       .select(
-        'slug, title_i18n, description_i18n, category, icon, accent_color, xp_bonus',
+        'slug, title_i18n, description_i18n, category, icon, accent_color, xp_bonus, badge_tier',
       ),
     db.from('user_badges').select('badge_slug, earned_at').eq('user_id', userId),
   ]);
@@ -182,6 +184,7 @@ function formatBadgeSummary(
     icon: badge.icon || null,
     accentColor: badge.accent_color || null,
     xpBonus: badge.xp_bonus ?? 0,
+    tier: badge.badge_tier || null,
     earnedAt: earnedAt ?? undefined,
   };
 }

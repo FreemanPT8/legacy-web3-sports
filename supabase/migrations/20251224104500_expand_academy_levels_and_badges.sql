@@ -276,7 +276,8 @@ INSERT INTO achievement_badges (
   icon,
   accent_color,
   unlock_condition,
-  xp_bonus
+  xp_bonus,
+  badge_tier
 ) VALUES
   (
     'start-here-complete',
@@ -286,7 +287,8 @@ INSERT INTO achievement_badges (
     'icon-sprint',
     '#0ea5e9',
     jsonb_build_object('type', 'course_completed', 'course_slug', 'comeca-aqui'),
-    25
+    25,
+    'rare'
   ),
   (
     'forum-playmaker',
@@ -296,7 +298,8 @@ INSERT INTO achievement_badges (
     'icon-forum',
     '#d946ef',
     jsonb_build_object('type', 'forum_post_count', 'min', 1),
-    15
+    15,
+    'uncommon'
   ),
   (
     'streak-7',
@@ -306,7 +309,8 @@ INSERT INTO achievement_badges (
     'icon-streak',
     '#f97316',
     jsonb_build_object('type', 'streak_days', 'days', 7),
-    50
+    50,
+    'rare'
   )
 ON CONFLICT (slug) DO UPDATE
 SET
