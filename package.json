@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:unlock": "tsc -p tests/tsconfig.json && node -r ./tests/register-alias.js .tmp-tests/tests/unlockEngine.helpers.test.js",
     "seed": "ts-node scripts/seed.ts"
   },
   "dependencies": {

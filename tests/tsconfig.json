@@ -1,0 +1,24 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../.tmp-tests",
+    "noEmit": false,
+    "module": "commonjs",
+    "target": "es2020",
+    "moduleResolution": "node",
+    "baseUrl": "..",
+    "rootDir": "..",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "../lib/supabase.ts",
+    "../lib/lesson-id.ts",
+    "../lib/education/unlockLogic.ts",
+    "../lib/education/unlockEngine.ts",
+    "./**/*.ts"
+  ]
+}
