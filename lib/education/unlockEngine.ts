@@ -41,6 +41,10 @@ type RawLevel = {
   short_label?: string | null;
 };
 
+type LoadedLevelsPayload = {
+  data: RawLevel[];
+};
+
 export type LevelCourseSummary = {
   id: string;
   slug: string | null;
@@ -80,6 +84,74 @@ export type UnlockEngineResult = {
   coursesByLevel: Record<string, LevelCourseSummary[]>;
 };
 
+async function loadAcademyLevels(): Promise<LoadedLevelsPayload> {
+  const detailedSelect =
+    'slug, order_index, title_i18n, unlock_condition, visibility_condition, min_xp, max_xp, accent_color, badge_icon, short_label';
+  const detailed = await db
+    .from('academy_levels')
+    .select(detailedSelect)
+    .order('order_index', { ascending: true });
+
+  if (!detailed.error) {
+    return {
+      data: applyLevelFallbacks((detailed.data || []) as RawLevel[]),
+    };
+  }
+
+  if (isMissingLevelColumnError(detailed.error)) {
+    const legacy = await db
+      .from('academy_levels')
+      .select('slug, order_index, title_i18n, unlock_condition, visibility_condition')
+      .order('order_index', { ascending: true });
+
+    if (legacy.error) {
+      throw new Error(`Failed to load academy levels: ${legacy.error.message}`);
+    }
+
+    return {
+      data: applyLevelFallbacks((legacy.data || []) as RawLevel[]),
+    };
+  }
+
+  throw new Error(`Failed to load academy levels: ${detailed.error.message}`);
+}
+
+async function loadCoursesForUnlock(): Promise<{ data: RawCourse[] }> {
+  const filters = ['published.eq.true', 'is_start_course.eq.true', `id.eq.${START_HERE_FALLBACK_ID}`].join(',');
+  const detailedSelect =
+    'id, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum, seo';
+
+  const detailed = await db
+    .from('courses')
+    .select(detailedSelect)
+    .or(filters)
+    .order('academy_level_slug', { ascending: true })
+    .order('academy_path_order', { ascending: true });
+
+  if (!detailed.error) {
+    return { data: (detailed.data || []) as RawCourse[] };
+  }
+
+  if (isMissingCourseColumnError(detailed.error)) {
+    const fallback = await db
+      .from('courses')
+      .select(
+        'id, title, published, academy_level_slug, is_required_in_level, is_start_course, curriculum',
+      )
+      .or(filters)
+      .order('academy_level_slug', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (fallback.error) {
+      throw new Error(`Failed to load courses: ${fallback.error.message}`);
+    }
+
+    return { data: (fallback.data || []) as RawCourse[] };
+  }
+
+  throw new Error(`Failed to load courses: ${detailed.error.message}`);
+}
+
 export async function computeUnlockState(
   userId: string,
   options?: { xpTotal?: number },
@@ -88,36 +160,15 @@ export async function computeUnlockState(
     throw new Error('computeUnlockState: userId is required');
   }
 
-  const [levelsResult, startCourseRecord, coursesResult, xpTotal] = await Promise.all([
-    db
-      .from('academy_levels')
-      .select(
-        'slug, order_index, title_i18n, unlock_condition, visibility_condition, min_xp, max_xp, accent_color, badge_icon, short_label',
-      )
-      .order('order_index', { ascending: true }),
+  const [levelsPayload, startCourseRecord, coursesPayload, xpTotal] = await Promise.all([
+    loadAcademyLevels(),
     fetchStartCourseRecord(),
-    db
-      .from('courses')
-      .select(
-        'id, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum, seo',
-      )
-      .or(
-        ['published.eq.true', 'is_start_course.eq.true', `id.eq.${START_HERE_FALLBACK_ID}`].join(','),
-      )
-      .order('academy_level_slug', { ascending: true })
-      .order('academy_path_order', { ascending: true }),
+    loadCoursesForUnlock(),
     resolveUserXpTotal(userId, options?.xpTotal),
   ]);
 
-  if (levelsResult.error) {
-    throw new Error(`Failed to load academy levels: ${levelsResult.error.message}`);
-  }
-  if (coursesResult.error) {
-    throw new Error(`Failed to load courses: ${coursesResult.error.message}`);
-  }
-
-  const levels = (levelsResult.data || []) as RawLevel[];
-  const publishedCourses = ((coursesResult.data || []) as RawCourse[]).map(
+  const levels = levelsPayload.data as RawLevel[];
+  const publishedCourses = (coursesPayload.data as RawCourse[]).map(
     attachCourseSlug,
   );
 
@@ -494,6 +545,23 @@ const START_LEVEL_SLUG = 'novato';
 const LEVEL_SLUG_ALIASES: Record<string, string> = {
   novato: 'cadets',
 };
+const LEGACY_LEVEL_METADATA: Record<
+  string,
+  {
+    minXp: number;
+    maxXp: number | null;
+    shortLabel?: string;
+  }
+> = {
+  cadets: { minXp: 0, maxXp: 98, shortLabel: 'Cadete' },
+  infantil: { minXp: 99, maxXp: 368, shortLabel: 'Infantil' },
+  juveniles: { minXp: 369, maxXp: 999, shortLabel: 'Juvenil' },
+  juniors: { minXp: 1000, maxXp: 2221, shortLabel: 'Junior' },
+  seniors: { minXp: 2222, maxXp: 3332, shortLabel: 'Sénior' },
+  'hall-of-fame': { minXp: 3333, maxXp: 4999, shortLabel: 'Hall da Fama' },
+  master: { minXp: 5000, maxXp: 9999, shortLabel: 'Master' },
+  legend: { minXp: 10000, maxXp: null, shortLabel: 'Lenda' },
+};
 
 function normalizeCourseLevelSlug(
   course: RawCourse,
@@ -609,4 +677,61 @@ export function resolveCourseSlug(course: RawCourse): string | null {
   }
 
   return course.id || null;
+}
+
+function applyLevelFallbacks(levels: RawLevel[]): RawLevel[] {
+  return levels.map((level) => {
+    const fallback = LEGACY_LEVEL_METADATA[level.slug];
+    const defaultLabel =
+      fallback?.shortLabel ||
+      (level.short_label ||
+        (level.slug ? level.slug.charAt(0).toUpperCase() + level.slug.slice(1) : ''));
+    const resolvedMin =
+      typeof level.min_xp === 'number'
+        ? level.min_xp
+        : fallback?.minXp ?? null;
+    const resolvedMax =
+      typeof level.max_xp === 'number'
+        ? level.max_xp
+        : fallback?.maxXp ?? null;
+
+    const localizedTitle =
+      level.title_i18n ||
+      (defaultLabel
+        ? {
+            pt: defaultLabel,
+            es: defaultLabel,
+            en: defaultLabel,
+          }
+        : undefined);
+
+    return {
+      ...level,
+      min_xp: resolvedMin,
+      max_xp: resolvedMax,
+      short_label:
+        level.short_label && level.short_label.trim().length > 0
+          ? level.short_label
+          : fallback?.shortLabel || level.short_label || null,
+      title_i18n: localizedTitle,
+    };
+  });
+}
+
+function isMissingLevelColumnError(error: { message?: string } | null): boolean {
+  const message = error?.message;
+  if (!message) return false;
+  const tokens = ['min_xp', 'max_xp', 'accent_color', 'badge_icon', 'short_label'];
+  return tokens.some((token) =>
+    message.includes(`column academy_levels.${token} does not exist`),
+  );
+}
+
+function isMissingCourseColumnError(error: { message?: string } | null): boolean {
+  const message = error?.message;
+  if (!message) return false;
+  const tokens = ['academy_path_order', 'seo', 'is_required_in_level'];
+  return tokens.some((token) =>
+    message.includes(`column courses.${token} does not exist`),
+  );
 }
