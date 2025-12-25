@@ -25,6 +25,7 @@ type RawCourse = {
   is_start_course: boolean | null;
   academy_path_order?: number | null;
   curriculum?: any;
+  seo?: any;
 };
 
 type RawLevel = {
@@ -98,7 +99,7 @@ export async function computeUnlockState(
     db
       .from('courses')
       .select(
-        'id, slug, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum',
+        'id, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum, seo',
       )
       .or(
         [
@@ -121,10 +122,12 @@ export async function computeUnlockState(
   }
 
   const levels = (levelsResult.data || []) as RawLevel[];
-  const publishedCourses = (coursesResult.data || []) as RawCourse[];
+  const publishedCourses = ((coursesResult.data || []) as RawCourse[]).map(
+    attachCourseSlug,
+  );
 
   const startHere = await computeStartHereState(
-    startCourseRecord,
+    startCourseRecord ? attachCourseSlug(startCourseRecord) : null,
     userId,
   );
 
@@ -153,28 +156,13 @@ export async function computeUnlockState(
 
 async function fetchStartCourseRecord(): Promise<RawCourse | null> {
   try {
-    const slugResult = await db
-      .from('courses')
-      .select('id, slug, title, curriculum, published')
-      .eq('slug', START_HERE_SLUG)
-      .maybeSingle();
-
-    if (slugResult.data) {
-      return slugResult.data as RawCourse;
-    }
-
-    if (slugResult.error) {
-      console.warn('fetchStartCourseRecord: failed to load start course by slug', slugResult.error);
-    }
-
     const idResult = await db
       .from('courses')
-      .select('id, slug, title, curriculum, published')
+      .select('id, title, curriculum, published, seo')
       .eq('id', START_HERE_FALLBACK_ID)
       .maybeSingle();
 
     if (idResult.data) {
-      console.warn('fetchStartCourseRecord: using fallback course id for start course.');
       return idResult.data as RawCourse;
     }
 
@@ -184,13 +172,13 @@ async function fetchStartCourseRecord(): Promise<RawCourse | null> {
 
     const fallbackResult = await db
       .from('courses')
-      .select('id, slug, title, curriculum, published')
+      .select('id, title, curriculum, published, seo')
       .eq('is_start_course', true)
       .order('created_at', { ascending: true })
       .maybeSingle();
 
     if (fallbackResult.data) {
-      console.warn('fetchStartCourseRecord: START_HERE not found by slug/id, using first course flagged as start.');
+      console.warn('fetchStartCourseRecord: START_HERE not found by id, using first course flagged as start.');
       return fallbackResult.data as RawCourse;
     }
 
@@ -348,9 +336,10 @@ function buildCoursesByLevel(
         acc.coursesByLevel[normalizedLevelSlug] = [];
       }
 
+      const resolvedSlug = resolveCourseSlug(course);
       const summary: LevelCourseSummary = {
         id: course.id,
-        slug: course.slug,
+        slug: resolvedSlug,
         title: resolveTitle(course.title),
         isRequired: course.is_required_in_level !== false,
         isStartCourse: Boolean(course.is_start_course),
@@ -358,8 +347,11 @@ function buildCoursesByLevel(
       };
 
       acc.coursesByLevel[normalizedLevelSlug].push(summary);
-      if (course.slug) {
-        acc.courseCompletionBySlug[course.slug] = summary.isCompleted;
+      if (resolvedSlug) {
+        acc.courseCompletionBySlug[resolvedSlug] = summary.isCompleted;
+      }
+      if (course.id) {
+        acc.courseCompletionBySlug[course.id] = summary.isCompleted;
       }
 
       return acc;
@@ -504,6 +496,9 @@ function buildLockedReason(
 }
 
 const START_LEVEL_SLUG = 'novato';
+const LEVEL_SLUG_ALIASES: Record<string, string> = {
+  novato: 'cadets',
+};
 
 function normalizeCourseLevelSlug(
   course: RawCourse,
@@ -514,7 +509,7 @@ function normalizeCourseLevelSlug(
       ? course.academy_level_slug.trim()
       : '';
   if (directSlug.length > 0) {
-    return directSlug;
+    return LEVEL_SLUG_ALIASES[directSlug] || directSlug;
   }
 
   const metadataSlugRaw =
@@ -524,12 +519,12 @@ function normalizeCourseLevelSlug(
 
   const metadataSlug = metadataSlugRaw ? metadataSlugRaw.trim() : '';
   if (metadataSlug.length > 0) {
-    return metadataSlug;
+    return LEVEL_SLUG_ALIASES[metadataSlug] || metadataSlug;
   }
 
   const isStart =
     course.is_start_course ||
-    course.slug === START_HERE_SLUG ||
+    resolveCourseSlug(course) === START_HERE_SLUG ||
     course.id === START_HERE_FALLBACK_ID;
 
   if (isStart) {
@@ -578,4 +573,45 @@ export function resolveTitle(raw: any): string {
 function capitalize(slug: string): string {
   if (!slug) return '';
   return slug.charAt(0).toUpperCase() + slug.slice(1);
+}
+
+function attachCourseSlug(course: RawCourse): RawCourse {
+  if (!course) return course;
+  const slug = resolveCourseSlug(course);
+  return {
+    ...course,
+    slug,
+  };
+}
+
+function resolveCourseSlug(course: RawCourse): string | null {
+  if (!course) return null;
+
+  const rawCandidates = [
+    typeof course.slug === 'string' ? course.slug : null,
+    typeof course.curriculum?.metadata?.seo?.slug === 'string'
+      ? course.curriculum.metadata.seo.slug
+      : null,
+    typeof course.curriculum?.metadata?.slug === 'string'
+      ? course.curriculum.metadata.slug
+      : null,
+    typeof course.seo?.slug === 'string' ? course.seo.slug : null,
+  ];
+
+  for (const candidate of rawCandidates) {
+    const value = typeof candidate === 'string' ? candidate.trim() : '';
+    if (value.length > 0) {
+      return value;
+    }
+  }
+
+  if (
+    course.is_start_course ||
+    course.id === START_HERE_FALLBACK_ID ||
+    course.curriculum?.metadata?.isStartCourse
+  ) {
+    return START_HERE_SLUG;
+  }
+
+  return course.id || null;
 }
