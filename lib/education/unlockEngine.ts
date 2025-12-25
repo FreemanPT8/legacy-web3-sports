@@ -129,9 +129,11 @@ export async function computeUnlockState(
   );
 
   const completedCourses = await fetchCourseCompletionSet(publishedCourses, userId);
+  const fallbackStartLevelSlug = levels[0]?.slug || START_LEVEL_SLUG;
   const { coursesByLevel, courseCompletionBySlug } = buildCoursesByLevel(
     publishedCourses,
     completedCourses,
+    fallbackStartLevelSlug,
   );
 
   const levelStates = computeLevelStates(
@@ -327,6 +329,7 @@ async function fetchCourseCompletionSet(
 function buildCoursesByLevel(
   courses: RawCourse[],
   completedCourseIds: Set<string>,
+  fallbackStartLevelSlug: string,
 ): {
   coursesByLevel: Record<string, LevelCourseSummary[]>;
   courseCompletionBySlug: Record<string, boolean>;
@@ -336,7 +339,7 @@ function buildCoursesByLevel(
     courseCompletionBySlug: Record<string, boolean>;
   }>(
     (acc, course) => {
-      const normalizedLevelSlug = normalizeCourseLevelSlug(course);
+      const normalizedLevelSlug = normalizeCourseLevelSlug(course, fallbackStartLevelSlug);
       if (!normalizedLevelSlug) {
         return acc;
       }
@@ -502,7 +505,10 @@ function buildLockedReason(
 
 const START_LEVEL_SLUG = 'novato';
 
-function normalizeCourseLevelSlug(course: RawCourse): string | null {
+function normalizeCourseLevelSlug(
+  course: RawCourse,
+  fallbackStartLevelSlug: string = START_LEVEL_SLUG,
+): string | null {
   const directSlug =
     typeof course.academy_level_slug === 'string'
       ? course.academy_level_slug.trim()
@@ -527,7 +533,7 @@ function normalizeCourseLevelSlug(course: RawCourse): string | null {
     course.id === START_HERE_FALLBACK_ID;
 
   if (isStart) {
-    return START_LEVEL_SLUG;
+    return fallbackStartLevelSlug || START_LEVEL_SLUG;
   }
 
   return null;
