@@ -107,40 +107,40 @@ CREATE POLICY "Admins manage user badges"
     )
   );
 
--- 4) Seed XP-based academy levels (Novato through Lenda)
+-- 4) Seed XP-based academy levels (Cadete through Lenda)
 WITH levels AS (
   SELECT *
   FROM (VALUES
     (
-      'novato',
-      0,
-      jsonb_build_object('pt', 'Novato', 'en', 'Novice', 'es', 'Novato'),
-      jsonb_build_object('type', 'always'),
-      jsonb_build_object('type', 'always'),
-      0,
-      98,
-      '#38f8ff',
-      'icon-novato',
-      'Novato'
-    ),
-    (
       'cadets',
       1,
       jsonb_build_object('pt', 'Cadete', 'en', 'Cadet', 'es', 'Cadete'),
-      jsonb_build_object('type', 'course_completed', 'course_slug', 'comeca-aqui'),
-      jsonb_build_object('type', 'course_completed', 'course_slug', 'comeca-aqui'),
-      99,
-      368,
+      jsonb_build_object('type', 'xp_threshold', 'min_xp', 0),
+      jsonb_build_object('type', 'always'),
+      0,
+      98,
       '#07f2c7',
       'icon-cadet',
       'Cadete'
     ),
     (
-      'juveniles',
+      'infantil',
       2,
-      jsonb_build_object('pt', 'Juvenil', 'en', 'Youth', 'es', 'Juvenil'),
-      jsonb_build_object('type', 'academy_level_completed', 'level_slug', 'cadets'),
-      jsonb_build_object('type', 'academy_level_completed', 'level_slug', 'cadets'),
+      jsonb_build_object('pt', 'Infantil', 'en', 'Youth', 'es', 'Infantil'),
+      jsonb_build_object('type', 'xp_threshold', 'min_xp', 99),
+      jsonb_build_object('type', 'always'),
+      99,
+      368,
+      '#4dd2ff',
+      'icon-infantil',
+      'Infantil'
+    ),
+    (
+      'juveniles',
+      3,
+      jsonb_build_object('pt', 'Juvenil', 'en', 'Juvenile', 'es', 'Juvenil'),
+      jsonb_build_object('type', 'xp_threshold', 'min_xp', 369),
+      jsonb_build_object('type', 'always'),
       369,
       999,
       '#6ee7ff',
@@ -149,10 +149,10 @@ WITH levels AS (
     ),
     (
       'juniors',
-      3,
+      4,
       jsonb_build_object('pt', 'Junior', 'en', 'Junior', 'es', 'Junior'),
-      jsonb_build_object('type', 'academy_level_unlocked', 'level_slug', 'juveniles'),
-      jsonb_build_object('type', 'academy_level_unlocked', 'level_slug', 'juveniles'),
+      jsonb_build_object('type', 'xp_threshold', 'min_xp', 1000),
+      jsonb_build_object('type', 'always'),
       1000,
       2221,
       '#8b5cf6',
@@ -161,22 +161,22 @@ WITH levels AS (
     ),
     (
       'seniors',
-      4,
-      jsonb_build_object('pt', 'Sénior', 'en', 'Senior', 'es', 'Senior'),
-      jsonb_build_object('type', 'academy_level_unlocked', 'level_slug', 'juveniles'),
-      jsonb_build_object('type', 'academy_level_unlocked', 'level_slug', 'juveniles'),
+      5,
+      jsonb_build_object('pt', 'Senior', 'en', 'Senior', 'es', 'Senior'),
+      jsonb_build_object('type', 'xp_threshold', 'min_xp', 2222),
+      jsonb_build_object('type', 'always'),
       2222,
       3332,
       '#f59e0b',
       'icon-senior',
-      'Sénior'
+      'Senior'
     ),
     (
       'hall-of-fame',
-      5,
-      jsonb_build_object('pt', 'Hall da Fama', 'en', 'Hall of Fame', 'es', 'Salón de la Fama'),
+      6,
+      jsonb_build_object('pt', 'Hall da Fama', 'en', 'Hall of Fame', 'es', 'Salon de la Fama'),
       jsonb_build_object('type', 'xp_threshold', 'min_xp', 3333),
-      jsonb_build_object('type', 'xp_threshold', 'min_xp', 3333),
+      jsonb_build_object('type', 'always'),
       3333,
       4999,
       '#fbbf24',
@@ -185,10 +185,10 @@ WITH levels AS (
     ),
     (
       'master',
-      6,
+      7,
       jsonb_build_object('pt', 'Master', 'en', 'Master', 'es', 'Master'),
       jsonb_build_object('type', 'xp_threshold', 'min_xp', 5000),
-      jsonb_build_object('type', 'xp_threshold', 'min_xp', 5000),
+      jsonb_build_object('type', 'always'),
       5000,
       9999,
       '#ef4444',
@@ -197,10 +197,10 @@ WITH levels AS (
     ),
     (
       'legend',
-      7,
+      8,
       jsonb_build_object('pt', 'Lenda', 'en', 'Legend', 'es', 'Leyenda'),
       jsonb_build_object('type', 'xp_threshold', 'min_xp', 10000),
-      jsonb_build_object('type', 'xp_threshold', 'min_xp', 10000),
+      jsonb_build_object('type', 'always'),
       10000,
       NULL,
       '#f472b6',
@@ -256,12 +256,12 @@ SET
   badge_icon = EXCLUDED.badge_icon,
   short_label = EXCLUDED.short_label;
 
--- 5) Ensure "Começa Aqui" course metadata reflects tri-language requirement
+-- 5) Ensure "Comeca Aqui" course metadata reflects tri-language requirement
 UPDATE courses
 SET
   is_start_course = true,
   is_required_in_level = true,
-  academy_level_slug = 'novato',
+  academy_level_slug = 'cadets',
   available_languages = ARRAY['pt', 'es', 'en']::text[],
   primary_language = 'pt',
   academy_path_order = 0
@@ -282,7 +282,7 @@ INSERT INTO achievement_badges (
   (
     'start-here-complete',
     jsonb_build_object('pt', 'Primeiro Sprint', 'en', 'First Sprint', 'es', 'Primer Sprint'),
-    jsonb_build_object('pt', 'Completa o curso COMEÇA AQUI em qualquer idioma.', 'en', 'Finish the START HERE course in any language.', 'es', 'Completa el curso EMPIEZA AQUÍ en cualquier idioma.'),
+    jsonb_build_object('pt', 'Completa o curso COMECA AQUI em qualquer idioma.', 'en', 'Finish the START HERE course in any language.', 'es', 'Completa el curso EMPIEZA AQUI en cualquier idioma.'),
     'education',
     'icon-sprint',
     '#0ea5e9',
@@ -293,7 +293,7 @@ INSERT INTO achievement_badges (
   (
     'forum-playmaker',
     jsonb_build_object('pt', 'Playmaker', 'en', 'Playmaker', 'es', 'Playmaker'),
-    jsonb_build_object('pt', 'Partilha a tua primeira participação no fórum.', 'en', 'Post your first contribution in the forum.', 'es', 'Comparte tu primer aporte en el foro.'),
+    jsonb_build_object('pt', 'Partilha a tua primeira participacao no forum.', 'en', 'Post your first contribution in the forum.', 'es', 'Comparte tu primer aporte en el foro.'),
     'community',
     'icon-forum',
     '#d946ef',
@@ -304,7 +304,7 @@ INSERT INTO achievement_badges (
   (
     'streak-7',
     jsonb_build_object('pt', 'Foco 7x7', 'en', 'Seven Day Focus', 'es', 'Enfoque 7x7'),
-    jsonb_build_object('pt', 'Mantém uma sequência de 7 dias a ganhar XP.', 'en', 'Maintain a seven-day XP streak.', 'es', 'Mantén una racha de XP de siete días.'),
+    jsonb_build_object('pt', 'Mantem uma sequencia de 7 dias a ganhar XP.', 'en', 'Maintain a seven-day XP streak.', 'es', 'Manten una racha de XP de siete dias.'),
     'streak',
     'icon-streak',
     '#f97316',

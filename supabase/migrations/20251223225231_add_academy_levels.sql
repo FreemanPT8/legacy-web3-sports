@@ -57,30 +57,58 @@ VALUES
   (
     'cadets',
     1,
-    jsonb_build_object('pt', 'Cadetes', 'en', 'Cadets', 'es', 'Cadetes'),
-    jsonb_build_object('type', 'course_completed', 'course_slug', 'comeca-aqui'),
+    jsonb_build_object('pt', 'Cadete', 'en', 'Cadet', 'es', 'Cadete'),
+    jsonb_build_object('type', 'xp_threshold', 'min_xp', 0),
+    jsonb_build_object('type', 'always')
+  ),
+  (
+    'infantil',
+    2,
+    jsonb_build_object('pt', 'Infantil', 'en', 'Youth', 'es', 'Infantil'),
+    jsonb_build_object('type', 'xp_threshold', 'min_xp', 99),
     jsonb_build_object('type', 'always')
   ),
   (
     'juveniles',
-    2,
-    jsonb_build_object('pt', 'Juvenis', 'en', 'Juveniles', 'es', 'Juveniles'),
-    jsonb_build_object('type', 'academy_level_completed', 'level_slug', 'cadets'),
+    3,
+    jsonb_build_object('pt', 'Juvenil', 'en', 'Juvenile', 'es', 'Juvenil'),
+    jsonb_build_object('type', 'xp_threshold', 'min_xp', 369),
     jsonb_build_object('type', 'always')
   ),
   (
     'juniors',
-    3,
-    jsonb_build_object('pt', 'Juniores', 'en', 'Juniors', 'es', 'Juniores'),
-    jsonb_build_object('type', 'academy_level_unlocked', 'level_slug', 'juveniles'),
-    jsonb_build_object('type', 'academy_level_unlocked', 'level_slug', 'juveniles')
+    4,
+    jsonb_build_object('pt', 'Junior', 'en', 'Junior', 'es', 'Junior'),
+    jsonb_build_object('type', 'xp_threshold', 'min_xp', 1000),
+    jsonb_build_object('type', 'always')
   ),
   (
     'seniors',
-    4,
-    jsonb_build_object('pt', 'Séniors', 'en', 'Seniors', 'es', 'Séniors'),
-    jsonb_build_object('type', 'academy_level_unlocked', 'level_slug', 'juveniles'),
-    jsonb_build_object('type', 'academy_level_unlocked', 'level_slug', 'juveniles')
+    5,
+    jsonb_build_object('pt', 'Senior', 'en', 'Senior', 'es', 'Senior'),
+    jsonb_build_object('type', 'xp_threshold', 'min_xp', 2222),
+    jsonb_build_object('type', 'always')
+  ),
+  (
+    'hall-of-fame',
+    6,
+    jsonb_build_object('pt', 'Hall da Fama', 'en', 'Hall of Fame', 'es', 'Salon de la Fama'),
+    jsonb_build_object('type', 'xp_threshold', 'min_xp', 3333),
+    jsonb_build_object('type', 'always')
+  ),
+  (
+    'master',
+    7,
+    jsonb_build_object('pt', 'Master', 'en', 'Master', 'es', 'Master'),
+    jsonb_build_object('type', 'xp_threshold', 'min_xp', 5000),
+    jsonb_build_object('type', 'always')
+  ),
+  (
+    'legend',
+    8,
+    jsonb_build_object('pt', 'Lenda', 'en', 'Legend', 'es', 'Leyenda'),
+    jsonb_build_object('type', 'xp_threshold', 'min_xp', 10000),
+    jsonb_build_object('type', 'always')
   )
 ON CONFLICT (slug) DO UPDATE
 SET
