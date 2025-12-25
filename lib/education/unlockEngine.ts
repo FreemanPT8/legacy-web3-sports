@@ -98,7 +98,7 @@ export async function computeUnlockState(
     db
       .from('courses')
       .select(
-        'id, slug, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order',
+        'id, slug, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum',
       )
       .eq('published', true)
       .order('academy_level_slug', { ascending: true })

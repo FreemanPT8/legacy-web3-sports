@@ -7,68 +7,17 @@ import { cn } from '@/lib/utils';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
 
 type Props = {
   summary: ProgressSummary | null;
 };
 
 export function LevelSections({ summary }: Props) {
-  const { getToken } = useAuth();
   const levels = summary?.levels || [];
-  const [coursesByLevel, setCoursesByLevel] = useState<Record<string, LevelCourseSummary[]>>(
-    summary?.coursesByLevel || {},
-  );
-  const [coursesStatus, setCoursesStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
-    'idle',
-  );
+  const coursesByLevel = summary?.coursesByLevel || {};
+
   const [isMobile, setIsMobile] = useState(false);
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCoursesByLevel(summary?.coursesByLevel || {});
-  }, [summary, getToken]);
-
-  useEffect(() => {
-    if (!summary) {
-      setCoursesStatus('idle');
-      return;
-    }
-
-    let isMounted = true;
-    const fetchUnlockState = async () => {
-      setCoursesStatus('loading');
-      try {
-        const token = getToken();
-        const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
-        }
-        const response = await fetch('/api/education/unlock-state', {
-          headers,
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to load unlock state: ${response.status}`);
-        }
-        const payload = await response.json();
-        if (!payload?.success || !payload.unlockState) {
-          throw new Error('Malformed unlock-state payload');
-        }
-        if (!isMounted) return;
-        setCoursesByLevel(payload.unlockState.coursesByLevel || {});
-        setCoursesStatus('success');
-      } catch (error) {
-        console.error('LevelSections failed to fetch unlock-state:', error);
-        if (!isMounted) return;
-        setCoursesStatus('error');
-      }
-    };
-
-    fetchUnlockState();
-    return () => {
-      isMounted = false;
-    };
-  }, [summary]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -93,18 +42,13 @@ export function LevelSections({ summary }: Props) {
   if (!summary) {
     return (
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
-        Autentica-te para explorar os cursos de cada n√≠vel.
+        Autentica-te para explorar os cursos de cada nÌvel.
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {coursesStatus === 'error' && (
-        <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">
-          N?o foi poss?vel carregar os cursos associados aos n?veis. Atualiza para tentar novamente.
-        </div>
-      )}
       {levels.map((level) => {
         const courses = coursesByLevel[level.slug] || [];
         const expanded = !isMobile || expandedSlug === level.slug;
@@ -215,7 +159,7 @@ function LevelSection({
       >
         {courses.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 bg-transparent p-4 text-sm text-slate-300">
-            Ainda n√£o existem cursos atribu√≠dos a este n√≠vel.
+            Ainda n„o existem cursos atribuÌdos a este nÌvel.
           </div>
         ) : (
           courses.map((course) => (
@@ -257,7 +201,7 @@ function CourseCard({
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
             {course.isRequired && (
               <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.3em] text-[10px] text-slate-300">
-                Obrigat√≥rio
+                ObrigatÛrio
               </span>
             )}
             {course.isStartCourse && (
@@ -268,7 +212,7 @@ function CourseCard({
             {course.isCompleted && (
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1 text-xs text-emerald-200">
                 <CheckCircle className="h-3 w-3" />
-                Conclu√≠do
+                ConcluÌdo
               </span>
             )}
           </div>
@@ -280,7 +224,7 @@ function CourseCard({
         {isLocked ? (
           <div className="flex items-center gap-2 text-sm text-slate-300">
             <Lock className="h-4 w-4 text-slate-400" />
-            <span>N√≠vel bloqueado</span>
+            <span>NÌvel bloqueado</span>
           </div>
         ) : (
           <Link href={course.slug ? `/education/courses/${course.slug}` : '#'} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
