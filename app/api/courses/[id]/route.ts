@@ -7,12 +7,17 @@ import {
   buildLessonIdVariants,
   normalizeLessonIdForStorage,
 } from '@/lib/lesson-id';
+import { resolveCourseSlug } from '@/lib/education/unlockEngine';
 
 interface RouteContext {
   params: { id: string };
 }
 
 const db = supabaseAdmin ?? supabase;
+const UUID_REGEX =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+const looksLikeUuid = (value: string) => UUID_REGEX.test(value);
 
 export async function GET(
   request: NextRequest,
@@ -42,17 +47,18 @@ export async function GET(
       rawCourse = courseById;
     }
 
-    if (!rawCourse) {
-      const { data: courseBySlug, error: bySlugError } = await db
+    if (!rawCourse && !looksLikeUuid(id)) {
+      const { data: candidateCourses, error: fallbackError } = await db
         .from('courses')
-        .select('*')
-        .eq('slug', id)
-        .maybeSingle();
+        .select('*');
 
-      if (bySlugError) {
-        courseError = bySlugError;
-      } else {
-        rawCourse = courseBySlug;
+      if (fallbackError) {
+        courseError = fallbackError;
+      } else if (candidateCourses) {
+        rawCourse =
+          candidateCourses.find(
+            (course: any) => resolveCourseSlug(course) === id,
+          ) || null;
       }
     }
 

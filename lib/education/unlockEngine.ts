@@ -584,7 +584,7 @@ function attachCourseSlug(course: RawCourse): RawCourse {
   };
 }
 
-function resolveCourseSlug(course: RawCourse): string | null {
+export function resolveCourseSlug(course: RawCourse): string | null {
   if (!course) return null;
 
   const rawCandidates = [

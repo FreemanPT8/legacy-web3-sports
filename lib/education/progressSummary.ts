@@ -1,6 +1,7 @@
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import {
   computeUnlockState,
+  resolveCourseSlug,
   resolveTitle,
   type AcademyLevelState,
   type LevelCourseSummary,
@@ -194,53 +195,47 @@ async function fetchStartCourseMeta(): Promise<StartCourseMeta | null> {
   try {
     const baseQuery = db
       .from('courses')
-      .select('id, slug, title, description, available_languages, primary_language')
-      .eq('slug', START_HERE_SLUG)
+      .select(
+        'id, title, description, available_languages, primary_language, curriculum, seo, is_start_course',
+      )
+      .eq('id', START_HERE_FALLBACK_ID)
       .maybeSingle();
 
     let dataResult = await baseQuery;
     let data = dataResult.data;
 
     if (!data) {
-      const idResult = await db
-        .from('courses')
-        .select('id, slug, title, description, available_languages, primary_language')
-        .eq('id', START_HERE_FALLBACK_ID)
-        .maybeSingle();
-
-      if (idResult.data) {
-        console.warn('fetchStartCourseMeta: using fallback course id for start course metadata.');
-        data = idResult.data;
-      } else if (idResult.error) {
-        console.error('fetchStartCourseMeta: failed to load metadata by fallback id', idResult.error);
+      if (dataResult.error) {
+        console.error('fetchStartCourseMeta: failed to load metadata by fallback id', dataResult.error);
       }
-    }
 
-    if (!data) {
       const fallbackResult = await db
         .from('courses')
-        .select('id, slug, title, description, available_languages, primary_language')
+        .select(
+          'id, title, description, available_languages, primary_language, curriculum, seo, is_start_course',
+        )
         .eq('is_start_course', true)
         .order('created_at', { ascending: true })
         .maybeSingle();
 
-      if (fallbackResult.data) {
-        console.warn('fetchStartCourseMeta: START_HERE not found by slug/id, using first course flagged as start.');
-        data = fallbackResult.data;
-      } else if (fallbackResult.error) {
+      if (fallbackResult.error) {
         console.error('fetchStartCourseMeta: fallback query failed', fallbackResult.error);
+      }
+
+      if (fallbackResult.data) {
+        console.warn('fetchStartCourseMeta: using first course flagged as start.');
+        data = fallbackResult.data;
       }
     }
 
     if (!data) {
-      if (dataResult.error) {
-        console.error('fetchStartCourseMeta: failed to load metadata by slug', dataResult.error);
-      }
       return null;
     }
 
+    const resolvedSlug = resolveCourseSlug(data as any) || data.id;
+
     return {
-      slug: data.slug || data.id,
+      slug: resolvedSlug,
       title: data.title,
       description: data.description,
       available_languages: Array.isArray(data.available_languages)
