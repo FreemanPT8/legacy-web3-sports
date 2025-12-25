@@ -42,7 +42,7 @@ export function LevelSections({ summary }: Props) {
   if (!summary) {
     return (
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
-        Autentica-te para explorar os cursos de cada nível.
+        Autentica-te para explorar os cursos de cada nvel.
       </div>
     );
   }
@@ -159,7 +159,7 @@ function LevelSection({
       >
         {courses.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 bg-transparent p-4 text-sm text-slate-300">
-            Ainda não existem cursos atribuídos a este nível.
+            Ainda no existem cursos atribudos a este nvel.
           </div>
         ) : (
           courses.map((course) => (
@@ -201,7 +201,7 @@ function CourseCard({
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
             {course.isRequired && (
               <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.3em] text-[10px] text-slate-300">
-                Obrigatório
+                Obrigatrio
               </span>
             )}
             {course.isStartCourse && (
@@ -212,7 +212,7 @@ function CourseCard({
             {course.isCompleted && (
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1 text-xs text-emerald-200">
                 <CheckCircle className="h-3 w-3" />
-                Concluído
+                Concludo
               </span>
             )}
           </div>
@@ -224,7 +224,7 @@ function CourseCard({
         {isLocked ? (
           <div className="flex items-center gap-2 text-sm text-slate-300">
             <Lock className="h-4 w-4 text-slate-400" />
-            <span>Nível bloqueado</span>
+            <span>Nvel bloqueado</span>
           </div>
         ) : (
           <Link href={course.slug ? `/education/courses/${course.slug}` : '#'} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
