@@ -102,12 +102,7 @@ export async function computeUnlockState(
         'id, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum, seo',
       )
       .or(
-        [
-          'published.eq.true',
-          'is_start_course.eq.true',
-          `id.eq.${START_HERE_FALLBACK_ID}`,
-          `slug.eq.${START_HERE_SLUG}`,
-        ].join(','),
+        ['published.eq.true', 'is_start_course.eq.true', `id.eq.${START_HERE_FALLBACK_ID}`].join(','),
       )
       .order('academy_level_slug', { ascending: true })
       .order('academy_path_order', { ascending: true }),
