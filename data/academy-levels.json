@@ -1,0 +1,14 @@
+﻿{
+  "en": {
+    "novice": "Novice",
+    "cadets": "Cadets"
+  },
+  "es": {
+    "novice": "Novato",
+    "cadets": "Cadetes"
+  },
+  "pt": {
+    "novato": "Novato",
+    "cadets": "Cadetes"
+  }
+}
