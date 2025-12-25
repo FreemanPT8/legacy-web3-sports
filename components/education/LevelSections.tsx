@@ -14,10 +14,52 @@ type Props = {
 
 export function LevelSections({ summary }: Props) {
   const levels = summary?.levels || [];
-  const coursesByLevel = summary?.coursesByLevel || {};
-
+  const [coursesByLevel, setCoursesByLevel] = useState<Record<string, LevelCourseSummary[]>>(
+    summary?.coursesByLevel || {},
+  );
+  const [coursesStatus, setCoursesStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
+    'idle',
+  );
   const [isMobile, setIsMobile] = useState(false);
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCoursesByLevel(summary?.coursesByLevel || {});
+  }, [summary]);
+
+  useEffect(() => {
+    if (!summary) {
+      setCoursesStatus('idle');
+      return;
+    }
+
+    let isMounted = true;
+    const fetchUnlockState = async () => {
+      setCoursesStatus('loading');
+      try {
+        const response = await fetch('/api/education/unlock-state');
+        if (!response.ok) {
+          throw new Error(`Failed to load unlock state: ${response.status}`);
+        }
+        const payload = await response.json();
+        if (!payload?.success || !payload.unlockState) {
+          throw new Error('Malformed unlock-state payload');
+        }
+        if (!isMounted) return;
+        setCoursesByLevel(payload.unlockState.coursesByLevel || {});
+        setCoursesStatus('success');
+      } catch (error) {
+        console.error('LevelSections failed to fetch unlock-state:', error);
+        if (!isMounted) return;
+        setCoursesStatus('error');
+      }
+    };
+
+    fetchUnlockState();
+    return () => {
+      isMounted = false;
+    };
+  }, [summary]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -49,6 +91,11 @@ export function LevelSections({ summary }: Props) {
 
   return (
     <div className="space-y-6">
+      {coursesStatus === 'error' && (
+        <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">
+          N?o foi poss?vel carregar os cursos associados aos n?veis. Atualiza para tentar novamente.
+        </div>
+      )}
       {levels.map((level) => {
         const courses = coursesByLevel[level.slug] || [];
         const expanded = !isMobile || expandedSlug === level.slug;

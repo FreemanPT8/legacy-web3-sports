@@ -329,13 +329,13 @@ function buildCoursesByLevel(
     courseCompletionBySlug: Record<string, boolean>;
   }>(
     (acc, course) => {
-      if (!course.academy_level_slug) {
+      const normalizedLevelSlug = normalizeCourseLevelSlug(course);
+      if (!normalizedLevelSlug) {
         return acc;
       }
 
-      const levelSlug = course.academy_level_slug;
-      if (!acc.coursesByLevel[levelSlug]) {
-        acc.coursesByLevel[levelSlug] = [];
+      if (!acc.coursesByLevel[normalizedLevelSlug]) {
+        acc.coursesByLevel[normalizedLevelSlug] = [];
       }
 
       const summary: LevelCourseSummary = {
@@ -347,7 +347,7 @@ function buildCoursesByLevel(
         isCompleted: completedCourseIds.has(course.id),
       };
 
-      acc.coursesByLevel[levelSlug].push(summary);
+      acc.coursesByLevel[normalizedLevelSlug].push(summary);
       if (course.slug) {
         acc.courseCompletionBySlug[course.slug] = summary.isCompleted;
       }
@@ -491,6 +491,33 @@ function buildLockedReason(
     default:
       return 'Nivel ainda nao desbloqueado.';
   }
+}
+
+const START_LEVEL_SLUG = 'novato';
+
+function normalizeCourseLevelSlug(course: RawCourse): string | null {
+  const directSlug = typeof course.academy_level_slug === 'string'
+    ? course.academy_level_slug.trim()
+    : '';
+  if (directSlug.length > 0) {
+    return directSlug;
+  }
+
+  const metadataSlugRaw =
+    typeof course.curriculum?.metadata?.academyLevelSlug === 'string'
+      ? course.curriculum.metadata.academyLevelSlug
+      : null;
+
+  const metadataSlug = metadataSlugRaw ? metadataSlugRaw.trim() : '';
+  if (metadataSlug.length > 0) {
+    return metadataSlug;
+  }
+
+  if (course.is_start_course) {
+    return START_LEVEL_SLUG;
+  }
+
+  return null;
 }
 
 async function resolveUserXpTotal(
