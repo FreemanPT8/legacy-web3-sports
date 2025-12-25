@@ -7,12 +7,14 @@ import { cn } from '@/lib/utils';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Props = {
   summary: ProgressSummary | null;
 };
 
 export function LevelSections({ summary }: Props) {
+  const { getToken } = useAuth();
   const levels = summary?.levels || [];
   const [coursesByLevel, setCoursesByLevel] = useState<Record<string, LevelCourseSummary[]>>(
     summary?.coursesByLevel || {},
@@ -25,7 +27,7 @@ export function LevelSections({ summary }: Props) {
 
   useEffect(() => {
     setCoursesByLevel(summary?.coursesByLevel || {});
-  }, [summary]);
+  }, [summary, getToken]);
 
   useEffect(() => {
     if (!summary) {
@@ -37,7 +39,14 @@ export function LevelSections({ summary }: Props) {
     const fetchUnlockState = async () => {
       setCoursesStatus('loading');
       try {
-        const response = await fetch('/api/education/unlock-state');
+        const token = getToken();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        const response = await fetch('/api/education/unlock-state', {
+          headers,
+        });
         if (!response.ok) {
           throw new Error(`Failed to load unlock state: ${response.status}`);
         }
