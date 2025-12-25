@@ -100,7 +100,7 @@ export async function computeUnlockState(
       .select(
         'id, slug, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum',
       )
-      .eq('published', true)
+      .or('published.eq.true,is_start_course.eq.true')
       .order('academy_level_slug', { ascending: true })
       .order('academy_path_order', { ascending: true }),
     resolveUserXpTotal(userId, options?.xpTotal),
