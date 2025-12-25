@@ -100,7 +100,14 @@ export async function computeUnlockState(
       .select(
         'id, slug, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum',
       )
-      .or('published.eq.true,is_start_course.eq.true')
+      .or(
+        [
+          'published.eq.true',
+          'is_start_course.eq.true',
+          `id.eq.${START_HERE_FALLBACK_ID}`,
+          `slug.eq.${START_HERE_SLUG}`,
+        ].join(','),
+      )
       .order('academy_level_slug', { ascending: true })
       .order('academy_path_order', { ascending: true }),
     resolveUserXpTotal(userId, options?.xpTotal),
@@ -496,9 +503,10 @@ function buildLockedReason(
 const START_LEVEL_SLUG = 'novato';
 
 function normalizeCourseLevelSlug(course: RawCourse): string | null {
-  const directSlug = typeof course.academy_level_slug === 'string'
-    ? course.academy_level_slug.trim()
-    : '';
+  const directSlug =
+    typeof course.academy_level_slug === 'string'
+      ? course.academy_level_slug.trim()
+      : '';
   if (directSlug.length > 0) {
     return directSlug;
   }
@@ -513,7 +521,12 @@ function normalizeCourseLevelSlug(course: RawCourse): string | null {
     return metadataSlug;
   }
 
-  if (course.is_start_course) {
+  const isStart =
+    course.is_start_course ||
+    course.slug === START_HERE_SLUG ||
+    course.id === START_HERE_FALLBACK_ID;
+
+  if (isStart) {
     return START_LEVEL_SLUG;
   }
 
