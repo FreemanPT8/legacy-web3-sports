@@ -19,6 +19,7 @@ type RawCourse = {
   id: string;
   slug: string | null;
   title: any;
+  description?: any;
   published: boolean | null;
   academy_level_slug: string | null;
   is_required_in_level: boolean | null;
@@ -26,6 +27,13 @@ type RawCourse = {
   academy_path_order?: number | null;
   curriculum?: any;
   seo?: any;
+  available_languages?: string[] | null;
+  primary_language?: string | null;
+  image_url?: string | null;
+  thumbnail_url?: string | null;
+  xp_reward?: number | null;
+  xp_reward_on_complete?: number | null;
+  xp_threshold?: number | null;
 };
 
 type RawLevel = {
@@ -52,6 +60,12 @@ export type LevelCourseSummary = {
   isRequired: boolean;
   isStartCourse: boolean;
   isCompleted: boolean;
+  coverImageUrl?: string | null;
+  description?: string;
+  availableLanguages?: string[];
+  modulesCount?: number;
+  lessonsCount?: number;
+  totalXp?: number;
 };
 
 export type AcademyLevelState = {
@@ -119,7 +133,7 @@ async function loadAcademyLevels(): Promise<LoadedLevelsPayload> {
 async function loadCoursesForUnlock(): Promise<{ data: RawCourse[] }> {
   const filters = ['published.eq.true', 'is_start_course.eq.true', `id.eq.${START_HERE_FALLBACK_ID}`].join(',');
   const detailedSelect =
-    'id, title, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum, seo';
+    'id, title, description, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum, seo, available_languages, primary_language, image_url, thumbnail_url, xp_reward, xp_reward_on_complete, xp_threshold';
 
   const detailed = await db
     .from('courses')
@@ -383,6 +397,7 @@ function buildCoursesByLevel(
       }
 
       const resolvedSlug = resolveCourseSlug(course);
+      const meta = buildCourseMetaSummary(course);
       const summary: LevelCourseSummary = {
         id: course.id,
         slug: resolvedSlug,
@@ -390,6 +405,12 @@ function buildCoursesByLevel(
         isRequired: course.is_required_in_level !== false,
         isStartCourse: Boolean(course.is_start_course),
         isCompleted: completedCourseIds.has(course.id),
+        coverImageUrl: meta.coverImageUrl,
+        description: meta.description,
+        availableLanguages: meta.availableLanguages,
+        modulesCount: meta.modulesCount,
+        lessonsCount: meta.lessonsCount,
+        totalXp: meta.totalXp,
       };
 
       acc.coursesByLevel[normalizedLevelSlug].push(summary);
@@ -636,6 +657,145 @@ export function resolveTitle(raw: any): string {
 function capitalize(slug: string): string {
   if (!slug) return '';
   return slug.charAt(0).toUpperCase() + slug.slice(1);
+}
+
+type CourseMetaSummary = {
+  coverImageUrl?: string | null;
+  description?: string;
+  availableLanguages?: string[];
+  modulesCount?: number;
+  lessonsCount?: number;
+  totalXp?: number;
+};
+
+function buildCourseMetaSummary(course: RawCourse): CourseMetaSummary {
+  const description = extractCourseDescription(course);
+  const coverImageUrl = resolveCourseCoverImage(course);
+  const availableLanguages = resolveCourseLanguages(course);
+  const structure = summarizeCourseStructure(course);
+
+  return {
+    coverImageUrl,
+    description,
+    availableLanguages,
+    modulesCount: structure.modulesCount,
+    lessonsCount: structure.lessonsCount,
+    totalXp: structure.totalXp,
+  };
+}
+
+function resolveCourseCoverImage(course: RawCourse): string | null {
+  const metadataCover = course.curriculum?.metadata?.coverAsset;
+  if (metadataCover && typeof metadataCover === 'object' && typeof metadataCover.url === 'string') {
+    return metadataCover.url;
+  }
+  if (typeof course.curriculum?.metadata?.coverImage === 'string') {
+    return course.curriculum.metadata.coverImage;
+  }
+  if (typeof metadataCover === 'string') {
+    return metadataCover;
+  }
+  if (typeof course.image_url === 'string' && course.image_url.trim().length > 0) {
+    return course.image_url;
+  }
+  if (typeof course.thumbnail_url === 'string' && course.thumbnail_url.trim().length > 0) {
+    return course.thumbnail_url;
+  }
+  if (typeof course.seo?.ogImageUrl === 'string') {
+    return course.seo.ogImageUrl;
+  }
+  if (typeof course.seo?.coverImageUrl === 'string') {
+    return course.seo.coverImageUrl;
+  }
+  return null;
+}
+
+function extractCourseDescription(course: RawCourse): string | undefined {
+  const rawDescription =
+    course.description ||
+    course.curriculum?.metadata?.summary ||
+    course.curriculum?.metadata?.description;
+  const resolved = resolveTitle(rawDescription);
+  const clean = stripHtml(resolved);
+  return clean.length > 0 ? clean : undefined;
+}
+
+function stripHtml(value: string): string {
+  if (!value) return '';
+  return value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function resolveCourseLanguages(course: RawCourse): string[] | undefined {
+  if (Array.isArray(course.available_languages) && course.available_languages.length > 0) {
+    return course.available_languages;
+  }
+  if (Array.isArray(course.curriculum?.metadata?.availableLanguages)) {
+    return course.curriculum.metadata.availableLanguages;
+  }
+  if (typeof course.primary_language === 'string' && course.primary_language.trim().length > 0) {
+    return [course.primary_language];
+  }
+  return undefined;
+}
+
+function summarizeCourseStructure(course: RawCourse): {
+  modulesCount?: number;
+  lessonsCount?: number;
+  totalXp?: number;
+} {
+  const topics: any[] = Array.isArray(course.curriculum?.topics) ? course.curriculum.topics : [];
+  let lessonsCount = 0;
+  let lessonsXp = 0;
+  let moduleBonus = 0;
+
+  topics.forEach((topic) => {
+    const lessons = Array.isArray(topic?.lessons) ? topic.lessons : [];
+    lessonsCount += lessons.length;
+    lessonsXp += lessons.reduce((sum: number, lesson: any) => sum + getLessonReward(lesson), 0);
+    moduleBonus += getModuleBonus(topic);
+  });
+
+  const courseBonus = getCourseBonus(course);
+  const aggregateXp = lessonsXp + moduleBonus + courseBonus;
+  const totalXp =
+    aggregateXp > 0
+      ? aggregateXp
+      : typeof course.xp_reward === 'number'
+        ? course.xp_reward
+        : typeof course.curriculum?.metadata?.xpReward === 'number'
+          ? course.curriculum.metadata.xpReward
+          : undefined;
+
+  return {
+    modulesCount: topics.length > 0 ? topics.length : undefined,
+    lessonsCount: lessonsCount > 0 ? lessonsCount : undefined,
+    totalXp,
+  };
+}
+
+function getLessonReward(lesson: any): number {
+  if (!lesson) return 0;
+  if (typeof lesson.xp_reward === 'number') return lesson.xp_reward;
+  if (typeof lesson.xpReward === 'number') return lesson.xpReward;
+  return 0;
+}
+
+function getModuleBonus(module: any): number {
+  if (!module) return 0;
+  if (typeof module.xp_reward === 'number') return module.xp_reward;
+  if (typeof module.xpReward === 'number') return module.xpReward;
+  if (typeof module.metadata?.xpReward === 'number') return module.metadata.xpReward;
+  return 0;
+}
+
+function getCourseBonus(course: RawCourse): number {
+  if (!course) return 0;
+  if (typeof course.xp_reward_on_complete === 'number') return course.xp_reward_on_complete;
+  if (typeof course.curriculum?.metadata?.xpReward === 'number') {
+    return course.curriculum.metadata.xpReward;
+  }
+  if (typeof course.xp_reward === 'number') return course.xp_reward;
+  return 0;
 }
 
 function attachCourseSlug(course: RawCourse): RawCourse {
