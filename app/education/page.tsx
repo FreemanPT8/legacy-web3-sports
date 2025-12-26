@@ -59,8 +59,8 @@ const XP_LEVEL_BLOCK_COPY: Record<
   ],
   en: [
     { title: 'Cadet', range: '0-98 XP' },
-    { title: 'Infant', range: '99-368 XP' },
-    { title: 'Juvenile', range: '369-999 XP' },
+    { title: 'Youth', range: '99-368 XP' },
+    { title: 'Intermediate', range: '369-999 XP' },
     { title: 'Junior', range: '1,000-2,221 XP' },
     { title: 'Senior', range: '2,222-3,332 XP' },
     { title: 'Hall of Fame', range: '3,333-4,999 XP' },

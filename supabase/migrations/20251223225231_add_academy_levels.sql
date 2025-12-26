@@ -71,7 +71,7 @@ VALUES
   (
     'juveniles',
     3,
-    jsonb_build_object('pt', 'Juvenil', 'en', 'Juvenile', 'es', 'Juvenil'),
+    jsonb_build_object('pt', 'Juvenil', 'en', 'Intermediate', 'es', 'Juvenil'),
     jsonb_build_object('type', 'xp_threshold', 'min_xp', 369),
     jsonb_build_object('type', 'always')
   ),

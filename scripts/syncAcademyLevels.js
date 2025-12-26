@@ -32,7 +32,7 @@ const LEVELS = [
   {
     slug: 'juveniles',
     order_index: 3,
-    title_i18n: { pt: 'Juvenil', en: 'Juvenile', es: 'Juvenil' },
+    title_i18n: { pt: 'Juvenil', en: 'Intermediate', es: 'Juvenil' },
     unlock_condition: { type: 'xp_threshold', min_xp: 369 },
     visibility_condition: { type: 'always' },
     min_xp: 369,
