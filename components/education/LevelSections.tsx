@@ -247,6 +247,7 @@ function LevelSection({
   onToggle,
   isFallbackLoading,
   labels,
+  language,
 }: LevelSectionProps) {
 
   const accent = level.accentColor || '#1ccfdd';
