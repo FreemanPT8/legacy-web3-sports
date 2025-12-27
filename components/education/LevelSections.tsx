@@ -471,14 +471,13 @@ function CourseCard({
   const courseHref = `/education/courses/${resolvedSlug}`;
   const levelLabel = level.shortLabel || level.title;
   const localizedTitle =
-    getMultilingualContent(course.title, language) ||
-    (typeof course.title === 'string' ? course.title : '') ||
-    levelLabel ||
-    '';
+    typeof course.title === 'string'
+      ? course.title
+      : getMultilingualContent(course.title, language) || levelLabel || '';
   const localizedDescription =
-    getMultilingualContent(course.description, language) ||
-    (typeof course.description === 'string' ? course.description : '') ||
-    '';
+    typeof course.description === 'string'
+      ? course.description
+      : getMultilingualContent(course.description, language) || '';
   const modulesCount = typeof course.modulesCount === 'number' ? course.modulesCount : 0;
   const lessonsCount = typeof course.lessonsCount === 'number' ? course.lessonsCount : 0;
   const totalXp = typeof course.totalXp === 'number' ? course.totalXp : null;
