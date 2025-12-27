@@ -19,6 +19,15 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent, type Language } from '@/lib/i18n';
 import { START_HERE_FALLBACK_ID } from '@/lib/education/unlockLogic';
 
+const START_COURSE_DESCRIPTION_FALLBACK: Record<Language, string> = {
+  pt: 'Há momentos na vida em que o mundo muda mais rápido do que nós. Quando isso acontece, só há duas escolhas: fingir que nada se passa... ou reinventar-nos.',
+  es: 'Hay momentos en la vida en los que el mundo cambia más rápido que nosotros. Cuando eso sucede, solo hay dos opciones: fingir que nada pasa... o reinventarnos.',
+  en: 'There are moments in life when the world changes faster than we do. When that happens, there are only two choices: pretend nothing is happening... or reinvent ourselves.',
+  fr: "Il y a des moments où le monde change plus vite que nous. Quand cela arrive, nous n'avons que deux options : faire semblant que rien ne se passe... ou nous réinventer.",
+  it: 'Ci sono momenti in cui il mondo cambia più velocemente di noi. Quando succede, ci sono solo due scelte: fingere che nulla stia accadendo... oppure reinventarci.',
+  de: 'Es gibt Momente, in denen sich die Welt schneller verändert als wir. Dann gibt es nur zwei Möglichkeiten: so tun, als würde nichts passieren... oder uns neu erfinden.',
+};
+
 
 
 type Props = {
@@ -555,7 +564,10 @@ function CourseCard({
   const localizedDescriptionRaw =
     resolveLocalizedField(startMeta?.description, language) ||
     resolveLocalizedField(course.description, language) ||
-    '';
+    (isPrimaryStartCourse
+      ? START_COURSE_DESCRIPTION_FALLBACK[language] ||
+        START_COURSE_DESCRIPTION_FALLBACK.en
+      : '');
   const localizedDescription = sanitizeDescription(localizedDescriptionRaw);
   const modulesCount = typeof course.modulesCount === 'number' ? course.modulesCount : 0;
   const lessonsCount = typeof course.lessonsCount === 'number' ? course.lessonsCount : 0;
