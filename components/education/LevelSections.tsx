@@ -473,11 +473,15 @@ function CourseCard({
   const localizedTitle =
     typeof course.title === 'string'
       ? course.title
-      : getMultilingualContent(course.title, language) || levelLabel || '';
+      : typeof course.title === 'object'
+        ? getMultilingualContent(course.title, language) || levelLabel || ''
+        : levelLabel || '';
   const localizedDescription =
     typeof course.description === 'string'
       ? course.description
-      : getMultilingualContent(course.description, language) || '';
+      : typeof course.description === 'object'
+        ? getMultilingualContent(course.description, language) || ''
+        : '';
   const modulesCount = typeof course.modulesCount === 'number' ? course.modulesCount : 0;
   const lessonsCount = typeof course.lessonsCount === 'number' ? course.lessonsCount : 0;
   const totalXp = typeof course.totalXp === 'number' ? course.totalXp : null;
