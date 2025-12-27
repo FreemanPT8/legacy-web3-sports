@@ -612,11 +612,6 @@ function CourseCard({
         </div>
 
         <div className="flex flex-wrap gap-3 text-xs text-slate-300">
-          {course.isRequired && (
-            <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-[10px] text-slate-200">
-              Obrigatorio
-            </span>
-          )}
           {course.isStartCourse && (
             <span className="rounded-full border border-cyan-300/50 px-3 py-1 uppercase tracking-[0.35em] text-[10px] text-cyan-200">
               Ponto de partida
