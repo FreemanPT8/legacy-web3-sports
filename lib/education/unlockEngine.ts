@@ -565,6 +565,17 @@ function buildLockedReason(
 const START_LEVEL_SLUG = 'novato';
 const LEVEL_SLUG_ALIASES: Record<string, string> = {
   novato: 'cadets',
+  cadete: 'cadets',
+  cadets: 'cadets',
+  infantil: 'infantil',
+  juvenil: 'juveniles',
+  juvenis: 'juveniles',
+  junior: 'juniors',
+  juniors: 'juniors',
+  senior: 'seniors',
+  seniors: 'seniors',
+  'hall-da-fama': 'hall-of-fame',
+  hall: 'hall-of-fame',
 };
 const LEGACY_LEVEL_METADATA: Record<
   string,
