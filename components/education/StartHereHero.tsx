@@ -10,17 +10,169 @@ import type { ProgressFetchState } from '@/components/education/LevelTimeline';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { XP_LEVELS } from '@/lib/education/xpLevels';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Language } from '@/lib/i18n';
 
-const LANGUAGE_METADATA: Record<
-  string,
-  {
-    label: string;
-    code: string;
-  }
-> = {
+const LANGUAGE_METADATA: Record<string, { label: string; code: string }> = {
   pt: { label: 'Português', code: 'PT' },
   es: { label: 'Español', code: 'ES' },
   en: { label: 'English', code: 'EN' },
+};
+
+type SupportedHeroLanguage = 'pt' | 'es' | 'en';
+
+type HeroCopy = {
+  badge: string;
+  contentAvailable: string;
+  currentLevel: string;
+  xpHint: string;
+  maxLevel: string;
+  completed: string;
+  startCta: string;
+  continueCta: string;
+  reviewCta: string;
+  viewRoadmap: string;
+  loginTitle: string;
+  loginHeading: string;
+  loginDescription: string;
+  loginAction: string;
+  loading: string;
+  fallback: string;
+  error: string;
+  progress: string;
+  lessons: (done: number, total: number) => string;
+  lessonsSync: string;
+  lessonsEmpty: string;
+};
+
+const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
+  en: {
+    badge: 'mandatory course',
+    contentAvailable: 'Content available in',
+    currentLevel: 'Current level',
+    xpHint: 'to',
+    maxLevel: 'Max level unlocked',
+    completed: 'Course completed — you can advance to Cadets',
+    startCta: 'Start course',
+    continueCta: 'Continue course',
+    reviewCta: 'Review course',
+    viewRoadmap: 'View paths',
+    loginTitle: 'First step',
+    loginHeading: 'START HERE is locked',
+    loginDescription: 'Create an account or sign in to unlock the mandatory course in Portuguese, Spanish and English.',
+    loginAction: 'Sign in',
+    loading: 'Loading course progress...',
+    fallback: 'Showing progress based on your local XP. Once the server syncs you will see full details.',
+    error: 'We could not load the initial course state. Please try again later.',
+    progress: 'PROGRESS',
+    lessons: (done, total) => `${done}/${total} lessons`,
+    lessonsSync: 'Syncing lessons...',
+    lessonsEmpty: '0 lessons tracked',
+  },
+  pt: {
+    badge: 'curso obrigatório',
+    contentAvailable: 'Conteúdo disponível em',
+    currentLevel: 'Nível atual',
+    xpHint: 'para',
+    maxLevel: 'Nível máximo desbloqueado',
+    completed: 'Curso concluído — podes avançar para Cadetes',
+    startCta: 'Começar Curso',
+    continueCta: 'Continuar Curso',
+    reviewCta: 'Rever Curso',
+    viewRoadmap: 'Ver Percursos',
+    loginTitle: 'Primeiro passo',
+    loginHeading: 'COMEÇA AQUI está bloqueado',
+    loginDescription: 'Cria conta ou autentica-te para desbloquear o curso obrigatório em Português, Espanhol e Inglês.',
+    loginAction: 'Iniciar sessão',
+    loading: 'A carregar progresso do curso...',
+    fallback: 'Estamos a mostrar o progresso deste curso com base no teu XP local. Assim que o servidor sincronizar vais ver todos os detalhes.',
+    error: 'Não foi possível carregar o estado do curso inicial. Tenta novamente mais tarde.',
+    progress: 'PROGRESSO',
+    lessons: (done, total) => `${done}/${total} lições`,
+    lessonsSync: 'A sincronizar lições...',
+    lessonsEmpty: '0 lições registadas',
+  },
+  es: {
+    badge: 'curso obligatorio',
+    contentAvailable: 'Contenido disponible en',
+    currentLevel: 'Nivel actual',
+    xpHint: 'para',
+    maxLevel: 'Nivel máximo desbloqueado',
+    completed: 'Curso completado — puedes avanzar a Cadetes',
+    startCta: 'Comenzar curso',
+    continueCta: 'Continuar curso',
+    reviewCta: 'Revisar curso',
+    viewRoadmap: 'Ver recorridos',
+    loginTitle: 'Primer paso',
+    loginHeading: 'EMPIEZA AQUÍ está bloqueado',
+    loginDescription: 'Crea una cuenta o inicia sesión para desbloquear el curso obligatorio en Portugués, Español e Inglés.',
+    loginAction: 'Iniciar sesión',
+    loading: 'Cargando progreso del curso...',
+    fallback: 'Mostramos tu progreso según tu XP local. Cuando el servidor sincronice verás todos los detalles.',
+    error: 'No ha sido posible cargar el estado del curso inicial. Inténtalo más tarde.',
+    progress: 'PROGRESO',
+    lessons: (done, total) => `${done}/${total} lecciones`,
+    lessonsSync: 'Sincronizando lecciones...',
+    lessonsEmpty: '0 lecciones registradas',
+  },
+};
+
+const HERO_TIPS: Record<SupportedHeroLanguage, Array<{ label: string; description: string; href: (slug: string) => string }>> = {
+  en: [
+    { label: 'Explore Courses', description: 'Choose new modules to earn XP quickly.', href: () => '/education/courses' },
+    { label: 'Back to START HERE', description: 'Finish missing lessons to unlock Cadets.', href: (slug) => `/education/courses/${slug}` },
+    { label: 'Read the Blog', description: 'Learn daily and gain extra XP from activities.', href: () => '/blog' },
+  ],
+  pt: [
+    { label: 'Explorar Cursos', description: 'Escolhe novos módulos para acumular XP rapidamente.', href: () => '/education/courses' },
+    { label: 'Voltar ao COMEÇA AQUI', description: 'Completa lições em falta para desbloquear Cadetes.', href: (slug) => `/education/courses/${slug}` },
+    { label: 'Ler o Blog', description: 'Aprende diariamente e garante XP adicional por atividade.', href: () => '/blog' },
+  ],
+  es: [
+    { label: 'Explorar Cursos', description: 'Elige nuevos módulos para acumular XP rápidamente.', href: () => '/education/courses' },
+    { label: 'Volver a EMPIEZA AQUÍ', description: 'Termina las lecciones pendientes para desbloquear Cadetes.', href: (slug) => `/education/courses/${slug}` },
+    { label: 'Leer el Blog', description: 'Aprende cada día y consigue XP adicional por actividad.', href: () => '/blog' },
+  ],
+};
+
+const TITLE_FALLBACK: Record<SupportedHeroLanguage, string> = {
+  pt: 'COMEÇA AQUI',
+  es: 'EMPIEZA AQUÍ',
+  en: 'START HERE',
+};
+
+const DESCRIPTION_FALLBACK: Record<SupportedHeroLanguage, string> = {
+  pt: 'Curso obrigatório para desbloquear toda a experiência da Academia Legacy.',
+  es: 'Curso obligatorio para desbloquear toda la experiencia de la Academia Legacy.',
+  en: 'Mandatory course that unlocks the full Legacy Academy experience.',
+};
+
+const LEVEL_TRANSLATIONS: Record<string, Partial<Record<Language, string>>> = {
+  cadets: { pt: 'Cadete', es: 'Cadete', en: 'Cadet' },
+  infantil: { pt: 'Infantil', es: 'Infantil', en: 'Youth' },
+  juveniles: { pt: 'Juvenil', es: 'Juvenil', en: 'Intermediate' },
+  juniors: { pt: 'Junior', es: 'Junior', en: 'Junior' },
+  seniors: { pt: 'Sénior', es: 'Senior', en: 'Senior' },
+  'hall-of-fame': { pt: 'Hall da Fama', es: 'Salón de la Fama', en: 'Hall of Fame' },
+  master: { pt: 'Master', es: 'Master', en: 'Master' },
+  legend: { pt: 'Lenda', es: 'Leyenda', en: 'Legend' },
+};
+
+const LEVEL_KEY_TO_SLUG: Record<string, string> = {
+  newcomer: 'cadets',
+  cadets: 'cadets',
+  cadete: 'cadets',
+  beginner: 'infantil',
+  infantil: 'infantil',
+  intermediate: 'juveniles',
+  juveniles: 'juveniles',
+  advanced: 'juniors',
+  juniors: 'juniors',
+  expert: 'seniors',
+  seniors: 'seniors',
+  hallOfFame: 'hall-of-fame',
+  halloffame: 'hall-of-fame',
+  master: 'master',
+  legend: 'legend',
 };
 
 type StartHereHeroProps = {
@@ -29,13 +181,10 @@ type StartHereHeroProps = {
   preferredLanguage?: string;
 };
 
-export function StartHereHero({
-  summary,
-  state,
-  preferredLanguage,
-}: StartHereHeroProps) {
+export function StartHereHero({ summary, state, preferredLanguage }: StartHereHeroProps) {
   const startHere = summary?.startHere;
   const startCourse = summary?.startCourse;
+  const { getToken } = useAuth();
 
   const availableLanguages = useMemo(() => {
     if (!startCourse?.available_languages) {
@@ -44,7 +193,7 @@ export function StartHereHero({
     return startCourse.available_languages.map((lang) => lang.toLowerCase());
   }, [startCourse]);
 
-  const defaultLanguage = useMemo(() => {
+  const defaultCourseLanguage = useMemo(() => {
     const preference = (preferredLanguage || startCourse?.primary_language || 'pt').toLowerCase();
     if (availableLanguages.includes(preference)) {
       return preference;
@@ -52,15 +201,20 @@ export function StartHereHero({
     return availableLanguages[0] || 'pt';
   }, [availableLanguages, preferredLanguage, startCourse?.primary_language]);
 
-  const { getToken } = useAuth();
-  const [activeLanguage, setActiveLanguage] = useState(defaultLanguage);
+  const [activeLanguage, setActiveLanguage] = useState(defaultCourseLanguage);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [courseStats, setCourseStats] = useState<{ totalLessons?: number; completedLessons?: number } | null>(null);
   const [isCourseStatsLoading, setIsCourseStatsLoading] = useState(false);
 
   useEffect(() => {
-    setActiveLanguage(defaultLanguage);
-  }, [defaultLanguage]);
+    setActiveLanguage(defaultCourseLanguage);
+  }, [defaultCourseLanguage]);
+
+  const uiLanguage = (preferredLanguage || activeLanguage || 'pt').toLowerCase();
+  const heroLanguage: SupportedHeroLanguage = ['pt', 'es', 'en'].includes(uiLanguage as SupportedHeroLanguage)
+    ? (uiLanguage as SupportedHeroLanguage)
+    : 'en';
+  const heroCopy = HERO_COPY[heroLanguage];
 
   const isLoading = state === 'idle' || state === 'loading';
   const hasError = state === 'error';
@@ -83,11 +237,15 @@ export function StartHereHero({
       : startHere?.progressPercent ?? 0;
   const hasStarted = completedLessons > 0;
   const isCompleted = Boolean(startHere?.isCompleted);
+
   const heroTitle =
-    getContentByLanguage(startCourse?.title, activeLanguage) || 'COMEÇA AQUI';
+    getContentByLanguage(startCourse?.title, activeLanguage) ||
+    TITLE_FALLBACK[heroLanguage] ||
+    TITLE_FALLBACK.en;
   const heroDescription =
     getContentByLanguage(startCourse?.description, activeLanguage) ||
-    'O teu ponto de partida obrigatório na Academia Legacy.';
+    DESCRIPTION_FALLBACK[heroLanguage] ||
+    DESCRIPTION_FALLBACK.en;
 
   const courseTarget =
     startHere?.courseId ||
@@ -96,18 +254,19 @@ export function StartHereHero({
     'comeca-aqui';
   const ctaHref = `/education/courses/${courseTarget}`;
 
-  const ctaLabel = !hasStarted ? 'Começar Curso' : !isCompleted ? 'Continuar Curso' : 'Rever Curso';
-  const progressLabel =
+  const ctaLabel = !hasStarted ? heroCopy.startCta : !isCompleted ? heroCopy.continueCta : heroCopy.reviewCta;
+  const lessonsStatus =
     totalLessonsDerived > 0
-      ? `${completedLessons}/${totalLessonsDerived} lições`
+      ? heroCopy.lessons(completedLessons, totalLessonsDerived)
       : isCourseStatsLoading
-        ? 'A sincronizar lições...'
-        : '0 lições registadas';
+        ? heroCopy.lessonsSync
+        : heroCopy.lessonsEmpty;
+
   const levelSummary = summary?.xp?.currentLevel;
   const levelHint =
     levelSummary?.nextLevelLabel && typeof levelSummary?.xpToNext === 'number'
-      ? `${levelSummary.xpToNext} XP para ${levelSummary.nextLevelLabel}`
-      : 'Nível máximo desbloqueado';
+      ? `${levelSummary.xpToNext} XP ${heroCopy.xpHint} ${translateLevelLabel(levelSummary.nextLevelLabel, heroLanguage)}`
+      : heroCopy.maxLevel;
 
   const languagesToRender = Object.keys(LANGUAGE_METADATA);
 
@@ -177,15 +336,13 @@ export function StartHereHero({
       <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#03121c] to-[#02070d] p-8 text-white shadow-[0_35px_80px_rgba(2,7,13,0.65)]">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Primeiro passo</p>
-            <h2 className="mt-2 text-3xl font-semibold">COMEÇA AQUI está bloqueado</h2>
-            <p className="mt-2 text-sm text-slate-300 max-w-xl">
-              Cria conta ou autentica-te para desbloquear o curso obrigatório em Português, Espanhol e Inglês.
-            </p>
+            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{heroCopy.loginTitle}</p>
+            <h2 className="mt-2 text-3xl font-semibold">{heroCopy.loginHeading}</h2>
+            <p className="mt-2 text-sm text-slate-300 max-w-xl">{heroCopy.loginDescription}</p>
           </div>
           <Link href="/login">
             <Button size="lg" className="gap-2">
-              Iniciar sessão
+              {heroCopy.loginAction}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -197,10 +354,12 @@ export function StartHereHero({
   if (hasError) {
     return (
       <div className="rounded-3xl border border-rose-500/40 bg-rose-500/10 p-8 text-sm text-rose-100">
-        Não foi possível carregar o estado do curso inicial. Tenta novamente mais tarde.
+        {heroCopy.error}
       </div>
     );
   }
+
+  const tips = buildTips(heroLanguage, startHere?.slug || 'comeca-aqui');
 
   return (
     <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#03121c] via-[#020b14] to-[#050d18] p-8 text-white shadow-[0_35px_80px_rgba(2,7,13,0.65)]">
@@ -208,7 +367,7 @@ export function StartHereHero({
         <div className="flex-1">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-200">
             <Shield className="h-3 w-3 text-cyan-300" />
-            curso obrigatório
+            {heroCopy.badge}
           </div>
           <h2 className="mt-4 text-4xl font-semibold">{heroTitle}</h2>
           <p className="mt-3 text-sm text-slate-300 max-w-2xl">{heroDescription}</p>
@@ -243,7 +402,7 @@ export function StartHereHero({
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-cyan-300" />
               <span>
-                Conteúdo disponível em{' '}
+                {heroCopy.contentAvailable}{' '}
                 {availableLanguages
                   .map((code) => LANGUAGE_METADATA[code]?.label || code.toUpperCase())
                   .join(', ')}
@@ -253,7 +412,8 @@ export function StartHereHero({
               <div className="flex items-center gap-2 text-slate-200">
                 <Target className="h-4 w-4 text-cyan-300" />
                 <span>
-                  Nível atual: <strong>{levelSummary.label}</strong>{' '}
+                  {heroCopy.currentLevel}:{' '}
+                  <strong>{translateLevelLabel(levelSummary.key, heroLanguage, levelSummary.label)}</strong>{' '}
                   <span className="text-slate-400">· {levelHint}</span>
                 </span>
               </div>
@@ -263,7 +423,7 @@ export function StartHereHero({
           {startHere?.isCompleted && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">
               <CheckCircle className="h-4 w-4" />
-              <span>Curso concluído · podes avançar para Cadetes</span>
+              <span>{heroCopy.completed}</span>
             </div>
           )}
 
@@ -271,7 +431,7 @@ export function StartHereHero({
             {!isCompleted && (
               <Link href={ctaHref}>
                 <Button size="lg" className="gap-2">
-                  {hasStarted ? 'Continuar Curso' : 'Começar Curso'}
+                  {ctaLabel}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -282,16 +442,15 @@ export function StartHereHero({
               className="text-slate-200"
               onClick={() => setIsRoadmapOpen(true)}
             >
-              Ver Percursos
+              {heroCopy.viewRoadmap}
             </Button>
           </div>
 
           {isFallback && (
             <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
-              Estamos a mostrar o progresso deste curso com base no teu XP local. Assim que o servidor sincronizar vais ver detalhes completos.
+              {heroCopy.fallback}
             </div>
           )}
-
         </div>
 
         <div className="flex w-full max-w-sm flex-col items-center justify-center">
@@ -306,16 +465,16 @@ export function StartHereHero({
               }}
             />
             <div className="absolute inset-[18px] rounded-full bg-[#02070d] flex flex-col items-center justify-center text-center">
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Progresso</p>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">{heroCopy.progress}</p>
               <p className="mt-1 text-3xl font-semibold text-white">
                 {Math.min(completionPercent, 100)}%
               </p>
-              <p className="text-xs text-slate-400">{progressLabel}</p>
+              <p className="text-xs text-slate-400">{lessonsStatus}</p>
             </div>
           </div>
           {isLoading && (
             <p className="mt-4 text-sm text-slate-400">
-              A carregar progresso do curso...
+              {heroCopy.loading}
             </p>
           )}
         </div>
@@ -325,6 +484,7 @@ export function StartHereHero({
         onOpenChange={setIsRoadmapOpen}
         summary={summary}
         startCourseSlug={startHere?.slug || 'comeca-aqui'}
+        tips={tips}
       />
     </div>
   );
@@ -335,6 +495,7 @@ type RoadmapDialogProps = {
   onOpenChange: (open: boolean) => void;
   summary: ProgressSummary | null;
   startCourseSlug: string;
+  tips: Array<{ label: string; description: string; href: string }>;
 };
 
 type ModalLevel = {
@@ -347,7 +508,7 @@ type ModalLevel = {
   lockedReason?: string | null;
 };
 
-function RoadmapDialog({ open, onOpenChange, summary, startCourseSlug }: RoadmapDialogProps) {
+function RoadmapDialog({ open, onOpenChange, summary, startCourseSlug, tips }: RoadmapDialogProps) {
   const xpTotal = summary?.xp?.total ?? 0;
   const currentLevelKey = summary?.xp?.currentLevel?.key ?? null;
   const levels = useMemo<ModalLevel[]>(() => {
@@ -391,24 +552,6 @@ function RoadmapDialog({ open, onOpenChange, summary, startCourseSlug }: Roadmap
       };
     });
   }, [summary, xpTotal]);
-
-  const tips = [
-    {
-      label: 'Explorar Cursos',
-      href: '/education/courses',
-      description: 'Escolhe novos módulos para acumular XP rapidamente.',
-    },
-    {
-      label: 'Voltar ao COMEÇA AQUI',
-      href: `/education/courses/${startCourseSlug}`,
-      description: 'Completa lições em falta para desbloquear Cadetes.',
-    },
-    {
-      label: 'Ler o Blog',
-      href: '/blog',
-      description: 'Aprende diariamente e garante XP adicional por atividade.',
-    },
-  ];
 
   const currentLevel = summary?.xp?.currentLevel;
 
@@ -498,6 +641,17 @@ function RoadmapDialog({ open, onOpenChange, summary, startCourseSlug }: Roadmap
   );
 }
 
+type TipsEntry = { label: string; description: string; href: string };
+
+function buildTips(language: SupportedHeroLanguage, slug: string): TipsEntry[] {
+  const entries = HERO_TIPS[language] || HERO_TIPS.en;
+  return entries.map((tip) => ({
+    label: tip.label,
+    description: tip.description,
+    href: tip.href(slug),
+  }));
+}
+
 function getContentByLanguage(value: any, lang: string): string {
   if (!value) return '';
   if (typeof value === 'string') return value;
@@ -514,4 +668,37 @@ function getContentByLanguage(value: any, lang: string): string {
     }
   }
   return '';
+}
+
+function translateLevelLabel(value: string | null | undefined, lang: Language, fallback?: string): string {
+  if (!value && fallback) {
+    value = fallback;
+  }
+  if (!value) return fallback || '';
+
+  const normalized = value.toLowerCase();
+  const slug =
+    LEVEL_KEY_TO_SLUG[value as keyof typeof LEVEL_KEY_TO_SLUG] ||
+    LEVEL_KEY_TO_SLUG[normalized as keyof typeof LEVEL_KEY_TO_SLUG] ||
+    mapLabelToSlug(value);
+
+  if (slug && LEVEL_TRANSLATIONS[slug]) {
+    const translations = LEVEL_TRANSLATIONS[slug];
+    return translations[lang] || translations.en || translations.pt || fallback || value;
+  }
+
+  return fallback || value;
+}
+
+function mapLabelToSlug(label: string): string | null {
+  const normalized = label.trim().toLowerCase();
+  for (const [slug, translations] of Object.entries(LEVEL_TRANSLATIONS)) {
+    const values = Object.values(translations)
+      .filter(Boolean)
+      .map((val) => val!.toLowerCase());
+    if (values.includes(normalized)) {
+      return slug;
+    }
+  }
+  return null;
 }
