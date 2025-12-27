@@ -54,12 +54,12 @@ export function LevelSections({ summary }: Props) {
   };
 
   const courseCardLabels = {
-    unlocked: translate('courses.unlocked', 'You can access this course'),
+    unlocked: translate('courses.unlocked', 'Podes aceder a este curso'),
     viewCourse: translate('courses.viewDetails', 'Ver curso'),
-    modules: translate('courses.modules', 'modules'),
-    lessons: translate('courses.lessons', 'lessons'),
-    xpAvailable: translate('courses.totalXP', 'XP available'),
-    completions: translate('courses.completions', 'users completed'),
+    modules: translate('courses.modules', 'modulos'),
+    lessons: translate('courses.lessons', 'licoes'),
+    xpAvailable: translate('courses.totalXP', 'XP disponivel'),
+    completions: translate('courses.completions', 'utilizadores concluiram'),
   };
 
 
@@ -145,7 +145,7 @@ export function LevelSections({ summary }: Props) {
         if ((error as any)?.name === 'AbortError') return;
         console.error('LevelSections fallback error:', error);
         if (!cancelled) {
-          setFallbackError('N?o foi poss?vel carregar os cursos associados aos n?veis. Atualiza para tentar novamente.');
+          setFallbackError('Nao foi possivel carregar os cursos associados aos niveis. Atualiza para tentar novamente.');
         }
       } finally {
         if (!cancelled) {
@@ -169,7 +169,7 @@ export function LevelSections({ summary }: Props) {
 
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
 
-        Autentica-te para explorar os cursos de cada n?vel.
+        Autentica-te para explorar os cursos de cada nivel.
 
       </div>
 
@@ -409,9 +409,9 @@ function LevelSection({
 
             {isFallbackLoading
 
-              ? 'A carregar cursos atribu?dos a este n?vel...'
+              ? 'A carregar cursos atribu?dos a este nivel...'
 
-              : 'Ainda n?o existem cursos atribu?dos a este n?vel.'}
+              : 'Ainda n?o existem cursos atribu?dos a este nivel.'}
 
           </div>
 
@@ -489,7 +489,7 @@ function CourseCard({
   return (
     <div
       className={cn(
-        'w-full max-w-[420px] rounded-3xl border border-white/10 bg-[#030a14] p-4 shadow-[0_25px_55px_rgba(0,0,0,0.45)] transition hover:border-cyan-400/40 focus-within:border-cyan-200/60 mx-auto md:mx-0',
+        'w-full max-w-[360px] rounded-3xl border border-white/10 bg-[#030a14] p-4 shadow-[0_25px_55px_rgba(0,0,0,0.45)] transition hover:border-cyan-400/40 focus-within:border-cyan-200/60 mx-auto md:mx-0',
         isLevelLocked && 'opacity-70',
       )}
       style={{ borderColor: isLevelLocked ? '#1e293b40' : `${accent}55` }}
@@ -520,7 +520,7 @@ function CourseCard({
         <div className="flex flex-wrap gap-3 text-xs text-slate-300">
           {course.isRequired && (
             <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-[10px] text-slate-200">
-              Obrigat?rio
+              Obrigatorio
             </span>
           )}
           {course.isStartCourse && (
@@ -530,12 +530,12 @@ function CourseCard({
           )}
           {course.isCompleted && (
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1 text-[11px] text-emerald-200">
-              <CheckCircle className="h-3 w-3" /> Conclu?do
+              <CheckCircle className="h-3 w-3" /> Concluido
             </span>
           )}
           {courseLanguages && (
             <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-slate-300">
-              {courseLanguages.map((lang) => lang?.toUpperCase()).join(' ? ')}
+              {courseLanguages.map((lang) => lang?.toUpperCase()).join(' / ')}
             </span>
           )}
         </div>
@@ -570,7 +570,7 @@ function CourseCard({
           >
             {isLevelLocked ? (
               <>
-                <Lock className="h-3 w-3" /> N?vel bloqueado
+                <Lock className="h-3 w-3" /> Nivel bloqueado
               </>
             ) : (
               <>
