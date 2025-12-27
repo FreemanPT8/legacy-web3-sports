@@ -470,7 +470,7 @@ function CourseCard({
         'rounded-3xl border border-white/10 bg-gradient-to-br from-[#02060f] to-[#030a14] p-4 shadow-[0_25px_55px_rgba(0,0,0,0.45)] transition hover:border-cyan-400/40 focus-within:border-cyan-200/60',
         isLevelLocked && 'opacity-70',
       )}
-      style={{ borderColor: isLevelLocked ? '#1e293b40' : ${accent}55 }}
+      style={{ borderColor: isLevelLocked ? '#1e293b40' : `${accent}55` }}
     >
       <div className="relative overflow-hidden rounded-2xl border border-white/5">
         {coverUrl ? (
@@ -513,7 +513,7 @@ function CourseCard({
           )}
           {courseLanguages && (
             <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-slate-300">
-              {courseLanguages.map((lang) => lang?.toUpperCase()).join(' ? ')}
+              {courseLanguages.map((lang) => lang?.toUpperCase()).join(' · ')}
             </span>
           )}
         </div>
@@ -529,7 +529,7 @@ function CourseCard({
           </div>
           <div className="flex items-center gap-2">
             <Award className="h-4 w-4 text-cyan-300" />
-            <span>{course.totalXp ? ${course.totalXp.toLocaleString()} XP : 'XP dispon?vel'}</span>
+            <span>{course.totalXp ? `${course.totalXp.toLocaleString()} XP` : 'XP disponível'}</span>
           </div>
         </div>
 
