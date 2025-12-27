@@ -16,7 +16,7 @@ import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getMultilingualContent } from '@/lib/i18n';
+import { getMultilingualContent, type Language } from '@/lib/i18n';
 
 
 
@@ -34,7 +34,8 @@ export function LevelSections({ summary }: Props) {
 
   const coursesByLevel = summary?.coursesByLevel || {};
 
-  const { language } = useLanguage();
+  const { language: activeLanguage } = useLanguage();
+  const language = (activeLanguage as Language) || 'en';
 
   const [isMobile, setIsMobile] = useState(false);
 
