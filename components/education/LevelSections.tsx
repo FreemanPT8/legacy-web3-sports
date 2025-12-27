@@ -15,6 +15,7 @@ import type { ProgressSummary, StartCourseMeta } from '@/lib/education/progressS
 import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent, type Language } from '@/lib/i18n';
 import { START_HERE_FALLBACK_ID } from '@/lib/education/unlockLogic';
@@ -113,6 +114,14 @@ export function LevelSections({ summary }: Props) {
       it: 'utenti hanno completato',
       de: 'nutzer haben abgeschlossen',
     },
+    viewMore: {
+      pt: 'Ver mais',
+      es: 'Ver más',
+      en: 'View more',
+      fr: 'Voir plus',
+      it: 'Vedi altro',
+      de: 'Mehr anzeigen',
+    },
   };
 
   const labelFallback = <K extends keyof CourseCardLabels>(
@@ -129,6 +138,7 @@ export function LevelSections({ summary }: Props) {
     lessons: translate('courses.lessons', labelFallback('lessons', 'lessons')),
     xpAvailable: translate('courses.totalXP', labelFallback('xpAvailable', 'XP available')),
     completions: translate('courses.completions', labelFallback('completions', 'users completed')),
+    viewMore: translate('courses.viewMore', labelFallback('viewMore', 'View more')),
   };
 
 
@@ -515,6 +525,7 @@ type CourseCardLabels = {
   lessons: string;
   xpAvailable: string;
   completions: string;
+  viewMore: string;
 };
 
 function CourseCard({
@@ -534,6 +545,7 @@ function CourseCard({
   language: Language;
   startCourseMeta: StartCourseMeta | null;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const isPrimaryStartCourse =
     course.isStartCourse ||
     (!!startCourseMeta &&
@@ -574,6 +586,7 @@ function CourseCard({
   const totalXp = typeof course.totalXp === 'number' ? course.totalXp : null;
   const completionsCount =
     typeof course.completionsCount === 'number' ? course.completionsCount : 0;
+  const hasDescription = Boolean(localizedDescription);
 
   return (
     <div
@@ -606,8 +619,17 @@ function CourseCard({
       <div className="mt-4 space-y-3">
         <div>
           <h4 className="text-lg font-semibold text-white">{localizedTitle}</h4>
-          {localizedDescription && (
-            <p className="mt-2 text-sm text-slate-300 line-clamp-3">{localizedDescription}</p>
+          {hasDescription && (
+            <div className="mt-2 flex items-center gap-2 text-sm text-slate-300">
+              <p className="flex-1 line-clamp-3">{localizedDescription}</p>
+              <button
+                type="button"
+                onClick={() => setDetailsOpen(true)}
+                className="rounded-full border border-transparent px-2 py-1 text-[11px] text-cyan-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"
+              >
+                {labels.viewMore}
+              </button>
+            </div>
           )}
         </div>
 
@@ -682,6 +704,66 @@ function CourseCard({
           </div>
         </div>
       </div>
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-md border border-white/10 bg-[#01050b] text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white">{localizedTitle}</DialogTitle>
+            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">{levelLabel}</p>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-slate-200">
+            {coverUrl && (
+              <img
+                src={coverUrl}
+                alt={localizedTitle || 'course cover'}
+                className="h-40 w-full rounded-2xl object-cover"
+              />
+            )}
+            {hasDescription && <p className="text-slate-300">{localizedDescription}</p>}
+            <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs uppercase tracking-[0.2em] text-slate-300">
+              <div className="flex items-center justify-between">
+                <span>{labels.modules}</span>
+                <strong className="text-white normal-case tracking-normal text-base">{modulesCount}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>{labels.lessons}</span>
+                <strong className="text-white normal-case tracking-normal text-base">{lessonsCount}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>{labels.xpAvailable}</span>
+                <strong className="text-white normal-case tracking-normal text-base">
+                  {totalXp ? totalXp.toLocaleString() : '—'}
+                </strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>{labels.completions}</span>
+                <strong className="text-white normal-case tracking-normal text-base">
+                  {completionsCount.toLocaleString()}
+                </strong>
+              </div>
+            </div>
+            {courseLanguages && (
+              <div className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Idiomas:{' '}
+                <span className="text-slate-200">
+                  {courseLanguages.map((lang) => lang?.toUpperCase()).join(' / ')}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Link href={courseHref} onClick={() => setDetailsOpen(false)}>
+                <Button
+                  size="sm"
+                  className="rounded-full bg-cyan-500 px-5 text-white hover:bg-cyan-400"
+                  disabled={isLevelLocked}
+                >
+                  {labels.viewCourse}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
