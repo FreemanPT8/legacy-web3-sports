@@ -421,6 +421,8 @@ function LevelSection({
 
               course={course}
 
+              level={level}
+
               accent={accent}
 
               isLevelLocked={isLocked}
@@ -443,120 +445,131 @@ function LevelSection({
 
 function CourseCard({
   course,
+  level,
   accent,
   isLevelLocked,
 }: {
   course: LevelCourseSummary;
+  level: ProgressSummary['levels'][number];
   accent: string;
   isLevelLocked: boolean;
 }) {
-  const isLocked = isLevelLocked;
   const courseLanguages =
     Array.isArray(course.availableLanguages) && course.availableLanguages.length > 0
       ? course.availableLanguages
       : null;
   const coverUrl = course.coverImageUrl;
   const courseHref = course.slug
-    ? `/education/courses/${course.slug}`
-    : `/education/courses/${course.id}`;
+    ? /education/courses/
+    : /education/courses/;
+  const levelLabel = level.shortLabel || level.title;
 
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#050b12] p-4 transition hover:border-white/30 focus-within:border-cyan-200/60',
-        isLocked && 'opacity-60',
+        'rounded-3xl border border-white/10 bg-gradient-to-br from-[#02060f] to-[#030a14] p-4 shadow-[0_25px_55px_rgba(0,0,0,0.45)] transition hover:border-cyan-400/40 focus-within:border-cyan-200/60',
+        isLevelLocked && 'opacity-70',
       )}
-      style={{ borderColor: `${accent}33` }}
+      style={{ borderColor: isLevelLocked ? '#1e293b40' : ${accent}55 }}
     >
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/5 md:w-60">
-          {coverUrl ? (
-            <img src={coverUrl} alt={course.title} className="h-40 w-full object-cover" loading="lazy" />
-          ) : (
-            <div className="flex h-40 items-center justify-center bg-gradient-to-br from-cyan-500/20 to-slate-900/40 text-xs uppercase tracking-[0.3em] text-white/70">
-              Sem imagem
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-1 flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h4 className="text-lg font-semibold text-white">{course.title}</h4>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                {course.isRequired && (
-                  <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.3em] text-[10px] text-slate-300">
-                    Obrigat?rio
-                  </span>
-                )}
-                {course.isStartCourse && (
-                  <span className="rounded-full border border-cyan-300/50 px-3 py-1 uppercase tracking-[0.3em] text-[10px] text-cyan-200">
-                    Ponto de partida
-                  </span>
-                )}
-                {course.isCompleted && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1 text-xs text-emerald-200">
-                    <CheckCircle className="h-3 w-3" />
-                    Conclu?do
-                  </span>
-                )}
-                {courseLanguages && (
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-slate-300">
-                    {courseLanguages.map((lang) => lang?.toUpperCase()).join(' · ')}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-xs text-slate-400">{course.slug ? `/${course.slug}` : ''}</div>
+      <div className="relative overflow-hidden rounded-2xl border border-white/5">
+        {coverUrl ? (
+          <img src={coverUrl} alt={course.title} className="h-44 w-full object-cover" loading="lazy" />
+        ) : (
+          <div className="flex h-44 items-center justify-center bg-gradient-to-br from-cyan-500/10 to-indigo-900/30 text-xs uppercase tracking-[0.3em] text-white/60">
+            Sem imagem
           </div>
-
-          {course.description && (
-            <p className="text-sm text-slate-300 line-clamp-3">{course.description}</p>
-          )}
-
-          <div className="flex flex-wrap gap-4 text-xs text-slate-300">
-            {typeof course.modulesCount === 'number' && (
-              <span className="inline-flex items-center gap-2">
-                <Layers3 className="h-4 w-4 text-cyan-300" />
-                {course.modulesCount} m?dulos
-              </span>
-            )}
-            {typeof course.lessonsCount === 'number' && (
-              <span className="inline-flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-cyan-300" />
-                {course.lessonsCount} li??es
-              </span>
-            )}
-            {typeof course.totalXp === 'number' && (
-              <span className="inline-flex items-center gap-2">
-                <Award className="h-4 w-4 text-cyan-300" />
-                {course.totalXp.toLocaleString()} XP dispon?vel
-              </span>
-            )}
-          </div>
+        )}
+        <div className="absolute right-3 top-3">
+          <span className="rounded-full border border-white/30 bg-black/60 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-white">
+            {levelLabel}
+          </span>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        {isLocked ? (
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            <Lock className="h-4 w-4 text-slate-400" />
-            <span>N?vel bloqueado</span>
+      <div className="mt-4 space-y-3">
+        <div>
+          <h4 className="text-lg font-semibold text-white">{course.title}</h4>
+          {course.description && (
+            <p className="mt-2 text-sm text-slate-300 line-clamp-3">{course.description}</p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-3 text-xs text-slate-300">
+          {course.isRequired && (
+            <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-[10px] text-slate-200">
+              Obrigat?rio
+            </span>
+          )}
+          {course.isStartCourse && (
+            <span className="rounded-full border border-cyan-300/50 px-3 py-1 uppercase tracking-[0.35em] text-[10px] text-cyan-200">
+              Ponto de partida
+            </span>
+          )}
+          {course.isCompleted && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1 text-[11px] text-emerald-200">
+              <CheckCircle className="h-3 w-3" /> Conclu?do
+            </span>
+          )}
+          {courseLanguages && (
+            <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-slate-300">
+              {courseLanguages.map((lang) => lang?.toUpperCase()).join(' ? ')}
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 text-sm text-slate-200">
+          <div className="flex items-center gap-2">
+            <Layers3 className="h-4 w-4 text-cyan-300" />
+            <span>{course.modulesCount ?? 0} m?dulos</span>
           </div>
-        ) : (
-          <Link href={courseHref} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
-            <Button variant="ghost" className="text-white hover:text-cyan-300">
-              Aceder curso
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        )}
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-cyan-300" />
+            <span>{course.lessonsCount ?? 0} li??es</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-cyan-300" />
+            <span>{course.totalXp ? ${course.totalXp.toLocaleString()} XP : 'XP dispon?vel'}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div
+            className={cn(
+              'inline-flex items-center gap-2 rounded-full border px-4 py-1 text-xs uppercase tracking-[0.3em]',
+              isLevelLocked
+                ? 'border-amber-400/40 bg-amber-500/10 text-amber-100'
+                : 'border-emerald-400/50 bg-emerald-500/10 text-emerald-100',
+            )}
+          >
+            {isLevelLocked ? (
+              <>
+                <Lock className="h-3 w-3" /> N?vel bloqueado
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-3 w-3" /> Podes aceder a este curso
+              </>
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <Link href={courseHref} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+              <Button
+                size="sm"
+                className="rounded-full bg-cyan-500 px-5 text-white hover:bg-cyan-400"
+                disabled={isLevelLocked}
+              >
+                Ver curso
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
-
 
 function formatRange(min?: number | null, max?: number | null) {
 
