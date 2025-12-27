@@ -57,11 +57,13 @@ export type LevelCourseSummary = {
   id: string;
   slug: string | null;
   title: string;
+  titleI18n?: Record<string, string>;
   isRequired: boolean;
   isStartCourse: boolean;
   isCompleted: boolean;
   coverImageUrl?: string | null;
   description?: string;
+  descriptionI18n?: Record<string, string>;
   availableLanguages?: string[];
   modulesCount?: number;
   lessonsCount?: number;
@@ -399,15 +401,26 @@ function buildCoursesByLevel(
 
       const resolvedSlug = resolveCourseSlug(course);
       const meta = buildCourseMetaSummary(course);
+      const titleI18n =
+        course.title && typeof course.title === 'object' && !Array.isArray(course.title)
+          ? (course.title as Record<string, string>)
+          : undefined;
+      const descriptionI18n =
+        course.description && typeof course.description === 'object' && !Array.isArray(course.description)
+          ? (course.description as Record<string, string>)
+          : undefined;
+
       const summary: LevelCourseSummary = {
         id: course.id,
         slug: resolvedSlug,
         title: resolveTitle(course.title),
+        titleI18n,
         isRequired: course.is_required_in_level !== false,
         isStartCourse: Boolean(course.is_start_course),
         isCompleted: completedCourseIds.has(course.id),
         coverImageUrl: meta.coverImageUrl,
         description: meta.description,
+        descriptionI18n,
         availableLanguages: meta.availableLanguages,
         modulesCount: meta.modulesCount,
         lessonsCount: meta.lessonsCount,

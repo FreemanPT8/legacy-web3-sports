@@ -570,11 +570,13 @@ function CourseCard({
   const levelLabel = level.shortLabel || level.title;
   const localizedTitle =
     resolveLocalizedField(startMeta?.title, language) ||
+    (course.titleI18n ? resolveLocalizedField(course.titleI18n, language) : null) ||
     resolveLocalizedField(course.title, language) ||
     levelLabel ||
     '';
   const localizedDescriptionRaw =
     resolveLocalizedField(startMeta?.description, language) ||
+    (course.descriptionI18n ? resolveLocalizedField(course.descriptionI18n, language) : null) ||
     resolveLocalizedField(course.description, language) ||
     (isPrimaryStartCourse
       ? START_COURSE_DESCRIPTION_FALLBACK[language] ||
@@ -901,14 +903,23 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
     return null;
   }
 
+  const titleRecord =
+    course.title && typeof course.title === 'object' && !Array.isArray(course.title)
+      ? (course.title as Record<string, string>)
+      : undefined;
+  const descriptionRecord =
+    course.description && typeof course.description === 'object' && !Array.isArray(course.description)
+      ? (course.description as Record<string, string>)
+      : undefined;
+
   const title =
-    getMultilingualContent(course.title, language) ||
+    (titleRecord ? getMultilingualContent(titleRecord, language) : '') ||
     (typeof course.title === 'string' ? course.title : '') ||
     course.slug ||
     'Curso';
 
   const description =
-    getMultilingualContent(course.description, language) ||
+    (descriptionRecord ? getMultilingualContent(descriptionRecord, language) : '') ||
     (typeof course.description === 'string' ? course.description : '') ||
     '';
 
@@ -954,11 +965,13 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
     id: course.id,
     slug: resolvedSlug,
     title,
+    titleI18n: titleRecord,
     isRequired: course.is_required_in_level !== false,
     isStartCourse: Boolean(course.is_start_course),
     isCompleted: false,
     coverImageUrl,
     description,
+    descriptionI18n: descriptionRecord,
     availableLanguages,
     modulesCount:
       typeof course.total_modules === 'number'
