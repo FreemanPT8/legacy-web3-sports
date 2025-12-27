@@ -460,8 +460,8 @@ function CourseCard({
       : null;
   const coverUrl = course.coverImageUrl;
   const courseHref = course.slug
-    ? /education/courses/
-    : /education/courses/;
+    ? `/education/courses/${course.slug}`
+    : `/education/courses/${course.id}`;
   const levelLabel = level.shortLabel || level.title;
 
   return (
