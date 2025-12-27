@@ -35,7 +35,7 @@ export function LevelSections({ summary }: Props) {
   const coursesByLevel = summary?.coursesByLevel || {};
 
   const { language: activeLanguage } = useLanguage();
-  const language = (activeLanguage as Language) || 'en';
+  const language: Language = (activeLanguage ?? 'en') as Language;
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -603,7 +603,7 @@ function normalizeLevelSlugFromCourse(course: any): string | null {
 
 function buildFallbackCoursesMap(
   courses: any[],
-  language: string,
+  language: Language,
 ): Record<string, LevelCourseSummary[]> {
   return courses.reduce((acc, course) => {
     const normalizedSlug = normalizeLevelSlugFromCourse(course);
@@ -622,7 +622,7 @@ function buildFallbackCoursesMap(
   }, {} as Record<string, LevelCourseSummary[]>);
 }
 
-function transformCourseRecord(course: any, language: string): LevelCourseSummary | null {
+function transformCourseRecord(course: any, language: Language): LevelCourseSummary | null {
   if (!course?.id) {
     return null;
   }
