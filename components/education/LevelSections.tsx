@@ -10,7 +10,7 @@ import { ArrowRight, Lock, CheckCircle, ChevronDown, Award, BookOpen, Layers3, U
 
 import { cn } from '@/lib/utils';
 
-import type { ProgressSummary } from '@/lib/education/progressSummary';
+import type { ProgressSummary, StartCourseMeta } from '@/lib/education/progressSummary';
 
 import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 
@@ -34,6 +34,7 @@ export function LevelSections({ summary }: Props) {
   const levels = summary?.levels || [];
 
   const coursesByLevel = summary?.coursesByLevel || {};
+  const startCourseMeta = summary?.startCourse ?? null;
 
   const { language: activeLanguage, t } = useLanguage();
   const language: Language = (activeLanguage ?? 'en') as Language;
@@ -54,13 +55,71 @@ export function LevelSections({ summary }: Props) {
     return value && value !== key ? value : fallback;
   };
 
+  const labelFallbacks: Record<keyof CourseCardLabels, Partial<Record<Language, string>>> = {
+    unlocked: {
+      pt: 'Podes aceder a este curso',
+      es: 'Puedes acceder a este curso',
+      en: 'You can access this course',
+      fr: 'Tu peux acceder a ce cours',
+      it: 'Puoi accedere a questo corso',
+      de: 'Du kannst auf diesen Kurs zugreifen',
+    },
+    viewCourse: {
+      pt: 'Ver curso',
+      es: 'Ver curso',
+      en: 'View course',
+      fr: 'Voir le cours',
+      it: 'Vedi corso',
+      de: 'Kurs ansehen',
+    },
+    modules: {
+      pt: 'modulos',
+      es: 'modulos',
+      en: 'modules',
+      fr: 'modules',
+      it: 'moduli',
+      de: 'module',
+    },
+    lessons: {
+      pt: 'licoes',
+      es: 'lecciones',
+      en: 'lessons',
+      fr: 'lecons',
+      it: 'lezioni',
+      de: 'lektionen',
+    },
+    xpAvailable: {
+      pt: 'XP disponivel',
+      es: 'XP disponible',
+      en: 'XP available',
+      fr: 'XP disponible',
+      it: 'XP disponibile',
+      de: 'XP verfugbar',
+    },
+    completions: {
+      pt: 'utilizadores concluiram',
+      es: 'usuarios completaron',
+      en: 'users completed',
+      fr: 'utilisateurs ont termine',
+      it: 'utenti hanno completato',
+      de: 'nutzer haben abgeschlossen',
+    },
+  };
+
+  const labelFallback = <K extends keyof CourseCardLabels>(
+    key: K,
+    defaultValue: string,
+  ): string => {
+    return labelFallbacks[key]?.[language] ?? defaultValue;
+  };
+
   const courseCardLabels = {
-    unlocked: translate('courses.unlocked', 'Podes aceder a este curso'),
-    viewCourse: translate('courses.viewDetails', 'Ver curso'),
-    modules: translate('courses.modules', 'modulos'),
-    lessons: translate('courses.lessons', 'licoes'),
-    xpAvailable: translate('courses.totalXP', 'XP disponivel'),
-    completions: translate('courses.completions', 'utilizadores concluiram'),
+    unlocked: translate('courses.unlocked', labelFallback('unlocked', 'You can access this course')),
+    viewCourse: translate('courses.viewDetails', labelFallback('viewCourse', 'View course')),
+    modules: translate('courses.modules', labelFallback('modules', 'modules')),
+    lessons: translate('courses.lessons', labelFallback('lessons', 'lessons')),
+    xpAvailable: translate('courses.totalXP', labelFallback('xpAvailable', 'XP available')),
+    completions: translate('courses.completions', labelFallback('completions', 'users completed')),
   };
 
 
@@ -213,6 +272,7 @@ export function LevelSections({ summary }: Props) {
             isFallbackLoading={isFallbackLoading}
             labels={courseCardLabels}
             language={language}
+            startCourseMeta={startCourseMeta}
           />
         );
 
@@ -235,6 +295,7 @@ type LevelSectionProps = {
   isFallbackLoading: boolean;
   labels: CourseCardLabels;
   language: Language;
+  startCourseMeta: StartCourseMeta | null;
 };
 
 
@@ -248,6 +309,7 @@ function LevelSection({
   isFallbackLoading,
   labels,
   language,
+  startCourseMeta,
 }: LevelSectionProps) {
 
   const accent = level.accentColor || '#1ccfdd';
@@ -420,6 +482,7 @@ function LevelSection({
               labels={labels}
               language={language}
               isLevelLocked={isLocked}
+              startCourseMeta={startCourseMeta}
             />
 
           ))
@@ -452,6 +515,7 @@ function CourseCard({
   isLevelLocked,
   labels,
   language,
+  startCourseMeta,
 }: {
   course: LevelCourseSummary;
   level: ProgressSummary['levels'][number];
@@ -459,29 +523,34 @@ function CourseCard({
   isLevelLocked: boolean;
   labels: CourseCardLabels;
   language: Language;
+  startCourseMeta: StartCourseMeta | null;
 }) {
-  const courseLanguages =
-    Array.isArray(course.availableLanguages) && course.availableLanguages.length > 0
-      ? course.availableLanguages
+  const startMeta = course.isStartCourse ? startCourseMeta : null;
+  const startMetaLanguages =
+    startMeta && Array.isArray(startMeta.available_languages) && startMeta.available_languages.length > 0
+      ? startMeta.available_languages
       : null;
+  const courseLanguages =
+    startMetaLanguages ||
+    (Array.isArray(course.availableLanguages) && course.availableLanguages.length > 0
+      ? course.availableLanguages
+      : null);
   const coverUrl = course.coverImageUrl;
-  const resolvedSlug =
-    course.slug ||
-    (course.isStartCourse ? START_HERE_FALLBACK_ID : course.id);
+  const resolvedSlug = course.isStartCourse
+    ? START_HERE_FALLBACK_ID
+    : course.slug || course.id;
   const courseHref = `/education/courses/${resolvedSlug}`;
   const levelLabel = level.shortLabel || level.title;
   const localizedTitle =
-    typeof course.title === 'string'
-      ? course.title
-      : typeof course.title === 'object'
-        ? getMultilingualContent(course.title, language) || levelLabel || ''
-        : levelLabel || '';
-  const localizedDescription =
-    typeof course.description === 'string'
-      ? course.description
-      : typeof course.description === 'object'
-        ? getMultilingualContent(course.description, language) || ''
-        : '';
+    resolveLocalizedField(startMeta?.title, language) ||
+    resolveLocalizedField(course.title, language) ||
+    levelLabel ||
+    '';
+  const localizedDescriptionRaw =
+    resolveLocalizedField(startMeta?.description, language) ||
+    resolveLocalizedField(course.description, language) ||
+    '';
+  const localizedDescription = sanitizeDescription(localizedDescriptionRaw);
   const modulesCount = typeof course.modulesCount === 'number' ? course.modulesCount : 0;
   const lessonsCount = typeof course.lessonsCount === 'number' ? course.lessonsCount : 0;
   const totalXp = typeof course.totalXp === 'number' ? course.totalXp : null;
@@ -498,7 +567,12 @@ function CourseCard({
     >
       <div className="relative overflow-hidden rounded-2xl border border-white/5">
         {coverUrl ? (
-          <img src={coverUrl} alt={course.title} className="h-44 w-full object-cover" loading="lazy" />
+          <img
+            src={coverUrl}
+            alt={localizedTitle || (typeof course.title === 'string' ? course.title : 'course cover')}
+            className="h-44 w-full object-cover"
+            loading="lazy"
+          />
         ) : (
           <div className="flex h-44 items-center justify-center bg-gradient-to-br from-cyan-500/10 to-indigo-900/30 text-xs uppercase tracking-[0.3em] text-white/60">
             Sem imagem
@@ -597,6 +671,22 @@ function CourseCard({
       </div>
     </div>
   );
+}
+
+function resolveLocalizedField(raw: any, language: Language): string | null {
+  if (!raw) return null;
+  if (typeof raw === 'string') {
+    return raw;
+  }
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    return getMultilingualContent(raw as Record<string, string>, language) || null;
+  }
+  return null;
+}
+
+function sanitizeDescription(value: string): string {
+  if (!value) return '';
+  return value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function formatRange(min?: number | null, max?: number | null) {

@@ -40,7 +40,7 @@ export type BadgeSummary = {
   earnedAt?: string | null;
 };
 
-type StartCourseMeta = {
+export type StartCourseMeta = {
   slug: string;
   title: any;
   description: any;
