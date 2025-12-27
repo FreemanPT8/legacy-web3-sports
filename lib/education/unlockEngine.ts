@@ -66,6 +66,7 @@ export type LevelCourseSummary = {
   modulesCount?: number;
   lessonsCount?: number;
   totalXp?: number;
+  completionsCount?: number;
 };
 
 export type AcademyLevelState = {
@@ -411,6 +412,7 @@ function buildCoursesByLevel(
         modulesCount: meta.modulesCount,
         lessonsCount: meta.lessonsCount,
         totalXp: meta.totalXp,
+        completionsCount: meta.completionsCount,
       };
 
       acc.coursesByLevel[normalizedLevelSlug].push(summary);
@@ -677,6 +679,7 @@ type CourseMetaSummary = {
   modulesCount?: number;
   lessonsCount?: number;
   totalXp?: number;
+  completionsCount?: number;
 };
 
 function buildCourseMetaSummary(course: RawCourse): CourseMetaSummary {
@@ -684,6 +687,7 @@ function buildCourseMetaSummary(course: RawCourse): CourseMetaSummary {
   const coverImageUrl = resolveCourseCoverImage(course);
   const availableLanguages = resolveCourseLanguages(course);
   const structure = summarizeCourseStructure(course);
+  const completionsCount = resolveCourseCompletionCount(course);
 
   return {
     coverImageUrl,
@@ -692,6 +696,7 @@ function buildCourseMetaSummary(course: RawCourse): CourseMetaSummary {
     modulesCount: structure.modulesCount,
     lessonsCount: structure.lessonsCount,
     totalXp: structure.totalXp,
+    completionsCount,
   };
 }
 
@@ -719,6 +724,25 @@ function resolveCourseCoverImage(course: RawCourse): string | null {
     return course.seo.coverImageUrl;
   }
   return null;
+}
+
+function resolveCourseCompletionCount(course: RawCourse): number | undefined {
+  const direct = (course as any)?.completions_count;
+  if (typeof direct === 'number') {
+    return direct;
+  }
+  const metadata = course.curriculum?.metadata;
+  const candidates = [
+    metadata?.completionsCount,
+    metadata?.stats?.completions,
+    metadata?.stats?.completedBy,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'number') {
+      return candidate;
+    }
+  }
+  return undefined;
 }
 
 function extractCourseDescription(course: RawCourse): string | undefined {

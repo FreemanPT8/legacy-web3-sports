@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
-import { ArrowRight, Lock, CheckCircle, ChevronDown, Award, BookOpen, Layers3 } from 'lucide-react';
+import { ArrowRight, Lock, CheckCircle, ChevronDown, Award, BookOpen, Layers3, Users } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -34,7 +34,7 @@ export function LevelSections({ summary }: Props) {
 
   const coursesByLevel = summary?.coursesByLevel || {};
 
-  const { language: activeLanguage } = useLanguage();
+  const { language: activeLanguage, t } = useLanguage();
   const language: Language = (activeLanguage ?? 'en') as Language;
 
   const [isMobile, setIsMobile] = useState(false);
@@ -46,6 +46,21 @@ export function LevelSections({ summary }: Props) {
   const [fallbackError, setFallbackError] = useState<string | null>(null);
 
   const [isFallbackLoading, setIsFallbackLoading] = useState(false);
+
+  const translate = (key: string, fallback: string) => {
+    if (typeof t !== 'function') return fallback;
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+  };
+
+  const courseCardLabels = {
+    unlocked: translate('courses.unlocked', 'You can access this course'),
+    viewCourse: translate('courses.viewDetails', 'Ver curso'),
+    modules: translate('courses.modules', 'modules'),
+    lessons: translate('courses.lessons', 'lessons'),
+    xpAvailable: translate('courses.totalXP', 'XP available'),
+    completions: translate('courses.completions', 'users completed'),
+  };
 
 
 
@@ -220,38 +235,11 @@ export function LevelSections({ summary }: Props) {
 
 
 
-type LevelSectionProps = {
-
-  level: ProgressSummary['levels'][number];
-
-  courses: LevelCourseSummary[];
-
-  isMobile: boolean;
-
-  expanded: boolean;
-
-  onToggle: () => void;
-
-  isFallbackLoading: boolean;
-
-};
+type LevelSectionProps = {\n\n  level: ProgressSummary['levels'][number];\n\n  courses: LevelCourseSummary[];\n\n  isMobile: boolean;\n\n  expanded: boolean;\n\n  onToggle: () => void;\n\n  isFallbackLoading: boolean;\n\n  labels: CourseCardLabels;\n\n};
 
 
 
-function LevelSection({
-
-  level,
-
-  courses,
-
-  isMobile,
-
-  expanded,
-
-  onToggle,
-  isFallbackLoading,
-
-}: LevelSectionProps) {
+function LevelSection({\n\n  level,\n\n  courses,\n\n  isMobile,\n\n  expanded,\n\n  onToggle,\n  isFallbackLoading,\n\n  labels,\n\n}: LevelSectionProps) {
 
   const accent = level.accentColor || '#1ccfdd';
 
@@ -391,7 +379,7 @@ function LevelSection({
 
         className={cn(
 
-          'mt-6 grid gap-4 md:grid-cols-2',
+          'mt-6 grid gap-4 md:grid-cols-2 place-items-start',
 
           isMobile && !expanded && 'hidden',
 
@@ -425,6 +413,8 @@ function LevelSection({
 
               accent={accent}
 
+              labels={labels}
+
               isLevelLocked={isLocked}
 
             />
@@ -443,16 +433,27 @@ function LevelSection({
 
 
 
+type CourseCardLabels = {
+  unlocked: string;
+  viewCourse: string;
+  modules: string;
+  lessons: string;
+  xpAvailable: string;
+  completions: string;
+};
+
 function CourseCard({
   course,
   level,
   accent,
   isLevelLocked,
+  labels,
 }: {
   course: LevelCourseSummary;
   level: ProgressSummary['levels'][number];
   accent: string;
   isLevelLocked: boolean;
+  labels: CourseCardLabels;
 }) {
   const courseLanguages =
     Array.isArray(course.availableLanguages) && course.availableLanguages.length > 0
@@ -463,11 +464,16 @@ function CourseCard({
     ? `/education/courses/${course.slug}`
     : `/education/courses/${course.id}`;
   const levelLabel = level.shortLabel || level.title;
+  const modulesCount = typeof course.modulesCount === 'number' ? course.modulesCount : 0;
+  const lessonsCount = typeof course.lessonsCount === 'number' ? course.lessonsCount : 0;
+  const totalXp = typeof course.totalXp === 'number' ? course.totalXp : null;
+  const completionsCount =
+    typeof course.completionsCount === 'number' ? course.completionsCount : 0;
 
   return (
     <div
       className={cn(
-        'rounded-3xl border border-white/10 bg-gradient-to-br from-[#02060f] to-[#030a14] p-4 shadow-[0_25px_55px_rgba(0,0,0,0.45)] transition hover:border-cyan-400/40 focus-within:border-cyan-200/60',
+        'w-full max-w-[420px] rounded-3xl border border-white/10 bg-[#030a14] p-4 shadow-[0_25px_55px_rgba(0,0,0,0.45)] transition hover:border-cyan-400/40 focus-within:border-cyan-200/60 mx-auto md:mx-0',
         isLevelLocked && 'opacity-70',
       )}
       style={{ borderColor: isLevelLocked ? '#1e293b40' : `${accent}55` }}
@@ -513,23 +519,27 @@ function CourseCard({
           )}
           {courseLanguages && (
             <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-slate-300">
-              {courseLanguages.map((lang) => lang?.toUpperCase()).join(' · ')}
+              {courseLanguages.map((lang) => lang?.toUpperCase()).join(' ? ')}
             </span>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-sm text-slate-200">
+        <div className="space-y-2 text-sm text-slate-200">
           <div className="flex items-center gap-2">
             <Layers3 className="h-4 w-4 text-cyan-300" />
-            <span>{course.modulesCount ?? 0} m?dulos</span>
+            <span>{modulesCount} {labels.modules}</span>
           </div>
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-cyan-300" />
-            <span>{course.lessonsCount ?? 0} li??es</span>
+            <span>{lessonsCount} {labels.lessons}</span>
           </div>
           <div className="flex items-center gap-2">
             <Award className="h-4 w-4 text-cyan-300" />
-            <span>{course.totalXp ? `${course.totalXp.toLocaleString()} XP` : 'XP disponível'}</span>
+            <span>{totalXp ? `${totalXp.toLocaleString()} ${labels.xpAvailable}` : labels.xpAvailable}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-cyan-300" />
+            <span>{completionsCount.toLocaleString()} {labels.completions}</span>
           </div>
         </div>
 
@@ -548,7 +558,7 @@ function CourseCard({
               </>
             ) : (
               <>
-                <CheckCircle className="h-3 w-3" /> Podes aceder a este curso
+                <CheckCircle className="h-3 w-3" /> {labels.unlocked}
               </>
             )}
           </div>
@@ -560,7 +570,7 @@ function CourseCard({
                 className="rounded-full bg-cyan-500 px-5 text-white hover:bg-cyan-400"
                 disabled={isLevelLocked}
               >
-                Ver curso
+                {labels.viewCourse}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -724,6 +734,17 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
     course.seo?.coverImageUrl ||
     null;
 
+  const completionsCount =
+    typeof course.completions_count === 'number'
+      ? course.completions_count
+      : typeof course.completionsCount === 'number'
+        ? course.completionsCount
+        : typeof course.total_completions === 'number'
+          ? course.total_completions
+          : typeof course.stats?.completions === 'number'
+            ? course.stats.completions
+            : undefined;
+
   return {
     id: course.id,
     slug: resolvedSlug,
@@ -746,5 +767,24 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
       typeof course.total_xp === 'number'
         ? course.total_xp
         : undefined,
+    completionsCount: completionsCount ?? 0,
   };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
