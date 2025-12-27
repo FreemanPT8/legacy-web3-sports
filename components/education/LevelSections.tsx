@@ -201,7 +201,18 @@ export function LevelSections({ summary }: Props) {
 
         return (
 
-          <LevelSection\n            key={level.slug}\n            level={level}\n            courses={courses}\n            isMobile={isMobile}\n            expanded={expanded}\n            onToggle={() =>\n              setExpandedSlug((prev) => (prev === level.slug ? null : level.slug))\n            }\n            isFallbackLoading={isFallbackLoading}\n            labels={courseCardLabels}\n          />
+          <LevelSection
+            key={level.slug}
+            level={level}
+            courses={courses}
+            isMobile={isMobile}
+            expanded={expanded}
+            onToggle={() =>
+              setExpandedSlug((prev) => (prev === level.slug ? null : level.slug))
+            }
+            isFallbackLoading={isFallbackLoading}
+            labels={courseCardLabels}
+          />
 
         );
 
