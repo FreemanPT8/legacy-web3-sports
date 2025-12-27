@@ -2,7 +2,7 @@
 
 
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -15,6 +15,8 @@ import type { ProgressSummary } from '@/lib/education/progressSummary';
 import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getMultilingualContent } from '@/lib/i18n';
 
 
 
@@ -32,11 +34,17 @@ export function LevelSections({ summary }: Props) {
 
   const coursesByLevel = summary?.coursesByLevel || {};
 
-
+  const { language } = useLanguage();
 
   const [isMobile, setIsMobile] = useState(false);
 
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+
+  const [fallbackRawCourses, setFallbackRawCourses] = useState<any[]>([]);
+
+  const [fallbackError, setFallbackError] = useState<string | null>(null);
+
+  const [isFallbackLoading, setIsFallbackLoading] = useState(false);
 
 
 
@@ -80,6 +88,65 @@ export function LevelSections({ summary }: Props) {
 
 
 
+  const hasServerCourses = useMemo(() => {
+    if (!summary || !summary.coursesByLevel) return false;
+    return Object.values(summary.coursesByLevel).some(
+      (list) => Array.isArray(list) && list.length > 0,
+    );
+  }, [summary]);
+
+  const fallbackCoursesByLevel = useMemo(() => {
+    if (fallbackRawCourses.length === 0) return {};
+    return buildFallbackCoursesMap(fallbackRawCourses, language);
+  }, [fallbackRawCourses, language]);
+
+  useEffect(() => {
+    if (!summary || hasServerCourses) {
+      setFallbackRawCourses([]);
+      setFallbackError(null);
+      setIsFallbackLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadFallbackCourses() {
+      setIsFallbackLoading(true);
+      setFallbackError(null);
+      try {
+        const response = await fetch('/api/courses?includeModules=true', {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Failed to load courses');
+        }
+        if (!cancelled) {
+          setFallbackRawCourses(Array.isArray(data.courses) ? data.courses : []);
+        }
+      } catch (error) {
+        if ((error as any)?.name === 'AbortError') return;
+        console.error('LevelSections fallback error:', error);
+        if (!cancelled) {
+          setFallbackError('N?o foi poss?vel carregar os cursos associados aos n?veis. Atualiza para tentar novamente.');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsFallbackLoading(false);
+        }
+      }
+    }
+
+    void loadFallbackCourses();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [summary, hasServerCourses]);
+
+
+
   if (!summary) {
 
     return (
@@ -100,9 +167,19 @@ export function LevelSections({ summary }: Props) {
 
     <div className="space-y-6">
 
+      {fallbackError && (
+        <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">
+          {fallbackError}
+        </div>
+      )}
+
       {levels.map((level) => {
 
-        const courses = coursesByLevel[level.slug] || [];
+        const fallbackCourses = fallbackCoursesByLevel[level.slug] || [];
+        const courses =
+          coursesByLevel[level.slug] && coursesByLevel[level.slug].length > 0
+            ? coursesByLevel[level.slug]
+            : fallbackCourses;
 
         const expanded = !isMobile || expandedSlug === level.slug;
 
@@ -320,7 +397,11 @@ function LevelSection({
 
           <div className="rounded-2xl border border-dashed border-white/10 bg-transparent p-4 text-sm text-slate-300">
 
-            Ainda n?o existem cursos atribu?dos a este n?vel.
+            {isFallbackLoading
+
+              ? 'A carregar cursos atribu?dos a este n?vel...'
+
+              : 'Ainda n?o existem cursos atribu?dos a este n?vel.'}
 
           </div>
 
@@ -485,3 +566,120 @@ function formatRange(min?: number | null, max?: number | null) {
 
 }
 
+
+const LEVEL_SLUG_NORMALIZATION: Record<string, string> = {
+  novato: 'cadets',
+  cadete: 'cadets',
+  cadets: 'cadets',
+  infantil: 'infantil',
+  juvenil: 'juveniles',
+  juvenis: 'juveniles',
+  junior: 'juniors',
+  juniors: 'juniors',
+  senior: 'seniors',
+  seniors: 'seniors',
+  'hall da fama': 'hall-of-fame',
+  hall: 'hall-of-fame',
+};
+
+function normalizeLevelSlugFromCourse(course: any): string | null {
+  const rawSlug =
+    course?.academy_level_slug ||
+    course?.academyLevelSlug ||
+    course?.curriculum?.metadata?.academyLevelSlug ||
+    '';
+  if (!rawSlug || typeof rawSlug !== 'string') {
+    return null;
+  }
+  const lowered = rawSlug.toLowerCase();
+  return LEVEL_SLUG_NORMALIZATION[lowered] || rawSlug;
+}
+
+function buildFallbackCoursesMap(
+  courses: any[],
+  language: string,
+): Record<string, LevelCourseSummary[]> {
+  return courses.reduce((acc, course) => {
+    const normalizedSlug = normalizeLevelSlugFromCourse(course);
+    if (!normalizedSlug) {
+      return acc;
+    }
+    const formatted = transformCourseRecord(course, language);
+    if (!formatted) {
+      return acc;
+    }
+    if (!acc[normalizedSlug]) {
+      acc[normalizedSlug] = [];
+    }
+    acc[normalizedSlug].push(formatted);
+    return acc;
+  }, {} as Record<string, LevelCourseSummary[]>);
+}
+
+function transformCourseRecord(course: any, language: string): LevelCourseSummary | null {
+  if (!course?.id) {
+    return null;
+  }
+
+  const title =
+    getMultilingualContent(course.title, language) ||
+    (typeof course.title === 'string' ? course.title : '') ||
+    course.slug ||
+    'Curso';
+
+  const description =
+    getMultilingualContent(course.description, language) ||
+    (typeof course.description === 'string' ? course.description : '') ||
+    '';
+
+  const modulesArray = Array.isArray(course.modules) ? course.modules : [];
+  const lessonsCountFallback = modulesArray.reduce(
+    (acc: number, module: any) =>
+      acc + (Array.isArray(module.lessons) ? module.lessons.length : 0),
+    0,
+  );
+
+  const resolvedSlug =
+    typeof course.slug === 'string' && course.slug.length > 0
+      ? course.slug
+      : null;
+
+  const availableLanguages = Array.isArray(course.available_languages)
+    ? course.available_languages
+    : Array.isArray(course.availableLanguages)
+      ? course.availableLanguages
+      : undefined;
+
+  const coverImageUrl =
+    course.image_url ||
+    course.thumbnail_url ||
+    course.curriculum?.metadata?.coverImage ||
+    course.curriculum?.metadata?.coverAsset?.url ||
+    course.seo?.ogImageUrl ||
+    course.seo?.coverImageUrl ||
+    null;
+
+  return {
+    id: course.id,
+    slug: resolvedSlug,
+    title,
+    isRequired: course.is_required_in_level !== false,
+    isStartCourse: Boolean(course.is_start_course),
+    isCompleted: false,
+    coverImageUrl,
+    description,
+    availableLanguages,
+    modulesCount:
+      typeof course.total_modules === 'number'
+        ? course.total_modules
+        : modulesArray.length,
+    lessonsCount:
+      typeof course.total_lessons === 'number'
+        ? course.total_lessons
+        : lessonsCountFallback,
+    totalXp:
+      typeof course.total_xp === 'number'
+        ? course.total_xp
+        : undefined,
+  };
+}
