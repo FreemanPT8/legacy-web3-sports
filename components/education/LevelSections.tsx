@@ -17,6 +17,7 @@ import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent, type Language } from '@/lib/i18n';
+import { START_HERE_FALLBACK_ID } from '@/lib/education/unlockLogic';
 
 
 
@@ -200,7 +201,6 @@ export function LevelSections({ summary }: Props) {
         const expanded = !isMobile || expandedSlug === level.slug;
 
         return (
-
           <LevelSection
             key={level.slug}
             level={level}
@@ -212,8 +212,8 @@ export function LevelSections({ summary }: Props) {
             }
             isFallbackLoading={isFallbackLoading}
             labels={courseCardLabels}
+            language={language}
           />
-
         );
 
       })}
@@ -234,6 +234,7 @@ type LevelSectionProps = {
   onToggle: () => void;
   isFallbackLoading: boolean;
   labels: CourseCardLabels;
+  language: Language;
 };
 
 
@@ -411,19 +412,13 @@ function LevelSection({
           courses.map((course) => (
 
             <CourseCard
-
               key={course.id}
-
               course={course}
-
               level={level}
-
               accent={accent}
-
               labels={labels}
-
+              language={language}
               isLevelLocked={isLocked}
-
             />
 
           ))
@@ -455,22 +450,34 @@ function CourseCard({
   accent,
   isLevelLocked,
   labels,
+  language,
 }: {
   course: LevelCourseSummary;
   level: ProgressSummary['levels'][number];
   accent: string;
   isLevelLocked: boolean;
   labels: CourseCardLabels;
+  language: Language;
 }) {
   const courseLanguages =
     Array.isArray(course.availableLanguages) && course.availableLanguages.length > 0
       ? course.availableLanguages
       : null;
   const coverUrl = course.coverImageUrl;
-  const courseHref = course.slug
-    ? `/education/courses/${course.slug}`
-    : `/education/courses/${course.id}`;
+  const resolvedSlug =
+    course.slug ||
+    (course.isStartCourse ? START_HERE_FALLBACK_ID : course.id);
+  const courseHref = `/education/courses/${resolvedSlug}`;
   const levelLabel = level.shortLabel || level.title;
+  const localizedTitle =
+    getMultilingualContent(course.title, language) ||
+    (typeof course.title === 'string' ? course.title : '') ||
+    levelLabel ||
+    '';
+  const localizedDescription =
+    getMultilingualContent(course.description, language) ||
+    (typeof course.description === 'string' ? course.description : '') ||
+    '';
   const modulesCount = typeof course.modulesCount === 'number' ? course.modulesCount : 0;
   const lessonsCount = typeof course.lessonsCount === 'number' ? course.lessonsCount : 0;
   const totalXp = typeof course.totalXp === 'number' ? course.totalXp : null;
@@ -502,9 +509,9 @@ function CourseCard({
 
       <div className="mt-4 space-y-3">
         <div>
-          <h4 className="text-lg font-semibold text-white">{course.title}</h4>
-          {course.description && (
-            <p className="mt-2 text-sm text-slate-300 line-clamp-3">{course.description}</p>
+          <h4 className="text-lg font-semibold text-white">{localizedTitle}</h4>
+          {localizedDescription && (
+            <p className="mt-2 text-sm text-slate-300 line-clamp-3">{localizedDescription}</p>
           )}
         </div>
 
@@ -553,10 +560,10 @@ function CourseCard({
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div
             className={cn(
-              'inline-flex items-center gap-2 rounded-full border px-4 py-1 text-xs uppercase tracking-[0.3em]',
+              'inline-flex items-center gap-2 rounded-full border px-3 py-0.5 text-[10px] uppercase tracking-[0.25em]',
               isLevelLocked
-                ? 'border-amber-400/40 bg-amber-500/10 text-amber-100'
-                : 'border-emerald-400/50 bg-emerald-500/10 text-emerald-100',
+                ? 'border-amber-400/30 bg-amber-500/5 text-amber-100/80'
+                : 'border-emerald-400/30 bg-emerald-500/5 text-emerald-100/80',
             )}
           >
             {isLevelLocked ? (
