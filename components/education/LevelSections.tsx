@@ -620,15 +620,17 @@ function CourseCard({
         <div>
           <h4 className="text-lg font-semibold text-white">{localizedTitle}</h4>
           {hasDescription && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-slate-300">
-              <p className="flex-1 line-clamp-3">{localizedDescription}</p>
-              <button
-                type="button"
-                onClick={() => setDetailsOpen(true)}
-                className="rounded-full border border-transparent px-2 py-1 text-[11px] text-cyan-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"
-              >
-                {labels.viewMore}
-              </button>
+            <div className="mt-2 space-y-1 text-sm text-slate-300">
+              <p className="line-clamp-3">{localizedDescription}</p>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDetailsOpen(true)}
+                  className="rounded-full border border-cyan-400/40 px-3 py-1 text-[11px] uppercase tracking-[0.25em] text-cyan-200 transition hover:border-cyan-300 hover:bg-cyan-300/10 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"
+                >
+                  {labels.viewMore}
+                </button>
+              </div>
             </div>
           )}
         </div>
