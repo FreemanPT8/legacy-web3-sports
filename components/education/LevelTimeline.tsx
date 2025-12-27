@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import { XP_LEVELS } from '@/lib/education/xpLevels';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { type Language } from '@/lib/i18n';
 
 export type ProgressFetchState =
   | 'idle'
@@ -24,6 +26,67 @@ const FALLBACK_ACCENTS = [
   '#f97316',
 ];
 
+const LEVEL_LABELS: Record<
+  string,
+  Partial<Record<Language, string>>
+> = {
+  cadets: { pt: 'Cadete', es: 'Cadete', en: 'Cadet' },
+  infantil: { pt: 'Infantil', es: 'Infantil', en: 'Youth' },
+  juveniles: { pt: 'Juvenil', es: 'Juvenil', en: 'Intermediate' },
+  juniors: { pt: 'Junior', es: 'Junior', en: 'Junior' },
+  seniors: { pt: 'Sénior', es: 'Senior', en: 'Senior' },
+  'hall-of-fame': { pt: 'Hall da Fama', es: 'Salón de la Fama', en: 'Hall of Fame' },
+  master: { pt: 'Master', es: 'Master', en: 'Master' },
+  legend: { pt: 'Lenda', es: 'Leyenda', en: 'Legend' },
+};
+
+const LEVEL_SLUG_ALIASES: Record<string, string> = {
+  cadets: 'cadets',
+  cadete: 'cadets',
+  cadet: 'cadets',
+  novato: 'cadets',
+  newcomer: 'cadets',
+  infantil: 'infantil',
+  youth: 'infantil',
+  beginner: 'infantil',
+  juveniles: 'juveniles',
+  juvenil: 'juveniles',
+  juvenis: 'juveniles',
+  intermediate: 'juveniles',
+  juniors: 'juniors',
+  junior: 'juniors',
+  advanced: 'juniors',
+  seniors: 'seniors',
+  senior: 'seniors',
+  expert: 'seniors',
+  'hall-of-fame': 'hall-of-fame',
+  hall: 'hall-of-fame',
+  halloffame: 'hall-of-fame',
+  halloff: 'hall-of-fame',
+  master: 'master',
+  legend: 'legend',
+};
+
+const FALLBACK_LEVEL_MAP: Record<string, string> = {
+  newcomer: 'cadets',
+  beginner: 'infantil',
+  intermediate: 'juveniles',
+  advanced: 'juniors',
+  expert: 'seniors',
+  hallOfFame: 'hall-of-fame',
+  master: 'master',
+  legend: 'legend',
+};
+
+const LESSON_PROGRESS_LABEL: Record<Language, string> = {
+  pt: 'lições concluídas',
+  es: 'lecciones completadas',
+  en: 'lessons completed',
+  fr: 'leçons terminées',
+  it: 'lezioni completate',
+  de: 'abgeschlossene Lektionen',
+};
+
 type LevelTimelineProps = {
   summary: ProgressSummary | null;
   state: ProgressFetchState;
@@ -31,25 +94,65 @@ type LevelTimelineProps = {
 };
 
 export function LevelTimeline({ summary, state, className }: LevelTimelineProps) {
-  const levelsToRender = useMemo(() => {
-    if (summary?.levels) {
-      return summary.levels.filter((level) => level.isVisible);
-    }
+  const { language: activeLanguage } = useLanguage();
+  const language = (activeLanguage ?? 'en') as Language;
 
-    return XP_LEVELS.map((level, index) => ({
-      slug: level.key,
-      title: level.label,
-      shortLabel: level.label,
-      accentColor: FALLBACK_ACCENTS[index % FALLBACK_ACCENTS.length],
-      minXp: level.min,
-      maxXp: (level as { max?: number }).max ?? null,
-      isVisible: true,
-      isUnlocked: false,
-      isCompleted: false,
-      progressPercent: 0,
-      lockedReason: 'Autentica-te para acompanhar o teu progresso.',
-    }));
-  }, [summary]);
+  const levelsToRender = useMemo(() => {
+    const baseLevels = summary?.levels
+      ? summary.levels.filter((level) => level.isVisible)
+      : XP_LEVELS.map((level, index) => ({
+          slug: level.key,
+          title: level.label,
+          shortLabel: level.label,
+          accentColor: FALLBACK_ACCENTS[index % FALLBACK_ACCENTS.length],
+          minXp: level.min,
+          maxXp: (level as { max?: number }).max ?? null,
+          isVisible: true,
+          isUnlocked: false,
+          isCompleted: false,
+          progressPercent: 0,
+          lockedReason: 'Autentica-te para acompanhar o teu progresso.',
+        }));
+
+    const startHere = summary?.startHere;
+
+    return baseLevels.map((level, index) => {
+      const normalizedSlug = normalizeLevelSlug(level.slug);
+      const localizedLabel =
+        LEVEL_LABELS[normalizedSlug]?.[language] ||
+        LEVEL_LABELS[normalizedSlug]?.en ||
+        LEVEL_LABELS[normalizedSlug]?.pt ||
+        level.title;
+      const localizedShort =
+        LEVEL_LABELS[normalizedSlug]?.[language] ||
+        level.shortLabel ||
+        localizedLabel;
+
+      let progressPercent = level.progressPercent ?? 0;
+      let lessonProgressLabel: string | null = null;
+
+      if (
+        startHere &&
+        normalizedSlug === 'cadets' &&
+        typeof startHere.totalLessons === 'number' &&
+        startHere.totalLessons > 0
+      ) {
+        progressPercent = Math.max(progressPercent, startHere.progressPercent ?? 0);
+        const label =
+          LESSON_PROGRESS_LABEL[language] || LESSON_PROGRESS_LABEL.en;
+        lessonProgressLabel = `${startHere.completedLessons ?? 0}/${startHere.totalLessons} ${label}`;
+      }
+
+      return {
+        ...level,
+        slug: normalizedSlug || level.slug || `level-${index}`,
+        title: localizedLabel,
+        shortLabel: localizedShort,
+        progressPercent,
+        lessonProgressLabel,
+      };
+    });
+  }, [summary, language]);
 
   const badgeStrip = useMemo(() => {
     if (!summary?.badges) {
@@ -174,6 +277,7 @@ function LevelCard({
     isCompleted: boolean;
     progressPercent: number;
     lockedReason: string | null;
+    lessonProgressLabel?: string | null;
   };
   position: number;
   total: number;
@@ -203,6 +307,9 @@ function LevelCard({
 
       <h3 className="mt-4 text-2xl font-semibold">{level.title}</h3>
       <p className="text-sm text-slate-400">{formatXpRange(level.minXp, level.maxXp)}</p>
+      {level.lessonProgressLabel && (
+        <p className="mt-1 text-xs text-slate-400">{level.lessonProgressLabel}</p>
+      )}
 
       <div className="mt-6">
         <div className="flex items-center justify-between text-xs text-slate-400">
@@ -297,4 +404,10 @@ function formatXpRange(min?: number | null, max?: number | null) {
     return `${lower}-${max.toLocaleString()} XP`;
   }
   return `${lower}+ XP`;
+}
+
+function normalizeLevelSlug(value?: string | null): string {
+  if (!value) return '';
+  const trimmed = value.toLowerCase().replace(/\s+/g, '-');
+  return LEVEL_SLUG_ALIASES[trimmed] || FALLBACK_LEVEL_MAP[trimmed] || trimmed;
 }
