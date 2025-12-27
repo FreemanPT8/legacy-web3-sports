@@ -235,11 +235,27 @@ export function LevelSections({ summary }: Props) {
 
 
 
-type LevelSectionProps = {\n\n  level: ProgressSummary['levels'][number];\n\n  courses: LevelCourseSummary[];\n\n  isMobile: boolean;\n\n  expanded: boolean;\n\n  onToggle: () => void;\n\n  isFallbackLoading: boolean;\n\n  labels: CourseCardLabels;\n\n};
+type LevelSectionProps = {
+  level: ProgressSummary['levels'][number];
+  courses: LevelCourseSummary[];
+  isMobile: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+  isFallbackLoading: boolean;
+  labels: CourseCardLabels;
+};
 
 
 
-function LevelSection({\n\n  level,\n\n  courses,\n\n  isMobile,\n\n  expanded,\n\n  onToggle,\n  isFallbackLoading,\n\n  labels,\n\n}: LevelSectionProps) {
+function LevelSection({
+  level,
+  courses,
+  isMobile,
+  expanded,
+  onToggle,
+  isFallbackLoading,
+  labels,
+}: LevelSectionProps) {
 
   const accent = level.accentColor || '#1ccfdd';
 
