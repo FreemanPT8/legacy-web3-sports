@@ -609,6 +609,11 @@ function CourseCard({
             Sem imagem
           </div>
         )}
+        {course.isStartCourse && (
+          <span className="absolute left-3 top-3 rounded-full border border-cyan-300/60 bg-black/60 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-200">
+            Ponto de partida
+          </span>
+        )}
         <div className="absolute right-3 top-3">
           <span className="rounded-full border border-white/30 bg-black/60 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-white">
             {levelLabel}
@@ -636,11 +641,6 @@ function CourseCard({
         </div>
 
         <div className="flex flex-wrap gap-3 text-xs text-slate-300">
-          {course.isStartCourse && (
-            <span className="rounded-full border border-cyan-300/50 px-3 py-1 uppercase tracking-[0.35em] text-[10px] text-cyan-200">
-              Ponto de partida
-            </span>
-          )}
           {course.isCompleted && (
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1 text-[11px] text-emerald-200">
               <CheckCircle className="h-3 w-3" /> Concluido
