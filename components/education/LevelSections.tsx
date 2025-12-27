@@ -577,28 +577,74 @@ const LEVEL_SLUG_NORMALIZATION: Record<string, string> = {
   novato: 'cadets',
   cadete: 'cadets',
   cadets: 'cadets',
+  cadet: 'cadets',
+  youth: 'infantil',
   infantil: 'infantil',
+  beginner: 'cadets',
+  intermediate: 'infantil',
+  advanced: 'juveniles',
   juvenil: 'juveniles',
   juvenis: 'juveniles',
+  juvenile: 'juveniles',
   junior: 'juniors',
   juniors: 'juniors',
   senior: 'seniors',
   seniors: 'seniors',
+  legend: 'legend',
+  master: 'master',
   'hall da fama': 'hall-of-fame',
+  'hall of fame': 'hall-of-fame',
   hall: 'hall-of-fame',
 };
 
+const BUILDER_LEVEL_TO_SLUG: Record<string, string> = {
+  beginner: 'cadets',
+  intermediate: 'infantil',
+  advanced: 'juveniles',
+};
+
+function normalizeSlugCandidate(value: unknown): string | null {
+  if (!value || typeof value !== 'string') return null;
+  const lowered = value.trim().toLowerCase();
+  if (!lowered) return null;
+  return LEVEL_SLUG_NORMALIZATION[lowered] || lowered;
+}
+
 function normalizeLevelSlugFromCourse(course: any): string | null {
-  const rawSlug =
-    course?.academy_level_slug ||
-    course?.academyLevelSlug ||
-    course?.curriculum?.metadata?.academyLevelSlug ||
-    '';
-  if (!rawSlug || typeof rawSlug !== 'string') {
-    return null;
+  const slugCandidates = [
+    course?.academy_level_slug,
+    course?.academyLevelSlug,
+    course?.curriculum?.metadata?.academyLevelSlug,
+  ];
+
+  for (const candidate of slugCandidates) {
+    const normalized = normalizeSlugCandidate(candidate);
+    if (normalized) {
+      return normalized;
+    }
   }
-  const lowered = rawSlug.toLowerCase();
-  return LEVEL_SLUG_NORMALIZATION[lowered] || rawSlug;
+
+  if (course?.level && BUILDER_LEVEL_TO_SLUG[course.level]) {
+    return BUILDER_LEVEL_TO_SLUG[course.level];
+  }
+
+  if (course?.is_start_course) {
+    return 'cadets';
+  }
+
+  if (typeof course?.xp_threshold === 'number') {
+    const xp = course.xp_threshold;
+    if (xp <= 0) return 'cadets';
+    if (xp < 369) return 'infantil';
+    if (xp < 1000) return 'juveniles';
+    if (xp < 2222) return 'juniors';
+    if (xp < 3333) return 'seniors';
+    if (xp < 5000) return 'hall-of-fame';
+    if (xp < 10000) return 'master';
+    return 'legend';
+  }
+
+  return null;
 }
 
 function buildFallbackCoursesMap(
