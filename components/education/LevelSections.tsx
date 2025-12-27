@@ -203,6 +203,8 @@ export function LevelSections({ summary }: Props) {
 
             }
 
+            isFallbackLoading={isFallbackLoading}
+
           />
 
         );
@@ -229,6 +231,8 @@ type LevelSectionProps = {
 
   onToggle: () => void;
 
+  isFallbackLoading: boolean;
+
 };
 
 
@@ -244,6 +248,7 @@ function LevelSection({
   expanded,
 
   onToggle,
+  isFallbackLoading,
 
 }: LevelSectionProps) {
 
