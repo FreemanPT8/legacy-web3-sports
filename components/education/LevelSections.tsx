@@ -525,7 +525,13 @@ function CourseCard({
   language: Language;
   startCourseMeta: StartCourseMeta | null;
 }) {
-  const startMeta = course.isStartCourse ? startCourseMeta : null;
+  const isPrimaryStartCourse =
+    course.isStartCourse ||
+    (!!startCourseMeta &&
+      (course.slug === startCourseMeta.slug ||
+        course.id === startCourseMeta.slug ||
+        course.id === START_HERE_FALLBACK_ID));
+  const startMeta = isPrimaryStartCourse ? startCourseMeta : null;
   const startMetaLanguages =
     startMeta && Array.isArray(startMeta.available_languages) && startMeta.available_languages.length > 0
       ? startMeta.available_languages
@@ -536,7 +542,7 @@ function CourseCard({
       ? course.availableLanguages
       : null);
   const coverUrl = course.coverImageUrl;
-  const resolvedSlug = course.isStartCourse
+  const resolvedSlug = isPrimaryStartCourse
     ? START_HERE_FALLBACK_ID
     : course.slug || course.id;
   const courseHref = `/education/courses/${resolvedSlug}`;
