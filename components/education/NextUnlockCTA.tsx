@@ -57,8 +57,6 @@ export function NextUnlockCTA({ summary, state }: Props) {
   const resolvedLanguage = resolveLanguage(language);
   const copy = CTA_COPY[resolvedLanguage];
 
-  if (state === 'anonymous') return null;
-
   const isLoading = state === 'idle' || state === 'loading';
   const hasError = state === 'error';
 
@@ -66,6 +64,8 @@ export function NextUnlockCTA({ summary, state }: Props) {
     if (!summary?.levels) return null;
     return summary.levels.find((level) => !level.isUnlocked) ?? null;
   }, [summary]);
+
+  if (state === 'anonymous') return null;
 
   if (!summary && !isLoading) return null;
   if (summary && !nextLevel && !isLoading) return null;

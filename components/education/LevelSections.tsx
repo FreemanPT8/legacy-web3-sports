@@ -10,7 +10,7 @@ import { ArrowRight, Lock, CheckCircle, ChevronDown, Award, BookOpen, Layers3, U
 
 import { cn } from '@/lib/utils';
 
-import type { ProgressSummary, StartCourseMeta } from '@/lib/education/progressSummary';
+import type { ProgressSummary, StartCourseMeta, StartHereState } from '@/lib/education/progressSummary';
 
 import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 
@@ -28,6 +28,65 @@ const START_COURSE_DESCRIPTION_FALLBACK: Record<Language, string> = {
   it: 'Ci sono momenti in cui il mondo cambia più velocemente di noi. Quando succede, ci sono solo due scelte: fingere che nulla stia accadendo... oppure reinventarci.',
   de: 'Es gibt Momente, in denen sich die Welt schneller verändert als wir. Dann gibt es nur zwei Möglichkeiten: so tun, als würde nichts passieren... oder uns neu erfinden.',
 };
+
+const SUPPORTED_LANGUAGES = ['pt', 'es', 'en'] as const;
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+type SectionCopy = {
+  authRequired: string;
+  loadingCourses: string;
+  noCourses: string;
+  coursesLoadError: string;
+  progressLabel: string;
+  startBadge: string;
+  noImage: string;
+  lockedBadge: string;
+  lessonsProgress: string;
+};
+
+const SECTION_COPY: Record<SupportedLanguage, SectionCopy> = {
+  pt: {
+    authRequired: 'Autentica-te para explorar os cursos de cada nivel.',
+    loadingCourses: 'A carregar cursos atribuidos a este nivel...',
+    noCourses: 'Ainda nao existem cursos atribuidos a este nivel.',
+    coursesLoadError: 'Nao foi possivel carregar os cursos associados aos niveis. Atualiza para tentar novamente.',
+    progressLabel: 'Progresso',
+    startBadge: 'Ponto de partida',
+    noImage: 'Sem imagem',
+    lockedBadge: 'Nivel bloqueado',
+    lessonsProgress: 'licoes concluidas',
+  },
+  es: {
+    authRequired: 'Autenticate para explorar los cursos de cada nivel.',
+    loadingCourses: 'Cargando cursos asignados a este nivel...',
+    noCourses: 'Todavia no existen cursos asignados a este nivel.',
+    coursesLoadError: 'No fue posible cargar los cursos asociados a los niveles. Actualiza para intentarlo de nuevo.',
+    progressLabel: 'Progreso',
+    startBadge: 'Punto de partida',
+    noImage: 'Sin imagen',
+    lockedBadge: 'Nivel bloqueado',
+    lessonsProgress: 'lecciones completadas',
+  },
+  en: {
+    authRequired: 'Sign in to explore the courses inside each level.',
+    loadingCourses: 'Loading courses assigned to this level...',
+    noCourses: 'There are no courses assigned to this level yet.',
+    coursesLoadError: 'We could not load the courses linked to these levels. Refresh to try again.',
+    progressLabel: 'Progress',
+    startBadge: 'Starting point',
+    noImage: 'No image',
+    lockedBadge: 'Level locked',
+    lessonsProgress: 'lessons completed',
+  },
+};
+
+const resolveLanguage = (value?: string | null): SupportedLanguage => {
+  const lang = (value ?? 'pt').toLowerCase();
+  return SUPPORTED_LANGUAGES.includes(lang as SupportedLanguage)
+    ? (lang as SupportedLanguage)
+    : 'pt';
+};
+
 
 
 
@@ -48,6 +107,8 @@ export function LevelSections({ summary }: Props) {
 
   const { language: activeLanguage, t } = useLanguage();
   const language: Language = (activeLanguage ?? 'en') as Language;
+  const resolvedLanguage = resolveLanguage(activeLanguage);
+  const copy = SECTION_COPY[resolvedLanguage];
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -128,7 +189,11 @@ export function LevelSections({ summary }: Props) {
     key: K,
     defaultValue: string,
   ): string => {
-    return labelFallbacks[key]?.[language] ?? defaultValue;
+    return (
+      labelFallbacks[key]?.[language] ??
+      labelFallbacks[key]?.[resolvedLanguage as Language] ??
+      defaultValue
+    );
   };
 
   const courseCardLabels = {
@@ -224,7 +289,7 @@ export function LevelSections({ summary }: Props) {
         if ((error as any)?.name === 'AbortError') return;
         console.error('LevelSections fallback error:', error);
         if (!cancelled) {
-          setFallbackError('Nao foi possivel carregar os cursos associados aos niveis. Atualiza para tentar novamente.');
+          setFallbackError(copy.coursesLoadError);
         }
       } finally {
         if (!cancelled) {
@@ -238,7 +303,13 @@ export function LevelSections({ summary }: Props) {
       cancelled = true;
       controller.abort();
     };
-  }, [summary, hasServerCourses]);
+  }, [summary, hasServerCourses, copy]);
+
+  useEffect(() => {
+    if (fallbackError && fallbackError !== copy.coursesLoadError) {
+      setFallbackError(copy.coursesLoadError);
+    }
+  }, [copy, fallbackError]);
 
 
 
@@ -248,7 +319,7 @@ export function LevelSections({ summary }: Props) {
 
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
 
-        Autentica-te para explorar os cursos de cada nivel.
+        {copy.authRequired}
 
       </div>
 
@@ -292,6 +363,8 @@ export function LevelSections({ summary }: Props) {
             labels={courseCardLabels}
             language={language}
             startCourseMeta={startCourseMeta}
+            copy={copy}
+            startHere={summary?.startHere ?? null}
           />
         );
 
@@ -315,6 +388,8 @@ type LevelSectionProps = {
   labels: CourseCardLabels;
   language: Language;
   startCourseMeta: StartCourseMeta | null;
+  copy: SectionCopy;
+  startHere: StartHereState | null;
 };
 
 
@@ -329,7 +404,23 @@ function LevelSection({
   labels,
   language,
   startCourseMeta,
+  copy,
+  startHere,
 }: LevelSectionProps) {
+
+  const normalizedLevelSlug = normalizeLevelSlugValue(level.slug);
+  const startCourseProgress =
+    normalizedLevelSlug === 'cadets' && startHere
+      ? startHere.progressPercent ?? 0
+      : 0;
+  const displayProgress = Math.max(level.progressPercent ?? 0, startCourseProgress);
+  const lessonsProgressLabel =
+    normalizedLevelSlug === 'cadets' &&
+    startHere &&
+    typeof startHere.totalLessons === 'number' &&
+    startHere.totalLessons > 0
+      ? `${startHere.completedLessons ?? 0}/${startHere.totalLessons} ${copy.lessonsProgress}`
+      : null;
 
   const accent = level.accentColor || '#1ccfdd';
 
@@ -429,13 +520,13 @@ function LevelSection({
 
             <span className="text-xs uppercase tracking-[0.4em] text-slate-400">
 
-              Progresso
+              {copy.progressLabel}
 
             </span>
 
             <span className="text-sm text-white">
 
-              {Math.min(level.progressPercent, 100)}%
+              {Math.min(displayProgress, 100)}%
 
             </span>
 
@@ -449,7 +540,7 @@ function LevelSection({
 
               style={{
 
-                width: `${Math.min(level.progressPercent, 100)}%`,
+                width: `${Math.min(displayProgress, 100)}%`,
 
                 background: accent,
 
@@ -458,6 +549,10 @@ function LevelSection({
             />
 
           </div>
+
+          {lessonsProgressLabel && (
+            <p className="text-xs text-slate-400 mt-1">{lessonsProgressLabel}</p>
+          )}
 
         </div>
 
@@ -483,9 +578,9 @@ function LevelSection({
 
             {isFallbackLoading
 
-              ? 'A carregar cursos atribu?dos a este nivel...'
+              ? copy.loadingCourses
 
-              : 'Ainda n?o existem cursos atribu?dos a este nivel.'}
+              : copy.noCourses}
 
           </div>
 
@@ -502,6 +597,7 @@ function LevelSection({
               language={language}
               isLevelLocked={isLocked}
               startCourseMeta={startCourseMeta}
+              copy={copy}
             />
 
           ))
@@ -536,6 +632,7 @@ function CourseCard({
   labels,
   language,
   startCourseMeta,
+  copy,
 }: {
   course: LevelCourseSummary;
   level: ProgressSummary['levels'][number];
@@ -544,6 +641,7 @@ function CourseCard({
   labels: CourseCardLabels;
   language: Language;
   startCourseMeta: StartCourseMeta | null;
+  copy: SectionCopy;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isPrimaryStartCourse =
@@ -608,12 +706,12 @@ function CourseCard({
           />
         ) : (
           <div className="flex h-44 items-center justify-center bg-gradient-to-br from-cyan-500/10 to-indigo-900/30 text-xs uppercase tracking-[0.3em] text-white/60">
-            Sem imagem
+            {copy.noImage}
           </div>
         )}
         {course.isStartCourse && (
           <span className="absolute left-3 top-3 rounded-full border border-cyan-300/60 bg-black/60 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-200">
-            Ponto de partida
+            {copy.startBadge}
           </span>
         )}
         <div className="absolute right-3 top-3">
@@ -685,7 +783,7 @@ function CourseCard({
           >
             {isLevelLocked ? (
               <>
-                <Lock className="h-3 w-3" /> Nivel bloqueado
+                <Lock className="h-3 w-3" /> {copy.lockedBadge}
               </>
             ) : (
               <>
@@ -800,6 +898,12 @@ function formatRange(min?: number | null, max?: number | null) {
 
   return `${lower}+ XP`;
 
+}
+
+function normalizeLevelSlugValue(value?: string | null): string {
+  const normalized = normalizeSlugCandidate(value);
+  if (normalized) return normalized;
+  return typeof value === 'string' ? value : '';
 }
 
 
