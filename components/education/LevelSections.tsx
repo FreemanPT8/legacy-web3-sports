@@ -10,9 +10,9 @@ import { ArrowRight, Lock, CheckCircle, ChevronDown, Award, BookOpen, Layers3, U
 
 import { cn } from '@/lib/utils';
 
-import type { ProgressSummary, StartCourseMeta, StartHereState } from '@/lib/education/progressSummary';
+import type { ProgressSummary, StartCourseMeta } from '@/lib/education/progressSummary';
 
-import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
+import type { LevelCourseSummary, StartHereState } from '@/lib/education/unlockEngine';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
