@@ -167,45 +167,6 @@ export default function CoursesPage() {
     return val === key ? fallback : val;
   };
 
-  const heroHighlights = [
-    {
-      key: 'xp',
-      label: tr('courses.stats.totalXP', 'XP acumulado'),
-      value: `${xpTotalValue.toLocaleString()} XP`,
-      description: tr(
-        'courses.stats.totalXPDesc',
-        'XP total ganho nos cursos, missões e desafios.',
-      ),
-      accentClass: 'text-[#5af3ff]',
-    },
-    {
-      key: 'start-course',
-      label: tr('courses.stats.startCourse', 'Curso inicial'),
-      value:
-        startLessonsTotal > 0
-          ? `${startLessonsDone}/${startLessonsTotal}`
-          : `${startCourseProgressPercent}%`,
-      description: tr(
-        'courses.stats.startCourseDesc',
-        'Progresso registado no curso obrigatório.',
-      ),
-      accentClass: 'text-[#fdd87c]',
-    },
-    {
-      key: 'levels',
-      label: tr('courses.stats.levelsUnlocked', 'Níveis desbloqueados'),
-      value:
-        visibleLevelsCount > 0
-          ? `${unlockedLevelsCount}/${visibleLevelsCount}`
-          : unlockedLevelsCount.toString(),
-      description: tr(
-        'courses.stats.levelsUnlockedDesc',
-        'Camadas disponíveis na Linha Temporal.',
-      ),
-      accentClass: 'text-emerald-300',
-    },
-  ];
-
   const courseOverviewStats = [
     {
       key: 'courses',
@@ -370,51 +331,12 @@ export default function CoursesPage() {
                 <div className="absolute -top-16 -left-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
                 <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
               </div>
-              <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)]">
+              <div className="relative">
                 <StartHereHero
                   summary={progressSummary}
                   state={progressState}
                   preferredLanguage={language}
                 />
-                <div className="space-y-4">
-                  {heroHighlights.map((highlight) => (
-                    <div
-                      key={highlight.key}
-                      className="rounded-2xl border border-white/15 bg-[#000c12]/60 p-4 shadow-lg shadow-black/40"
-                    >
-                      <p className="text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
-                        {highlight.label}
-                      </p>
-                      <p className={`text-3xl font-semibold ${highlight.accentClass}`}>
-                        {highlight.value}
-                      </p>
-                      <p className="text-sm text-slate-300">{highlight.description}</p>
-                    </div>
-                  ))}
-                  <div className="rounded-2xl border border-white/10 bg-[#020b16]/80 p-5 shadow-lg shadow-black/40">
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
-                      {tr('courses.stats.timelineTitle', 'Linha temporal')}
-                    </p>
-                    <p className="mt-3 text-2xl font-semibold text-white">
-                      {levelSummary?.label || tr('courses.stats.defaultLevel', 'Cadete')}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-300">
-                      {levelSummary?.nextLevelLabel && typeof levelSummary?.xpToNext === 'number'
-                        ? `${levelSummary.xpToNext.toLocaleString()} XP → ${levelSummary.nextLevelLabel}`
-                        : tr(
-                            'courses.stats.timelineDesc',
-                            'Completa cursos e badges para subir de escalão.',
-                          )}
-                    </p>
-                    <Link
-                      href="#levels"
-                      className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100 transition hover:border-cyan-200 hover:text-white"
-                    >
-                      {tr('courses.stats.viewTimeline', 'Ver Linha XP')}
-                      <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  </div>
-                </div>
               </div>
             </section>
 
