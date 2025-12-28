@@ -187,6 +187,23 @@ export default function CoursesPage() {
     },
   ];
 
+  const heroLabel = tr('courses.hero.label', 'ACADEMIA LEGACY');
+  const heroTitle = tr('courses.hero.title', 'Academia Legacy XP Hub');
+  const heroSubtitle = tr(
+    'courses.hero.subtitle',
+    'Curso obrigatório, trilhos oficiais e XP centralizado para desbloquear toda a experiência.',
+  );
+  const heroBadge = tr('courses.hero.badge', 'Sistema XP Oficial');
+  const timelineLabel = tr('courses.timeline.label', 'Academia Legacy');
+  const timelineTitle = tr(
+    'courses.timeline.heading',
+    'Linha Temporal de XP',
+  );
+  const timelineSubtitle = tr(
+    'courses.timeline.description',
+    'Acompanha cada nível, o XP necessário e os badges que desbloqueias ao longo da jornada.',
+  );
+
   useEffect(() => {
     if (USE_COURSE_HUB_V2) {
       return;
@@ -326,17 +343,35 @@ export default function CoursesPage() {
       <main className="flex-1 py-8 bg-gradient-to-b from-[#000c12] via-[#00141f] to-[#021c27]">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl space-y-10">
-            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-2xl shadow-black/40">
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-2xl shadow-black/40">
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute -top-16 -left-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
                 <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
               </div>
-              <div className="relative">
-                <StartHereHero
-                  summary={progressSummary}
-                  state={progressState}
-                  preferredLanguage={language}
-                />
+              <div className="relative grid gap-10 lg:grid-cols-[1.05fr,1fr] lg:items-center">
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                      {heroLabel}
+                    </p>
+                    <h1 className="text-4xl font-semibold text-[#fdd87c] md:text-5xl">
+                      {heroTitle}
+                    </h1>
+                    <p className="text-base text-slate-100/90 leading-relaxed">
+                      {heroSubtitle}
+                    </p>
+                  </div>
+                  <Badge className="w-fit border border-white/10 bg-cyan-500/15 text-cyan-100">
+                    {heroBadge}
+                  </Badge>
+                </div>
+                <div className="relative">
+                  <StartHereHero
+                    summary={progressSummary}
+                    state={progressState}
+                    preferredLanguage={language}
+                  />
+                </div>
               </div>
             </section>
 
@@ -345,7 +380,18 @@ export default function CoursesPage() {
                 <div className="absolute -top-20 -right-12 h-60 w-60 rounded-full bg-cyan-500/10 blur-3xl" />
                 <div className="absolute -bottom-16 -left-12 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
               </div>
-              <div className="relative">
+              <div className="relative space-y-6">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+                    {timelineLabel}
+                  </p>
+                  <h2 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
+                    {timelineTitle}
+                  </h2>
+                  <p className="text-sm text-slate-200 max-w-3xl">
+                    {timelineSubtitle}
+                  </p>
+                </div>
                 <LevelTimeline summary={progressSummary} state={progressState} />
               </div>
             </section>
