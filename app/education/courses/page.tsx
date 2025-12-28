@@ -323,7 +323,7 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
-      <main className="flex-1 py-8">
+      <main className="flex-1 py-8 bg-gradient-to-b from-[#000c12] via-[#00141f] to-[#021c27]">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl space-y-10">
             <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-2xl shadow-black/40">
@@ -340,10 +340,27 @@ export default function CoursesPage() {
               </div>
             </section>
 
-            <LevelTimeline summary={progressSummary} state={progressState} />
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#031b27] px-6 py-6 shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-20 -right-12 h-60 w-60 rounded-full bg-cyan-500/10 blur-3xl" />
+                <div className="absolute -bottom-16 -left-12 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
+              </div>
+              <div className="relative">
+                <LevelTimeline summary={progressSummary} state={progressState} />
+              </div>
+            </section>
 
-            <section id="levels">
-              <LevelSections summary={progressSummary} />
+            <section
+              id="levels"
+              className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020c18] via-[#00141f] to-[#021c27] px-6 py-8 shadow-[0_25px_60px_rgba(2,10,20,0.65)]"
+            >
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-16 -left-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                <div className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+              </div>
+              <div className="relative">
+                <LevelSections summary={progressSummary} />
+              </div>
             </section>
 
             <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
@@ -618,7 +635,19 @@ export default function CoursesPage() {
         </section>
       </div>
     </div>
-    <NextUnlockCTA summary={progressSummary} state={progressState} />
+    <section className="mt-10">
+      <div className="container mx-auto px-4 max-w-5xl">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-2xl shadow-black/40">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-16 -right-12 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative">
+            <NextUnlockCTA summary={progressSummary} state={progressState} />
+          </div>
+        </div>
+      </div>
+    </section>
       </main>
       <Footer />
     </div>
