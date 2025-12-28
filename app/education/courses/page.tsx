@@ -346,7 +346,7 @@ export default function CoursesPage() {
               <LevelSections summary={progressSummary} />
             </section>
 
-            <section className="rounded-3xl border border-white/10 bg-[#02070d] px-6 py-8 shadow-[0_25px_60px_rgba(0,0,0,0.55)]">
+            <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#010915] via-[#01050b] to-[#000305] px-6 py-8 shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.6em] text-[#fdd87c]">
@@ -366,7 +366,7 @@ export default function CoursesPage() {
                   {courseOverviewStats.map((stat) => (
                     <div
                       key={stat.key}
-                      className="rounded-2xl border border-white/10 bg-[#000c12]/70 px-4 py-3 text-center"
+                      className="rounded-2xl border border-white/15 bg-gradient-to-b from-[#051423]/80 to-[#01070d] px-4 py-3 text-center shadow-[0_8px_25px_rgba(0,0,0,0.35)]"
                     >
                       <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">
                         {stat.label}
@@ -379,7 +379,7 @@ export default function CoursesPage() {
                 </div>
               </div>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-[#000c12]/60 px-4 py-2 text-sm text-slate-200">
+                <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-gradient-to-r from-[#031225]/80 to-[#021018]/80 px-4 py-2 text-sm text-slate-100 shadow-[0_10px_30px_rgba(3,12,20,0.5)]">
                   {user ? (
                     <>
                       <span>
@@ -395,7 +395,10 @@ export default function CoursesPage() {
                   )}
                 </div>
                 {!user && (
-                  <Button onClick={() => router.push('/login')} className="w-full sm:w-auto">
+                  <Button
+                    onClick={() => router.push('/login')}
+                    className="w-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 text-[#00121c] font-semibold shadow-[0_10px_30px_rgba(8,145,178,0.35)] transition hover:from-cyan-400 hover:via-sky-400 hover:to-emerald-300 sm:w-auto"
+                  >
                     {tr('auth.login', 'Inicia sessão para ganhar XP')}
                   </Button>
                 )}
@@ -404,7 +407,7 @@ export default function CoursesPage() {
                 {USE_COURSE_HUB_V2 ? (
                   <CourseHubV2 />
                 ) : courses.length === 0 ? (
-                  <Card className="border border-white/10 bg-[#000c12]/70">
+                  <Card className="border border-white/10 bg-gradient-to-br from-[#04121b]/80 via-[#02070d] to-[#000306]">
                     <CardContent className="py-10 text-center text-slate-300">
                       {tr(
                         'courses.noCourses',
@@ -456,12 +459,12 @@ export default function CoursesPage() {
                   const initials = getInitials(title);
 
                   return (
-                    <Card
-                      key={course.id}
-                      className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#04121b] via-[#020a12] to-[#01060d] shadow-[0_25px_55px_rgba(0,0,0,0.45)] transition hover:border-cyan-400/70 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
-                    >
+                    <Card
+                      key={course.id}
+                      className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#05182c] via-[#020912] to-[#000508] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
+                    >
                       {/* Thumbnail / Placeholder */}
-                      <div className="relative overflow-hidden border border-white/10 bg-[#030a14]">
+                      <div className="relative overflow-hidden border border-white/10 bg-[#010915]">
                         {imageUrl ? (
                           <img
                             src={imageUrl}
@@ -469,21 +472,21 @@ export default function CoursesPage() {
                             className="h-40 w-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-400">
-                            <div className="flex flex-col items-center text-white">
+                          <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-cyan-500/25 via-sky-500/20 to-emerald-400/25 text-cyan-100">
+                            <div className="flex flex-col items-center text-white">
                               <div className="mb-1 flex items-center gap-2">
                                 <BookOpen className="h-6 w-6" />
                                 <span className="text-xl font-bold">
                                   {initials}
                                 </span>
                               </div>
-                              <span className="text-[11px] uppercase tracking-[0.3em] opacity-80">
+                              <span className="text-[11px] uppercase tracking-[0.3em] text-white/70">
                                 {tr('courses.defaultCourseLabel', 'Curso Legacy')}
                               </span>
                             </div>
                           </div>
                         )}
-                        <div className="absolute right-3 top-3">
+                        <div className="absolute right-3 top-3">
                           {getLevelBadge(course.level)}
                         </div>
                       </div>

@@ -288,7 +288,7 @@ export function LevelTimeline({ summary, state, className }: LevelTimelineProps)
   return (
     <div
       className={cn(
-        'rounded-3xl border border-white/10 bg-[#02050a] p-6 text-white shadow-[0_25px_60px_rgba(4,6,11,0.66)]',
+        'rounded-3xl border border-white/10 bg-gradient-to-br from-[#010813] via-[#01050c] to-[#000307] p-6 text-white shadow-[0_30px_70px_rgba(2,8,20,0.7)]',
         className,
       )}
     >
