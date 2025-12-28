@@ -346,16 +346,20 @@ export default function CoursesPage() {
               <LevelSections summary={progressSummary} />
             </section>
 
-            <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#010915] via-[#01050b] to-[#000305] px-6 py-8 shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-20 -right-16 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+                <div className="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+              </div>
+              <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.6em] text-[#fdd87c]">
+                  <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                     {tr('nav.courses', 'Cursos')}
                   </p>
-                  <h2 className="mt-2 text-3xl font-semibold text-white md:text-4xl">
+                  <h2 className="mt-2 text-3xl font-semibold text-[#fdd87c] md:text-4xl">
                     {tr('courses.mainTitle', 'Cursos')}
                   </h2>
-                  <p className="mt-2 max-w-2xl text-sm text-slate-300">
+                  <p className="mt-2 max-w-2xl text-sm text-slate-100">
                     {tr(
                       'courses.mainSubtitle',
                       'Percursos estruturados sobre Web3, a blockchain Apertum e o ecossistema desportivo. Ganha XP à medida que avanças.',
@@ -366,9 +370,9 @@ export default function CoursesPage() {
                   {courseOverviewStats.map((stat) => (
                     <div
                       key={stat.key}
-                      className="rounded-2xl border border-white/15 bg-gradient-to-b from-[#051423]/80 to-[#01070d] px-4 py-3 text-center shadow-[0_8px_25px_rgba(0,0,0,0.35)]"
+                      className="rounded-2xl border border-white/15 bg-[#000c12]/40 px-4 py-3 text-center shadow-lg shadow-black/40"
                     >
-                      <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">
+                      <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">
                         {stat.label}
                       </p>
                       <p className="mt-2 text-2xl font-semibold text-[#5af3ff]">
@@ -378,8 +382,8 @@ export default function CoursesPage() {
                   ))}
                 </div>
               </div>
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-gradient-to-r from-[#031225]/80 to-[#021018]/80 px-4 py-2 text-sm text-slate-100 shadow-[0_10px_30px_rgba(3,12,20,0.5)]">
+              <div className="relative mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-gradient-to-r from-[#031225]/90 to-[#010e17]/90 px-4 py-2 text-sm text-slate-100 shadow-[0_10px_30px_rgba(3,12,20,0.5)]">
                   {user ? (
                     <>
                       <span>
@@ -397,7 +401,7 @@ export default function CoursesPage() {
                 {!user && (
                   <Button
                     onClick={() => router.push('/login')}
-                    className="w-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 text-[#00121c] font-semibold shadow-[0_10px_30px_rgba(8,145,178,0.35)] transition hover:from-cyan-400 hover:via-sky-400 hover:to-emerald-300 sm:w-auto"
+                    className="w-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] transition hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045] sm:w-auto"
                   >
                     {tr('auth.login', 'Inicia sessão para ganhar XP')}
                   </Button>
