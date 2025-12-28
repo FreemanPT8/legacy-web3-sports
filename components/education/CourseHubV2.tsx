@@ -163,14 +163,14 @@ export function CourseHubV2() {
               type="button"
               onClick={() => handleToggleLevel(level.slug)}
               className={cn(
-                'group relative w-full rounded-3xl border border-white/10 bg-[#050b10] p-6 text-left text-white shadow-2xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/80',
+                'group relative w-full rounded-3xl border border-white/10 bg-gradient-to-br from-[#041421] via-[#020910] to-[#01060b] p-6 text-left text-white shadow-[0_25px_60px_rgba(3,10,20,0.6)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/80',
                 'before:absolute before:inset-0 before:-z-10 before:rounded-3xl before:bg-gradient-to-br',
                 styles.accent,
                 isLocked ? 'opacity-60' : 'opacity-100',
                 isExpanded ? 'border-cyan-400/70' : '',
               )}
             >
-              <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
+              <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#fdd87c]/80">
                 <span>{formatLevelName(level.slug)}</span>
                 <span
                   className={cn(
@@ -208,7 +208,7 @@ export function CourseHubV2() {
               </div>
 
               <div className="mt-6">
-                <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+              <div className="mb-2 flex items-center justify-between text-xs text-cyan-200/80">
                   <span>Progresso</span>
                   <span>{level.progressPercent}%</span>
                 </div>
@@ -249,9 +249,9 @@ export function CourseHubV2() {
             </button>
 
             {isExpanded && (
-              <div className="mt-4 rounded-3xl border border-white/10 bg-black/40 p-4 text-sm text-white">
+              <div className="mt-4 rounded-3xl border border-white/10 bg-[#01060d]/80 p-4 text-sm text-white">
                 {courses.length === 0 ? (
-                  <div className="rounded-2xl border border-white/5 bg-white/5 p-4 text-center text-slate-300">
+                  <div className="rounded-2xl border border-dashed border-white/15 bg-transparent p-4 text-center text-slate-300">
                     Ainda não existem cursos atribuídos a este nível.
                   </div>
                 ) : (
@@ -266,7 +266,7 @@ export function CourseHubV2() {
                         <div
                           key={course.id}
                           className={cn(
-                            'flex flex-col gap-3 rounded-2xl border border-white/5 bg-white/5 p-4 md:flex-row md:items-center md:justify-between',
+                            'flex flex-col gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-[#031626] via-[#010910] to-[#000508] p-4 md:flex-row md:items-center md:justify-between',
                             isCourseLocked ? 'opacity-70' : 'opacity-100',
                           )}
                         >
@@ -303,7 +303,7 @@ export function CourseHubV2() {
                             <Link
                               href={coursePath}
                               onClick={(event) => event.stopPropagation()}
-                              className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white transition hover:border-white/60"
+                              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[#00121c] shadow-[0_8px_25px_rgba(8,145,178,0.35)] transition hover:from-cyan-400 hover:via-sky-400 hover:to-emerald-300"
                             >
                               Ver curso
                               <ArrowRight className="h-3 w-3" />
@@ -327,10 +327,10 @@ export function CourseHubV2() {
     if (!start) return null;
 
     return (
-      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-black p-6 shadow-2xl">
+      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#031a2b] via-[#010b12] to-[#000509] p-6 shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">
+            <p className="text-sm uppercase tracking-[0.3em] text-[#fdd87c]/80">
               Curso inicial
             </p>
             <h3 className="mt-2 text-3xl font-semibold text-white">
@@ -342,7 +342,7 @@ export function CourseHubV2() {
           </div>
           <div className="flex w-full flex-col items-center gap-4 md:w-80">
             <div className="w-full">
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+              <div className="mb-2 flex items-center justify-between text-xs text-cyan-200/80">
                 <span>Progresso</span>
                 <span>
                   {start.completedLessons}/{start.totalLessons} lições
@@ -350,7 +350,7 @@ export function CourseHubV2() {
               </div>
               <div className="h-2 rounded-full bg-white/10">
                 <div
-                  className="h-2 rounded-full bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 transition-all"
+                  className="h-2 rounded-full bg-gradient-to-r from-cyan-400 via-sky-500 to-emerald-400 transition-all"
                   style={{ width: `${Math.min(start.progressPercent, 100)}%` }}
                 />
               </div>
@@ -364,8 +364,8 @@ export function CourseHubV2() {
               className={cn(
                 'inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-medium transition',
                 start.isCompleted
-                  ? 'border border-white/20 text-white hover:border-white/40 hover:bg-white/5'
-                  : 'bg-white text-black hover:bg-slate-100',
+                  ? 'border border-white/30 text-white hover:border-white/60 hover:bg-white/5'
+                  : 'bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 text-[#00121c] shadow-[0_12px_35px_rgba(8,145,178,0.35)] hover:from-cyan-400 hover:via-sky-400 hover:to-emerald-300',
               )}
             >
               {start.isCompleted ? 'Explorar cursos' : 'Continuar curso'}
@@ -383,31 +383,31 @@ export function CourseHubV2() {
   const hasError = status === 'error';
 
   return (
-    <div className="space-y-10 rounded-3xl border border-white/5 bg-[#02070d] p-6 shadow-inner shadow-black/40 sm:p-8">
+    <div className="space-y-10 rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00121d] to-[#021b28] p-6 shadow-[0_30px_70px_rgba(2,8,20,0.65)] sm:p-8">
       <div>
-        <div className="flex items-center gap-3 text-sm uppercase tracking-[0.4em] text-slate-500">
-          <span className="h-px flex-1 bg-slate-700/50" />
+        <div className="flex items-center gap-3 text-sm uppercase tracking-[0.4em] text-[#fdd87c]">
+          <span className="h-px flex-1 bg-[#fdd87c]/30" />
           {START_SECTION_TITLE}
-          <span className="h-px flex-1 bg-slate-700/50" />
+          <span className="h-px flex-1 bg-[#fdd87c]/30" />
         </div>
         <h2 className="mt-4 text-3xl font-semibold text-white">
           {unlockState?.startHere?.isCompleted
             ? 'Pronto para novos desafios'
             : 'Tudo começa aqui'}
         </h2>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-sm text-slate-300">
           Completa o curso inicial para desbloquear a Academia Legacy.
         </p>
       </div>
 
       {isLoading && (
-        <div className="rounded-3xl border border-white/5 bg-black/20 p-6 text-center text-sm text-slate-400">
+        <div className="rounded-3xl border border-white/10 bg-[#01060d]/70 p-6 text-center text-sm text-slate-300">
           A carregar o teu progresso...
         </div>
       )}
 
       {hasError && (
-        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-6 text-center text-sm text-red-200">
+        <div className="rounded-3xl border border-red-500/30 bg-red-500/15 p-6 text-center text-sm text-red-100">
           Não foi possível carregar a Grelha de Partida. Atualiza a página ou tenta novamente mais tarde.
         </div>
       )}
@@ -415,26 +415,26 @@ export function CourseHubV2() {
       {!isLoading && !hasError && startCard}
 
       <div className="pt-4">
-        <div className="flex items-center gap-3 text-sm uppercase tracking-[0.4em] text-slate-500">
-          <span className="h-px flex-1 bg-slate-700/50" />
+        <div className="flex items-center gap-3 text-sm uppercase tracking-[0.4em] text-[#fdd87c]">
+          <span className="h-px flex-1 bg-[#fdd87c]/30" />
           {LEVELS_SECTION_TITLE}
-          <span className="h-px flex-1 bg-slate-700/50" />
+          <span className="h-px flex-1 bg-[#fdd87c]/30" />
         </div>
         <h2 className="mt-4 text-3xl font-semibold text-white">
           Desbloqueia a tua progressão
         </h2>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-sm text-slate-300">
           Progride pelos níveis e desbloqueia conteúdo premium da Academia Legacy.
         </p>
 
         {isLoading && (
-          <div className="mt-6 rounded-3xl border border-white/5 bg-black/20 p-6 text-center text-sm text-slate-400">
+          <div className="mt-6 rounded-3xl border border-white/10 bg-[#01060d]/70 p-6 text-center text-sm text-slate-300">
             A sincronizar estados dos níveis...
           </div>
         )}
 
         {hasError && (
-          <div className="mt-6 rounded-3xl border border-red-500/20 bg-red-500/10 p-6 text-center text-sm text-red-200">
+          <div className="mt-6 rounded-3xl border border-red-500/30 bg-red-500/15 p-6 text-center text-sm text-red-100">
             Não foi possível carregar os níveis. Volta mais tarde.
           </div>
         )}
@@ -444,7 +444,7 @@ export function CourseHubV2() {
             {levelCards.length > 0 ? (
               levelCards
             ) : (
-              <div className="col-span-full rounded-3xl border border-white/5 bg-black/20 p-6 text-center text-sm text-slate-400">
+              <div className="col-span-full rounded-3xl border border-white/10 bg-[#01060d]/70 p-6 text-center text-sm text-slate-300">
                 Nenhum nível disponível neste momento.
               </div>
             )}
