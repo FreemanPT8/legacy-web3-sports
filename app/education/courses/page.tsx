@@ -411,7 +411,7 @@ export default function CoursesPage() {
                 {USE_COURSE_HUB_V2 ? (
                   <CourseHubV2 />
                 ) : courses.length === 0 ? (
-                  <Card className="border border-white/10 bg-gradient-to-br from-[#04121b]/80 via-[#02070d] to-[#000306]">
+                  <Card className="border border-white/10 bg-gradient-to-br from-[#020b16]/80 via-[#00141f] to-[#021c27]">
                     <CardContent className="py-10 text-center text-slate-300">
                       {tr(
                         'courses.noCourses',
@@ -460,147 +460,156 @@ export default function CoursesPage() {
                   const imageUrl =
                     course.image_url || course.thumbnail_url || null;
 
-                  const initials = getInitials(title);
-
-                  return (
+                  const initials = getInitials(title);
+
+
+
+                  return (
+
                     <Card
                       key={course.id}
-                      className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#05182c] via-[#020912] to-[#000508] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
+                      className="flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-[#031423] via-[#010b14] to-[#00060a] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
                     >
-                      {/* Thumbnail / Placeholder */}
                       <div className="relative overflow-hidden border border-white/10 bg-[#010915]">
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={title}
-                            className="h-40 w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-cyan-500/25 via-sky-500/20 to-emerald-400/25 text-cyan-100">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={title}
+                            className="h-40 w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-[#fdd87c]/20 via-[#5af3ff]/15 to-transparent text-cyan-100">
                             <div className="flex flex-col items-center text-white">
-                              <div className="mb-1 flex items-center gap-2">
-                                <BookOpen className="h-6 w-6" />
-                                <span className="text-xl font-bold">
-                                  {initials}
-                                </span>
-                              </div>
+                              <div className="mb-1 flex items-center gap-2">
+                                <BookOpen className="h-6 w-6 text-[#fdd87c]" />
+                                <span className="text-xl font-bold text-white">
+                                  {initials}
+                                </span>
+                              </div>
                               <span className="text-[11px] uppercase tracking-[0.3em] text-white/70">
-                                {tr('courses.defaultCourseLabel', 'Curso Legacy')}
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                                {tr('courses.defaultCourseLabel', 'Curso Legacy')}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="absolute right-3 top-3">
-                          {getLevelBadge(course.level)}
-                        </div>
-                      </div>
-
-                      <CardHeader className="space-y-3 pb-3">
-                        <div>
-                          <CardTitle className="text-lg text-white">{title}</CardTitle>
-                          {isCourseCreator && (
-                            <div className="mt-2">
-                              <Badge className="flex w-fit items-center gap-1 border border-white/20 bg-[#14718f] text-white">
-                                <PenSquare className="h-3 w-3" />
-                                Creator
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {xpRequired > 0 && (
-                            <Badge
-                              variant="outline"
-                              className="border-[#fdd87c]/40 bg-[#fdd87c]/10 text-[#fdd87c] text-[11px] uppercase tracking-[0.3em]"
-                            >
-                              {xpRequired} XP
-                            </Badge>
-                          )}
-                        </div>
-                        {description && (
-                          <p className="text-sm text-slate-300 line-clamp-3">
-                            {description}
-                          </p>
-                        )}
-                      </CardHeader>
-
-                      <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0">
-                        <div className="flex flex-col gap-2 text-sm text-slate-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4 text-cyan-300" />
-                              <span>
-                                {totalModules}{' '}
-                                {tr('courses.modules', 'm?dulos')}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4 text-cyan-300" />
-                              <span>
-                                {totalLessons}{' '}
-                                {tr('courses.lessons', 'li??es')}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 text-base text-white">
-                              <Award className="h-4 w-4 text-cyan-300" />
-                              <span>
-                                {totalXP}{' '}
-                                {tr('courses.totalXP', 'XP dispon?vel')}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-slate-300">
-                              <Users className="h-4 w-4 text-cyan-300" />
-                              <span>
-                                {completionsCount}{' '}
-                                {tr(
-                                  'courses.completions',
-                                  'utilizadores conclu?ram',
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-2 flex items-center justify-between">
-                          {isLocked ? (
-                            <div className="flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/10 px-3 py-1 text-xs text-rose-100">
-                              <Lock className="h-3 w-3" />
-                              <span>
-                                {tr('courses.unlockAt', 'Desbloqueia aos')}{' '}
-                                <strong>{xpRequired} XP</strong>
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-100">
-                              <CheckCircle className="h-3 w-3" />
-                              <span>
-                                {tr(
-                                  'courses.unlocked',
-                                  'J? podes aceder a este curso',
-                                )}
-                              </span>
-                            </div>
-                          )}
-
-                          <Link href={`/education/courses/${course.id}`}>
-                            <Button
-                              size="sm"
-                              className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-[#02070d] hover:from-cyan-400 hover:to-emerald-400"
-                              disabled={isLocked && !user}
-                            >
-                              <span className="text-xs">
-                                {tr('courses.viewDetails', 'Ver curso')}
-                              </span>
-                              <ArrowRight className="ml-1 h-3 w-3" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
+                          {getLevelBadge(course.level)}
+                        </div>
+                      </div>
+
+                      <CardHeader className="space-y-3 pb-3">
+                        <div>
+                          <CardTitle className="text-lg text-white">{title}</CardTitle>
+
+                          {isCourseCreator && (
+                            <div className="mt-2">
+                              <Badge className="flex w-fit items-center gap-1 border border-white/20 bg-[#14718f] text-white">
+                                <PenSquare className="h-3 w-3" />
+                                Creator
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          {xpRequired > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="border-[#fdd87c]/40 bg-[#fdd87c]/10 text-[#fdd87c] text-[11px] uppercase tracking-[0.3em]"
+                            >
+                              {xpRequired} XP
+                            </Badge>
+                          )}
+                        </div>
+
+                        {description && (
+                          <p className="text-sm text-slate-300 line-clamp-3">
+                            {description}
+                          </p>
+                        )}
+                      </CardHeader>
+
+                      <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0">
+                        <div className="flex flex-col gap-2 text-sm text-slate-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4 text-[#5af3ff]" />
+                              <span>
+                                {totalModules}{' '}
+                                {tr('courses.modules', 'm?dulos')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4 text-[#5af3ff]" />
+                              <span>
+                                {totalLessons}{' '}
+                                {tr('courses.lessons', 'li??es')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-base text-white">
+                              <Award className="h-4 w-4 text-[#fdd87c]" />
+                              <span>
+                                {totalXP}{' '}
+                                {tr('courses.totalXP', 'XP dispon?vel')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-slate-300">
+                              <Users className="h-4 w-4 text-[#5af3ff]" />
+                              <span>
+                                {completionsCount}{' '}
+                                {tr(
+                                  'courses.completions',
+                                  'utilizadores conclu?ram',
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex items-center justify-between">
+                          {isLocked ? (
+                            <div className="flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/10 px-3 py-1 text-xs text-rose-100">
+                              <Lock className="h-3 w-3" />
+                              <span>
+                                {tr('courses.unlockAt', 'Desbloqueia aos')}{' '}
+                                <strong>{xpRequired} XP</strong>
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-100">
+                              <CheckCircle className="h-3 w-3" />
+                              <span>
+                                {tr(
+                                  'courses.unlocked',
+                                  'J? podes aceder a este curso',
+                                )}
+                              </span>
+                            </div>
+                          )}
+
+                          <Link href={/education/courses/}>
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                              disabled={isLocked && !user}
+                            >
+                              <span className="text-xs font-semibold">
+                                {tr('courses.viewDetails', 'Ver curso')}
+                              </span>
+                              <ArrowRight className="ml-1 h-3 w-3" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+
+                  );
+
 
                 })}
               </div>
