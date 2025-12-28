@@ -591,7 +591,7 @@ export default function CoursesPage() {
                             </div>
                           )}
 
-                          <Link href={/education/courses/}>
+                          <Link href={`/education/courses/${course.id}`}>
                             <Button
                               size="sm"
                               className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
