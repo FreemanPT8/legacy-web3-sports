@@ -434,7 +434,7 @@ function LevelSection({
 
       className={cn(
 
-        'rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 px-6 py-8 shadow-[0_20px_60px_rgba(2,6,12,0.55)]',
+        'rounded-3xl border border-white/10 bg-gradient-to-br from-[#031225]/70 via-[#01060d] to-[#000508] px-6 py-8 shadow-[0_25px_60px_rgba(3,10,20,0.65)]',
 
         isLocked && 'opacity-70',
 
@@ -452,13 +452,13 @@ function LevelSection({
 
           onClick={onToggle}
 
-          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#041421]/80 px-4 py-3 text-left text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
 
         >
 
           <div>
 
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+            <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/80">
 
               {level.shortLabel || level.title}
 
@@ -502,7 +502,7 @@ function LevelSection({
 
         <div>
 
-          <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+          <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">
 
             {level.shortLabel || level.title}
 
@@ -518,7 +518,7 @@ function LevelSection({
 
           <div className="flex items-center gap-2">
 
-            <span className="text-xs uppercase tracking-[0.4em] text-slate-400">
+            <span className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">
 
               {copy.progressLabel}
 
@@ -574,7 +574,7 @@ function LevelSection({
 
         {courses.length === 0 ? (
 
-          <div className="rounded-2xl border border-dashed border-white/10 bg-transparent p-4 text-sm text-slate-300">
+          <div className="rounded-2xl border border-dashed border-white/15 bg-[#01050b]/60 p-4 text-sm text-slate-300">
 
             {isFallbackLoading
 
@@ -691,12 +691,12 @@ function CourseCard({
   return (
     <div
       className={cn(
-        'w-full max-w-[360px] rounded-3xl border border-white/10 bg-[#030a14] p-4 shadow-[0_25px_55px_rgba(0,0,0,0.45)] transition hover:border-cyan-400/40 focus-within:border-cyan-200/60 mx-auto md:mx-0',
+        'w-full max-w-[380px] rounded-3xl border border-white/10 bg-gradient-to-b from-[#05182c] via-[#020912] to-[#000508] p-4 shadow-[0_30px_65px_rgba(3,10,25,0.6)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)] focus-within:border-cyan-200/70 mx-auto md:mx-0',
         isLevelLocked && 'opacity-70',
       )}
       style={{ borderColor: isLevelLocked ? '#1e293b40' : `${accent}55` }}
     >
-      <div className="relative overflow-hidden rounded-2xl border border-white/5">
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#010915]">
         {coverUrl ? (
           <img
             src={coverUrl}
@@ -705,17 +705,17 @@ function CourseCard({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-44 items-center justify-center bg-gradient-to-br from-cyan-500/10 to-indigo-900/30 text-xs uppercase tracking-[0.3em] text-white/60">
+          <div className="flex h-44 items-center justify-center bg-gradient-to-br from-cyan-500/20 via-sky-500/15 to-indigo-900/30 text-xs uppercase tracking-[0.3em] text-cyan-100">
             {copy.noImage}
           </div>
         )}
         {course.isStartCourse && (
-          <span className="absolute left-3 top-3 rounded-full border border-cyan-300/60 bg-black/60 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-200">
+          <span className="absolute left-3 top-3 rounded-full border border-cyan-300/70 bg-[#021727]/90 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
             {copy.startBadge}
           </span>
         )}
         <div className="absolute right-3 top-3">
-          <span className="rounded-full border border-white/30 bg-black/60 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-white">
+          <span className="rounded-full border border-white/40 bg-[#010b15]/90 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-slate-100">
             {levelLabel}
           </span>
         </div>
@@ -747,7 +747,7 @@ function CourseCard({
             </span>
           )}
           {courseLanguages && (
-            <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-slate-300">
+            <span className="rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
               {courseLanguages.map((lang) => lang?.toUpperCase()).join(' / ')}
             </span>
           )}
@@ -796,7 +796,7 @@ function CourseCard({
             <Link href={courseHref} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
               <Button
                 size="sm"
-                className="rounded-full bg-cyan-500 px-5 text-white hover:bg-cyan-400"
+                className="rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 px-5 text-[#00121c] font-semibold shadow-[0_10px_25px_rgba(8,145,178,0.35)] transition hover:from-cyan-400 hover:via-sky-400 hover:to-emerald-300"
                 disabled={isLevelLocked}
               >
                 {labels.viewCourse}
@@ -855,7 +855,7 @@ function CourseCard({
               <Link href={courseHref} onClick={() => setDetailsOpen(false)}>
                 <Button
                   size="sm"
-                  className="rounded-full bg-cyan-500 px-5 text-white hover:bg-cyan-400"
+                  className="rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 px-5 text-[#00121c] font-semibold shadow-[0_10px_25px_rgba(8,145,178,0.35)] transition hover:from-cyan-400 hover:via-sky-400 hover:to-emerald-300"
                   disabled={isLevelLocked}
                 >
                   {labels.viewCourse}
