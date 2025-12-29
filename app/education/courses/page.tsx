@@ -24,7 +24,10 @@ import { LevelSections } from '@/components/education/LevelSections';
 import { NextUnlockCTA } from '@/components/education/NextUnlockCTA';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import { buildFallbackProgressSummary } from '@/lib/education/fallbackSummary';
-import { START_HERE_FALLBACK_ID } from '@/lib/education/unlockLogic';
+import {
+  START_HERE_FALLBACK_ID,
+  START_HERE_SLUG,
+} from '@/lib/education/unlockLogic';
 import {
   BookOpen,
   Award,
@@ -55,6 +58,7 @@ type Course = {
   id: string;
   title: any;
   description: any;
+  slug?: string | null;
   level?: string | null;
   xp_threshold: number;
   xp_reward?: number | null;
@@ -264,9 +268,23 @@ export default function CoursesPage() {
     return () => controller.abort();
   }, [user, getToken]);
 
-  const getLevelBadge = (level?: string | null) => {
+  const getLevelBadge = (course: Course) => {
+    const level = course.level?.toLowerCase() ?? '';
+    const slug = ((course as any)?.slug || '').toString().toLowerCase();
+    const infantilLabel = tr('courses.level.infantil', 'Infantil');
     const baseClass =
       'border border-primary/70 bg-black/40 text-cyan-100 text-[11px] uppercase tracking-[0.3em] rounded-full px-3 py-1';
+
+    if (
+      slug === START_HERE_SLUG ||
+      course.id === START_HERE_FALLBACK_ID
+    ) {
+      return (
+        <Badge variant="outline" className={baseClass}>
+          {infantilLabel}
+        </Badge>
+      );
+    }
 
     switch (level) {
       case 'beginner':
@@ -511,7 +529,7 @@ export default function CoursesPage() {
                         )}
 
                         <div className="absolute right-3 top-3">
-                          {getLevelBadge(course.level)}
+                          {getLevelBadge(course)}
                         </div>
                       </div>
 
