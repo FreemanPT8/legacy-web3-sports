@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent, type Language } from '@/lib/i18n';
 import { START_HERE_FALLBACK_ID, START_HERE_SLUG } from '@/lib/education/unlockLogic';
+import { resolveCourseLevelOverride } from '@/lib/education/courseLevelOverrides';
 
 const START_COURSE_DESCRIPTION_FALLBACK: Record<Language, string> = {
   pt: 'Há momentos na vida em que o mundo muda mais rápido do que nós. Quando isso acontece, só há duas escolhas: fingir que nada se passa... ou reinventar-nos.',
@@ -31,16 +32,6 @@ const START_COURSE_DESCRIPTION_FALLBACK: Record<Language, string> = {
 
 const SUPPORTED_LANGUAGES = ['pt', 'es', 'en'] as const;
 type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
-
-const COURSE_LEVEL_OVERRIDES_BY_ID: Record<string, string> = {
-  [START_HERE_FALLBACK_ID]: 'cadets',
-  '416b0b74-ec44-4aea-be62-50c3ee60af29': 'infantil',
-};
-
-const COURSE_LEVEL_OVERRIDES_BY_SLUG: Record<string, string> = {
-  [START_HERE_SLUG]: 'cadets',
-  '416b0b74-ec44-4aea-be62-50c3ee60af29': 'infantil',
-};
 
 type SectionCopy = {
   authRequired: string;
@@ -1028,19 +1019,6 @@ function buildFallbackCoursesMap(
     acc[normalizedSlug].push(formatted);
     return acc;
   }, {} as Record<string, LevelCourseSummary[]>);
-}
-
-function resolveCourseLevelOverride(course: any): string | undefined {
-  if (!course) return undefined;
-  const idKey = typeof course.id === 'string' ? course.id : undefined;
-  const slugKey =
-    typeof course.slug === 'string'
-      ? course.slug.toLowerCase()
-      : undefined;
-  return (
-    (idKey && COURSE_LEVEL_OVERRIDES_BY_ID[idKey]) ||
-    (slugKey && COURSE_LEVEL_OVERRIDES_BY_SLUG[slugKey])
-  );
 }
 
 function pickAuthorName(

@@ -23,6 +23,17 @@ const DEFAULT_START_COURSE = {
   primaryLanguage: 'pt',
 };
 
+const XP_KEY_TO_ACADEMY_SLUG: Record<string, string> = {
+  newcomer: 'cadets',
+  beginner: 'infantil',
+  intermediate: 'juveniles',
+  advanced: 'juniors',
+  expert: 'seniors',
+  hallOfFame: 'hall-of-fame',
+  master: 'master',
+  legend: 'legend',
+};
+
 export function buildFallbackProgressSummary(options: FallbackOptions = {}): ProgressSummary {
   const xpTotal = Math.max(0, options.xpTotal ?? 0);
   const startCourseSlug = options.startCourseSlug || DEFAULT_START_COURSE.slug;
@@ -45,6 +56,7 @@ export function buildFallbackProgressSummary(options: FallbackOptions = {}): Pro
   const xpToNext = nextLevel ? Math.max(nextLevel.min - xpTotal, 0) : null;
 
   const levels = XP_LEVELS.map((level) => {
+    const academySlug = XP_KEY_TO_ACADEMY_SLUG[level.key] || level.key;
     const maxXp =
       typeof (level as { max?: number }).max === 'number'
         ? (level as { max: number }).max
@@ -59,7 +71,7 @@ export function buildFallbackProgressSummary(options: FallbackOptions = {}): Pro
           : 0;
 
     return {
-      slug: level.key,
+      slug: academySlug,
       title: level.label,
       shortLabel: level.label,
       minXp: level.min,

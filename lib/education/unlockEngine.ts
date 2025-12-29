@@ -10,6 +10,7 @@ import {
   type UnlockCondition,
   type UnlockConditionContext,
 } from '@/lib/education/unlockLogic';
+import { resolveCourseLevelOverride } from '@/lib/education/courseLevelOverrides';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -625,6 +626,10 @@ function normalizeCourseLevelSlug(
   course: RawCourse,
   fallbackStartLevelSlug: string = START_LEVEL_SLUG,
 ): string | null {
+  const overrideSlug = resolveCourseLevelOverride(course);
+  if (overrideSlug) {
+    return overrideSlug;
+  }
   const directSlug =
     typeof course.academy_level_slug === 'string'
       ? course.academy_level_slug.trim()

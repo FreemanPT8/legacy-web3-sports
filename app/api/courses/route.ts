@@ -8,6 +8,51 @@ import {
 
 const db = supabaseAdmin ?? supabase;
 
+type IdentityLike = {
+  name?: string | null;
+  full_name?: string | null;
+  display_name?: string | null;
+  username?: string | null;
+};
+
+const pickAuthorName = (
+  ...candidates: Array<string | null | undefined>
+): string | undefined => {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  }
+  return undefined;
+};
+
+const resolveIdentityName = (
+  identity?: IdentityLike | string | null,
+): string | undefined => {
+  if (!identity) return undefined;
+  if (typeof identity === 'string') {
+    return identity.trim() || undefined;
+  }
+  return pickAuthorName(
+    identity.name,
+    identity.full_name,
+    identity.display_name,
+    identity.username,
+  );
+};
+
+const resolveRequestUserName = (requestUser?: any): string | undefined => {
+  if (!requestUser) return undefined;
+  return pickAuthorName(
+    requestUser.full_name,
+    requestUser.display_name,
+    requestUser.username,
+  );
+};
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -19,11 +64,14 @@ export async function GET(request: NextRequest) {
     const isAdminUser =
       !!user &&
       (user.role === 'Super Admin' || user.role === 'Admin');
+    const requestUserName = resolveRequestUserName(user);
 
     // 1) Cursos publicados
     const { data: rawCourses, error: courseError } = await db
       .from('courses')
-      .select('*')
+      .select(
+        '*, author_profile:users!courses_author_id_fkey(username, full_name, display_name)',
+      )
       .order('order', { ascending: true });
 
     if (courseError) {
@@ -54,7 +102,7 @@ export async function GET(request: NextRequest) {
       if (courseAuthorIds.length > 0) {
         const { data: authors, error: authorsError } = await db
           .from('users')
-          .select('id, username')
+          .select('id, username, full_name, display_name')
           .in('id', courseAuthorIds);
 
         if (authorsError) {
@@ -64,7 +112,9 @@ export async function GET(request: NextRequest) {
           );
         } else {
           (authors || []).forEach((u: any) => {
-            authorMap[u.id] = u.username || 'User';
+            authorMap[u.id] =
+              pickAuthorName(u.full_name, u.display_name, u.username) ||
+              'User';
           });
         }
       }
@@ -76,9 +126,13 @@ export async function GET(request: NextRequest) {
             (!c.author_id && isAdminUser));
 
         const authorName =
-          (c.author_id && authorMap[c.author_id]) ||
-          c.author ||
-          (isCourseCreator ? user!.username : 'Admin');
+          pickAuthorName(
+            c.author_name,
+            resolveIdentityName(c.author),
+            resolveIdentityName(c.author_profile),
+            c.author_id ? authorMap[c.author_id] : undefined,
+            isCourseCreator ? requestUserName : undefined,
+          ) || 'Admin';
 
         return {
           ...c,
@@ -166,14 +220,15 @@ export async function GET(request: NextRequest) {
     if (allAuthorIds.length > 0) {
       const { data: authors, error: authorsError } = await db
         .from('users')
-        .select('id, username')
+        .select('id, username, full_name, display_name')
         .in('id', allAuthorIds);
 
       if (authorsError) {
         console.error('Error fetching authors:', authorsError);
       } else {
         (authors || []).forEach((u: any) => {
-          authorMap[u.id] = u.username || 'User';
+          authorMap[u.id] =
+            pickAuthorName(u.full_name, u.display_name, u.username) || 'User';
         });
       }
     }
@@ -312,18 +367,37 @@ export async function GET(request: NextRequest) {
           .sort(
             (a: any, b: any) => (a.order || 0) - (b.order || 0),
           )
-          .map((lesson: any) => ({
-            ...lesson,
-            author_name:
-              (lesson.author_id && authorMap[lesson.author_id]) ||
-              lesson.author ||
-              'Admin',
-          }));
+          .map((lesson: any) => {
+            const isLessonCreator =
+              !!user &&
+              ((lesson.author_id && lesson.author_id === user.id) ||
+                (!lesson.author_id && isAdminUser));
+            const lessonAuthorName =
+              pickAuthorName(
+                lesson.author_name,
+                resolveIdentityName(lesson.author),
+                lesson.author_id ? authorMap[lesson.author_id] : undefined,
+                isLessonCreator ? requestUserName : undefined,
+              ) || 'Admin';
+
+            return {
+              ...lesson,
+              author_name: lessonAuthorName,
+            };
+          });
+
+        const isModuleCreator =
+          !!user &&
+          ((topic?.author_id && topic.author_id === user.id) ||
+            (!topic?.author_id && isAdminUser));
 
         const moduleAuthorName =
-          (topic?.author_id && authorMap[topic.author_id]) ||
-          topic?.author ||
-          'Admin';
+          pickAuthorName(
+            topic?.author_name,
+            resolveIdentityName(topic?.author),
+            topic?.author_id ? authorMap[topic.author_id] : undefined,
+            isModuleCreator ? requestUserName : undefined,
+          ) || 'Admin';
 
         const moduleXpAvailable = moduleLessons.reduce(
           (sum: number, lesson: any) => sum + getLessonReward(lesson),
@@ -389,9 +463,13 @@ export async function GET(request: NextRequest) {
           (!course.author_id && isAdminUser));
 
       const authorName =
-        (course.author_id && authorMap[course.author_id]) ||
-        course.author ||
-        (isCourseCreator ? user!.username : 'Admin');
+        pickAuthorName(
+          course.author_name,
+          resolveIdentityName(course.author),
+          resolveIdentityName(course.author_profile),
+          course.author_id ? authorMap[course.author_id] : undefined,
+          isCourseCreator ? requestUserName : undefined,
+        ) || 'Admin';
 
       const xpDistributed = xpDistributedByCourse[course.id] || 0;
 
