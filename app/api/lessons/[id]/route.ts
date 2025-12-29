@@ -11,6 +11,42 @@ interface RouteContext {
 
 const db = supabaseAdmin ?? supabase;
 
+type IdentityLike = {
+  name?: string | null;
+  full_name?: string | null;
+  display_name?: string | null;
+  username?: string | null;
+};
+
+const pickAuthorName = (
+  ...candidates: Array<string | null | undefined>
+): string | undefined => {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  }
+  return undefined;
+};
+
+const resolveIdentityName = (
+  identity?: IdentityLike | string | null,
+): string | undefined => {
+  if (!identity) return undefined;
+  if (typeof identity === 'string') {
+    return identity.trim() || undefined;
+  }
+  return pickAuthorName(
+    identity.name,
+    identity.full_name,
+    identity.display_name,
+    identity.username,
+  );
+};
+
 type CompletionRow = {
   user_id: string | null;
   xp_earned: number | null;
@@ -66,14 +102,19 @@ export async function GET(
     if (authorIds.size > 0) {
       const { data: authors, error: authorsError } = await db
         .from('users')
-        .select('id, username')
+        .select('id, username, full_name, display_name')
         .in('id', Array.from(authorIds));
 
       if (authorsError) {
         console.error('Error fetching lesson/module authors:', authorsError);
       } else {
         (authors || []).forEach((author: any) => {
-          authorMap[author.id] = author.username || 'User';
+          authorMap[author.id] =
+            pickAuthorName(
+              author.full_name,
+              author.display_name,
+              author.username,
+            ) || 'User';
         });
       }
     }
@@ -111,7 +152,12 @@ export async function GET(
     );
 
     const resolvedAuthorName =
-      (resolvedAuthorId && authorMap[resolvedAuthorId]) || null;
+      pickAuthorName(
+        resolvedAuthorId ? authorMap[resolvedAuthorId] : undefined,
+        resolveIdentityName((matchedLesson as any)?.author),
+        resolveIdentityName((matchedTopic as any)?.author),
+        resolveIdentityName((matchedCourse as any)?.author),
+      ) || null;
 
     const rawContent =
       typeof matchedLesson.content === 'string'
@@ -160,9 +206,16 @@ export async function GET(
     };
 
     const moduleAuthorName =
-      (matchedTopic?.author_id &&
-        authorMap[matchedTopic.author_id]) ||
-      null;
+      pickAuthorName(
+        matchedTopic?.author_id
+          ? authorMap[matchedTopic.author_id]
+          : undefined,
+        resolveIdentityName((matchedTopic as any)?.author),
+        matchedCourse?.author_id
+          ? authorMap[matchedCourse.author_id]
+          : undefined,
+        resolveIdentityName((matchedCourse as any)?.author),
+      ) || null;
 
     const lessonModule = {
       id: matchedTopic?.id,

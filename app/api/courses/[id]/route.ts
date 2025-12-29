@@ -26,15 +26,6 @@ type IdentityLike = {
   username?: string | null;
 };
 
-const resolveRequestUserName = (requestUser?: any): string | undefined => {
-  if (!requestUser) return undefined;
-  return pickAuthorName(
-    requestUser.full_name,
-    requestUser.display_name,
-    requestUser.username,
-  );
-};
-
 const pickAuthorName = (
   ...candidates: Array<string | null | undefined>
 ): string | undefined => {
@@ -76,7 +67,6 @@ export async function GET(
     const isAdminUser =
       !!user &&
       (user.role === 'Super Admin' || user.role === 'Admin');
-    const requestUserName = resolveRequestUserName(user);
 
     // 1) Curso
     let rawCourse: any = null;
@@ -345,7 +335,6 @@ export async function GET(
                 l.author_name,
                 resolveIdentityName(l.author),
                 l.author_id ? authorMap[l.author_id] : undefined,
-                isLessonCreator ? requestUserName : undefined,
               ) || 'Admin';
 
             return {
@@ -368,7 +357,6 @@ export async function GET(
             topic?.author_name,
             resolveIdentityName(topic?.author),
             topic?.author_id ? authorMap[topic.author_id] : undefined,
-            isModuleCreator ? requestUserName : undefined,
           ) || 'Admin';
 
         // XP disponível no módulo (soma dos xp_reward das lições)
@@ -458,7 +446,6 @@ export async function GET(
         rawCourse.author_name,
         resolveIdentityName(rawCourse.author),
         rawCourse.author_id ? authorMap[rawCourse.author_id] : undefined,
-        isCourseCreator ? requestUserName : undefined,
       ) || 'Admin';
 
     const course = {

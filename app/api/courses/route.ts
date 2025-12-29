@@ -44,15 +44,6 @@ const resolveIdentityName = (
   );
 };
 
-const resolveRequestUserName = (requestUser?: any): string | undefined => {
-  if (!requestUser) return undefined;
-  return pickAuthorName(
-    requestUser.full_name,
-    requestUser.display_name,
-    requestUser.username,
-  );
-};
-
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -64,7 +55,6 @@ export async function GET(request: NextRequest) {
     const isAdminUser =
       !!user &&
       (user.role === 'Super Admin' || user.role === 'Admin');
-    const requestUserName = resolveRequestUserName(user);
 
     // 1) Cursos publicados
     const detailedSelect =
@@ -146,7 +136,6 @@ export async function GET(request: NextRequest) {
             resolveIdentityName(c.author),
             resolveIdentityName(c.author_profile),
             c.author_id ? authorMap[c.author_id] : undefined,
-            isCourseCreator ? requestUserName : undefined,
           ) || 'Admin';
 
         return {
@@ -383,16 +372,11 @@ export async function GET(request: NextRequest) {
             (a: any, b: any) => (a.order || 0) - (b.order || 0),
           )
           .map((lesson: any) => {
-            const isLessonCreator =
-              !!user &&
-              ((lesson.author_id && lesson.author_id === user.id) ||
-                (!lesson.author_id && isAdminUser));
             const lessonAuthorName =
               pickAuthorName(
                 lesson.author_name,
                 resolveIdentityName(lesson.author),
                 lesson.author_id ? authorMap[lesson.author_id] : undefined,
-                isLessonCreator ? requestUserName : undefined,
               ) || 'Admin';
 
             return {
@@ -401,17 +385,11 @@ export async function GET(request: NextRequest) {
             };
           });
 
-        const isModuleCreator =
-          !!user &&
-          ((topic?.author_id && topic.author_id === user.id) ||
-            (!topic?.author_id && isAdminUser));
-
         const moduleAuthorName =
           pickAuthorName(
             topic?.author_name,
             resolveIdentityName(topic?.author),
             topic?.author_id ? authorMap[topic.author_id] : undefined,
-            isModuleCreator ? requestUserName : undefined,
           ) || 'Admin';
 
         const moduleXpAvailable = moduleLessons.reduce(
@@ -483,7 +461,6 @@ export async function GET(request: NextRequest) {
           resolveIdentityName(course.author),
           resolveIdentityName(course.author_profile),
           course.author_id ? authorMap[course.author_id] : undefined,
-          isCourseCreator ? requestUserName : undefined,
         ) || 'Admin';
 
       const xpDistributed = xpDistributedByCourse[course.id] || 0;
