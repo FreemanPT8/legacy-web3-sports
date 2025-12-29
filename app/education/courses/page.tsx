@@ -276,7 +276,7 @@ export default function CoursesPage() {
     const slug = ((course as any)?.slug || '').toString().toLowerCase();
     const infantilLabel = tr('courses.level.infantil', 'Infantil');
     const baseClass =
-      'border border-primary/70 bg-black/40 text-cyan-100 text-[11px] uppercase tracking-[0.3em] rounded-full px-3 py-1';
+      'border border-white/15 bg-cyan-500/15 text-cyan-100 text-[11px] uppercase tracking-[0.3em] rounded-full px-3 py-1';
 
     if (
       INFANTIL_COURSE_SLUGS.includes(slug) ||
@@ -330,7 +330,7 @@ export default function CoursesPage() {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4" />
             <p className="text-slate-300">
               {tr('courses.loading', 'A carregar cursos...')}
             </p>
@@ -344,7 +344,7 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
-      <main className="flex-1 py-8 bg-gradient-to-b from-[#000c12] via-[#00141f] to-[#021c27]">
+      <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl space-y-10">
             <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-2xl shadow-black/40">
@@ -421,7 +421,7 @@ export default function CoursesPage() {
                 </div>
               </div>
               <div className="relative mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-gradient-to-r from-[#031225]/90 to-[#010e17]/90 px-4 py-2 text-sm text-slate-100 shadow-[0_10px_30px_rgba(3,12,20,0.5)]">
+                <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-[#000c12]/80 px-4 py-2 text-sm text-slate-300 md:text-base shadow-[0_10px_30px_rgba(3,12,20,0.5)]">
                   {user ? (
                     <>
                       <span>
@@ -449,7 +449,7 @@ export default function CoursesPage() {
                 {USE_COURSE_HUB_V2 ? (
                   <CourseHubV2 />
                 ) : courses.length === 0 ? (
-                  <Card className="border border-white/10 bg-gradient-to-br from-[#020b16]/80 via-[#00141f] to-[#021c27]">
+                  <Card className="border border-white/10 bg-[#000c12]/80">
                     <CardContent className="py-10 text-center text-slate-300">
                       {tr(
                         'courses.noCourses',
@@ -506,9 +506,9 @@ export default function CoursesPage() {
 
                     <Card
                       key={course.id}
-                      className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-[#031423] via-[#010b14] to-[#00060a] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
+                      className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#04131b] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/70 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
                     >
-                      <div className="relative overflow-hidden border border-white/10 bg-[#010915]">
+                      <div className="relative overflow-hidden border border-white/10 bg-[#000c12]">
                         {imageUrl ? (
                           <img
                             src={imageUrl}
@@ -516,7 +516,7 @@ export default function CoursesPage() {
                             className="h-40 w-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-[#fdd87c]/20 via-[#5af3ff]/15 to-transparent text-cyan-100">
+                          <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-[#020b16] via-[#000c12] to-[#04131b] text-cyan-100">
                             <div className="flex flex-col items-center text-white">
                               <div className="mb-1 flex items-center gap-2">
                                 <BookOpen className="h-6 w-6 text-[#fdd87c]" />
@@ -612,16 +612,16 @@ export default function CoursesPage() {
 
                         <div className="mt-4 flex items-center justify-between gap-3">
                           {isLocked ? (
-                            <div className="flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/10 px-3 py-1 text-xs text-rose-100">
-                              <Lock className="h-3 w-3" />
+                            <div className="flex items-center gap-2 rounded-full border border-white/20 bg-[#04131b] px-3 py-1 text-xs text-slate-200">
+                              <Lock className="h-3 w-3 text-[#fdd87c]" />
                               <span>
                                 {tr('courses.unlockAt', 'Desbloqueia aos')}{' '}
                                 <strong>{xpRequired} XP</strong>
                               </span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-100">
-                              <CheckCircle className="h-3 w-3" />
+                            <div className="flex items-center gap-2 rounded-full border border-cyan-400/70 bg-cyan-500/10 px-3 py-1 text-xs text-white">
+                              <CheckCircle className="h-3 w-3 text-[#5af3ff]" />
                               <span>
                                 {tr(
                                   'courses.unlocked',
@@ -636,7 +636,7 @@ export default function CoursesPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="border-white/40 text-white hover:bg-white/10"
+                                className="border-white/50 bg-black/40 text-white hover:bg-black/60"
                               >
                                 <span className="text-xs font-semibold">
                                   {tr('courses.learnMore', 'Saber mais')}
