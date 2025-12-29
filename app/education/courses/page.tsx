@@ -28,6 +28,9 @@ import {
   START_HERE_FALLBACK_ID,
   START_HERE_SLUG,
 } from '@/lib/education/unlockLogic';
+
+const INFANTIL_COURSE_IDS = [START_HERE_FALLBACK_ID, '416b0b74-ec44-4aea-be62-50c3ee60af29'];
+const INFANTIL_COURSE_SLUGS = [START_HERE_SLUG, '416b0b74-ec44-4aea-be62-50c3ee60af29'];
 import {
   BookOpen,
   Award,
@@ -276,8 +279,8 @@ export default function CoursesPage() {
       'border border-primary/70 bg-black/40 text-cyan-100 text-[11px] uppercase tracking-[0.3em] rounded-full px-3 py-1';
 
     if (
-      slug === START_HERE_SLUG ||
-      course.id === START_HERE_FALLBACK_ID
+      INFANTIL_COURSE_SLUGS.includes(slug) ||
+      INFANTIL_COURSE_IDS.includes(course.id)
     ) {
       return (
         <Badge variant="outline" className={baseClass}>
