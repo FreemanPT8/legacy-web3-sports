@@ -48,7 +48,7 @@ type HeroCopy = {
 
 const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
   en: {
-    badge: 'mandatory course',
+    badge: 'Academia Web3 Legacy',
     contentAvailable: 'Content available in',
     currentLevel: 'Current level',
     xpHint: 'to',
@@ -72,7 +72,7 @@ const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
     nextContentLabel: 'Next content',
   },
   pt: {
-    badge: 'curso obrigatório',
+    badge: 'Academia Web3 Legacy',
     contentAvailable: 'Conteúdo disponível em',
     currentLevel: 'Nível atual',
     xpHint: 'para',
@@ -96,7 +96,7 @@ const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
     nextContentLabel: 'Próximo conteúdo',
   },
   es: {
-    badge: 'curso obligatorio',
+    badge: 'Academia Web3 Legacy',
     contentAvailable: 'Contenido disponible en',
     currentLevel: 'Nivel actual',
     xpHint: 'para',
