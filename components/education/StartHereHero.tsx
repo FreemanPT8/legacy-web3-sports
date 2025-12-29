@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import type { ProgressFetchState } from '@/components/education/LevelTimeline';
+import type { LevelCourseSummary } from '@/lib/education/unlockEngine';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { XP_LEVELS } from '@/lib/education/xpLevels';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +43,7 @@ type HeroCopy = {
   lessons: (done: number, total: number) => string;
   lessonsSync: string;
   lessonsEmpty: string;
+  nextContentLabel: string;
 };
 
 const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
@@ -67,6 +69,7 @@ const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
     lessons: (done, total) => `${done}/${total} lessons`,
     lessonsSync: 'Syncing lessons...',
     lessonsEmpty: '0 lessons tracked',
+    nextContentLabel: 'Next content',
   },
   pt: {
     badge: 'curso obrigatório',
@@ -90,6 +93,7 @@ const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
     lessons: (done, total) => `${done}/${total} lições`,
     lessonsSync: 'A sincronizar lições...',
     lessonsEmpty: '0 lições registadas',
+    nextContentLabel: 'Próximo conteúdo',
   },
   es: {
     badge: 'curso obligatorio',
@@ -113,6 +117,7 @@ const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
     lessons: (done, total) => `${done}/${total} lecciones`,
     lessonsSync: 'Sincronizando lecciones...',
     lessonsEmpty: '0 lecciones registradas',
+    nextContentLabel: 'Próximo contenido',
   },
 };
 
@@ -179,6 +184,13 @@ type StartHereHeroProps = {
   summary: ProgressSummary | null;
   state: ProgressFetchState;
   preferredLanguage?: string;
+};
+
+type NextContentTarget = {
+  type: 'startCourse' | 'course' | 'review';
+  href: string;
+  courseName?: string;
+  levelName?: string;
 };
 
 export function StartHereHero({ summary, state, preferredLanguage }: StartHereHeroProps) {
@@ -252,9 +264,84 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
     startCourse?.slug ||
     startHere?.slug ||
     'comeca-aqui';
-  const ctaHref = `/education/courses/${courseTarget}`;
 
-  const ctaLabel = !hasStarted ? heroCopy.startCta : !isCompleted ? heroCopy.continueCta : heroCopy.reviewCta;
+  const normalizedCoursesByLevel = useMemo<Record<string, LevelCourseSummary[]>>(() => {
+    if (!summary?.coursesByLevel) {
+      return {};
+    }
+    return Object.entries(summary.coursesByLevel).reduce<Record<string, LevelCourseSummary[]>>(
+      (acc, [levelSlug, list]) => {
+        const safeList = Array.isArray(list) ? list : [];
+        acc[levelSlug] = safeList;
+        if (typeof levelSlug === 'string') {
+          acc[levelSlug.toLowerCase()] = safeList;
+        }
+        const normalizedKey = normalizeLevelSlugValue(levelSlug);
+        if (normalizedKey) {
+          acc[normalizedKey] = safeList;
+        }
+        return acc;
+      },
+      {},
+    );
+  }, [summary?.coursesByLevel]);
+
+  const nextContentTarget = useMemo<NextContentTarget>(() => {
+    const fallbackHref = `/education/courses/${courseTarget}`;
+    const baseTarget: NextContentTarget = {
+      type: 'startCourse',
+      href: fallbackHref,
+      courseName: heroTitle,
+    };
+
+    if (!summary || !startHere) {
+      return baseTarget;
+    }
+
+    if (!startHere.isCompleted) {
+      return baseTarget;
+    }
+
+    const availableLevels = summary.levels || [];
+    for (const level of availableLevels) {
+      if (!level?.isUnlocked) continue;
+      const normalizedKey = normalizeLevelSlugValue(level.slug);
+      const candidates =
+        normalizedCoursesByLevel[normalizedKey] ||
+        normalizedCoursesByLevel[level.slug] ||
+        normalizedCoursesByLevel[
+          typeof level.slug === 'string' ? level.slug.toLowerCase() : ''
+        ];
+
+      if (!Array.isArray(candidates)) continue;
+      const pendingCourse = candidates.find((course) => !course.isCompleted);
+      if (pendingCourse) {
+        const slug = pendingCourse.slug || pendingCourse.id;
+        if (!slug) continue;
+        return {
+          type: 'course',
+          href: `/education/courses/${slug}`,
+          courseName: pendingCourse.title,
+          levelName: level.title,
+        };
+      }
+    }
+
+    return {
+      type: 'review',
+      href: fallbackHref,
+      courseName: heroTitle,
+    };
+  }, [courseTarget, heroTitle, normalizedCoursesByLevel, startHere, summary]);
+
+  const hasNextCourseTarget = nextContentTarget.type === 'course';
+  const ctaLabel = !hasStarted
+    ? heroCopy.startCta
+    : hasNextCourseTarget
+      ? heroCopy.continueCta
+      : !isCompleted
+        ? heroCopy.continueCta
+        : heroCopy.reviewCta;
   const lessonsStatus =
     totalLessonsDerived > 0
       ? heroCopy.lessons(completedLessons, totalLessonsDerived)
@@ -431,17 +518,15 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
           )}
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {!isCompleted && (
-              <Link href={ctaHref}>
-                <Button
-                  size="lg"
-                  className="gap-2 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                >
-                  {ctaLabel}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            )}
+            <Link href={nextContentTarget.href}>
+              <Button
+                size="lg"
+                className="gap-2 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+              >
+                {ctaLabel}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
             <Button
               type="button"
               variant="ghost"
@@ -451,6 +536,18 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
               {heroCopy.viewRoadmap}
             </Button>
           </div>
+          {nextContentTarget.type === 'course' && (
+            <div className="mt-2 text-xs text-slate-400">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
+                {heroCopy.nextContentLabel}
+              </p>
+              <p className="text-sm text-white">
+                {nextContentTarget.levelName
+                  ? `${nextContentTarget.levelName} · ${nextContentTarget.courseName}`
+                  : nextContentTarget.courseName}
+              </p>
+            </div>
+          )}
 
           {isFallback && (
             <div className="mt-4 rounded-2xl border border-amber-400/30 bg-[#231903] px-4 py-3 text-xs text-amber-100">
@@ -707,4 +804,9 @@ function mapLabelToSlug(label: string): string | null {
     }
   }
   return null;
+}
+
+function normalizeLevelSlugValue(value?: string | null): string {
+  if (!value) return '';
+  return value.toString().trim().toLowerCase().replace(/[\s_]+/g, '-');
 }
