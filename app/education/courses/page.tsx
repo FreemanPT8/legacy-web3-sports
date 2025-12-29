@@ -485,7 +485,7 @@ export default function CoursesPage() {
 
                     <Card
                       key={course.id}
-                      className="flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-[#031423] via-[#010b14] to-[#00060a] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
+                      className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-[#031423] via-[#010b14] to-[#00060a] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
                     >
                       <div className="relative overflow-hidden border border-white/10 bg-[#010915]">
                         {imageUrl ? (
@@ -540,11 +540,13 @@ export default function CoursesPage() {
                           )}
                         </div>
 
-                        {description && (
-                          <p className="text-sm text-slate-300 line-clamp-3">
-                            {description}
-                          </p>
-                        )}
+                        <p className="text-sm text-slate-300 line-clamp-4 min-h-[72px]">
+                          {description ||
+                            tr(
+                              'courses.noDescription',
+                              'Descrição breve indisponível.',
+                            )}
+                        </p>
                       </CardHeader>
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0">
@@ -587,7 +589,7 @@ export default function CoursesPage() {
                           </div>
                         </div>
 
-                        <div className="mt-2 flex items-center justify-between">
+                        <div className="mt-4 flex items-center justify-between gap-3">
                           {isLocked ? (
                             <div className="flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/10 px-3 py-1 text-xs text-rose-100">
                               <Lock className="h-3 w-3" />
@@ -608,18 +610,31 @@ export default function CoursesPage() {
                             </div>
                           )}
 
-                          <Link href={`/education/courses/${course.id}`}>
-                            <Button
-                              size="sm"
-                              className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                              disabled={isLocked && !user}
-                            >
-                              <span className="text-xs font-semibold">
-                                {tr('courses.viewDetails', 'Ver curso')}
-                              </span>
-                              <ArrowRight className="ml-1 h-3 w-3" />
-                            </Button>
-                          </Link>
+                          <div className="flex flex-1 items-center justify-end gap-2">
+                            <Link href={`/education/courses/${course.id}`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-white/40 text-white hover:bg-white/10"
+                              >
+                                <span className="text-xs font-semibold">
+                                  {tr('courses.learnMore', 'Saber mais')}
+                                </span>
+                              </Button>
+                            </Link>
+                            <Link href={`/education/courses/${course.id}`}>
+                              <Button
+                                size="sm"
+                                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                                disabled={isLocked && !user}
+                              >
+                                <span className="text-xs font-semibold">
+                                  {tr('courses.viewDetails', 'Ver curso')}
+                                </span>
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
