@@ -577,14 +577,14 @@ export default function CoursesPage() {
                               <BookOpen className="h-4 w-4 text-[#5af3ff]" />
                               <span>
                                 {totalModules}{' '}
-                                {tr('courses.modules', 'm?dulos')}
+                                {tr('courses.modules', 'módulos')}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <BookOpen className="h-4 w-4 text-[#5af3ff]" />
                               <span>
                                 {totalLessons}{' '}
-                                {tr('courses.lessons', 'li??es')}
+                                {tr('courses.lessons', 'lições')}
                               </span>
                             </div>
                           </div>
@@ -594,7 +594,7 @@ export default function CoursesPage() {
                               <Award className="h-4 w-4 text-[#fdd87c]" />
                               <span>
                                 {totalXP}{' '}
-                                {tr('courses.totalXP', 'XP dispon?vel')}
+                                {tr('courses.totalXP', 'XP disponível')}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-slate-300">
@@ -603,7 +603,7 @@ export default function CoursesPage() {
                                 {completionsCount}{' '}
                                 {tr(
                                   'courses.completions',
-                                  'utilizadores conclu?ram',
+                                  'utilizadores concluíram',
                                 )}
                               </span>
                             </div>
@@ -625,7 +625,7 @@ export default function CoursesPage() {
                               <span>
                                 {tr(
                                   'courses.unlocked',
-                                  'J? podes aceder a este curso',
+                                  'Já podes aceder a este curso',
                                 )}
                               </span>
                             </div>
