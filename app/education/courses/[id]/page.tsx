@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 
 type AuthorIdentity = {
   id?: string | null;
@@ -279,6 +280,7 @@ const resolveCourseAuthorName = (
   course: Course,
   modules: Module[],
 ): string => {
+  const fallbackAuthorName = getDefaultAuthorName();
   const courseName = pickAuthorName(
     course.author_name,
     normalizeIdentityName(course.author),
@@ -303,20 +305,20 @@ const resolveCourseAuthorName = (
     }
   }
 
-  return 'Admin';
+  return fallbackAuthorName;
 };
 
 const resolveModuleAuthorName = (module: Module, fallback: string) =>
   pickAuthorName(
     module.author_name,
     normalizeIdentityName(module.author),
-  ) || fallback;
+  ) || fallback || getDefaultAuthorName();
 
 const resolveLessonAuthorName = (lesson: Lesson, fallback: string) =>
   pickAuthorName(
     lesson.author_name,
     normalizeIdentityName(lesson.author),
-  ) || fallback;
+  ) || fallback || getDefaultAuthorName();
 
 const sanitizeCourseDescription = (html: string) =>
   removeReadMoreMarker(html || '').replace(

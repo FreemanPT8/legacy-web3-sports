@@ -10,6 +10,7 @@ import {
   type UnlockCondition,
   type UnlockConditionContext,
 } from '@/lib/education/unlockLogic';
+import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 import { resolveCourseLevelOverride } from '@/lib/education/courseLevelOverrides';
 
 const db = supabaseAdmin ?? supabase;
@@ -760,10 +761,12 @@ function resolveIdentityName(value: any): string | undefined {
 }
 
 function resolveCourseAuthorNameFromRaw(course: RawCourse): string | undefined {
-  return pickAuthorName(
-    course.author_name,
-    resolveIdentityName(course.author),
-    resolveIdentityName(course.author_profile),
+  return (
+    pickAuthorName(
+      course.author_name,
+      resolveIdentityName(course.author),
+      resolveIdentityName(course.author_profile),
+    ) || getDefaultAuthorName()
   );
 }
 

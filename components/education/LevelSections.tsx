@@ -20,6 +20,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent, type Language } from '@/lib/i18n';
 import { START_HERE_FALLBACK_ID, START_HERE_SLUG } from '@/lib/education/unlockLogic';
 import { resolveCourseLevelOverride } from '@/lib/education/courseLevelOverrides';
+import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 
 const START_COURSE_DESCRIPTION_FALLBACK: Record<Language, string> = {
   pt: 'Há momentos na vida em que o mundo muda mais rápido do que nós. Quando isso acontece, só há duas escolhas: fingir que nada se passa... ou reinventar-nos.',
@@ -1057,6 +1058,7 @@ function resolveIdentityName(value: any): string | undefined {
 }
 
 function transformCourseRecord(course: any, language: Language): LevelCourseSummary | null {
+  const defaultAuthorName = getDefaultAuthorName();
   if (!course?.id) {
     return null;
   }
@@ -1103,7 +1105,7 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
       course.author_name,
       resolveIdentityName(course.author),
       resolveIdentityName(course.author_profile),
-    ) || undefined;
+    ) || defaultAuthorName;
 
   const coverImageUrl =
     course.image_url ||

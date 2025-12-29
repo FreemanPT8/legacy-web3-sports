@@ -8,6 +8,7 @@ import {
   normalizeLessonIdForStorage,
 } from '@/lib/lesson-id';
 import { resolveCourseSlug } from '@/lib/education/unlockEngine';
+import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 
 interface RouteContext {
   params: { id: string };
@@ -67,6 +68,7 @@ export async function GET(
     const isAdminUser =
       !!user &&
       (user.role === 'Super Admin' || user.role === 'Admin');
+    const defaultAuthorName = getDefaultAuthorName();
 
     // 1) Curso
     let rawCourse: any = null;
@@ -256,7 +258,7 @@ export async function GET(
               u.full_name,
               u.display_name,
               u.username,
-            ) || 'User';
+            ) || defaultAuthorName;
         });
       }
     }
@@ -335,7 +337,7 @@ export async function GET(
                 l.author_name,
                 resolveIdentityName(l.author),
                 l.author_id ? authorMap[l.author_id] : undefined,
-              ) || 'Admin';
+              ) || defaultAuthorName;
 
             return {
               ...l,
@@ -357,7 +359,7 @@ export async function GET(
             topic?.author_name,
             resolveIdentityName(topic?.author),
             topic?.author_id ? authorMap[topic.author_id] : undefined,
-          ) || 'Admin';
+          ) || defaultAuthorName;
 
         // XP disponível no módulo (soma dos xp_reward das lições)
         const moduleXpAvailable = moduleLessons.reduce(
@@ -446,7 +448,7 @@ export async function GET(
         rawCourse.author_name,
         resolveIdentityName(rawCourse.author),
         rawCourse.author_id ? authorMap[rawCourse.author_id] : undefined,
-      ) || 'Admin';
+      ) || defaultAuthorName;
 
     const course = {
       ...rawCourse,

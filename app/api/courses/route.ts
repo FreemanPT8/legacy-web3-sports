@@ -5,6 +5,7 @@ import {
   buildLessonIdVariants,
   normalizeLessonIdForStorage,
 } from '@/lib/lesson-id';
+import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -55,6 +56,7 @@ export async function GET(request: NextRequest) {
     const isAdminUser =
       !!user &&
       (user.role === 'Super Admin' || user.role === 'Admin');
+    const defaultAuthorName = getDefaultAuthorName();
 
     // 1) Cursos publicados
     const detailedSelect =
@@ -119,7 +121,7 @@ export async function GET(request: NextRequest) {
           (authors || []).forEach((u: any) => {
             authorMap[u.id] =
               pickAuthorName(u.full_name, u.display_name, u.username) ||
-              'User';
+              defaultAuthorName;
           });
         }
       }
@@ -136,7 +138,7 @@ export async function GET(request: NextRequest) {
             resolveIdentityName(c.author),
             resolveIdentityName(c.author_profile),
             c.author_id ? authorMap[c.author_id] : undefined,
-          ) || 'Admin';
+          ) || defaultAuthorName;
 
         return {
           ...c,
@@ -232,7 +234,8 @@ export async function GET(request: NextRequest) {
       } else {
         (authors || []).forEach((u: any) => {
           authorMap[u.id] =
-            pickAuthorName(u.full_name, u.display_name, u.username) || 'User';
+            pickAuthorName(u.full_name, u.display_name, u.username) ||
+            defaultAuthorName;
         });
       }
     }
@@ -377,7 +380,7 @@ export async function GET(request: NextRequest) {
                 lesson.author_name,
                 resolveIdentityName(lesson.author),
                 lesson.author_id ? authorMap[lesson.author_id] : undefined,
-              ) || 'Admin';
+              ) || defaultAuthorName;
 
             return {
               ...lesson,
@@ -390,7 +393,7 @@ export async function GET(request: NextRequest) {
             topic?.author_name,
             resolveIdentityName(topic?.author),
             topic?.author_id ? authorMap[topic.author_id] : undefined,
-          ) || 'Admin';
+          ) || defaultAuthorName;
 
         const moduleXpAvailable = moduleLessons.reduce(
           (sum: number, lesson: any) => sum + getLessonReward(lesson),
@@ -461,7 +464,7 @@ export async function GET(request: NextRequest) {
           resolveIdentityName(course.author),
           resolveIdentityName(course.author_profile),
           course.author_id ? authorMap[course.author_id] : undefined,
-        ) || 'Admin';
+        ) || defaultAuthorName;
 
       const xpDistributed = xpDistributedByCourse[course.id] || 0;
 

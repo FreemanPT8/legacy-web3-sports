@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
+import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 
 import {
   ArrowLeft,
@@ -79,6 +80,7 @@ export default function LessonPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { language, setLanguage, setLanguageUnsafe, t } = useLanguage();
+  const fallbackAuthorName = getDefaultAuthorName();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [module, setModule] = useState<ModuleWithLessons | null>(null);
@@ -258,7 +260,7 @@ export default function LessonPage() {
 
   const durationMinutes = lesson.estimated_time ?? 10;
   const creatorName =
-    lesson.author_name || (lesson.author_id ? 'Creator' : 'Admin');
+    lesson.author_name || fallbackAuthorName;
   const createdAtStr = lesson.created_at
     ? new Date(lesson.created_at).toLocaleDateString()
     : '-';

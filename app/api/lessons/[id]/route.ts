@@ -4,6 +4,7 @@ import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { splitReadMore } from '@/lib/read-more';
 import { fetchLessonContext } from '@/lib/lesson-context';
 import { buildLessonIdVariants } from '@/lib/lesson-id';
+import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 
 interface RouteContext {
   params: { id: string };
@@ -99,6 +100,8 @@ export async function GET(
 
     const authorMap: Record<string, string> = {};
 
+    const defaultAuthorName = getDefaultAuthorName();
+
     if (authorIds.size > 0) {
       const { data: authors, error: authorsError } = await db
         .from('users')
@@ -114,7 +117,7 @@ export async function GET(
               author.full_name,
               author.display_name,
               author.username,
-            ) || 'User';
+            ) || defaultAuthorName;
         });
       }
     }
@@ -157,7 +160,7 @@ export async function GET(
         resolveIdentityName((matchedLesson as any)?.author),
         resolveIdentityName((matchedTopic as any)?.author),
         resolveIdentityName((matchedCourse as any)?.author),
-      ) || null;
+      ) || defaultAuthorName;
 
     const rawContent =
       typeof matchedLesson.content === 'string'
@@ -215,7 +218,7 @@ export async function GET(
           ? authorMap[matchedCourse.author_id]
           : undefined,
         resolveIdentityName((matchedCourse as any)?.author),
-      ) || null;
+      ) || defaultAuthorName;
 
     const lessonModule = {
       id: matchedTopic?.id,
