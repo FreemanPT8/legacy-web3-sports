@@ -67,29 +67,44 @@ export async function GET(request: NextRequest) {
     const requestUserName = resolveRequestUserName(user);
 
     // 1) Cursos publicados
+    const detailedSelect =
+      '*, author_profile:users!courses_author_id_fkey(username, full_name, display_name)';
+    let coursesArray: any[] = [];
+
     const { data: rawCourses, error: courseError } = await db
       .from('courses')
-      .select(
-        '*, author_profile:users!courses_author_id_fkey(username, full_name, display_name)',
-      )
+      .select(detailedSelect)
       .order('order', { ascending: true });
 
     if (courseError) {
-      console.error('Error fetching courses:', courseError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load courses' },
-        { status: 500 },
+      console.warn(
+        'Error fetching courses with author_profile join, falling back to basic select:',
+        courseError,
       );
+      const { data: fallbackCourses, error: fallbackError } = await db
+        .from('courses')
+        .select('*')
+        .order('order', { ascending: true });
+
+      if (fallbackError) {
+        console.error('Error fetching courses (fallback):', fallbackError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to load courses' },
+          { status: 500 },
+        );
+      }
+
+      coursesArray = fallbackCourses || [];
+    } else {
+      coursesArray = rawCourses || [];
     }
 
-    if (rawCourses.length === 0) {
+    if (coursesArray.length === 0) {
       return NextResponse.json({
         success: true,
         courses: [],
       });
     }
-
-    const coursesArray: any[] = rawCourses;
 
     // Se não queremos módulos → só normalizamos autor e isCreator
     if (!includeModules) {
