@@ -1043,6 +1043,36 @@ function resolveCourseLevelOverride(course: any): string | undefined {
   );
 }
 
+function pickAuthorName(
+  ...candidates: Array<string | null | undefined>
+): string | undefined {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  }
+  return undefined;
+}
+
+function resolveIdentityName(value: any): string | undefined {
+  if (!value) return undefined;
+  if (typeof value === 'string') {
+    return value.trim() || undefined;
+  }
+  if (typeof value === 'object') {
+    return pickAuthorName(
+      value.full_name,
+      value.display_name,
+      value.name,
+      value.username,
+    );
+  }
+  return undefined;
+}
+
 function transformCourseRecord(course: any, language: Language): LevelCourseSummary | null {
   if (!course?.id) {
     return null;
@@ -1085,6 +1115,12 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
     : Array.isArray(course.availableLanguages)
       ? course.availableLanguages
       : undefined;
+  const authorName =
+    pickAuthorName(
+      course.author_name,
+      resolveIdentityName(course.author),
+      resolveIdentityName(course.author_profile),
+    ) || undefined;
 
   const coverImageUrl =
     course.image_url ||
@@ -1131,6 +1167,7 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
         ? course.total_xp
         : undefined,
     completionsCount: completionsCount ?? 0,
+    authorName,
   };
 }
 

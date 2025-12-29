@@ -34,6 +34,14 @@ type RawCourse = {
   xp_reward?: number | null;
   xp_reward_on_complete?: number | null;
   xp_threshold?: number | null;
+  author_id?: string | null;
+  author?: any;
+  author_name?: string | null;
+  author_profile?: {
+    username?: string | null;
+    full_name?: string | null;
+    display_name?: string | null;
+  } | null;
 };
 
 type RawLevel = {
@@ -69,6 +77,7 @@ export type LevelCourseSummary = {
   lessonsCount?: number;
   totalXp?: number;
   completionsCount?: number;
+  authorName?: string;
 };
 
 export type AcademyLevelState = {
@@ -136,7 +145,7 @@ async function loadAcademyLevels(): Promise<LoadedLevelsPayload> {
 async function loadCoursesForUnlock(): Promise<{ data: RawCourse[] }> {
   const filters = ['published.eq.true', 'is_start_course.eq.true', `id.eq.${START_HERE_FALLBACK_ID}`].join(',');
   const detailedSelect =
-    'id, title, description, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum, seo, available_languages, primary_language, image_url, thumbnail_url, xp_reward, xp_reward_on_complete, xp_threshold';
+    'id, title, description, published, academy_level_slug, is_required_in_level, is_start_course, academy_path_order, curriculum, seo, available_languages, primary_language, image_url, thumbnail_url, xp_reward, xp_reward_on_complete, xp_threshold, author_id, author, author_name, author_profile:users!courses_author_id_fkey(username, full_name, display_name)';
 
   const detailed = await db
     .from('courses')
@@ -153,7 +162,7 @@ async function loadCoursesForUnlock(): Promise<{ data: RawCourse[] }> {
     const fallback = await db
       .from('courses')
       .select(
-        'id, title, published, academy_level_slug, is_required_in_level, is_start_course, curriculum',
+        'id, title, published, academy_level_slug, is_required_in_level, is_start_course, curriculum, author_id, author, author_name',
       )
       .or(filters)
       .order('academy_level_slug', { ascending: true })
@@ -401,6 +410,7 @@ function buildCoursesByLevel(
 
       const resolvedSlug = resolveCourseSlug(course);
       const meta = buildCourseMetaSummary(course);
+      const authorName = resolveCourseAuthorNameFromRaw(course);
       const titleI18n =
         course.title && typeof course.title === 'object' && !Array.isArray(course.title)
           ? (course.title as Record<string, string>)
@@ -426,6 +436,7 @@ function buildCoursesByLevel(
         lessonsCount: meta.lessonsCount,
         totalXp: meta.totalXp,
         completionsCount: meta.completionsCount,
+        authorName,
       };
 
       acc.coursesByLevel[normalizedLevelSlug].push(summary);
@@ -711,6 +722,44 @@ function buildCourseMetaSummary(course: RawCourse): CourseMetaSummary {
     totalXp: structure.totalXp,
     completionsCount,
   };
+}
+
+function pickAuthorName(
+  ...candidates: Array<string | null | undefined>
+): string | undefined {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  }
+  return undefined;
+}
+
+function resolveIdentityName(value: any): string | undefined {
+  if (!value) return undefined;
+  if (typeof value === 'string') {
+    return value.trim() || undefined;
+  }
+  if (typeof value === 'object') {
+    return pickAuthorName(
+      value.full_name,
+      value.display_name,
+      value.name,
+      value.username,
+    );
+  }
+  return undefined;
+}
+
+function resolveCourseAuthorNameFromRaw(course: RawCourse): string | undefined {
+  return pickAuthorName(
+    course.author_name,
+    resolveIdentityName(course.author),
+    resolveIdentityName(course.author_profile),
+  );
 }
 
 function resolveCourseCoverImage(course: RawCourse): string | null {

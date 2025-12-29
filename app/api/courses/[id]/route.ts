@@ -19,6 +19,51 @@ const UUID_REGEX =
 
 const looksLikeUuid = (value: string) => UUID_REGEX.test(value);
 
+type IdentityLike = {
+  name?: string | null;
+  full_name?: string | null;
+  display_name?: string | null;
+  username?: string | null;
+};
+
+const resolveRequestUserName = (requestUser?: any): string | undefined => {
+  if (!requestUser) return undefined;
+  return pickAuthorName(
+    requestUser.full_name,
+    requestUser.display_name,
+    requestUser.username,
+  );
+};
+
+const pickAuthorName = (
+  ...candidates: Array<string | null | undefined>
+): string | undefined => {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  }
+  return undefined;
+};
+
+const resolveIdentityName = (
+  identity?: IdentityLike | string | null,
+): string | undefined => {
+  if (!identity) return undefined;
+  if (typeof identity === 'string') {
+    return identity.trim() || undefined;
+  }
+  return pickAuthorName(
+    identity.name,
+    identity.full_name,
+    identity.display_name,
+    identity.username,
+  );
+};
+
 export async function GET(
   request: NextRequest,
   context: RouteContext,
@@ -31,6 +76,7 @@ export async function GET(
     const isAdminUser =
       !!user &&
       (user.role === 'Super Admin' || user.role === 'Admin');
+    const requestUserName = resolveRequestUserName(user);
 
     // 1) Curso
     let rawCourse: any = null;
@@ -208,14 +254,19 @@ export async function GET(
     if (allAuthorIds.length > 0) {
       const { data: authors, error: authorsError } = await db
         .from('users')
-        .select('id, username')
+        .select('id, username, full_name, display_name')
         .in('id', allAuthorIds);
 
       if (authorsError) {
         console.error('Error fetching authors:', authorsError);
       } else {
         (authors || []).forEach((u: any) => {
-          authorMap[u.id] = u.username || 'User';
+          authorMap[u.id] =
+            pickAuthorName(
+              u.full_name,
+              u.display_name,
+              u.username,
+            ) || 'User';
         });
       }
     }
@@ -290,11 +341,12 @@ export async function GET(
               completedSetForUser.has(lessonStorageId);
 
             const lessonAuthorName =
-              (l.author_id && authorMap[l.author_id]) ||
-              l.author ||
-              (isLessonCreator && user
-                ? user.username
-                : 'Admin');
+              pickAuthorName(
+                l.author_name,
+                resolveIdentityName(l.author),
+                l.author_id ? authorMap[l.author_id] : undefined,
+                isLessonCreator ? requestUserName : undefined,
+              ) || 'Admin';
 
             return {
               ...l,
@@ -312,11 +364,12 @@ export async function GET(
             (!topic?.author_id && isAdminUser));
 
         const moduleAuthorName =
-          (topic?.author_id && authorMap[topic.author_id]) ||
-          topic?.author ||
-          (isModuleCreator && user
-            ? user.username
-            : 'Admin');
+          pickAuthorName(
+            topic?.author_name,
+            resolveIdentityName(topic?.author),
+            topic?.author_id ? authorMap[topic.author_id] : undefined,
+            isModuleCreator ? requestUserName : undefined,
+          ) || 'Admin';
 
         // XP disponível no módulo (soma dos xp_reward das lições)
         const moduleXpAvailable = moduleLessons.reduce(
@@ -401,10 +454,12 @@ export async function GET(
         (!rawCourse.author_id && isAdminUser));
 
     const courseAuthorName =
-      (rawCourse.author_id &&
-        authorMap[rawCourse.author_id]) ||
-      rawCourse.author ||
-      (isCourseCreator && user ? user.username : 'Admin');
+      pickAuthorName(
+        rawCourse.author_name,
+        resolveIdentityName(rawCourse.author),
+        rawCourse.author_id ? authorMap[rawCourse.author_id] : undefined,
+        isCourseCreator ? requestUserName : undefined,
+      ) || 'Admin';
 
     const course = {
       ...rawCourse,
