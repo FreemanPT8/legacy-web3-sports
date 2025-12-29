@@ -333,15 +333,18 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
 
   if (isAnonymous) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#03121c] to-[#02070d] p-8 text-white shadow-[0_35px_80px_rgba(2,7,13,0.65)]">
+      <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] p-8 text-white shadow-2xl shadow-black/40">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{heroCopy.loginTitle}</p>
-            <h2 className="mt-2 text-3xl font-semibold">{heroCopy.loginHeading}</h2>
+            <h2 className="mt-2 text-3xl font-semibold text-[#fdd87c]">{heroCopy.loginHeading}</h2>
             <p className="mt-2 text-sm text-slate-300 max-w-xl">{heroCopy.loginDescription}</p>
           </div>
           <Link href="/login">
-            <Button size="lg" className="gap-2">
+            <Button
+              size="lg"
+              className="gap-2 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+            >
               {heroCopy.loginAction}
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -362,14 +365,14 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
   const tips = buildTips(heroLanguage, startHere?.slug || 'comeca-aqui');
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#03121c] via-[#020b14] to-[#050d18] p-8 text-white shadow-[0_35px_80px_rgba(2,7,13,0.65)]">
+    <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] p-8 text-white shadow-2xl shadow-black/40">
       <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
         <div className="flex-1">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-cyan-500/15 px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-cyan-100">
             <Shield className="h-3 w-3 text-cyan-300" />
             {heroCopy.badge}
           </div>
-          <h2 className="mt-4 text-4xl font-semibold">{heroTitle}</h2>
+          <h2 className="mt-4 text-4xl font-semibold text-[#fdd87c]">{heroTitle}</h2>
           <p className="mt-3 text-sm text-slate-300 max-w-2xl">{heroDescription}</p>
 
           <div className="mt-6 flex flex-wrap gap-3 text-xs">
@@ -399,7 +402,7 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
           </div>
 
           <div className="mt-6 flex flex-col gap-4 text-sm text-slate-300 md:flex-row md:items-center">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-slate-200">
               <Sparkles className="h-4 w-4 text-cyan-300" />
               <span>
                 {heroCopy.contentAvailable}{' '}
@@ -421,8 +424,8 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
           </div>
 
           {startHere?.isCompleted && (
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">
-              <CheckCircle className="h-4 w-4" />
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/70 bg-cyan-500/10 px-4 py-2 text-sm text-white">
+              <CheckCircle className="h-4 w-4 text-[#5af3ff]" />
               <span>{heroCopy.completed}</span>
             </div>
           )}
@@ -430,7 +433,10 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
           <div className="mt-8 flex flex-wrap gap-3">
             {!isCompleted && (
               <Link href={ctaHref}>
-                <Button size="lg" className="gap-2">
+                <Button
+                  size="lg"
+                  className="gap-2 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                >
                   {ctaLabel}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -439,7 +445,7 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
             <Button
               type="button"
               variant="ghost"
-              className="text-slate-200"
+              className="text-slate-200 hover:text-white"
               onClick={() => setIsRoadmapOpen(true)}
             >
               {heroCopy.viewRoadmap}
@@ -447,7 +453,7 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
           </div>
 
           {isFallback && (
-            <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
+            <div className="mt-4 rounded-2xl border border-amber-400/30 bg-[#231903] px-4 py-3 text-xs text-amber-100">
               {heroCopy.fallback}
             </div>
           )}
@@ -456,7 +462,7 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
         <div className="flex w-full max-w-sm flex-col items-center justify-center">
           <div className="relative h-48 w-48">
             <div
-              className="absolute inset-0 rounded-full border border-white/10 bg-white/5"
+              className="absolute inset-0 rounded-full border border-white/15 bg-[#031a24]"
               style={{
                 background: `conic-gradient(#22d3ee ${Math.min(
                   completionPercent,
@@ -464,16 +470,16 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
                 )}%, rgba(255,255,255,0.08) 0)`,
               }}
             />
-            <div className="absolute inset-[18px] rounded-full bg-[#02070d] flex flex-col items-center justify-center text-center">
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">{heroCopy.progress}</p>
-              <p className="mt-1 text-3xl font-semibold text-white">
+            <div className="absolute inset-[18px] rounded-full bg-[#000c12] flex flex-col items-center justify-center text-center">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">{heroCopy.progress}</p>
+              <p className="mt-1 text-3xl font-semibold text-[#fdd87c]">
                 {Math.min(completionPercent, 100)}%
               </p>
-              <p className="text-xs text-slate-400">{lessonsStatus}</p>
+              <p className="text-xs text-slate-300">{lessonsStatus}</p>
             </div>
           </div>
           {isLoading && (
-            <p className="mt-4 text-sm text-slate-400">
+            <p className="mt-4 text-sm text-slate-300">
               {heroCopy.loading}
             </p>
           )}

@@ -288,24 +288,24 @@ export function LevelTimeline({ summary, state, className }: LevelTimelineProps)
   return (
     <div
       className={cn(
-        'rounded-3xl border border-white/10 bg-gradient-to-br from-[#010813] via-[#01050c] to-[#000307] p-6 text-white shadow-[0_30px_70px_rgba(2,8,20,0.7)]',
+        'rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 text-white shadow-2xl shadow-black/40',
         className,
       )}
     >
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">
+          <p className="text-[11px] uppercase tracking-[0.5em] text-[#fdd87c]">
             {copy.sectionLabel}
           </p>
-          <h2 className="mt-2 text-3xl font-semibold">{copy.sectionTitle}</h2>
+          <h2 className="mt-2 text-3xl font-semibold text-[#fdd87c]">{copy.sectionTitle}</h2>
           <p className="mt-1 text-sm text-slate-300">
             {copy.sectionSubtitle}
           </p>
         </div>
         {summary?.xp && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">{copy.xpCurrentLabel}</p>
-            <div className="mt-1 text-2xl font-semibold text-white">
+          <div className="rounded-2xl border border-white/15 bg-[#000c12]/70 px-5 py-3 text-sm shadow-lg shadow-black/30">
+            <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">{copy.xpCurrentLabel}</p>
+            <div className="mt-1 text-2xl font-semibold text-[#5af3ff]">
               {summary.xp.total.toLocaleString()} XP
             </div>
             <p className="text-xs text-slate-300">
@@ -319,25 +319,25 @@ export function LevelTimeline({ summary, state, className }: LevelTimelineProps)
       </div>
 
       {isLoading && (
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+        <div className="mt-6 rounded-2xl border border-white/10 bg-[#04131b] p-4 text-sm text-slate-300">
           {copy.syncing}
         </div>
       )}
 
       {hasError && (
-        <div className="mt-6 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">
+        <div className="mt-6 rounded-2xl border border-rose-500/40 bg-[#2b1117] p-4 text-sm text-rose-200">
           {copy.error}
         </div>
       )}
 
       {isFallback && (
-        <div className="mt-6 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <div className="mt-6 rounded-2xl border border-amber-400/30 bg-[#231903] p-4 text-sm text-amber-100">
           {copy.fallback}
         </div>
       )}
 
       {timelineStatus && (
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+        <div className="mt-6 rounded-2xl border border-white/10 bg-[#04131b] p-4 text-sm text-slate-200">
           {timelineStatus}
         </div>
       )}
@@ -363,7 +363,7 @@ export function LevelTimeline({ summary, state, className }: LevelTimelineProps)
       </div>
 
       <div className="mt-10 space-y-4">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-slate-400">
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">
           <Sparkles className="h-4 w-4 text-cyan-300" />
           {copy.badgesLabel}
         </div>
@@ -374,7 +374,7 @@ export function LevelTimeline({ summary, state, className }: LevelTimelineProps)
             labels={{ empty: copy.badgesEmpty, upcomingHint: copy.upcomingHint }}
           />
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-2xl border border-white/10 bg-[#04131b] p-4 text-sm text-slate-300">
             {copy.badgesHint}
           </div>
         )}
@@ -414,7 +414,7 @@ function LevelCard({
   return (
     <div
       className={cn(
-        'relative flex min-w-[260px] max-w-[300px] flex-col rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-white/0 p-5',
+        'relative flex min-w-[260px] max-w-[300px] flex-col rounded-3xl border border-white/10 bg-[#04131b] p-5 shadow-[0_20px_45px_rgba(0,0,0,0.6)]',
         isLocked && 'opacity-70',
       )}
       style={{
@@ -422,14 +422,14 @@ function LevelCard({
         borderColor: `${accent}40`,
       }}
     >
-      <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-slate-300">
+      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">
         <span>
           {labels.levelPrefix} {position}/{total}
         </span>
         <span>{level.shortLabel || level.title}</span>
       </div>
 
-      <h3 className="mt-4 text-2xl font-semibold">{level.title}</h3>
+      <h3 className="mt-4 text-2xl font-semibold text-white">{level.title}</h3>
       <p className="text-sm text-slate-400">{formatXpRange(level.minXp, level.maxXp)}</p>
       {level.lessonProgressLabel && (
         <p className="mt-1 text-xs text-slate-400">{level.lessonProgressLabel}</p>
@@ -454,8 +454,8 @@ function LevelCard({
       <div className="mt-6 flex items-center gap-2 text-sm">
         {isLocked ? (
           <>
-            <Lock className="h-4 w-4 text-slate-400" />
-            <p className="text-slate-300 text-xs">
+            <Lock className="h-4 w-4 text-[#fdd87c]" />
+            <p className="text-slate-200 text-xs">
               {level.lockedReason || labels.lockedDefault}
             </p>
           </>
@@ -483,7 +483,7 @@ function BadgeStrip({
 }) {
   if (earned.length === 0 && upcoming.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+      <div className="rounded-2xl border border-white/10 bg-[#04131b] p-4 text-sm text-slate-300">
         {labels.empty}
       </div>
     );
@@ -492,7 +492,7 @@ function BadgeStrip({
   return (
     <div className="flex flex-wrap gap-3">
       {earned.map((badge) => (
-        <div key={badge.slug} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+        <div key={badge.slug} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#04131b] px-4 py-3">
           <Badge
             variant="outline"
             className={cn(
@@ -514,7 +514,7 @@ function BadgeStrip({
       {upcoming.map((badge) => (
         <div
           key={badge.slug}
-          className="flex items-center gap-2 rounded-2xl border border-dashed border-white/10 bg-transparent px-4 py-2 text-sm text-slate-400"
+          className="flex items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-[#000c12]/40 px-4 py-2 text-sm text-slate-400"
         >
           <Trophy className="h-4 w-4 text-slate-500" />
           <div>

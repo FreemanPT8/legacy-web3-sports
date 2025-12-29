@@ -335,17 +335,11 @@ export function LevelSections({ summary }: Props) {
 
 
   if (!summary) {
-
     return (
-
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
-
+      <div className="rounded-3xl border border-white/10 bg-[#04131b] p-6 text-sm text-slate-300 shadow-2xl shadow-black/40">
         {copy.authRequired}
-
       </div>
-
     );
-
   }
 
 
@@ -455,7 +449,7 @@ function LevelSection({
 
       className={cn(
 
-        'rounded-3xl border border-white/10 bg-gradient-to-br from-[#031225]/70 via-[#01060d] to-[#000508] px-6 py-8 shadow-[0_25px_60px_rgba(3,10,20,0.65)]',
+        'rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-2xl shadow-black/40',
 
         isLocked && 'opacity-70',
 
@@ -473,13 +467,13 @@ function LevelSection({
 
           onClick={onToggle}
 
-          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#041421]/80 px-4 py-3 text-left text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#04131b] px-4 py-3 text-left text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
 
         >
 
           <div>
 
-            <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/80">
+            <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">
 
               {level.shortLabel || level.title}
 
@@ -523,13 +517,13 @@ function LevelSection({
 
         <div>
 
-          <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">
+          <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">
 
             {level.shortLabel || level.title}
 
           </p>
 
-          <h3 className="mt-1 text-3xl font-semibold text-white">{level.title}</h3>
+          <h3 className="mt-1 text-3xl font-semibold text-[#fdd87c]">{level.title}</h3>
 
           <p className="text-sm text-slate-300">{formatRange(level.minXp, level.maxXp)}</p>
 
@@ -539,7 +533,7 @@ function LevelSection({
 
           <div className="flex items-center gap-2">
 
-            <span className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">
+            <span className="text-[11px] uppercase tracking-[0.4em] text-cyan-200/70">
 
               {copy.progressLabel}
 
@@ -595,7 +589,7 @@ function LevelSection({
 
         {courses.length === 0 ? (
 
-          <div className="rounded-2xl border border-dashed border-white/15 bg-[#01050b]/60 p-4 text-sm text-slate-300">
+          <div className="rounded-2xl border border-dashed border-white/15 bg-[#04131b]/70 p-4 text-sm text-slate-300">
 
             {isFallbackLoading
 
@@ -712,12 +706,12 @@ function CourseCard({
   return (
     <div
       className={cn(
-        'w-full max-w-[380px] rounded-3xl border border-white/10 bg-gradient-to-b from-[#05182c] via-[#020912] to-[#000508] p-4 shadow-[0_30px_65px_rgba(3,10,25,0.6)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)] focus-within:border-cyan-200/70 mx-auto md:mx-0',
+        'w-full max-w-[380px] rounded-3xl border border-white/10 bg-[#04131b] p-4 shadow-[0_30px_65px_rgba(0,0,0,0.55)] transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)] focus-within:border-cyan-200/70 mx-auto md:mx-0',
         isLevelLocked && 'opacity-70',
       )}
       style={{ borderColor: isLevelLocked ? '#1e293b40' : `${accent}55` }}
     >
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#010915]">
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#000c12]">
         {coverUrl ? (
           <img
             src={coverUrl}
@@ -726,7 +720,7 @@ function CourseCard({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-44 items-center justify-center bg-gradient-to-br from-cyan-500/20 via-sky-500/15 to-indigo-900/30 text-xs uppercase tracking-[0.3em] text-cyan-100">
+          <div className="flex h-44 items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] text-xs uppercase tracking-[0.3em] text-cyan-100">
             {copy.noImage}
           </div>
         )}
@@ -736,7 +730,7 @@ function CourseCard({
           </span>
         )}
         <div className="absolute right-3 top-3">
-          <span className="rounded-full border border-white/40 bg-[#010b15]/90 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-slate-100">
+          <span className="rounded-full border border-white/40 bg-[#010b15]/90 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-[#fdd87c]">
             {levelLabel}
           </span>
         </div>
@@ -763,12 +757,12 @@ function CourseCard({
 
         <div className="flex flex-wrap gap-3 text-xs text-slate-300">
           {course.isCompleted && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1 text-[11px] text-emerald-200">
-              <CheckCircle className="h-3 w-3" /> Concluido
+            <span className="inline-flex items-center gap-1 rounded-full border border-cyan-400/70 bg-cyan-500/10 px-3 py-1 text-[11px] text-white">
+              <CheckCircle className="h-3 w-3 text-[#5af3ff]" /> Concluido
             </span>
           )}
           {courseLanguages && (
-            <span className="rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
+            <span className="rounded-full border border-white/20 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
               {courseLanguages.map((lang) => lang?.toUpperCase()).join(' / ')}
             </span>
           )}
@@ -798,17 +792,17 @@ function CourseCard({
             className={cn(
               'inline-flex items-center gap-2 rounded-full border px-3 py-0.5 text-[10px] uppercase tracking-[0.25em]',
               isLevelLocked
-                ? 'border-amber-400/30 bg-amber-500/5 text-amber-100/80'
-                : 'border-emerald-400/30 bg-emerald-500/5 text-emerald-100/80',
+                ? 'border-white/30 bg-[#04131b] text-slate-200'
+                : 'border-cyan-400/70 bg-cyan-500/10 text-white',
             )}
           >
             {isLevelLocked ? (
               <>
-                <Lock className="h-3 w-3" /> {copy.lockedBadge}
+                <Lock className="h-3 w-3 text-[#fdd87c]" /> {copy.lockedBadge}
               </>
             ) : (
               <>
-                <CheckCircle className="h-3 w-3" /> {labels.unlocked}
+                <CheckCircle className="h-3 w-3 text-[#5af3ff]" /> {labels.unlocked}
               </>
             )}
           </div>
@@ -817,7 +811,7 @@ function CourseCard({
             <Link href={courseHref} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
               <Button
                 size="sm"
-                className="rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 px-5 text-[#00121c] font-semibold shadow-[0_10px_25px_rgba(8,145,178,0.35)] transition hover:from-cyan-400 hover:via-sky-400 hover:to-emerald-300"
+                className="rounded-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] px-5 text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] transition hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                 disabled={isLevelLocked}
               >
                 {labels.viewCourse}
@@ -828,7 +822,7 @@ function CourseCard({
         </div>
       </div>
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-md border border-white/10 bg-[#01050b] text-white">
+        <DialogContent className="max-w-md border border-white/10 bg-[#000c12] text-white">
           <DialogHeader>
             <DialogTitle className="text-white">{localizedTitle}</DialogTitle>
             <p className="text-xs uppercase tracking-[0.4em] text-slate-400">{levelLabel}</p>
@@ -842,7 +836,7 @@ function CourseCard({
               />
             )}
             {hasDescription && <p className="text-slate-300">{localizedDescription}</p>}
-            <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs uppercase tracking-[0.2em] text-slate-300">
+            <div className="grid gap-3 rounded-2xl border border-white/10 bg-[#04131b] p-4 text-xs uppercase tracking-[0.2em] text-slate-300">
               <div className="flex items-center justify-between">
                 <span>{labels.modules}</span>
                 <strong className="text-white normal-case tracking-normal text-base">{modulesCount}</strong>
@@ -876,7 +870,7 @@ function CourseCard({
               <Link href={courseHref} onClick={() => setDetailsOpen(false)}>
                 <Button
                   size="sm"
-                  className="rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 px-5 text-[#00121c] font-semibold shadow-[0_10px_25px_rgba(8,145,178,0.35)] transition hover:from-cyan-400 hover:via-sky-400 hover:to-emerald-300"
+                  className="rounded-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] px-5 text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] transition hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                   disabled={isLevelLocked}
                 >
                   {labels.viewCourse}
