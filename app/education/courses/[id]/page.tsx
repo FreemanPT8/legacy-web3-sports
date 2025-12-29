@@ -451,7 +451,7 @@ const sanitizeCourseDescription = (html: string) =>
 
               <CardHeader className="space-y-6 px-6 py-6 sm:px-8 md:px-10 md:py-8">
                 <div className="flex flex-wrap justify-between items-start gap-6">
-                  <div className="space-y-4 max-w-3xl">
+                  <div className="space-y-4 w-full">
                     <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                       {tr('nav.education', 'WEB3 ACADEMY')}
                     </p>
