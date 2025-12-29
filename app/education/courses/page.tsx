@@ -29,8 +29,8 @@ import {
   START_HERE_SLUG,
 } from '@/lib/education/unlockLogic';
 
-const INFANTIL_COURSE_IDS = [START_HERE_FALLBACK_ID, '416b0b74-ec44-4aea-be62-50c3ee60af29'];
-const INFANTIL_COURSE_SLUGS = [START_HERE_SLUG, '416b0b74-ec44-4aea-be62-50c3ee60af29'];
+const INFANTIL_COURSE_IDS = ['416b0b74-ec44-4aea-be62-50c3ee60af29'];
+const INFANTIL_COURSE_SLUGS = ['416b0b74-ec44-4aea-be62-50c3ee60af29'];
 import {
   BookOpen,
   Award,
