@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent, type Language } from '@/lib/i18n';
-import { START_HERE_FALLBACK_ID } from '@/lib/education/unlockLogic';
+import { START_HERE_FALLBACK_ID, START_HERE_SLUG } from '@/lib/education/unlockLogic';
 
 const START_COURSE_DESCRIPTION_FALLBACK: Record<Language, string> = {
   pt: 'Há momentos na vida em que o mundo muda mais rápido do que nós. Quando isso acontece, só há duas escolhas: fingir que nada se passa... ou reinventar-nos.',
@@ -31,6 +31,16 @@ const START_COURSE_DESCRIPTION_FALLBACK: Record<Language, string> = {
 
 const SUPPORTED_LANGUAGES = ['pt', 'es', 'en'] as const;
 type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+const COURSE_LEVEL_OVERRIDES_BY_ID: Record<string, string> = {
+  [START_HERE_FALLBACK_ID]: 'cadets',
+  '416b0b74-ec44-4aea-be62-50c3ee60af29': 'infantil',
+};
+
+const COURSE_LEVEL_OVERRIDES_BY_SLUG: Record<string, string> = {
+  [START_HERE_SLUG]: 'cadets',
+  '416b0b74-ec44-4aea-be62-50c3ee60af29': 'infantil',
+};
 
 type SectionCopy = {
   authRequired: string;
@@ -102,7 +112,22 @@ export function LevelSections({ summary }: Props) {
 
   const levels = summary?.levels || [];
 
-  const coursesByLevel = summary?.coursesByLevel || {};
+  const rawCoursesByLevel = summary?.coursesByLevel || {};
+  const coursesByLevel = useMemo(() => {
+    const normalized: Record<string, LevelCourseSummary[]> = {};
+    Object.entries(rawCoursesByLevel).forEach(([levelSlug, list]) => {
+      const entries = Array.isArray(list) ? list : [];
+      entries.forEach((course) => {
+        const overrideSlug = resolveCourseLevelOverride(course);
+        const targetSlug = overrideSlug || levelSlug;
+        if (!normalized[targetSlug]) {
+          normalized[targetSlug] = [];
+        }
+        normalized[targetSlug].push(course);
+      });
+    });
+    return normalized;
+  }, [rawCoursesByLevel]);
   const startCourseMeta = summary?.startCourse ?? null;
 
   const { language: activeLanguage, t } = useLanguage();
@@ -249,11 +274,10 @@ export function LevelSections({ summary }: Props) {
 
 
   const hasServerCourses = useMemo(() => {
-    if (!summary || !summary.coursesByLevel) return false;
-    return Object.values(summary.coursesByLevel).some(
+    return Object.values(rawCoursesByLevel).some(
       (list) => Array.isArray(list) && list.length > 0,
     );
-  }, [summary]);
+  }, [rawCoursesByLevel]);
 
   const fallbackCoursesByLevel = useMemo(() => {
     if (fallbackRawCourses.length === 0) return {};
@@ -945,6 +969,10 @@ function normalizeSlugCandidate(value: unknown): string | null {
 }
 
 function normalizeLevelSlugFromCourse(course: any): string | null {
+  const overrideSlug = resolveCourseLevelOverride(course);
+  if (overrideSlug) {
+    return overrideSlug;
+  }
   const slugCandidates = [
     course?.academy_level_slug,
     course?.academyLevelSlug,
@@ -1000,6 +1028,19 @@ function buildFallbackCoursesMap(
     acc[normalizedSlug].push(formatted);
     return acc;
   }, {} as Record<string, LevelCourseSummary[]>);
+}
+
+function resolveCourseLevelOverride(course: any): string | undefined {
+  if (!course) return undefined;
+  const idKey = typeof course.id === 'string' ? course.id : undefined;
+  const slugKey =
+    typeof course.slug === 'string'
+      ? course.slug.toLowerCase()
+      : undefined;
+  return (
+    (idKey && COURSE_LEVEL_OVERRIDES_BY_ID[idKey]) ||
+    (slugKey && COURSE_LEVEL_OVERRIDES_BY_SLUG[slugKey])
+  );
 }
 
 function transformCourseRecord(course: any, language: Language): LevelCourseSummary | null {
