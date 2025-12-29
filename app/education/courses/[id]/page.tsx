@@ -37,6 +37,14 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
+type AuthorIdentity = {
+  id?: string | null;
+  name?: string | null;
+  full_name?: string | null;
+  username?: string | null;
+  display_name?: string | null;
+};
+
 type Lesson = {
   id: string;
   title: any;
@@ -45,6 +53,7 @@ type Lesson = {
   order?: number | null;
   author_id?: string | null;
   author_name?: string | null;
+  author?: AuthorIdentity | null;
   isCompleted?: boolean;
   isCreator?: boolean;
   content_has_read_more?: boolean;
@@ -58,6 +67,7 @@ type Module = {
   order?: number | null;
   author_id?: string | null;
   author_name?: string | null;
+  author?: AuthorIdentity | null;
   isCreator?: boolean;
   isCompleted?: boolean;
   xp_available?: number;
@@ -75,6 +85,7 @@ type Course = {
   thumbnail_url?: string | null;
   author_id?: string | null;
   author_name?: string | null;
+  author?: AuthorIdentity | null;
   isCreator?: boolean;
   modules?: Module[];
   total_modules?: number;
@@ -242,6 +253,71 @@ const getInitials = (text: string) => {
   return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
 };
 
+const pickAuthorName = (
+  ...candidates: Array<string | null | undefined>
+): string | undefined => {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  }
+  return undefined;
+};
+
+const normalizeIdentityName = (identity?: AuthorIdentity | null) =>
+  pickAuthorName(
+    identity?.name,
+    identity?.full_name,
+    identity?.display_name,
+    identity?.username,
+  );
+
+const resolveCourseAuthorName = (
+  course: Course,
+  modules: Module[],
+): string => {
+  const courseName = pickAuthorName(
+    course.author_name,
+    normalizeIdentityName(course.author),
+  );
+  if (courseName) return courseName;
+
+  for (const module of modules) {
+    const moduleName = pickAuthorName(
+      module.author_name,
+      normalizeIdentityName(module.author),
+    );
+    if (moduleName) return moduleName;
+
+    if (Array.isArray(module.lessons)) {
+      for (const lesson of module.lessons) {
+        const lessonName = pickAuthorName(
+          lesson.author_name,
+          normalizeIdentityName(lesson.author),
+        );
+        if (lessonName) return lessonName;
+      }
+    }
+  }
+
+  return 'Admin';
+};
+
+const resolveModuleAuthorName = (module: Module, fallback: string) =>
+  pickAuthorName(
+    module.author_name,
+    normalizeIdentityName(module.author),
+  ) || fallback;
+
+const resolveLessonAuthorName = (lesson: Lesson, fallback: string) =>
+  pickAuthorName(
+    lesson.author_name,
+    normalizeIdentityName(lesson.author),
+  ) || fallback;
+
 const sanitizeCourseDescription = (html: string) =>
   removeReadMoreMarker(html || '').replace(
     /<script[\s\S]*?>[\s\S]*?<\/script>/gi,
@@ -309,6 +385,10 @@ const sanitizeCourseDescription = (html: string) =>
 
   const initials = getInitials(title);
 
+  const modules: Module[] = Array.isArray(course.modules)
+    ? (course.modules as Module[])
+    : [];
+
   const totalModules = course.total_modules ?? 0;
   const totalLessons = course.total_lessons ?? 0;
   const totalXP = course.total_xp ?? 0;
@@ -316,16 +396,12 @@ const sanitizeCourseDescription = (html: string) =>
   const xpDistributed = course.xp_distributed ?? 0;
   const userXpInCourse = course.xp_earned_by_user ?? 0;
 
-  const authorName = course.author_name || 'Admin';
+  const authorName = resolveCourseAuthorName(course, modules);
   const isCourseCreator =
     !!course.isCreator ||
     (!!user &&
       ((course.author_id && course.author_id === user.id) ||
         (!course.author_id && isAdminUser)));
-
-  const modules: Module[] = Array.isArray(course.modules)
-    ? (course.modules as Module[])
-    : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
@@ -500,8 +576,10 @@ const sanitizeCourseDescription = (html: string) =>
                   );
                   const hasModuleDescription =
                     moduleDescriptionHtml.trim().length > 0;
-                  const moduleAuthorName =
-                    mod.author_name || course.author_name || 'Admin';
+                  const moduleAuthorName = resolveModuleAuthorName(
+                    mod,
+                    authorName,
+                  );
 
                   const isModuleCreator =
                     !!mod.isCreator ||
@@ -590,10 +668,10 @@ const sanitizeCourseDescription = (html: string) =>
                                 `${lessonLabel} ${lesson.order ?? lessonIndex + 1}`,
                               );
                               const lessonAuthorName =
-                                lesson.author_name ||
-                                moduleAuthorName ||
-                                course.author_name ||
-                                'Admin';
+                                resolveLessonAuthorName(
+                                  lesson,
+                                  moduleAuthorName,
+                                );
 
                               const isLessonCreator =
                                 !!lesson.isCreator ||
