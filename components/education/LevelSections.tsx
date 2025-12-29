@@ -108,9 +108,14 @@ export function LevelSections({ summary }: Props) {
     const normalized: Record<string, LevelCourseSummary[]> = {};
     Object.entries(rawCoursesByLevel).forEach(([levelSlug, list]) => {
       const entries = Array.isArray(list) ? list : [];
+      const normalizedLevelSlug = normalizeLevelSlugValue(levelSlug) || levelSlug;
       entries.forEach((course) => {
         const overrideSlug = resolveCourseLevelOverride(course);
-        const targetSlug = overrideSlug || levelSlug;
+        const targetSlugCandidate = overrideSlug || normalizedLevelSlug;
+        const targetSlug =
+          normalizeLevelSlugValue(targetSlugCandidate) ||
+          targetSlugCandidate ||
+          normalizedLevelSlug;
         if (!normalized[targetSlug]) {
           normalized[targetSlug] = [];
         }
@@ -355,11 +360,11 @@ export function LevelSections({ summary }: Props) {
       )}
 
       {levels.map((level) => {
-
-        const fallbackCourses = fallbackCoursesByLevel[level.slug] || [];
+        const levelKey = normalizeLevelSlugValue(level.slug) || level.slug;
+        const fallbackCourses = fallbackCoursesByLevel[levelKey] || [];
         const courses =
-          coursesByLevel[level.slug] && coursesByLevel[level.slug].length > 0
-            ? coursesByLevel[level.slug]
+          coursesByLevel[levelKey] && coursesByLevel[levelKey].length > 0
+            ? coursesByLevel[levelKey]
             : fallbackCourses;
 
         const expanded = !isMobile || expandedSlug === level.slug;
