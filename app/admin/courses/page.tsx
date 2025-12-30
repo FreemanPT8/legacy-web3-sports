@@ -804,29 +804,17 @@ export default function CoursesManagementPage() {
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-4">
                       <div className="space-y-4 text-sm text-slate-300">
-                        <div className="rounded-2xl border border-cyan-400/40 bg-cyan-500/5 p-4 text-white shadow-[0_0_25px_rgba(6,182,212,0.15)]">
-                          <div className="flex flex-wrap items-end justify-between gap-3">
-                            <div>
-                              <p className="text-[11px] uppercase tracking-wider text-cyan-200">
-                                XP já distribuído
-                              </p>
-                              <p className="text-3xl font-semibold text-white leading-none">
-                                {formatNumber(xpDistributed)}{' '}
-                                <span className="text-base font-medium text-cyan-100">XP</span>
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[11px] uppercase tracking-wider text-cyan-200">
-                                Conclusões
-                              </p>
-                              <p className="text-xl font-semibold text-cyan-100">
-                                {formatNumber(completionsCount)}
-                              </p>
-                            </div>
+                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <span className="flex items-center gap-2 text-base font-semibold text-white">
+                              <Award className="h-4 w-4 text-cyan-300" />
+                              {formatNumber(xpDistributed)} XP já distribuído
+                            </span>
+                            <span className="text-xs text-slate-200">
+                              {formatNumber(completionsCount)}{' '}
+                              {completionsCount === 1 ? 'conclusão' : 'conclusões'}
+                            </span>
                           </div>
-                          <p className="mt-3 text-xs text-cyan-100/80">
-                            Cada conclusão soma XP automaticamente para este curso e para o criador.
-                          </p>
                         </div>
                         <div className="flex flex-col gap-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
