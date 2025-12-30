@@ -15,7 +15,6 @@ import {
   MessageCircle,
   Award,
   BarChart3,
-  Settings,
   Target,
 } from 'lucide-react';
 
@@ -30,20 +29,19 @@ const NAV_ITEMS = [
   { href: '/admin/xp', label: 'XP Management', icon: Award },
   { href: '/admin/missions', label: 'Missions', icon: Target },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/admin/settings/permissions', label: 'Permissions', icon: Settings },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden h-[calc(100vh-120px)] w-64 flex-col gap-6 border-r border-white/10 bg-[#05212b] p-6 md:flex">
+    <aside className="hidden h-[calc(100vh-120px)] w-64 flex-col gap-6 rounded-3xl border border-white/10 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#021c27] p-6 shadow-[0_30px_65px_rgba(2,10,20,0.55)] md:flex">
       <div className="space-y-1">
-        <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.4em] text-cyan-300">
-          <LayoutDashboard className="h-4 w-4 text-cyan-300" />
+        <h2 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.4em] text-[#fdd87c]">
+          <LayoutDashboard className="h-4 w-4 text-[#fdd87c]" />
           Admin Panel
         </h2>
-        <p className="text-xs text-slate-400">Ferramentas de gestao</p>
+        <p className="text-xs text-slate-200/80">Ferramentas de gestao</p>
       </div>
 
       <nav className="flex flex-col gap-2 text-sm font-medium text-slate-200">
@@ -57,15 +55,15 @@ export function AdminSidebar() {
             <Link key={item.href} href={item.href}>
               <Button
                 variant="outline"
-                className={`w-full justify-start gap-3 border-white/30 text-white transition hover:border-cyan-300/40 hover:text-cyan-300 ${
+                className={`w-full justify-start gap-3 rounded-2xl border border-white/10 bg-white/5 text-slate-100 transition hover:border-cyan-300/60 hover:bg-cyan-500/10 hover:text-white ${
                   isActive
-                    ? 'border-cyan-400/60 bg-cyan-400/10 text-white'
-                    : 'bg-transparent'
+                    ? 'border-[#fdd87c]/60 bg-gradient-to-r from-[#fdd87c]/20 via-transparent to-transparent text-white shadow-[0_0_25px_rgba(253,216,124,0.35)]'
+                    : 'bg-white/5'
                 }`}
               >
                 <Icon
                   className={`h-4 w-4 ${
-                    isActive ? 'text-white' : 'text-cyan-300'
+                    isActive ? 'text-[#fdd87c]' : 'text-cyan-300'
                   }`}
                 />
                 {item.label}
