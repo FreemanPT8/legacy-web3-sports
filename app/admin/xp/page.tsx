@@ -74,7 +74,7 @@ type ThresholdConfig = {
 };
 
 const MetricCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-xl border border-white/10 bg-[#05212b] p-4">
+  <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
     <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{label}</p>
     <p className="mt-2 text-3xl font-semibold text-white">
       {value.toLocaleString('pt-PT')}
@@ -83,7 +83,7 @@ const MetricCard = ({ label, value }: { label: string; value: number }) => (
 );
 
 const INPUT_STYLES =
-  'bg-[#000c12] border-white/10 text-white placeholder:text-slate-400';
+  'bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] border-white/10 text-white placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-cyan-300 focus-visible:ring-offset-0';
 
 const getInputClass = (extra?: string) =>
   extra ? `${INPUT_STYLES} ${extra}` : INPUT_STYLES;
@@ -290,7 +290,7 @@ export default function AdminXpPage() {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
         <div className="flex items-center gap-2 text-slate-300">
           <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
           A carregar XP...
@@ -300,20 +300,20 @@ export default function AdminXpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#000c12] px-4 py-8 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-8 text-white">
       <div className="mx-auto max-w-6xl space-y-8">
-        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-8 shadow-2xl shadow-black/40">
+        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
           <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-cyan-500/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
           <div className="relative z-10 space-y-3">
-            <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+            <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
               LEGACY ADMIN
             </p>
-            <h1 className="flex items-center gap-2 text-3xl font-semibold md:text-4xl">
+            <h1 className="flex items-center gap-2 text-3xl font-semibold text-[#fdd87c] md:text-4xl">
               <Sparkles className="h-7 w-7 text-amber-300" />
               XP Control Room
             </h1>
-            <p className="text-sm text-slate-300 md:text-base max-w-3xl">
+            <p className="max-w-3xl text-sm text-slate-100 md:text-base">
               Controla recompensas, limites diarios e thresholds que movem o XP
               publico. Todas as alteracoes ficam registadas no sistema.
             </p>
@@ -327,17 +327,17 @@ export default function AdminXpPage() {
 
         {xpConfig && (
           <section className="space-y-6">
-            <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-amber-950/40">
+            <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="border border-white/20 bg-transparent text-cyan-300">
+                  <Badge className="border border-cyan-400/40 bg-cyan-400/10 text-cyan-100">
                     XP Rules
                   </Badge>
-                  <CardTitle className="text-white text-sm font-semibold">
+                  <CardTitle className="text-sm font-semibold text-[#fdd87c]">
                     Recompensas, limites e thresholds
                   </CardTitle>
                 </div>
-                <CardDescription className="text-xs text-slate-300">
+                <CardDescription className="text-xs text-slate-200">
                   Atualiza com cuidado os valores oficiais usados pelo XP publico.
                 </CardDescription>
               </CardHeader>
@@ -351,7 +351,7 @@ export default function AdminXpPage() {
                       {xpConfig.rewards.map((reward, index) => (
                         <div
                           key={reward.action_type}
-                          className="rounded-xl border border-white/10 bg-[#000c12] p-4"
+                          className="rounded-xl border border-white/10 bg-[#021824]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.45)]"
                         >
                           <p className="text-sm font-semibold text-white">
                             {reward.label}
@@ -434,7 +434,7 @@ export default function AdminXpPage() {
                       {xpConfig.limits.map((limit, index) => (
                         <div
                           key={limit.action_type}
-                          className="rounded-xl border border-white/10 bg-[#000c12] p-4"
+                          className="rounded-xl border border-white/10 bg-[#021824]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.45)]"
                         >
                           <p className="text-sm font-semibold text-white">
                             {limit.action_type}
@@ -494,7 +494,7 @@ export default function AdminXpPage() {
                       {xpConfig.thresholds.map((threshold, index) => (
                         <div
                           key={threshold.id}
-                          className="rounded-xl border border-white/10 bg-[#000c12] p-4"
+                          className="rounded-xl border border-white/10 bg-[#021824]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.45)]"
                         >
                           <Input
                             type="number"
@@ -609,7 +609,7 @@ export default function AdminXpPage() {
         )}
 
         <section className="space-y-4">
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-amber-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-amber-950/40">
             <CardHeader>
               <CardTitle className="text-white text-sm font-semibold">
                 Ajustar XP manualmente
@@ -684,7 +684,7 @@ export default function AdminXpPage() {
         </section>
 
         <section className="space-y-6">
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-amber-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-amber-950/40">
             <CardHeader>
               <CardTitle className="text-white text-sm font-semibold">
                 Metricas principais
