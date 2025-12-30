@@ -153,8 +153,8 @@ export default function AdminMissionsPage() {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
-        <div className="flex items-center gap-2 text-slate-300">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-200">
           <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
           Loading missions...
         </div>
@@ -163,19 +163,19 @@ export default function AdminMissionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#000c12] px-4 py-8 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-8 text-white">
       <div className="mx-auto max-w-6xl space-y-8">
-        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-8 shadow-2xl shadow-black/40">
-          <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-cyan-500/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-16 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
+        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
+          <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-16 h-48 w-48 rounded-full bg-[#fdd87c]/10 blur-3xl" />
           <div className="relative z-10 space-y-4">
-            <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+            <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
               LEGACY ADMIN
             </p>
-            <h1 className="text-3xl font-semibold md:text-4xl">
+            <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
               Daily Missions Control
             </h1>
-            <p className="text-sm text-slate-300 md:text-base max-w-3xl">
+            <p className="max-w-3xl text-sm text-slate-100 md:text-base">
               Supervisiona as missoes diarias, gera novos desafios e acompanha a
               execucao em tempo real para toda a comunidade.
             </p>
@@ -183,7 +183,7 @@ export default function AdminMissionsPage() {
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="default"
-                className="gap-2"
+                className="gap-2 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                 onClick={handleGenerate}
                 disabled={generating}
               >
@@ -196,7 +196,7 @@ export default function AdminMissionsPage() {
               </Button>
               <Button
                 variant="outline"
-                className="gap-2 border-white/30 text-white hover:text-cyan-300"
+                className="gap-2 border-white/40 text-white hover:bg-white/10"
                 onClick={fetchMissions}
                 disabled={loadingMissions}
               >
@@ -218,28 +218,28 @@ export default function AdminMissionsPage() {
           ].map((item) => (
             <Card
               key={item.label}
-              className="border border-white/10 bg-[#05212b] p-4 shadow-sm shadow-black/30"
+              className="border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
             >
-              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">
                 {item.label}
               </p>
-              <p className="mt-2 text-3xl font-semibold">{item.value}</p>
+              <p className="mt-2 text-3xl font-semibold text-[#fdd87c]">{item.value}</p>
             </Card>
           ))}
         </section>
 
         <section className="space-y-4">
-          <Card className="border border-white/10 bg-[#05212b]">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Badge className="border border-white/20 bg-transparent text-cyan-300">
+                <Badge className="border border-cyan-400/40 bg-cyan-400/10 text-cyan-100">
                   Reports
                 </Badge>
-                <CardTitle className="text-white">
+                <CardTitle className="text-[#fdd87c]">
                   Mission performance
                 </CardTitle>
               </div>
-              <CardDescription className="text-sm text-slate-300">
+              <CardDescription className="text-sm text-slate-200">
                 Monitor the daily progress of each mission and how much XP is
                 unlocked.
               </CardDescription>
@@ -280,10 +280,10 @@ export default function AdminMissionsPage() {
                         >
                           <td className="py-3 pr-4">
                             <div className="flex flex-col">
-                              <span className="font-semibold text-white">
+                              <span className="font-semibold text-[#fdd87c]">
                                 {mission.description}
                               </span>
-                              <span className="text-xs text-slate-400">
+                              <span className="text-xs text-slate-300">
                                 {mission.type}
                               </span>
                             </div>
@@ -333,9 +333,9 @@ export default function AdminMissionsPage() {
               ? Array.from({ length: 3 }).map((_, index) => (
                   <Card
                     key={`mission-placeholder-${index}`}
-                    className="border border-white/10 bg-[#05212b] p-5 shadow-sm shadow-black/30"
+                    className="border border-white/10 bg-[#04131b] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
                   >
-                    <div className="flex h-24 items-center justify-center text-slate-400">
+                    <div className="flex h-24 items-center justify-center text-slate-300">
                       Loading...
                     </div>
                   </Card>
@@ -343,18 +343,18 @@ export default function AdminMissionsPage() {
               : missions.map((mission) => (
                   <Card
                     key={mission.id}
-                    className="border border-white/10 bg-[#05212b] p-5 shadow-sm shadow-black/30"
+                    className="border border-white/10 bg-[#04131b] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
                   >
-                    <Badge className="border border-white/20 bg-transparent text-cyan-300">
+                    <Badge className="border border-cyan-400/40 bg-cyan-400/10 text-cyan-100">
                       {mission.type.replace(/_/g, ' ')}
                     </Badge>
-                    <h3 className="mt-3 text-lg font-semibold text-white">
+                    <h3 className="mt-3 text-lg font-semibold text-[#fdd87c]">
                       {mission.description}
                     </h3>
-                    <p className="mt-1 text-sm text-slate-300">
+                    <p className="mt-1 text-sm text-slate-200">
                       Reward: {mission.xp_reward} XP
                     </p>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-slate-300">
                       Target: {mission.target_count || 1}
                     </p>
                   </Card>
