@@ -58,9 +58,9 @@ type AdminStats = {
 };
 
 const MetricCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-xl border border-white/10 bg-[#05212b] p-4">
-    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{label}</p>
-    <p className="mt-2 text-3xl font-semibold text-white">
+  <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
+    <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">{label}</p>
+    <p className="mt-2 text-3xl font-semibold text-[#fdd87c]">
       {value.toLocaleString('pt-PT')}
     </p>
   </div>
@@ -73,7 +73,7 @@ const TopList = ({
   title: string;
   items: { id: string; title: any; views: number }[];
 }) => (
-  <Card className="border border-white/10 border-dashed bg-[#05212b]">
+  <Card className="border border-white/10 border-dashed bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
     <CardHeader className="pb-2">
       <CardTitle className="text-sm text-white">{title}</CardTitle>
     </CardHeader>
@@ -212,8 +212,8 @@ export default function AdminAnalyticsPage() {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
-        <div className="flex items-center gap-2 text-slate-300">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-200">
           <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
           A carregar analytics...
         </div>
@@ -222,21 +222,21 @@ export default function AdminAnalyticsPage() {
   }
 
   return (
-    <div className="w-full space-y-8">
-      <section className="relative mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#05212b] px-6 py-8">
+    <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-8 md:px-8">
+      <section className="relative mt-2 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-8 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
-          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
         </div>
         <div className="relative z-10 max-w-5xl space-y-3">
-          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
             LEGACY ADMIN
           </p>
-          <h1 className="flex items-center gap-2 text-3xl font-semibold text-white md:text-4xl">
+          <h1 className="flex items-center gap-2 text-3xl font-semibold text-[#fdd87c] md:text-4xl">
             <BarChart3 className="h-7 w-7 text-cyan-300" />
             Insights & Analytics
           </h1>
-          <p className="text-sm text-slate-300 md:text-base">
+          <p className="text-sm text-slate-100 md:text-base">
             Metricas oficiais do ecossistema para informar decisoes de trafego,
             conteudo e engagement.
           </p>
@@ -247,12 +247,12 @@ export default function AdminAnalyticsPage() {
       </section>
 
       <section className="space-y-6">
-        <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-slate-950/40">
+        <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
           <CardHeader>
-            <CardTitle className="text-sm font-semibold text-white">
+            <CardTitle className="text-sm font-semibold text-[#fdd87c]">
               Indicadores principais
             </CardTitle>
-            <CardDescription className="text-xs text-slate-300">
+            <CardDescription className="text-xs text-slate-200">
               Dados frescos diretamente do /api/admin/stats.
             </CardDescription>
           </CardHeader>
@@ -270,9 +270,9 @@ export default function AdminAnalyticsPage() {
         </Card>
 
         <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="border border-white/10 bg-[#05212b]">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
                 <Globe2 className="h-4 w-4 text-blue-400" />
                 Top blog posts
               </CardTitle>
@@ -283,12 +283,12 @@ export default function AdminAnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-white/10 bg-[#05212b]">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
             <CardHeader>
-              <CardTitle className="text-white">
+              <CardTitle className="text-[#fdd87c]">
                 Onboarding pipeline
               </CardTitle>
-              <CardDescription className="text-xs text-slate-300">
+              <CardDescription className="text-xs text-slate-200">
                 Agrupamento real por estados.
               </CardDescription>
             </CardHeader>
@@ -298,7 +298,7 @@ export default function AdminAnalyticsPage() {
                   {onboardingEntries.map(([status, value]) => (
                     <div
                       key={status}
-                      className="flex items-center justify-between rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-xs text-slate-200"
+                      className="flex items-center justify-between rounded-md border border-white/10 bg-[#021824]/80 px-3 py-2 text-xs text-slate-200 shadow-[0_15px_40px_rgba(3,10,25,0.45)]"
                     >
                       <span>{status}</span>
                       <span className="font-semibold">{value.toLocaleString('pt-PT')}</span>
@@ -311,49 +311,35 @@ export default function AdminAnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-white/10 bg-[#05212b]">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
             <CardHeader>
-              <CardTitle className="text-white">
+              <CardTitle className="text-[#fdd87c]">
                 Houses of Sports
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-lg border border-white/10 bg-[#000c12] p-3">
-                  <p className="text-[11px] uppercase text-slate-400">Active</p>
-                  <p className="text-2xl font-semibold text-white">{safeStats.houses.active.toLocaleString('pt-PT')}</p>
+                <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                  <p className="text-[11px] uppercase text-slate-300">Active</p>
+                  <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.active.toLocaleString('pt-PT')}</p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-[#000c12] p-3">
-                  <p className="text-[11px] uppercase text-slate-400">Building</p>
-                  <p className="text-2xl font-semibold text-white">{safeStats.houses.building.toLocaleString('pt-PT')}</p>
+                <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                  <p className="text-[11px] uppercase text-slate-300">Building</p>
+                  <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.building.toLocaleString('pt-PT')}</p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-[#000c12] p-3">
-                  <p className="text-[11px] uppercase text-slate-400">Developing</p>
-                  <p className="text-2xl font-semibold text-white">{safeStats.houses.developing.toLocaleString('pt-PT')}</p>
+                <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                  <p className="text-[11px] uppercase text-slate-300">Developing</p>
+                  <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.developing.toLocaleString('pt-PT')}</p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-[#000c12] p-3">
-                  <p className="text-[11px] uppercase text-slate-400">Total</p>
-                  <p className="text-2xl font-semibold text-white">{safeStats.houses.total.toLocaleString('pt-PT')}</p>
+                <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                  <p className="text-[11px] uppercase text-slate-300">Total</p>
+                  <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.total.toLocaleString('pt-PT')}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="space-y-3 border-t border-white/10 pt-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.4em] text-cyan-300">
-              Niveis de XP
-            </h2>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-white/30 text-white hover:border-cyan-300/40 hover:text-cyan-300"
-              onClick={() => router.push('/admin/xp')}
-            >
-              Ver controle de XP
-            </Button>
-          </div>
           <div className="grid gap-3 md:grid-cols-3">
             <MetricCard
               label="XP total (all actions)"
