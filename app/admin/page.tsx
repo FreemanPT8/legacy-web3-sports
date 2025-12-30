@@ -110,11 +110,11 @@ type AdvancedStats = {
 
 function StatTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-[#05212b] p-4">
-      <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+    <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_55px_rgba(3,10,25,0.55)]">
+      <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/80">
         {label}
       </p>
-      <p className="mt-2 text-3xl font-semibold text-white">
+      <p className="mt-2 text-3xl font-semibold text-[#fdd87c]">
         {(value ?? 0).toLocaleString('pt-PT')}
       </p>
     </div>
@@ -129,32 +129,32 @@ function TopList({
   items: { id: string; title: any; views: number }[];
 }) {
   return (
-    <Card className="border border-dashed border-white/10 bg-[#05212b]">
+    <Card className="border border-dashed border-white/20 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-white">
+        <CardTitle className="text-sm text-[#fdd87c]">
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 text-sm text-slate-300">
+      <CardContent className="space-y-2 text-sm text-slate-200">
         {items && items.length > 0 ? (
           items.map((item) => (
             <div
               key={item.id}
               className="flex items-center justify-between gap-3"
             >
-              <span className="truncate text-white">
+              <span className="truncate text-slate-100">
                 {(item.title as any)?.pt ??
                   (item.title as any)?.en ??
                   item.title ??
                   '—'}
               </span>
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-slate-100">
                 {(item.views ?? 0).toLocaleString('pt-PT')}
               </span>
             </div>
           ))
         ) : (
-          <p className="text-xs text-slate-300">Sem dados</p>
+          <p className="text-xs text-slate-400">Sem dados</p>
         )}
       </CardContent>
     </Card>
@@ -347,78 +347,84 @@ export default function AdminDashboardPage() {
   return (
     <div className="w-full space-y-10">
       {/* HERO */}
-      <section className="rounded-2xl border border-white/10 bg-[#05212b] px-6 py-8">
-        <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
-          LEGACY ADMIN
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold text-white">
-          Admin Dashboard
-        </h1>
-        <p className="mt-2 text-sm text-slate-300 max-w-3xl">
-          Visão rápida sobre utilizadores, cursos, blog, onboarding e Houses of
-          Sports. Usa este painel para perceber se o LEGACY cresce de forma
-          saudável ou se algo precisa da tua atenção.
-        </p>
-        {statsError && (
-          <p className="mt-3 text-xs text-rose-400">{statsError}</p>
-        )}
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-16 -left-10 h-56 w-56 rounded-full bg-[#fdd87c]/15 blur-3xl" />
+          <div className="absolute -bottom-16 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/15 blur-3xl" />
+        </div>
+        <div className="relative">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
+            LEGACY ADMIN
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold text-[#fdd87c]">
+            Admin Dashboard
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm text-slate-100">
+            Visão rápida sobre utilizadores, cursos, blog, onboarding e Houses of
+            Sports. Usa este painel para perceber se o LEGACY cresce de forma
+            saudável ou se algo precisa da tua atenção.
+          </p>
+          {statsError && (
+            <p className="mt-3 text-xs text-rose-400">{statsError}</p>
+          )}
+        </div>
       </section>
 
       {/* BLOCOS PRINCIPAIS */}
       <section className="space-y-8">
         {/* USERS */}
         <div className="space-y-3">
-          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-200">
             Utilizadores
           </h2>
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-slate-950/40">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
+            <CardHeader className="border-b border-white/5">
+              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
                 <Users className="h-5 w-5 text-blue-400" />
                 Users
               </CardTitle>
-              <CardDescription className="text-slate-300">
+              <CardDescription className="text-slate-200">
                 Base de utilizadores e registos recentes.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-4 gap-4 text-slate-300">
-              <div className="rounded-lg border-white/10 bg-[#05212b] p-3">
-                <p className="text-xs text-slate-300">Total</p>
-                <p className="text-3xl font-bold text-white">
+            <CardContent className="grid gap-4 text-slate-200 md:grid-cols-4">
+              <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.5)]">
+                <p className="text-xs text-slate-400">Total</p>
+                <p className="text-3xl font-bold text-[#fdd87c]">
                   {loadingStats ? '...' : formatNumber(safeStats.users.total)}
                 </p>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="mt-1 text-xs text-slate-400">
                   Super Admin: {formatNumber(safeStats.users.superAdmins)} |{' '}
                   Admin: {formatNumber(safeStats.users.admins)} | Members:{' '}
                   {formatNumber(safeStats.users.members)}
                 </p>
               </div>
-              <div className="rounded-lg border-white/10 bg-[#05212b] p-3">
-                <p className="text-xs text-slate-300">Novos (24h)</p>
-                <p className="text-3xl font-bold text-white">
+              <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.5)]">
+                <p className="text-xs text-slate-400">Novos (24h)</p>
+                <p className="text-3xl font-bold text-[#fdd87c]">
                   {formatNumber(safeStats.users.new24h)}
                 </p>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="mt-1 text-xs text-slate-400">
                   Últimas 24 horas
                 </p>
               </div>
-              <div className="rounded-lg border-white/10 bg-[#05212b] p-3">
-                <p className="text-xs text-slate-300">Novos (30d)</p>
-                <p className="text-3xl font-bold text-white">
+              <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.5)]">
+                <p className="text-xs text-slate-400">Novos (30d)</p>
+                <p className="text-3xl font-bold text-[#fdd87c]">
                   {formatNumber(safeStats.users.new30d)}
                 </p>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="mt-1 text-xs text-slate-400">
                   Últimos 30 dias
                 </p>
               </div>
-              <div className="rounded-lg border-white/10 bg-[#05212b] p-3">
-                <p className="text-xs text-slate-300">
+              <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.5)]">
+                <p className="text-xs text-slate-400">
                   XP Total (todas ações)
                 </p>
-                <p className="text-xl font-semibold text-white">
+                <p className="text-xl font-semibold text-[#fdd87c]">
                   {formatNumber(safeStats.courses.xp.allActions.total)}
                 </p>
-                <p className="text-[11px] text-slate-300">
+                <p className="text-[11px] text-slate-400">
                   24h:{' '}
                   {formatNumber(safeStats.courses.xp.allActions.last24h)} | 30d:{' '}
                   {formatNumber(safeStats.courses.xp.allActions.last30d)}
@@ -430,20 +436,20 @@ export default function AdminDashboardPage() {
 
         {/* COURSES / MODULES / LESSONS */}
         <div className="space-y-3">
-          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-200">
             Conteúdo educativo
           </h2>
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-blue-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
                 <BookOpen className="h-5 w-5 text-emerald-400" />
                 Active Courses
               </CardTitle>
-              <CardDescription className="text-slate-300">
+              <CardDescription className="text-slate-200">
                 Cursos, módulos, lições e distribuição de XP.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-slate-300">
+            <CardContent className="space-y-4 text-slate-200">
               <div className="grid md:grid-cols-4 gap-4">
                 <StatTile
                   label="Courses (published)"
@@ -463,14 +469,14 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div className="grid md:grid-cols-3 gap-4">
-                <Card className="border border-white/10 border-dashed bg-[#05212b]">
+                <Card className="border border-dashed border-white/20 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-white">
+                    <CardTitle className="text-sm flex items-center gap-2 text-[#fdd87c]">
                       <Activity className="h-4 w-4 text-emerald-400" />
                       XP Distribuído (Total)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-slate-300">
+                  <CardContent className="space-y-2 text-sm text-slate-200">
                     <div>
                       Cursos:{' '}
                       {formatNumber(safeStats.courses.xp.totalCourses)}
@@ -485,14 +491,14 @@ export default function AdminDashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border border-white/10 border-dashed bg-[#05212b]">
+                <Card className="border border-dashed border-white/20 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-white">
+                    <CardTitle className="text-sm flex items-center gap-2 text-[#fdd87c]">
                       <TrendingUp className="h-4 w-4 text-blue-400" />
                       XP (Últimas 24h)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-slate-300">
+                  <CardContent className="space-y-2 text-sm text-slate-200">
                     <div>
                       Cursos:{' '}
                       {formatNumber(safeStats.courses.xp.last24h.courses)}
@@ -507,14 +513,14 @@ export default function AdminDashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border border-white/10 border-dashed bg-[#05212b]">
+                <Card className="border border-dashed border-white/20 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-white">
+                    <CardTitle className="text-sm flex items-center gap-2 text-[#fdd87c]">
                       <BarChart3 className="h-4 w-4 text-purple-400" />
                       XP (Últimos 30d)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-slate-300">
+                  <CardContent className="space-y-2 text-sm text-slate-200">
                     <div>
                       Cursos:{' '}
                       {formatNumber(safeStats.courses.xp.last30d.courses)}
@@ -536,20 +542,20 @@ export default function AdminDashboardPage() {
 
         {/* BLOG */}
         <div className="space-y-3">
-          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-200">
             Blog & Educação contínua
           </h2>
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-purple-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
                 <FileText className="h-5 w-5 text-purple-400" />
                 Blog Posts
               </CardTitle>
-              <CardDescription className="text-slate-300">
+              <CardDescription className="text-slate-200">
                 Publicados, XP distribuído e visualizações.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-slate-300">
+            <CardContent className="space-y-4 text-slate-200">
               <div className="grid md:grid-cols-4 gap-4">
                 <StatTile
                   label="Publicados"
@@ -569,14 +575,14 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div className="grid md:grid-cols-3 gap-4">
-                <Card className="border border-white/10 border-dashed bg-[#05212b]">
+                <Card className="border border-dashed border-white/20 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-white">
-                      <BarChart3 className="h-4 w-4 text-slate-300" />
+                    <CardTitle className="text-sm flex items-center gap-2 text-[#fdd87c]">
+                      <BarChart3 className="h-4 w-4 text-slate-200" />
                       Visualizações
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-1 text-sm text-slate-300">
+                  <CardContent className="space-y-1 text-sm text-slate-200">
                     <div>
                       Total:{' '}
                       {formatNumber(safeStats.blog.views.total)}
@@ -606,20 +612,20 @@ export default function AdminDashboardPage() {
 
         {/* ONBOARDING */}
         <div className="space-y-3">
-          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-200">
             Onboarding & Leads
           </h2>
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-orange-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
                 <Mail className="h-5 w-5 text-orange-400" />
                 Pending Onboarding
               </CardTitle>
-              <CardDescription className="text-slate-300">
+              <CardDescription className="text-slate-200">
                 Estados e responsáveis.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-slate-300">
+            <CardContent className="space-y-4 text-slate-200">
               <div className="grid md:grid-cols-3 gap-4">
                 <StatTile
                   label="Pendentes (total)"
@@ -639,12 +645,12 @@ export default function AdminDashboardPage() {
                   {onboardingStatusEntries.map(([status, count]) => (
                     <div
                       key={status}
-                      className="rounded border border-white/10 bg-[#05212b] p-3"
+                      className="rounded border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]"
                     >
-                      <div className="font-semibold text-white">
+                      <div className="font-semibold text-[#fdd87c]">
                         {status}
                       </div>
-                      <div className="text-sm text-slate-300">{count}</div>
+                      <div className="text-sm text-slate-200">{count}</div>
                     </div>
                   ))}
                 </div>
@@ -652,7 +658,7 @@ export default function AdminDashboardPage() {
               {Object.keys(safeStats.onboarding.byResponsible || {}).length >
                 0 && (
                 <div className="space-y-2 text-xs">
-                  <div className="font-semibold text-white">
+                  <div className="font-semibold text-[#fdd87c]">
                     Responsáveis (by user_id)
                   </div>
                   <div className="grid md:grid-cols-4 gap-2">
@@ -660,12 +666,12 @@ export default function AdminDashboardPage() {
                       ([uid, count]) => (
                         <div
                           key={uid}
-                          className="rounded border border-white/10 bg-[#05212b] p-2"
+                          className="rounded border border-white/10 bg-[#021824]/80 p-2 shadow-[0_10px_30px_rgba(3,10,25,0.45)]"
                         >
-                          <div className="text-[11px] text-slate-300 break-all">
+                          <div className="text-[11px] text-slate-200 break-all">
                             {uid}
                           </div>
-                          <div className="text-sm font-semibold text-slate-300">
+                          <div className="text-sm font-semibold text-slate-200">
                             {count}
                           </div>
                         </div>
@@ -680,20 +686,20 @@ export default function AdminDashboardPage() {
 
         {/* HOUSES */}
         <div className="space-y-3">
-          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-200">
             Houses of Sports
           </h2>
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-amber-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
                 <Building2 className="h-5 w-5 text-amber-400" />
                 Houses of Sports
               </CardTitle>
-              <CardDescription className="text-slate-300">
+              <CardDescription className="text-slate-200">
                 Visão geral de estado.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-4 gap-4 text-slate-300">
+            <CardContent className="grid md:grid-cols-4 gap-4 text-slate-200">
               <StatTile label="Total" value={safeStats.houses.total} />
               <StatTile label="Active" value={safeStats.houses.active} />
               <StatTile label="Building" value={safeStats.houses.building} />
@@ -706,16 +712,18 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* BOTÃO + INSIGHTS AVANÇADOS */}
-        <div className="space-y-4 border-t border-slate-800/70 pt-6">
+        <div className="space-y-4 border-t border-white/10 pt-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
+            <h2 className="text-xl font-semibold flex items-center gap-2 text-[#fdd87c]">
               Advanced Insights
             </h2>
 
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              className="border-white/30 text-white hover:border-cyan-300/40 hover:text-cyan-300"
+              className={`bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045] ${
+                showAdvanced ? 'opacity-90' : ''
+              }`}
               onClick={() => setShowAdvanced((prev) => !prev)}
             >
               {showAdvanced ? 'Esconder insights' : 'Mostrar insights'}
@@ -729,15 +737,15 @@ export default function AdminDashboardPage() {
               )}
 
               {/* User Growth */}
-              <Card className="border border-white/10 bg-[#000c12]">
+              <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
                 <CardHeader>
-                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-200">
                     User Growth (Monthly)
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-slate-300">
+                <CardContent className="text-slate-200">
                   {loadingAdvanced && !advanced ? (
-                    <p className="text-sm text-slate-300">
+                    <p className="text-sm text-slate-200">
                       A carregar...
                     </p>
                   ) : (
@@ -756,15 +764,15 @@ export default function AdminDashboardPage() {
               </Card>
 
               {/* Course Engagement */}
-              <Card className="border border-white/10 bg-[#000c12]">
+              <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
                 <CardHeader>
-                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-200">
                     Course Engagement
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-slate-300">
+                <CardContent className="text-slate-200">
                   {loadingAdvanced && !advanced ? (
-                    <p className="text-sm text-slate-300">
+                    <p className="text-sm text-slate-200">
                       A carregar...
                     </p>
                   ) : (
@@ -774,15 +782,15 @@ export default function AdminDashboardPage() {
               </Card>
 
               {/* Weekly Engagement */}
-              <Card className="border border-white/10 bg-[#000c12]">
+              <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
                 <CardHeader>
-                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                  <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-200">
                     User Activity (Weekly)
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-slate-300">
+                <CardContent className="text-slate-200">
                   {loadingAdvanced && !advanced ? (
-                    <p className="text-sm text-slate-300">
+                    <p className="text-sm text-slate-200">
                       A carregar...
                     </p>
                   ) : (
