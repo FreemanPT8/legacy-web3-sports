@@ -75,8 +75,8 @@ type ThresholdConfig = {
 
 const MetricCard = ({ label, value }: { label: string; value: number }) => (
   <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
-    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{label}</p>
-    <p className="mt-2 text-3xl font-semibold text-white">
+    <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">{label}</p>
+    <p className="mt-2 text-3xl font-semibold text-[#fdd87c]">
       {value.toLocaleString('pt-PT')}
     </p>
   </div>
@@ -559,7 +559,7 @@ export default function AdminXpPage() {
                 <div className="flex justify-end">
                   <Button
                     variant="default"
-                    className="gap-2"
+                    className="gap-2 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                     onClick={async () => {
                       if (!xpConfig) return;
                       setSavingConfig(true);
@@ -609,12 +609,12 @@ export default function AdminXpPage() {
         )}
 
         <section className="space-y-4">
-          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-amber-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
-              <CardTitle className="text-white text-sm font-semibold">
+              <CardTitle className="text-sm font-semibold text-[#fdd87c]">
                 Ajustar XP manualmente
               </CardTitle>
-              <CardDescription className="text-xs text-slate-300">
+              <CardDescription className="text-xs text-slate-200">
                 Escolhe o utilizador e aplica ou remove XP diretamente.
               </CardDescription>
             </CardHeader>
@@ -652,7 +652,7 @@ export default function AdminXpPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="default"
-                  className="gap-2"
+                  className="gap-2 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                   onClick={handleXpAdjustment}
                   disabled={!selectedUserId || !normalizedAmount || submittingXP}
                 >
@@ -666,7 +666,7 @@ export default function AdminXpPage() {
                 {isSuperAdminFreeman && (
                   <Button
                     variant="outline"
-                    className="border-rose-500 text-rose-300 hover:text-rose-200"
+                    className="border-white/40 text-rose-300 hover:bg-rose-500/10"
                     onClick={handleResetXP}
                     disabled={resettingXP}
                   >
@@ -684,7 +684,7 @@ export default function AdminXpPage() {
         </section>
 
         <section className="space-y-6">
-          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-amber-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
               <CardTitle className="text-white text-sm font-semibold">
                 Metricas principais
