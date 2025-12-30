@@ -157,24 +157,28 @@ export default function EducationPage() {
     switch (level) {
       case 'beginner':
         return (
-          <Badge className="bg-emerald-600 text-white">
+          <Badge className="border border-[#34d399]/50 bg-gradient-to-r from-[#0f766e] to-[#059669] text-white shadow-[0_8px_20px_rgba(15,118,110,0.35)]">
             {t('education.level.beginner')}
           </Badge>
         );
       case 'intermediate':
         return (
-          <Badge className="bg-amber-500 text-black">
+          <Badge className="border border-[#fdd87c]/50 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] shadow-[0_8px_20px_rgba(253,216,124,0.35)]">
             {t('education.level.intermediate')}
           </Badge>
         );
       case 'advanced':
         return (
-          <Badge className="bg-rose-600 text-white">
+          <Badge className="border border-[#fb7185]/50 bg-gradient-to-r from-[#f43f5e] to-[#fb7185] text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)]">
             {t('education.level.advanced')}
           </Badge>
         );
       default:
-        return <Badge>{t('education.level.unknown')}</Badge>;
+        return (
+          <Badge className="border border-white/20 bg-[#04131b] text-white">
+            {t('education.level.unknown')}
+          </Badge>
+        );
     }
   };
 
@@ -206,10 +210,10 @@ export default function EducationPage() {
               <h1 className="text-4xl font-semibold leading-tight text-white md:text-5xl">
                 {t('education.hero.title')}
               </h1>
-              <p className="text-lg text-slate-200">
+              <p className="text-lg text-slate-100">
                 {t('education.hero.subtitle')}
               </p>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-slate-200">
                 {t('education.hero.description')}
               </p>
               <div className="flex flex-wrap gap-4">
@@ -235,7 +239,7 @@ export default function EducationPage() {
                   </Link>
                 </Button>
               </div>
-              <p className="text-xs text-slate-300">{t('home.trackProgress')}</p>
+              <p className="text-xs text-cyan-200/80">{t('home.trackProgress')}</p>
             </div>
 
             <div className="flex-1">
@@ -249,7 +253,7 @@ export default function EducationPage() {
                     <CardTitle className="text-3xl font-semibold text-white">
                       {formatStat(stats?.totalCourses)}
                     </CardTitle>
-                    <CardDescription className="text-xs text-slate-300">
+                    <CardDescription className="text-xs text-slate-200">
                       {t('home.structuredPaths')}
                     </CardDescription>
                   </CardHeader>
@@ -264,7 +268,7 @@ export default function EducationPage() {
                     <CardTitle className="text-3xl font-semibold text-white">
                       {formatStat(stats?.totalLessons)}
                     </CardTitle>
-                    <CardDescription className="text-xs text-slate-300">
+                    <CardDescription className="text-xs text-slate-200">
                       {t('home.learnEarnDesc')}
                     </CardDescription>
                   </CardHeader>
@@ -279,7 +283,7 @@ export default function EducationPage() {
                     <CardTitle className="text-3xl font-semibold text-white">
                       {formatStat(stats?.activeUsers)}
                     </CardTitle>
-                    <CardDescription className="text-xs text-slate-300">
+                    <CardDescription className="text-xs text-slate-200">
                       {t('home.personalizedOnboardingDesc')}
                     </CardDescription>
                   </CardHeader>
@@ -302,7 +306,7 @@ export default function EducationPage() {
               <h2 className="mt-3 text-3xl font-semibold text-white">
                 {t('education.cta.title')}
               </h2>
-              <p className="mt-3 text-sm text-slate-300">
+              <p className="mt-3 text-sm text-slate-200">
                 Acede a conteúdos exclusivos, missões e badges quando crias uma conta e entras na Academia Web3.
               </p>
               <div className="mt-6 space-y-3 text-sm text-slate-200">
@@ -343,10 +347,10 @@ export default function EducationPage() {
                     className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#04131b] px-4 py-3"
                   >
                     <span className="font-semibold text-white">{item.title}</span>
-                    <span className="text-slate-300">{item.range}</span>
+                    <span className="text-slate-200">{item.range}</span>
                   </div>
                 ))}
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-200">
                   {t('education.previewHint') || 'Regista-te para ver a timeline completa, badges e cursos disponíveis em cada nível.'}
                 </p>
               </div>
@@ -365,7 +369,7 @@ export default function EducationPage() {
               {loading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-                  <p className="mt-4 text-slate-300">
+                  <p className="mt-4 text-slate-200">
                     {t('education.loadingStats')}
                   </p>
                 </div>
@@ -377,7 +381,7 @@ export default function EducationPage() {
                         <div className="text-3xl font-bold text-white">
                           {stats?.totalCourses || 0}
                         </div>
-                        <div className="text-sm text-slate-300">
+                        <div className="text-sm text-slate-200">
                           {t('education.stats.courses')}
                         </div>
                       </CardContent>
@@ -388,7 +392,7 @@ export default function EducationPage() {
                         <div className="text-3xl font-bold text-white">
                           {stats?.totalLessons || 0}
                         </div>
-                        <div className="text-sm text-slate-300">
+                        <div className="text-sm text-slate-200">
                           {t('education.stats.lessons')}
                         </div>
                       </CardContent>
@@ -399,7 +403,7 @@ export default function EducationPage() {
                         <div className="text-3xl font-bold text-white">
                           {stats?.activeUsers || 0}
                         </div>
-                        <div className="text-sm text-slate-300">
+                        <div className="text-sm text-slate-200">
                           {t('education.stats.activeUsers')}
                         </div>
                       </CardContent>
@@ -410,7 +414,7 @@ export default function EducationPage() {
                         <div className="text-3xl font-bold text-white">
                           {stats?.totalXPDistributed?.toLocaleString() || 0}
                         </div>
-                        <div className="text-sm text-slate-300">
+                        <div className="text-sm text-slate-200">
                           {t('education.stats.xpDistributed')}
                         </div>
                     </CardContent>
@@ -469,7 +473,7 @@ export default function EducationPage() {
             <div className="text-center mb-8">
               <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">Academia em níveis</p>
               <h2 className="mt-2 text-3xl font-semibold text-white">Desbloqueia conteúdos progressivos</h2>
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-2 text-sm text-slate-200">
                 Vê um sneak peek dos caminhos disponíveis. Depois de entrares, poderás acompanhar o teu progresso em tempo real.
               </p>
             </div>
@@ -480,8 +484,8 @@ export default function EducationPage() {
                   className="rounded-2xl border border-white/10 bg-[#04131b] px-4 py-6 text-center text-white"
                 >
                   <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{item.title}</p>
-                  <p className="mt-2 text-sm text-slate-300">{item.range}</p>
-                  <p className="mt-4 text-xs text-slate-400">
+                  <p className="mt-2 text-sm text-slate-200">{item.range}</p>
+                  <p className="mt-4 text-xs text-slate-200">
                     {t('education.previewcta') || 'Disponível após login.'}
                   </p>
                 </div>
@@ -503,7 +507,7 @@ export default function EducationPage() {
                   <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
                     {t('education.featured.title')}
                   </h2>
-                  <p className="text-lg text-slate-300">
+                  <p className="text-lg text-slate-200">
                     {t('education.featuredDesc') ||
                       'Start your learning journey with our most popular courses'}
                   </p>
@@ -516,8 +520,8 @@ export default function EducationPage() {
                 ) : topCourses.length === 0 ? (
                   <Card className="border border-white/10 bg-[#04131b]">
                     <CardContent className="text-center py-12">
-                      <BookOpen className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                      <p className="text-slate-300">
+                      <BookOpen className="h-16 w-16 text-slate-200 mx-auto mb-4" />
+                      <p className="text-slate-200">
                         {t('education.noCourses') || 'No courses available yet'}
                       </p>
                     </CardContent>
@@ -558,7 +562,7 @@ export default function EducationPage() {
                             {getLevelBadge(course.level)}
                                 <Badge
                                   variant="outline"
-                                  className="border-primary/70 bg-black/40 text-cyan-100"
+                                  className="border-[#5af3ff]/50 bg-[#00141f]/80 text-[#5af3ff]"
                                 >
                                 {course.xp_required} XP
                               </Badge>
@@ -566,13 +570,13 @@ export default function EducationPage() {
                               <CardTitle className="text-xl text-white">
                                 {title}
                               </CardTitle>
-                              <CardDescription className="line-clamp-2 text-slate-300">
+                              <CardDescription className="line-clamp-2 text-slate-200">
                                 {description}
                               </CardDescription>
                           </CardHeader>
                           <CardContent>
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2 text-sm text-slate-300">
+                              <div className="flex items-center gap-2 text-sm text-slate-200">
                                 <BookOpen className="h-4 w-4 text-cyan-300" />
                                 <span>
                                   {modulesArray.length} {t('education.modules')} /{' '}
@@ -582,7 +586,7 @@ export default function EducationPage() {
                             {isLocked ? (
                               <Button
                                 variant="outline"
-                                className="w-full border-white/30 text-slate-300 hover:bg-white/10"
+                                className="w-full border-white/30 text-slate-200 hover:bg-white/10"
                                 disabled
                               >
                                 {t('education.unlockAt') || 'Unlock at'}{' '}
@@ -632,7 +636,7 @@ export default function EducationPage() {
                   <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
                     {t('education.xp.title')}
                   </h2>
-                  <p className="mb-6 text-lg text-slate-300">
+                  <p className="mb-6 text-lg text-slate-200">
                     {t('education.xp.description')}
                   </p>
                   <div className="space-y-4 text-sm">
@@ -642,7 +646,7 @@ export default function EducationPage() {
                         <div className="font-semibold text-white">
                           {t('education.completeLessons')}
                         </div>
-                        <div className="text-slate-300">
+                        <div className="text-slate-200">
                           {t('education.completeLessonsDesc')}
                         </div>
                       </div>
@@ -653,7 +657,7 @@ export default function EducationPage() {
                         <div className="font-semibold text-white">
                         {t('education.readArticles')}
                       </div>
-                        <div className="text-slate-300">
+                        <div className="text-slate-200">
                         {t('education.readArticlesDesc')}
                       </div>
                     </div>
@@ -664,7 +668,7 @@ export default function EducationPage() {
                         <div className="font-semibold text-white">
                         {t('education.forumParticipation')}
                       </div>
-                        <div className="text-slate-300">
+                        <div className="text-slate-200">
                         {t('education.forumParticipationDesc')}
                       </div>
                     </div>
@@ -675,7 +679,7 @@ export default function EducationPage() {
                         <div className="font-semibold text-white">
                         {t('education.dailyStreaks')}
                       </div>
-                        <div className="text-slate-300">
+                        <div className="text-slate-200">
                         {t('education.dailyStreaksDesc')}
                       </div>
                     </div>
@@ -735,11 +739,11 @@ export default function EducationPage() {
                   <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
                   {t('education.leaderboard.title')}
                   </h2>
-                  <p className="text-lg text-slate-300">
+                  <p className="text-lg text-slate-200">
                     See who's leading the way in Web3 education
                   </p>
                 </div>
-                <div className="mb-6 flex items-center justify-center gap-2 text-sm text-slate-300">
+                <div className="mb-6 flex items-center justify-center gap-2 text-sm text-slate-200">
                   <Award className="h-4 w-4 text-amber-300" />
                   <span>{badgeIconHint}</span>
                 </div>
@@ -751,8 +755,8 @@ export default function EducationPage() {
                 ) : leaderboard.length === 0 ? (
                   <Card className="border border-white/10 bg-[#04131b]">
                     <CardContent className="text-center py-12">
-                      <Trophy className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                      <p className="text-slate-300">
+                      <Trophy className="h-16 w-16 text-slate-200 mx-auto mb-4" />
+                      <p className="text-slate-200">
                         {t('education.noLeaderboard')}
                       </p>
                   </CardContent>
@@ -777,7 +781,7 @@ export default function EducationPage() {
                                 ? 'text-white'
                                 : index === 2
                                 ? 'text-orange-400'
-                                : 'text-slate-400'
+                                : 'text-slate-300'
                             }`}
                           >
                             #{index + 1}
@@ -786,7 +790,7 @@ export default function EducationPage() {
                             <div className="font-semibold text-lg text-white">
                               {learner.username}
                             </div>
-                            <div className="text-sm text-slate-300">
+                            <div className="text-sm text-slate-200">
                               {learner.country}
                             </div>
                           </div>
@@ -804,7 +808,7 @@ export default function EducationPage() {
                                 {learner.xp_total}
                               </div>
                             </div>
-                            <div className="text-sm text-slate-300">
+                            <div className="text-sm text-slate-200">
                               XP
                             </div>
                           </div>
