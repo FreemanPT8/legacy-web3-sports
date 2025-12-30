@@ -272,9 +272,9 @@ export default function AdminOnboardingPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-custom">
-          <Loader2 className="h-5 w-5 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-200">
+          <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
           A carregar onboarding...
         </div>
       </div>
@@ -282,59 +282,59 @@ export default function AdminOnboardingPage() {
   }
 
   return (
-    <div className="w-full space-y-8">
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+    <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 md:px-8">
+      <section className="mt-2 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-4 py-6 md:px-6 md:py-8 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
           <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
         </div>
         <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+          <span className="mb-3 inline-flex items-center rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-200">
             LEGACY Admin — Onboarding
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight text-[#fdd87c] md:text-4xl">
             <Mail className="h-7 w-7 text-emerald-300" />
             Onboarding Central
           </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
+          <p className="mt-2 max-w-2xl text-sm text-slate-100 md:text-base">
             Priorize leads, distribua ações e mantenha o ritmo com dados reais de cada etapa.
           </p>
         </div>
       </section>
 
       <section>
-        <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-emerald-900/60 shadow-2xl mx-auto max-w-6xl">
+        <Card className="mx-auto max-w-6xl border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
           <CardHeader className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-emerald-500/20 text-emerald-100 border border-emerald-500/40">
+              <Badge className="border border-cyan-400/40 bg-cyan-400/10 text-cyan-100">
                 Pulse
               </Badge>
-              <CardTitle className="text-heading text-lg">
+              <CardTitle className="text-lg text-[#fdd87c]">
                 Onboarding com ritmo
               </CardTitle>
             </div>
-            <p className="text-muted-custom text-sm max-w-3xl">
+            <p className="max-w-3xl text-sm text-slate-200">
               Use este painel para responder rapidamente, organizar checklists e compartilhar o pipeline com o time.
             </p>
           </CardHeader>
           <CardContent className="pt-2">
             <div className="flex flex-col gap-3 md:flex-row">
               <Button
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="flex-1 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                 onClick={handleScrollToLeads}
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Ver novos leads
               </Button>
               <Button
-                className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+                className="flex-1 border border-white/30 bg-transparent text-white hover:bg-white/10"
                 onClick={handleScrollToPipeline}
               >
                 <ClipboardList className="h-4 w-4 mr-2" />
                 Revisar checklist
               </Button>
               <Button
-                className="flex-1 border border-blue-600 text-blue-100 bg-blue-950/50 hover:bg-blue-900"
+                className="flex-1 border border-white/30 bg-transparent text-white hover:bg-white/10"
                 onClick={handleSharePipeline}
               >
                 <Share2 className="h-4 w-4 mr-2" />
@@ -343,23 +343,23 @@ export default function AdminOnboardingPage() {
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
               {loadingStats ? (
-                <div className="md:col-span-3 text-center text-sm text-muted-custom">
+                <div className="md:col-span-3 text-center text-sm text-slate-300">
                   A carregar métricas rápidas...
                 </div>
               ) : (
                 quickMetrics.map((metric) => (
                   <div
                     key={metric.label}
-                    className="rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2 text-muted-custom"
+                    className="rounded-lg border border-white/10 bg-[#021824]/80 px-3 py-2 text-slate-200"
                   >
                     <p className="text-[11px] uppercase tracking-wide">
                       {metric.label}
                     </p>
-                    <p className="text-2xl font-semibold text-heading">
+                    <p className="text-2xl font-semibold text-[#fdd87c]">
                       {metric.value.toLocaleString('pt-PT')}
                     </p>
                     {metric.hint && (
-                      <p className="text-[11px] text-muted-custom">{metric.hint}</p>
+                      <p className="text-[11px] text-slate-300">{metric.hint}</p>
                     )}
                   </div>
                 ))
@@ -370,63 +370,63 @@ export default function AdminOnboardingPage() {
       </section>
 
       <section className="space-y-4" ref={pipelineRef}>
-        <Card className="bg-card-custom border-custom shadow-lg shadow-emerald-950/40">
+        <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
           <CardHeader>
-            <CardTitle className="text-heading text-sm font-semibold">
+            <CardTitle className="text-sm font-semibold text-[#fdd87c]">
               Métricas do pipeline
             </CardTitle>
-            <CardDescription className="text-xs text-muted-custom">
+            <CardDescription className="text-xs text-slate-300">
               Visualize quantos leads estão em cada etapa.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4">
+          <CardContent className="grid gap-4 md:grid-cols-2">
             {stageData.map((stage) => (
               <div
                 key={stage.status}
-                className="rounded-lg border border-slate-800 bg-slate-950/60 p-4 space-y-2"
+                className="space-y-2 rounded-lg border border-white/10 bg-[#021824]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.45)]"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-heading">{stage.label}</p>
+                  <p className="text-sm font-semibold text-white">{stage.label}</p>
                   <Badge variant={stage.badgeVariant as any}>
                     {stage.badgeLabel}
                   </Badge>
                 </div>
-                <p className="text-3xl font-semibold text-heading">{stage.count}</p>
-                <p className="text-xs text-muted-custom">{stage.description}</p>
+                <p className="text-3xl font-semibold text-white">{stage.count}</p>
+                <p className="text-xs text-slate-300">{stage.description}</p>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="bg-card-custom border-custom">
+        <Card className="border border-white/10 bg-[#04131b]">
           <CardHeader>
-            <CardTitle className="text-heading">Ações rápidas</CardTitle>
-            <CardDescription className="text-xs text-muted-custom">
+            <CardTitle className="text-white">Ações rápidas</CardTitle>
+            <CardDescription className="text-xs text-slate-300">
               Priorização baseada em dados reais e leads que mais pedem atenção.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs uppercase text-muted-custom">Checklist</p>
-                <p className="text-lg font-semibold text-heading">
+                <p className="text-xs uppercase text-slate-300">Checklist</p>
+                <p className="text-lg font-semibold text-white">
                   {pendingFirstContacts.toLocaleString('pt-PT')} contatos agendados
                 </p>
-                <p className="text-xs text-muted-custom mt-1">
+                <p className="text-xs text-slate-300 mt-1">
                   Valide o primeiro contacto antes de avançar para outras etapas.
                 </p>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10">
                 Ver agenda completa
               </Button>
             </div>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs uppercase text-muted-custom">Conversas abertas</p>
-                <p className="text-lg font-semibold text-heading">
+                <p className="text-xs uppercase text-slate-300">Conversas abertas</p>
+                <p className="text-lg font-semibold text-white">
                   {onboardingStats.pendingTotal.toLocaleString('pt-PT')} em aberto
                 </p>
-                <p className="text-xs text-muted-custom mt-1">
+                <p className="text-xs text-slate-300 mt-1">
                   Consulte os leads listados abaixo para atuar rapidamente.
                 </p>
               </div>
@@ -439,31 +439,31 @@ export default function AdminOnboardingPage() {
       </section>
 
       <section ref={leadsRef} className="space-y-4">
-        <Card className="bg-card-custom border-custom">
+        <Card className="border border-white/10 bg-[#04131b]">
           <CardHeader>
-            <CardTitle className="text-heading text-sm font-semibold">
+            <CardTitle className="text-white text-sm font-semibold">
               Leads recentes
             </CardTitle>
-            <CardDescription className="text-xs text-muted-custom">
+            <CardDescription className="text-xs text-slate-300">
               {leads.length} registros puxados diretamente do pipeline.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {loadingLeads ? (
-              <div className="flex items-center justify-center gap-2 text-muted-custom">
+              <div className="flex items-center justify-center gap-2 text-slate-300">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Carregando leads...
               </div>
             ) : leadsError ? (
               <p className="text-sm text-red-400">{leadsError}</p>
             ) : leads.length === 0 ? (
-              <p className="text-sm text-muted-custom">
+              <p className="text-sm text-slate-300">
                 Ainda não existem leads cadastrados neste momento.
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm text-slate-200">
-                  <thead className="text-xs uppercase tracking-wide text-muted-custom">
+                  <thead className="text-xs uppercase tracking-wide text-slate-300">
                     <tr>
                       <th className="px-3 py-2 text-left">Lead</th>
                       <th className="px-3 py-2 text-left">Status</th>
@@ -476,10 +476,10 @@ export default function AdminOnboardingPage() {
                     {leads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-slate-950/40">
                         <td className="px-3 py-2">
-                          <p className="font-semibold text-heading">
+                          <p className="font-semibold text-white">
                             {lead.full_name || lead.email || 'Sem nome'}
                           </p>
-                          <p className="text-xs text-muted-custom">{lead.email}</p>
+                          <p className="text-xs text-slate-300">{lead.email}</p>
                         </td>
                         <td className="px-3 py-2">
                           <Badge variant="outline" className="uppercase text-[10px]">
@@ -492,7 +492,7 @@ export default function AdminOnboardingPage() {
                         <td className="px-3 py-2">
                           {lead.assigned_to_username || 'Unassigned'}
                         </td>
-                        <td className="px-3 py-2 text-xs text-muted-custom">
+                        <td className="px-3 py-2 text-xs text-slate-300">
                           {lead.created_at
                             ? new Date(lead.created_at).toLocaleDateString()
                             : '-'}
