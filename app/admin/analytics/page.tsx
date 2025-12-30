@@ -340,6 +340,20 @@ export default function AdminAnalyticsPage() {
           </Card>
         </div>
 
+        <div className="space-y-3 border-t border-white/10 pt-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.4em] text-cyan-200">
+              Níveis de XP
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/40 text-white hover:bg-white/10"
+              onClick={() => router.push('/admin/xp')}
+            >
+              Ver controle de XP
+            </Button>
+          </div>
           <div className="grid gap-3 md:grid-cols-3">
             <MetricCard
               label="XP total (all actions)"
