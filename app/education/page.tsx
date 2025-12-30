@@ -207,7 +207,7 @@ export default function EducationPage() {
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                 {t('nav.education')}
               </p>
-              <h1 className="text-4xl font-semibold leading-tight text-white md:text-5xl">
+              <h1 className="text-4xl font-semibold leading-tight text-[#fdd87c] md:text-5xl">
                 {t('education.hero.title')}
               </h1>
               <p className="text-lg text-slate-100">
@@ -303,7 +303,7 @@ export default function EducationPage() {
               <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
                 {t('education.hero.subtitle')}
               </p>
-              <h2 className="mt-3 text-3xl font-semibold text-white">
+              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">
                 {t('education.cta.title')}
               </h2>
               <p className="mt-3 text-sm text-slate-200">
@@ -472,7 +472,7 @@ export default function EducationPage() {
           <div className="relative mx-auto max-w-6xl px-6">
             <div className="text-center mb-8">
               <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">Academia em níveis</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Desbloqueia conteúdos progressivos</h2>
+              <h2 className="mt-2 text-3xl font-semibold text-[#fdd87c]">Desbloqueia conteúdos progressivos</h2>
               <p className="mt-2 text-sm text-slate-200">
                 Vê um sneak peek dos caminhos disponíveis. Depois de entrares, poderás acompanhar o teu progresso em tempo real.
               </p>
@@ -504,7 +504,7 @@ export default function EducationPage() {
           <div className="relative container mx-auto px-4">
             <div className="mx-auto max-w-6xl">
                 <div className="text-center mb-12">
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#fdd87c]">
                     {t('education.featured.title')}
                   </h2>
                   <p className="text-lg text-slate-200">
@@ -633,7 +633,7 @@ export default function EducationPage() {
           <div className="relative mx-auto max-w-6xl">
             <div className="grid items-center gap-12 md:grid-cols-2">
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-6 text-[#fdd87c]">
                     {t('education.xp.title')}
                   </h2>
                   <p className="mb-6 text-lg text-slate-200">
@@ -736,7 +736,7 @@ export default function EducationPage() {
             <div className="relative mx-auto max-w-6xl">
               <div className="mx-auto max-w-6xl">
                 <div className="text-center mb-12">
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#fdd87c]">
                   {t('education.leaderboard.title')}
                   </h2>
                   <p className="text-lg text-slate-200">
@@ -841,7 +841,7 @@ export default function EducationPage() {
             <div className="absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
           </div>
           <div className="relative mx-auto max-w-5xl px-6 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-[#fdd87c]">
                 {t('education.cta.title')}
               </h2>
             <p className="text-xl text-cyan-100 mb-8 max-w-2xl mx-auto">
