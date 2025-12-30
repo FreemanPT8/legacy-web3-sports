@@ -218,7 +218,7 @@ export default function AdminHousesPage() {
             </div>
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-end lg:w-auto">
               <Button
-                className="flex-1 bg-cyan-500 text-[#000c12] hover:bg-cyan-400 sm:flex-none"
+                className="flex-1 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045] sm:flex-none"
                 onClick={() => router.push('/admin/houses/create')}
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -375,7 +375,7 @@ export default function AdminHousesPage() {
                   Limpar filtros
                 </Button>
                 <Button
-                  className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                   onClick={() => router.push('/admin/houses/create')}
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -390,24 +390,24 @@ export default function AdminHousesPage() {
           <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             LISTA DE HOUSES
           </p>
-          <Card className="border border-white/10 bg-[#04131b]/50">
+          <Card className="border border-white/10 bg-[#04131b]/60 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
             <CardHeader>
-              <CardTitle className="text-white">
+              <CardTitle className="text-[#fdd87c]">
                 Houses encontradas: {filtered.length}
               </CardTitle>
-              <CardDescription className="text-sm text-slate-300">
+              <CardDescription className="text-sm text-slate-200">
                 Os dados abaixo usam o mesmo layout dos cards de houses
                 publicos mas com mais contexto para o admin.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="flex items-center justify-center gap-2 py-12 text-slate-300">
+                <div className="flex items-center justify-center gap-2 py-12 text-slate-200">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   A carregar houses...
                 </div>
               ) : filtered.length === 0 ? (
-                <p className="py-10 text-center text-sm text-slate-300">
+                <p className="py-10 text-center text-sm text-slate-200">
                   {houses.length === 0
                     ? 'Nenhuma house registada ainda. Cria a primeira usando o botao acima.'
                     : 'Nenhuma house corresponde aos filtros atuais.'}
@@ -426,7 +426,7 @@ export default function AdminHousesPage() {
                     return (
                       <article
                         key={house.id}
-                        className="rounded-2xl border border-white/10 bg-[#04131b] p-5 shadow-lg shadow-black/20 transition hover:border-cyan-400/50"
+                        className="rounded-2xl border border-white/10 bg-[#04131b] p-5 shadow-[0_25px_70px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/50"
                       >
                         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                           <div className="flex flex-1 items-start gap-4">
@@ -453,7 +453,7 @@ export default function AdminHousesPage() {
                             <div className="space-y-1">
                               <Link
                                 href={`/admin/houses/${house.id}`}
-                                className="text-lg font-semibold text-white hover:text-cyan-300"
+                                className="text-lg font-semibold text-[#fdd87c] hover:text-cyan-300"
                               >
                                 {house.sport_name || 'House sem nome'}
                               </Link>
@@ -466,7 +466,7 @@ export default function AdminHousesPage() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex flex-1 flex-col gap-3 text-sm text-slate-300">
+                          <div className="flex flex-1 flex-col gap-3 text-sm text-slate-200">
                             <div className="flex items-center gap-3">
                               <div className="h-12 w-12 rounded-full border border-white/10 bg-[#03121a] text-xs font-semibold uppercase text-slate-300">
                                 {house.head?.avatar_url &&
@@ -515,7 +515,7 @@ export default function AdminHousesPage() {
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <Button
-                                className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                                 onClick={() =>
                                   router.push(`/admin/houses/${house.id}`)
                                 }
