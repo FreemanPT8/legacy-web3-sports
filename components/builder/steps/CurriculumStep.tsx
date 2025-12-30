@@ -105,6 +105,7 @@ export function CurriculumStep() {
   const topics = courseState.curriculum.topics;
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
   const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
+  const [collapsedTopics, setCollapsedTopics] = useState<Record<string, boolean>>({});
   const lessonLibrary = useMediaLibrary();
   const [mediaPicker, setMediaPicker] = useState<{
     topicId: string;
@@ -529,6 +530,54 @@ export function CurriculumStep() {
 
   const topicItems = useMemo(() => topics.map((topic) => topic.id), [topics]);
 
+  const isTopicCollapsed = useCallback(
+    (topicId: string) => Boolean(collapsedTopics[topicId]),
+    [collapsedTopics],
+  );
+
+  const handleToggleTopicCollapse = useCallback(
+    (topicId: string) => {
+      const willCollapse = !collapsedTopics[topicId];
+      setCollapsedTopics((prev) => {
+        const nextState = { ...prev };
+        if (willCollapse) {
+          nextState[topicId] = true;
+        } else {
+          delete nextState[topicId];
+        }
+        return nextState;
+      });
+
+      if (!willCollapse) {
+        return;
+      }
+
+      const topic = topics.find((item) => item.id === topicId);
+      if (!topic) return;
+
+      if (
+        expandedLessonId &&
+        topic.lessons.some((lesson) => lesson.id === expandedLessonId)
+      ) {
+        setExpandedLessonId(null);
+      }
+      if (
+        expandedQuizId &&
+        topic.quizzes.some((quiz) => quiz.id === expandedQuizId)
+      ) {
+        setExpandedQuizId(null);
+      }
+    },
+    [
+      collapsedTopics,
+      expandedLessonId,
+      expandedQuizId,
+      topics,
+      setExpandedLessonId,
+      setExpandedQuizId,
+    ],
+  );
+
   const handleOpenMediaPicker = (
     topicId: string,
     lessonId: string,
@@ -627,6 +676,7 @@ export function CurriculumStep() {
               key={topic.id}
               topic={topic}
               index={index}
+              isCollapsed={isTopicCollapsed(topic.id)}
               activeLanguage={activeLanguage}
               onTitleChange={(value) =>
                 updateTopicTitle(topic.id, activeLanguage, value)
@@ -667,6 +717,7 @@ export function CurriculumStep() {
               onQuizChange={(quizId, updater) =>
                 updateQuiz(topic.id, quizId, updater)
               }
+              onToggleCollapse={() => handleToggleTopicCollapse(topic.id)}
             />
             ))}
           </div>
@@ -710,6 +761,7 @@ export function CurriculumStep() {
 interface TopicCardProps {
   topic: TopicState;
   index: number;
+  isCollapsed: boolean;
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onXpRequiredChange: (value: number) => void;
@@ -740,6 +792,7 @@ interface TopicCardProps {
   translatingTopic: boolean;
   onTranslateLesson: (lessonId: string) => void;
   translatingLessonId: string | null;
+  onToggleCollapse: () => void;
 }
 
 function SortableTopicCard(props: TopicCardProps) {
@@ -760,6 +813,7 @@ function SortableTopicCard(props: TopicCardProps) {
 function TopicCard({
   topic,
   index,
+  isCollapsed,
   onTitleChange,
   onDescriptionChange,
   onXpRequiredChange,
@@ -784,6 +838,7 @@ function TopicCard({
   translatingTopic,
   onTranslateLesson,
   translatingLessonId,
+  onToggleCollapse,
 }: TopicCardProps) {
   const titleValue = getTranslationValue(topic.title, activeLanguage);
   const currentDescription = getTranslationValue(
@@ -833,17 +888,31 @@ function TopicCard({
   return (
     <Card className="border-gray-200 shadow-sm dark:border-gray-800">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="rounded-md border border-dashed border-gray-300 p-1 text-gray-400 hover:text-gray-600"
-              {...dragAttributes}
-              {...dragListeners}
-            >
-              <GripVertical className="h-4 w-4" />
-            </button>
-            <div>
+        <div className="flex w-full flex-wrap items-start gap-3">
+          <div className="flex flex-1 flex-wrap items-start gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-dashed border-gray-300 p-1 text-gray-400 hover:text-gray-600"
+                {...dragAttributes}
+                {...dragListeners}
+              >
+                <GripVertical className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                aria-expanded={!isCollapsed}
+                className="rounded-md border border-gray-200 p-1 text-gray-500 transition-colors hover:text-gray-700 dark:border-gray-700 dark:text-gray-300 dark:hover:text-white"
+                title={isCollapsed ? 'Expand topic' : 'Collapse topic'}
+              >
+                <ChevronDown
+                  className="h-4 w-4 transition-transform"
+                  style={{ transform: isCollapsed ? 'rotate(-90deg)' : undefined }}
+                />
+              </button>
+            </div>
+            <div className="min-w-[220px] flex-1">
               <p className="text-xs text-gray-500">Topic {index + 1}</p>
               <Input
                 value={titleValue}
@@ -851,55 +920,61 @@ function TopicCard({
                 className="mt-1 h-8 border-0 bg-transparent px-0 text-base font-semibold focus-visible:ring-0"
                 placeholder="Untitled topic"
               />
-              <div className="mt-2">
-                {isEditingDescription ? (
-                  <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                    <Textarea
-                      value={descriptionDraft}
-                      onChange={(event) => setDescriptionDraft(event.target.value)}
-                      placeholder="Describe what this topic will cover"
-                      className="min-h-[90px] border-0 bg-transparent text-sm text-gray-700 focus-visible:ring-0 dark:text-gray-100"
-                    />
-                    <div className="mt-3 flex items-center justify-end gap-2">
+              {!isCollapsed ? (
+                <div className="mt-2">
+                  {isEditingDescription ? (
+                    <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                      <Textarea
+                        value={descriptionDraft}
+                        onChange={(event) => setDescriptionDraft(event.target.value)}
+                        placeholder="Describe what this topic will cover"
+                        className="min-h-[90px] border-0 bg-transparent text-sm text-gray-700 focus-visible:ring-0 dark:text-gray-100"
+                      />
+                      <div className="mt-3 flex items-center justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCancelDescription}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleSaveDescription}
+                        >
+                          Save description
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                      <p className="whitespace-pre-wrap">
+                        {currentDescription.trim()
+                          ? currentDescription
+                          : 'No description for this topic yet.'}
+                      </p>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={handleCancelDescription}
+                        className="mt-2"
+                        onClick={() => setIsEditingDescription(true)}
                       >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleSaveDescription}
-                      >
-                        Save description
+                        Edit description
                       </Button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
-                    <p className="whitespace-pre-wrap">
-                      {currentDescription.trim()
-                        ? currentDescription
-                        : 'No description for this topic yet.'}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => setIsEditingDescription(true)}
-                    >
-                      Edit description
-                    </Button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Topic minimized. Expand to manage description, lessons and quizzes.
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex flex-1 items-start justify-end gap-2">
+          <div className="ml-auto flex items-start gap-2">
             <Button
               type="button"
               variant="outline"
@@ -923,7 +998,8 @@ function TopicCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      {!isCollapsed && (
+        <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline" className="flex items-center gap-1">
             <BookOpenCheck className="h-3.5 w-3.5 text-blue-600" />
@@ -1054,7 +1130,8 @@ function TopicCard({
             </Button>
           </div>
         </div>
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 }
