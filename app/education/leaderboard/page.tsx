@@ -187,7 +187,12 @@ export default function LeaderboardPage() {
               };
             })
             .filter(Boolean);
-          setCountryLeaders(normalized);
+          const sortedCountries = [...normalized].sort(
+            (a, b) =>
+              (b.totalXP ?? 0) - (a.totalXP ?? 0) ||
+              (b.memberCount ?? 0) - (a.memberCount ?? 0),
+          );
+          setCountryLeaders(sortedCountries);
           const totalCountriesValue =
             typeof countryJson.totalCountries === 'number'
               ? countryJson.totalCountries
@@ -361,7 +366,7 @@ export default function LeaderboardPage() {
   });
 
   const topCountryItems: HighlightItem[] = [...countryLeaders]
-    .sort((a, b) => b.memberCount - a.memberCount || (b.totalXP ?? 0) - (a.totalXP ?? 0))
+    .sort((a, b) => (b.totalXP ?? 0) - (a.totalXP ?? 0) || b.memberCount - a.memberCount)
     .slice(0, 3)
     .map((country) => ({
       key: country.code,
@@ -513,7 +518,7 @@ type RankingEntry = {
     key: country.code,
     rank: index + 1,
     title: country.name,
-    subtitle: `${country.memberCount} ${t('leaderboard.members')}`,
+    subtitle: `${formatNumber(country.memberCount)} ${t('leaderboard.members')}`,
     valueLabel: `${formatNumber(country.totalXP ?? 0)} XP`,
     valueClass: 'text-emerald-300',
   }));
