@@ -696,12 +696,10 @@ export default function AdminBlogPage() {
     !permissionsLoaded
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 mx-auto animate-spin text-blue-600" />
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
-            {copy.loadingAdmin}
-          </p>
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-cyan-300" />
+          <p className="mt-4 text-slate-200">{copy.loadingAdmin}</p>
         </div>
       </div>
     );
@@ -770,26 +768,26 @@ export default function AdminBlogPage() {
     });
 
   return (
-    <div className="min-h-screen w-full space-y-8 bg-[#000c12] px-4 py-6 text-white md:px-8">
+    <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 text-white md:px-8">
       {/* HERO */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-10 shadow-2xl shadow-black/40">
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
         </div>
 
         <div className="relative z-10 max-w-5xl space-y-4">
-          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
             {copy.hero.badge}
           </p>
-          <h1 className="text-3xl font-semibold text-white md:text-4xl">
+          <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
             {copy.hero.title}
           </h1>
-          <p className="text-sm text-slate-300 md:text-base">
+          <p className="text-sm text-slate-100 md:text-base">
             {copy.hero.description}
           </p>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3 text-sm text-white shadow-lg shadow-black/30">
+            <div className="rounded-2xl border border-white/10 bg-[#021824]/80 px-4 py-3 text-sm text-white shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
               <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-200">
                 {copy.hero.xpLabel}
               </p>
@@ -800,7 +798,7 @@ export default function AdminBlogPage() {
                 {copy.hero.xpDescription}
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3 text-xs text-white">
+            <div className="rounded-2xl border border-white/10 bg-[#021824]/80 px-4 py-3 text-xs text-white shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
               <div className="flex items-center gap-2 text-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 {copy.hero.trendLabel}
@@ -814,7 +812,7 @@ export default function AdminBlogPage() {
             </div>
             <Button
               variant="outline"
-              className="flex items-center justify-center gap-2 border-white/30 text-white hover:text-cyan-300"
+              className="flex items-center justify-center gap-2 border-white/40 text-white hover:bg-white/10"
               onClick={() => setFocusMode((prev) => !prev)}
             >
               <Zap className="h-4 w-4" />
@@ -837,7 +835,7 @@ export default function AdminBlogPage() {
         <div className="max-w-6xl mx-auto space-y-6">
           {/* STAT CARDS */}
           <div className="grid gap-4 md:grid-cols-5 mb-2">
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="bg-[#04131b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
                   {copy.stats.total}
@@ -849,7 +847,7 @@ export default function AdminBlogPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="bg-[#04131b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
                   {copy.stats.published}
@@ -861,7 +859,7 @@ export default function AdminBlogPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="bg-[#04131b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
                   {copy.stats.draft}
@@ -873,7 +871,7 @@ export default function AdminBlogPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="bg-[#04131b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
                   {copy.stats.xp}
@@ -885,7 +883,7 @@ export default function AdminBlogPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="bg-[#04131b] border border-white/10">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium text-white">
                   {copy.stats.views}
@@ -902,7 +900,7 @@ export default function AdminBlogPage() {
           {/* TOP LISTS */}
           {posts.length > 0 && (
             <div className="grid md:grid-cols-2 gap-4">
-              <Card className="bg-[#05212b] border border-white/10">
+              <Card className="bg-[#04131b] border border-white/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
                     {copy.topLists.viewsTitle}
@@ -934,7 +932,7 @@ export default function AdminBlogPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#05212b] border border-white/10">
+              <Card className="bg-[#04131b] border border-white/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
                     {copy.topLists.xpTitle}
@@ -969,7 +967,7 @@ export default function AdminBlogPage() {
           )}
 
           {/* FILTROS + BOTAO NOVO POST */}
-          <Card className="bg-[#05212b] border border-white/10">
+          <Card className="bg-[#04131b] border border-white/10">
             <CardHeader className="pb-0 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <CardTitle className="text-sm text-white">
@@ -1058,7 +1056,7 @@ export default function AdminBlogPage() {
           </Card>
 
           {/* ACTION PANEL */}
-        <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+        <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
             <CardHeader className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <Badge className="border border-cyan-400/40 bg-cyan-400/10 text-cyan-200">
@@ -1086,7 +1084,7 @@ export default function AdminBlogPage() {
                   {copy.actions.publishButton}
                 </Button>
                 <Button
-                  className="flex-1 border border-white/30 bg-[#000c12] text-white hover:text-cyan-300 disabled:opacity-60"
+                  className="flex-1 border border-white/30 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white hover:text-cyan-300 disabled:opacity-60"
                   onClick={() => {
                     if (!canManageBlog) return;
                     toast({
@@ -1112,7 +1110,7 @@ export default function AdminBlogPage() {
                 </Button>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2 text-xs">
-                <div className="rounded-2xl border border-white/10 bg-[#05212b] p-3 text-slate-200">
+                <div className="rounded-2xl border border-white/10 bg-[#04131b] p-3 text-slate-200">
                   <p className="text-[11px] uppercase tracking-wide text-slate-300">
                     {copy.actions.topViewsCardTitle}
                   </p>
@@ -1143,7 +1141,7 @@ export default function AdminBlogPage() {
                     </p>
                   )}
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-[#05212b] p-3 text-slate-200">
+                <div className="rounded-2xl border border-white/10 bg-[#04131b] p-3 text-slate-200">
                   <p className="text-[11px] uppercase tracking-wide text-slate-300">
                     {copy.actions.topXpCardTitle}
                   </p>
@@ -1178,14 +1176,14 @@ export default function AdminBlogPage() {
 
           {/* LISTA / ESTADO */}
           {loadingData ? (
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="bg-[#04131b] border border-white/10">
               <CardContent className="text-center py-12 text-slate-200">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
                 <p className="mt-4 text-slate-300">{copy.list.loading}</p>
               </CardContent>
             </Card>
           ) : filteredPosts.length === 0 ? (
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="bg-[#04131b] border border-white/10">
               <CardContent className="text-center py-12 text-slate-200">
                 <FileText className="h-16 w-16 text-slate-700 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2 text-white">
@@ -1208,7 +1206,7 @@ export default function AdminBlogPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-[#05212b] border border-white/10 shadow-lg shadow-purple-950/40">
+            <Card className="bg-[#04131b] border border-white/10 shadow-lg shadow-purple-950/40">
               <CardHeader>
                 <CardTitle className="text-white">
                   {copy.table.listTitle.replace(
@@ -1239,7 +1237,7 @@ export default function AdminBlogPage() {
                     return (
                       <div
                         key={post.id}
-                        className="flex flex-col gap-4 rounded-xl border border-white/10 bg-[#05212b] p-4 transition-all md:flex-row md:items-center md:justify-between hover:border-cyan-300/70"
+                        className="flex flex-col gap-4 rounded-xl border border-white/10 bg-[#04131b] p-4 transition-all md:flex-row md:items-center md:justify-between hover:border-cyan-300/70"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-3">
