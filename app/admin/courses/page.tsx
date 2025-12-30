@@ -716,16 +716,13 @@ export default function CoursesManagementPage() {
                 const description = stripHtml(getCourseDescription(course));
                 const isPublished = course.is_published ?? course.published;
                 const isCreator = !!user && course.author_id === user.id;
-                const xpDistributed =
-                  course.xp_total_distributed ??
-                  course.xp_distributed_total ??
-                  0;
                 const completionsCount =
                   course.completions_count ??
                   course.total_completions ??
                   0;
                 const { totalModules, totalLessons, totalXP } =
                   getCourseStats(course);
+                const xpDistributed = totalXP;
                 const curriculumStats = getCurriculumSnapshot(course);
                 const legacyStats = getLegacyModuleSnapshot(course);
                 const topicsCount =
@@ -815,6 +812,9 @@ export default function CoursesManagementPage() {
                               {completionsCount === 1 ? 'conclusão' : 'conclusões'}
                             </span>
                           </div>
+                          <p className="mt-1 text-[11px] text-slate-300">
+                            Soma de XP das lições + bónus finais definidos para o curso.
+                          </p>
                         </div>
                         <div className="flex flex-col gap-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
