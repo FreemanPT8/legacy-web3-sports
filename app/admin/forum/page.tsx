@@ -114,9 +114,9 @@ export default function AdminForumPage() {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-custom">
-          <Loader2 className="h-5 w-5 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-200">
+          <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
           A carregar fórum...
         </div>
       </div>
@@ -124,21 +124,21 @@ export default function AdminForumPage() {
   }
 
   return (
-    <div className="w-full space-y-8">
-      <section className="mt-2 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden px-4 py-6 md:px-6 md:py-8">
+    <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 md:px-8">
+      <section className="mt-2 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-4 py-6 md:px-6 md:py-8 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
           <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
         </div>
         <div className="relative z-10 max-w-5xl">
-          <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-blue-100 mb-3 border border-white/10">
+          <span className="mb-3 inline-flex items-center rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-200">
             LEGACY Admin — Fórum
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight text-[#fdd87c] md:text-4xl">
             <MessageCircle className="h-7 w-7 text-purple-300" />
             Forum Control Room
           </h1>
-          <p className="mt-2 text-sm md:text-base text-blue-100/90 max-w-2xl">
+          <p className="mt-2 max-w-2xl text-sm text-slate-100 md:text-base">
             Monitore tópicos ativos, priorize moderação e acompanhe os dados oficiais do fórum.
           </p>
           {summaryError && (
@@ -148,38 +148,38 @@ export default function AdminForumPage() {
       </section>
 
       <section>
-        <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-purple-900/60 shadow-2xl mx-auto max-w-6xl">
+        <Card className="mx-auto max-w-6xl border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
           <CardHeader className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-purple-500/20 text-purple-100 border border-purple-500/40">
+              <Badge className="border border-cyan-400/40 bg-cyan-400/10 text-cyan-100">
                 Pulse
               </Badge>
-              <CardTitle className="text-heading text-lg">
+              <CardTitle className="text-lg text-[#fdd87c]">
                 Fórum com ritmo
               </CardTitle>
             </div>
-            <p className="text-muted-custom text-sm max-w-3xl">
+            <p className="max-w-3xl text-sm text-slate-200">
               Use métricas reais para priorizar threads, moderação e crescimento da comunidade.
             </p>
           </CardHeader>
           <CardContent className="pt-2">
             <div className="flex flex-col gap-3 md:flex-row">
               <Button
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                className="flex-1 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                 onClick={() => router.push('/admin/forum')}
               >
                 <Zap className="h-4 w-4 mr-2" />
                 Ver threads em destaque
               </Button>
               <Button
-                className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+                className="flex-1 border border-white/30 bg-transparent text-white hover:bg-white/10"
                 onClick={() => router.push('/admin/forum')}
               >
                 <ShieldCheck className="h-4 w-4 mr-2" />
                 Ir para moderação
               </Button>
               <Button
-                className="flex-1 border border-emerald-500 text-emerald-100 bg-emerald-950/50 hover:bg-emerald-900"
+                className="flex-1 border border-white/30 bg-transparent text-white hover:bg-white/10"
                 onClick={() => router.push('/admin')}
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
@@ -188,19 +188,19 @@ export default function AdminForumPage() {
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
               {loadingSummary ? (
-                <div className="md:col-span-3 text-center text-sm text-muted-custom">
+                <div className="md:col-span-3 text-center text-sm text-slate-300">
                   A carregar métricas do fórum...
                 </div>
               ) : (
                 quickMetrics.map((metric) => (
                   <div
                     key={metric.label}
-                    className="rounded-lg border border-slate-800 bg-slate-950/40 p-3"
+                    className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 text-slate-200"
                   >
-                    <p className="text-[11px] uppercase text-muted-custom">
+                    <p className="text-[11px] uppercase text-slate-300">
                       {metric.label}
                     </p>
-                    <p className="text-2xl font-semibold text-heading">
+                    <p className="text-2xl font-semibold text-[#fdd87c]">
                       {metric.value.toLocaleString('pt-PT')}
                     </p>
                   </div>
@@ -212,35 +212,35 @@ export default function AdminForumPage() {
       </section>
 
       <section className="space-y-6">
-        <Card className="bg-card-custom border-custom shadow-lg shadow-purple-950/40">
+        <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
           <CardHeader>
-            <CardTitle className="text-heading text-sm font-semibold">
+            <CardTitle className="text-sm font-semibold text-[#fdd87c]">
               Top threads por views
             </CardTitle>
-            <CardDescription className="text-xs text-muted-custom">
+            <CardDescription className="text-xs text-slate-300">
               Baseado nos dados oficiais.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {topTopics.length === 0 ? (
-              <p className="text-xs text-muted-custom">Sem dados disponíveis.</p>
+              <p className="text-xs text-slate-300">Sem dados disponíveis.</p>
             ) : (
               topTopics.map((topic) => (
                 <div
                   key={topic.id}
-                  className="flex items-center justify-between gap-3 border border-slate-800 rounded-md px-3 py-2 bg-slate-950/60 text-sm"
+                  className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-[#021824]/80 px-3 py-2 text-sm shadow-[0_20px_60px_rgba(3,10,25,0.45)]"
                 >
                   <div>
-                    <p className="font-semibold text-heading">
+                    <p className="font-semibold text-white">
                       {topic.title ?? 'Sem título'}
                     </p>
                     {topic.room?.name && (
-                      <p className="text-[11px] text-muted-custom">
+                      <p className="text-[11px] text-slate-300">
                         Sala: {topic.room.name}
                       </p>
                     )}
                   </div>
-                  <div className="text-xs text-muted-custom">
+                  <div className="text-xs text-slate-300">
                     {topic.views?.toLocaleString('pt-PT') ?? '0'} views
                   </div>
                 </div>
@@ -249,25 +249,25 @@ export default function AdminForumPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card-custom border-custom">
+        <Card className="border border-white/10 bg-[#04131b]">
           <CardHeader>
-            <CardTitle className="text-heading text-sm font-semibold">
+            <CardTitle className="text-sm font-semibold text-white">
               Atividade recente
             </CardTitle>
-            <CardDescription className="text-xs text-muted-custom">
+            <CardDescription className="text-xs text-slate-300">
               Últimos posts publicados.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {recentPosts.length === 0 ? (
-              <p className="text-xs text-muted-custom">Sem atividade recente.</p>
+              <p className="text-xs text-slate-300">Sem atividade recente.</p>
             ) : (
               recentPosts.map((post) => (
                 <div
                   key={post.id}
-                  className="rounded-md border border-slate-800 bg-slate-950/60 p-3 text-xs space-y-1"
+                  className="space-y-1 rounded-md border border-white/10 bg-[#021824]/80 p-3 text-xs shadow-[0_20px_60px_rgba(3,10,25,0.45)]"
                 >
-                  <div className="flex items-center justify-between text-muted-custom uppercase tracking-wide">
+                  <div className="flex items-center justify-between text-slate-300 uppercase tracking-wide">
                     <span>
                       {post.topic?.title ?? 'Sem tópico'} ·{' '}
                       {post.author?.username ? `@${post.author.username}` : '—'}
@@ -278,7 +278,7 @@ export default function AdminForumPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-body">
+                  <p className="text-[11px] text-slate-200">
                     {truncate(post.content)}
                   </p>
                 </div>
