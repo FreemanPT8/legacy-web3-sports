@@ -164,18 +164,26 @@ export default function HomePage() {
       <Header />
 
       <main className="space-y-16">
-        <section className="relative isolate overflow-hidden bg-[#000c12] px-6 py-16">
-          <div className="absolute inset-0 opacity-30" aria-hidden="true" />
+        <section className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-16 shadow-2xl shadow-black/40">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-20 -left-12 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
           <div className="mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center" style={{ minHeight: '420px' }}>
             <div className="relative z-10 flex-1 space-y-6">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">LEGACY XP</p>
-              <h1 className="text-4xl font-semibold leading-tight text-white md:text-5xl">
+              <h1 className="text-4xl font-semibold leading-tight text-[#fdd87c] md:text-5xl">
                 LEGACY: Gamified Web3 Academy for Sports
               </h1>
-              <p className="text-lg text-slate-200">{heroActionDescription}</p>
+              <p className="text-lg text-slate-100">{heroActionDescription}</p>
               <div className="flex flex-wrap gap-4">
                 {heroButtons.map((action) => (
-                  <Button key={action.label} variant="default" asChild>
+                  <Button
+                    key={action.label}
+                    variant="default"
+                    asChild
+                    className={action === heroButtons[0] ? 'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]' : 'border-white/40 text-white hover:bg-white/10'}
+                  >
                     <Link href={action.href} className="flex items-center gap-2">
                       {action.label}
                       <ArrowRight className="h-4 w-4" />
@@ -183,9 +191,9 @@ export default function HomePage() {
                   </Button>
                 ))}
               </div>
-              <p className="text-xs text-slate-300">{CTA_SUBTITLE}</p>
+              <p className="text-xs text-cyan-200/80">{CTA_SUBTITLE}</p>
             </div>
-            <div className="relative flex-1 rounded-[32px] border border-white/10 bg-slate-950 shadow-2xl">
+            <div className="relative flex-1 rounded-[32px] border border-white/10 bg-[#04131b] shadow-[0_30px_80px_rgba(3,10,25,0.65)]">
               <div
                 className="h-72 rounded-[32px] bg-cover bg-center"
                 style={{
@@ -230,14 +238,19 @@ export default function HomePage() {
           />
         </section>
 
-        <section className="bg-[#05212b] px-6 py-16">
-          <div className="mx-auto max-w-6xl space-y-6">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -right-16 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">LEGACY XP HIGHLIGHTS</p>
-                <h2 className="text-3xl font-semibold text-white">Transparência total de XP</h2>
+                <h2 className="text-3xl font-semibold text-[#fdd87c]">Transparência total de XP</h2>
               </div>
-              <span className="text-sm text-slate-300">Alterna entre conteúdo público e privado com XP auditado.</span>
+              <span className="text-sm text-slate-200">Alterna entre conteúdo público e privado com XP auditado.</span>
             </div>
             <div className="grid gap-4 md:grid-cols-4">
               {[
@@ -248,7 +261,10 @@ export default function HomePage() {
               ].map((item) => (
                 <Card
                   key={item.label}
-                  className={cn('border border-white/10 bg-[#000c12]', 'duration-200 hover:-translate-y-0.5')}
+                  className={cn(
+                    'border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]',
+                    'duration-200 hover:-translate-y-0.5',
+                  )}
                 >
                   <CardHeader>
                     <CardTitle className="text-sm font-semibold text-slate-200">{item.label}</CardTitle>
@@ -260,17 +276,25 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-[#000c12] px-6 py-16">
-          <div className="mx-auto max-w-6xl space-y-6">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-14 -right-12 h-56 w-56 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-18 -left-14 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-6">
             <div>
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">TRÊS PILARES</p>
-              <h2 className="text-3xl font-semibold text-white">O Legacy revela o que existe de verdade em cada área</h2>
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">O Legacy revela o que existe de verdade em cada área</h2>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
               {pillarCards.map((pill) => (
                 <Card
                   key={pill.title}
-                  className={cn('border-white/10 bg-[#05212b] text-white shadow-xl', 'flex flex-col justify-between p-6')}
+                  className={cn(
+                    'border-white/10 bg-[#04131b] text-white shadow-[0_25px_60px_rgba(3,10,25,0.55)]',
+                    'flex flex-col justify-between p-6',
+                  )}
                 >
                   <div className="flex items-center gap-4">
                     <pill.icon className="h-6 w-6 text-cyan-300" />
@@ -286,15 +310,23 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-[#05212b] px-6 py-16">
-          <div className="mx-auto max-w-6xl space-y-8">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-18 -left-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-16 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-8">
             <div>
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">STORY</p>
-              <h2 className="text-3xl font-semibold text-white">3 passos para dominar o ecossistema</h2>
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">3 passos para dominar o ecossistema</h2>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               {storySteps.map((step) => (
-                <Card key={step.title} className="border border-white/10 bg-[#000c12] p-6">
+                <Card
+                  key={step.title}
+                  className="border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
+                >
                   <div className="flex items-center gap-3">
                     <step.icon className="h-5 w-5 text-cyan-300" />
                     <CardTitle className="text-base font-semibold">{step.title}</CardTitle>
@@ -306,12 +338,17 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-[#000c12] px-6 py-16">
-          <div className="mx-auto max-w-6xl space-y-6">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-18 -right-14 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-6">
             <div>
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">EXPLORA O LEGACY</p>
-              <h2 className="text-3xl font-semibold text-white">O que podes fazer dentro da plataforma</h2>
-              <p className="mt-2 text-sm text-slate-300">
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">O que podes fazer dentro da plataforma</h2>
+              <p className="mt-2 text-sm text-slate-200">
                 Do XP à tabela de líderes, passando por eventos e fórum, o Legacy conecta aprendizagem, comunidade e oportunidades reais.
               </p>
             </div>
@@ -319,14 +356,14 @@ export default function HomePage() {
               {navigationHighlights.map((item) => (
                 <Card
                   key={item.label}
-                  className="flex h-full flex-col justify-between border border-white/10 bg-[#05212b] p-5"
+                  className="flex h-full flex-col justify-between border border-white/10 bg-[#04131b] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
                 >
                   <div className="space-y-2">
                     <CardTitle className="text-sm font-semibold text-white">{item.label}</CardTitle>
                     <CardDescription className="text-xs text-slate-200">{item.description}</CardDescription>
                   </div>
                   <div className="mt-4">
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10" asChild>
                       <Link href={item.href} className="text-xs">
                         Entrar
                       </Link>
@@ -338,11 +375,16 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-[#05212b] px-6 py-16">
-          <div className="mx-auto max-w-6xl grid gap-10 lg:grid-cols-2">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-18 -left-16 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-16 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl grid gap-10 lg:grid-cols-2">
             <div className="space-y-4">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">HOUSES OF SPORTS</p>
-              <h2 className="text-3xl font-semibold text-white">A tua casa dentro do ecossistema</h2>
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">A tua casa dentro do ecossistema</h2>
               <p className="text-sm text-slate-200">
                 As Houses of Sports são comunidades distribuídas por várias cidades, pensadas para ligar atletas, profissionais e entusiastas que querem
                 crescer no universo Web3 + Desporto. Mentores, eventos, treino e networking num só lugar.
@@ -362,22 +404,30 @@ export default function HomePage() {
                 </li>
               </ul>
               <div className="flex flex-wrap gap-4">
-                <Button variant="default" asChild>
+                <Button
+                  variant="default"
+                  asChild
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                >
                   <Link href="/sports/houses">Explorar Houses</Link>
                 </Button>
-                <Button variant="outline" asChild>
+                <Button
+                  variant="outline"
+                  asChild
+                  className="border-white/40 text-white hover:bg-white/10"
+                >
                   <Link href="/sports/onboarding">Encontrar a tua House</Link>
                 </Button>
               </div>
             </div>
-            <div className="relative rounded-[32px] border border-white/10 bg-[#000c12] p-6">
+            <div className="relative rounded-[32px] border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
               <div
                 className="h-64 rounded-[24px] bg-cover bg-center"
                 style={{
                   backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.75)), url('${heroImageUrl}')`,
                 }}
               />
-              <p className="mt-4 text-xs text-slate-300">
+              <p className="mt-4 text-xs text-slate-200">
                 Começa pelo onboarding personalizado, partilha o teu contexto (atleta, treinador, gestor, criador de conteúdo ou fã) e recebe recomendações
                 sobre a melhor House para ti.
               </p>
@@ -385,12 +435,17 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-[#000c12] px-6 py-16">
-          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-18 -right-14 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-16 -left-12 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-2">
             <div className="space-y-4">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">WEB3 ACADEMY</p>
-              <h2 className="text-3xl font-semibold text-white">Academia Web3</h2>
-              <p className="text-sm text-slate-300">
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">Academia Web3</h2>
+              <p className="text-sm text-slate-200">
                 Cursos estruturados que combinam teoria, prática e XP autenticado para profissionais ou quem quer explorar Blockchain e Apertum.
               </p>
               <ul className="space-y-2 text-sm text-slate-200">
@@ -402,15 +457,23 @@ export default function HomePage() {
                 ))}
               </ul>
               <div className="flex flex-wrap gap-4">
-                <Button variant="secondary" asChild>
+                <Button
+                  variant="default"
+                  asChild
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                >
                   <Link href="/education/courses">Explorar Academia Web3</Link>
                 </Button>
-                <Button variant="outline" asChild>
+                <Button
+                  variant="outline"
+                  asChild
+                  className="border-white/40 text-white hover:bg-white/10"
+                >
                   <Link href="/education/courses">Ver Cursos</Link>
                 </Button>
               </div>
             </div>
-            <div className="relative rounded-[32px] border border-white/10 bg-[#05212b] p-6 shadow-2xl">
+            <div className="relative rounded-[32px] border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
               <div
                 className="h-56 rounded-[24px] bg-cover bg-center"
                 style={{
@@ -430,7 +493,7 @@ export default function HomePage() {
                   label: 'Cursos',
                   value: 'Cursos em preparação',
                 }].map((item) => (
-                  <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
+                  <Card key={item.label} className="border border-white/10 bg-[#04131b] p-4 shadow-[0_10px_35px_rgba(3,10,25,0.45)]">
                     <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
                     <CardDescription className="text-sm text-slate-200">{item.value}</CardDescription>
                   </Card>
@@ -439,7 +502,7 @@ export default function HomePage() {
                   label: 'Lições',
                   value: 'Lições em construção',
                 }].map((item) => (
-                  <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
+                  <Card key={item.label} className="border border-white/10 bg-[#04131b] p-4 shadow-[0_10px_35px_rgba(3,10,25,0.45)]">
                     <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
                     <CardDescription className="text-sm text-slate-200">{item.value}</CardDescription>
                   </Card>
@@ -448,7 +511,7 @@ export default function HomePage() {
                   label: 'Membros',
                   value: 'Primeiros membros a chegar',
                 }].map((item) => (
-                  <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
+                  <Card key={item.label} className="border border-white/10 bg-[#04131b] p-4 shadow-[0_10px_35px_rgba(3,10,25,0.45)]">
                     <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
                     <CardDescription className="text-sm text-slate-200">{item.value}</CardDescription>
                   </Card>
@@ -457,7 +520,7 @@ export default function HomePage() {
                   label: 'Idiomas',
                   value: 'Idiomas planeados',
                 }].map((item) => (
-                  <Card key={item.label} className="border border-white/10 bg-[#000c12] p-4">
+                  <Card key={item.label} className="border border-white/10 bg-[#04131b] p-4 shadow-[0_10px_35px_rgba(3,10,25,0.45)]">
                     <CardTitle className="text-xs uppercase tracking-[0.5em] text-cyan-300">{item.label}</CardTitle>
                     <CardDescription className="text-sm text-slate-200">{item.value}</CardDescription>
                   </Card>
@@ -467,14 +530,17 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-[#000c12] px-6 py-16">
-          <div className="mx-auto max-w-6xl space-y-6">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-6">
             <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">LEGACY É</p>
             <div className="flex flex-wrap gap-3">
               {legacyValues.map((value) => (
                 <span
                   key={value}
-                  className="rounded-full border border-white/30 bg-[#05212b] px-4 py-1 text-xs uppercase tracking-[0.4em] text-cyan-100"
+                  className="rounded-full border border-white/30 bg-[#04131b]/80 px-4 py-1 text-xs uppercase tracking-[0.4em] text-cyan-100 shadow-[0_10px_30px_rgba(3,10,25,0.45)]"
                 >
                   {value}
                 </span>
@@ -482,7 +548,7 @@ export default function HomePage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {faqs.map((faq) => (
-                <Card key={faq.question} className="border border-white/10 bg-[#05212b] p-6">
+                <Card key={faq.question} className="border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold text-white">{faq.question}</CardTitle>
                     <CardDescription className="text-sm text-slate-200">{faq.answer}</CardDescription>
@@ -493,18 +559,33 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84] px-6 py-16">
-          <div className="mx-auto max-w-5xl text-center">
-            <p className="text-xs uppercase tracking-[0.6em] text-white">PRONTO PARA COMEÇAR A TUA JORNADA WEB3?</p>
-            <h2 className="mt-4 text-3xl font-semibold text-white">O Legacy é a tua porta de entrada para a Web3 + Desporto.</h2>
-            <p className="mt-2 text-sm text-cyan-50">A comunidade de Houses e os cursos da Academia estão alinhados para te preparar para o futuro.</p>
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-5xl text-center">
+            <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">PRONTO PARA COMEÇAR A TUA JORNADA WEB3?</p>
+            <h2 className="mt-4 text-3xl font-semibold text-[#fdd87c]">O Legacy é a tua porta de entrada para a Web3 + Desporto.</h2>
+            <p className="mt-2 text-sm text-slate-200">A comunidade de Houses e os cursos da Academia estão alinhados para te preparar para o futuro.</p>
             <div className="mt-6 flex flex-wrap justify-center gap-4">
-              <Button size="lg" variant="default" asChild>
+              <Button
+                size="lg"
+                variant="default"
+                asChild
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+              >
                 <Link href={user ? '/sports/houses' : '/sports/onboarding'}>
                   {user ? 'Ir para as Houses' : 'Começar'}
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white/40 text-white hover:bg-white/10"
+                asChild
+              >
                 <Link href="/education/courses">Descobrir a Academia</Link>
               </Button>
             </div>
