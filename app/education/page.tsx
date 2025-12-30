@@ -193,8 +193,12 @@ export default function EducationPage() {
 
       <main className="flex-1 space-y-16">
         {/* HERO */}
-        <section className="relative isolate overflow-hidden bg-[#000c12] px-6 py-16">
-          <div className="mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center">
+        <section className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-16 shadow-2xl shadow-black/40">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-20 -left-14 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center">
             <div className="relative z-10 flex-1 space-y-6">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                 {t('nav.education')}
@@ -209,13 +213,22 @@ export default function EducationPage() {
                 {t('education.hero.description')}
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" variant="default" asChild>
+                <Button
+                  size="lg"
+                  asChild
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                >
                   <Link href="/education/courses" className="flex items-center gap-2">
                     {t('education.viewAll')} {t('education.courses')}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/40 text-white hover:bg-white/10"
+                  asChild
+                >
                   <Link href="/education/xp" className="flex items-center gap-2">
                     {t('education.learnMoreXP')}
                     <BookOpen className="h-4 w-4" />
@@ -227,7 +240,7 @@ export default function EducationPage() {
 
             <div className="flex-1">
               <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border border-white/10 bg-[#05212b]">
+                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
                   <CardHeader className="space-y-1">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
                       <BookOpen className="h-4 w-4" />
@@ -242,7 +255,7 @@ export default function EducationPage() {
                   </CardHeader>
                 </Card>
 
-                <Card className="border border-white/10 bg-[#05212b]">
+                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
                   <CardHeader className="space-y-1">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
                       <Target className="h-4 w-4" />
@@ -257,7 +270,7 @@ export default function EducationPage() {
                   </CardHeader>
                 </Card>
 
-                <Card className="border border-white/10 bg-[#05212b]">
+                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
                   <CardHeader className="space-y-1">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
                       <Users className="h-4 w-4" />
@@ -276,8 +289,12 @@ export default function EducationPage() {
           </div>
         </section>
 
-        <section className="bg-[#01050b] py-12">
-          <div className="mx-auto max-w-6xl px-6 grid gap-10 md:grid-cols-2">
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] py-12">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-16 -right-14 h-56 w-56 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -left-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-2">
             <div>
               <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
                 {t('education.hero.subtitle')}
@@ -295,18 +312,27 @@ export default function EducationPage() {
               </div>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/signup">
-                  <Button size="lg">{t('cta.startJourney')}</Button>
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                  >
+                    {t('cta.startJourney')}
+                  </Button>
                 </Link>
                 {!user && (
                   <Link href="/login">
-                    <Button size="lg" variant="outline" className="border-white/40 text-white">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-white/40 text-white hover:bg-white/10"
+                    >
                       {t('auth.login')}
                     </Button>
                   </Link>
                 )}
               </div>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
+            <div className="rounded-3xl border border-white/10 bg-[#000c12]/60 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
               <h3 className="text-xl font-semibold text-white mb-4">
                 {t('education.previewLevels') || 'Pré-visualização dos níveis'}
               </h3>
@@ -314,7 +340,7 @@ export default function EducationPage() {
                 {previewLevels.map((item) => (
                   <div
                     key={`${item.title}-${item.range}`}
-                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#000c12] px-4 py-3"
+                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#04131b] px-4 py-3"
                   >
                     <span className="font-semibold text-white">{item.title}</span>
                     <span className="text-slate-300">{item.range}</span>
@@ -329,8 +355,12 @@ export default function EducationPage() {
         </section>
 
         {/* STATS + PROGRESSO PESSOAL */}
-        <section className="py-16 bg-[#000c12]">
-          <div className="mx-auto max-w-6xl px-6">
+        <section className="relative overflow-hidden py-16 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#031b27]">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-16 -left-12 h-52 w-52 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -right-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl px-6">
             <div className="space-y-10">
               {loading ? (
                 <div className="text-center py-12">
@@ -340,8 +370,8 @@ export default function EducationPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid md:grid-cols-4 gap-6 mb-4">
-                  <Card className="text-center border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+                <div className="mb-4 grid gap-6 md:grid-cols-4">
+                  <Card className="text-center border border-white/10 bg-[#04131b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
                     <CardContent className="pt-6">
                         <BookOpen className="h-10 w-10 text-primary mx-auto mb-3" />
                         <div className="text-3xl font-bold text-white">
@@ -352,7 +382,7 @@ export default function EducationPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  <Card className="text-center border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+                  <Card className="text-center border border-white/10 bg-[#04131b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
                     <CardContent className="pt-6">
                       <Target className="h-10 w-10 text-cyan-400 mx-auto mb-3" />
                         <div className="text-3xl font-bold text-white">
@@ -363,7 +393,7 @@ export default function EducationPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  <Card className="text-center border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+                  <Card className="text-center border border-white/10 bg-[#04131b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
                     <CardContent className="pt-6">
                       <Users className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
                         <div className="text-3xl font-bold text-white">
@@ -374,7 +404,7 @@ export default function EducationPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  <Card className="text-center border border-white/10 bg-[#000c12] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+                  <Card className="text-center border border-white/10 bg-[#04131b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
                     <CardContent className="pt-6">
                       <Zap className="h-10 w-10 text-amber-400 mx-auto mb-3" />
                         <div className="text-3xl font-bold text-white">
@@ -389,7 +419,7 @@ export default function EducationPage() {
               )}
 
               {user && (
-                <Card className="mb-4 border border-white/10 bg-[#05212b]">
+                <Card className="mb-4 border border-white/10 bg-[#04131b]/80 backdrop-blur">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white">
                       <Star className="h-6 w-6 text-amber-400" />
@@ -430,8 +460,12 @@ export default function EducationPage() {
           </div>
         </section>
 
-        <section className="bg-[#020b14] py-12" id="levels">
-          <div className="mx-auto max-w-6xl px-6">
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] py-12" id="levels">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-14 -right-12 h-48 w-48 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-16 -left-14 h-56 w-56 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl px-6">
             <div className="text-center mb-8">
               <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">Academia em níveis</p>
               <h2 className="mt-2 text-3xl font-semibold text-white">Desbloqueia conteúdos progressivos</h2>
@@ -443,7 +477,7 @@ export default function EducationPage() {
               {previewLevels.map((item) => (
                 <div
                   key={`${item.title}-${item.range}-grid`}
-                  className="rounded-2xl border border-white/10 bg-[#000c12] px-4 py-6 text-center text-white"
+                  className="rounded-2xl border border-white/10 bg-[#04131b] px-4 py-6 text-center text-white"
                 >
                   <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{item.title}</p>
                   <p className="mt-2 text-sm text-slate-300">{item.range}</p>
@@ -457,9 +491,14 @@ export default function EducationPage() {
         </section>
 
         {/* CURSOS EM DESTAQUE */}
-        <section className="py-16 bg-[#05212b]">
-          <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
+        <section className="relative overflow-hidden py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-20 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -right-14 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative container mx-auto px-4">
+            <div className="mx-auto max-w-6xl">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
                     {t('education.featured.title')}
@@ -475,7 +514,7 @@ export default function EducationPage() {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
                   </div>
                 ) : topCourses.length === 0 ? (
-                  <Card className="border border-white/10 bg-[#000c12]">
+                  <Card className="border border-white/10 bg-[#04131b]">
                     <CardContent className="text-center py-12">
                       <BookOpen className="h-16 w-16 text-slate-300 mx-auto mb-4" />
                       <p className="text-slate-300">
@@ -512,7 +551,7 @@ export default function EducationPage() {
                     return (
                         <Card
                           key={course.id}
-                          className="border border-white/10 bg-[#000c12] hover:border-primary/70 hover:shadow-[0_0_25px_rgba(45,212,191,0.25)] transition-all"
+                          className="border border-white/10 bg-[#04131b] hover:border-cyan-400/70 hover:shadow-[0_0_25px_rgba(34,211,238,0.35)] transition-all"
                         >
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
@@ -543,7 +582,7 @@ export default function EducationPage() {
                             {isLocked ? (
                               <Button
                                 variant="outline"
-                                className="w-full border-white/30 text-slate-300"
+                                className="w-full border-white/30 text-slate-300 hover:bg-white/10"
                                 disabled
                               >
                                 {t('education.unlockAt') || 'Unlock at'}{' '}
@@ -551,7 +590,7 @@ export default function EducationPage() {
                               </Button>
                             ) : (
                               <Link href={`/education/courses/${course.id}`}>
-                                  <Button className="w-full">
+                                  <Button className="w-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
                                   {t('education.startCourse') || 'Start Course'}
                                 </Button>
                               </Link>
@@ -569,7 +608,7 @@ export default function EducationPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="border-primary text-primary hover:bg-[#000c12]"
+                      className="border-white/40 text-white hover:bg-white/10"
                     >
                     {t('education.viewAll') || t('dashboard.viewAll')}{' '}
                     {t('education.courses')}
@@ -581,8 +620,13 @@ export default function EducationPage() {
         </section>
 
         {/* SISTEMA DE XP */}
-        <section className="bg-[#000c12] px-6 py-16">
-          <div className="mx-auto max-w-6xl">
+        <section className="relative overflow-hidden px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-14 -left-12 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-16 -right-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl">
             <div className="grid items-center gap-12 md:grid-cols-2">
                 <div>
                   <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
@@ -642,7 +686,7 @@ export default function EducationPage() {
                       <Button
                         size="lg"
                         variant="outline"
-                        className="border-white/40 text-slate-100 hover:bg-[#000c12]"
+                        className="border-white/40 text-white hover:bg-white/10"
                       >
                         {t('education.learnMoreXP')}
                       </Button>
@@ -650,7 +694,7 @@ export default function EducationPage() {
                   </div>
               </div>
 
-              <div className="bg-gradient-to-br from-[#020b16] to-[#000c12] p-8 rounded-2xl border border-white/10">
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#020b16] to-[#04131b] p-8 shadow-[0_25px_60px_rgba(3,10,25,0.65)]">
                   <h3 className="text-xl font-bold mb-6 text-center text-cyan-100">
                     {t('education.xpLevels')}
                   </h3>
@@ -658,7 +702,7 @@ export default function EducationPage() {
                   {xpLevelsCopy.map((item) => (
                     <div
                       key={`${item.title}-${item.range}`}
-                      className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] px-4 py-3"
+                      className="flex items-center justify-between rounded-lg border border-white/10 bg-[#04131b] px-4 py-3"
                     >
                       <span className="font-semibold text-white">
                         {item.title}
@@ -679,8 +723,13 @@ export default function EducationPage() {
         </section>
 
         {/* LEADERBOARD */}
-          <section className="bg-[#05212b] px-6 py-16">
-            <div className="mx-auto max-w-6xl">
+          <section className="relative overflow-hidden px-6 py-16">
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#031b27]" />
+              <div className="absolute -top-24 -left-14 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+              <div className="absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            </div>
+            <div className="relative mx-auto max-w-6xl">
               <div className="mx-auto max-w-6xl">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
@@ -700,7 +749,7 @@ export default function EducationPage() {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
                   </div>
                 ) : leaderboard.length === 0 ? (
-                  <Card className="border border-white/10 bg-[#000c12]">
+                  <Card className="border border-white/10 bg-[#04131b]">
                     <CardContent className="text-center py-12">
                       <Trophy className="h-16 w-16 text-slate-300 mx-auto mb-4" />
                       <p className="text-slate-300">
@@ -715,7 +764,7 @@ export default function EducationPage() {
                         <Card
                           key={learner.id}
                           className={cn(
-                            'border border-white/10 bg-[#000c12]',
+                            'border border-white/10 bg-[#04131b]',
                             index < 3 ? 'ring-1 ring-primary/60' : '',
                           )}
                         >
@@ -768,7 +817,7 @@ export default function EducationPage() {
                         <Button
                           size="lg"
                           variant="outline"
-                          className="border-primary text-primary hover:bg-[#000c12]"
+                          className="border-white/40 text-white hover:bg-white/10"
                         >
                         View Full Leaderboard
                       </Button>
@@ -781,8 +830,13 @@ export default function EducationPage() {
         </section>
 
         {/* CTA FINAL */}
-        <section className="py-16 bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84]">
-          <div className="mx-auto max-w-5xl px-6 text-center">
+        <section className="relative overflow-hidden py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-5xl px-6 text-center">
               <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
                 {t('education.cta.title')}
               </h2>
@@ -792,19 +846,29 @@ export default function EducationPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {!user ? (
                 <Link href="/signup">
-                  <Button size="lg" className="px-8">
+                  <Button
+                    size="lg"
+                    className="px-8 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                  >
                     {t('cta.startJourney')}
                   </Button>
                 </Link>
               ) : (
                 <Link href="/education/courses">
-                  <Button size="lg" className="px-8">
+                  <Button
+                    size="lg"
+                    className="px-8 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                  >
                     {t('cta.explore')} Courses
                   </Button>
                 </Link>
               )}
               <Link href="/blog">
-                <Button size="lg" variant="outline" className="px-8">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="px-8 border-white/40 text-white hover:bg-white/10"
+                >
                   {t('cta.exploreBlog')}
                 </Button>
               </Link>
