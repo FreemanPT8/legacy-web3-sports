@@ -800,32 +800,37 @@ export default function AdminUsersPage() {
     return [...current, value];
   };
 
+  const activeFilterButtonClasses =
+    'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_12px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]';
+  const inactiveFilterButtonClasses =
+    'border-white/40 text-white hover:bg-white/10';
+
   if (loading || !permissionsLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
-        <p className="text-sm text-slate-300">A carregar utilizadores...</p>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
+        <p className="text-sm text-slate-200">A carregar utilizadores...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full space-y-8 bg-[#000c12] px-4 py-6 text-white md:px-8">
+    <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 text-white md:px-8">
       {/* HERO */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-10 shadow-2xl shadow-black/40">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-          <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
         </div>
 
         <div className="relative z-10 max-w-5xl space-y-4">
-          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
             LEGACY ADMIN - USERS
           </p>
 
-          <h1 className="text-3xl font-semibold text-white md:text-4xl">
+          <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
             User Management
           </h1>
-          <p className="text-sm text-slate-300 md:text-base">
+          <p className="text-sm text-slate-100 md:text-base">
             Gestao centralizada de roles, permissoes e filtros de utilizadores
             por pais, desporto, atividade recente e XP. A sala de controlo da
             comunidade LEGACY.
@@ -837,19 +842,19 @@ export default function AdminUsersPage() {
       <section className="pb-2">
         <div className="mx-auto max-w-6xl space-y-6">
           {/* STAT CARDS */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-2">
+          <div className="mb-2 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {metricCards.map((metric) => (
               <Card
                 key={metric.label}
-                className="border border-white/10 bg-[#05212b] p-5 shadow-sm shadow-black/40"
+                className="border border-white/10 bg-[#04131b] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
               >
-                <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">
                   {metric.label}
                 </p>
-                <p className="mt-3 text-3xl font-semibold text-white">
+                <p className="mt-3 text-3xl font-semibold text-[#fdd87c]">
                   {metric.value}
                 </p>
-                <p className="mt-1 text-sm text-slate-300">
+                <p className="mt-1 text-sm text-slate-200">
                   {metric.description}
                 </p>
               </Card>
@@ -857,29 +862,29 @@ export default function AdminUsersPage() {
           </div>
 
           {/* USER MANAGEMENT */}
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-emerald-950/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
-              <CardTitle className="text-white">User Management</CardTitle>
-              <p className="text-sm text-slate-300">
+              <CardTitle className="text-[#fdd87c]">User Management</CardTitle>
+              <p className="text-sm text-slate-200">
                 Filtros avancados por role, pais, desporto, ultimo login e
                 ultimo XP.
               </p>
             </CardHeader>
-            <CardContent className="text-slate-300">
-              <div className="flex flex-col gap-4 mb-4">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div className="flex gap-2 items-center">
+            <CardContent className="text-slate-200">
+              <div className="mb-4 flex flex-col gap-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex items-center gap-2">
                     <Input
                       placeholder="Search by username, name or email..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="max-w-md bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
+                      className="max-w-md border-white/20 bg-[#021824]/80 text-white placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-cyan-300 focus-visible:ring-offset-0"
                     />
                     <Button
                       variant="outline"
                       onClick={() => setSearch('')}
                       disabled={!search}
-                      className="border-white/30 text-white hover:text-cyan-300"
+                      className="border-white/40 text-white hover:bg-white/10"
                     >
                       Clear
                     </Button>
@@ -888,7 +893,7 @@ export default function AdminUsersPage() {
                     <Button
                       variant="outline"
                       onClick={() => setShowFilters((p) => !p)}
-                      className="border-white/30 text-white hover:text-cyan-300"
+                      className="border-white/40 text-white hover:bg-white/10"
                     >
                       {showFilters ? 'Esconder filtros' : 'Procurar por filtros'}
                     </Button>
@@ -896,10 +901,10 @@ export default function AdminUsersPage() {
                 </div>
 
                 {showFilters && (
-                  <div className="space-y-4 rounded-lg border border-white/10 bg-[#000c12] p-4">
+                  <div className="space-y-4 rounded-lg border border-white/10 bg-[#021824]/70 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.45)]">
                     <div className="flex flex-wrap gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-300">
+                        <span className="text-sm text-slate-200">
                           Last login:
                         </span>
                         <Select
@@ -908,7 +913,7 @@ export default function AdminUsersPage() {
                             setLastLoginFilter(v as typeof lastLoginFilter)
                           }
                         >
-                          <SelectTrigger className="w-[150px] bg-[#000c12] border-white/10 text-white">
+                          <SelectTrigger className="w-[150px] border-white/10 bg-[#04131b] text-white focus-visible:ring-1 focus-visible:ring-cyan-300 focus-visible:ring-offset-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -924,7 +929,7 @@ export default function AdminUsersPage() {
                         </Select>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-300">
+                        <span className="text-sm text-slate-200">
                           Ultimo XP:
                         </span>
                         <Select
@@ -933,7 +938,7 @@ export default function AdminUsersPage() {
                             setLastXpFilter(v as typeof lastXpFilter)
                           }
                         >
-                          <SelectTrigger className="w-[150px] bg-[#000c12] border-white/10 text-white">
+                          <SelectTrigger className="w-[150px] border-white/10 bg-[#04131b] text-white focus-visible:ring-1 focus-visible:ring-cyan-300 focus-visible:ring-offset-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -952,7 +957,7 @@ export default function AdminUsersPage() {
 
                     <div className="grid md:grid-cols-3 gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-slate-200 mb-2">
+                        <p className="mb-2 text-sm font-semibold text-slate-100">
                           Roles
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -969,8 +974,8 @@ export default function AdminUsersPage() {
                               }
                               className={
                                 roleFilters.includes(r)
-                                  ? ''
-                                  : 'border-white/30 text-white hover:text-cyan-300'
+                                  ? activeFilterButtonClasses
+                                  : inactiveFilterButtonClasses
                               }
                               onClick={() =>
                                 setRoleFilters((prev) =>
@@ -987,7 +992,7 @@ export default function AdminUsersPage() {
                       </div>
 
                       <div>
-                        <p className="text-sm font-semibold text-slate-200 mb-2">
+                        <p className="mb-2 text-sm font-semibold text-slate-100">
                           Pais
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -1002,8 +1007,8 @@ export default function AdminUsersPage() {
                               }
                               className={
                                 countryFilters.includes(c)
-                                  ? ''
-                                  : 'border-white/30 text-white hover:text-cyan-300'
+                                  ? activeFilterButtonClasses
+                                  : inactiveFilterButtonClasses
                               }
                               onClick={() =>
                                 setCountryFilters((prev) =>
@@ -1015,7 +1020,7 @@ export default function AdminUsersPage() {
                             </Button>
                           ))}
                           {countryOptions.length === 0 && (
-                            <span className="text-xs text-slate-300">
+                            <span className="text-xs text-slate-400">
                               Sem dados
                             </span>
                           )}
@@ -1023,7 +1028,7 @@ export default function AdminUsersPage() {
                       </div>
 
                       <div>
-                        <p className="text-sm font-semibold text-slate-200 mb-2">
+                        <p className="mb-2 text-sm font-semibold text-slate-100">
                           Desporto
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -1038,8 +1043,8 @@ export default function AdminUsersPage() {
                               }
                               className={
                                 sportFilters.includes(s)
-                                  ? ''
-                                  : 'border-white/30 text-white hover:text-cyan-300'
+                                  ? activeFilterButtonClasses
+                                  : inactiveFilterButtonClasses
                               }
                               onClick={() =>
                                 setSportFilters((prev) =>
@@ -1051,7 +1056,7 @@ export default function AdminUsersPage() {
                             </Button>
                           ))}
                           {sportOptions.length === 0 && (
-                            <span className="text-xs text-slate-300">
+                            <span className="text-xs text-slate-400">
                               Sem dados
                             </span>
                           )}
@@ -1062,9 +1067,9 @@ export default function AdminUsersPage() {
                 )}
               </div>
 
-              <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-[#000c12]">
+              <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-[#021824]/80 shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
                 <table className="min-w-full text-left text-sm text-slate-200">
-                  <thead className="bg-[#05212b] text-xs uppercase tracking-[0.2em] text-slate-300">
+                  <thead className="bg-[#04131b]/80 text-xs uppercase tracking-[0.2em] text-slate-200">
                     <tr>
                       <th
                         className="px-4 py-3 text-left font-semibold cursor-pointer select-none"
@@ -1144,7 +1149,7 @@ export default function AdminUsersPage() {
                   <tbody>
                     {isLoadingUsers && (
                       <tr>
-                        <td colSpan={12} className="px-4 py-6 text-center text-slate-300">
+                        <td colSpan={12} className="px-4 py-6 text-center text-slate-400">
                           Loading users...
                         </td>
                       </tr>
@@ -1152,7 +1157,7 @@ export default function AdminUsersPage() {
 
                     {!isLoadingUsers && filteredAndSortedUsers.length === 0 && (
                       <tr>
-                        <td colSpan={12} className="px-4 py-6 text-center text-slate-300">
+                        <td colSpan={12} className="px-4 py-6 text-center text-slate-400">
                           No users found.
                         </td>
                       </tr>
@@ -1162,11 +1167,11 @@ export default function AdminUsersPage() {
                       filteredAndSortedUsers.map((u) => (
                         <tr
                           key={u.id}
-                          className="odd:bg-[#000c12] even:bg-[#020b11] hover:bg-[#05212b]/40 text-slate-200 transition-colors"
+                          className="text-slate-200 transition-colors odd:bg-[#04131b]/60 even:bg-[#021c27]/60 hover:bg-[#062332]/70"
                         >
-                          <td className="px-4 py-3 font-medium text-white">
+                          <td className="px-4 py-3 font-medium text-[#fdd87c]">
                             {u.username || (
-                              <span className="text-slate-300">-</span>
+                              <span className="text-slate-400">-</span>
                             )}
                             {user?.id === u.id && (
                               <span className="ml-1 text-[10px] text-blue-400">
@@ -1176,7 +1181,7 @@ export default function AdminUsersPage() {
                           </td>
                           <td className="px-4 py-3">
                             {u.full_name || (
-                              <span className="text-slate-300">-</span>
+                              <span className="text-slate-400">-</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -1206,7 +1211,7 @@ export default function AdminUsersPage() {
                                   )
                                 }
                               >
-                                <SelectTrigger className="w-[150px] border-white/10 bg-[#000c12] text-white focus-visible:ring-1 focus-visible:ring-cyan-300 focus-visible:ring-offset-0">
+                                <SelectTrigger className="w-[150px] border-white/20 bg-[#04131b] text-white focus-visible:ring-1 focus-visible:ring-cyan-300 focus-visible:ring-offset-0">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1218,7 +1223,7 @@ export default function AdminUsersPage() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <span className="text-xs text-slate-300">
+                              <span className="text-xs text-slate-400">
                                 View only
                               </span>
                             )}
@@ -1227,7 +1232,7 @@ export default function AdminUsersPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="border-white/30 text-white hover:text-cyan-300"
+                              className="border-white/40 text-white hover:bg-white/10"
                               onClick={() => handleOpenUserPermissions(u)}
                             >
                               View / Edit
@@ -1235,7 +1240,7 @@ export default function AdminUsersPage() {
                           </td>
                           <td className="px-4 py-3">
                             {u.country || (
-                              <span className="text-slate-300">-</span>
+                              <span className="text-slate-400">-</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-xs">
@@ -1247,7 +1252,7 @@ export default function AdminUsersPage() {
                           </td>
                           <td className="px-4 py-3">
                             {u.email || (
-                              <span className="text-slate-300">-</span>
+                              <span className="text-slate-400">-</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -1255,7 +1260,7 @@ export default function AdminUsersPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-white/30 text-rose-300 hover:text-rose-400"
+                                className="border-white/40 text-rose-300 hover:bg-rose-500/10"
                                 disabled={deletingUserId === u.id}
                                 onClick={() => handleDeleteUser(u.id, u.username)}
                               >
@@ -1264,7 +1269,7 @@ export default function AdminUsersPage() {
                                   : 'Delete'}
                               </Button>
                             ) : (
-                              <span className="text-xs text-slate-300">
+                              <span className="text-xs text-slate-400">
                                 -
                               </span>
                             )}
@@ -1276,16 +1281,16 @@ export default function AdminUsersPage() {
               </div>
 
               {selectedUser && (
-                <div className="mt-8 rounded-2xl border border-white/10 bg-[#05212b] p-6">
+                <div className="mt-8 rounded-2xl border border-white/10 bg-[#04131b] p-6 shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Permissions</p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
+                      <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">Permissions</p>
+                      <h2 className="mt-2 text-2xl font-semibold text-[#fdd87c]">
                         {selectedUser.username || selectedUser.email || 'user'}
                       </h2>
-                      <p className="text-sm text-slate-300">
+                      <p className="text-sm text-slate-200">
                         Role:{' '}
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-[#fdd87c]">
                           {selectedUserRole || selectedUser.role}
                         </span>
                       </p>
@@ -1294,7 +1299,7 @@ export default function AdminUsersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-white/30 text-white hover:text-cyan-300"
+                        className="border-white/40 text-white hover:bg-white/10"
                         onClick={() => {
                           setSelectedUser(null);
                           setSelectedUserRole(null);
@@ -1306,6 +1311,7 @@ export default function AdminUsersPage() {
                       {permissionsEditable && canEditUsers && isSuperAdmin && (
                         <Button
                           size="sm"
+                          className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                           onClick={handleSaveUserPermissions}
                           disabled={savingUserPermissions || loadingUserPermissions}
                         >
@@ -1316,29 +1322,29 @@ export default function AdminUsersPage() {
                   </div>
                   <div className="mt-4 space-y-4">
                     {loadingUserPermissions ? (
-                      <p className="text-sm text-slate-300">Loading permissions...</p>
+                      <p className="text-sm text-slate-200">Loading permissions...</p>
                     ) : (
                       <>
                         {selectedUserRole === 'Super Admin' && (
-                          <p className="text-sm text-slate-300">
+                          <p className="text-sm text-slate-200">
                             Super Admin already has all permissions. Extra overrides are not needed.
                           </p>
                         )}
                         {selectedUserRole === 'Member' && (
-                          <p className="text-sm text-slate-300">
+                          <p className="text-sm text-slate-200">
                             Members cannot have admin permissions. Change the role to <strong>Admin</strong> to grant admin-level permissions.
                           </p>
                         )}
                         {selectedUserRole === 'Admin' && (
-                          <div className="rounded-xl border border-white/10 bg-[#000c12] p-4">
-                            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                          <div className="rounded-xl border border-white/10 bg-[#021824]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.45)]">
+                            <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">
                               Admin permissions
                             </p>
                             <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                               {ADMIN_TOGGLABLE_PERMISSIONS.map((key) => (
                                 <label
                                   key={key}
-                                  className="flex items-center gap-2 text-sm text-slate-200"
+                                  className="flex items-center gap-2 text-sm text-slate-100"
                                 >
                                   <Checkbox
                                     checked={!!selectedUserPermissions[key]}
