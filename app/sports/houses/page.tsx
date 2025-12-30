@@ -120,10 +120,10 @@ export default function HousesPage() {
 
       <main className="flex-1 bg-[#000c12]">
         {/* HERO / INTRO */}
-        <section className="relative overflow-hidden border-b border-white/10">
+        <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27]">
           <div className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-32 -right-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
-            <div className="absolute -bottom-40 -left-24 h-80 w-80 rounded-full bg-emerald-500/20 blur-3xl" />
+            <div className="absolute -top-32 -right-24 h-72 w-72 rounded-full bg-[#5af3ff]/15 blur-3xl" />
+            <div className="absolute -bottom-40 -left-24 h-80 w-80 rounded-full bg-[#fdd87c]/10 blur-3xl" />
           </div>
 
           <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 md:py-16">
@@ -132,18 +132,18 @@ export default function HousesPage() {
                 <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                   HOUSES OF SPORTS
                 </p>
-                <h1 className="text-3xl font-semibold text-white md:text-4xl">
+                <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
                   Explora as Houses
                 </h1>
-                <p className="max-w-3xl text-sm text-slate-300 md:text-base">
+                <p className="max-w-3xl text-sm text-slate-200 md:text-base">
                   Cada House of Sports é uma comunidade que junta desporto, formação Web3 e networking local. Descobre onde estas Houses já estão ativas, quais estão em construção e as próximas a chegar ao ecossistema LEGACY.
                 </p>
-                <p className="max-w-3xl text-sm text-slate-300 md:text-base">
+                <p className="max-w-3xl text-sm text-slate-200 md:text-base">
                   Escolhe a House alinhada com o teu desporto e contexto ou usa este mapa para perceber onde podes liderar uma nova iniciativa.
                 </p>
               </div>
 
-              <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#020b16]/80 p-4 md:grid-cols-3 md:p-6">
+              <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#04131b]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.65)] md:grid-cols-3 md:p-6">
                 <StatusSummaryItem
                   label="Houses ativas"
                   value={totalActive}
@@ -185,7 +185,7 @@ export default function HousesPage() {
                       consegue orientar-te com muito mais precisão.
                     </li>
                   </ul>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-200">
                     Não precisas de &quot;entrar em tudo&quot;. A ideia é
                     perceber onde faz sentido colocar a tua energia — como
                     membro, como líder ou simplesmente como alguém que quer
@@ -193,7 +193,7 @@ export default function HousesPage() {
                   </p>
                 </div>
 
-                <div className="space-y-3 rounded-2xl border border-white/10 bg-[#020b16]/80 p-4">
+                <div className="space-y-3 rounded-2xl border border-white/10 bg-[#04131b]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200">
                     PRÓXIMO PASSO
                   </p>
@@ -205,10 +205,19 @@ export default function HousesPage() {
                     uma nova.
                   </p>
                   <div className="flex flex-wrap gap-3 pt-1">
-                    <Button asChild size="sm">
+                    <Button
+                      asChild
+                      size="sm"
+                      className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                    >
                       <Link href="/sports/onboarding">Fazer Onboarding</Link>
                     </Button>
-                    <Button asChild variant="outline" size="sm">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="border-white/40 text-white hover:bg-white/10"
+                    >
                       <Link href="/education/courses">Começar pela Academia</Link>
                     </Button>
                   </div>
@@ -219,8 +228,11 @@ export default function HousesPage() {
         </section>
 
         {/* LISTAS DE HOUSES */}
-        <section className="bg-[#000c12] px-6 py-12 md:py-16">
-          <div className="mx-auto max-w-6xl space-y-10">
+        <section className="relative px-6 py-12 md:py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-10">
             {error && (
               <div className="rounded-xl border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
                 {error}
@@ -228,21 +240,21 @@ export default function HousesPage() {
             )}
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#05212b] px-6 py-10 text-center">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#04131b] px-6 py-10 text-center shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
                 <p className="text-sm font-medium text-white">
                   A carregar Houses of Sports...
                 </p>
-                <p className="text-xs text-slate-300">
+                <p className="text-xs text-slate-200">
                   Estamos a buscar o mapa atualizado das Houses. Isto pode
                   demorar alguns segundos.
                 </p>
               </div>
             ) : houses.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#05212b] px-6 py-10 text-center">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#04131b] px-6 py-10 text-center shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
                 <p className="text-sm font-medium text-white">
                   Ainda não existem Houses of Sports visíveis.
                 </p>
-                <p className="text-xs text-slate-300">
+                <p className="text-xs text-slate-200">
                   A equipa do LEGACY está a preparar a primeira vaga de
                   comunidades. Mantém-te atento ao portal e à Academia.
                 </p>
@@ -289,12 +301,12 @@ function StatusSummaryItem(props: {
   const { label, value, description } = props;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#000c12]/80 p-4">
+    <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
         {label}
       </p>
       <p className="mt-2 text-2xl font-bold text-white">{value}</p>
-      <p className="mt-1 text-xs text-slate-300">{description}</p>
+      <p className="mt-1 text-xs text-slate-200">{description}</p>
     </div>
   );
 }
@@ -316,10 +328,10 @@ function HousesSection({
     <div>
       <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h3 className="text-md font-semibold text-white">{title}</h3>
-          <p className="text-xs text-slate-300">{description}</p>
+          <h3 className="text-md font-semibold text-[#fdd87c]">{title}</h3>
+          <p className="text-xs text-slate-200">{description}</p>
         </div>
-        <p className="text-[11px] text-slate-400">
+        <p className="text-[11px] text-slate-300">
           {houses.length} {houses.length === 1 ? 'House' : 'Houses'}
         </p>
       </div>
@@ -341,7 +353,7 @@ function HousesSection({
 
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
-              <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#05212b] p-4 shadow-sm transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
+              <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
                 <div className="mb-3 h-20 overflow-hidden rounded-lg border border-white/10 bg-[#000c12]">
                   {house.cover_image_url || house.avatar_url ? (
                     <SafeImage

@@ -74,76 +74,89 @@ export default function SportsLandingPage() {
 
       <main className="flex-1 space-y-16">
         {/* Hero */}
-        <section className="relative isolate overflow-hidden bg-[#000c12] px-6 py-16">
-          <div className="mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center">
+        <section className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-16 shadow-2xl shadow-black/40">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-20 -left-12 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center">
             <div className="relative z-10 flex-1 space-y-6">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">LEGACY SPORTS</p>
-              <h1 className="text-4xl font-semibold leading-tight text-white md:text-5xl">
+              <h1 className="text-4xl font-semibold leading-tight text-[#fdd87c] md:text-5xl">
                 Desportos e Houses na Web3
               </h1>
-              <p className="text-lg text-slate-200">
+              <p className="text-lg text-slate-100">
                 Explora os desportos cobertos pelo Legacy, descobre Houses oficiais e encontra o ponto de partida
                 certo para a tua jornada Web3 + Desporto.
               </p>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-slate-200">
                 Cada House é um hub para treino, networking e XP. Escolhe a comunidade certa e acompanha o teu progresso
                 com o mesmo design system da homepage.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" variant="default" asChild>
+                <Button
+                  size="lg"
+                  asChild
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                >
                   <Link href="/sports/onboarding" className="flex items-center gap-2">
                     Começar onboarding
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/40 text-white hover:bg-white/10"
+                  asChild
+                >
                   <Link href="/sports/houses" className="flex items-center gap-2">
                     Ver Houses
                     <Users className="h-4 w-4" />
                   </Link>
                 </Button>
               </div>
-              <p className="text-sm text-slate-300">
+              <p className="text-xs text-cyan-200/80">
                 Podes sempre ajustar o teu desporto principal e a tua House mais tarde no teu perfil Legacy.
               </p>
             </div>
 
             <div className="flex-1">
               <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border border-white/10 bg-[#05212b]">
+                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
                   <CardHeader className="space-y-1">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
                       <Activity className="h-4 w-4" />
                       <span>Desportos</span>
                     </div>
                     <CardTitle className="text-3xl font-semibold text-white">{totalSports}</CardTitle>
-                    <CardDescription className="text-xs text-slate-300">
+                    <CardDescription className="text-xs text-slate-200">
                       Modalidades com Houses e trilhos dedicados.
                     </CardDescription>
                   </CardHeader>
                 </Card>
 
-                <Card className="border border-white/10 bg-[#05212b]">
+                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
                   <CardHeader className="space-y-1">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
                       <Users className="h-4 w-4" />
                       <span>Houses</span>
                     </div>
                     <CardTitle className="text-3xl font-semibold text-white">{totalHouses}</CardTitle>
-                    <CardDescription className="text-xs text-slate-300">
+                    <CardDescription className="text-xs text-slate-200">
                       Comunidades locais e globais ligadas ao Legacy.
                     </CardDescription>
                   </CardHeader>
                 </Card>
 
-                <Card className="border border-white/10 bg-[#05212b]">
+                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
                   <CardHeader className="space-y-1">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
                       <Trophy className="h-4 w-4" />
                       <span>Membros</span>
                     </div>
                     <CardTitle className="text-3xl font-semibold text-white">{totalMembers}</CardTitle>
-                    <CardDescription className="text-xs text-slate-300">
+                    <CardDescription className="text-xs text-slate-200">
                       Pessoas a construir reputação Web3 em conjunto.
                     </CardDescription>
                   </CardHeader>
@@ -154,21 +167,26 @@ export default function SportsLandingPage() {
         </section>
 
         {/* Secção desportos */}
-        <section className="bg-[#05212b] px-6 py-16">
-          <div className="mx-auto max-w-6xl space-y-6">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">DESPORTOS</p>
-                <h2 className="text-3xl font-semibold text-white">Onde o Legacy joga</h2>
+                <h2 className="text-3xl font-semibold text-[#fdd87c]">Onde o Legacy joga</h2>
               </div>
-              <p className="max-w-xl text-sm text-slate-300">
+              <p className="max-w-xl text-sm text-slate-200">
                 O Legacy come?a por desportos-chave e vai expandindo ao ritmo da comunidade. Cada modalidade pode ter
                 Houses locais, Houses globais e trilhos espec?ficos na Academia Web3.
               </p>
             </div>
 
             {loading && (
-              <div className="flex items-center justify-center py-12 text-sm text-slate-300">
+              <div className="flex items-center justify-center py-12 text-sm text-slate-200">
                 A carregar desportos...
               </div>
             )}
@@ -180,7 +198,7 @@ export default function SportsLandingPage() {
             )}
 
             {!loading && !error && sports.length === 0 && (
-              <div className="rounded-xl border border-white/10 bg-[#000c12] px-4 py-6 text-sm text-slate-200">
+              <div className="rounded-xl border border-white/10 bg-[#04131b] px-4 py-6 text-sm text-slate-200">
                 Estamos a preparar a lista inicial de desportos. Em breve vais poder ver todas as modalidades cobertas pelo
                 Legacy.
               </div>
@@ -194,27 +212,32 @@ export default function SportsLandingPage() {
                   return (
                     <Card
                       key={sport.id}
-                      className="flex h-full flex-col justify-between border border-white/10 bg-[#000c12] transition-transform duration-150 hover:-translate-y-0.5 hover:border-cyan-400/50"
+                      className="flex h-full flex-col justify-between border border-white/10 bg-[#04131b] transition-transform duration-150 hover:-translate-y-0.5 hover:border-cyan-400/50 shadow-[0_25px_60px_rgba(3,10,25,0.55)]"
                     >
                       <CardHeader className="space-y-3">
                         <div className="flex items-center justify-between gap-3">
                           <CardTitle className="text-base font-semibold text-white">{sport.name}</CardTitle>
-                          <span className="rounded-full bg-[#05212b] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
+                          <span className="rounded-full border border-white/10 bg-[#00141f]/80 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
                             Desporto
                           </span>
                         </div>
-                        <CardDescription className="text-xs text-slate-300">
+                        <CardDescription className="text-xs text-slate-200">
                           {sport.description ??
                             'Modalidade com trilhos dedicados na Academia Web3 e Houses em desenvolvimento.'}
                         </CardDescription>
                         {sport.discipline && (
-                          <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">
+                          <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
                             {sport.discipline}
                           </p>
                         )}
                         {href && (
                           <div className="pt-2">
-                            <Button variant="outline" size="sm" asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-white/30 text-slate-200 hover:bg-white/10"
+                              asChild
+                            >
                               <Link href={href} className="text-xs">
                                 Ver detalhes
                               </Link>
@@ -231,12 +254,17 @@ export default function SportsLandingPage() {
         </section>
 
         {/* Secção Houses */}
-        <section className="bg-[#000c12] px-6 py-16">
-          <div className="mx-auto max-w-6xl space-y-6">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-20 -right-14 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-16 -left-12 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">HOUSES OF SPORTS</p>
-                <h2 className="text-3xl font-semibold text-white">Houses ativas e em preparação</h2>
+                <h2 className="text-3xl font-semibold text-[#fdd87c]">Houses ativas e preparação</h2>
               </div>
               <p className="max-w-xl text-sm text-slate-200">
                 As Houses são hubs locais para treino, networking e preparação Web3. Escolhe a que faz mais sentido
@@ -245,7 +273,7 @@ export default function SportsLandingPage() {
             </div>
 
             {loading && (
-              <div className="flex items-center justify-center py-12 text-sm text-slate-300">
+              <div className="flex items-center justify-center py-12 text-sm text-slate-200">
                 A carregar Houses...
               </div>
             )}
@@ -266,16 +294,16 @@ export default function SportsLandingPage() {
                   return (
                     <Card
                       key={house.id}
-                      className="flex h-full flex-col justify-between border border-white/10 bg-[#05212b] transition-transform duration-150 hover:-translate-y-0.5 hover:border-cyan-400/50"
+                      className="flex h-full flex-col justify-between border border-white/10 bg-[#04131b] transition-transform duration-150 hover:-translate-y-0.5 hover:border-cyan-400/50 shadow-[0_25px_60px_rgba(3,10,25,0.55)]"
                     >
                       <CardHeader className="space-y-3">
                         <div className="flex items-center justify-between gap-3">
                           <CardTitle className="text-base font-semibold text-white">{house.name}</CardTitle>
-                          <span className="rounded-full bg-[#000c12] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
+                          <span className="rounded-full border border-white/10 bg-[#00141f]/80 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
                             House
                           </span>
                         </div>
-                        <CardDescription className="space-y-1 text-xs text-slate-300">
+                        <CardDescription className="space-y-1 text-xs text-slate-200">
                           <div className="flex items-center gap-2">
                             <MapPin className="h-3.5 w-3.5 text-cyan-300" />
                             <span>
@@ -307,7 +335,7 @@ export default function SportsLandingPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="border-white/30 text-slate-100 hover:bg-[#000c12]"
+                            className="border-white/30 text-slate-200 hover:bg-white/10"
                             asChild
                           >
                             <Link href={href}>Ver detalhes da House</Link>
@@ -323,21 +351,35 @@ export default function SportsLandingPage() {
         </section>
 
         {/* CTA final */}
-        <section className="bg-gradient-to-r from-[#1d98a6] via-[#14718f] to-[#126e84] px-6 py-16">
-          <div className="mx-auto max-w-5xl text-center">
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-5xl text-center">
             <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">PRONTO PARA ESCOLHER O TEU CAMINHO?</p>
-            <h2 className="mt-4 text-3xl font-semibold text-white">
+            <h2 className="mt-4 text-3xl font-semibold text-[#fdd87c]">
               Define o desporto, a House e começa a ganhar XP genuíno.
             </h2>
-            <p className="mt-2 text-sm text-cyan-50">
+            <p className="mt-2 text-sm text-slate-200">
               O onboarding personalizado do Legacy ajuda-te a escolher a melhor combinação entre Academia Web3 e Houses
               of Sports para o teu contexto.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-4">
-              <Button size="lg" variant="default" asChild>
+              <Button
+                size="lg"
+                asChild
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+              >
                 <Link href="/sports/onboarding">Começar onboarding</Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white/40 text-white hover:bg-white/10"
+                asChild
+              >
                 <Link href="/education/courses">Explorar cursos da Academia</Link>
               </Button>
             </div>
