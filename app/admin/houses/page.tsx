@@ -163,7 +163,7 @@ export default function AdminHousesPage() {
     (user.role !== 'Super Admin' && user.role !== 'Admin')
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#000c12] text-white">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
         <div className="flex items-center gap-2 text-slate-300">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading Houses of Sports...</span>
@@ -192,23 +192,23 @@ export default function AdminHousesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000c12] text-white px-4 py-10 md:px-10">
+    <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] text-white px-4 py-10 md:px-10">
       <div className="mx-auto w-full max-w-6xl space-y-10">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#04141c] via-[#03121a] to-[#020b11] p-6 md:p-10 shadow-2xl shadow-black/40">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] p-6 md:p-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-4 max-w-3xl">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                 HOUSES ADMIN
               </p>
               <div className="flex items-start gap-4">
-                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#05212b]">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#021824]/80">
                   <Building2 className="h-7 w-7 text-cyan-300" />
                 </span>
                 <div className="space-y-2">
-                  <h1 className="text-3xl font-semibold text-white">
+                  <h1 className="text-3xl font-semibold text-[#fdd87c]">
                     Houses of Sports
                   </h1>
-                  <p className="text-sm text-slate-300">
+                  <p className="text-sm text-slate-100">
                     Monitoriza o estado de cada house, confirma lideranca e
                     acelera ativacoes com o mesmo sistema visual da homepage.
                   </p>
@@ -249,7 +249,7 @@ export default function AdminHousesPage() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
             <CardHeader className="space-y-2 pb-2">
               <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                 TOTAL
@@ -265,7 +265,7 @@ export default function AdminHousesPage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
             <CardHeader className="space-y-2 pb-2">
               <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                 ATIVAS
@@ -281,7 +281,7 @@ export default function AdminHousesPage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
             <CardHeader className="space-y-2 pb-2">
               <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                 EM OBRAS
@@ -297,7 +297,7 @@ export default function AdminHousesPage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
             <CardHeader className="space-y-2 pb-2">
               <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                 EM DESENV
@@ -313,7 +313,7 @@ export default function AdminHousesPage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-white/10 bg-[#05212b] shadow-lg shadow-black/30">
+          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
             <CardHeader className="space-y-2 pb-2">
               <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
                 SEM HEAD
@@ -334,14 +334,14 @@ export default function AdminHousesPage() {
           <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             FILTROS
           </p>
-          <Card className="border border-white/10 bg-[#05212b]">
+          <Card className="border border-white/10 bg-[#04131b]">
             <CardContent className="flex flex-col gap-4 pt-6 md:flex-row md:items-center">
               <div className="flex-1 w-full">
                 <Input
                   placeholder="Procurar por esporte, codigo ou head..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="bg-[#000c12] border-white/10 text-white placeholder:text-slate-400"
+                  className="bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] border-white/10 text-white placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-cyan-300 focus-visible:ring-offset-0"
                 />
               </div>
               <div className="w-full md:w-60">
@@ -351,7 +351,7 @@ export default function AdminHousesPage() {
                     setStatusFilter(val as 'all' | HouseStatus)
                   }
                 >
-                  <SelectTrigger className="bg-[#000c12] border-white/10 text-white">
+                  <SelectTrigger className="bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] border-white/10 text-white">
                     <SelectValue placeholder="Estado" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#03121a] text-white">
@@ -390,7 +390,7 @@ export default function AdminHousesPage() {
           <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
             LISTA DE HOUSES
           </p>
-          <Card className="border border-white/10 bg-[#05212b]/50">
+          <Card className="border border-white/10 bg-[#04131b]/50">
             <CardHeader>
               <CardTitle className="text-white">
                 Houses encontradas: {filtered.length}
@@ -426,7 +426,7 @@ export default function AdminHousesPage() {
                     return (
                       <article
                         key={house.id}
-                        className="rounded-2xl border border-white/10 bg-[#05212b] p-5 shadow-lg shadow-black/20 transition hover:border-cyan-400/50"
+                        className="rounded-2xl border border-white/10 bg-[#04131b] p-5 shadow-lg shadow-black/20 transition hover:border-cyan-400/50"
                       >
                         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                           <div className="flex flex-1 items-start gap-4">
