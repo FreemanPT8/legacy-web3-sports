@@ -431,8 +431,8 @@ export default function CoursesManagementPage() {
 
   if (loading || !user || !isAdmin || !permissionsLoaded) {
     return (
-      <div className="w-full">
-        <p className="text-sm text-blue-100/90">A carregar cursos...</p>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
+        <p className="text-sm text-slate-200">A carregar cursos...</p>
       </div>
     );
   }
@@ -463,29 +463,29 @@ export default function CoursesManagementPage() {
   const levelLabel = (course: Course) => course.level || 'Beginner';
 
   return (
-    <div className="min-h-screen w-full space-y-8 bg-[#000c12] px-4 py-6 text-white md:px-8">
+    <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 text-white md:px-8">
       {/* HERO */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#05212b] px-6 py-10 shadow-2xl shadow-black/40">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-          <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
         </div>
 
         <div className="relative z-10 max-w-5xl space-y-4">
-          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
             LEGACY ADMIN - COURSES
           </p>
-          <h1 className="text-3xl font-semibold text-white md:text-4xl">
+          <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
             Course Management
           </h1>
-          <p className="text-sm text-slate-300 md:text-base">
+          <p className="text-sm text-slate-100 md:text-base">
             Cria, organiza e afina cursos, topicos e licoes. Aqui controlas o
             motor educativo do LEGACY para saber o que esta publicado e o que
             ainda esta em draft.
           </p>
 
           {!canManageCourses && (
-            <p className="mt-3 flex items-center gap-2 text-xs text-amber-300">
+            <p className="mt-3 flex items-center gap-2 text-xs text-amber-200">
               <Lock className="h-4 w-4" />
               Podes ver os cursos, mas nao tens permissao para criar ou editar
               conteudo.
@@ -497,17 +497,17 @@ export default function CoursesManagementPage() {
       {/* ACTION PANEL */}
       <section>
         <div className="max-w-6xl mx-auto">
-          <Card className="border border-white/10 bg-[#05212b] shadow-xl shadow-black/40">
+          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
+                <Badge className="border border-emerald-400/50 bg-emerald-400/10 text-emerald-100">
                   Playbook
                 </Badge>
-                <CardTitle className="text-lg text-white">
+                <CardTitle className="text-lg text-[#fdd87c]">
                   Acoes imediatas para acelerar os cursos
                 </CardTitle>
               </div>
-              <CardDescription className="text-slate-300 max-w-3xl">
+              <CardDescription className="max-w-3xl text-slate-200">
                 Organiza lancamentos, mantem topicos engajando e conecta cada
                 update com XP e impacto real.
               </CardDescription>
@@ -515,7 +515,7 @@ export default function CoursesManagementPage() {
             <CardContent className="pt-2">
               <div className="flex flex-col gap-3 md:flex-row">
                 <Button
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="flex-1 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045] disabled:opacity-60"
                   disabled={!canManageCourses}
                   onClick={() => {
                     if (!canManageCourses) return;
@@ -526,7 +526,7 @@ export default function CoursesManagementPage() {
                   Criar novo curso
                 </Button>
                 <Button
-                  className="flex-1 border border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900 disabled:opacity-60"
+                  className="flex-1 border border-white/30 bg-transparent text-white hover:bg-white/10 disabled:opacity-60"
                   disabled={!canManageCourses}
                   onClick={() => {
                     if (!canManageCourses) return;
@@ -541,44 +541,44 @@ export default function CoursesManagementPage() {
                   Adicionar topico
                 </Button>
                 <Button
-                  className="flex-1 border border-blue-600 text-blue-100 hover:bg-blue-900 bg-blue-950/50"
+                  className="flex-1 border border-white/30 bg-transparent text-white hover:bg-white/10"
                   onClick={() => router.push('/admin/courses')}
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Rever portfolio
                 </Button>
               </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
-                <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-100">
-                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+              <div className="mt-4 grid gap-3 text-xs md:grid-cols-3">
+                <div className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-emerald-100 shadow-[0_15px_35px_rgba(2,20,20,0.45)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide">
                     Cursos ativos
                   </p>
-                  <p className="text-sm font-bold mt-1">
+                  <p className="mt-1 text-sm font-bold">
                     {publishedCourses.length} publicados
                   </p>
-                  <p className="text-slate-300 text-[11px]">
+                  <p className="text-[11px] text-slate-200">
                     Foque em transformar 3 deles em experiencias multimidia.
                   </p>
                 </div>
-                <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-purple-100">
-                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+                <div className="rounded-lg border border-purple-400/40 bg-purple-400/10 px-3 py-2 text-purple-100 shadow-[0_15px_35px_rgba(15,10,45,0.4)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide">
                     Topicos / licoes
                   </p>
-                  <p className="text-sm font-bold mt-1">
+                  <p className="mt-1 text-sm font-bold">
                     {totalTopics} topicos / {totalLessons} licoes
                   </p>
-                  <p className="text-slate-300 text-[11px]">
+                  <p className="text-[11px] text-slate-200">
                     Cada topico concluido gera potencial de XP e retencao.
                   </p>
                 </div>
-                <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-blue-100">
-                  <p className="font-semibold text-[11px] uppercase tracking-wide">
+                <div className="rounded-lg border border-cyan-400/40 bg-cyan-400/10 px-3 py-2 text-cyan-100 shadow-[0_15px_35px_rgba(5,30,40,0.45)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide">
                     Engajamento
                   </p>
-                  <p className="text-sm font-bold mt-1">
+                  <p className="mt-1 text-sm font-bold">
                     {draftCourses.length} rascunhos
                   </p>
-                  <p className="text-slate-300 text-[11px]">
+                  <p className="text-[11px] text-slate-200">
                     Finalize e publique para ativar XP em massa.
                   </p>
                 </div>
@@ -594,10 +594,10 @@ export default function CoursesManagementPage() {
           {/* HEADER + BOTAO */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-[#fdd87c]">
                 Cursos, topicos e licoes
               </h2>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-slate-200">
                 Visao geral rapida do portefolio de cursos e da estrutura de
                 topicos/licoes.
               </p>
@@ -607,7 +607,7 @@ export default function CoursesManagementPage() {
               aria-disabled={!canManageCourses}
             >
               <Button
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!canManageCourses}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -618,56 +618,56 @@ export default function CoursesManagementPage() {
 
           {/* STATS */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-white">
+                <CardTitle className="text-sm font-medium text-[#fdd87c]">
                   Total Courses
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">
+                <div className="text-3xl font-bold text-[#fdd87c]">
                   {courses.length}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-white">
+                <CardTitle className="text-sm font-medium text-[#fdd87c]">
                   Published
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-400">
+                <div className="text-3xl font-bold text-emerald-300">
                   {publishedCourses.length}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-white">
+                <CardTitle className="text-sm font-medium text-[#fdd87c]">
                   Draft
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-amber-400">
+                <div className="text-3xl font-bold text-amber-300">
                   {draftCourses.length}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#05212b] border border-white/10">
+            <Card className="border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-white">
+                <CardTitle className="text-sm font-medium text-[#fdd87c]">
                   Modules / Lessons
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-semibold text-white">
+                <div className="text-lg font-semibold text-[#fdd87c]">
                   {totalTopics} topics
                 </div>
-                <div className="text-sm text-slate-300">
+                <div className="text-sm text-slate-200">
                   {totalLessons} lessons
                 </div>
               </CardContent>
@@ -676,22 +676,22 @@ export default function CoursesManagementPage() {
 
           {/* LISTA DE CURSOS */}
           {loadingData ? (
-            <Card className="bg-[#05212b] border border-white/10">
-              <CardContent className="text-center py-12 text-slate-200">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-                <p className="mt-4 text-sm text-slate-300">
+            <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
+              <CardContent className="py-12 text-center text-slate-200">
+                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-300" />
+                <p className="mt-4 text-sm text-slate-200">
                   Loading courses...
                 </p>
               </CardContent>
             </Card>
           ) : courses.length === 0 ? (
-            <Card className="bg-[#05212b] border border-white/10">
-              <CardContent className="text-center py-12 text-slate-200">
-                <BookOpen className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2 text-white">
+            <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
+              <CardContent className="py-12 text-center text-slate-200">
+                <BookOpen className="mx-auto mb-4 h-16 w-16 text-cyan-200" />
+                <h3 className="mb-2 text-xl font-semibold text-[#fdd87c]">
                   No courses yet
                 </h3>
-                <p className="text-sm text-slate-300 mb-6">
+                <p className="mb-6 text-sm text-slate-200">
                   Cria o teu primeiro curso para comecar a construir o
                   legado educativo.
                 </p>
@@ -700,7 +700,7 @@ export default function CoursesManagementPage() {
                   aria-disabled={!canManageCourses}
                 >
                   <Button
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_40px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045] disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={!canManageCourses}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -736,9 +736,9 @@ export default function CoursesManagementPage() {
                 return (
                   <Card
                     key={course.id}
-                    className="flex flex-col overflow-hidden border border-white/10 bg-[#000c12] text-slate-200 transition-all hover:border-cyan-300/70"
+                    className="flex flex-col overflow-hidden border border-white/10 bg-[#04131b] text-slate-200 transition-all shadow-[0_25px_70px_rgba(3,10,25,0.65)] hover:border-cyan-300/60"
                   >
-                    <div className="relative overflow-hidden border-b border-white/10 bg-[#05212b]">
+                    <div className="relative overflow-hidden border-b border-white/10 bg-[#021824]/80">
                       {imageUrl ? (
                         <SafeImage
                           src={imageUrl}
@@ -785,33 +785,33 @@ export default function CoursesManagementPage() {
                     </div>
 
                     <CardHeader className="space-y-2 pb-0">
-                      <CardTitle className="text-xl text-white leading-tight line-clamp-2 min-h-[3.2rem]">
+                      <CardTitle className="min-h-[3.2rem] line-clamp-2 text-xl leading-tight text-[#fdd87c]">
                         {title}
                       </CardTitle>
                       {course.author_name && (
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-300">
                           By {course.author_name}
                         </p>
                       )}
                       {description && (
-                        <p className="text-sm text-slate-300 line-clamp-3">
+                        <p className="text-sm text-slate-200 line-clamp-3">
                           {description}
                         </p>
                       )}
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-4">
-                      <div className="space-y-4 text-sm text-slate-300">
-                        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/70 to-slate-800/40 px-4 py-3 shadow-inner">
+                      <div className="space-y-4 text-sm text-slate-200">
+                        <div className="rounded-2xl border border-white/10 bg-[#021824]/80 px-4 py-3 shadow-[0_20px_60px_rgba(3,10,25,0.45)]">
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-300">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-200">
                                 <Award className="h-5 w-5" />
                               </div>
                               <div>
                                 <p className="text-[11px] uppercase tracking-wide text-cyan-200">
                                   XP já distribuído
                                 </p>
-                                <p className="text-2xl font-semibold text-white leading-tight">
+                                <p className="text-2xl font-semibold text-[#fdd87c] leading-tight">
                                   {formatNumber(xpDistributed)} XP
                                 </p>
                               </div>
@@ -820,7 +820,7 @@ export default function CoursesManagementPage() {
                               <p className="text-[11px] uppercase tracking-wide text-slate-400">
                                 Conclusões
                               </p>
-                              <p className="text-xl font-semibold text-white">
+                              <p className="text-xl font-semibold text-[#fdd87c]">
                                 {formatNumber(completionsCount)}
                               </p>
                               <p className="text-[11px] text-slate-300">
@@ -833,22 +833,22 @@ export default function CoursesManagementPage() {
                           </p>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+                          <div className="rounded-xl border border-white/10 bg-[#04131b]/80 px-3 py-3">
                             <p className="text-[11px] uppercase tracking-wide text-slate-400">
                               XP disponível
                             </p>
-                            <p className="text-2xl font-semibold text-white leading-tight">
+                            <p className="text-2xl font-semibold text-[#fdd87c] leading-tight">
                               {formatNumber(totalXP)} XP
                             </p>
                             <p className="text-[11px] text-slate-400">
                               Total de recompensas possíveis no currículo atual.
                             </p>
                           </div>
-                          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+                          <div className="rounded-xl border border-white/10 bg-[#04131b]/80 px-3 py-3">
                             <p className="text-[11px] uppercase tracking-wide text-slate-400">
                               Estrutura
                             </p>
-                            <p className="text-lg font-semibold text-white">
+                            <p className="text-lg font-semibold text-[#fdd87c]">
                               {(topicsCount || totalModules) || 0} módulos
                             </p>
                             <p className="text-[11px] text-slate-400">
@@ -857,7 +857,7 @@ export default function CoursesManagementPage() {
                           </div>
                         </div>
                         {xpRequired > 0 && (
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-300">
                             XP mínimo recomendado: {formatNumber(xpRequired)} XP
                           </p>
                         )}
@@ -867,7 +867,7 @@ export default function CoursesManagementPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1"
+                          className="flex-1 border-white/40 text-white hover:bg-white/10"
                           onClick={() =>
                             router.push(
                               course.id
@@ -882,7 +882,7 @@ export default function CoursesManagementPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="flex-1 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045] disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={
                             !canManageCourses ||
                             (!isSuperAdmin && !isCreator)
@@ -902,7 +902,7 @@ export default function CoursesManagementPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="border-white/30 text-rose-300 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={!canManageCourses || !isSuperAdmin}
                           onClick={() => handleDeleteCourse(course)}
                         >
