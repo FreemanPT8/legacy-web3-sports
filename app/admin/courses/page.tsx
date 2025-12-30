@@ -133,6 +133,11 @@ function getCourseDescription(course: Course): string {
 const stripHtml = (value: string) =>
   value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
+const formatNumber = (value: number) =>
+  new Intl.NumberFormat('pt-PT', {
+    maximumFractionDigits: 0,
+  }).format(value);
+
 const getLessonReward = (lesson: any) => {
   if (typeof lesson?.xp_reward === 'number') return lesson.xp_reward;
   if (typeof lesson?.xpReward === 'number') return lesson.xpReward;
@@ -798,32 +803,49 @@ export default function CoursesManagementPage() {
                       )}
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-4">
-                      <div className="space-y-3 text-sm text-slate-300">
-                        <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-2 text-base text-white">
-                            <Award className="h-4 w-4 text-cyan-300" />
-                            {totalXP} XP disponível
-                          </span>
-                          <span className="flex items-center gap-2 text-xs text-slate-400">
-                            <Users className="h-4 w-4 text-cyan-300" />
-                            {(topicsCount || totalModules) || 0} módulos /{' '}
-                            {(lessonsCount || totalLessons) || 0} lições
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-slate-400">
-                          <span>{xpDistributed} XP distribuído</span>
-                          <span>
-                            {completionsCount}{' '}
-                            {completionsCount === 1
-                              ? 'utilizador concluiu'
-                              : 'utilizadores concluíram'}
-                          </span>
-                        </div>
-                        {xpRequired > 0 && (
-                          <p className="text-xs text-slate-400">
-                            XP mínimo recomendado: {xpRequired} XP
+                      <div className="space-y-4 text-sm text-slate-300">
+                        <div className="rounded-2xl border border-cyan-400/40 bg-cyan-500/5 p-4 text-white shadow-[0_0_25px_rgba(6,182,212,0.15)]">
+                          <div className="flex flex-wrap items-end justify-between gap-3">
+                            <div>
+                              <p className="text-[11px] uppercase tracking-wider text-cyan-200">
+                                XP já distribuído
+                              </p>
+                              <p className="text-3xl font-semibold text-white leading-none">
+                                {formatNumber(xpDistributed)}{' '}
+                                <span className="text-base font-medium text-cyan-100">XP</span>
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[11px] uppercase tracking-wider text-cyan-200">
+                                Conclusões
+                              </p>
+                              <p className="text-xl font-semibold text-cyan-100">
+                                {formatNumber(completionsCount)}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="mt-3 text-xs text-cyan-100/80">
+                            Cada conclusão soma XP automaticamente para este curso e para o criador.
                           </p>
-                        )}
+                        </div>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="flex items-center gap-2 text-base text-white">
+                              <Award className="h-4 w-4 text-cyan-300" />
+                              {totalXP} XP disponível
+                            </span>
+                            <span className="flex items-center gap-2 text-xs text-slate-400">
+                              <Users className="h-4 w-4 text-cyan-300" />
+                              {(topicsCount || totalModules) || 0} módulos /{' '}
+                              {(lessonsCount || totalLessons) || 0} lições
+                            </span>
+                          </div>
+                          {xpRequired > 0 && (
+                            <p className="text-xs text-slate-400">
+                              XP mínimo recomendado: {xpRequired} XP
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex gap-2">
