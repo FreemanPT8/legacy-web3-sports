@@ -82,6 +82,44 @@ const SECTION_COPY: Record<SupportedLanguage, SectionCopy> = {
   },
 };
 
+type LevelTranslation = {
+  title: string;
+  range: string;
+};
+
+const LEVEL_TRANSLATIONS: Record<SupportedLanguage, Record<string, LevelTranslation>> = {
+  pt: {
+    cadets: { title: 'Cadete', range: '0-98 XP' },
+    infantil: { title: 'Infantil', range: '99-368 XP' },
+    juveniles: { title: 'Juvenil', range: '369-999 XP' },
+    juniors: { title: 'Júnior', range: '1,000-2,221 XP' },
+    seniors: { title: 'Sénior', range: '2,222-3,332 XP' },
+    'hall-of-fame': { title: 'Hall of Fame', range: '3,333-4,999 XP' },
+    master: { title: 'Master', range: '5,000-9,999 XP' },
+    legend: { title: 'Lenda', range: '10,000+ XP' },
+  },
+  es: {
+    cadets: { title: 'Cadete', range: '0-98 XP' },
+    infantil: { title: 'Infantil', range: '99-368 XP' },
+    juveniles: { title: 'Juvenil', range: '369-999 XP' },
+    juniors: { title: 'Junior', range: '1,000-2,221 XP' },
+    seniors: { title: 'Senior', range: '2,222-3,332 XP' },
+    'hall-of-fame': { title: 'Hall of Fame', range: '3,333-4,999 XP' },
+    master: { title: 'Master', range: '5,000-9,999 XP' },
+    legend: { title: 'Leyenda', range: '10,000+ XP' },
+  },
+  en: {
+    cadets: { title: 'Cadet', range: '0-98 XP' },
+    infantil: { title: 'Youth', range: '99-368 XP' },
+    juveniles: { title: 'Intermediate', range: '369-999 XP' },
+    juniors: { title: 'Junior', range: '1,000-2,221 XP' },
+    seniors: { title: 'Senior', range: '2,222-3,332 XP' },
+    'hall-of-fame': { title: 'Hall of Fame', range: '3,333-4,999 XP' },
+    master: { title: 'Master', range: '5,000-9,999 XP' },
+    legend: { title: 'Legend', range: '10,000+ XP' },
+  },
+};
+
 const resolveLanguage = (value?: string | null): SupportedLanguage => {
   const lang = (value ?? 'pt').toLowerCase();
   return SUPPORTED_LANGUAGES.includes(lang as SupportedLanguage)
@@ -131,6 +169,8 @@ export function LevelSections({ summary }: Props) {
   const language: Language = (activeLanguage ?? 'en') as Language;
   const resolvedLanguage = resolveLanguage(activeLanguage);
   const copy = SECTION_COPY[resolvedLanguage];
+  const levelTranslations = LEVEL_TRANSLATIONS[resolvedLanguage];
+  const fallbackLevelTranslations = LEVEL_TRANSLATIONS.en;
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -380,6 +420,8 @@ export function LevelSections({ summary }: Props) {
             startCourseMeta={startCourseMeta}
             copy={copy}
             startHere={summary?.startHere ?? null}
+            levelTranslations={levelTranslations}
+            fallbackLevelTranslations={fallbackLevelTranslations}
           />
         );
 
@@ -405,6 +447,8 @@ type LevelSectionProps = {
   startCourseMeta: StartCourseMeta | null;
   copy: SectionCopy;
   startHere: StartHereState | null;
+  levelTranslations: Record<string, LevelTranslation>;
+  fallbackLevelTranslations: Record<string, LevelTranslation>;
 };
 
 
@@ -421,9 +465,19 @@ function LevelSection({
   startCourseMeta,
   copy,
   startHere,
+  levelTranslations,
+  fallbackLevelTranslations,
 }: LevelSectionProps) {
 
   const normalizedLevelSlug = normalizeLevelSlugValue(level.slug);
+  const translation =
+    levelTranslations[normalizedLevelSlug] ||
+    fallbackLevelTranslations[normalizedLevelSlug] ||
+    null;
+  const displayTitle = translation?.title || level.title;
+  const displayShortLabel = translation?.title || level.shortLabel || level.title;
+  const displayRange =
+    translation?.range || formatRange(level.minXp, level.maxXp);
   const startCourseProgress =
     normalizedLevelSlug === 'cadets' && startHere
       ? startHere.progressPercent ?? 0
@@ -475,13 +529,13 @@ function LevelSection({
 
             <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">
 
-              {level.shortLabel || level.title}
+              {displayShortLabel}
 
             </p>
 
-            <p className="text-lg font-semibold">{level.title}</p>
+            <p className="text-lg font-semibold">{displayTitle}</p>
 
-            <p className="text-xs text-slate-400">{formatRange(level.minXp, level.maxXp)}</p>
+            <p className="text-xs text-slate-400">{displayRange}</p>
 
           </div>
 
@@ -519,13 +573,13 @@ function LevelSection({
 
           <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">
 
-            {level.shortLabel || level.title}
+            {displayShortLabel}
 
           </p>
 
-          <h3 className="mt-1 text-3xl font-semibold text-[#fdd87c]">{level.title}</h3>
+          <h3 className="mt-1 text-3xl font-semibold text-[#fdd87c]">{displayTitle}</h3>
 
-          <p className="text-sm text-slate-300">{formatRange(level.minXp, level.maxXp)}</p>
+          <p className="text-sm text-slate-300">{displayRange}</p>
 
         </div>
 
@@ -613,6 +667,7 @@ function LevelSection({
               isLevelLocked={isLocked}
               startCourseMeta={startCourseMeta}
               copy={copy}
+              levelLabel={displayShortLabel}
             />
 
           ))
@@ -642,6 +697,7 @@ type CourseCardLabels = {
 function CourseCard({
   course,
   level,
+  levelLabel,
   accent,
   isLevelLocked,
   labels,
@@ -651,6 +707,7 @@ function CourseCard({
 }: {
   course: LevelCourseSummary;
   level: ProgressSummary['levels'][number];
+  levelLabel: string;
   accent: string;
   isLevelLocked: boolean;
   labels: CourseCardLabels;
@@ -680,7 +737,6 @@ function CourseCard({
     ? START_HERE_FALLBACK_ID
     : course.slug || course.id;
   const courseHref = `/education/courses/${resolvedSlug}`;
-  const levelLabel = level.shortLabel || level.title;
   const localizedTitle =
     resolveLocalizedField(startMeta?.title, language) ||
     (course.titleI18n ? resolveLocalizedField(course.titleI18n, language) : null) ||
