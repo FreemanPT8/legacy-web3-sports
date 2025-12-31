@@ -23,6 +23,7 @@ import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import { useToast } from '@/hooks/use-toast';
+import { XP_LEVELS } from '@/lib/education/xpLevels';
 
 type AcademyLevelOption = {
   slug: string;
@@ -30,16 +31,11 @@ type AcademyLevelOption = {
   xpRange: string;
 };
 
-const FALLBACK_ACADEMY_LEVELS: AcademyLevelOption[] = [
-  { slug: 'novato', label: 'Cadete', xpRange: '0-98 XP' },
-  { slug: 'cadets', label: 'Infantil', xpRange: '99-368 XP' },
-  { slug: 'juveniles', label: 'Juvenil', xpRange: '369-999 XP' },
-  { slug: 'juniors', label: 'Junior', xpRange: '1,000-2,221 XP' },
-  { slug: 'seniors', label: 'Sénior', xpRange: '2,222-3,332 XP' },
-  { slug: 'hall-of-fame', label: 'Hall da Fama', xpRange: '3,333-4,999 XP' },
-  { slug: 'master', label: 'Master', xpRange: '5,000-9,999 XP' },
-  { slug: 'legend', label: 'Lenda', xpRange: '10,000+ XP' },
-];
+const FALLBACK_ACADEMY_LEVELS: AcademyLevelOption[] = XP_LEVELS.map((level) => ({
+  slug: level.slug,
+  label: level.translations.pt.title,
+  xpRange: level.translations.pt.range,
+}));
 
 const formatRange = (min?: number | null, max?: number | null) => {
   if (typeof min === 'number' && typeof max === 'number') {

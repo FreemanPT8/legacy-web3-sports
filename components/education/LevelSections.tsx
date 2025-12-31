@@ -20,6 +20,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent, type Language } from '@/lib/i18n';
 import { START_HERE_FALLBACK_ID, START_HERE_SLUG } from '@/lib/education/unlockLogic';
 import { resolveCourseLevelOverride } from '@/lib/education/courseLevelOverrides';
+import {
+  getLevelTranslation,
+  normalizeLevelSlug,
+  resolveLevelSlugFromCourse,
+  type LevelLanguage,
+} from '@/lib/education/xpLevels';
 import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 
 const START_COURSE_DESCRIPTION_FALLBACK: Record<Language, string> = {
@@ -82,43 +88,6 @@ const SECTION_COPY: Record<SupportedLanguage, SectionCopy> = {
   },
 };
 
-type LevelTranslation = {
-  title: string;
-  range: string;
-};
-
-const LEVEL_TRANSLATIONS: Record<SupportedLanguage, Record<string, LevelTranslation>> = {
-  pt: {
-    cadets: { title: 'Cadete', range: '0-98 XP' },
-    infantil: { title: 'Infantil', range: '99-368 XP' },
-    juveniles: { title: 'Juvenil', range: '369-999 XP' },
-    juniors: { title: 'Júnior', range: '1,000-2,221 XP' },
-    seniors: { title: 'Sénior', range: '2,222-3,332 XP' },
-    'hall-of-fame': { title: 'Hall of Fame', range: '3,333-4,999 XP' },
-    master: { title: 'Master', range: '5,000-9,999 XP' },
-    legend: { title: 'Lenda', range: '10,000+ XP' },
-  },
-  es: {
-    cadets: { title: 'Cadete', range: '0-98 XP' },
-    infantil: { title: 'Infantil', range: '99-368 XP' },
-    juveniles: { title: 'Juvenil', range: '369-999 XP' },
-    juniors: { title: 'Junior', range: '1,000-2,221 XP' },
-    seniors: { title: 'Senior', range: '2,222-3,332 XP' },
-    'hall-of-fame': { title: 'Hall of Fame', range: '3,333-4,999 XP' },
-    master: { title: 'Master', range: '5,000-9,999 XP' },
-    legend: { title: 'Leyenda', range: '10,000+ XP' },
-  },
-  en: {
-    cadets: { title: 'Cadet', range: '0-98 XP' },
-    infantil: { title: 'Youth', range: '99-368 XP' },
-    juveniles: { title: 'Intermediate', range: '369-999 XP' },
-    juniors: { title: 'Junior', range: '1,000-2,221 XP' },
-    seniors: { title: 'Senior', range: '2,222-3,332 XP' },
-    'hall-of-fame': { title: 'Hall of Fame', range: '3,333-4,999 XP' },
-    master: { title: 'Master', range: '5,000-9,999 XP' },
-    legend: { title: 'Legend', range: '10,000+ XP' },
-  },
-};
 
 const resolveLanguage = (value?: string | null): SupportedLanguage => {
   const lang = (value ?? 'pt').toLowerCase();
@@ -147,12 +116,13 @@ export function LevelSections({ summary }: Props) {
     const normalized: Record<string, LevelCourseSummary[]> = {};
     Object.entries(rawCoursesByLevel).forEach(([levelSlug, list]) => {
       const entries = Array.isArray(list) ? list : [];
-      const normalizedLevelSlug = normalizeLevelSlugValue(levelSlug) || levelSlug;
+      const normalizedLevelSlug =
+        normalizeLevelSlug(levelSlug) || levelSlug;
       entries.forEach((course) => {
         const overrideSlug = resolveCourseLevelOverride(course);
         const targetSlugCandidate = overrideSlug || normalizedLevelSlug;
         const targetSlug =
-          normalizeLevelSlugValue(targetSlugCandidate) ||
+          normalizeLevelSlug(targetSlugCandidate) ||
           targetSlugCandidate ||
           normalizedLevelSlug;
         if (!normalized[targetSlug]) {
@@ -169,8 +139,7 @@ export function LevelSections({ summary }: Props) {
   const language: Language = (activeLanguage ?? 'en') as Language;
   const resolvedLanguage = resolveLanguage(activeLanguage);
   const copy = SECTION_COPY[resolvedLanguage];
-  const levelTranslations = LEVEL_TRANSLATIONS[resolvedLanguage];
-  const fallbackLevelTranslations = LEVEL_TRANSLATIONS.en;
+  const levelLanguage = resolvedLanguage as LevelLanguage;
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -395,7 +364,7 @@ export function LevelSections({ summary }: Props) {
       )}
 
       {levels.map((level) => {
-        const levelKey = normalizeLevelSlugValue(level.slug) || level.slug;
+        const levelKey = normalizeLevelSlug(level.slug) || level.slug;
         const fallbackCourses = fallbackCoursesByLevel[levelKey] || [];
         const courses =
           coursesByLevel[levelKey] && coursesByLevel[levelKey].length > 0
@@ -420,8 +389,7 @@ export function LevelSections({ summary }: Props) {
             startCourseMeta={startCourseMeta}
             copy={copy}
             startHere={summary?.startHere ?? null}
-            levelTranslations={levelTranslations}
-            fallbackLevelTranslations={fallbackLevelTranslations}
+            levelLanguage={levelLanguage}
           />
         );
 
@@ -447,8 +415,7 @@ type LevelSectionProps = {
   startCourseMeta: StartCourseMeta | null;
   copy: SectionCopy;
   startHere: StartHereState | null;
-  levelTranslations: Record<string, LevelTranslation>;
-  fallbackLevelTranslations: Record<string, LevelTranslation>;
+  levelLanguage: LevelLanguage;
 };
 
 
@@ -465,19 +432,18 @@ function LevelSection({
   startCourseMeta,
   copy,
   startHere,
-  levelTranslations,
-  fallbackLevelTranslations,
+  levelLanguage,
 }: LevelSectionProps) {
 
-  const normalizedLevelSlug = normalizeLevelSlugValue(level.slug);
-  const translation =
-    levelTranslations[normalizedLevelSlug] ||
-    fallbackLevelTranslations[normalizedLevelSlug] ||
-    null;
+  const normalizedLevelSlug =
+    normalizeLevelSlug(level.slug) || normalizeLevelSlug(level.shortLabel) || null;
+  const translation = normalizedLevelSlug
+    ? getLevelTranslation(normalizedLevelSlug, levelLanguage)
+    : null;
   const displayTitle = translation?.title || level.title;
-  const displayShortLabel = translation?.title || level.shortLabel || level.title;
-  const displayRange =
-    translation?.range || formatRange(level.minXp, level.maxXp);
+  const displayShortLabel =
+    translation?.title || level.shortLabel || level.title;
+  const displayRange = translation?.range || formatRange(level.minXp, level.maxXp);
   const startCourseProgress =
     normalizedLevelSlug === 'cadets' && startHere
       ? startHere.progressPercent ?? 0
@@ -958,102 +924,11 @@ function sanitizeDescription(value: string): string {
 }
 
 function formatRange(min?: number | null, max?: number | null) {
-
   const lower = typeof min === 'number' ? min.toLocaleString() : '0';
-
   if (typeof max === 'number') {
-
     return `${lower}-${max.toLocaleString()} XP`;
-
   }
-
   return `${lower}+ XP`;
-
-}
-
-function normalizeLevelSlugValue(value?: string | null): string {
-  const normalized = normalizeSlugCandidate(value);
-  if (normalized) return normalized;
-  return typeof value === 'string' ? value : '';
-}
-
-
-const LEVEL_SLUG_NORMALIZATION: Record<string, string> = {
-  novato: 'cadets',
-  cadete: 'cadets',
-  cadets: 'cadets',
-  cadet: 'cadets',
-  youth: 'infantil',
-  infantil: 'infantil',
-  beginner: 'cadets',
-  intermediate: 'infantil',
-  advanced: 'juveniles',
-  juvenil: 'juveniles',
-  juvenis: 'juveniles',
-  juvenile: 'juveniles',
-  junior: 'juniors',
-  juniors: 'juniors',
-  senior: 'seniors',
-  seniors: 'seniors',
-  legend: 'legend',
-  master: 'master',
-  'hall da fama': 'hall-of-fame',
-  'hall of fame': 'hall-of-fame',
-  hall: 'hall-of-fame',
-};
-
-const BUILDER_LEVEL_TO_SLUG: Record<string, string> = {
-  beginner: 'cadets',
-  intermediate: 'infantil',
-  advanced: 'juveniles',
-};
-
-function normalizeSlugCandidate(value: unknown): string | null {
-  if (!value || typeof value !== 'string') return null;
-  const lowered = value.trim().toLowerCase();
-  if (!lowered) return null;
-  return LEVEL_SLUG_NORMALIZATION[lowered] || lowered;
-}
-
-function normalizeLevelSlugFromCourse(course: any): string | null {
-  const overrideSlug = resolveCourseLevelOverride(course);
-  if (overrideSlug) {
-    return overrideSlug;
-  }
-  const slugCandidates = [
-    course?.academy_level_slug,
-    course?.academyLevelSlug,
-    course?.curriculum?.metadata?.academyLevelSlug,
-  ];
-
-  for (const candidate of slugCandidates) {
-    const normalized = normalizeSlugCandidate(candidate);
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  if (course?.level && BUILDER_LEVEL_TO_SLUG[course.level]) {
-    return BUILDER_LEVEL_TO_SLUG[course.level];
-  }
-
-  if (course?.is_start_course) {
-    return 'cadets';
-  }
-
-  if (typeof course?.xp_threshold === 'number') {
-    const xp = course.xp_threshold;
-    if (xp <= 0) return 'cadets';
-    if (xp < 369) return 'infantil';
-    if (xp < 1000) return 'juveniles';
-    if (xp < 2222) return 'juniors';
-    if (xp < 3333) return 'seniors';
-    if (xp < 5000) return 'hall-of-fame';
-    if (xp < 10000) return 'master';
-    return 'legend';
-  }
-
-  return null;
 }
 
 function buildFallbackCoursesMap(
@@ -1061,8 +936,8 @@ function buildFallbackCoursesMap(
   language: Language,
 ): Record<string, LevelCourseSummary[]> {
   return courses.reduce((acc, course) => {
-    const normalizedSlug = normalizeLevelSlugFromCourse(course);
-    if (!normalizedSlug) {
+    const normalizedSlug = resolveLevelSlugFromCourse(course);
+    if (!normalizedSlug || normalizedSlug === 'unknown') {
       return acc;
     }
     const formatted = transformCourseRecord(course, language);

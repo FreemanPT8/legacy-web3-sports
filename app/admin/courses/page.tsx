@@ -7,6 +7,11 @@ import Link from 'next/link';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import {
+  getLevelFilterOptions,
+  getLevelLabelFromCourse,
+  resolveLevelSlugFromCourse,
+} from '@/lib/education/xpLevels';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +36,10 @@ type Course = {
   description: any;
   image_url?: string | null;
   curriculum?: {
+    metadata?: {
+      academyLevelSlug?: string | null;
+      xpThreshold?: number | null;
+    };
     topics?: Array<{
       lessons?: any[];
       quizzes?: any[];
@@ -39,63 +48,21 @@ type Course = {
   is_published?: boolean;
   published?: boolean;
   level?: string | null;
+  academy_level_slug?: string | null;
+  academyLevelSlug?: string | null;
   author_id?: string | null;
   author_name?: string | null;
   xp_total_distributed?: number | null;
   xp_creator_distributed?: number | null;
   modules?: any[];
+  xp_threshold?: number | null;
+  xpThreshold?: number | null;
 };
 
-const LEVEL_OPTIONS = [
+const LEVEL_FILTER_OPTIONS = [
   { value: 'all', label: 'Todos os níveis' },
-  { value: 'cadete', label: 'Cadete' },
-  { value: 'infantil', label: 'Infantil' },
-  { value: 'juvenil', label: 'Juvenil' },
-  { value: 'junior', label: 'Júnior' },
-  { value: 'senior', label: 'Sénior' },
-  { value: 'hall-of-fame', label: 'Hall of Fame' },
-  { value: 'master', label: 'Master' },
-  { value: 'lenda', label: 'Lenda' },
+  ...getLevelFilterOptions('pt'),
 ];
-
-const LEVEL_LABELS: Record<string, string> = {
-  'cadete': 'Cadete',
-  'infantil': 'Infantil',
-  'juvenil': 'Juvenil',
-  'junior': 'Júnior',
-  'senior': 'Sénior',
-  'hall-of-fame': 'Hall of Fame',
-  'master': 'Master',
-  'lenda': 'Lenda',
-  'unknown': 'Sem nível',
-};
-
-const LEVEL_NORMALIZATION: Record<string, string> = {
-  cadete: 'cadete',
-  cadet: 'cadete',
-  cadets: 'cadete',
-  beginner: 'cadete',
-  infantil: 'infantil',
-  youth: 'infantil',
-  juvenile: 'juvenil',
-  juvenis: 'juvenil',
-  juveniles: 'juvenil',
-  intermediate: 'juvenil',
-  junior: 'junior',
-  juniors: 'junior',
-  'júnior': 'junior',
-  senior: 'senior',
-  seniors: 'senior',
-  'sénior': 'senior',
-  legend: 'lenda',
-  lenda: 'lenda',
-  master: 'master',
-  'hall of fame': 'hall-of-fame',
-  hall: 'hall-of-fame',
-  'hall da fama': 'hall-of-fame',
-  'hall-of-fame': 'hall-of-fame',
-  'unknown': 'unknown',
-};
 
 type CurriculumSnapshot = {
   topics: number;
@@ -303,47 +270,6 @@ const getCourseStats = (course: Course) => {
   return buildStatsFromLegacyModules(legacyModules, course);
 };
 
-const inferLevelSlugFromXp = (xp: number): string => {
-  if (xp <= 98) return 'cadete';
-  if (xp <= 368) return 'infantil';
-  if (xp <= 999) return 'juvenil';
-  if (xp <= 2221) return 'junior';
-  if (xp <= 3332) return 'senior';
-  if (xp <= 4999) return 'hall-of-fame';
-  if (xp <= 9999) return 'master';
-  return 'lenda';
-};
-
-const normalizeLevelValue = (value?: string | null): string | null => {
-  if (!value) return null;
-  const normalized = value
-    .toString()
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-  return LEVEL_NORMALIZATION[normalized] || normalized || null;
-};
-
-const getCourseLevelSlug = (course: Course): string => {
-  const normalized = normalizeLevelValue(course.level);
-  if (normalized) return normalized;
-  if (typeof (course as any)?.academy_level_slug === 'string') {
-    const normalizedSlug = normalizeLevelValue(
-      (course as any).academy_level_slug,
-    );
-    if (normalizedSlug) return normalizedSlug;
-  }
-  if (typeof (course as any)?.xp_threshold === 'number') {
-    return inferLevelSlugFromXp((course as any).xp_threshold);
-  }
-  return 'unknown';
-};
-
-const getCourseLevelLabel = (course: Course): string => {
-  const slug = getCourseLevelSlug(course);
-  return LEVEL_LABELS[slug] || LEVEL_LABELS.unknown;
-};
 
 export default function CoursesManagementPage() {
   const router = useRouter();
@@ -556,7 +482,7 @@ export default function CoursesManagementPage() {
 
   const filteredCourses = courses.filter((course) => {
     if (levelFilter === 'all') return true;
-    const slug = getCourseLevelSlug(course);
+    const slug = resolveLevelSlugFromCourse(course as any);
     return slug === levelFilter;
   });
   const noCoursesAvailable = courses.length === 0;
@@ -729,7 +655,7 @@ export default function CoursesManagementPage() {
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
               >
-                {LEVEL_OPTIONS.map((option) => (
+                {LEVEL_FILTER_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -869,7 +795,7 @@ export default function CoursesManagementPage() {
                   curriculumStats.topics || legacyStats.modules;
                 const lessonsCount =
                   curriculumStats.lessons || legacyStats.lessons;
-                const level = getCourseLevelLabel(course);
+                const level = getLevelLabelFromCourse(course as any, 'pt');
                 const imageUrl = course.image_url || null;
                 const xpRequired = course.xp_threshold ?? 0;
 

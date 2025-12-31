@@ -7,7 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
-import { getXpLevelLabel } from '@/lib/education/xpLevels';
+import { XP_LEVELS, getXpLevelLabel } from '@/lib/education/xpLevels';
 import { cn } from '@/lib/utils';
 import {
   Card,
@@ -33,40 +33,19 @@ import {
 const EDUCATION_LANGUAGES = ['pt', 'es', 'en'] as const;
 type EducationLanguage = (typeof EDUCATION_LANGUAGES)[number];
 
+const buildLevelCopy = (lang: EducationLanguage) =>
+  XP_LEVELS.map((level) => ({
+    title: level.translations[lang].title,
+    range: level.translations[lang].range,
+  }));
+
 const XP_LEVEL_BLOCK_COPY: Record<
   EducationLanguage,
   { title: string; range: string }[]
 > = {
-  pt: [
-    { title: 'Cadete', range: '0-98 XP' },
-    { title: 'Infantil', range: '99-368 XP' },
-    { title: 'Juvenil', range: '369-999 XP' },
-    { title: 'Júnior', range: '1,000-2,221 XP' },
-    { title: 'Sénior', range: '2,222-3,332 XP' },
-    { title: 'Hall of Fame', range: '3,333-4,999 XP' },
-    { title: 'Master', range: '5,000-9,999 XP' },
-    { title: 'Lenda', range: '10,000+ XP' },
-  ],
-  es: [
-    { title: 'Cadete', range: '0-98 XP' },
-    { title: 'Infantil', range: '99-368 XP' },
-    { title: 'Juvenil', range: '369-999 XP' },
-    { title: 'Junior', range: '1,000-2,221 XP' },
-    { title: 'Senior', range: '2,222-3,332 XP' },
-    { title: 'Hall of Fame', range: '3,333-4,999 XP' },
-    { title: 'Master', range: '5,000-9,999 XP' },
-    { title: 'Leyenda', range: '10,000+ XP' },
-  ],
-  en: [
-    { title: 'Cadet', range: '0-98 XP' },
-    { title: 'Youth', range: '99-368 XP' },
-    { title: 'Intermediate', range: '369-999 XP' },
-    { title: 'Junior', range: '1,000-2,221 XP' },
-    { title: 'Senior', range: '2,222-3,332 XP' },
-    { title: 'Hall of Fame', range: '3,333-4,999 XP' },
-    { title: 'Master', range: '5,000-9,999 XP' },
-    { title: 'Legend', range: '10,000+ XP' },
-  ],
+  pt: buildLevelCopy('pt'),
+  es: buildLevelCopy('es'),
+  en: buildLevelCopy('en'),
 };
 
 const PREVIEW_LEVELS: Record<

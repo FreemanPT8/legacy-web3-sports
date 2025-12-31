@@ -12,6 +12,10 @@ import {
 } from '@/lib/education/unlockLogic';
 import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 import { resolveCourseLevelOverride } from '@/lib/education/courseLevelOverrides';
+import {
+  normalizeLevelSlug,
+  resolveLevelSlugFromCourse,
+} from '@/lib/education/xpLevels';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -590,21 +594,7 @@ function buildLockedReason(
   }
 }
 
-const START_LEVEL_SLUG = 'novato';
-const LEVEL_SLUG_ALIASES: Record<string, string> = {
-  novato: 'cadets',
-  cadete: 'cadets',
-  cadets: 'cadets',
-  infantil: 'infantil',
-  juvenil: 'juveniles',
-  juvenis: 'juveniles',
-  junior: 'juniors',
-  juniors: 'juniors',
-  senior: 'seniors',
-  seniors: 'seniors',
-  'hall-da-fama': 'hall-of-fame',
-  hall: 'hall-of-fame',
-};
+const START_LEVEL_SLUG = 'cadets';
 const LEGACY_LEVEL_METADATA: Record<
   string,
   {
@@ -616,9 +606,9 @@ const LEGACY_LEVEL_METADATA: Record<
   cadets: { minXp: 0, maxXp: 98, shortLabel: 'Cadete' },
   infantil: { minXp: 99, maxXp: 368, shortLabel: 'Infantil' },
   juveniles: { minXp: 369, maxXp: 999, shortLabel: 'Juvenil' },
-  juniors: { minXp: 1000, maxXp: 2221, shortLabel: 'Junior' },
+  juniors: { minXp: 1000, maxXp: 2221, shortLabel: 'Júnior' },
   seniors: { minXp: 2222, maxXp: 3332, shortLabel: 'Sénior' },
-  'hall-of-fame': { minXp: 3333, maxXp: 4999, shortLabel: 'Hall da Fama' },
+  'hall-of-fame': { minXp: 3333, maxXp: 4999, shortLabel: 'Hall of Fame' },
   master: { minXp: 5000, maxXp: 9999, shortLabel: 'Master' },
   legend: { minXp: 10000, maxXp: null, shortLabel: 'Lenda' },
 };
@@ -629,24 +619,12 @@ function normalizeCourseLevelSlug(
 ): string | null {
   const overrideSlug = resolveCourseLevelOverride(course);
   if (overrideSlug) {
-    return overrideSlug;
-  }
-  const directSlug =
-    typeof course.academy_level_slug === 'string'
-      ? course.academy_level_slug.trim()
-      : '';
-  if (directSlug.length > 0) {
-    return LEVEL_SLUG_ALIASES[directSlug] || directSlug;
+    return normalizeLevelSlug(overrideSlug) || overrideSlug;
   }
 
-  const metadataSlugRaw =
-    typeof course.curriculum?.metadata?.academyLevelSlug === 'string'
-      ? course.curriculum.metadata.academyLevelSlug
-      : null;
-
-  const metadataSlug = metadataSlugRaw ? metadataSlugRaw.trim() : '';
-  if (metadataSlug.length > 0) {
-    return LEVEL_SLUG_ALIASES[metadataSlug] || metadataSlug;
+  const resolvedSlug = resolveLevelSlugFromCourse(course as any);
+  if (resolvedSlug && resolvedSlug !== 'unknown') {
+    return resolvedSlug;
   }
 
   const isStart =

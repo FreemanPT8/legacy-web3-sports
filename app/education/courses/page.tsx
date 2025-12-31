@@ -25,12 +25,15 @@ import { NextUnlockCTA } from '@/components/education/NextUnlockCTA';
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import { buildFallbackProgressSummary } from '@/lib/education/fallbackSummary';
 import {
+  getLevelTranslation,
+  resolveLevelSlugFromCourse,
+  type LevelLanguage,
+} from '@/lib/education/xpLevels';
+import {
   START_HERE_FALLBACK_ID,
   START_HERE_SLUG,
 } from '@/lib/education/unlockLogic';
 
-const INFANTIL_COURSE_IDS = ['416b0b74-ec44-4aea-be62-50c3ee60af29'];
-const INFANTIL_COURSE_SLUGS = ['416b0b74-ec44-4aea-be62-50c3ee60af29'];
 import {
   BookOpen,
   Award,
@@ -63,7 +66,10 @@ type Course = {
   description: any;
   slug?: string | null;
   level?: string | null;
+  academy_level_slug?: string | null;
+  academyLevelSlug?: string | null;
   xp_threshold: number;
+  xpThreshold?: number | null;
   xp_reward?: number | null;
   xp_reward_on_complete?: number | null;
   image_url?: string | null;
@@ -72,6 +78,8 @@ type Course = {
   curriculum?: {
     metadata?: {
       xpReward?: number;
+      academyLevelSlug?: string | null;
+      xpThreshold?: number | null;
     };
   };
   author_id?: string | null;
@@ -271,50 +279,21 @@ export default function CoursesPage() {
     return () => controller.abort();
   }, [user, getToken]);
 
+  const xpLevelLanguage = (language as LevelLanguage) || 'pt';
   const getLevelBadge = (course: Course) => {
-    const level = course.level?.toLowerCase() ?? '';
-    const slug = ((course as any)?.slug || '').toString().toLowerCase();
-    const infantilLabel = tr('courses.level.infantil', 'Infantil');
     const baseClass =
       'border border-white/15 bg-cyan-500/15 text-cyan-100 text-[11px] uppercase tracking-[0.3em] rounded-full px-3 py-1';
-
-    if (
-      INFANTIL_COURSE_SLUGS.includes(slug) ||
-      INFANTIL_COURSE_IDS.includes(course.id)
-    ) {
-      return (
-        <Badge variant="outline" className={baseClass}>
-          {infantilLabel}
-        </Badge>
-      );
-    }
-
-    switch (level) {
-      case 'beginner':
-        return (
-          <Badge variant="outline" className={baseClass}>
-            {tr('education.level.beginner', 'Principiante')}
-          </Badge>
-        );
-      case 'intermediate':
-        return (
-          <Badge variant="outline" className={baseClass}>
-            {tr('education.level.intermediate', 'Intermédio')}
-          </Badge>
-        );
-      case 'advanced':
-        return (
-          <Badge variant="outline" className={baseClass}>
-            {tr('education.level.advanced', 'Avançado')}
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className={baseClass}>
-            {tr('education.level.unknown', 'Todos os níveis')}
-          </Badge>
-        );
-    }
+    const translation =
+      getLevelTranslation(
+        resolveLevelSlugFromCourse(course as any),
+        xpLevelLanguage,
+      ) || null;
+    return (
+      <Badge variant="outline" className={baseClass}>
+        {translation?.title ||
+          tr('education.level.unknown', 'Todos os níveis')}
+      </Badge>
+    );
   };
 
   const getInitials = (text: string) => {
