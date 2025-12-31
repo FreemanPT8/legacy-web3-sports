@@ -46,6 +46,44 @@ type Course = {
   modules?: any[];
 };
 
+const LEVEL_OPTIONS = [
+  { value: 'all', label: 'Todos os níveis' },
+  { value: 'cadete', label: 'Cadete' },
+  { value: 'infantil', label: 'Infantil' },
+  { value: 'juvenil', label: 'Juvenil' },
+  { value: 'junior', label: 'Júnior' },
+  { value: 'senior', label: 'Sénior' },
+  { value: 'hall-of-fame', label: 'Hall of Fame' },
+  { value: 'master', label: 'Master' },
+  { value: 'lenda', label: 'Lenda' },
+];
+
+const LEVEL_NORMALIZATION: Record<string, string> = {
+  cadete: 'cadete',
+  cadet: 'cadete',
+  cadets: 'cadete',
+  beginner: 'cadete',
+  infantil: 'infantil',
+  youth: 'infantil',
+  juvenile: 'juvenil',
+  juvenis: 'juvenil',
+  juveniles: 'juvenil',
+  intermediate: 'juvenil',
+  junior: 'junior',
+  juniors: 'junior',
+  'júnior': 'junior',
+  senior: 'senior',
+  seniors: 'senior',
+  'sénior': 'senior',
+  legend: 'lenda',
+  lenda: 'lenda',
+  master: 'master',
+  'hall of fame': 'hall-of-fame',
+  hall: 'hall-of-fame',
+  'hall da fama': 'hall-of-fame',
+  'hall-of-fame': 'hall-of-fame',
+};
+
 type CurriculumSnapshot = {
   topics: number;
   lessons: number;
@@ -252,6 +290,17 @@ const getCourseStats = (course: Course) => {
   return buildStatsFromLegacyModules(legacyModules, course);
 };
 
+const normalizeLevelValue = (value?: string | null): string | null => {
+  if (!value) return null;
+  const normalized = value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  return LEVEL_NORMALIZATION[normalized] || normalized || null;
+};
+
 export default function CoursesManagementPage() {
   const router = useRouter();
   const { user, loading, getToken } = useAuth();
@@ -261,6 +310,7 @@ export default function CoursesManagementPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageCourses, setCanManageCourses] = useState(false);
+  const [levelFilter, setLevelFilter] = useState<string>('all');
 
   const isSuperAdmin = user?.role === 'Super Admin';
   const isAdmin =
@@ -461,6 +511,13 @@ export default function CoursesManagementPage() {
   const totalLessons = totalSnapshot.lessons;
 
   const levelLabel = (course: Course) => course.level || 'Beginner';
+  const filteredCourses = courses.filter((course) => {
+    if (levelFilter === 'all') return true;
+    const normalized = normalizeLevelValue(levelLabel(course));
+    return normalized === levelFilter;
+  });
+  const noCoursesAvailable = courses.length === 0;
+  const noFilteredCourses = !noCoursesAvailable && filteredCourses.length === 0;
 
   return (
     <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 text-white md:px-8">
@@ -616,6 +673,28 @@ export default function CoursesManagementPage() {
             </Link>
           </div>
 
+          <div className="rounded-2xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
+            <label className="text-xs uppercase tracking-[0.4em] text-cyan-200">
+              Filtro por nível
+            </label>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-300">
+                Mostra apenas cursos do nível selecionado.
+              </p>
+              <select
+                className="w-full rounded-lg border border-white/15 bg-[#000c12] px-3 py-2 text-sm text-white shadow-inner focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:w-60"
+                value={levelFilter}
+                onChange={(e) => setLevelFilter(e.target.value)}
+              >
+                {LEVEL_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* STATS */}
           <div className="grid gap-4 md:grid-cols-4">
             <Card className="border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
@@ -684,7 +763,7 @@ export default function CoursesManagementPage() {
                 </p>
               </CardContent>
             </Card>
-          ) : courses.length === 0 ? (
+          ) : noCoursesAvailable ? (
             <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
               <CardContent className="py-12 text-center text-slate-200">
                 <BookOpen className="mx-auto mb-4 h-16 w-16 text-cyan-200" />
@@ -709,9 +788,27 @@ export default function CoursesManagementPage() {
                 </Link>
               </CardContent>
             </Card>
+          ) : noFilteredCourses ? (
+            <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
+              <CardContent className="py-12 text-center text-slate-200 space-y-4">
+                <p className="text-lg font-semibold text-[#fdd87c]">
+                  Nenhum curso encontrado para este nível
+                </p>
+                <p className="text-sm text-slate-300">
+                  Ajusta o filtro para ver outros cursos disponíveis.
+                </p>
+                <Button
+                  variant="outline"
+                  className="border-white/40 text-white hover:bg-white/10"
+                  onClick={() => setLevelFilter('all')}
+                >
+                  Limpar filtro
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course: any) => {
+              {filteredCourses.map((course: any) => {
                 const title = getCourseTitle(course);
                 const description = stripHtml(getCourseDescription(course));
                 const isPublished = course.is_published ?? course.published;
