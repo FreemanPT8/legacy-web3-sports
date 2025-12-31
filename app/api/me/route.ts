@@ -4,6 +4,19 @@ import { supabase } from '@/lib/supabase';
 import { ensureUserRole } from '@/lib/roles';
 import type { User } from '@/lib/auth';
 
+type RawUserRow = {
+  id: string;
+  username: string;
+  full_name?: string | null;
+  email: string;
+  role: string | null;
+  xp_total?: number | null;
+  avatar_url?: string | null;
+  streak_count?: number | null;
+  country?: string | null;
+  is_banned?: boolean | null;
+};
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -31,7 +44,7 @@ export async function GET(request: NextRequest) {
       ].join(', '),
     )
     .eq('id', tokenUser.userId)
-    .maybeSingle();
+    .maybeSingle<RawUserRow>();
 
   if (error || !data) {
     console.error('Failed to load user in GET /api/me:', error);
