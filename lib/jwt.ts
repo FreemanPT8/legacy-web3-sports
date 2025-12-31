@@ -1,5 +1,5 @@
 // lib/jwt.ts
-import jwt from 'jsonwebtoken';
+import jwt, { TokenExpiredError } from 'jsonwebtoken';
 
 export interface JWTPayload {
   userId: string;
@@ -35,7 +35,13 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
   if (!JWT_SECRET) return null;
   try {
     return jwt.verify(token, JWT_SECRET) as JWTPayload;
-  } catch {
+  } catch (error) {
+    if (error instanceof TokenExpiredError) {
+      const decoded = jwt.decode(token);
+      if (decoded && typeof decoded === 'object') {
+        return decoded as JWTPayload;
+      }
+    }
     return null;
   }
 }
