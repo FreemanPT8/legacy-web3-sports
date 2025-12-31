@@ -188,23 +188,27 @@ export default function BlogPage() {
   }, [posts]);
 
   return (
-    <div className="min-h-screen bg-[#000c12] text-white">
+    <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] text-white">
       <Header />
 
       <main className="space-y-16">
         {/* HERO / HEADER DO BLOG */}
         <section className="px-6 py-16">
           <div className="mx-auto max-w-6xl">
-            <div className="rounded-3xl border border-white/10 bg-[#05212b] px-6 py-8 shadow-[0_0_60px_rgba(34,211,238,0.20)] md:px-10 md:py-10">
-              <div className="space-y-6">
-                <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)] md:px-10">
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute -top-16 -left-10 h-60 w-60 rounded-full bg-[#fdd87c]/15 blur-3xl" />
+                <div className="absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/15 blur-3xl" />
+              </div>
+              <div className="relative space-y-6">
+                <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
                   Blog · Web3 · Desporto · Apertum
                 </p>
                 <div className="space-y-3">
-                  <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
+                  <h1 className="text-3xl font-semibold tracking-tight text-[#fdd87c] md:text-4xl">
                     Artigos que ligam Web3, desporto e Apertum — sem bullshit.
                   </h1>
-                  <p className="max-w-2xl text-sm text-slate-300">
+                  <p className="max-w-2xl text-sm text-slate-100">
                     Aqui encontras explicações diretas sobre blockchain, Apertum
                     e o impacto real no desporto. Sem hype vazio, sem jargão
                     técnico — apenas contexto, exemplos e caminhos que podes
@@ -213,7 +217,7 @@ export default function BlogPage() {
                 </div>
 
                 {user ? (
-                  <p className="text-[12px] text-slate-300">
+                  <p className="text-[12px] text-slate-100">
                     Estás autenticado como{' '}
                     <span className="font-semibold text-white">
                       @{user.username ?? 'member'}
@@ -222,7 +226,7 @@ export default function BlogPage() {
                     de aprendizagem.
                   </p>
                 ) : (
-                  <p className="text-[12px] text-slate-300">
+                  <p className="text-[12px] text-slate-100">
                     Cria uma conta gratuita para acumular XP ao leres artigos,
                     guardar favoritos e acompanhar o teu progresso dentro do
                     ecossistema LEGACY.
@@ -231,23 +235,23 @@ export default function BlogPage() {
 
                 {/* Stats globais */}
                 <div className="mt-6 grid gap-4 md:grid-cols-3">
-                  <Card className="border border-white/10 bg-[#000c12]">
+                  <Card className="border border-white/10 bg-[#04131b]/90 shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
                     <CardContent className="py-4">
-                      <div className="mb-1 text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                      <div className="mb-1 text-[11px] uppercase tracking-[0.3em] text-cyan-200">
                         Artigos publicados
                       </div>
-                      <div className="text-2xl font-bold text-cyan-300">
+                      <div className="text-2xl font-bold text-[#5af3ff]">
                         {globalStats.totalArticles}
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="border border-white/10 bg-[#000c12]">
+                  <Card className="border border-white/10 bg-[#04131b]/90 shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
                     <CardContent className="py-4">
-                      <div className="mb-1 text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                      <div className="mb-1 text-[11px] uppercase tracking-[0.3em] text-cyan-200">
                         XP disponível em artigos
                       </div>
-                      <div className="flex items-baseline gap-1 text-2xl font-bold text-cyan-300">
-                        <Award className="h-5 w-5 text-cyan-300" />
+                      <div className="flex items-baseline gap-1 text-2xl font-bold text-[#5af3ff]">
+                        <Award className="h-5 w-5 text-[#fdd87c]" />
                         <span>{globalStats.totalXpAvailable}</span>
                         <span className="text-xs font-normal text-slate-300">
                           XP
@@ -255,12 +259,12 @@ export default function BlogPage() {
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="border border-white/10 bg-[#000c12]">
+                  <Card className="border border-white/10 bg-[#04131b]/90 shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
                     <CardContent className="py-4">
-                      <div className="mb-1 text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                      <div className="mb-1 text-[11px] uppercase tracking-[0.3em] text-cyan-200">
                         Leituras registadas
                       </div>
-                      <div className="text-2xl font-bold text-cyan-200">
+                      <div className="text-2xl font-bold text-[#5af3ff]">
                         {globalStats.totalRegisteredReaders}
                       </div>
                     </CardContent>
@@ -268,31 +272,46 @@ export default function BlogPage() {
                 </div>
               </div>
             </div>
-          </div>
+        </div>
         </section>
 
         {/* LISTA DE POSTS */}
         <section className="px-6 pb-20">
           <div className="mx-auto max-w-6xl">
             {loading ? (
-              <div className="flex justify-center py-16">
-                <div className="text-center">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#04131b]/80 px-6 py-16 text-center shadow-[0_30px_65px_rgba(3,10,25,0.55)]">
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute -top-10 -left-8 h-48 w-48 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+                  <div className="absolute -bottom-12 -right-6 h-56 w-56 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                </div>
+                <div className="relative flex flex-col items-center gap-4 text-slate-200">
                   <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-cyan-400" />
-                  <p className="mt-4 text-sm text-slate-300">
+                  <p className="text-sm text-slate-200">
                     A carregar artigos...
                   </p>
                 </div>
               </div>
             ) : posts.length === 0 ? (
-              <div className="mx-auto max-w-xl py-16 text-center">
-                <p className="text-sm text-slate-200">
-                  Ainda não há artigos publicados. Em breve vais ver aqui
-                  explicações, análises e frameworks sobre Web3, desporto e o
-                  ecossistema Apertum.
-                </p>
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-16 text-center shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute -top-16 -right-12 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+                  <div className="absolute -bottom-16 -left-12 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                </div>
+                <div className="relative mx-auto max-w-xl space-y-4">
+                  <p className="text-sm text-slate-100">
+                    Ainda não há artigos publicados. Em breve vais ver aqui
+                    explicações, análises e frameworks sobre Web3, desporto e o
+                    ecossistema Apertum.
+                  </p>
+                </div>
               </div>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020c18] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute -top-20 -left-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+                  <div className="absolute -bottom-16 -right-10 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                </div>
+                <div className="relative grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {posts.map((post) => {
                   const title = resolveTitle(post.title);
                   const {
@@ -357,7 +376,7 @@ export default function BlogPage() {
                   return (
                     <Card
                       key={post.id}
-                      className="flex cursor-pointer flex-col border border-white/10 bg-[#000c12] transition hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(34,211,238,0.30)]"
+                      className="flex cursor-pointer flex-col border border-white/10 bg-[#04131b] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:-translate-y-1 hover:border-cyan-400/70 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
                       onClick={() => router.push(`/blog/${post.id}`)}
                     >
                       {imageUrl ? (
@@ -376,8 +395,8 @@ export default function BlogPage() {
                           />
                         </div>
                       ) : (
-                        <div className="flex h-40 w-full items-center justify-center rounded-t-[24px] bg-gradient-to-br from-slate-800 via-slate-900 to-black">
-                          <div className="text-xl uppercase tracking-[0.4em] text-white">
+                        <div className="flex h-40 w-full items-center justify-center rounded-t-[24px] bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]">
+                          <div className="text-xl uppercase tracking-[0.4em] text-[#5af3ff]">
                             {initials}
                           </div>
                         </div>
@@ -388,12 +407,12 @@ export default function BlogPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge
                               variant="outline"
-                              className="border-white/30 bg-[#000c12] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.35em] text-cyan-100"
+                              className="border-[#fdd87c]/40 bg-[#fdd87c]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.35em] text-[#fdd87c]"
                             >
                               {post.category || 'Geral'}
                             </Badge>
                             {isAuthor && (
-                              <Badge className="flex items-center gap-1 bg-amber-500 text-[11px] text-white">
+                              <Badge className="flex items-center gap-1 border border-white/15 bg-[#14718f] text-[11px] text-white">
                                 <PenSquare className="h-3 w-3" />
                                 Autor
                               </Badge>
@@ -406,7 +425,7 @@ export default function BlogPage() {
                             )}
                           </div>
                           {xpReward > 0 && (
-                            <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold text-cyan-200">
+                            <span className="rounded-full border border-[#fdd87c]/40 bg-[#fdd87c]/10 px-3 py-1 text-[11px] font-semibold text-[#fdd87c]">
                               +{xpReward} XP
                             </span>
                           )}
@@ -418,20 +437,20 @@ export default function BlogPage() {
                       </CardHeader>
 
                       <CardContent className="flex flex-1 flex-col justify-between space-y-4 pb-5">
-                        <p className="line-clamp-3 text-sm text-slate-300">
+                        <p className="line-clamp-3 text-sm text-slate-200">
                           {excerptToShow}
                         </p>
 
                         <div className="flex items-center justify-between">
                           {hasReadMore && (
-                            <span className="inline-flex text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300">
+                            <span className="inline-flex text-xs font-semibold uppercase tracking-[0.3em] text-[#fdd87c]">
                               Continuar a ler
                             </span>
                           )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs text-cyan-200 hover:text-cyan-100"
+                            className="text-xs font-semibold text-[#5af3ff] hover:text-white"
                             onClick={(event) => {
                               event.stopPropagation();
                                 setPreviewPost({
@@ -447,8 +466,8 @@ export default function BlogPage() {
                           </Button>
                         </div>
 
-                        <div className="mt-2 space-y-2 text-[11px] text-slate-400">
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-white/5 pb-2">
+                        <div className="mt-2 space-y-2 text-[11px] text-slate-300">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-white/10 pb-2">
                             {post.author && (
                               <span className="inline-flex items-center gap-1">
                                 <User className="h-3 w-3 text-cyan-300" />
@@ -469,8 +488,8 @@ export default function BlogPage() {
 
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                             {xpReward > 0 && (
-                              <span className="inline-flex items-center gap-1 text-cyan-200">
-                                <Award className="h-3 w-3 text-cyan-300" />
+                              <span className="inline-flex items-center gap-1 text-[#fdd87c]">
+                                <Award className="h-3 w-3 text-[#fdd87c]" />
                                 {xpReward} XP disponível
                               </span>
                             )}
@@ -479,7 +498,7 @@ export default function BlogPage() {
                               {post.views ?? 0} views
                             </span>
                             {totalXp > 0 && (
-                              <span className="inline-flex items-center gap-1 text-slate-300">
+                              <span className="inline-flex items-center gap-1 text-cyan-200">
                                 <Award className="h-3 w-3 text-cyan-300" />
                                 {totalXp} XP já distribuído
                               </span>
@@ -496,7 +515,8 @@ export default function BlogPage() {
                   );
                 })}
               </div>
-            )}
+            </div>
+          )}
           </div>
         </section>
       </main>
@@ -506,15 +526,15 @@ export default function BlogPage() {
           open={!!previewPost}
           onOpenChange={(open) => !open && setPreviewPost(null)}
         >
-          <DialogContent className="max-w-2xl border border-white/10 bg-[#000c12] text-white">
+          <DialogContent className="max-w-2xl border border-white/10 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#021c27] text-white shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-white">
+              <DialogTitle className="text-lg font-semibold text-[#fdd87c]">
                 {previewPost.title}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {previewPost.imageUrl && (
-                <div className="overflow-hidden rounded-2xl border border-white/5">
+                <div className="overflow-hidden rounded-2xl border border-white/5 shadow-[0_15px_40px_rgba(0,0,0,0.45)]">
                   <Image
                     src={previewPost.imageUrl}
                     alt={previewPost.title}
@@ -529,8 +549,8 @@ export default function BlogPage() {
                   />
                 </div>
               )}
-              <div className="space-y-2 rounded-2xl border border-white/10 bg-[#051620] p-4 text-sm text-slate-300">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+              <div className="space-y-2 rounded-2xl border border-white/10 bg-[#04131b] p-4 text-sm text-slate-100">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300">
                   {previewPost.post.author && (
                     <span className="inline-flex items-center gap-1">
                       <User className="h-3 w-3 text-cyan-300" />
@@ -551,7 +571,7 @@ export default function BlogPage() {
                   )}
                 </div>
                 <div
-                  className="prose prose-invert max-w-none text-slate-200"
+                  className="prose prose-invert max-w-none text-slate-100"
                   dangerouslySetInnerHTML={{
                     __html:
                       previewPost.content ||
@@ -562,13 +582,13 @@ export default function BlogPage() {
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                 <Button
                   variant="ghost"
-                  className="text-sm text-slate-300 hover:text-white"
+                  className="text-sm font-semibold text-[#5af3ff] hover:text-white"
                   onClick={() => setPreviewPost(null)}
                 >
                   Voltar atrás
                 </Button>
                 <Button
-                  className="bg-cyan-500 text-[#000c12] hover:bg-cyan-400"
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                   onClick={() => {
                     if (previewPost?.post?.id) {
                       router.push(`/blog/${previewPost.post.id}`);
