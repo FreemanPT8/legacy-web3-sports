@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     return auth.response!;
   }
 
-  const { user: tokenUser } = auth;
+  const tokenUser = auth.user!;
 
   const { data, error } = await supabase
     .from('users')
