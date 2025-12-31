@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastSyncId, setLastSyncId] = useState<string | null>(null);
+  const [hasSyncedProfile, setHasSyncedProfile] = useState(false);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -62,12 +63,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedUser) {
         const parsed = JSON.parse(storedUser);
         setUser(withCanonicalUserRole(parsed));
+        setHasSyncedProfile(false);
       }
     } catch (error) {
       console.error('refreshUser error:', error);
       setUser(null);
+      setHasSyncedProfile(false);
     }
   };
+
+  useEffect(() => {
+    if (!isHydrated || hasSyncedProfile) return;
+    if (typeof window === 'undefined') return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const controller = new AbortController();
+
+    const syncProfile = async () => {
+      try {
+        const response = await fetch('/api/me', {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (response.ok && data?.success && data.user) {
+          const safeUser = withCanonicalUserRole(data.user);
+          setUser(safeUser);
+          localStorage.setItem('user', JSON.stringify(safeUser));
+        }
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          console.error('Failed to sync user profile:', error);
+        }
+      } finally {
+        setHasSyncedProfile(true);
+      }
+    };
+
+    void syncProfile();
+
+    return () => controller.abort();
+  }, [isHydrated, hasSyncedProfile]);
 
   useEffect(() => {
     if (!isHydrated || !user) return;
@@ -125,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('user', JSON.stringify(safeUser));
           localStorage.setItem('token', data.token);
         }
+        setHasSyncedProfile(true);
         return { success: true };
       }
 
@@ -159,6 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('user', JSON.stringify(safeUser));
           localStorage.setItem('token', data.token);
         }
+        setHasSyncedProfile(true);
         return { success: true };
       }
 
@@ -172,6 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setLastSyncId(null);
+    setHasSyncedProfile(false);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
       localStorage.removeItem('token');

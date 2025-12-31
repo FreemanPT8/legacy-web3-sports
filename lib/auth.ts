@@ -15,6 +15,8 @@ export interface User {
   avatar_url?: string;
   streak_count?: number;
   created_at?: string;
+  full_name?: string;
+  country?: string;
   is_banned?: boolean; // novo campo (tabela users)
 }
 

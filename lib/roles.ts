@@ -2,14 +2,52 @@ import type { UserRole } from './permissions';
 
 const ROLE_ALIASES: Record<string, UserRole> = {
   admin: 'Admin',
+  administrador: 'Admin',
+  administradora: 'Admin',
   administrator: 'Admin',
+  administrateur: 'Admin',
+  administradorao: 'Admin',
+  'legacy admin': 'Admin',
+  'admin legacy': 'Admin',
   'super admin': 'Super Admin',
+  'super administrador': 'Super Admin',
+  'super administradora': 'Super Admin',
   'super administrator': 'Super Admin',
   superadministrator: 'Super Admin',
+  superadministrador: 'Super Admin',
+  superadministradora: 'Super Admin',
   superadmin: 'Super Admin',
+  'head admin': 'Super Admin',
   member: 'Member',
+  membro: 'Member',
+  miembro: 'Member',
+  usuario: 'Member',
   user: 'Member',
 };
+
+const KEYWORD_FALLBACKS: Array<{ match: (normalized: string) => boolean; role: UserRole }> = [
+  {
+    role: 'Super Admin',
+    match: (key) => key.includes('super') && key.includes('admin'),
+  },
+  {
+    role: 'Admin',
+    match: (key) =>
+      key.includes('admin') ||
+      key.includes('adm.') ||
+      key.includes('administr') ||
+      key.includes('moderador chefe'),
+  },
+  {
+    role: 'Member',
+    match: (key) =>
+      key.includes('member') ||
+      key.includes('membro') ||
+      key.includes('miembro') ||
+      key.includes('usuario') ||
+      key.includes('user'),
+  },
+];
 
 function normalizeKey(role: string): string {
   return role
@@ -24,7 +62,12 @@ export function normalizeUserRole(role?: string | null): UserRole | null {
     return null;
   }
   const normalized = normalizeKey(role);
-  return ROLE_ALIASES[normalized] ?? null;
+  if (ROLE_ALIASES[normalized]) {
+    return ROLE_ALIASES[normalized];
+  }
+
+  const fallback = KEYWORD_FALLBACKS.find(({ match }) => match(normalized));
+  return fallback?.role ?? null;
 }
 
 export function ensureUserRole(
