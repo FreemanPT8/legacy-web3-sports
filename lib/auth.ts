@@ -1,10 +1,10 @@
 import { supabase } from './supabase';
 import bcrypt from 'bcryptjs';
 import { signToken } from './jwt';
+import type { UserRole } from './permissions';
+import { ensureUserRole } from './roles';
 
-// ---- ROLES & USER BASE TYPES ----
-
-export type UserRole = 'Super Admin' | 'Admin' | 'Member';
+export type { UserRole };
 
 export interface User {
   id: string;
@@ -114,17 +114,19 @@ export async function signUp(data: {
       };
     }
 
+    const canonicalRole = ensureUserRole(newUser.role);
+
     const token = await signToken({
       userId: newUser.id,
       username: newUser.username,
       email: newUser.email,
-      role: newUser.role as UserRole,
+      role: canonicalRole,
       xp_total: newUser.xp_total,
     });
 
     return {
       success: true,
-      user: newUser as User,
+      user: { ...newUser, role: canonicalRole } as User,
       token,
     };
   } catch (error) {
@@ -183,18 +185,19 @@ export async function signIn(username: string, password: string): Promise<AuthRe
     }
 
     const { password_hash, ...userWithoutPassword } = user;
+    const canonicalRole = ensureUserRole(user.role);
 
     const token = await signToken({
       userId: user.id,
       username: user.username,
       email: user.email,
-      role: user.role as UserRole,
+      role: canonicalRole,
       xp_total: user.xp_total,
     });
 
     return {
       success: true,
-      user: userWithoutPassword as User,
+      user: { ...userWithoutPassword, role: canonicalRole } as User,
       token,
     };
   } catch (error) {
@@ -220,7 +223,12 @@ export async function getUserByToken(userId: string): Promise<User | null> {
       return null;
     }
 
-    return user as User;
+    if (!user) {
+      return null;
+    }
+
+    const canonicalRole = ensureUserRole(user.role);
+    return { ...user, role: canonicalRole } as User;
   } catch (error) {
     console.error('getUserByToken error:', error);
     return null;

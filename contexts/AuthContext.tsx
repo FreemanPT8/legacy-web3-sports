@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '@/lib/auth';
+import { withCanonicalUserRole } from '@/lib/roles';
 
 interface AuthContextType {
   user: User | null;
@@ -38,7 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = localStorage.getItem('user');
       const storedToken = localStorage.getItem('token');
       if (storedUser && storedToken) {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        setUser(withCanonicalUserRole(parsed));
       }
     } catch (error) {
       console.error('AuthProvider hydration error:', error);
@@ -58,7 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        setUser(withCanonicalUserRole(parsed));
       }
     } catch (error) {
       console.error('refreshUser error:', error);
@@ -116,9 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.success && data.user && data.token) {
         setLastSyncId(null);
-        setUser(data.user);
+        const safeUser = withCanonicalUserRole(data.user);
+        setUser(safeUser);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('user', JSON.stringify(safeUser));
           localStorage.setItem('token', data.token);
         }
         return { success: true };
@@ -149,9 +153,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.success && data.user && data.token) {
         setLastSyncId(null);
-        setUser(data.user);
+        const safeUser = withCanonicalUserRole(data.user);
+        setUser(safeUser);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('user', JSON.stringify(safeUser));
           localStorage.setItem('token', data.token);
         }
         return { success: true };

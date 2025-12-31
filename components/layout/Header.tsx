@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, SUPPORTED_LANGUAGES } from '@/contexts/LanguageContext';
 import { LANGUAGES } from '@/lib/i18n';
+import { isAdminRole } from '@/lib/roles';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -64,6 +65,8 @@ export const Header = memo(function Header() {
     const interval = setInterval(fetchUnreadCount, 60000);
     return () => clearInterval(interval);
   }, [user]);
+
+  const canAccessAdmin = user ? isAdminRole(user.role) : false;
 
   return (
     <header
@@ -312,7 +315,7 @@ export const Header = memo(function Header() {
                     )}
                   </DropdownMenuItem>
                 </Link>
-                {(user.role === 'Super Admin' || user.role === 'Admin') && (
+                {canAccessAdmin && (
                   <>
                     <DropdownMenuSeparator className="bg-gray-800" />
                     <Link href="/admin">
@@ -501,7 +504,7 @@ export const Header = memo(function Header() {
                         </span>
                       )}
                     </Link>
-                    {(user.role === 'Super Admin' || user.role === 'Admin') && (
+                    {canAccessAdmin && (
                       <Link
                         href="/admin"
                         onClick={() => setMobileOpen(false)}

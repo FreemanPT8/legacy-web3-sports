@@ -4,6 +4,7 @@ import { verifyToken, extractTokenFromHeader, JWTPayload } from './jwt';
 import { supabase } from './supabase';
 import { type PermissionKey, type UserRole } from './permissions';
 import { userHasPermission } from './server/permissions';
+import { ensureUserRole, isAdminRole } from './roles';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: JWTPayload;
@@ -84,13 +85,15 @@ export async function authenticateRequest(
     };
   }
 
+  const canonicalRole = ensureUserRole(user.role);
+
   return {
     authenticated: true,
     user: {
       userId: user.id,
       username: user.username,
       email: user.email,
-      role: user.role,
+      role: canonicalRole,
       xp_total: user.xp_total,
     },
   };
@@ -137,7 +140,7 @@ export async function requireAdmin(
   const user = authResult.user!;
 
   // Atenção: aqui usamos exatamente os valores da coluna "role" em users
-  if (user.role !== 'Super Admin' && user.role !== 'Admin') {
+  if (!isAdminRole(user.role)) {
     return {
       success: false,
       response: NextResponse.json(
@@ -203,10 +206,7 @@ export async function requirePermission(
   if (!authResult.success) return authResult;
 
   const user = authResult.user!;
-  const role =
-    user.role === 'Super Admin' || user.role === 'Admin'
-      ? (user.role as UserRole)
-      : ('Member' as UserRole);
+  const role = ensureUserRole(user.role, 'Member');
 
   const allowed = await userHasPermission(user.userId, role, permission);
 

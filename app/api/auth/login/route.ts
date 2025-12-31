@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '@/lib/supabase';
 import { JWTPayload, signToken } from '@/lib/jwt';
+import { ensureUserRole } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,12 +85,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const canonicalRole = ensureUserRole(user.role);
+
     // 4) Construir payload do token (respeitando o tipo JWTPayload)
     const payload: JWTPayload = {
       userId: user.id, // <- aqui usamos userId, não id
       username: user.username,
       email: user.email,
-      role: user.role ?? 'Member',
+      role: canonicalRole,
       xp_total: user.xp_total ?? 0,
     };
 
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
       username: user.username,
       full_name: user.full_name,
       email: user.email,
-      role: user.role ?? 'Member',
+      role: canonicalRole,
       xp_total: user.xp_total ?? 0,
       country: user.country,
       avatar_url: user.avatar_url,
