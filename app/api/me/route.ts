@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { ensureUserRole } from '@/lib/roles';
 import type { User } from '@/lib/auth';
 
@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
 
   const tokenUser = auth.user!;
 
-  const { data, error } = await supabase
+  const client = supabaseAdmin ?? supabase;
+
+  const { data, error } = await client
     .from('users')
     .select(
       [
