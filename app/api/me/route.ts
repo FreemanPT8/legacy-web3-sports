@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       ].join(', '),
     )
     .eq('id', tokenUser.userId)
-    .maybeSingle<RawUserRow>();
+    .maybeSingle();
 
   if (error || !data) {
     console.error('Failed to load user in GET /api/me:', error);
