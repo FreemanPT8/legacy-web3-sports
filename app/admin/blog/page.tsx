@@ -1,7 +1,7 @@
 // app/admin/blog/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -66,20 +66,30 @@ function resolveLocalizedText(value: any): string {
   if (!value) return '';
   if (typeof value === 'string') return value;
   if (typeof value === 'object') {
-    const v =
-      (value as any).en ??
-      (value as any).pt ??
-      (value as any).es ??
-      (value as any).fr ??
-      (value as any).it ??
-      (value as any).de ??
-      Object.values(value as any).find(
-        (x) => typeof x === 'string' && x.trim().length > 0,
-      );
-    return typeof v === 'string' ? v : '';
+    const preferredOrder = ['en', 'pt', 'es', 'fr', 'it', 'de'];
+    for (const key of preferredOrder) {
+      const candidate = (value as any)[key];
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return candidate;
+      }
+    }
+    const fallback = Object.values(value as any).find(
+      (x) => typeof x === 'string' && x.trim().length > 0,
+    );
+    if (typeof fallback === 'string') {
+      return fallback;
+    }
+    return '';
   }
   return String(value);
 }
+
+const getAuthorMeta = (post: BlogPost) => {
+  const label =
+    (post.author_name || post.author || 'Admin').trim() || 'Admin';
+  const value = post.author_id || `name:${label.toLowerCase()}`;
+  return { label, value };
+};
 
 type SupportedCopyLang = 'en' | 'pt' | 'es';
 
@@ -118,6 +128,7 @@ type BlogCopy = {
     statusLabel: string;
     categoryLabel: string;
     authorLabel: string;
+    authorAllLabel: string;
     orderLabel: string;
     categoryPlaceholder: string;
     authorPlaceholder: string;
@@ -226,6 +237,7 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
       statusLabel: 'Status',
       categoryLabel: 'Category',
       authorLabel: 'Author',
+      authorAllLabel: 'All authors',
       orderLabel: 'Order by',
       categoryPlaceholder: 'e.g. News',
       authorPlaceholder: 'name or username',
@@ -338,6 +350,7 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
       statusLabel: 'Estado',
       categoryLabel: 'Categoria',
       authorLabel: 'Autor',
+      authorAllLabel: 'Todos os autores',
       orderLabel: 'Ordenar por',
       categoryPlaceholder: 'ex: Noticias',
       authorPlaceholder: 'nome ou username',
@@ -450,6 +463,7 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
       statusLabel: 'Estado',
       categoryLabel: 'Categoria',
       authorLabel: 'Autor',
+      authorAllLabel: 'Todos los autores',
       orderLabel: 'Ordenar por',
       categoryPlaceholder: 'ej: Noticias',
       authorPlaceholder: 'nombre o usuario',
@@ -544,9 +558,22 @@ export default function AdminBlogPage() {
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [authorFilter, setAuthorFilter] = useState('');
+  const [authorFilter, setAuthorFilter] = useState<'all' | string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'views' | 'xp'>('recent');
   const [focusMode, setFocusMode] = useState(false);
+
+  const authorOptions = useMemo(() => {
+    const map = new Map<string, { value: string; label: string }>();
+    posts.forEach((post) => {
+      const meta = getAuthorMeta(post);
+      if (!map.has(meta.value)) {
+        map.set(meta.value, meta);
+      }
+    });
+    return Array.from(map.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, copy.locale),
+    );
+  }, [posts, copy.locale]);
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
@@ -745,13 +772,11 @@ export default function AdminBlogPage() {
       ) {
         return false;
       }
-      if (
-        authorFilter.trim() &&
-        !(p.author_name || p.author || '')
-          .toLowerCase()
-          .includes(authorFilter.toLowerCase())
-      ) {
-        return false;
+      if (authorFilter !== 'all') {
+        const meta = getAuthorMeta(p);
+        if (meta.value !== authorFilter) {
+          return false;
+        }
       }
       return true;
     })
@@ -1025,12 +1050,18 @@ export default function AdminBlogPage() {
                 <p className="text-xs text-slate-300">
                   {copy.filters.authorLabel}
                 </p>
-                <input
-                  className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white placeholder:text-xs placeholder:text-slate-400 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                <select
+                  className="w-full rounded-md border border-white/10 bg-[#000c12] px-3 py-2 text-sm text-white shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   value={authorFilter}
                   onChange={(e) => setAuthorFilter(e.target.value)}
-                  placeholder={copy.filters.authorPlaceholder}
-                />
+                >
+                  <option value="all">{copy.filters.authorAllLabel}</option>
+                  {authorOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-slate-300">
