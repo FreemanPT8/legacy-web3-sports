@@ -52,7 +52,7 @@ const createLevel = ({
   aliases,
 });
 
-export const XP_LEVELS: LevelDefinition[] = [
+export const XP_LEVELS = [
   createLevel({
     key: 'newcomer',
     slug: 'cadets',
