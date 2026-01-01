@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -25,13 +25,18 @@ import type {
   GlossaryLanguage,
   GlossaryStatus,
   GlossaryTerm,
+  GlossaryTermCompletion,
 } from '@/types/glossary';
 import {
+  AlertCircle,
+  Award,
+  CheckCircle2,
   Loader2,
   Plus,
   RefreshCcw,
   Search,
   ShieldAlert,
+  Timer,
   Trash2,
   X,
 } from 'lucide-react';
@@ -47,6 +52,7 @@ type TermFormState = {
 
 const LANGUAGES: GlossaryLanguage[] = ['pt', 'en', 'es'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const PROGRESS_SECONDS = 30;
 
 const defaultFormState = (): TermFormState => ({
   slug: '',
@@ -77,7 +83,7 @@ type PaginationMeta = {
 
 export default function GlossaryPage() {
   const router = useRouter();
-  const { user, loading: authLoading, getToken } = useAuth();
+  const { user, loading: authLoading, getToken, refreshUser } = useAuth();
   const { language } = useLanguage();
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +107,12 @@ export default function GlossaryPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [previewTerm, setPreviewTerm] = useState<GlossaryTerm | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [completedTerms, setCompletedTerms] = useState<Record<string, GlossaryTermCompletion>>({});
+  const [progressSeconds, setProgressSeconds] = useState(0);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [awardingXp, setAwardingXp] = useState(false);
+  const [progressMessage, setProgressMessage] = useState<string | null>(null);
+  const [progressError, setProgressError] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
 
@@ -114,6 +126,85 @@ export default function GlossaryPage() {
     const token = getToken?.();
     return token ? { Authorization: `Bearer ${token}` } : undefined;
   };
+
+  const persistUserXP = useCallback(
+    (newTotal?: number) => {
+      if (typeof newTotal !== 'number' || Number.isNaN(newTotal)) return;
+      if (typeof window === 'undefined') return;
+      try {
+        const stored = localStorage.getItem('user');
+        if (!stored) return;
+        const parsed = JSON.parse(stored);
+        parsed.xp_total = newTotal;
+        localStorage.setItem('user', JSON.stringify(parsed));
+        refreshUser?.();
+      } catch (err) {
+        console.error('Failed to persist XP locally:', err);
+      }
+    },
+    [refreshUser],
+  );
+
+  const clearProgressTimer = () => {
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  };
+
+  const registerCompletion = useCallback(
+    async (termId: string) => {
+      const token = getToken?.();
+      if (!termId || !token) {
+        setProgressError('Sessão expirada. Volta a iniciar sessão.');
+        return;
+      }
+
+      setAwardingXp(true);
+      setProgressError(null);
+
+      try {
+        const res = await fetch(`/api/glossary/${termId}/read`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.error || 'Não foi possível registar o XP.');
+        }
+
+        if (!data?.alreadyCompleted) {
+          persistUserXP(data?.newTotal);
+          setProgressMessage('2 XP registados!');
+        } else {
+          setProgressMessage('Leitura já registada.');
+        }
+
+        const completionAt =
+          data?.completion?.completedAt ?? new Date().toISOString();
+
+        setCompletedTerms((prev) => ({
+          ...prev,
+          [termId]: { termId, completedAt: completionAt },
+        }));
+        setProgressError(null);
+      } catch (err) {
+        console.error('Glossary progress registration failed:', err);
+        setProgressError(
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível registar o XP. Tenta novamente.',
+        );
+      } finally {
+        setAwardingXp(false);
+      }
+    },
+    [getToken, persistUserXP],
+  );
 
   const activeLanguage: GlossaryLanguage = useMemo(() => {
     if (LANGUAGES.includes(language as GlossaryLanguage)) {
@@ -141,15 +232,33 @@ export default function GlossaryPage() {
         if (isAdmin && filters.status) {
           params.set('status', filters.status);
         }
-        const authHeaders = buildAuthHeaders();
+        const token = getToken?.();
+        const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
         const res = await fetch(`/api/glossary?${params.toString()}`, {
-          headers: authHeaders ? { ...authHeaders } : undefined,
+          headers,
         });
         const data = await res.json();
         if (!res.ok || !data?.success) {
           throw new Error(data?.error || 'Falhou o carregamento.');
         }
         setTerms(data.terms || []);
+        if (Array.isArray(data.completedTerms)) {
+          const normalized = (data.completedTerms as Array<{
+            termId?: string;
+            completedAt?: string;
+          }>).reduce<Record<string, GlossaryTermCompletion>>((acc, entry) => {
+            if (entry?.termId) {
+              acc[entry.termId] = {
+                termId: entry.termId,
+                completedAt: entry.completedAt ?? '',
+              };
+            }
+            return acc;
+          }, {});
+          setCompletedTerms(normalized);
+        } else {
+          setCompletedTerms({});
+        }
         if (data.pagination) {
           setPagination(data.pagination);
         } else {
@@ -178,6 +287,7 @@ export default function GlossaryPage() {
     isAdmin,
     refreshKey,
     activeLanguage,
+    getToken,
   ]);
 
   const groupedTerms = useMemo(() => {
@@ -408,13 +518,20 @@ export default function GlossaryPage() {
   };
 
   const handlePreviewOpen = (term: GlossaryTerm) => {
+    setProgressSeconds(0);
+    setProgressMessage(null);
+    setProgressError(null);
     setPreviewTerm(term);
     setPreviewOpen(true);
   };
 
   const closePreview = () => {
+    clearProgressTimer();
     setPreviewOpen(false);
     setPreviewTerm(null);
+    setProgressSeconds(0);
+    setProgressMessage(null);
+    setProgressError(null);
   };
 
   const StatusBadge = ({ status }: { status: GlossaryStatus }) => {
@@ -444,7 +561,64 @@ export default function GlossaryPage() {
     };
   }, [previewOpen]);
 
+  useEffect(() => {
+    clearProgressTimer();
+    setProgressError(null);
+    setAwardingXp(false);
+
+    if (!previewOpen || !previewTerm || !user) {
+      setProgressSeconds(0);
+      setProgressMessage(null);
+      return;
+    }
+
+    if (previewTerm.status !== 'published') {
+      setProgressSeconds(PROGRESS_SECONDS);
+      setProgressMessage('Este termo está em rascunho. XP indisponível.');
+      return;
+    }
+
+    if (activeTermCompletion) {
+      setProgressSeconds(PROGRESS_SECONDS);
+      setProgressMessage((prev) => prev ?? 'Leitura concluída.');
+      return;
+    }
+
+    setProgressSeconds(0);
+    setProgressMessage(null);
+    const currentTermId = previewTerm.id;
+    progressTimerRef.current = setInterval(() => {
+      setProgressSeconds((prev) => {
+        const next = Math.min(PROGRESS_SECONDS, prev + 1);
+        if (next >= PROGRESS_SECONDS) {
+          clearProgressTimer();
+          void registerCompletion(currentTermId);
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearProgressTimer();
+  }, [
+    previewOpen,
+    previewTerm,
+    previewTerm?.id,
+    previewTerm?.status,
+    user,
+    user?.id,
+    activeTermCompletion,
+    registerCompletion,
+  ]);
+
   const previewExample = previewTerm ? renderExample(previewTerm) : '';
+  const activeTermCompletion = previewTerm
+    ? completedTerms[previewTerm.id]
+    : undefined;
+  const progressPercent = Math.min(
+    100,
+    (progressSeconds / PROGRESS_SECONDS) * 100,
+  );
+  const remainingSeconds = Math.max(0, PROGRESS_SECONDS - progressSeconds);
 
   return (
     <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
@@ -620,6 +794,12 @@ export default function GlossaryPage() {
                           </div>
                           <div className="flex flex-col items-end gap-2">
                             {isAdmin && <StatusBadge status={term.status} />}
+                            {completedTerms[term.id] && (
+                              <Badge className="flex items-center gap-1 border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                XP registado
+                              </Badge>
+                            )}
                             {isAdmin && (
                               <Button
                                 variant="secondary"
@@ -690,9 +870,9 @@ export default function GlossaryPage() {
             <p className="text-sm text-slate-300">/{previewTerm.slug}</p>
 
             <div className="mt-6 space-y-4">
-                <p className="whitespace-pre-line text-lg leading-relaxed text-white">
-                  {renderDefinition(previewTerm)}
-                </p>
+              <p className="whitespace-pre-line text-lg leading-relaxed text-white">
+                {renderDefinition(previewTerm)}
+              </p>
               {previewExample && (
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
@@ -703,6 +883,65 @@ export default function GlossaryPage() {
                   </p>
                 </div>
               )}
+              <div className="rounded-2xl border border-white/10 bg-[#031723]/70 p-4">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-cyan-300">
+                  <span className="flex items-center gap-2">
+                    <Timer className="h-4 w-4" />
+                    Progress Reading
+                  </span>
+                  <span className="flex items-center gap-1 text-[#fdd87c]">
+                    <Award className="h-4 w-4" />
+                    +2 XP
+                  </span>
+                </div>
+                {previewTerm.status !== 'published' ? (
+                  <p className="mt-3 text-sm text-amber-200">
+                    {progressMessage || 'Este termo está em rascunho. XP indisponível.'}
+                  </p>
+                ) : activeTermCompletion ? (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-emerald-200">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {progressMessage || 'Leitura concluída e XP registado.'}
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-3 flex items-center justify-between text-[11px] text-slate-300">
+                      <span>
+                        {remainingSeconds > 0
+                          ? `Faltam ${remainingSeconds}s`
+                          : 'A concluir...'}
+                      </span>
+                      <span>{Math.round(progressPercent)}%</span>
+                    </div>
+                    <div className="mt-2 h-2 w-full rounded-full bg-white/10">
+                      <div
+                        className="h-2 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-[11px] text-slate-400">
+                      Mantém o conceito aberto por 30 segundos para registar os 2 XP{' '}
+                      {awardingXp && '• a atribuir XP'}
+                    </p>
+                  </>
+                )}
+                {progressError && (
+                  <div className="mt-3 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-100">
+                    <p className="flex items-center gap-2 font-semibold">
+                      <AlertCircle className="h-4 w-4" />
+                      {progressError}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="mt-2 w-full border border-rose-400/50 bg-transparent text-rose-100 hover:bg-rose-500/20"
+                      onClick={() => previewTerm && void registerCompletion(previewTerm.id)}
+                      disabled={awardingXp}
+                    >
+                      Tentar novamente
+                    </Button>
+                  </div>
+                )}
+              </div>
               {previewTerm.tags?.length ? (
                 <div className="flex flex-wrap gap-2">
                   {previewTerm.tags.map((tag) => (

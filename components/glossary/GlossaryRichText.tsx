@@ -9,7 +9,7 @@ import type {
   GlossaryTerm,
 } from '@/types/glossary';
 import { cn } from '@/lib/utils';
-import { Loader2, Lock, X } from 'lucide-react';
+import { AlertCircle, Award, CheckCircle2, Loader2, Lock, Timer, X } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -34,7 +34,7 @@ type PopoverPosition = {
   left: number;
 };
 
-const LANG_ORDER: GlossaryLanguage[] = ['pt', 'en', 'es'];
+const PROGRESS_SECONDS = 30;
 
 type GlossaryDefinitionKey = `definition_${GlossaryLanguage}`;
 type GlossaryExampleKey = `example_${GlossaryLanguage}`;
@@ -43,7 +43,7 @@ const FALLBACK_DEFINITION =
   'Estamos a carregar a definição deste conceito.';
 
 export function GlossaryRichText({ html, className }: Props) {
-  const { user, getToken } = useAuth();
+  const { user, getToken, refreshUser } = useAuth();
   const { language } = useLanguage();
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -56,26 +56,118 @@ export function GlossaryRichText({ html, className }: Props) {
   const [termData, setTermData] = useState<GlossaryTerm | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [displayLanguage, setDisplayLanguage] =
-    useState<GlossaryLanguage>('pt');
+  const [progressSeconds, setProgressSeconds] = useState(0);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string | null>(null);
+  const [progressError, setProgressError] = useState<string | null>(null);
+  const [awardingXp, setAwardingXp] = useState(false);
+  const [termCompletion, setTermCompletion] = useState<{
+    termId: string;
+    completedAt: string;
+  } | null>(null);
+
+  const resolvedLanguage = useMemo<GlossaryLanguage>(() => {
+    if (language === 'pt' || language === 'en' || language === 'es') {
+      return language;
+    }
+    return 'pt';
+  }, [language]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (language === 'pt' || language === 'en' || language === 'es') {
-      setDisplayLanguage(language);
-    } else {
-      setDisplayLanguage('pt');
+  const clearProgressTimer = () => {
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
     }
-  }, [language]);
+  };
+
+  const persistUserXP = useCallback(
+    (newTotal?: number) => {
+      if (typeof newTotal !== 'number' || Number.isNaN(newTotal)) return;
+      if (typeof window === 'undefined') return;
+      try {
+        const stored = localStorage.getItem('user');
+        if (!stored) return;
+        const parsed = JSON.parse(stored);
+        parsed.xp_total = newTotal;
+        localStorage.setItem('user', JSON.stringify(parsed));
+        refreshUser?.();
+      } catch (err) {
+        console.error('Failed to persist XP locally:', err);
+      }
+    },
+    [refreshUser],
+  );
+
+  const registerCompletion = useCallback(async () => {
+    if (!termData?.id) return;
+    const token = getToken?.();
+    if (!token) {
+      setProgressError('Sessão expirada. Inicia sessão para receber XP.');
+      return;
+    }
+
+    setAwardingXp(true);
+    setProgressError(null);
+
+    try {
+      const res = await fetch(`/api/glossary/${termData.id}/read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Não foi possível registar o XP.');
+      }
+
+      if (!data?.alreadyCompleted) {
+        persistUserXP(data?.newTotal);
+        setProgressMessage('2 XP registados!');
+      } else {
+        setProgressMessage('Leitura já registada.');
+      }
+
+      const completionPayload = data?.completion
+        ? {
+            termId: data.completion.termId as string,
+            completedAt: data.completion.completedAt as string,
+          }
+        : {
+            termId: termData.id,
+            completedAt: new Date().toISOString(),
+          };
+
+      setTermCompletion(completionPayload);
+    } catch (err) {
+      console.error('Failed to register glossary XP:', err);
+      setProgressError(
+        err instanceof Error
+          ? err.message
+          : 'Não foi possível registar o XP. Tenta novamente.',
+      );
+    } finally {
+      setAwardingXp(false);
+    }
+  }, [getToken, termData?.id, persistUserXP]);
 
   const closePopover = useCallback(() => {
+    clearProgressTimer();
     setActiveTerm(null);
     setPosition(null);
     setError(null);
     setTermData(null);
+    setTermCompletion(null);
+    setProgressSeconds(0);
+    setProgressMessage(null);
+    setProgressError(null);
+    setAwardingXp(false);
   }, []);
 
   const updatePosition = useCallback((node: HTMLElement | null) => {
@@ -121,6 +213,10 @@ export function GlossaryRichText({ html, className }: Props) {
       if (!slug) return;
 
       setActiveTerm({ slug, label, node: target });
+      setTermCompletion(null);
+      setProgressSeconds(0);
+      setProgressMessage(null);
+      setProgressError(null);
       updatePosition(target);
     };
 
@@ -185,6 +281,10 @@ export function GlossaryRichText({ html, className }: Props) {
       setError(null);
       setTermData(null);
       setLoading(false);
+      setTermCompletion(null);
+      setProgressSeconds(0);
+      setProgressMessage(null);
+      setProgressError(null);
       return;
     }
 
@@ -192,6 +292,10 @@ export function GlossaryRichText({ html, className }: Props) {
       setTermData(null);
       setError('Disponível apenas para membros registados.');
       setLoading(false);
+      setTermCompletion(null);
+      setProgressSeconds(0);
+      setProgressMessage(null);
+      setProgressError(null);
       return;
     }
 
@@ -199,12 +303,9 @@ export function GlossaryRichText({ html, className }: Props) {
     if (cached) {
       setTermData(cached);
       setError(null);
-      setLoading(false);
-      return;
     }
-
     let isMounted = true;
-    setLoading(true);
+    setLoading(!cached);
     setError(null);
 
     const loadTerm = async () => {
@@ -228,6 +329,16 @@ export function GlossaryRichText({ html, className }: Props) {
 
         cacheRef.current.set(activeTerm.slug, data.term as GlossaryTerm);
         setTermData(data.term as GlossaryTerm);
+        if (data.completion?.termId) {
+          setTermCompletion({
+            termId: data.completion.termId as string,
+            completedAt: data.completion.completedAt as string,
+          });
+          setProgressSeconds(PROGRESS_SECONDS);
+          setProgressMessage((prev) => prev ?? 'Leitura concluída.');
+        } else {
+          setTermCompletion(null);
+        }
         setError(null);
       } catch (err) {
         if (!isMounted) return;
@@ -238,6 +349,8 @@ export function GlossaryRichText({ html, className }: Props) {
             : 'Não foi possível carregar a definição.';
         setError(message);
         setTermData(null);
+        setTermCompletion(null);
+        setProgressSeconds(0);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -252,6 +365,56 @@ export function GlossaryRichText({ html, className }: Props) {
     };
   }, [activeTerm, user, getToken]);
 
+  useEffect(() => {
+    clearProgressTimer();
+    setProgressError(null);
+
+    if (!activeTerm || !termData || !user) {
+      setProgressSeconds(0);
+      if (!activeTerm) {
+        setProgressMessage(null);
+      }
+      return;
+    }
+
+    if (termData.status !== 'published') {
+      setProgressSeconds(PROGRESS_SECONDS);
+      setProgressMessage('Este termo está em rascunho. XP indisponível.');
+      return;
+    }
+
+    if (termCompletion) {
+      setProgressSeconds(PROGRESS_SECONDS);
+      setProgressMessage((prev) => prev ?? 'Leitura concluída.');
+      return;
+    }
+
+    setProgressSeconds(0);
+    setProgressMessage(null);
+    progressTimerRef.current = setInterval(() => {
+      setProgressSeconds((prev) => {
+        const next = Math.min(PROGRESS_SECONDS, prev + 1);
+        if (next >= PROGRESS_SECONDS) {
+          clearProgressTimer();
+          void registerCompletion();
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearProgressTimer();
+  }, [
+    activeTerm,
+    activeTerm?.slug,
+    termData,
+    termData?.id,
+    termData?.status,
+    user,
+    user?.id,
+    termCompletion,
+    registerCompletion,
+  ]);
+
   const content = useMemo(() => {
     return { __html: html };
   }, [html]);
@@ -262,9 +425,9 @@ export function GlossaryRichText({ html, className }: Props) {
     const showLogin = !user;
 
     const definitionKey =
-      `definition_${displayLanguage}` as GlossaryDefinitionKey;
+      `definition_${resolvedLanguage}` as GlossaryDefinitionKey;
     const exampleKey =
-      `example_${displayLanguage}` as GlossaryExampleKey;
+      `example_${resolvedLanguage}` as GlossaryExampleKey;
 
     const displayDefinition =
       (termData?.[
@@ -274,11 +437,16 @@ export function GlossaryRichText({ html, className }: Props) {
       (termData?.[
         exampleKey as keyof GlossaryTerm
       ] as string | null | undefined) || null;
-
-    const availableLanguages = LANG_ORDER.filter((lang) => {
-      const key = `definition_${lang}` as GlossaryDefinitionKey;
-      return Boolean(termData?.[key as keyof GlossaryTerm]);
-    });
+    const progressPercent = Math.min(
+      100,
+      (progressSeconds / PROGRESS_SECONDS) * 100,
+    );
+    const remainingSeconds = Math.max(
+      0,
+      PROGRESS_SECONDS - progressSeconds,
+    );
+    const isPublished = termData?.status === 'published';
+    const hasCompletion = Boolean(termCompletion);
 
     return (
       <div
@@ -335,38 +503,6 @@ export function GlossaryRichText({ html, className }: Props) {
           </div>
         ) : (
           <div className="mt-4 space-y-3">
-            <div className="flex items-center gap-2">
-              {availableLanguages.length > 0
-                ? availableLanguages
-                    .map((lang) => (
-                      <button
-                        key={lang}
-                        type="button"
-                        className={cn(
-                          'rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors',
-                          displayLanguage === lang
-                            ? 'border-[#fdd87c] text-[#fdd87c]'
-                            : 'border-white/20 text-slate-300 hover:border-white/40',
-                        )}
-                        onClick={() => setDisplayLanguage(lang)}
-                      >
-                        {lang}
-                      </button>
-                    ))
-                : LANG_ORDER.map((lang) => (
-                    <span
-                      key={lang}
-                      className={cn(
-                        'rounded-full border border-white/10 px-3 py-1 text-xs uppercase text-slate-500',
-                        displayLanguage === lang &&
-                          'border-white/30 text-white',
-                      )}
-                    >
-                      {lang}
-                    </span>
-                  ))}
-            </div>
-
             {loading ? (
               <div className="flex items-center gap-2 text-slate-300">
                 <Loader2 className="h-4 w-4 animate-spin text-cyan-300" />
@@ -397,6 +533,65 @@ export function GlossaryRichText({ html, className }: Props) {
                     </p>
                   </div>
                 ) : null}
+                <div className="rounded-xl border border-white/10 bg-[#03131f]/80 p-3 text-[11px] text-slate-200">
+                  <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-cyan-300">
+                    <span className="flex items-center gap-1">
+                      <Timer className="h-3.5 w-3.5" />
+                      Progress Reading
+                    </span>
+                    <span className="flex items-center gap-1 text-[#fdd87c]">
+                      <Award className="h-3.5 w-3.5" />
+                      +2 XP
+                    </span>
+                  </div>
+                  {!isPublished ? (
+                    <p className="mt-2 text-amber-200">
+                      {progressMessage || 'Termo em rascunho. XP indisponível.'}
+                    </p>
+                  ) : hasCompletion ? (
+                    <p className="mt-2 flex items-center gap-2 text-emerald-200">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {progressMessage || 'Leitura concluída.'}
+                    </p>
+                  ) : (
+                    <>
+                      <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+                        <span>
+                          {remainingSeconds > 0
+                            ? `Faltam ${remainingSeconds}s`
+                            : 'A concluir...'}
+                        </span>
+                        <span>{Math.round(progressPercent)}%</span>
+                      </div>
+                      <div className="mt-2 h-1.5 w-full rounded-full bg-white/10">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        Mantém a definição aberta 30s para registarmos o XP
+                        {awardingXp && ' • a atribuir XP'}
+                      </p>
+                    </>
+                  )}
+                  {progressError && (
+                    <div className="mt-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-2 text-[10px] text-rose-100">
+                      <p className="flex items-center gap-1 font-semibold">
+                        <AlertCircle className="h-3 w-3" />
+                        {progressError}
+                      </p>
+                      <button
+                        type="button"
+                        className="mt-1 w-full rounded-full border border-rose-400/60 px-2 py-1 text-[10px] font-semibold text-rose-100 hover:bg-rose-500/20 disabled:opacity-60"
+                        onClick={() => void registerCompletion()}
+                        disabled={awardingXp}
+                      >
+                        Tentar novamente
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>

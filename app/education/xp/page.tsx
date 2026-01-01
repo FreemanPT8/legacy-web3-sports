@@ -84,6 +84,7 @@ const XP_COPY: Record<
     thresholdsDescription: string;
     levelNote: string;
     unlockNote: string;
+    glossaryNote: string;
   }
 > = {
   pt: {
@@ -140,6 +141,8 @@ const XP_COPY: Record<
       'O XP total determina privilégios, reputação e desbloqueios. Vê abaixo o que precisas para cada etapa.',
     levelNote: 'Nível = XP total / 100 (arredondado para baixo).',
     unlockNote: 'Ao atingir novos marcos, desbloqueias casas, fóruns privados, missões e desafios.',
+    glossaryNote:
+      'Glossário Legacy: cada Progress Reading de 30 segundos regista 2 XP por termo e só conta uma vez por utilizador (inclui o autor). Não existe bónus extra para criadores quando outros completam.',
   },
   es: {
     heroTitle: 'XP de Legacy',
@@ -195,6 +198,8 @@ const XP_COPY: Record<
       'El XP total define privilegios, reputación y desbloqueos. Consulta cuánto XP necesitas en cada etapa.',
     levelNote: 'Nivel = XP total / 100 (redondeado hacia abajo).',
     unlockNote: 'Cada nuevo hito abre casas, foros privados, misiones y desafíos especiales.',
+    glossaryNote:
+      'Glosario Legacy: cada Progress Reading de 30 segundos otorga 2 XP por término y cuenta solo una vez por usuario (incluye al autor). No hay bono adicional para creadores cuando otros completan.',
   },
   en: {
     heroTitle: 'Legacy XP',
@@ -250,6 +255,8 @@ const XP_COPY: Record<
       'Total XP defines privileges, reputation, and unlocks. Check how much XP each stage requires.',
     levelNote: 'Level = total XP / 100 (rounded down).',
     unlockNote: 'Hitting new milestones opens houses, private forums, missions, and special challenges.',
+    glossaryNote:
+      'Legacy Glossary: every 30-second Progress Reading grants 2 XP per term and counts only once per user (including the author). There is no creator bonus when others complete it.',
   },
 };
 
@@ -312,9 +319,16 @@ const rewardMetadata: Record<
       en: 'Forum comment',
     },
     creatorBonus: {
-      pt: '+0.5% quando outros interagem com o teu comentário — exclusivo para criadores.',
-      es: '+0,5% cuando otros interactúan con tu comentario — exclusivo para creadores.',
+      pt: '+0.5% quando outros interagem com o teu comentário – exclusivo para criadores.',
+      es: '+0,5% cuando otros interactúan con tu comentario – exclusivo para creadores.',
       en: '+0.5% whenever someone interacts with your comment—creator-only bonus.',
+    },
+  },
+  glossary_term_read: {
+    title: {
+      pt: 'Glossário Legacy – termo lido',
+      es: 'Glosario Legacy – término leído',
+      en: 'Legacy Glossary – term read',
     },
   },
   mission_daily: {
@@ -510,6 +524,11 @@ export default function EducationXpPage() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#000c12]/80 via-[#031821]/20 to-transparent" />
               </div>
             </div>
+            {copy.glossaryNote && (
+              <div className="rounded-2xl border border-white/10 bg-[#031b26]/80 p-4 text-sm text-slate-200">
+                {copy.glossaryNote}
+              </div>
+            )}
           </section>
 
           {/* Error state */}

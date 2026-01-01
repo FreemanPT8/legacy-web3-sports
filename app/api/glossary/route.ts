@@ -11,6 +11,9 @@ import type {
   GlossaryStatus,
   GlossaryTermPayload,
 } from '@/types/glossary';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
+
+const db = supabaseAdmin ?? supabase;
 
 function parseInteger(value: string | null, fallback: number): number {
   if (!value) return fallback;
@@ -101,9 +104,32 @@ export async function GET(request: NextRequest) {
       includeDrafts: canSeeDrafts,
     });
 
+    let completedTerms: Array<{ termId: string; completedAt: string }> = [];
+    const termIds = result.items.map((term) => term.id);
+
+    if (termIds.length > 0) {
+      const { data: completionData, error: completionError } = await db
+        .from('glossary_term_reads')
+        .select('term_id, completed_at')
+        .eq('user_id', user!.userId)
+        .in('term_id', termIds);
+
+      if (completionError) {
+        console.error('Failed to load glossary completions', completionError);
+        throw new GlossaryError('Falha ao carregar progresso de leitura.', 500);
+      }
+
+      completedTerms =
+        completionData?.map((row) => ({
+          termId: row.term_id as string,
+          completedAt: row.completed_at as string,
+        })) ?? [];
+    }
+
     return NextResponse.json({
       success: true,
       terms: result.items,
+      completedTerms,
       pagination: {
         page: result.page,
         pageSize: result.pageSize,

@@ -26,6 +26,11 @@ export interface GlossaryTerm {
   updated_at: string;
 }
 
+export interface GlossaryTermCompletion {
+  termId: string;
+  completedAt: string;
+}
+
 export type GlossaryTranslations = Record<GlossaryLanguage, string>;
 
 export interface GlossaryTermPayload {
