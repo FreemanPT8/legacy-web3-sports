@@ -120,10 +120,12 @@ export async function GET(request: NextRequest) {
       }
 
       completedTerms =
-        completionData?.map((row) => ({
-          termId: row.term_id as string,
-          completedAt: row.completed_at as string,
-        })) ?? [];
+        completionData?.map(
+          (row: { term_id: string; completed_at: string }) => ({
+            termId: row.term_id,
+            completedAt: row.completed_at,
+          }),
+        ) ?? [];
     }
 
     return NextResponse.json({
