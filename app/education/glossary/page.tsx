@@ -7,7 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -789,12 +789,11 @@ export default function GlossaryPage() {
                                 <button
                                   type="button"
                                   onClick={() => handlePreviewOpen(term)}
-                                  className="text-left text-lg font-semibold text-white transition hover:text-[#fdd87c]"
-                                >
-                                  {renderTermTitle(term)}
-                                </button>
-                                <CardDescription className="text-slate-400">/{term.slug}</CardDescription>
-                              </div>
+                                  className="text-left text-lg font-semibold text-white transition hover:text-[#fdd87c]"
+                                >
+                                  {renderTermTitle(term)}
+                                </button>
+                              </div>
                               <div className="flex flex-wrap items-center gap-2">
                                 {completedTerms[term.id] && (
                                   <Badge className="flex items-center gap-1 border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
