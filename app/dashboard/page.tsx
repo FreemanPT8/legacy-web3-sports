@@ -255,14 +255,17 @@ export default function DashboardPage() {
 
       <main className="flex-1 py-12">
         <div className="mx-auto w-full max-w-6xl px-4 space-y-10">
-          <section className="space-y-4">
+          <section className="relative space-y-4 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-6 shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute -top-10 -left-10 h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl" />
+            </div>
             <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
               LEGACY XP
             </p>
-            <h1 className="text-3xl font-semibold text-white md:text-4xl">
+            <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
               {t('dashboard.welcomeBack').replace('{username}', user.username)}
             </h1>
-            <p className="text-sm text-slate-300 max-w-3xl">
+            <p className="max-w-3xl text-sm text-slate-100">
               {t('dashboard.trackProgress')}
             </p>
             {xpError && (
@@ -272,7 +275,7 @@ export default function DashboardPage() {
 
           <section className="grid gap-6 md:grid-cols-3">
             {/* XP TOTAL + HOJE + LIMITE */}
-            <Card className="border border-white/10 bg-[#05212b]">
+            <Card className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_20px_50px_rgba(2,10,20,0.6)]">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-slate-300">
                   {t('dashboard.totalXp')}
@@ -335,7 +338,7 @@ export default function DashboardPage() {
             </Card>
 
             {/* STREAK */}
-            <Card className="border border-white/10 bg-[#05212b]">
+            <Card className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_20px_50px_rgba(2,10,20,0.6)]">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-slate-300">
                   {t('dashboard.currentStreak')}
@@ -364,7 +367,7 @@ export default function DashboardPage() {
             </Card>
 
             {/* GLOBAL RANK */}
-            <Card className="border border-white/10 bg-[#05212b]">
+            <Card className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_20px_50px_rgba(2,10,20,0.6)]">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-slate-300">
                   {t('dashboard.globalRank')}
@@ -399,7 +402,7 @@ export default function DashboardPage() {
 
           {/* MISSÕES + FEATURES DESBLOQUEADAS */}
           <section className="grid gap-6 md:grid-cols-2">
-            <Card className="border border-white/10 bg-[#000c12]">
+            <Card className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
                   <Target className="h-5 w-5 text-cyan-400" />
@@ -436,10 +439,10 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={mission.id}
-                          className={`flex items-center justify-between rounded-lg border p-4 ${
+                          className={`flex items-center justify-between rounded-2xl border p-4 ${
                             completed
                               ? 'border-emerald-500/60 bg-emerald-500/10'
-                              : 'border-white/10 bg-[#000c12]'
+                              : 'border-white/10 bg-black/30'
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -480,7 +483,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="border border-white/10 bg-[#05212b]">
+            <Card className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020c18] via-[#00141f] to-[#021c27] shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
                   <div className="rounded-lg bg-cyan-500/10 p-2">
@@ -523,7 +526,7 @@ export default function DashboardPage() {
           </section>
 
           {/* HISTÓRICO DE XP */}
-          <Card className="border border-white/10 bg-[#000c12]">
+          <Card className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
             <CardHeader>
               <CardTitle className="text-white">
                 {t('dashboard.recentXpActivity')}
@@ -542,7 +545,7 @@ export default function DashboardPage() {
                   {xpHistory.map((tx) => (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between rounded-lg border border-white/10 bg-[#000c12] p-4"
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-4"
                     >
                       <div>
                         <p className="font-medium text-white">
