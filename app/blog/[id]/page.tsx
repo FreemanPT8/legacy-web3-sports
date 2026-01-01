@@ -27,10 +27,12 @@ import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { removeReadMoreMarker } from '@/lib/read-more';
+import { renderGlossaryTokens } from '@/lib/glossary/tokens';
 import { getAvailableLanguages } from '@/lib/language';
 import type { Language } from '@/lib/i18n';
 import type { LangCode } from '@/types/builder';
 import { TranslationFallbackDialog } from '@/components/language/TranslationFallbackDialog';
+import { GlossaryRichText } from '@/components/glossary/GlossaryRichText';
 
 type MultiLang = Record<string, string>;
 
@@ -250,8 +252,8 @@ export default function BlogPostPage() {
     return 0;
   };
 
-  const htmlContent = removeReadMoreMarker(
-    pickTranslation(post.content, ''),
+  const htmlContent = renderGlossaryTokens(
+    removeReadMoreMarker(pickTranslation(post.content, '')),
   );
   const xpReward = normalizeXpReward(post.xp_reward);
   const estimatedMinutes =
@@ -468,18 +470,10 @@ export default function BlogPostPage() {
                     isAuthor={isAuthor}
                     onComplete={handleTrackerCompletion}
                   >
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: htmlContent,
-                      }}
-                    />
+                    <GlossaryRichText html={htmlContent} />
                   </ContentTracker>
                 ) : (
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: htmlContent,
-                    }}
-                  />
+                  <GlossaryRichText html={htmlContent} />
                 )}
               </CardContent>
             </Card>

@@ -11,7 +11,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
 import type { Language } from '@/lib/i18n';
 import { removeReadMoreMarker } from '@/lib/read-more';
+import { renderGlossaryTokens } from '@/lib/glossary/tokens';
 import { TranslationFallbackDialog } from '@/components/language/TranslationFallbackDialog';
+import { GlossaryRichText } from '@/components/glossary/GlossaryRichText';
 
 import { getAvailableLanguages } from '@/lib/language';
 import type { LangCode } from '@/types/builder';
@@ -240,8 +242,8 @@ export default function LessonPage() {
 
   const title = getLocalizedValue(lesson.title);
   const description = getLocalizedValue(lesson.description);
-  const content = removeReadMoreMarker(
-    getLocalizedValue(lesson.content),
+  const content = renderGlossaryTokens(
+    removeReadMoreMarker(getLocalizedValue(lesson.content)),
   );
   const moduleTitle = getLocalizedValue(module.title);
 
@@ -451,14 +453,10 @@ export default function LessonPage() {
                     isAuthor={isCreator}
                     onComplete={handleLessonCompleted}
                   >
-                    <div
-                      dangerouslySetInnerHTML={{ __html: content }}
-                    />
+                    <GlossaryRichText html={content} />
                   </ContentTracker>
                 ) : (
-                  <div
-                    dangerouslySetInnerHTML={{ __html: content }}
-                  />
+                  <GlossaryRichText html={content} />
                 )}
               </CardContent>
             </Card>

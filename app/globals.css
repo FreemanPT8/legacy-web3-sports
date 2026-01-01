@@ -294,4 +294,21 @@
   .legacy-container {
     @apply mx-auto w-full max-w-6xl;
   }
+
+  .glossary-inline-term {
+    border: none;
+    background: transparent;
+    color: #fdd87c;
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(250, 224, 134, 0.8);
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .glossary-inline-term:hover {
+    color: #5af3ff;
+    border-color: rgba(90, 243, 255, 0.8);
+  }
 }
