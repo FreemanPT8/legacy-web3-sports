@@ -789,7 +789,8 @@ export default function CoursesManagementPage() {
                 const { totalModules, totalLessons, totalXP } =
                   getCourseStats(course);
                 const xpDistributed =
-                  typeof course.xp_total_distributed === 'number'
+                  typeof course.xp_total_distributed === 'number' &&
+                  course.xp_total_distributed > 0
                     ? course.xp_total_distributed
                     : totalXP;
                 const curriculumStats = getCurriculumSnapshot(course);
