@@ -65,9 +65,6 @@ export async function GET(
   try {
     const authHeader = request.headers.get('Authorization');
     const user = authHeader ? await verifyAuth(authHeader) : null;
-    const isAdminUser =
-      !!user &&
-      (user.role === 'Super Admin' || user.role === 'Admin');
     const defaultAuthorName = getDefaultAuthorName();
 
     // 1) Curso
@@ -305,10 +302,21 @@ export async function GET(
       return 0;
     };
 
+    const userIsCourseAuthor =
+      !!user &&
+      !!rawCourse.author_id &&
+      rawCourse.author_id === user.id;
+
     const normalizedModules = curriculumTopics.map(
       (topic: any, topicIndex: number) => {
         const moduleId = topic?.id || `topic-${topicIndex + 1}`;
         const moduleLessonsRaw = lessonsByModule[moduleId] || [];
+
+        const moduleAuthorId = topic?.author_id || null;
+        const isModuleCreator =
+          !!user &&
+          ((moduleAuthorId && moduleAuthorId === user.id) ||
+            (!moduleAuthorId && userIsCourseAuthor));
 
         const moduleLessons = moduleLessonsRaw
           .slice()
@@ -325,7 +333,7 @@ export async function GET(
             const isLessonCreator =
               !!user &&
               ((l.author_id && l.author_id === user.id) ||
-                (!l.author_id && isAdminUser));
+                (!l.author_id && (isModuleCreator || userIsCourseAuthor)));
 
             const isCompleted =
               !!user &&
@@ -348,11 +356,6 @@ export async function GET(
               content_has_read_more,
             };
           });
-
-        const isModuleCreator =
-          !!user &&
-          ((topic?.author_id && topic.author_id === user.id) ||
-            (!topic?.author_id && isAdminUser));
 
         const moduleAuthorName =
           pickAuthorName(
@@ -437,11 +440,7 @@ export async function GET(
       0,
     );
 
-    const isCourseCreator =
-      !!user &&
-      ((rawCourse.author_id &&
-        rawCourse.author_id === user.id) ||
-        (!rawCourse.author_id && isAdminUser));
+    const isCourseCreator = userIsCourseAuthor;
 
     const courseAuthorName =
       pickAuthorName(
