@@ -116,16 +116,16 @@ export async function GET(request: NextRequest) {
 
       if (completionError) {
         console.error('Failed to load glossary completions', completionError);
-        throw new GlossaryError('Falha ao carregar progresso de leitura.', 500);
+        completedTerms = [];
+      } else {
+        completedTerms =
+          completionData?.map(
+            (row: { term_id: string; completed_at: string }) => ({
+              termId: row.term_id,
+              completedAt: row.completed_at,
+            }),
+          ) ?? [];
       }
-
-      completedTerms =
-        completionData?.map(
-          (row: { term_id: string; completed_at: string }) => ({
-            termId: row.term_id,
-            completedAt: row.completed_at,
-          }),
-        ) ?? [];
     }
 
     return NextResponse.json({
