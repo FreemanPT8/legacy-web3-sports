@@ -299,7 +299,11 @@ export async function createGlossaryTerm(
     .single();
 
   if (error) {
-    throw new GlossaryError('Falha ao criar termo do glossario.', 500);
+    console.error('createGlossaryTerm error:', error);
+    throw new GlossaryError(
+      error.message || 'Falha ao criar termo do glossario.',
+      500,
+    );
   }
 
   return data as GlossaryTerm;
@@ -352,7 +356,11 @@ export async function updateGlossaryTerm(
     .single();
 
   if (error) {
-    throw new GlossaryError('Falha ao atualizar termo do glossario.', 500);
+    console.error('updateGlossaryTerm error:', error);
+    throw new GlossaryError(
+      error.message || 'Falha ao atualizar termo do glossario.',
+      500,
+    );
   }
 
   return data as GlossaryTerm;
@@ -366,7 +374,11 @@ export async function deleteGlossaryTerm(id: string): Promise<void> {
     .select('id');
 
   if (error) {
-    throw new GlossaryError('Falha ao eliminar termo do glossario.', 500);
+    console.error('deleteGlossaryTerm error:', error);
+    throw new GlossaryError(
+      error.message || 'Falha ao eliminar termo do glossario.',
+      500,
+    );
   }
 
   if (!data || data.length === 0) {
