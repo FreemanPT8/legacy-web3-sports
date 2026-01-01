@@ -30,6 +30,7 @@ import {
   AlignRight,
   AlignJustify,
   Asterisk,
+  BookMarked,
   Bold,
   Clipboard,
   Eraser,
@@ -57,6 +58,7 @@ import {
   Unlink,
 } from 'lucide-react';
 import type { MediaAsset } from '@/types/builder';
+import { GlossaryTermPicker } from '@/components/editor/GlossaryTermPicker';
 const SPECIAL_CHARACTERS = ['*', '-', '--', '"', "'", '?', '!', '(c)', '(r)'];
 type Level = 1 | 2 | 3 | 4;
 const HEADING_LEVELS: Level[] = [1, 2, 3, 4];
@@ -166,6 +168,8 @@ export function RichTextEditor({
     bg: '#06b6d4',
     hover: '#0ea5e9',
   });
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [glossarySelection, setGlossarySelection] = useState('');
   const mediaLibrary = useMediaLibrary();
 
   const editor = useEditor({
@@ -328,6 +332,26 @@ export function RichTextEditor({
     }
     editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
   }, [editor]);
+
+  const openGlossaryDialog = useCallback(() => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, ' ');
+    setGlossarySelection(selectedText?.trim() || '');
+    setGlossaryOpen(true);
+  }, [editor]);
+
+  const handleInsertGlossaryTerm = useCallback(
+    (slug: string, label?: string) => {
+      if (!editor) return;
+      const safeLabel = (label && label.trim()) || glossarySelection || slug;
+      const sanitizedLabel = safeLabel.replace(/\|/g, '-');
+      const token = `[[glossary:${slug}|${sanitizedLabel}]]`;
+      editor.chain().focus().insertContent(token).run();
+      setGlossaryOpen(false);
+    },
+    [editor, glossarySelection],
+  );
 
   const openMedia = useCallback(
     (asset: MediaAsset) => {
@@ -525,6 +549,15 @@ export function RichTextEditor({
           aria-label="Remove link"
         >
           <Unlink className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={openGlossaryDialog}
+          aria-label="Inserir termo do glossário"
+        >
+          <BookMarked className="h-4 w-4" />
         </Button>
         <div className="border-l border-slate-200 px-2 dark:border-slate-800">
           <Button
@@ -823,6 +856,12 @@ export function RichTextEditor({
         </span>
         <span>{forcePlainText ? 'Paste as plain text' : 'Rich paste enabled'}</span>
       </div>
+      <GlossaryTermPicker
+        open={glossaryOpen}
+        onClose={() => setGlossaryOpen(false)}
+        onInsert={handleInsertGlossaryTerm}
+        selection={glossarySelection}
+      />
     </div>
   );
 }
