@@ -101,13 +101,9 @@ export default function GlossaryPage() {
     }
   }, [authLoading, user, router]);
 
-  const buildAuthHeaders = () => {
+  const buildAuthHeaders = (): HeadersInit | undefined => {
     const token = getToken?.();
-    return token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {};
+    return token ? { Authorization: `Bearer ${token}` } : undefined;
   };
 
   useEffect(() => {
@@ -129,10 +125,9 @@ export default function GlossaryPage() {
         if (isAdmin && filters.status) {
           params.set('status', filters.status);
         }
+        const authHeaders = buildAuthHeaders();
         const res = await fetch(`/api/glossary?${params.toString()}`, {
-          headers: {
-            ...buildAuthHeaders(),
-          },
+          headers: authHeaders ? { ...authHeaders } : undefined,
         });
         const data = await res.json();
         if (!res.ok || !data?.success) {
@@ -274,13 +269,14 @@ export default function GlossaryPage() {
       status: formState.status,
     };
     try {
+      const authHeaders = buildAuthHeaders();
       const res = await fetch(
         editingTerm ? `/api/glossary/${editingTerm.id}` : '/api/glossary',
         {
           method: editingTerm ? 'PATCH' : 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...buildAuthHeaders(),
+            ...(authHeaders || {}),
           },
           body: JSON.stringify(payload),
         },
@@ -308,11 +304,10 @@ export default function GlossaryPage() {
     setDeleteLoading(true);
     setError(null);
     try {
+      const authHeaders = buildAuthHeaders();
       const res = await fetch(`/api/glossary/${editingTerm.id}`, {
         method: 'DELETE',
-        headers: {
-          ...buildAuthHeaders(),
-        },
+        headers: authHeaders ? { ...authHeaders } : undefined,
       });
       const data = await res.json();
       if (!res.ok || !data?.success) {
