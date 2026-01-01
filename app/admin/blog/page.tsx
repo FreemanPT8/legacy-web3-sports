@@ -1,7 +1,7 @@
 // app/admin/blog/page.tsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -13,6 +13,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   FileText,
   Plus,
   Eye,
@@ -22,6 +29,7 @@ import {
   User,
   Loader2,
   Zap,
+  History,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +52,16 @@ type BlogPost = {
   registered_only?: boolean | null;
   xp_total_distributed?: number;
   xp_creator_distributed?: number;
+};
+
+type XpHistoryEntry = {
+  id: string;
+  xp: number;
+  completedAt: string;
+  user: {
+    id: string;
+    name: string;
+  };
 };
 
 type PermissionsResponse = {
@@ -178,6 +196,7 @@ type BlogCopy = {
       membersOnly: string;
       xpLabel: string;
       xpCreatorLabel: string;
+      xpHistory: string;
     };
     statusLabels: {
       published: string;
@@ -197,6 +216,16 @@ type BlogCopy = {
     deleteSuccessTitle: string;
     deleteSuccessDescription: string;
     deleteNetworkErrorDescription: string;
+  };
+  history: {
+    buttonLabel: string;
+    dialogTitle: string;
+    dialogDescription: string;
+    loading: string;
+    empty: string;
+    error: string;
+    loadMore: string;
+    entriesLabel: string;
   };
 };
 
@@ -290,6 +319,7 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
         membersOnly: 'Members only',
         xpLabel: 'XP:',
         xpCreatorLabel: 'Creator XP:',
+        xpHistory: 'XP history',
       },
       statusLabels: {
         published: 'published',
@@ -312,6 +342,16 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
       deleteSuccessDescription: 'The blog post was deleted successfully.',
       deleteNetworkErrorDescription:
         'Could not delete blog post. Please try again.',
+    },
+    history: {
+      buttonLabel: 'XP history',
+      dialogTitle: 'XP history',
+      dialogDescription: 'Tracked XP earned in this post.',
+      loading: 'Loading XP history...',
+      empty: 'No XP entries yet.',
+      error: 'Failed to load XP history.',
+      loadMore: 'Load more',
+      entriesLabel: 'entries loaded',
     },
   },
   pt: {
@@ -403,6 +443,7 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
         membersOnly: 'So para membros',
         xpLabel: 'XP:',
         xpCreatorLabel: 'XP do autor:',
+        xpHistory: 'Histórico de XP',
       },
       statusLabels: {
         published: 'publicado',
@@ -424,6 +465,16 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
       deleteSuccessDescription: 'O post foi removido com sucesso.',
       deleteNetworkErrorDescription:
         'Nao foi possivel apagar o post. Tenta novamente.',
+    },
+    history: {
+      buttonLabel: 'Histórico de XP',
+      dialogTitle: 'Histórico de XP',
+      dialogDescription: 'XP registado para este artigo.',
+      loading: 'A carregar histórico de XP...',
+      empty: 'Ainda não existem registos de XP.',
+      error: 'Falha ao carregar o histórico de XP.',
+      loadMore: 'Ver mais',
+      entriesLabel: 'registos carregados',
     },
   },
   es: {
@@ -516,6 +567,7 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
         membersOnly: 'Solo miembros',
         xpLabel: 'XP:',
         xpCreatorLabel: 'XP del autor:',
+        xpHistory: 'Historial de XP',
       },
       statusLabels: {
         published: 'publicado',
@@ -540,6 +592,16 @@ const BLOG_COPY: Record<SupportedCopyLang, BlogCopy> = {
       deleteNetworkErrorDescription:
         'No se pudo eliminar el post. Intentalo de nuevo.',
     },
+    history: {
+      buttonLabel: 'Historial de XP',
+      dialogTitle: 'Historial de XP',
+      dialogDescription: 'XP registrado en este artículo.',
+      loading: 'Cargando historial de XP...',
+      empty: 'Aún no hay registros de XP.',
+      error: 'No se pudo cargar el historial de XP.',
+      loadMore: 'Ver más',
+      entriesLabel: 'registros cargados',
+    },
   },
 };
 
@@ -561,6 +623,14 @@ export default function AdminBlogPage() {
   const [authorFilter, setAuthorFilter] = useState<'all' | string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'views' | 'xp'>('recent');
   const [focusMode, setFocusMode] = useState(false);
+  const [xpHistoryOpen, setXpHistoryOpen] = useState(false);
+  const [xpHistoryPost, setXpHistoryPost] = useState<{ id: string; title: string } | null>(null);
+  const [xpHistoryEntries, setXpHistoryEntries] = useState<XpHistoryEntry[]>([]);
+  const [xpHistoryLoading, setXpHistoryLoading] = useState(false);
+  const [xpHistoryError, setXpHistoryError] = useState<string | null>(null);
+  const [xpHistoryHasMore, setXpHistoryHasMore] = useState(false);
+  const [xpHistoryPage, setXpHistoryPage] = useState(0);
+  const HISTORY_PAGE_SIZE = 25;
 
   const authorOptions = useMemo(() => {
     const map = new Map<string, { value: string; label: string }>();
@@ -576,6 +646,81 @@ export default function AdminBlogPage() {
   }, [posts, copy.locale]);
 
   const isSuperAdmin = user?.role === 'Super Admin';
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString(copy.locale, {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+
+  const fetchXpHistory = useCallback(
+    async (postId: string, page = 0, append = false) => {
+      setXpHistoryLoading(true);
+      setXpHistoryError(null);
+      try {
+        const token = getToken();
+        const params = new URLSearchParams({
+          limit: HISTORY_PAGE_SIZE.toString(),
+          offset: String(page * HISTORY_PAGE_SIZE),
+        });
+        const response = await fetch(
+          `/api/admin/blog/${postId}/xp-history?${params.toString()}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          },
+        );
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to load XP history');
+        }
+        const entries: XpHistoryEntry[] = data.entries || [];
+        setXpHistoryEntries((prev) =>
+          append ? [...prev, ...entries] : entries,
+        );
+        setXpHistoryHasMore(Boolean(data.hasMore));
+        setXpHistoryPage(page);
+      } catch (error: any) {
+        setXpHistoryError(
+          error?.message || 'Failed to load XP history',
+        );
+      } finally {
+        setXpHistoryLoading(false);
+      }
+    },
+    [getToken],
+  );
+
+  const handleOpenHistory = useCallback(
+    (post: BlogPost) => {
+      const title =
+        resolveLocalizedText(post.title) || copy.table.untitledPost;
+      setXpHistoryPost({ id: post.id, title });
+      setXpHistoryEntries([]);
+      setXpHistoryHasMore(false);
+      setXpHistoryError(null);
+      setXpHistoryPage(0);
+      setXpHistoryOpen(true);
+      void fetchXpHistory(post.id, 0, false);
+    },
+    [copy.table.untitledPost, fetchXpHistory],
+  );
+
+  const handleLoadMoreHistory = () => {
+    if (!xpHistoryPost) return;
+    const nextPage = xpHistoryPage + 1;
+    void fetchXpHistory(xpHistoryPost.id, nextPage, true);
+  };
+
+  const handleCloseHistory = () => {
+    setXpHistoryOpen(false);
+    setXpHistoryPost(null);
+    setXpHistoryEntries([]);
+    setXpHistoryError(null);
+    setXpHistoryHasMore(false);
+    setXpHistoryPage(0);
+  };
 
   // ProteAAo bAsica
   useEffect(() => {
@@ -793,7 +938,8 @@ export default function AdminBlogPage() {
     });
 
   return (
-    <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 text-white md:px-8">
+    <>
+      <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 text-white md:px-8">
       {/* HERO */}
       <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
         <div className="absolute inset-0 pointer-events-none">
@@ -1305,10 +1451,23 @@ export default function AdminBlogPage() {
                                   </Badge>
                                 )}
                                 {xpTotal > 0 && (
-                                  <Badge variant="outline" className="gap-1">
-                                    {copy.table.badges.xpLabel}{' '}
-                                    {formatNumber(xpTotal)}
-                                  </Badge>
+                                  <div className="flex items-center gap-1">
+                                    <Badge variant="outline" className="gap-1">
+                                      {copy.table.badges.xpLabel}{' '}
+                                      {formatNumber(xpTotal)}
+                                    </Badge>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-7 w-7 border border-white/20 text-white hover:bg-white/10"
+                                      onClick={() => handleOpenHistory(post)}
+                                    >
+                                      <History className="h-3.5 w-3.5" />
+                                      <span className="sr-only">
+                                        {copy.history.buttonLabel}
+                                      </span>
+                                    </Button>
+                                  </div>
                                 )}
                                 {xpCreator > 0 && (
                                   <Badge variant="outline" className="gap-1">
@@ -1390,6 +1549,81 @@ export default function AdminBlogPage() {
           )}
         </div>
       </section>
-    </div>
+      </div>
+
+      <Dialog
+        open={xpHistoryOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseHistory();
+          } else {
+            setXpHistoryOpen(true);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl border border-white/10 bg-[#020b16] text-white">
+          <DialogHeader className="space-y-1">
+            <DialogTitle>{copy.history.dialogTitle}</DialogTitle>
+            <DialogDescription className="text-slate-300">
+              {xpHistoryPost
+                ? `${copy.history.dialogDescription} "${xpHistoryPost.title}".`
+                : copy.history.dialogDescription}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+            {xpHistoryLoading && xpHistoryEntries.length === 0 && (
+              <div className="flex items-center justify-center py-8 text-sm text-slate-300">
+                {copy.history.loading}
+              </div>
+            )}
+            {xpHistoryError && (
+              <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                {xpHistoryError || copy.history.error}
+              </div>
+            )}
+            {!xpHistoryLoading &&
+              xpHistoryEntries.length === 0 &&
+              !xpHistoryError && (
+                <div className="rounded-xl border border-white/10 bg-[#04131b]/70 px-4 py-6 text-center text-sm text-slate-300">
+                  {copy.history.empty}
+                </div>
+              )}
+            {xpHistoryEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded-2xl border border-white/10 bg-[#021824]/80 px-4 py-3 shadow-[0_10px_30px_rgba(3,10,25,0.45)]"
+              >
+                <div className="flex items-center justify-between text-sm">
+                  <p className="font-semibold text-white">{entry.user.name}</p>
+                  <p className="text-xs text-slate-400">
+                    {formatDateTime(entry.completedAt)}
+                  </p>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-[#fdd87c]">
+                  +{formatNumber(entry.xp)} XP
+                </p>
+              </div>
+            ))}
+          </div>
+          {(xpHistoryHasMore || xpHistoryEntries.length > 0) && (
+            <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+              <span>
+                {formatNumber(xpHistoryEntries.length)} {copy.history.entriesLabel}
+              </span>
+              {xpHistoryHasMore && (
+                <Button
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                  onClick={handleLoadMoreHistory}
+                  disabled={xpHistoryLoading}
+                >
+                  {xpHistoryLoading ? copy.history.loading : copy.history.loadMore}
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
