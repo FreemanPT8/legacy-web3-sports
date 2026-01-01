@@ -393,13 +393,17 @@ export async function GET(request: NextRequest) {
         tx.reference_type === 'lesson_creator',
     );
 
-    const [lessonLabels, blogLabels, glossaryLabels, creatorRewardConsumers] =
-      await Promise.all([
-        resolveLessonLabels(lessonReferenceIds),
-        resolveBlogLabels(blogReferenceIds),
-        resolveGlossaryLabels(glossaryReferenceIds),
-        resolveCreatorRewardConsumers(creatorRewardTransactions),
-      ]);
+    const [
+      lessonLabels,
+      blogLabels,
+      glossaryLabels,
+      creatorRewardConsumers,
+    ] = await Promise.all([
+      resolveLessonLabels(lessonReferenceIds),
+      resolveBlogLabels(blogReferenceIds),
+      resolveGlossaryLabels(glossaryReferenceIds),
+      resolveCreatorRewardConsumers(creatorRewardTransactions),
+    ]);
 
     const transactionsWithLabels = recentTransactions.map((tx) => {
       let referenceLabel: string | null = null;
