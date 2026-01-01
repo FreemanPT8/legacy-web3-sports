@@ -672,7 +672,7 @@ export default function GlossaryPage() {
           role="dialog"
           aria-modal="true"
         >
-          <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#021c27] p-8 text-white shadow-[0_35px_80px_rgba(0,0,0,0.65)]">
+          <div className="relative w-full max-w-2xl rounded-3xl border border-[#fdd87c]/40 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#021c27] p-8 text-white shadow-[0_35px_80px_rgba(0,0,0,0.65)]">
             <button
               type="button"
               onClick={closePreview}
@@ -690,14 +690,9 @@ export default function GlossaryPage() {
             <p className="text-sm text-slate-300">/{previewTerm.slug}</p>
 
             <div className="mt-6 space-y-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
-                  Definição ({activeLanguage.toUpperCase()})
-                </p>
                 <p className="whitespace-pre-line text-lg leading-relaxed text-white">
                   {renderDefinition(previewTerm)}
                 </p>
-              </div>
               {previewExample && (
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
