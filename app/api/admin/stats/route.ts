@@ -3,6 +3,7 @@ import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 
 const db = supabaseAdmin ?? supabase;
+const PAGE_SIZE = 1000;
 
 const now = () => new Date();
 const sinceHours = (h: number) =>
@@ -13,6 +14,206 @@ const sinceDays = (d: number) =>
 const sumColumn = (rows: any[] | null | undefined, field: string) =>
   (rows || []).reduce((acc, r) => acc + (r?.[field] ?? 0), 0);
 
+type Range = { from: number; to: number };
+
+async function paginateRows<T>(
+  fetchPage: (range: Range) => Promise<{ data: T[] | null; error: any }>,
+  onPage: (rows: T[]) => void,
+) {
+  let from = 0;
+  while (true) {
+    const range = { from, to: from + PAGE_SIZE - 1 };
+    const { data, error } = await fetchPage(range);
+    if (error) {
+      throw error;
+    }
+    const batch = data || [];
+    if (batch.length === 0) break;
+    onPage(batch);
+    if (batch.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+}
+
+async function aggregateXpTable(
+  table: string,
+  timestampColumn: string,
+  threshold24h: number,
+  threshold30d: number,
+) {
+  let total = 0;
+  let last24h = 0;
+  let last30d = 0;
+
+  await paginateRows<any>(
+    ({ from, to }) =>
+      db
+        .from(table)
+        .select(`xp_earned, ${timestampColumn}`)
+        .range(from, to),
+    (rows) => {
+      rows.forEach((row) => {
+        const xp = Number(row.xp_earned) || 0;
+        total += xp;
+        const ts = row[timestampColumn] ? Date.parse(row[timestampColumn]) : NaN;
+        if (!Number.isNaN(ts)) {
+          if (ts >= threshold30d) {
+            last30d += xp;
+          }
+          if (ts >= threshold24h) {
+            last24h += xp;
+          }
+        }
+      });
+    },
+  );
+
+  return { total, last24h, last30d };
+}
+
+async function aggregateBlogReads(thresholds: {
+  threshold24h: number;
+  threshold30d: number;
+  threshold7d: number;
+  threshold365d: number;
+}) {
+  const counts7d = new Map<string, number>();
+  const counts30d = new Map<string, number>();
+  const counts365d = new Map<string, number>();
+
+  let xpTotal = 0;
+  let xp24h = 0;
+  let xp30d = 0;
+  let viewsLogged = 0;
+
+  await paginateRows<BlogReadRow>(
+    ({ from, to }) =>
+      db
+        .from('blog_reads')
+        .select('blog_post_id, xp_earned, completed_at')
+        .range(from, to),
+    (rows) => {
+      rows.forEach((row) => {
+        viewsLogged += 1;
+        const xp = Number(row.xp_earned) || 0;
+        xpTotal += xp;
+        const ts = row.completed_at ? Date.parse(row.completed_at) : NaN;
+        if (!Number.isNaN(ts)) {
+          if (ts >= thresholds.threshold24h) {
+            xp24h += xp;
+          }
+          if (ts >= thresholds.threshold30d) {
+            xp30d += xp;
+            incrementMap(counts30d, row.blog_post_id);
+          }
+          if (ts >= thresholds.threshold7d) {
+            incrementMap(counts7d, row.blog_post_id);
+          }
+          if (ts >= thresholds.threshold365d) {
+            incrementMap(counts365d, row.blog_post_id);
+          }
+        }
+      });
+    },
+  );
+
+  return {
+    xp: {
+      total: xpTotal,
+      last24h: xp24h,
+      last30d: xp30d,
+    },
+    viewsLogged,
+    counts: {
+      last7d: counts7d,
+      last30d: counts30d,
+      last365d: counts365d,
+    },
+  };
+}
+
+async function fetchAllRows<T>(
+  fetchPage: (range: Range) => Promise<{ data: T[] | null; error: any }>,
+): Promise<T[]> {
+  const result: T[] = [];
+  await paginateRows(fetchPage, (rows) => {
+    result.push(...rows);
+  });
+  return result;
+}
+
+function incrementMap(map: Map<string, number>, key?: string | null) {
+  if (!key) return;
+  map.set(key, (map.get(key) || 0) + 1);
+}
+
+type BlogPostRow = {
+  id: string;
+  published?: boolean | null;
+  views?: number | null;
+  title?: any;
+};
+
+type BlogReadRow = {
+  blog_post_id?: string | null;
+  xp_earned?: number | null;
+  completed_at?: string | null;
+};
+
+type UserRow = {
+  id: string;
+  role?: string | null;
+  created_at?: string | null;
+};
+
+type CourseRow = {
+  id: string;
+  published?: boolean | null;
+  curriculum?: any;
+};
+
+type OnboardingRow = {
+  id: string;
+  status?: string | null;
+  assigned_to_user_id?: string | null;
+  created_at?: string | null;
+};
+
+type HouseRow = {
+  id: string;
+  status?: string | null;
+};
+
+function resolveBlogTitle(post?: BlogPostRow | null) {
+  if (!post) return null;
+  const title = post.title;
+  if (!title) return null;
+  if (typeof title === 'string') return title;
+  return (
+    title.en ||
+    title.pt ||
+    title.es ||
+    title.fr ||
+    title.de ||
+    title.it ||
+    null
+  );
+}
+
+function buildTopPosts(
+  map: Map<string, number>,
+  blogPosts: BlogPostRow[] | null | undefined,
+) {
+  const posts = blogPosts || [];
+  return Array.from(map.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([id, views]) => {
+      const post = posts.find((p) => p.id === id);
+      return { id, views, title: resolveBlogTitle(post) };
+    });
+}
+
 export async function GET(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
@@ -20,51 +221,64 @@ export async function GET(request: NextRequest) {
   try {
     const window24h = sinceHours(24);
     const window30d = sinceDays(30);
+    const threshold24h = Date.parse(window24h);
+    const threshold30d = Date.parse(window30d);
+    const threshold7d = Date.parse(sinceDays(7));
+    const threshold365d = Date.parse(sinceDays(365));
 
-    // USERS
-    type UserRow = { id: string; role?: string | null; created_at?: string | null };
-    const { data: users, error: usersError } = await db
-      .from('users')
-      .select('id, role, created_at', { count: 'exact' }) as { data: UserRow[] | null; error: any };
-    if (usersError) console.error('Error fetching users in admin stats:', usersError);
+    const [
+      users,
+      courses,
+      blogPosts,
+      onboardingSubmissions,
+      houses,
+      courseXp,
+      lessonXp,
+      xpAllAgg,
+    ] = await Promise.all([
+      fetchAllRows<UserRow>(({ from, to }) =>
+        db.from('users').select('id, role, created_at').range(from, to),
+      ),
+      fetchAllRows<CourseRow>(({ from, to }) =>
+        db.from('courses').select('id, published, curriculum').range(from, to),
+      ),
+      fetchAllRows<BlogPostRow>(({ from, to }) =>
+        db.from('blog_posts').select('id, published, views, title').range(from, to),
+      ),
+      fetchAllRows<OnboardingRow>(({ from, to }) =>
+        db
+          .from('onboarding_submissions')
+          .select('id, status, assigned_to_user_id, created_at')
+          .range(from, to),
+      ),
+      fetchAllRows<HouseRow>(({ from, to }) =>
+        db.from('houses_of_sports').select('id, status').range(from, to),
+      ),
+      aggregateXpTable('course_completions', 'completed_at', threshold24h, threshold30d),
+      aggregateXpTable('lesson_completions', 'completed_at', threshold24h, threshold30d),
+      aggregateXpTable('xp_transactions', 'created_at', threshold24h, threshold30d),
+    ]);
 
-    const totalUsers = users?.length || 0;
-    const totalAdmins =
-      users?.filter((u: UserRow) => u.role === 'Admin').length || 0;
-    const totalSuperAdmins =
-      users?.filter((u: UserRow) => u.role === 'Super Admin').length || 0;
-    const totalMembers =
-      users?.filter((u: UserRow) => u.role === 'Member').length || 0;
-    const newUsers24h =
-      users?.filter(
-        (u: UserRow) => u.created_at && u.created_at >= window24h,
-      ).length ||
-      0;
-    const newUsers30d =
-      users?.filter(
-        (u: UserRow) => u.created_at && u.created_at >= window30d,
-      ).length ||
-      0;
+    const blogReadsAggregated = await aggregateBlogReads({
+      threshold24h,
+      threshold30d,
+      threshold7d,
+      threshold365d,
+    });
 
-    // COURSES / MODULES / LESSONS
-    type CourseRow = { id: string; published?: boolean | null; curriculum?: any };
+    const totalUsers = users.length;
+    const totalAdmins = users.filter((u) => u.role === 'Admin').length;
+    const totalSuperAdmins = users.filter((u) => u.role === 'Super Admin').length;
+    const totalMembers = users.filter((u) => u.role === 'Member').length;
+    const newUsers24h = users.filter((u) => u.created_at && u.created_at >= window24h).length;
+    const newUsers30d = users.filter((u) => u.created_at && u.created_at >= window30d).length;
 
-    const { data: courses, error: coursesError } = await db
-      .from('courses')
-      .select('id, published, curriculum') as { data: CourseRow[] | null; error: any };
-
-    if (coursesError) {
-      console.error('Error fetching courses in admin stats:', coursesError);
-    }
-
-    const totalCourses = courses?.length || 0;
-    const activeCourses =
-      courses?.filter((c: CourseRow) => !!c.published).length || 0;
+    const totalCourses = courses.length;
+    const activeCourses = courses.filter((c) => !!c.published).length;
 
     let totalModules = 0;
     let totalLessons = 0;
-
-    (courses || []).forEach((course: CourseRow) => {
+    courses.forEach((course) => {
       const topics: any[] = Array.isArray(course.curriculum?.topics)
         ? course.curriculum!.topics
         : [];
@@ -76,138 +290,42 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    // XP DISTRIBUÍDO (via completions para granularidade por tipo)
-    const [
-      { data: courseCompletions24h },
-      { data: courseCompletions30d },
-      { data: courseCompletionsAll },
-      { data: lessonCompletions24h },
-      { data: lessonCompletions30d },
-      { data: lessonCompletionsAll },
-    ] = await Promise.all([
-      db.from('course_completions').select('xp_earned, completed_at').gte('completed_at', window24h),
-      db.from('course_completions').select('xp_earned, completed_at').gte('completed_at', window30d),
-      db.from('course_completions').select('xp_earned'),
-      db.from('lesson_completions').select('xp_earned, completed_at').gte('completed_at', window24h),
-      db.from('lesson_completions').select('xp_earned, completed_at').gte('completed_at', window30d),
-      db.from('lesson_completions').select('xp_earned'),
-    ]);
-
-    const xpCoursesTotal = sumColumn(courseCompletionsAll, 'xp_earned');
-    const xpCourses24h = sumColumn(courseCompletions24h, 'xp_earned');
-    const xpCourses30d = sumColumn(courseCompletions30d, 'xp_earned');
+    const xpCoursesTotal = courseXp.total;
+    const xpCourses24h = courseXp.last24h;
+    const xpCourses30d = courseXp.last30d;
 
     const xpModulesTotal = 0;
     const xpModules24h = 0;
     const xpModules30d = 0;
 
-    const xpLessonsTotal = sumColumn(lessonCompletionsAll, 'xp_earned');
-    const xpLessons24h = sumColumn(lessonCompletions24h, 'xp_earned');
-    const xpLessons30d = sumColumn(lessonCompletions30d, 'xp_earned');
+    const xpLessonsTotal = lessonXp.total;
+    const xpLessons24h = lessonXp.last24h;
+    const xpLessons30d = lessonXp.last30d;
 
-    // XP TOTAL (todas as ações)
-    const [
-      { data: xpAll },
-      { data: xpAll24h },
-      { data: xpAll30d },
-    ] = await Promise.all([
-      db.from('xp_transactions').select('xp_earned'),
-      db.from('xp_transactions').select('xp_earned').gte('created_at', window24h),
-      db.from('xp_transactions').select('xp_earned').gte('created_at', window30d),
-    ]);
+    const totalXpAll = xpAllAgg.total;
+    const totalXpAll24h = xpAllAgg.last24h;
+    const totalXpAll30d = xpAllAgg.last30d;
 
-    const totalXpAll = sumColumn(xpAll, 'xp_earned');
-    const totalXpAll24h = sumColumn(xpAll24h, 'xp_earned');
-    const totalXpAll30d = sumColumn(xpAll30d, 'xp_earned');
-
-    // BLOG
-    type BlogPostRow = { id: string; published?: boolean | null; views?: number | null; title?: any };
-    type BlogReadRow = {
-      blog_post_id?: string | null;
-      xp_earned?: number | null;
-      completed_at?: string | null;
-    };
-    const [{ data: blogPosts, error: blogError }, { data: blogReads24h }, { data: blogReads30d }, { data: blogReadsAll }] =
-      await Promise.all([
-        db.from('blog_posts').select('id, published, views, title') as {
-          data: BlogPostRow[] | null;
-          error: any;
-        },
-        db
-          .from('blog_reads')
-          .select('blog_post_id, xp_earned, completed_at')
-          .gte('completed_at', window24h) as { data: BlogReadRow[] | null; error: any },
-        db
-          .from('blog_reads')
-          .select('blog_post_id, xp_earned, completed_at')
-          .gte('completed_at', window30d) as { data: BlogReadRow[] | null; error: any },
-        db.from('blog_reads').select('blog_post_id, xp_earned, completed_at') as {
-          data: BlogReadRow[] | null;
-          error: any;
-        },
-      ]);
-
-    if (blogError) console.error('Error fetching blog posts in admin stats:', blogError);
-
-    const publishedPosts = (blogPosts || []).filter(
-      (p: BlogPostRow) => !!p.published,
-    );
+    const publishedPosts = blogPosts.filter((p) => !!p.published);
     const totalBlogPosts = publishedPosts.length;
-    const blogXpTotal = sumColumn(blogReadsAll, 'xp_earned');
-    const blogXp24h = sumColumn(blogReads24h, 'xp_earned');
-    const blogXp30d = sumColumn(blogReads30d, 'xp_earned');
+    const blogXpTotal = blogReadsAggregated.xp.total;
+    const blogXp24h = blogReadsAggregated.xp.last24h;
+    const blogXp30d = blogReadsAggregated.xp.last30d;
     const blogViewsTotal = sumColumn(blogPosts, 'views');
-    const blogViewsLogged = (blogReadsAll || []).length;
+    const blogViewsLogged = blogReadsAggregated.viewsLogged;
 
-    const calcTop = (reads: any[]) => {
-      const counts = (reads || []).reduce<Record<string, number>>((acc, r) => {
-        const id = r.blog_post_id;
-        if (!id) return acc;
-        acc[id] = (acc[id] || 0) + 1;
-        return acc;
-      }, {});
-      const sorted = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([id, views]) => {
-          const post = blogPosts?.find((p) => p.id === id);
-          return { id, views, title: post?.title || null };
-        });
-      return sorted;
-    };
-
-    const blogTop7d = calcTop(
-      (blogReadsAll || []).filter(
-        (r: BlogReadRow) => r.completed_at && r.completed_at >= sinceDays(7),
-      ),
+    const blogTop7d = buildTopPosts(
+      blogReadsAggregated.counts.last7d,
+      blogPosts,
     );
-    const blogTop30d = calcTop(
-      (blogReadsAll || []).filter(
-        (r: BlogReadRow) => r.completed_at && r.completed_at >= window30d,
-      ),
+    const blogTop30d = buildTopPosts(
+      blogReadsAggregated.counts.last30d,
+      blogPosts,
     );
-    const blogTop365d = calcTop(
-      (blogReadsAll || []).filter(
-        (r: BlogReadRow) => r.completed_at && r.completed_at >= sinceDays(365),
-      ),
+    const blogTop365d = buildTopPosts(
+      blogReadsAggregated.counts.last365d,
+      blogPosts,
     );
-
-    // ONBOARDING
-    type OnboardingRow = {
-      id: string;
-      status?: string | null;
-      assigned_to_user_id?: string | null;
-      created_at?: string | null;
-    };
-    const { data: onboardingSubmissions, error: onboardingError } = (await db
-      .from('onboarding_submissions')
-      .select('id, status, assigned_to_user_id, created_at')) as {
-      data: OnboardingRow[] | null;
-      error: any;
-    };
-    if (onboardingError) {
-      console.error('Error fetching onboarding submissions in admin stats:', onboardingError);
-    }
 
     const pendingStatuses = [
       'PENDING_RESPONSE',
@@ -246,13 +364,6 @@ export async function GET(request: NextRequest) {
       onboardingSubmissions?.filter(
         (f: OnboardingRow) => f.status === 'PENDING_RESPONSE',
       ).length || 0;
-
-    // HOUSES OF SPORTS
-    type HouseRow = { id: string; status?: string | null };
-    const { data: houses, error: housesError } = (await db
-      .from('houses_of_sports')
-      .select('id, status')) as { data: HouseRow[] | null; error: any };
-    if (housesError) console.error('Error fetching houses in admin stats:', housesError);
 
     const statusMap = {
       active: 'active',
