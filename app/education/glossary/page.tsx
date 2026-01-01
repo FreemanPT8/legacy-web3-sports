@@ -257,11 +257,41 @@ export default function GlossaryPage() {
   const handleSubmit = async () => {
     setSaving(true);
     setError(null);
+    for (const lang of LANGUAGES) {
+      const termValue = formState.term[lang]?.trim();
+      const defValue = formState.definition[lang]?.trim();
+      if (!termValue || !defValue) {
+        setSaving(false);
+        setError(
+          `Preenche termo e definição em ${lang.toUpperCase()} antes de guardar.`,
+        );
+        return;
+      }
+    }
+
     const payload = {
       slug: formState.slug || undefined,
-      term: formState.term,
-      definition: formState.definition,
-      example: formState.example,
+      term: LANGUAGES.reduce<Record<GlossaryLanguage, string>>(
+        (acc, lang) => {
+          acc[lang] = formState.term[lang].trim();
+          return acc;
+        },
+        { pt: '', en: '', es: '' },
+      ),
+      definition: LANGUAGES.reduce<Record<GlossaryLanguage, string>>(
+        (acc, lang) => {
+          acc[lang] = formState.definition[lang].trim();
+          return acc;
+        },
+        { pt: '', en: '', es: '' },
+      ),
+      example: LANGUAGES.reduce<Record<GlossaryLanguage, string>>(
+        (acc, lang) => {
+          acc[lang] = formState.example[lang]?.trim() || '';
+          return acc;
+        },
+        { pt: '', en: '', es: '' },
+      ),
       tags: formState.tags
         .split(',')
         .map((tag) => tag.trim())
