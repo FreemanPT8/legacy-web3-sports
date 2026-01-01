@@ -29,6 +29,7 @@ import type {
 } from '@/types/glossary';
 import {
   AlertCircle,
+  ArrowUpRight,
   Award,
   CheckCircle2,
   Loader2,
@@ -803,11 +804,12 @@ export default function GlossaryPage() {
                                 )}
                                 {canEditTerm && <StatusBadge status={term.status} />}
                                 <Button
-                                  size="sm"
-                                  className="rounded-full bg-gradient-to-r from-[#fdd87c] via-[#ffd37b] to-[#f7b733] px-4 text-sm font-semibold text-[#04121c] shadow-[0_0_18px_rgba(253,216,124,0.25)] transition hover:from-[#ffe5aa] hover:to-[#ffc85c]"
+                                  size="icon"
+                                  className="h-9 w-9 rounded-full bg-gradient-to-r from-[#fdd87c] via-[#ffd37b] to-[#f7b733] text-[#04121c] shadow-[0_0_18px_rgba(253,216,124,0.25)] transition hover:from-[#ffe5aa] hover:to-[#ffc85c]"
                                   onClick={() => handlePreviewOpen(term)}
                                 >
-                                  Ver definição
+                                  <ArrowUpRight className="h-4 w-4" />
+                                  <span className="sr-only">Ver definição</span>
                                 </Button>
                                 {canEditTerm && (
                                   <Button variant="secondary" size="sm" onClick={() => handleOpenEdit(term)}>
