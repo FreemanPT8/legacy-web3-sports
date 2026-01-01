@@ -26,7 +26,15 @@ import type {
   GlossaryStatus,
   GlossaryTerm,
 } from '@/types/glossary';
-import { Loader2, Plus, RefreshCcw, Search, ShieldAlert, Trash2 } from 'lucide-react';
+import {
+  Loader2,
+  Plus,
+  RefreshCcw,
+  Search,
+  ShieldAlert,
+  Trash2,
+  X,
+} from 'lucide-react';
 
 type TermFormState = {
   slug: string;
@@ -77,7 +85,6 @@ export default function GlossaryPage() {
   const [filters, setFilters] = useState({
     letter: 'all',
     search: '',
-    language: 'pt' as GlossaryLanguage,
     status: 'published' as GlossaryStatus | 'all',
   });
   const [pagination, setPagination] = useState<PaginationMeta>({
@@ -92,6 +99,8 @@ export default function GlossaryPage() {
   const [editingTerm, setEditingTerm] = useState<GlossaryTerm | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [previewTerm, setPreviewTerm] = useState<GlossaryTerm | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
 
@@ -106,6 +115,13 @@ export default function GlossaryPage() {
     return token ? { Authorization: `Bearer ${token}` } : undefined;
   };
 
+  const activeLanguage: GlossaryLanguage = useMemo(() => {
+    if (LANGUAGES.includes(language as GlossaryLanguage)) {
+      return language as GlossaryLanguage;
+    }
+    return 'pt';
+  }, [language]);
+
   useEffect(() => {
     if (!user) return;
     const fetchTerms = async () => {
@@ -115,7 +131,7 @@ export default function GlossaryPage() {
         const params = new URLSearchParams();
         params.set('page', String(pagination.page));
         params.set('pageSize', '500');
-        params.set('language', filters.language);
+        params.set('language', activeLanguage);
         if (filters.search.trim()) {
           params.set('search', filters.search.trim());
         }
@@ -156,19 +172,19 @@ export default function GlossaryPage() {
   }, [
     user,
     pagination.page,
-    filters.language,
     filters.search,
     filters.letter,
     filters.status,
     isAdmin,
     refreshKey,
+    activeLanguage,
   ]);
 
   const groupedTerms = useMemo(() => {
     const groups: Record<string, GlossaryTerm[]> = {};
     terms.forEach((term) => {
       const displayValue =
-        term[`term_${filters.language}` as const] ||
+        term[`term_${activeLanguage}` as const] ||
         term.term_pt ||
         term.term_en ||
         term.term_es ||
@@ -183,21 +199,23 @@ export default function GlossaryPage() {
       letter,
       items: (groups[letter] || []).sort((a, b) => {
         const textA =
-          a[`term_${filters.language}` as const] ||
+          a[`term_${activeLanguage}` as const] ||
           a.term_pt ||
           a.term_en ||
           a.term_es ||
           '';
         const textB =
-          b[`term_${filters.language}` as const] ||
+          b[`term_${activeLanguage}` as const] ||
           b.term_pt ||
           b.term_en ||
           b.term_es ||
           '';
-        return textA.localeCompare(textB, undefined, { sensitivity: 'base' });
+        return textA.localeCompare(textB, undefined, {
+          sensitivity: 'base',
+        });
       }),
     })).filter((group) => group.items.length > 0);
-  }, [terms, filters.language]);
+  }, [terms, activeLanguage]);
 
   const handleOpenCreate = () => {
     setEditingTerm(null);
@@ -357,7 +375,7 @@ export default function GlossaryPage() {
   };
 
   const renderDefinition = (term: GlossaryTerm) => {
-    const key = `definition_${filters.language}` as keyof GlossaryTerm;
+    const key = `definition_${activeLanguage}` as keyof GlossaryTerm;
     return (
       (term[key] as string | undefined) ||
       term.definition_pt ||
@@ -368,7 +386,7 @@ export default function GlossaryPage() {
   };
 
   const renderTermTitle = (term: GlossaryTerm) => {
-    const key = `term_${filters.language}` as keyof GlossaryTerm;
+    const key = `term_${activeLanguage}` as keyof GlossaryTerm;
     return (
       (term[key] as string | undefined) ||
       term.term_pt ||
@@ -376,6 +394,27 @@ export default function GlossaryPage() {
       term.term_es ||
       term.slug
     );
+  };
+
+  const renderExample = (term: GlossaryTerm) => {
+    const key = `example_${activeLanguage}` as keyof GlossaryTerm;
+    return (
+      (term[key] as string | undefined) ||
+      term.example_pt ||
+      term.example_en ||
+      term.example_es ||
+      ''
+    );
+  };
+
+  const handlePreviewOpen = (term: GlossaryTerm) => {
+    setPreviewTerm(term);
+    setPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    setPreviewOpen(false);
+    setPreviewTerm(null);
   };
 
   const StatusBadge = ({ status }: { status: GlossaryStatus }) => {
@@ -393,6 +432,19 @@ export default function GlossaryPage() {
       </Badge>
     );
   };
+
+  useEffect(() => {
+    if (previewOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [previewOpen]);
+
+  const previewExample = previewTerm ? renderExample(previewTerm) : '';
 
   return (
     <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
@@ -435,56 +487,19 @@ export default function GlossaryPage() {
         <section className="mx-auto max-w-6xl px-6 py-12">
           <div className="mb-8 grid gap-4 md:grid-cols-3">
             <div className="col-span-2 space-y-4">
-              <div className="flex flex-wrap gap-3">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    placeholder="Procurar por termo ou definição"
-                    value={filters.search}
-                    onChange={(event) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        search: event.target.value,
-                      }))
-                    }
-                    className="border-white/10 bg-white/5 pl-9 text-white placeholder:text-slate-400"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      'border-white/10 bg-white/5 text-white hover:bg-white/10',
-                      filters.language === 'pt' && 'border-[#fdd87c] text-[#fdd87c]',
-                    )}
-                    onClick={() => setFilters((prev) => ({ ...prev, language: 'pt' }))}
-                  >
-                    PT
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      'border-white/10 bg-white/5 text-white hover:bg-white/10',
-                      filters.language === 'en' && 'border-[#fdd87c] text-[#fdd87c]',
-                    )}
-                    onClick={() => setFilters((prev) => ({ ...prev, language: 'en' }))}
-                  >
-                    EN
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      'border-white/10 bg-white/5 text-white hover:bg-white/10',
-                      filters.language === 'es' && 'border-[#fdd87c] text-[#fdd87c]',
-                    )}
-                    onClick={() => setFilters((prev) => ({ ...prev, language: 'es' }))}
-                  >
-                    ES
-                  </Button>
-                </div>
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  placeholder="Procurar por termo ou definição"
+                  value={filters.search}
+                  onChange={(event) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      search: event.target.value,
+                    }))
+                  }
+                  className="border-white/10 bg-white/5 pl-9 text-white placeholder:text-slate-400"
+                />
               </div>
               <div className="flex flex-wrap gap-2 text-xs text-slate-300">
                 <Button
@@ -592,9 +607,13 @@ export default function GlossaryPage() {
                       >
                         <CardHeader className="flex flex-row items-start justify-between space-y-0">
                           <div>
-                            <CardTitle className="text-xl text-white">
+                            <button
+                              type="button"
+                              onClick={() => handlePreviewOpen(term)}
+                              className="text-left text-xl font-semibold text-white transition hover:text-[#fdd87c]"
+                            >
                               {renderTermTitle(term)}
-                            </CardTitle>
+                            </button>
                             <CardDescription className="text-slate-300">
                               /{term.slug}
                             </CardDescription>
@@ -613,9 +632,6 @@ export default function GlossaryPage() {
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          <p className="text-sm text-slate-200">
-                            {renderDefinition(term)}
-                          </p>
                           <div className="flex flex-wrap gap-2 text-xs text-slate-300">
                             {term.tags?.length ? (
                               term.tags.map((tag) => (
@@ -631,41 +647,13 @@ export default function GlossaryPage() {
                               <span className="text-slate-500">Sem tags</span>
                             )}
                           </div>
-                          <Tabs defaultValue={filters.language} className="pt-2">
-                            <TabsList className="bg-white/5">
-                              {LANGUAGES.map((lang) => (
-                                <TabsTrigger key={lang} value={lang}>
-                                  {lang.toUpperCase()}
-                                </TabsTrigger>
-                              ))}
-                            </TabsList>
-                            {LANGUAGES.map((lang) => {
-                              const defKey = `definition_${lang}` as keyof GlossaryTerm;
-                              const exKey = `example_${lang}` as keyof GlossaryTerm;
-                              return (
-                                <TabsContent
-                                  key={lang}
-                                  value={lang}
-                                  className="space-y-2 rounded-xl border border-white/5 bg-white/5 p-3"
-                                >
-                                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
-                                    Definição
-                                  </p>
-                                  <p className="text-sm text-white">
-                                    {(term[defKey] as string) ||
-                                      'Sem definição nesta língua.'}
-                                  </p>
-                                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
-                                    Exemplo
-                                  </p>
-                                  <p className="text-sm text-slate-200">
-                                    {(term[exKey] as string) ||
-                                      'Sem exemplo nesta língua.'}
-                                  </p>
-                                </TabsContent>
-                              );
-                            })}
-                          </Tabs>
+                          <Button
+                            variant="outline"
+                            className="rounded-full border-white/20 text-white hover:border-[#fdd87c] hover:text-[#fdd87c]"
+                            onClick={() => handlePreviewOpen(term)}
+                          >
+                            Ver definição
+                          </Button>
                         </CardContent>
                       </Card>
                     ))}
@@ -677,6 +665,66 @@ export default function GlossaryPage() {
         </section>
       </main>
       <Footer />
+
+      {previewOpen && previewTerm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#021c27] p-8 text-white shadow-[0_35px_80px_rgba(0,0,0,0.65)]">
+            <button
+              type="button"
+              onClick={closePreview}
+              className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/10 p-2 text-white transition hover:border-[#fdd87c] hover:text-[#fdd87c]"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
+              Glossário Legacy
+            </p>
+            <h2 className="mt-2 text-3xl font-semibold text-[#fdd87c]">
+              {renderTermTitle(previewTerm)}
+            </h2>
+            <p className="text-sm text-slate-300">/{previewTerm.slug}</p>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
+                  Definição ({activeLanguage.toUpperCase()})
+                </p>
+                <p className="whitespace-pre-line text-lg leading-relaxed text-white">
+                  {renderDefinition(previewTerm)}
+                </p>
+              </div>
+              {previewExample && (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
+                    Exemplo
+                  </p>
+                  <p className="whitespace-pre-line text-slate-200">
+                    {previewExample}
+                  </p>
+                </div>
+              )}
+              {previewTerm.tags?.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {previewTerm.tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="outline"
+                      className="border-white/10 bg-white/10 text-slate-200"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Dialog open={sheetOpen} onOpenChange={(open) => (!open ? setSheetOpen(false) : null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto border border-white/10 bg-[#02131d] text-white">
