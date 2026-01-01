@@ -1,7 +1,7 @@
 // app/admin/courses/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -16,6 +16,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { SafeImage } from '@/app/components/SafeImage';
 
 import {
@@ -28,6 +35,7 @@ import {
   Award,
   Users,
   PenSquare,
+  History,
 } from 'lucide-react';
 
 type Course = {
@@ -68,6 +76,22 @@ type CurriculumSnapshot = {
   topics: number;
   lessons: number;
   quizzes: number;
+};
+
+type XpHistoryEntry = {
+  id: string;
+  type: 'lesson' | 'course';
+  xp: number;
+  completedAt: string;
+  user: {
+    id: string;
+    name: string;
+  };
+  content: {
+    title: string;
+    moduleTitle?: string | null;
+    typeLabel: string;
+  };
 };
 
 const getCurriculumSnapshot = (course: Course): CurriculumSnapshot => {
@@ -281,10 +305,93 @@ export default function CoursesManagementPage() {
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [canManageCourses, setCanManageCourses] = useState(false);
   const [levelFilter, setLevelFilter] = useState<string>('all');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyCourse, setHistoryCourse] = useState<{ id: string; title: string } | null>(null);
+  const [historyEntries, setHistoryEntries] = useState<XpHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyPage, setHistoryPage] = useState(0);
+  const HISTORY_PAGE_SIZE = 25;
 
   const isSuperAdmin = user?.role === 'Super Admin';
   const isAdmin =
     !!user && (user.role === 'Super Admin' || user.role === 'Admin');
+
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString('pt-PT', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+
+  const fetchXpHistory = useCallback(
+    async (courseId: string, page = 0, append = false) => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const token = getToken();
+        const params = new URLSearchParams({
+          limit: HISTORY_PAGE_SIZE.toString(),
+          offset: String(page * HISTORY_PAGE_SIZE),
+        });
+        const res = await fetch(
+          `/api/admin/courses/${courseId}/xp-history?${params.toString()}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          },
+        );
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Falha ao carregar histórico');
+        }
+        const entries: XpHistoryEntry[] = data.entries || [];
+        setHistoryEntries((prev) =>
+          append ? [...prev, ...entries] : entries,
+        );
+        setHistoryHasMore(Boolean(data.hasMore));
+        setHistoryPage(page);
+      } catch (error: any) {
+        setHistoryError(
+          error?.message || 'Falha ao carregar histórico de XP',
+        );
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    [getToken],
+  );
+
+  const handleOpenHistory = useCallback(
+    (course: Course) => {
+      const title = getCourseTitle(course);
+      setHistoryCourse({ id: course.id, title });
+      setHistoryEntries([]);
+      setHistoryPage(0);
+      setHistoryHasMore(false);
+      setHistoryError(null);
+      setHistoryOpen(true);
+      void fetchXpHistory(course.id, 0, false);
+    },
+    [fetchXpHistory],
+  );
+
+  const handleLoadMoreHistory = () => {
+    if (!historyCourse) return;
+    const nextPage = historyPage + 1;
+    void fetchXpHistory(historyCourse.id, nextPage, true);
+  };
+
+  const handleCloseHistory = () => {
+    setHistoryOpen(false);
+    setHistoryCourse(null);
+    setHistoryEntries([]);
+    setHistoryError(null);
+    setHistoryPage(0);
+    setHistoryHasMore(false);
+  };
 
   // Protecao basica por role
   useEffect(() => {
@@ -489,11 +596,12 @@ export default function CoursesManagementPage() {
   const noFilteredCourses = !noCoursesAvailable && filteredCourses.length === 0;
 
   return (
-    <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 text-white md:px-8">
-      {/* HERO */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+    <>
+      <div className="min-h-screen w-full space-y-8 bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] px-4 py-6 text-white md:px-8">
+        {/* HERO */}
+        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -top-24 -right-10 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
           <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
         </div>
 
@@ -789,10 +897,9 @@ export default function CoursesManagementPage() {
                 const { totalModules, totalLessons, totalXP } =
                   getCourseStats(course);
                 const xpDistributed =
-                  typeof course.xp_total_distributed === 'number' &&
-                  course.xp_total_distributed > 0
+                  typeof course.xp_total_distributed === 'number'
                     ? course.xp_total_distributed
-                    : totalXP;
+                    : 0;
                 const curriculumStats = getCurriculumSnapshot(course);
                 const legacyStats = getLegacyModuleSnapshot(course);
                 const topicsCount =
@@ -886,16 +993,27 @@ export default function CoursesManagementPage() {
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                                Conclusões
-                              </p>
-                              <p className="text-xl font-semibold text-[#fdd87c]">
-                                {formatNumber(completionsCount)}
-                              </p>
-                              <p className="text-[11px] text-slate-300">
-                                {completionsCount === 1 ? 'utilizador' : 'utilizadores'}
-                              </p>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right">
+                                <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                  Conclusões
+                                </p>
+                                <p className="text-xl font-semibold text-[#fdd87c]">
+                                  {formatNumber(completionsCount)}
+                                </p>
+                                <p className="text-[11px] text-slate-300">
+                                  {completionsCount === 1 ? 'utilizador' : 'utilizadores'}
+                                </p>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-9 w-9 border border-white/20 text-white hover:bg-white/10"
+                                onClick={() => handleOpenHistory(course)}
+                              >
+                                <History className="h-4 w-4" />
+                                <span className="sr-only">Ver histórico de XP</span>
+                              </Button>
                             </div>
                           </div>
                           <p className="mt-3 text-[11px] text-slate-300">
@@ -987,6 +1105,95 @@ export default function CoursesManagementPage() {
           )}
         </div>
       </section>
-    </div>
+      </div>
+
+      <Dialog
+        open={historyOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseHistory();
+          } else {
+            setHistoryOpen(true);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl border border-white/10 bg-[#020b16] text-white">
+          <DialogHeader className="space-y-2">
+            <DialogTitle>Histórico de XP</DialogTitle>
+            <DialogDescription className="text-slate-300">
+              {historyCourse
+                ? `Registos de XP para o curso "${historyCourse.title}".`
+                : 'Sem curso selecionado.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+            {historyLoading && historyEntries.length === 0 && (
+              <div className="flex items-center justify-center py-8 text-sm text-slate-300">
+                A carregar histórico...
+              </div>
+            )}
+            {historyError && (
+              <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                {historyError}
+              </div>
+            )}
+            {!historyLoading &&
+              historyEntries.length === 0 &&
+              !historyError && (
+                <div className="rounded-xl border border-white/10 bg-[#04131b]/70 px-4 py-6 text-center text-sm text-slate-300">
+                  Ainda não existe histórico de XP para este curso.
+                </div>
+              )}
+            {historyEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded-2xl border border-white/10 bg-[#021824]/80 px-4 py-3 shadow-[0_10px_30px_rgba(3,10,25,0.45)]"
+              >
+                <div className="flex items-center justify-between text-sm">
+                  <p className="font-semibold text-white">{entry.user.name}</p>
+                  <p className="text-xs text-slate-400">
+                    {formatDateTime(entry.completedAt)}
+                  </p>
+                </div>
+                <p className="text-xs uppercase tracking-wide text-cyan-200">
+                  {entry.content.typeLabel}
+                </p>
+                <p className="text-base font-semibold text-white">
+                  {entry.content.title}
+                </p>
+                {entry.content.moduleTitle && (
+                  <p className="text-xs text-slate-400">
+                    Tópico: {entry.content.moduleTitle}
+                  </p>
+                )}
+                <p className="mt-2 text-sm font-semibold text-[#fdd87c]">
+                  +{formatNumber(entry.xp)} XP
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {(historyHasMore || historyEntries.length > 0) && (
+            <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+              <span>
+                {historyEntries.length}{' '}
+                {historyEntries.length === 1 ? 'registo' : 'registos'} carregados
+              </span>
+              {historyHasMore && (
+                <Button
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                  onClick={handleLoadMoreHistory}
+                  disabled={historyLoading}
+                >
+                  {historyLoading ? 'A carregar…' : 'Ver mais'}
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
+import {
+  extractLessonContext,
+  fetchCourseXpData,
+  type CourseLike,
+} from '@/lib/admin/courseXpHelpers';
+
+const db = supabaseAdmin ?? supabase;
 
 export async function GET(request: NextRequest) {
   // 1) Verificar se é Admin / Super Admin
@@ -16,7 +23,7 @@ export async function GET(request: NextRequest) {
     // ?published=true para filtrar apenas cursos publicados
     const onlyPublished = searchParams.get('published') === 'true';
 
-    let query = supabase
+    let query = db
       .from('courses')
       .select('*')
       .order('order', { ascending: true });
@@ -53,21 +60,23 @@ export async function GET(request: NextRequest) {
     let completionsMap: Record<string, number> = {};
 
     if (ids.length > 0) {
-      const { data: xpRows, error: xpError } = await supabase
-        .from('course_total_xp_distributed')
-        .select('course_id, total_xp_distributed')
-        .in('course_id', ids);
-      if (xpError) {
-        console.error('Error loading course_total_xp_distributed:', xpError);
-      } else {
-        xpMap =
-          xpRows?.reduce((acc: Record<string, number>, row: any) => {
-            acc[row.course_id] = row.total_xp_distributed || 0;
-            return acc;
-          }, {}) || {};
+      const lessonContext = extractLessonContext(
+        (courses || []) as CourseLike[],
+      );
+      try {
+        const xpData = await fetchCourseXpData(
+          db,
+          ids,
+          lessonContext.lessonIds,
+          lessonContext.lessonToCourse,
+        );
+        xpMap = xpData.xpByCourse;
+        completionsMap = xpData.completionCountMap;
+      } catch (xpError) {
+        console.error('Error computing XP distribution for courses:', xpError);
       }
 
-      const { data: xpCreatorRows, error: xpCreatorError } = await supabase
+      const { data: xpCreatorRows, error: xpCreatorError } = await db
         .from('xp_transactions')
         .select('reference_id, xp_earned, user_id')
         .eq('reference_type', 'course')
@@ -86,31 +95,10 @@ export async function GET(request: NextRequest) {
           }, {}) || {};
       }
 
-      const { data: completionsRows, error: completionsError } =
-        await supabase
-          .from('course_completions')
-          .select('course_id')
-          .in('course_id', ids);
-      if (completionsError) {
-        console.error(
-          'Error loading course completions for admin:',
-          completionsError,
-        );
-      } else {
-        completionsMap =
-          completionsRows?.reduce(
-            (acc: Record<string, number>, row: any) => {
-              if (!row?.course_id) return acc;
-              acc[row.course_id] = (acc[row.course_id] || 0) + 1;
-              return acc;
-            },
-            {},
-          ) || {};
-      }
     }
 
     if (authorIds.length > 0) {
-      const { data: authors, error: authorError } = await supabase
+      const { data: authors, error: authorError } = await db
         .from('users')
         .select('id, full_name, username')
         .in('id', authorIds);
