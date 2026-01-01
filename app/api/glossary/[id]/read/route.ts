@@ -39,19 +39,23 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const { data: existing, error: completionError } = await db
+    let existing: { term_id: string; completed_at: string } | null = null;
+    const { data: completionRow, error: completionError } = await db
       .from('glossary_term_reads')
       .select('term_id, completed_at')
       .eq('term_id', termId)
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (completionError && (completionError as any).code !== 'PGRST116') {
-      console.error('Failed to check glossary completion:', completionError);
-      return NextResponse.json(
-        { success: false, error: 'Erro ao validar progresso.' },
-        { status: 500 },
-      );
+    if (completionError) {
+      if ((completionError as any).code !== 'PGRST116') {
+        console.error('Failed to check glossary completion:', completionError);
+      }
+    } else if (completionRow) {
+      existing = {
+        term_id: completionRow.term_id as string,
+        completed_at: completionRow.completed_at as string,
+      };
     }
 
     if (existing) {
@@ -59,8 +63,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         success: true,
         alreadyCompleted: true,
         completion: {
-          termId: existing.term_id as string,
-          completedAt: existing.completed_at as string,
+            termId: existing.term_id,
+            completedAt: existing.completed_at,
         },
       });
     }
