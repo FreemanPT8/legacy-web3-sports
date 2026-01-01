@@ -134,6 +134,98 @@ async function resolveGlossaryLabels(
   }, {});
 }
 
+async function resolveCreatorRewardConsumers(
+  creatorTransactions: XPTransaction[],
+): Promise<Record<string, string>> {
+  const map: Record<string, string> = {};
+  const transactionsWithContent = creatorTransactions.filter(
+    (tx) => tx.reference_id && tx.created_at,
+  );
+
+  if (transactionsWithContent.length === 0) {
+    return map;
+  }
+
+  const referenceIds = Array.from(
+    new Set(
+      transactionsWithContent.map(
+        (tx) => tx.reference_id as string,
+      ),
+    ),
+  );
+
+  const { data: consumerTxs, error } = await db
+    .from('xp_transactions')
+    .select('id, user_id, reference_id, reference_type, created_at')
+    .in('reference_id', referenceIds)
+    .in('reference_type', ['blog', 'lesson'])
+    .order('created_at', { ascending: false });
+
+  if (error || !consumerTxs) {
+    console.error('Failed to resolve creator reward consumers:', error);
+    return map;
+  }
+
+  const groupedByContent: Record<string, any[]> = {};
+  consumerTxs.forEach((tx) => {
+    if (!tx.reference_id) return;
+    if (!groupedByContent[tx.reference_id]) {
+      groupedByContent[tx.reference_id] = [];
+    }
+    groupedByContent[tx.reference_id].push(tx);
+  });
+
+  const consumerIds = new Set<string>();
+  transactionsWithContent.forEach((creatorTx) => {
+    const candidates =
+      groupedByContent[creatorTx.reference_id as string] || [];
+    const rewardTime = new Date(creatorTx.created_at!).getTime();
+    const matched = candidates.find((candidate) => {
+      if (!candidate.created_at) return false;
+      const consumerTime = new Date(candidate.created_at).getTime();
+      return consumerTime <= rewardTime + 5_000;
+    });
+    if (matched?.user_id) {
+      map[creatorTx.id] = matched.user_id as string;
+      consumerIds.add(matched.user_id as string);
+    }
+  });
+
+  if (consumerIds.size === 0) {
+    return map;
+  }
+
+  const { data: consumerUsers, error: userError } = await db
+    .from('users')
+    .select('id, username')
+    .in('id', Array.from(consumerIds));
+
+  if (userError || !consumerUsers) {
+    console.error('Failed to resolve consumer usernames:', userError);
+    return map;
+  }
+
+  const usernameMap = consumerUsers.reduce(
+    (acc: Record<string, string>, user: any) => {
+      acc[user.id] = user.username;
+      return acc;
+    },
+    {},
+  );
+
+  Object.keys(map).forEach((txId) => {
+    const consumerId = map[txId];
+    const username = usernameMap[consumerId];
+    if (!username) {
+      delete map[txId];
+    } else {
+      map[txId] = username;
+    }
+  });
+
+  return map;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const headerToken = request.headers.get('Authorization');
@@ -275,13 +367,17 @@ export async function GET(request: NextRequest) {
         (tx) =>
           tx.reference_id &&
           tx.reference_type &&
-          tx.reference_type.startsWith('lesson'),
+          (tx.reference_type.startsWith('lesson') ||
+            tx.reference_type === 'lesson_creator'),
       )
       .map((tx) => tx.reference_id as string);
 
     const blogReferenceIds = recentTransactions
       .filter(
-        (tx) => tx.reference_id && tx.reference_type === 'blog',
+        (tx) =>
+          tx.reference_id &&
+          (tx.reference_type === 'blog' ||
+            tx.reference_type === 'blog_creator'),
       )
       .map((tx) => tx.reference_id as string);
 
@@ -291,11 +387,19 @@ export async function GET(request: NextRequest) {
       )
       .map((tx) => tx.reference_id as string);
 
-    const [lessonLabels, blogLabels, glossaryLabels] = await Promise.all([
-      resolveLessonLabels(lessonReferenceIds),
-      resolveBlogLabels(blogReferenceIds),
-      resolveGlossaryLabels(glossaryReferenceIds),
-    ]);
+    const creatorRewardTransactions = recentTransactions.filter(
+      (tx) =>
+        tx.reference_type === 'blog_creator' ||
+        tx.reference_type === 'lesson_creator',
+    );
+
+    const [lessonLabels, blogLabels, glossaryLabels, creatorRewardConsumers] =
+      await Promise.all([
+        resolveLessonLabels(lessonReferenceIds),
+        resolveBlogLabels(blogReferenceIds),
+        resolveGlossaryLabels(glossaryReferenceIds),
+        resolveCreatorRewardConsumers(creatorRewardTransactions),
+      ]);
 
     const transactionsWithLabels = recentTransactions.map((tx) => {
       let referenceLabel: string | null = null;
@@ -328,6 +432,31 @@ export async function GET(request: NextRequest) {
         tx.reference_type === 'glossary_term'
       ) {
         referenceLabel = glossaryLabels[tx.reference_id] || null;
+      }
+
+      if (
+        tx.reference_id &&
+        !referenceLabel &&
+        tx.reference_type === 'lesson_creator'
+      ) {
+        referenceLabel = lessonLabels[tx.reference_id] || null;
+      } else if (
+        tx.reference_id &&
+        !referenceLabel &&
+        tx.reference_type === 'blog_creator'
+      ) {
+        referenceLabel = blogLabels[tx.reference_id] || null;
+      }
+
+      const consumerUsername = creatorRewardConsumers[tx.id];
+      if (consumerUsername) {
+        const consumerLabel =
+          tx.reference_type === 'blog_creator'
+            ? `Leitura por @${consumerUsername}`
+            : `Conclusão por @${consumerUsername}`;
+        referenceLabel = referenceLabel
+          ? `${referenceLabel} • ${consumerLabel}`
+          : consumerLabel;
       }
 
       return {
