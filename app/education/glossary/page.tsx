@@ -108,6 +108,9 @@ export default function GlossaryPage() {
   const [previewTerm, setPreviewTerm] = useState<GlossaryTerm | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [completedTerms, setCompletedTerms] = useState<Record<string, GlossaryTermCompletion>>({});
+  const activeTermCompletion = previewTerm
+    ? completedTerms[previewTerm.id]
+    : undefined;
   const [progressSeconds, setProgressSeconds] = useState(0);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [awardingXp, setAwardingXp] = useState(false);
@@ -611,9 +614,6 @@ export default function GlossaryPage() {
   ]);
 
   const previewExample = previewTerm ? renderExample(previewTerm) : '';
-  const activeTermCompletion = previewTerm
-    ? completedTerms[previewTerm.id]
-    : undefined;
   const progressPercent = Math.min(
     100,
     (progressSeconds / PROGRESS_SECONDS) * 100,
