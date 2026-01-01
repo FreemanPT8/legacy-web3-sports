@@ -788,7 +788,10 @@ export default function CoursesManagementPage() {
                   0;
                 const { totalModules, totalLessons, totalXP } =
                   getCourseStats(course);
-                const xpDistributed = totalXP;
+                const xpDistributed =
+                  typeof course.xp_total_distributed === 'number'
+                    ? course.xp_total_distributed
+                    : totalXP;
                 const curriculumStats = getCurriculumSnapshot(course);
                 const legacyStats = getLegacyModuleSnapshot(course);
                 const topicsCount =
