@@ -107,6 +107,33 @@ async function resolveBlogLabels(
   }, {});
 }
 
+async function resolveGlossaryLabels(
+  ids: string[],
+): Promise<Record<string, string>> {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (uniqueIds.length === 0) return {};
+
+  const { data: terms, error } = await db
+    .from('glossary_terms')
+    .select('id, slug, term_pt, term_en, term_es')
+    .in('id', uniqueIds);
+
+  if (error || !terms) {
+    console.error('Failed to resolve glossary titles:', error);
+    return {};
+  }
+
+  return terms.reduce((acc: Record<string, string>, term: any) => {
+    acc[term.id] =
+      term.term_pt ||
+      term.term_en ||
+      term.term_es ||
+      term.slug ||
+      'Termo do glossário';
+    return acc;
+  }, {});
+}
+
 export async function GET(request: NextRequest) {
   try {
     const headerToken = request.headers.get('Authorization');
@@ -258,9 +285,16 @@ export async function GET(request: NextRequest) {
       )
       .map((tx) => tx.reference_id as string);
 
-    const [lessonLabels, blogLabels] = await Promise.all([
+    const glossaryReferenceIds = recentTransactions
+      .filter(
+        (tx) => tx.reference_id && tx.reference_type === 'glossary_term',
+      )
+      .map((tx) => tx.reference_id as string);
+
+    const [lessonLabels, blogLabels, glossaryLabels] = await Promise.all([
       resolveLessonLabels(lessonReferenceIds),
       resolveBlogLabels(blogReferenceIds),
+      resolveGlossaryLabels(glossaryReferenceIds),
     ]);
 
     const transactionsWithLabels = recentTransactions.map((tx) => {
@@ -289,6 +323,11 @@ export async function GET(request: NextRequest) {
         tx.reference_type === 'blog'
       ) {
         referenceLabel = blogLabels[tx.reference_id] || null;
+      } else if (
+        tx.reference_id &&
+        tx.reference_type === 'glossary_term'
+      ) {
+        referenceLabel = glossaryLabels[tx.reference_id] || null;
       }
 
       return {
