@@ -69,7 +69,7 @@ type PaginationMeta = {
 
 export default function GlossaryPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, getToken } = useAuth();
   const { language } = useLanguage();
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +101,15 @@ export default function GlossaryPage() {
     }
   }, [authLoading, user, router]);
 
+  const buildAuthHeaders = () => {
+    const token = getToken?.();
+    return token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {};
+  };
+
   useEffect(() => {
     if (!user) return;
     const fetchTerms = async () => {
@@ -120,7 +129,11 @@ export default function GlossaryPage() {
         if (isAdmin && filters.status) {
           params.set('status', filters.status);
         }
-        const res = await fetch(`/api/glossary?${params.toString()}`);
+        const res = await fetch(`/api/glossary?${params.toString()}`, {
+          headers: {
+            ...buildAuthHeaders(),
+          },
+        });
         const data = await res.json();
         if (!res.ok || !data?.success) {
           throw new Error(data?.error || 'Falhou o carregamento.');
@@ -267,6 +280,7 @@ export default function GlossaryPage() {
           method: editingTerm ? 'PATCH' : 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...buildAuthHeaders(),
           },
           body: JSON.stringify(payload),
         },
@@ -296,6 +310,9 @@ export default function GlossaryPage() {
     try {
       const res = await fetch(`/api/glossary/${editingTerm.id}`, {
         method: 'DELETE',
+        headers: {
+          ...buildAuthHeaders(),
+        },
       });
       const data = await res.json();
       if (!res.ok || !data?.success) {
