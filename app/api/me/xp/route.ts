@@ -167,13 +167,15 @@ async function resolveCreatorRewardConsumers(
   }
 
   const groupedByContent: Record<string, any[]> = {};
-  consumerTxs.forEach((tx) => {
-    if (!tx.reference_id) return;
-    if (!groupedByContent[tx.reference_id]) {
-      groupedByContent[tx.reference_id] = [];
-    }
-    groupedByContent[tx.reference_id].push(tx);
-  });
+  consumerTxs.forEach(
+    (tx: { reference_id: string | null; created_at: string | null }) => {
+      if (!tx.reference_id) return;
+      if (!groupedByContent[tx.reference_id]) {
+        groupedByContent[tx.reference_id] = [];
+      }
+      groupedByContent[tx.reference_id].push(tx);
+    },
+  );
 
   const consumerIds = new Set<string>();
   transactionsWithContent.forEach((creatorTx) => {
