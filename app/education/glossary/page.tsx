@@ -774,69 +774,70 @@ export default function GlossaryPage() {
                     <Separator className="flex-1 bg-white/10" />
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {group.items.map((term) => (
-                      <Card
-                        key={term.id}
-                        className="border border-white/10 bg-[#02131d] text-white transition hover:border-white/30"
-                      >
-                        <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                          <div>
-                            <button
-                              type="button"
-                              onClick={() => handlePreviewOpen(term)}
-                              className="text-left text-xl font-semibold text-white transition hover:text-[#fdd87c]"
-                            >
-                              {renderTermTitle(term)}
-                            </button>
-                            <CardDescription className="text-slate-300">
-                              /{term.slug}
-                            </CardDescription>
-                          </div>
-                          <div className="flex flex-col items-end gap-2">
-                            {isAdmin && <StatusBadge status={term.status} />}
-                            {completedTerms[term.id] && (
-                              <Badge className="flex items-center gap-1 border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                XP registado
-                              </Badge>
-                            )}
-                            {isAdmin && (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleOpenEdit(term)}
-                              >
-                                Editar
-                              </Button>
-                            )}
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="flex flex-wrap gap-2 text-xs text-slate-300">
-                            {term.tags?.length ? (
-                              term.tags.map((tag) => (
-                                <Badge
-                                  key={tag}
+                    {group.items.map((term) => {
+                      const canEditTerm = Boolean(user?.id) && term.created_by === user?.id;
+
+                      return (
+                        <Card
+                          key={term.id}
+                          className="border border-white/10 bg-[#02131d] text-white transition hover:border-white/30"
+                        >
+                          <CardHeader className="space-y-3 pb-2">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handlePreviewOpen(term)}
+                                  className="text-left text-lg font-semibold text-white transition hover:text-[#fdd87c]"
+                                >
+                                  {renderTermTitle(term)}
+                                </button>
+                                <CardDescription className="text-slate-400">/{term.slug}</CardDescription>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {completedTerms[term.id] && (
+                                  <Badge className="flex items-center gap-1 border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    XP registado
+                                  </Badge>
+                                )}
+                                {canEditTerm && <StatusBadge status={term.status} />}
+                                <Button
                                   variant="outline"
-                                  className="border-white/10 bg-white/5 text-slate-200"
+                                  size="sm"
+                                  className="border-white/20 text-white hover:border-[#fdd87c] hover:text-[#fdd87c]"
+                                  onClick={() => handlePreviewOpen(term)}
                                 >
-                                  {tag}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-slate-500">Sem tags</span>
-                            )}
-                          </div>
-                          <Button
-                            variant="outline"
-                            className="rounded-full border-white/20 text-white hover:border-[#fdd87c] hover:text-[#fdd87c]"
-                            onClick={() => handlePreviewOpen(term)}
-                          >
-                            Ver definição
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                                  Ver definição
+                                </Button>
+                                {canEditTerm && (
+                                  <Button variant="secondary" size="sm" onClick={() => handleOpenEdit(term)}>
+                                    Editar
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="flex flex-wrap gap-2 text-xs text-slate-300">
+                              {term.tags?.length ? (
+                                term.tags.map((tag) => (
+                                  <Badge
+                                    key={tag}
+                                    variant="outline"
+                                    className="border-white/10 bg-white/5 text-slate-200"
+                                  >
+                                    {tag}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span className="text-slate-500">Sem tags</span>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
