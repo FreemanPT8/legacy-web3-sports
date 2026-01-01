@@ -773,21 +773,21 @@ export default function GlossaryPage() {
                     </h2>
                     <Separator className="flex-1 bg-white/10" />
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {group.items.map((term) => {
-                      const canEditTerm = Boolean(user?.id) && term.created_by === user?.id;
-
-                      return (
-                        <Card
-                          key={term.id}
-                          className="border border-white/10 bg-[#02131d] text-white transition hover:border-white/30"
-                        >
-                          <CardHeader className="space-y-3 pb-2">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div className="min-w-0">
-                                <button
-                                  type="button"
-                                  onClick={() => handlePreviewOpen(term)}
+                  <div className="flex flex-col gap-4">
+                    {group.items.map((term) => {
+                      const canEditTerm = Boolean(user?.id) && term.created_by === user?.id;
+
+                      return (
+                        <Card
+                          key={term.id}
+                          className="w-full border border-white/10 bg-[#02131d] text-white transition hover:border-white/30"
+                        >
+                          <CardHeader className="space-y-3 px-5 pb-2 pt-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handlePreviewOpen(term)}
                                   className="text-left text-lg font-semibold text-white transition hover:text-[#fdd87c]"
                                 >
                                   {renderTermTitle(term)}
@@ -803,40 +803,37 @@ export default function GlossaryPage() {
                                 )}
                                 {canEditTerm && <StatusBadge status={term.status} />}
                                 <Button
-                                  variant="outline"
                                   size="sm"
-                                  className="border-white/20 text-white hover:border-[#fdd87c] hover:text-[#fdd87c]"
+                                  className="rounded-full bg-gradient-to-r from-[#fdd87c] via-[#ffd37b] to-[#f7b733] px-4 text-sm font-semibold text-[#04121c] shadow-[0_0_18px_rgba(253,216,124,0.25)] transition hover:from-[#ffe5aa] hover:to-[#ffc85c]"
                                   onClick={() => handlePreviewOpen(term)}
                                 >
                                   Ver definição
                                 </Button>
-                                {canEditTerm && (
-                                  <Button variant="secondary" size="sm" onClick={() => handleOpenEdit(term)}>
-                                    Editar
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pt-0">
-                            <div className="flex flex-wrap gap-2 text-xs text-slate-300">
-                              {term.tags?.length ? (
-                                term.tags.map((tag) => (
-                                  <Badge
-                                    key={tag}
-                                    variant="outline"
-                                    className="border-white/10 bg-white/5 text-slate-200"
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))
-                              ) : (
-                                <span className="text-slate-500">Sem tags</span>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
+                                {canEditTerm && (
+                                  <Button variant="secondary" size="sm" onClick={() => handleOpenEdit(term)}>
+                                    Editar
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          {term.tags?.length ? (
+                            <CardContent className="px-5 pb-4 pt-0">
+                              <div className="flex flex-wrap gap-2 text-xs text-slate-300">
+                                {term.tags.map((tag) => (
+                                  <Badge
+                                    key={tag}
+                                    variant="outline"
+                                    className="border-white/10 bg-white/5 text-slate-200"
+                                  >
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </CardContent>
+                          ) : null}
+                        </Card>
+                      );
                     })}
                   </div>
                 </div>
