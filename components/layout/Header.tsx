@@ -72,6 +72,12 @@ export const Header = memo(function Header() {
     <header
       className="sticky top-0 z-50 w-full border-b border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_12px_35px_rgba(0,0,0,0.55)]"
     >
+      <div className="border-b border-white/10 bg-white/5 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
+        <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 lg:justify-end">
+          <span>Disponível em 3 línguas</span>
+          <span className="text-white/80">PT · EN · ES</span>
+        </div>
+      </div>
       <div className="container flex h-16 items-center justify-between text-slate-100">
         {/* LOGO + NAV DESKTOP */}
         <div className="flex items-center gap-8">

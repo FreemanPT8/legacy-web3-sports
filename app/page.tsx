@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Activity, ArrowRight, CircleDot, GraduationCap, ShieldCheck } from 'lucide-react';
 
 import { Header } from '@/components/layout/Header';
@@ -16,19 +16,8 @@ import { useManagedMediaSetting } from '@/hooks/useManagedMediaSetting';
 import { useAuth } from '@/contexts/AuthContext';
 import type { MediaAsset } from '@/types/builder';
 
-const GUEST_PRIMARY = { label: 'Registar & Começar', href: '/signup' };
-const GUEST_SECONDARY = {
-  label: 'Ver a Academia',
-  description:
-    'Escolas, cursos e missões desenhadas para entrares no ecossistema Apertum com segurança.',
-  href: '/education/courses',
-};
-const MEMBER_PRIMARY = { label: 'Explorar Cursos', href: '/education/courses' };
-const MEMBER_SECONDARY = {
-  label: 'Ver Houses',
-  description: 'A comunidade global das Houses of Sports está pronta para te receber.',
-  href: '/sports/houses',
-};
+const PRIMARY_CTA = { label: 'Registar e Começar', href: '/signup' };
+const SECONDARY_CTA = { label: 'Explorar a Academia', href: '/education/courses' };
 
 const storySteps = [
   {
@@ -174,13 +163,6 @@ export default function HomePage() {
     void mediaLibrary.openLibrary();
   };
 
-  const heroButtons = useMemo(() => {
-    if (user) {
-      return [MEMBER_PRIMARY, MEMBER_SECONDARY];
-    }
-    return [GUEST_PRIMARY, GUEST_SECONDARY];
-  }, [user]);
-
   const heroImageUrl =
     heroMedia.assetUrl ||
     'https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?auto=format&fit=crop&w=1600&q=80';
@@ -220,19 +202,19 @@ export default function HomePage() {
               <p className="text-sm text-amber-200 font-medium">{HERO_URGENCY}</p>
               <p className="text-sm text-slate-200">{heroActionDescription}</p>
               <div className="flex flex-wrap gap-4">
-                {heroButtons.map((action) => (
-                  <Button
-                    key={action.label}
-                    variant="default"
-                    asChild
-                    className={action === heroButtons[0] ? 'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]' : 'border-white/40 text-white hover:bg-white/10'}
-                  >
-                    <Link href={action.href} className="flex items-center gap-2">
-                      {action.label}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                ))}
+                <Button
+                  variant="default"
+                  asChild
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                >
+                  <Link href={user ? SECONDARY_CTA.href : PRIMARY_CTA.href} className="flex items-center gap-2">
+                    {PRIMARY_CTA.label}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild className="border-white/40 text-white hover:bg-white/10">
+                  <Link href={SECONDARY_CTA.href}>{SECONDARY_CTA.label}</Link>
+                </Button>
               </div>
               <p className="text-xs text-cyan-200/80">{HERO_TRUST_COPY}</p>
             </div>
@@ -380,20 +362,27 @@ export default function HomePage() {
                   asChild
                   className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                 >
-                  <Link href={user ? '/education/glossary' : '/login'}>
-                    {user ? 'Abrir Glossário' : 'Entrar para usar'}
-                  </Link>
+                  <Link href={user ? SECONDARY_CTA.href : PRIMARY_CTA.href}>{PRIMARY_CTA.label}</Link>
                 </Button>
-                {!user && (
-                  <Button
-                    variant="outline"
-                    asChild
-                    className="border-white/40 text-white hover:bg-white/10"
-                  >
-                    <Link href="/signup">Criar conta</Link>
-                  </Button>
-                )}
+                <Button variant="outline" asChild className="border-white/40 text-white hover:bg-white/10">
+                  <Link href={SECONDARY_CTA.href}>{SECONDARY_CTA.label}</Link>
+                </Button>
               </div>
+              <p className="text-xs text-slate-400">
+                {user ? (
+                  <Link className="text-cyan-200 hover:text-white" href="/education/glossary">
+                    Abrir o Glossário integrado
+                  </Link>
+                ) : (
+                  <>
+                    Já tens conta?{' '}
+                    <Link href="/login" className="text-cyan-200 hover:text-white">
+                      Entrar
+                    </Link>{' '}
+                    para desbloquear o Glossário.
+                  </>
+                )}
+              </p>
             </div>
             <div className="relative rounded-[32px] border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
               <div className="rounded-[24px] border border-white/10 bg-[#020f19] p-6">
@@ -459,15 +448,16 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
-            <div className="text-center">
+            <div className="flex flex-wrap justify-center gap-4">
               <Button
-                variant="outline"
-                className="border-white/40 text-white hover:bg-white/10"
+                variant="default"
                 asChild
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
               >
-                <Link href={user ? '/education/courses' : '/signup'}>
-                  {user ? 'Explorar a Academia' : 'Registar e come?ar'}
-                </Link>
+                <Link href={user ? SECONDARY_CTA.href : PRIMARY_CTA.href}>{PRIMARY_CTA.label}</Link>
+              </Button>
+              <Button variant="outline" asChild className="border-white/40 text-white hover:bg-white/10">
+                <Link href={SECONDARY_CTA.href}>{SECONDARY_CTA.label}</Link>
               </Button>
             </div>
           </div>
@@ -520,14 +510,10 @@ export default function HomePage() {
                   asChild
                   className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                 >
-                  <Link href="/education/courses">Explorar Academia Web3</Link>
+                  <Link href={user ? SECONDARY_CTA.href : PRIMARY_CTA.href}>{PRIMARY_CTA.label}</Link>
                 </Button>
-                <Button
-                  variant="outline"
-                  asChild
-                  className="border-white/40 text-white hover:bg-white/10"
-                >
-                  <Link href="/education/courses">Ver Cursos</Link>
+                <Button variant="outline" asChild className="border-white/40 text-white hover:bg-white/10">
+                  <Link href={SECONDARY_CTA.href}>{SECONDARY_CTA.label}</Link>
                 </Button>
               </div>
             </div>
@@ -640,17 +626,23 @@ export default function HomePage() {
                     asChild
                     className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                   >
-                    <Link href="/sports/houses">Explorar Houses</Link>
+                    <Link href={user ? SECONDARY_CTA.href : PRIMARY_CTA.href}>{PRIMARY_CTA.label}</Link>
                   </Button>
-                  <Button
-                    variant="outline"
-                    asChild
-                    className="border-white/40 text-white hover:bg-white/10"
-                  >
-                    <Link href="/sports/onboarding">Encontrar a tua House</Link>
+                  <Button variant="outline" asChild className="border-white/40 text-white hover:bg-white/10">
+                    <Link href={SECONDARY_CTA.href}>{SECONDARY_CTA.label}</Link>
                   </Button>
                 </div>
-                <p className="text-xs text-slate-300">Opcional. A academia funciona sem Houses.</p>
+                <p className="text-xs text-slate-300">
+                  Opcional. A academia funciona sem Houses. Quando estiveres pronto,{' '}
+                  <Link href="/sports/houses" className="text-cyan-200 hover:text-white">
+                    explora as Houses
+                  </Link>{' '}
+                  ou{' '}
+                  <Link href="/sports/onboarding" className="text-cyan-200 hover:text-white">
+                    encontra a tua House ideal
+                  </Link>
+                  .
+                </p>
               </div>
             </div>
             <div className="relative rounded-[32px] border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
@@ -737,9 +729,7 @@ export default function HomePage() {
                 asChild
                 className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
               >
-                <Link href={user ? '/sports/houses' : '/sports/onboarding'}>
-                  {user ? 'Ir para as Houses' : 'Começar'}
-                </Link>
+                <Link href={user ? SECONDARY_CTA.href : PRIMARY_CTA.href}>{PRIMARY_CTA.label}</Link>
               </Button>
               <Button
                 size="lg"
@@ -747,7 +737,7 @@ export default function HomePage() {
                 className="border-white/40 text-white hover:bg-white/10"
                 asChild
               >
-                <Link href="/education/courses">Descobrir a Academia</Link>
+                <Link href={SECONDARY_CTA.href}>{SECONDARY_CTA.label}</Link>
               </Button>
             </div>
           </div>
