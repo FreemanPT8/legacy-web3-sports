@@ -16,12 +16,12 @@ import { useManagedMediaSetting } from '@/hooks/useManagedMediaSetting';
 import { useAuth } from '@/contexts/AuthContext';
 import type { MediaAsset } from '@/types/builder';
 
-const GUEST_PRIMARY = { label: 'Junte-se Agora', href: '/sports/onboarding' };
+const GUEST_PRIMARY = { label: 'Registar e Começar', href: '/signup' };
 const GUEST_SECONDARY = {
-  label: 'Começar a Jornada Web3',
+  label: 'Ver a Academia',
   description:
-    'És profissional ou entusiasta de algum desporto específico? Preenche o formulário e recebe ajuda personalizada nos primeiros passos.',
-  href: '/sports/onboarding',
+    'Escolas, cursos e missões desenhadas para entrares no ecossistema Apertum com segurança.',
+  href: '/education/courses',
 };
 const MEMBER_PRIMARY = { label: 'Explorar Cursos', href: '/education/courses' };
 const MEMBER_SECONDARY = {
@@ -119,7 +119,8 @@ const faqs = [
   },
 ];
 
-const CTA_SUBTITLE = 'Para membros Legacy ou quem quer fazer parte da comunidade global Web3 + Desporto.';
+const HERO_TRUST_COPY = 'Sem custos. Sem promessas fáceis. Evolução visível com XP.';
+const HERO_URGENCY = 'A Web3 já é o presente — e a maioria ainda está fora.';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -173,9 +174,14 @@ export default function HomePage() {
             <div className="relative z-10 flex-1 space-y-6">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">LEGACY XP</p>
               <h1 className="text-4xl font-semibold leading-tight text-[#fdd87c] md:text-5xl">
-                LEGACY: Gamified Web3 Academy for Sports
+                Academia Web3 Gratuita, focada na Apertum Blockchain
               </h1>
-              <p className="text-lg text-slate-100">{heroActionDescription}</p>
+              <p className="text-lg text-slate-100">
+                Educação prática, progressiva e segura para homens e mulheres em qualquer parte do mundo. Especial atenção ao desporto — mas
+                se tens curiosidade pela Web3, entra na mesma e começa hoje.
+              </p>
+              <p className="text-sm text-amber-200 font-medium">{HERO_URGENCY}</p>
+              <p className="text-sm text-slate-200">{heroActionDescription}</p>
               <div className="flex flex-wrap gap-4">
                 {heroButtons.map((action) => (
                   <Button
@@ -191,7 +197,7 @@ export default function HomePage() {
                   </Button>
                 ))}
               </div>
-              <p className="text-xs text-cyan-200/80">{CTA_SUBTITLE}</p>
+              <p className="text-xs text-cyan-200/80">{HERO_TRUST_COPY}</p>
             </div>
             <div className="relative flex-1 rounded-[32px] border border-white/10 bg-[#04131b] shadow-[0_30px_80px_rgba(3,10,25,0.65)]">
               <div
