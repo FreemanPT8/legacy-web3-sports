@@ -54,6 +54,7 @@ type TermFormState = {
 const LANGUAGES: GlossaryLanguage[] = ['pt', 'en', 'es'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const PROGRESS_SECONDS = 30;
+const TERMS_PER_PAGE = 19;
 
 const defaultFormState = (): TermFormState => ({
   slug: '',
@@ -156,6 +157,18 @@ export default function GlossaryPage() {
     }
   };
 
+  const handlePageChange = useCallback((newPage: number) => {
+    setPagination((prev) => {
+      const totalPages = prev.totalPages || 1;
+      const nextPage = Math.max(1, Math.min(newPage, totalPages));
+      if (nextPage === prev.page) return prev;
+      return {
+        ...prev,
+        page: nextPage,
+      };
+    });
+  }, []);
+
   const registerCompletion = useCallback(
     async (termId: string) => {
       const token = getToken?.();
@@ -225,7 +238,7 @@ export default function GlossaryPage() {
       try {
         const params = new URLSearchParams();
         params.set('page', String(pagination.page));
-        params.set('pageSize', '500');
+        params.set('pageSize', String(TERMS_PER_PAGE));
         params.set('language', activeLanguage);
         if (filters.search.trim()) {
           params.set('search', filters.search.trim());
@@ -264,12 +277,25 @@ export default function GlossaryPage() {
           setCompletedTerms({});
         }
         if (data.pagination) {
-          setPagination(data.pagination);
+          setPagination({
+            ...data.pagination,
+            totalPages:
+              data.pagination.totalPages && data.pagination.totalPages > 0
+                ? data.pagination.totalPages
+                : Math.max(
+                    1,
+                    Math.ceil(
+                      (data.pagination.total ?? data.terms?.length ?? 0) /
+                        TERMS_PER_PAGE,
+                    ),
+                  ),
+          });
         } else {
+          const currentTotal = data.terms?.length ?? 0;
           setPagination((prev) => ({
             ...prev,
-            total: data.terms?.length ?? 0,
-            totalPages: 1,
+            total: currentTotal,
+            totalPages: Math.max(1, Math.ceil(currentTotal / TERMS_PER_PAGE)),
           }));
         }
       } catch (err) {
@@ -667,12 +693,14 @@ export default function GlossaryPage() {
                 <Input
                   placeholder="Procurar por termo ou definição"
                   value={filters.search}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const { value } = event.target;
                     setFilters((prev) => ({
                       ...prev,
-                      search: event.target.value,
-                    }))
-                  }
+                      search: value,
+                    }));
+                    handlePageChange(1);
+                  }}
                   className="border-white/10 bg-white/5 pl-9 text-white placeholder:text-slate-400"
                 />
               </div>
@@ -684,7 +712,10 @@ export default function GlossaryPage() {
                     'rounded-full border border-white/10 bg-white/5 hover:bg-white/10',
                     filters.letter === 'all' && 'bg-[#fdd87c] text-[#00131d]',
                   )}
-                  onClick={() => setFilters((prev) => ({ ...prev, letter: 'all' }))}
+                  onClick={() => {
+                    setFilters((prev) => ({ ...prev, letter: 'all' }));
+                    handlePageChange(1);
+                  }}
                 >
                   Todos
                 </Button>
@@ -697,7 +728,10 @@ export default function GlossaryPage() {
                       'rounded-full border border-white/10 bg-white/5 hover:bg-white/10',
                       filters.letter === letter && 'bg-[#fdd87c] text-[#00131d]',
                     )}
-                    onClick={() => setFilters((prev) => ({ ...prev, letter }))}
+                    onClick={() => {
+                      setFilters((prev) => ({ ...prev, letter }));
+                      handlePageChange(1);
+                    }}
                   >
                     {letter}
                   </Button>
@@ -732,12 +766,13 @@ export default function GlossaryPage() {
                   <select
                     className="rounded-full border border-white/20 bg-transparent px-3 py-1 text-white"
                     value={filters.status}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setFilters((prev) => ({
                         ...prev,
                         status: event.target.value as GlossaryStatus | 'all',
-                      }))
-                    }
+                      }));
+                      handlePageChange(1);
+                    }}
                   >
                     <option value="all">Todos</option>
                     <option value="published">Publicados</option>
@@ -839,6 +874,30 @@ export default function GlossaryPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {!loading && groupedTerms.length > 0 && pagination.totalPages > 1 && (
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-slate-100">
+              <Button
+                variant="outline"
+                className="border-white/20 text-white hover:border-[#fdd87c] hover:text-[#fdd87c]"
+                disabled={pagination.page <= 1}
+                onClick={() => handlePageChange(pagination.page - 1)}
+              >
+                Página anterior
+              </Button>
+              <p className="text-sm text-slate-300">
+                Página <span className="font-semibold text-white">{pagination.page}</span> de{' '}
+                <span className="font-semibold text-white">{pagination.totalPages}</span>
+              </p>
+              <Button
+                className="bg-[#fdd87c] text-[#04121c] hover:bg-[#ffe5aa]"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => handlePageChange(pagination.page + 1)}
+              >
+                Próxima página
+              </Button>
             </div>
           )}
         </section>
