@@ -107,18 +107,43 @@ const navigationHighlights = [
   },
 ];
 
-const legacyValues = ['Conteúdos públicos', 'Cursos privados com XP genuíno', 'Houses globais / capacitação profissional'];
+const legacyValues = [
+  'Educação pública primeiro',
+  'XP antes de promessas',
+  'Segurança em vez de hype',
+  'Comunidade + Apertum',
+];
 
 const faqs = [
   {
-    question: 'Preciso ser atleta para participar?',
+    question: 'Isto é mesmo gratuito?',
     answer:
-      'O Legacy aceita profissionais, entusiastas e curiosos pela Web3. O foco é aproximar qualquer pessoa interessada em desporto e Apertum.',
+      'Sim. O acesso à Academia, Glossário e leaderboard é gratuito. Podes avançar no teu ritmo e ganhar XP sem custos escondidos.',
   },
   {
-    question: 'Como ganho XP?',
+    question: 'Preciso de experiência em cripto?',
     answer:
-      'Conclui lições e cursos da Academia Web3, participa em desafios da comunidade e os pontos são adicionados automaticamente ao teu perfil.',
+      'Não. Temos glossário integrado, cursos introdutórios e onboarding guiado. Começas do zero e evoluis com contexto.',
+  },
+  {
+    question: 'Isto é para atletas apenas?',
+    answer:
+      'O foco é desporto + Web3, mas aceitamos profissionais, estudantes e curiosos que querem aprender e contribuir.',
+  },
+  {
+    question: 'O que é XP e para que serve?',
+    answer:
+      'XP é o registo da tua consistência. Cada leitura, lição ou desafio gera XP que aparece no teu perfil e leaderboard.',
+  },
+  {
+    question: 'Como é que a Apertum entra aqui?',
+    answer:
+      'A Apertum fornece a blockchain e os programas que usamos para autenticar XP, Houses e oportunidades reais.',
+  },
+  {
+    question: 'Isto é aconselhamento financeiro?',
+    answer:
+      'Não. É educação e comunidade. Não prometemos ganhos nem damos recomendações financeiras.',
   },
 ];
 
