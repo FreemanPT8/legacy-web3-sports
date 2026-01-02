@@ -63,24 +63,19 @@ const academyHighlights = [
 
 const navigationHighlights = [
   {
-    label: 'XP & Níveis',
-    description: 'Vê como o teu XP evolui, desbloqueia streaks e acompanha o teu progresso.',
-    href: '/education/xp',
+    label: 'Academia Web3 (grátis)',
+    description: 'Cursos estruturados com XP autenticado para entrares na Apertum com segurança.',
+    href: '/education/courses',
   },
   {
-    label: 'Leaderboard',
-    description: 'Sobe na tabela global e vê quem lidera a aprendizagem Web3.',
+    label: 'Glossário dinâmico',
+    description: 'Termos em pop-up dentro dos conteúdos para aprenderes sem perder o ritmo.',
+    href: '/education/glossary',
+  },
+  {
+    label: 'XP + Leaderboard',
+    description: 'Cada ação gera XP e posiciona-te na tabela global da comunidade.',
     href: '/education/leaderboard',
-  },
-  {
-    label: 'Eventos',
-    description: 'Explora próximos eventos físicos e digitais ligados ao ecossistema Apertum.',
-    href: '/events',
-  },
-  {
-    label: 'Fórum',
-    description: 'Entra nas salas do fórum para trocar ideias com a comunidade.',
-    href: '/forum',
   },
 ];
 
@@ -227,6 +222,43 @@ export default function HomePage() {
         <section className="relative px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-18 -right-14 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">EXPLORA O LEGACY</p>
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">Depois da Academia e do Glossário, escolhe o próximo passo</h2>
+              <p className="mt-2 text-sm text-slate-200">
+                Primeiro provamos o produto através da Academia Web3 e do Glossário dinâmico. A seguir, decide onde queres mergulhar para continuar a tua jornada.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {navigationHighlights.map((item) => (
+                <Card
+                  key={item.label}
+                  className="flex h-full flex-col justify-between border border-white/10 bg-[#04131b] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
+                >
+                  <div className="space-y-2">
+                    <CardTitle className="text-sm font-semibold text-white">{item.label}</CardTitle>
+                    <CardDescription className="text-xs text-slate-200">{item.description}</CardDescription>
+                  </div>
+                  <div className="mt-4">
+                    <Button variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10" asChild>
+                      <Link href={item.href} className="text-xs">
+                        Explorar
+                      </Link>
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
             <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
             <div className="absolute -bottom-20 -right-16 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
           </div>
@@ -318,43 +350,6 @@ export default function HomePage() {
                   {user ? 'Explorar a Academia' : 'Registar e come?ar'}
                 </Link>
               </Button>
-            </div>
-          </div>
-        </section>
-
-        <section className="relative px-6 py-16">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
-            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-            <div className="absolute -bottom-18 -right-14 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
-          </div>
-          <div className="relative mx-auto max-w-6xl space-y-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">EXPLORA O LEGACY</p>
-              <h2 className="text-3xl font-semibold text-[#fdd87c]">O que podes fazer dentro da plataforma</h2>
-              <p className="mt-2 text-sm text-slate-200">
-                Do XP à tabela de líderes, passando por eventos e fórum, o Legacy conecta aprendizagem, comunidade e oportunidades reais.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-4">
-              {navigationHighlights.map((item) => (
-                <Card
-                  key={item.label}
-                  className="flex h-full flex-col justify-between border border-white/10 bg-[#04131b] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
-                >
-                  <div className="space-y-2">
-                    <CardTitle className="text-sm font-semibold text-white">{item.label}</CardTitle>
-                    <CardDescription className="text-xs text-slate-200">{item.description}</CardDescription>
-                  </div>
-                  <div className="mt-4">
-                    <Button variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10" asChild>
-                      <Link href={item.href} className="text-xs">
-                        Entrar
-                      </Link>
-                    </Button>
-                  </div>
-                </Card>
-              ))}
             </div>
           </div>
         </section>
