@@ -218,7 +218,6 @@ export default function HomePage() {
             description="Seleciona ou envia a imagem principal para a homepage do Legacy."
           />
         </section>
-
         <section className="relative px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
@@ -357,66 +356,6 @@ export default function HomePage() {
         <section className="relative px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
-            <div className="absolute -top-18 -left-16 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-            <div className="absolute -bottom-16 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
-          </div>
-          <div className="relative mx-auto max-w-6xl grid gap-10 lg:grid-cols-2">
-            <div className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">HOUSES OF SPORTS</p>
-              <h2 className="text-3xl font-semibold text-[#fdd87c]">A tua casa dentro do ecossistema</h2>
-              <p className="text-sm text-slate-200">
-                As Houses of Sports são comunidades distribuídas por várias cidades, pensadas para ligar atletas, profissionais e entusiastas que querem
-                crescer no universo Web3 + Desporto. Mentores, eventos, treino e networking num só lugar.
-              </p>
-              <ul className="space-y-2 text-sm text-slate-200">
-                <li className="flex items-center gap-2">
-                  <CircleDot className="h-4 w-4 text-cyan-300" />
-                  Mentoria local com foco em Web3 e carreira.
-                </li>
-                <li className="flex items-center gap-2">
-                  <CircleDot className="h-4 w-4 text-cyan-300" />
-                  Eventos presenciais e digitais com a comunidade Legacy.
-                </li>
-                <li className="flex items-center gap-2">
-                  <CircleDot className="h-4 w-4 text-cyan-300" />
-                  Pontos de contacto oficiais da Apertum no desporto.
-                </li>
-              </ul>
-              <div className="flex flex-wrap gap-4">
-                <Button
-                  variant="default"
-                  asChild
-                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                >
-                  <Link href="/sports/houses">Explorar Houses</Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  asChild
-                  className="border-white/40 text-white hover:bg-white/10"
-                >
-                  <Link href="/sports/onboarding">Encontrar a tua House</Link>
-                </Button>
-              </div>
-            </div>
-            <div className="relative rounded-[32px] border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
-              <div
-                className="h-64 rounded-[24px] bg-cover bg-center"
-                style={{
-                  backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.75)), url('${heroImageUrl}')`,
-                }}
-              />
-              <p className="mt-4 text-xs text-slate-200">
-                Começa pelo onboarding personalizado, partilha o teu contexto (atleta, treinador, gestor, criador de conteúdo ou fã) e recebe recomendações
-                sobre a melhor House para ti.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="relative px-6 py-16">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
             <div className="absolute -top-18 -right-14 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
             <div className="absolute -bottom-16 -left-12 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
           </div>
@@ -508,6 +447,78 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-18 -left-16 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+            <div className="absolute -bottom-16 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl grid gap-10 lg:grid-cols-2">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">HOUSES OF SPORTS</p>
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">Uma comunidade global para aprender e evoluir com mais contexto.</h2>
+              <p className="text-sm text-slate-200">
+                Se queres aprender sozinho, consegues. Se queres aprender com pessoas alinhadas, aqui tens o caminho. Depois de dominares a Academia e o Glossário,
+                as Houses ajudam-te a acelerar com mentoria e networking.
+              </p>
+              <p className="text-sm text-slate-200">
+                São comunidades distribuídas por várias cidades que ligam atletas, profissionais e entusiastas que querem crescer no universo Web3 + Desporto.
+                Mentores, eventos, treino e networking num só lugar.
+              </p>
+              <ul className="space-y-2 text-sm text-slate-200">
+                <li className="flex items-center gap-2">
+                  <CircleDot className="h-4 w-4 text-cyan-300" />
+                  Mentoria local com foco em Web3 e carreira.
+                </li>
+                <li className="flex items-center gap-2">
+                  <CircleDot className="h-4 w-4 text-cyan-300" />
+                  Eventos presenciais e digitais com a comunidade Legacy.
+                </li>
+                <li className="flex items-center gap-2">
+                  <CircleDot className="h-4 w-4 text-cyan-300" />
+                  Pontos de contacto oficiais da Apertum no desporto.
+                </li>
+              </ul>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-4">
+                  <Button
+                    variant="default"
+                    asChild
+                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                  >
+                    <Link href="/sports/houses">Explorar Houses</Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="border-white/40 text-white hover:bg-white/10"
+                  >
+                    <Link href="/sports/onboarding">Encontrar a tua House</Link>
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-300">Opcional. A academia funciona sem Houses.</p>
+              </div>
+            </div>
+            <div className="relative rounded-[32px] border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
+              <div
+                className="h-64 rounded-[24px] bg-cover bg-center"
+                style={{
+                  backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.75)), url('${heroImageUrl}')`,
+                }}
+              />
+              <p className="mt-4 text-xs text-slate-200">
+                Começa pelo onboarding personalizado, partilha o teu contexto (atleta, treinador, gestor, criador de conteúdo ou fã) e recebe recomendações
+                sobre a melhor House para ti.
+              </p>
+            </div>
+          </div>
+        </section>
+
+
+
+
 
         <section className="relative px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
