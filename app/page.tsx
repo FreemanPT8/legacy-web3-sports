@@ -61,6 +61,28 @@ const academyHighlights = [
   'Tutoriais em Blockchain e nos principais desportos',
 ];
 
+const coursePreviews = [
+  {
+    title: 'Começa Aqui: Apertum Essentials',
+    summary: 'Mapa mental simples para entender a Apertum, carteiras e segurança básica.',
+  },
+  {
+    title: 'Desporto + Blockchain',
+    summary: 'Casos reais de clubes, atletas e equipas que já operam com Web3.',
+  },
+  {
+    title: 'XP aplicado no dia a dia',
+    summary: 'Como usar o XP como prova de consistência para entrar em comunidades e jobs.',
+  },
+];
+
+const sevenDayWins = [
+  'compreender o básico sem jargão',
+  'criar um mapa mental do ecossistema',
+  'reconhecer riscos comuns',
+  'usar glossário integrado sem te perderes',
+];
+
 const navigationHighlights = [
   {
     label: 'Academia Web3 (grátis)',
@@ -366,6 +388,14 @@ export default function HomePage() {
               <p className="text-sm text-slate-200">
                 Cursos estruturados que combinam teoria, prática e XP autenticado para profissionais ou quem quer explorar Blockchain e Apertum.
               </p>
+              <div className="grid gap-4 md:grid-cols-3">
+                {coursePreviews.map((course) => (
+                  <Card key={course.title} className="border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_35px_rgba(3,10,25,0.45)]">
+                    <CardTitle className="text-base font-semibold text-white">{course.title}</CardTitle>
+                    <CardDescription className="mt-2 text-sm text-slate-200">{course.summary}</CardDescription>
+                  </Card>
+                ))}
+              </div>
               <ul className="space-y-2 text-sm text-slate-200">
                 {academyHighlights.map((highlight) => (
                   <li key={highlight} className="flex items-center gap-2">
@@ -374,6 +404,18 @@ export default function HomePage() {
                   </li>
                 ))}
               </ul>
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">Em 7 dias, consegues:</p>
+                <ul className="space-y-2 text-sm text-slate-200">
+                  {sevenDayWins.map((win) => (
+                    <li key={win} className="flex items-center gap-2">
+                      <CircleDot className="h-4 w-4 text-cyan-300" />
+                      {win.charAt(0).toUpperCase() + win.slice(1)}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-slate-400">Sem promessas financeiras.</p>
+              </div>
               <div className="flex flex-wrap gap-4">
                 <Button
                   variant="default"
@@ -398,6 +440,18 @@ export default function HomePage() {
                   backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.65)), url('${heroImageUrl}')`,
                 }}
               />
+              <div
+                className="mt-4 h-40 rounded-[18px] border border-white/15 bg-cover bg-center shadow-[0_15px_40px_rgba(3,10,25,0.45)]"
+                style={{
+                  backgroundImage: `linear-gradient(180deg, rgba(2,12,18,0.2), rgba(2,12,18,0.75)), url('${heroImageUrl}')`,
+                }}
+              >
+                <div className="flex h-full flex-col justify-end rounded-[18px] bg-gradient-to-t from-black/70 via-black/30 to-transparent p-4">
+                  <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">Preview da aula</p>
+                  <p className="text-sm font-semibold text-white">XP Fundamentals ∙ Interface real da lição</p>
+                  <p className="text-xs text-slate-200">Screenshot real do player usado na Academia.</p>
+                </div>
+              </div>
               {user?.role === 'Super Admin' && (
                 <div className="mt-4 flex items-center justify-between text-xs text-slate-200">
                   <Button size="sm" variant="ghost" onClick={openHeroMediaLibrary}>
