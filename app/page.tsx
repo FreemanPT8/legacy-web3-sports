@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Activity, ArrowRight, BookOpen, CircleDot, GraduationCap, ShieldCheck, Users } from 'lucide-react';
+import { Activity, ArrowRight, CircleDot, GraduationCap, ShieldCheck } from 'lucide-react';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -16,7 +16,7 @@ import { useManagedMediaSetting } from '@/hooks/useManagedMediaSetting';
 import { useAuth } from '@/contexts/AuthContext';
 import type { MediaAsset } from '@/types/builder';
 
-const GUEST_PRIMARY = { label: 'Registar e Começar', href: '/signup' };
+const GUEST_PRIMARY = { label: 'Registar & Começar', href: '/signup' };
 const GUEST_SECONDARY = {
   label: 'Ver a Academia',
   description:
@@ -30,48 +30,28 @@ const MEMBER_SECONDARY = {
   href: '/sports/houses',
 };
 
-const pillarCards = [
-  {
-    title: 'Explora o Blog Público',
-    description:
-      'Aprende Web3, Blockchain e Apertum com histórias e análises escritas por jornalistas e entusiastas.',
-    icon: BookOpen,
-    href: '/blog',
-    action: 'Ver artigos',
-  },
-  {
-    title: 'Aprende com Conteúdos Exclusivos',
-    description:
-      'Cursos, módulos e lições gamificadas que recompensam XP real e privado para quem quer aprofundar o conhecimento.',
-    icon: GraduationCap,
-    href: '/education/courses',
-    action: 'Entrar nos cursos',
-  },
-  {
-    title: 'Conecta-te a uma Casa de Desporto',
-    description:
-      'Houses of Sports espalhadas pelo mundo para te aproximar de mentores e pares no ecossistema Apertum.',
-    icon: Users,
-    href: '/sports/houses',
-    action: 'Explorar Houses',
-  },
-];
-
 const storySteps = [
   {
-    title: '1 · Consome conhecimentos públicos',
-    copy: 'Lê o blog para dominar os fundamentos Web3 e perceber o papel da Apertum.',
+    title: '1 · Regista-te',
+    copy: 'Cria a tua conta em segundos e recebe onboarding personalizado para a tua realidade.',
     icon: Activity,
+    bullets: [],
   },
   {
-    title: '2 · Aprofunda com conteúdos exclusivos',
-    copy: 'Segues cursos da Academia Web3, completas lições e acumulas XP genuíno.',
+    title: '2 · Consome conteúdos',
+    copy: 'Explora o blog público, cursos exclusivos e Houses of Sports — todo o ecossistema num único portal.',
     icon: GraduationCap,
+    bullets: [
+      { label: 'Blog público com análises reais', href: '/blog' },
+      { label: 'Cursos exclusivos da Academia', href: '/education/courses' },
+      { label: 'Houses of Sports espalhadas pelo mundo', href: '/sports/houses' },
+    ],
   },
   {
-    title: '3 · Prepara-te com a comunidade',
-    copy: 'As Houses of Sports ligam-te a profissionais que vivem o ecossistema Web3 diariamente.',
+    title: '3 · Ganha XP e progride',
+    copy: 'Cada leitura, lição e interação acrescenta XP, desbloqueia o leaderboard global e mostra consistência.',
     icon: ShieldCheck,
+    bullets: [],
   },
 ];
 
@@ -286,39 +266,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="relative px-6 py-16">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
-            <div className="absolute -top-14 -right-12 h-56 w-56 rounded-full bg-[#5af3ff]/10 blur-3xl" />
-            <div className="absolute -bottom-18 -left-14 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-          </div>
-          <div className="relative mx-auto max-w-6xl space-y-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">TRÊS PILARES</p>
-              <h2 className="text-3xl font-semibold text-[#fdd87c]">O Legacy revela o que existe de verdade em cada área</h2>
-            </div>
-            <div className="grid gap-6 md:grid-cols-3">
-              {pillarCards.map((pill) => (
-                <Card
-                  key={pill.title}
-                  className={cn(
-                    'border-white/10 bg-[#04131b] text-white shadow-[0_25px_60px_rgba(3,10,25,0.55)]',
-                    'flex flex-col justify-between p-6',
-                  )}
-                >
-                  <div className="flex items-center gap-4">
-                    <pill.icon className="h-6 w-6 text-cyan-300" />
-                    <CardTitle className="text-lg font-bold">{pill.title}</CardTitle>
-                  </div>
-                  <CardDescription className="mt-4 text-sm text-slate-200">{pill.description}</CardDescription>
-                  <Link href={pill.href} className="mt-6 text-sm font-semibold text-cyan-300">
-                    {pill.action} <ArrowRight className="inline-block h-4 w-4" />
-                  </Link>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
 
         <section className="relative px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
@@ -328,8 +275,8 @@ export default function HomePage() {
           </div>
           <div className="relative mx-auto max-w-6xl space-y-8">
             <div>
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">STORY</p>
-              <h2 className="text-3xl font-semibold text-[#fdd87c]">3 passos para dominar o ecossistema</h2>
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">COMO FUNCIONA</p>
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">3 passos para dominares o ecossistema</h2>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               {storySteps.map((step) => (
@@ -342,8 +289,35 @@ export default function HomePage() {
                     <CardTitle className="text-base font-semibold">{step.title}</CardTitle>
                   </div>
                   <CardDescription className="mt-3 text-sm text-slate-200">{step.copy}</CardDescription>
+                  {step.bullets && step.bullets.length > 0 && (
+                    <ul className="mt-4 space-y-2 text-xs text-slate-200">
+                      {step.bullets.map((bullet) => (
+                        <li key={bullet.label} className="flex items-start gap-2">
+                          <span className="text-cyan-300">?</span>
+                          {bullet.href ? (
+                            <Link href={bullet.href} className="text-cyan-200 hover:text-white transition">
+                              {bullet.label}
+                            </Link>
+                          ) : (
+                            <span>{bullet.label}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </Card>
               ))}
+            </div>
+            <div className="text-center">
+              <Button
+                variant="outline"
+                className="border-white/40 text-white hover:bg-white/10"
+                asChild
+              >
+                <Link href={user ? '/education/courses' : '/signup'}>
+                  {user ? 'Explorar a Academia' : 'Registar e come?ar'}
+                </Link>
+              </Button>
             </div>
           </div>
         </section>
