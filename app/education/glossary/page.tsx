@@ -55,6 +55,7 @@ const LANGUAGES: GlossaryLanguage[] = ['pt', 'en', 'es'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const PROGRESS_SECONDS = 30;
 const TERMS_PER_PAGE = 19;
+const XP_REWARD = 2;
 
 const defaultFormState = (): TermFormState => ({
   slug: '',
@@ -81,6 +82,420 @@ type PaginationMeta = {
   page: number;
   totalPages: number;
   total: number;
+};
+
+type UILocaleStrings = {
+  hero: {
+    tagline: string;
+    title: string;
+    description: string;
+    membersOnly: string;
+    newConcept: string;
+  };
+  searchPlaceholder: string;
+  filters: {
+    lettersAll: string;
+    statusLabel: string;
+    statusOptions: {
+      all: string;
+      published: string;
+      draft: string;
+      review: string;
+    };
+  };
+  stats: {
+    label: string;
+    description: string;
+  };
+  messages: {
+    loading: string;
+    empty: string;
+  };
+  badges: {
+    xpComplete: string;
+  };
+  buttons: {
+    edit: string;
+    preview: string;
+    prevPage: string;
+    nextPage: string;
+    tryAgain: string;
+    cancel: string;
+    delete: string;
+    save: string;
+  };
+  preview: {
+    tagline: string;
+    example: string;
+    progressTitle: string;
+    close: string;
+  };
+  progress: {
+    xpAwarded: (xp: number) => string;
+    alreadyRegistered: string;
+    completed: string;
+    completedWithXp: string;
+    draft: string;
+    timerHint: (seconds: number, xp: number) => string;
+    secondsRemaining: (seconds: number) => string;
+    finishing: string;
+    awarding: string;
+  };
+  form: {
+    editTitle: string;
+    newTitle: string;
+    slugLabel: string;
+    tagsLabel: string;
+    tagsPlaceholder: string;
+    statusLabel: string;
+    statusOptions: {
+      draft: string;
+      review: string;
+      published: string;
+    };
+    termLabel: string;
+    definitionLabel: string;
+    exampleLabel: string;
+    optionalTag: string;
+  };
+  errors: {
+    sessionExpired: string;
+    registerXP: string;
+    progressGeneral: string;
+    fetchFailed: string;
+    loadTerms: string;
+    fillTermDefinition: (lang: GlossaryLanguage) => string;
+    saveFailed: string;
+    saveRequestFailed: string;
+    deleteFailed: string;
+    deleteError: string;
+  };
+  general: {
+    noDefinition: string;
+  };
+  pagination: {
+    label: (page: number, total: number) => string;
+    prev: string;
+    next: string;
+  };
+};
+
+const STATUS_LABELS: Record<GlossaryStatus, Record<GlossaryLanguage, string>> = {
+  published: {
+    pt: 'Publicado',
+    en: 'Published',
+    es: 'Publicado',
+  },
+  draft: {
+    pt: 'Rascunho',
+    en: 'Draft',
+    es: 'Borrador',
+  },
+  review: {
+    pt: 'Em revisão',
+    en: 'In review',
+    es: 'En revisión',
+  },
+};
+
+const UI_TEXT: Record<GlossaryLanguage, UILocaleStrings> = {
+  pt: {
+    hero: {
+      tagline: 'Academia Web3',
+      title: 'Glossário Legacy',
+      description:
+        'Consulta as definições chave da Academia Web3, em três línguas, e reforça os teus conhecimentos durante as aulas ou leitura de artigos.',
+      membersOnly: 'Exclusivo para membros registados',
+      newConcept: 'Novo conceito',
+    },
+    searchPlaceholder: 'Procurar por termo ou definição',
+    filters: {
+      lettersAll: 'Todos',
+      statusLabel: 'Estado:',
+      statusOptions: {
+        all: 'Todos',
+        published: 'Publicados',
+        draft: 'Rascunhos',
+        review: 'Em revisão',
+      },
+    },
+    stats: {
+      label: 'Conceitos',
+      description:
+        'Termos curados pela equipa Legacy com suporte integral PT/EN/ES.',
+    },
+    messages: {
+      loading: 'A carregar termos...',
+      empty: 'Nenhum termo encontrado com os filtros atuais.',
+    },
+    badges: {
+      xpComplete: 'XP registado',
+    },
+    buttons: {
+      edit: 'Editar',
+      preview: 'Ver definição',
+      prevPage: 'Página anterior',
+      nextPage: 'Próxima página',
+      tryAgain: 'Tentar novamente',
+      cancel: 'Cancelar',
+      delete: 'Eliminar',
+      save: 'Guardar termo',
+    },
+    preview: {
+      tagline: 'Glossário Legacy',
+      example: 'Exemplo',
+      progressTitle: 'Progresso de leitura',
+      close: 'Fechar',
+    },
+    progress: {
+      xpAwarded: (xp) => `${xp} XP registados!`,
+      alreadyRegistered: 'Leitura já registada.',
+      completed: 'Leitura concluída.',
+      completedWithXp: 'Leitura concluída e XP registado.',
+      draft: 'Este termo está em rascunho. XP indisponível.',
+      timerHint: (seconds, xp) =>
+        `Mantém o conceito aberto por ${seconds} segundos para registar os ${xp} XP`,
+      secondsRemaining: (seconds) => `Faltam ${seconds}s`,
+      finishing: 'A concluir...',
+      awarding: '• a atribuir XP',
+    },
+    form: {
+      editTitle: 'Editar conceito',
+      newTitle: 'Novo conceito',
+      slugLabel: 'Slug',
+      tagsLabel: 'Tags (separadas por vírgulas)',
+      tagsPlaceholder: 'web3, tokenomics',
+      statusLabel: 'Estado',
+      statusOptions: {
+        draft: 'Rascunho',
+        review: 'Em revisão',
+        published: 'Publicado',
+      },
+      termLabel: 'Termo',
+      definitionLabel: 'Definição',
+      exampleLabel: 'Exemplo',
+      optionalTag: '(opcional)',
+    },
+    errors: {
+      sessionExpired: 'Sessão expirada. Volta a iniciar sessão.',
+      registerXP: 'Não foi possível registar o XP.',
+      progressGeneral: 'Não foi possível registar o XP. Tenta novamente.',
+      fetchFailed: 'Falhou o carregamento.',
+      loadTerms: 'Erro a carregar termos.',
+      fillTermDefinition: (lang) =>
+        `Preenche termo e definição em ${lang.toUpperCase()} antes de guardar.`,
+      saveFailed: 'Erro ao guardar termo.',
+      saveRequestFailed: 'Falha ao guardar termo.',
+      deleteFailed: 'Falha ao eliminar termo.',
+      deleteError: 'Erro ao eliminar termo.',
+    },
+    general: {
+      noDefinition: 'Sem definição disponível.',
+    },
+    pagination: {
+      label: (page, total) => `Página ${page} de ${total}`,
+      prev: 'Página anterior',
+      next: 'Próxima página',
+    },
+  },
+  en: {
+    hero: {
+      tagline: 'Web3 Academy',
+      title: 'Legacy Glossary',
+      description:
+        'Browse the key definitions from the Web3 Academy, available in three languages, and reinforce your knowledge while watching lessons or reading articles.',
+      membersOnly: 'Exclusive for registered members',
+      newConcept: 'New concept',
+    },
+    searchPlaceholder: 'Search by term or definition',
+    filters: {
+      lettersAll: 'All',
+      statusLabel: 'Status:',
+      statusOptions: {
+        all: 'All',
+        published: 'Published',
+        draft: 'Drafts',
+        review: 'In review',
+      },
+    },
+    stats: {
+      label: 'Concepts',
+      description:
+        'Terms curated by the Legacy team with full PT/EN/ES support.',
+    },
+    messages: {
+      loading: 'Loading terms...',
+      empty: 'No terms found with the current filters.',
+    },
+    badges: {
+      xpComplete: 'XP recorded',
+    },
+    buttons: {
+      edit: 'Edit',
+      preview: 'View definition',
+      prevPage: 'Previous page',
+      nextPage: 'Next page',
+      tryAgain: 'Try again',
+      cancel: 'Cancel',
+      delete: 'Delete',
+      save: 'Save term',
+    },
+    preview: {
+      tagline: 'Legacy Glossary',
+      example: 'Example',
+      progressTitle: 'Reading progress',
+      close: 'Close',
+    },
+    progress: {
+      xpAwarded: (xp) => `${xp} XP recorded!`,
+      alreadyRegistered: 'Reading already recorded.',
+      completed: 'Reading completed.',
+      completedWithXp: 'Reading completed and XP recorded.',
+      draft: 'This term is in draft. XP unavailable.',
+      timerHint: (seconds, xp) =>
+        `Keep the concept open for ${seconds} seconds to register the ${xp} XP`,
+      secondsRemaining: (seconds) => `${seconds}s left`,
+      finishing: 'Finishing...',
+      awarding: '• awarding XP',
+    },
+    form: {
+      editTitle: 'Edit concept',
+      newTitle: 'New concept',
+      slugLabel: 'Slug',
+      tagsLabel: 'Tags (separated by commas)',
+      tagsPlaceholder: 'web3, tokenomics',
+      statusLabel: 'Status',
+      statusOptions: {
+        draft: 'Draft',
+        review: 'In review',
+        published: 'Published',
+      },
+      termLabel: 'Term',
+      definitionLabel: 'Definition',
+      exampleLabel: 'Example',
+      optionalTag: '(optional)',
+    },
+    errors: {
+      sessionExpired: 'Session expired. Please sign in again.',
+      registerXP: 'Could not register XP.',
+      progressGeneral: 'Could not register XP. Please try again.',
+      fetchFailed: 'Loading failed.',
+      loadTerms: 'Error loading terms.',
+      fillTermDefinition: (lang) =>
+        `Fill in the term and definition in ${lang.toUpperCase()} before saving.`,
+      saveFailed: 'Error saving term.',
+      saveRequestFailed: 'Failed to save term.',
+      deleteFailed: 'Failed to delete term.',
+      deleteError: 'Error deleting term.',
+    },
+    general: {
+      noDefinition: 'No definition available.',
+    },
+    pagination: {
+      label: (page, total) => `Page ${page} of ${total}`,
+      prev: 'Previous page',
+      next: 'Next page',
+    },
+  },
+  es: {
+    hero: {
+      tagline: 'Academia Web3',
+      title: 'Glosario Legacy',
+      description:
+        'Consulta las definiciones clave de la Academia Web3, disponibles en tres idiomas, y refuerza tu conocimiento durante clases o artículos.',
+      membersOnly: 'Exclusivo para miembros registrados',
+      newConcept: 'Nuevo concepto',
+    },
+    searchPlaceholder: 'Buscar por término o definición',
+    filters: {
+      lettersAll: 'Todos',
+      statusLabel: 'Estado:',
+      statusOptions: {
+        all: 'Todos',
+        published: 'Publicados',
+        draft: 'Borradores',
+        review: 'En revisión',
+      },
+    },
+    stats: {
+      label: 'Conceptos',
+      description:
+        'Términos seleccionados por el equipo Legacy con soporte completo PT/EN/ES.',
+    },
+    messages: {
+      loading: 'Cargando términos...',
+      empty: 'Ningún término encontrado con los filtros actuales.',
+    },
+    badges: {
+      xpComplete: 'XP registrado',
+    },
+    buttons: {
+      edit: 'Editar',
+      preview: 'Ver definición',
+      prevPage: 'Página anterior',
+      nextPage: 'Siguiente página',
+      tryAgain: 'Reintentar',
+      cancel: 'Cancelar',
+      delete: 'Eliminar',
+      save: 'Guardar término',
+    },
+    preview: {
+      tagline: 'Glosario Legacy',
+      example: 'Ejemplo',
+      progressTitle: 'Progreso de lectura',
+      close: 'Cerrar',
+    },
+    progress: {
+      xpAwarded: (xp) => `¡${xp} XP registrados!`,
+      alreadyRegistered: 'Lectura ya registrada.',
+      completed: 'Lectura completada.',
+      completedWithXp: 'Lectura completada y XP registrado.',
+      draft: 'Este término está en borrador. XP no disponible.',
+      timerHint: (seconds, xp) =>
+        `Mantén el concepto abierto durante ${seconds} segundos para registrar los ${xp} XP`,
+      secondsRemaining: (seconds) => `Quedan ${seconds}s`,
+      finishing: 'Finalizando...',
+      awarding: '• asignando XP',
+    },
+    form: {
+      editTitle: 'Editar concepto',
+      newTitle: 'Nuevo concepto',
+      slugLabel: 'Slug',
+      tagsLabel: 'Etiquetas (separadas por comas)',
+      tagsPlaceholder: 'web3, tokenomics',
+      statusLabel: 'Estado',
+      statusOptions: {
+        draft: 'Borrador',
+        review: 'En revisión',
+        published: 'Publicado',
+      },
+      termLabel: 'Término',
+      definitionLabel: 'Definición',
+      exampleLabel: 'Ejemplo',
+      optionalTag: '(opcional)',
+    },
+    errors: {
+      sessionExpired: 'Sesión expirada. Vuelve a iniciar sesión.',
+      registerXP: 'No fue posible registrar el XP.',
+      progressGeneral: 'No fue posible registrar el XP. Inténtalo de nuevo.',
+      fetchFailed: 'Falló la carga.',
+      loadTerms: 'Error al cargar términos.',
+      fillTermDefinition: (lang) =>
+        `Completa el término y la definición en ${lang.toUpperCase()} antes de guardar.`,
+      saveFailed: 'Error al guardar el término.',
+      saveRequestFailed: 'Fallo al guardar el término.',
+      deleteFailed: 'Fallo al eliminar el término.',
+      deleteError: 'Error al eliminar el término.',
+    },
+    general: {
+      noDefinition: 'Sin definición disponible.',
+    },
+    pagination: {
+      label: (page, total) => `Página ${page} de ${total}`,
+      prev: 'Página anterior',
+      next: 'Siguiente página',
+    },
+  },
 };
 
 export default function GlossaryPage() {
@@ -173,7 +588,7 @@ export default function GlossaryPage() {
     async (termId: string) => {
       const token = getToken?.();
       if (!termId || !token) {
-        setProgressError('Sessão expirada. Volta a iniciar sessão.');
+        setProgressError(copy.errors.sessionExpired);
         return;
       }
 
@@ -191,14 +606,14 @@ export default function GlossaryPage() {
         const data = await res.json();
 
         if (!res.ok || !data?.success) {
-          throw new Error(data?.error || 'Não foi possível registar o XP.');
+          throw new Error(data?.error || copy.errors.registerXP);
         }
 
         if (!data?.alreadyCompleted) {
           persistUserXP(data?.newTotal);
-          setProgressMessage('2 XP registados!');
+          setProgressMessage(copy.progress.xpAwarded(XP_REWARD));
         } else {
-          setProgressMessage('Leitura já registada.');
+          setProgressMessage(copy.progress.alreadyRegistered);
         }
 
         const completionAt =
@@ -212,15 +627,13 @@ export default function GlossaryPage() {
       } catch (err) {
         console.error('Glossary progress registration failed:', err);
         setProgressError(
-          err instanceof Error
-            ? err.message
-            : 'Não foi possível registar o XP. Tenta novamente.',
+          err instanceof Error ? err.message : copy.errors.progressGeneral,
         );
       } finally {
         setAwardingXp(false);
       }
     },
-    [getToken, persistUserXP],
+    [copy, getToken, persistUserXP],
   );
 
   const activeLanguage: GlossaryLanguage = useMemo(() => {
@@ -229,6 +642,7 @@ export default function GlossaryPage() {
     }
     return 'pt';
   }, [language]);
+  const copy = UI_TEXT[activeLanguage];
 
   useEffect(() => {
     if (!user) return;
@@ -256,7 +670,7 @@ export default function GlossaryPage() {
         });
         const data = await res.json();
         if (!res.ok || !data?.success) {
-          throw new Error(data?.error || 'Falhou o carregamento.');
+          throw new Error(data?.error || copy.errors.fetchFailed);
         }
         setTerms(data.terms || []);
         if (Array.isArray(data.completedTerms)) {
@@ -301,7 +715,7 @@ export default function GlossaryPage() {
       } catch (err) {
         console.error('Glossary load error:', err);
         setError(
-          err instanceof Error ? err.message : 'Erro a carregar termos.',
+          err instanceof Error ? err.message : copy.errors.loadTerms,
         );
       } finally {
         setLoading(false);
@@ -317,6 +731,7 @@ export default function GlossaryPage() {
     isAdmin,
     refreshKey,
     activeLanguage,
+    copy,
     getToken,
   ]);
 
@@ -420,9 +835,7 @@ export default function GlossaryPage() {
       const defValue = formState.definition[lang]?.trim();
       if (!termValue || !defValue) {
         setSaving(false);
-        setError(
-          `Preenche termo e definição em ${lang.toUpperCase()} antes de guardar.`,
-        );
+        setError(copy.errors.fillTermDefinition(lang));
         return;
       }
     }
@@ -471,7 +884,7 @@ export default function GlossaryPage() {
       );
       const data = await res.json();
       if (!res.ok || !data?.success) {
-        throw new Error(data?.error || 'Erro ao guardar termo.');
+        throw new Error(data?.error || copy.errors.saveFailed);
       }
       setSheetOpen(false);
       setFormState(defaultFormState());
@@ -480,7 +893,7 @@ export default function GlossaryPage() {
     } catch (err) {
       console.error('Glossary save error:', err);
       setError(
-        err instanceof Error ? err.message : 'Falha ao guardar termo.',
+        err instanceof Error ? err.message : copy.errors.saveRequestFailed,
       );
     } finally {
       setSaving(false);
@@ -499,7 +912,7 @@ export default function GlossaryPage() {
       });
       const data = await res.json();
       if (!res.ok || !data?.success) {
-        throw new Error(data?.error || 'Falha ao eliminar termo.');
+        throw new Error(data?.error || copy.errors.deleteFailed);
       }
       setSheetOpen(false);
       setTerms((prev) => prev.filter((item) => item.id !== editingTerm.id));
@@ -508,7 +921,7 @@ export default function GlossaryPage() {
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.error('Glossary delete error:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao eliminar termo.');
+      setError(err instanceof Error ? err.message : copy.errors.deleteError);
     } finally {
       setDeleteLoading(false);
     }
@@ -521,7 +934,7 @@ export default function GlossaryPage() {
       term.definition_pt ||
       term.definition_en ||
       term.definition_es ||
-      'Sem definição disponível.'
+      copy.general.noDefinition
     );
   };
 
@@ -575,7 +988,7 @@ export default function GlossaryPage() {
         variant="outline"
         className={cn('text-xs uppercase tracking-wide', colorMap[status])}
       >
-        {status}
+        {STATUS_LABELS[status]?.[activeLanguage] ?? status}
       </Badge>
     );
   };
@@ -604,13 +1017,13 @@ export default function GlossaryPage() {
 
     if (previewTerm.status !== 'published') {
       setProgressSeconds(PROGRESS_SECONDS);
-      setProgressMessage('Este termo está em rascunho. XP indisponível.');
+      setProgressMessage(copy.progress.draft);
       return;
     }
 
     if (activeTermCompletion) {
       setProgressSeconds(PROGRESS_SECONDS);
-      setProgressMessage((prev) => prev ?? 'Leitura concluída.');
+      setProgressMessage((prev) => prev ?? copy.progress.completed);
       return;
     }
 
@@ -630,14 +1043,16 @@ export default function GlossaryPage() {
 
     return () => clearProgressTimer();
   }, [
+    activeTermCompletion,
+    copy.progress.completed,
+    copy.progress.draft,
     previewOpen,
     previewTerm,
     previewTerm?.id,
     previewTerm?.status,
+    registerCompletion,
     user,
     user?.id,
-    activeTermCompletion,
-    registerCompletion,
   ]);
 
   const previewExample = previewTerm ? renderExample(previewTerm) : '';
@@ -658,18 +1073,18 @@ export default function GlossaryPage() {
           </div>
           <div className="relative mx-auto flex max-w-6xl flex-col gap-6 px-6">
             <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
-              Academia Web3
+              {copy.hero.tagline}
             </p>
             <h1 className="text-4xl font-semibold text-[#fdd87c] md:text-5xl">
-              Glossário Legacy
+              {copy.hero.title}
             </h1>
             <p className="max-w-3xl text-lg text-slate-100">
-              Consulta as definições chave da Academia Web3, em três línguas, e reforça os teus conhecimentos durante as aulas ou leitura de artigos.
+              {copy.hero.description}
             </p>
             <div className="flex flex-wrap gap-3">
               <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm text-slate-200">
                 <ShieldAlert className="h-4 w-4 text-amber-300" />
-                Exclusivo para membros registados
+                {copy.hero.membersOnly}
               </div>
               {isAdmin && (
                 <Button
@@ -678,7 +1093,7 @@ export default function GlossaryPage() {
                   onClick={handleOpenCreate}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Novo conceito
+                  {copy.hero.newConcept}
                 </Button>
               )}
             </div>
@@ -691,7 +1106,7 @@ export default function GlossaryPage() {
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
-                  placeholder="Procurar por termo ou definição"
+                  placeholder={copy.searchPlaceholder}
                   value={filters.search}
                   onChange={(event) => {
                     const { value } = event.target;
@@ -717,7 +1132,7 @@ export default function GlossaryPage() {
                     handlePageChange(1);
                   }}
                 >
-                  Todos
+                  {copy.filters.lettersAll}
                 </Button>
                 {LETTERS.map((letter) => (
                   <Button
@@ -742,7 +1157,7 @@ export default function GlossaryPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
-                    Conceitos
+                    {copy.stats.label}
                   </p>
                   <p className="text-3xl font-semibold text-white">
                     {pagination.total}
@@ -758,11 +1173,11 @@ export default function GlossaryPage() {
                 </Button>
               </div>
               <p className="text-sm text-slate-300">
-                Termos curados pela equipa Legacy com suporte integral PT/EN/ES.
+                {copy.stats.description}
               </p>
               {isAdmin && (
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-slate-400">Estado:</span>
+                  <span className="text-slate-400">{copy.filters.statusLabel}</span>
                   <select
                     className="rounded-full border border-white/20 bg-transparent px-3 py-1 text-white"
                     value={filters.status}
@@ -774,10 +1189,10 @@ export default function GlossaryPage() {
                       handlePageChange(1);
                     }}
                   >
-                    <option value="all">Todos</option>
-                    <option value="published">Publicados</option>
-                    <option value="draft">Rascunhos</option>
-                    <option value="review">Em revisão</option>
+                    <option value="all">{copy.filters.statusOptions.all}</option>
+                    <option value="published">{copy.filters.statusOptions.published}</option>
+                    <option value="draft">{copy.filters.statusOptions.draft}</option>
+                    <option value="review">{copy.filters.statusOptions.review}</option>
                   </select>
                 </div>
               )}
@@ -793,11 +1208,11 @@ export default function GlossaryPage() {
           {loading ? (
             <div className="flex items-center justify-center py-20 text-slate-300">
               <Loader2 className="mr-2 h-5 w-5 animate-spin text-cyan-300" />
-              A carregar termos...
+              {copy.messages.loading}
             </div>
           ) : groupedTerms.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-slate-300">
-              Nenhum termo encontrado com os filtros atuais.
+              {copy.messages.empty}
             </div>
           ) : (
             <div className="space-y-10">
@@ -831,11 +1246,11 @@ export default function GlossaryPage() {
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
                                 {completedTerms[term.id] && (
-                                  <Badge className="flex items-center gap-1 border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                    XP registado
-                                  </Badge>
-                                )}
+                                  <Badge className="flex items-center gap-1 border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    {copy.badges.xpComplete}
+                                  </Badge>
+                                )}
                                 {canEditTerm && <StatusBadge status={term.status} />}
                                 <Button
                                   size="icon"
@@ -843,11 +1258,11 @@ export default function GlossaryPage() {
                                   onClick={() => handlePreviewOpen(term)}
                                 >
                                   <ArrowUpRight className="h-4 w-4" />
-                                  <span className="sr-only">Ver definição</span>
+                                  <span className="sr-only">{copy.buttons.preview}</span>
                                 </Button>
                                 {canEditTerm && (
                                   <Button variant="secondary" size="sm" onClick={() => handleOpenEdit(term)}>
-                                    Editar
+                                    {copy.buttons.edit}
                                   </Button>
                                 )}
                               </div>
@@ -885,18 +1300,17 @@ export default function GlossaryPage() {
                 disabled={pagination.page <= 1}
                 onClick={() => handlePageChange(pagination.page - 1)}
               >
-                Página anterior
+                {copy.pagination.prev}
               </Button>
               <p className="text-sm text-slate-300">
-                Página <span className="font-semibold text-white">{pagination.page}</span> de{' '}
-                <span className="font-semibold text-white">{pagination.totalPages}</span>
+                {copy.pagination.label(pagination.page, pagination.totalPages)}
               </p>
               <Button
                 className="bg-[#fdd87c] text-[#04121c] hover:bg-[#ffe5aa]"
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => handlePageChange(pagination.page + 1)}
               >
-                Próxima página
+                {copy.pagination.next}
               </Button>
             </div>
           )}
@@ -915,12 +1329,12 @@ export default function GlossaryPage() {
               type="button"
               onClick={closePreview}
               className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/10 p-2 text-white transition hover:border-[#fdd87c] hover:text-[#fdd87c]"
-              aria-label="Fechar"
+              aria-label={copy.preview.close}
             >
               <X className="h-4 w-4" />
             </button>
             <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
-              Glossário Legacy
+              {copy.preview.tagline}
             </p>
             <h2 className="mt-2 text-3xl font-semibold text-[#fdd87c]">
               {renderTermTitle(previewTerm)}
@@ -934,7 +1348,7 @@ export default function GlossaryPage() {
               {previewExample && (
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
-                    Exemplo
+                    {copy.preview.example}
                   </p>
                   <p className="whitespace-pre-line text-slate-200">
                     {previewExample}
@@ -945,29 +1359,29 @@ export default function GlossaryPage() {
                 <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-cyan-300">
                   <span className="flex items-center gap-2">
                     <Timer className="h-4 w-4" />
-                    Progress Reading
+                    {copy.preview.progressTitle}
                   </span>
                   <span className="flex items-center gap-1 text-[#fdd87c]">
                     <Award className="h-4 w-4" />
-                    +2 XP
+                    +{XP_REWARD} XP
                   </span>
                 </div>
                 {previewTerm.status !== 'published' ? (
                   <p className="mt-3 text-sm text-amber-200">
-                    {progressMessage || 'Este termo está em rascunho. XP indisponível.'}
+                    {progressMessage || copy.progress.draft}
                   </p>
                 ) : activeTermCompletion ? (
                   <div className="mt-3 flex items-center gap-2 text-sm text-emerald-200">
                     <CheckCircle2 className="h-4 w-4" />
-                    {progressMessage || 'Leitura concluída e XP registado.'}
+                    {progressMessage || copy.progress.completedWithXp}
                   </div>
                 ) : (
                   <>
                     <div className="mt-3 flex items-center justify-between text-[11px] text-slate-300">
                       <span>
                         {remainingSeconds > 0
-                          ? `Faltam ${remainingSeconds}s`
-                          : 'A concluir...'}
+                          ? copy.progress.secondsRemaining(remainingSeconds)
+                          : copy.progress.finishing}
                       </span>
                       <span>{Math.round(progressPercent)}%</span>
                     </div>
@@ -978,8 +1392,8 @@ export default function GlossaryPage() {
                       />
                     </div>
                     <p className="mt-2 text-[11px] text-slate-400">
-                      Mantém o conceito aberto por 30 segundos para registar os 2 XP{' '}
-                      {awardingXp && '• a atribuir XP'}
+                      {copy.progress.timerHint(PROGRESS_SECONDS, XP_REWARD)}{' '}
+                      {awardingXp && copy.progress.awarding}
                     </p>
                   </>
                 )}
@@ -995,7 +1409,7 @@ export default function GlossaryPage() {
                       onClick={() => previewTerm && void registerCompletion(previewTerm.id)}
                       disabled={awardingXp}
                     >
-                      Tentar novamente
+                      {copy.buttons.tryAgain}
                     </Button>
                   </div>
                 )}
@@ -1022,13 +1436,13 @@ export default function GlossaryPage() {
         <DialogContent className="max-h-[85vh] overflow-y-auto border border-white/10 bg-[#02131d] text-white">
           <DialogHeader>
             <DialogTitle className="text-2xl text-[#fdd87c]">
-              {editingTerm ? 'Editar conceito' : 'Novo conceito'}
+              {editingTerm ? copy.form.editTitle : copy.form.newTitle}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="text-xs uppercase text-slate-400">Slug</label>
+                <label className="text-xs uppercase text-slate-400">{copy.form.slugLabel}</label>
                 <Input
                   value={formState.slug}
                   onChange={(event) =>
@@ -1039,20 +1453,20 @@ export default function GlossaryPage() {
                 />
               </div>
               <div>
-                <label className="text-xs uppercase text-slate-400">Tags (separadas por vírgulas)</label>
+                <label className="text-xs uppercase text-slate-400">{copy.form.tagsLabel}</label>
                 <Input
                   value={formState.tags}
                   onChange={(event) =>
                     handleFormChange('meta', 'tags', event.target.value)
                   }
-                  placeholder="web3, tokenomics"
+                  placeholder={copy.form.tagsPlaceholder}
                   className="border-white/10 bg-white/5 text-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs uppercase text-slate-400">Estado</label>
+              <label className="text-xs uppercase text-slate-400">{copy.form.statusLabel}</label>
               <select
                 value={formState.status}
                 onChange={(event) =>
@@ -1064,9 +1478,9 @@ export default function GlossaryPage() {
                 }
                 className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white"
               >
-                <option value="draft">Rascunho</option>
-                <option value="review">Em revisão</option>
-                <option value="published">Publicado</option>
+                <option value="draft">{copy.form.statusOptions.draft}</option>
+                <option value="review">{copy.form.statusOptions.review}</option>
+                <option value="published">{copy.form.statusOptions.published}</option>
               </select>
             </div>
 
@@ -1082,7 +1496,7 @@ export default function GlossaryPage() {
                 <TabsContent key={lang} value={lang} className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
                   <div>
                     <label className="text-xs uppercase text-slate-400">
-                      Termo ({lang.toUpperCase()})
+                      {copy.form.termLabel} ({lang.toUpperCase()})
                     </label>
                     <Input
                       value={formState.term[lang]}
@@ -1094,7 +1508,7 @@ export default function GlossaryPage() {
                   </div>
                   <div>
                     <label className="text-xs uppercase text-slate-400">
-                      Definição ({lang.toUpperCase()})
+                      {copy.form.definitionLabel} ({lang.toUpperCase()})
                     </label>
                     <Textarea
                       value={formState.definition[lang]}
@@ -1107,7 +1521,7 @@ export default function GlossaryPage() {
                   </div>
                   <div>
                     <label className="text-xs uppercase text-slate-400">
-                      Exemplo ({lang.toUpperCase()}) (opcional)
+                      {copy.form.exampleLabel} ({lang.toUpperCase()}) {copy.form.optionalTag}
                     </label>
                     <Textarea
                       value={formState.example[lang]}
@@ -1133,18 +1547,18 @@ export default function GlossaryPage() {
               >
                 {deleteLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 <Trash2 className="h-4 w-4" />
-                Eliminar
+                {copy.buttons.delete}
               </Button>
             ) : (
               <div />
             )}
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setSheetOpen(false)}>
-                Cancelar
+                {copy.buttons.cancel}
               </Button>
               <Button onClick={handleSubmit} disabled={saving}>
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Guardar termo
+                {copy.buttons.save}
               </Button>
             </div>
           </DialogFooter>
