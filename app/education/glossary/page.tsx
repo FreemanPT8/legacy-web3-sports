@@ -9,7 +9,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -21,6 +20,8 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { GlossaryRichText } from '@/components/glossary/GlossaryRichText';
 import type {
   GlossaryLanguage,
   GlossaryStatus,
@@ -56,6 +57,26 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const PROGRESS_SECONDS = 30;
 const TERMS_PER_PAGE = 19;
 const XP_REWARD = 2;
+const HTML_TAG_REGEX = /<\/?[a-z][\s\S]*>/i;
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const normalizeRichText = (content: string): string => {
+  if (!content) return '';
+  const trimmed = content.trim();
+  if (!trimmed) return '';
+  if (HTML_TAG_REGEX.test(trimmed)) {
+    return trimmed;
+  }
+  const escaped = escapeHtml(trimmed).replace(/\n/g, '<br />');
+  return `<p>${escaped}</p>`;
+};
 
 const defaultFormState = (): TermFormState => ({
   slug: '',
@@ -1055,7 +1076,12 @@ export default function GlossaryPage() {
     user?.id,
   ]);
 
-  const previewExample = previewTerm ? renderExample(previewTerm) : '';
+  const previewDefinitionHtml = previewTerm
+    ? normalizeRichText(renderDefinition(previewTerm))
+    : '';
+  const previewExampleHtml = previewTerm
+    ? normalizeRichText(renderExample(previewTerm))
+    : '';
   const progressPercent = Math.min(
     100,
     (progressSeconds / PROGRESS_SECONDS) * 100,
@@ -1342,17 +1368,25 @@ export default function GlossaryPage() {
             <p className="text-sm text-slate-300">/{previewTerm.slug}</p>
 
             <div className="mt-6 space-y-4">
-              <p className="whitespace-pre-line text-lg leading-relaxed text-white">
-                {renderDefinition(previewTerm)}
-              </p>
-              {previewExample && (
+              {previewDefinitionHtml ? (
+                <GlossaryRichText
+                  html={previewDefinitionHtml}
+                  className="glossary-definition prose prose-invert prose-sm max-w-none text-white"
+                />
+              ) : (
+                <p className="text-lg leading-relaxed text-white">
+                  {copy.general.noDefinition}
+                </p>
+              )}
+              {previewExampleHtml && (
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
                     {copy.preview.example}
                   </p>
-                  <p className="whitespace-pre-line text-slate-200">
-                    {previewExample}
-                  </p>
+                  <GlossaryRichText
+                    html={previewExampleHtml}
+                    className="glossary-example prose prose-invert prose-sm max-w-none text-slate-200"
+                  />
                 </div>
               )}
               <div className="rounded-2xl border border-white/10 bg-[#031723]/70 p-4">
@@ -1510,26 +1544,27 @@ export default function GlossaryPage() {
                     <label className="text-xs uppercase text-slate-400">
                       {copy.form.definitionLabel} ({lang.toUpperCase()})
                     </label>
-                    <Textarea
+                    <RichTextEditor
+                      id={`definition-${lang}`}
                       value={formState.definition[lang]}
-                      rows={4}
-                      onChange={(event) =>
-                        handleFormChange('definition', lang, event.target.value)
+                      onChange={(value) =>
+                        handleFormChange('definition', lang, value)
                       }
-                      className="border-white/10 bg-[#041926] text-white"
+                      placeholder={`${copy.form.definitionLabel} (${lang.toUpperCase()})`}
                     />
                   </div>
                   <div>
                     <label className="text-xs uppercase text-slate-400">
                       {copy.form.exampleLabel} ({lang.toUpperCase()}) {copy.form.optionalTag}
                     </label>
-                    <Textarea
+                    <RichTextEditor
+                      id={`example-${lang}`}
                       value={formState.example[lang]}
-                      rows={3}
-                      onChange={(event) =>
-                        handleFormChange('example', lang, event.target.value)
+                      onChange={(value) =>
+                        handleFormChange('example', lang, value)
                       }
-                      className="border-white/10 bg-[#041926] text-white"
+                      placeholder={`${copy.form.exampleLabel} (${lang.toUpperCase()})`}
+                      minRows={4}
                     />
                   </div>
                 </TabsContent>
