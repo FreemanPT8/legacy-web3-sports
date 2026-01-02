@@ -34,6 +34,14 @@ import {
 import { Switch } from '@/components/ui/switch';
 
 import { Award, Lock, Trophy, User } from 'lucide-react';
+import {
+  HeroContent,
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
 
 const XP_UNLOCK = 99;
 
@@ -163,23 +171,21 @@ export default function ProfilePage() {
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
       <PageShell className="space-y-10 py-10">
-        <section className="rounded-[32px] border border-white/10 bg-[#05212b] p-6 shadow-2xl">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">Profile</p>
-              <h1 className="text-3xl font-semibold tracking-tight text-white lg:text-4xl">
-                Legacy Profile
-              </h1>
-              <p className="text-sm text-slate-300">
+        <HeroSection className="p-6">
+          <HeroContent className="items-end">
+            <HeroTextColumn className="space-y-3">
+              <HeroEyebrow>Profile</HeroEyebrow>
+              <HeroTitle className="text-white lg:text-4xl">Legacy Profile</HeroTitle>
+              <HeroDescription className="text-sm text-slate-300">
                 Keep your personal story and contacts visible to the community.
-              </p>
-            </div>
+              </HeroDescription>
+            </HeroTextColumn>
             <div className="text-right">
               <div className="text-2xl font-bold text-cyan-300">{user.xp_total} XP</div>
               <p className="text-sm text-slate-300">Level {Math.floor(user.xp_total / 100)}</p>
             </div>
-          </div>
-        </section>
+          </HeroContent>
+        </HeroSection>
 
         {!isUnlocked && (
           <Card className="border border-white/10 bg-[#05212b] shadow-xl">

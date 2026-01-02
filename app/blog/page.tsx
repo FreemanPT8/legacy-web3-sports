@@ -14,6 +14,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -195,25 +202,18 @@ export default function BlogPage() {
         {/* HERO / HEADER DO BLOG */}
         <section className="px-6 py-16">
           <div className="mx-auto max-w-6xl">
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)] md:px-10">
-              <div className="pointer-events-none absolute inset-0">
-                <div className="absolute -top-16 -left-10 h-60 w-60 rounded-full bg-[#fdd87c]/15 blur-3xl" />
-                <div className="absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/15 blur-3xl" />
-              </div>
-              <div className="relative space-y-6">
-                <p className="text-xs uppercase tracking-[0.6em] text-cyan-200">
+            <HeroSection className="px-6 py-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)] md:px-10">
+              <HeroTextColumn className="space-y-6">
+                <HeroEyebrow className="text-cyan-200">
                   Blog · Web3 · Desporto · Apertum
-                </p>
+                </HeroEyebrow>
                 <div className="space-y-3">
-                  <h1 className="text-3xl font-semibold tracking-tight text-[#fdd87c] md:text-4xl">
-                    Artigos que ligam Web3, desporto e Apertum — sem bullshit.
-                  </h1>
-                  <p className="max-w-2xl text-sm text-slate-100">
-                    Aqui encontras explicações diretas sobre blockchain, Apertum
-                    e o impacto real no desporto. Sem hype vazio, sem jargão
-                    técnico — apenas contexto, exemplos e caminhos que podes
-                    aplicar na prática.
-                  </p>
+                  <HeroTitle className="text-3xl md:text-4xl tracking-tight">
+                    Artigos que ligam Web3, desporto e Apertum – sem bullshit.
+                  </HeroTitle>
+                  <HeroDescription className="max-w-2xl text-slate-100">
+                    Aqui encontras explicações diretas sobre blockchain, Apertum e o impacto real no desporto. Sem hype vazio, sem jargão técnico – apenas contexto, exemplos e caminhos que podes aplicar na prática.
+                  </HeroDescription>
                 </div>
 
                 {user ? (
@@ -270,9 +270,9 @@ export default function BlogPage() {
                     </CardContent>
                   </Card>
                 </div>
-              </div>
-            </div>
-        </div>
+              </HeroTextColumn>
+            </HeroSection>
+          </div>
         </section>
 
         {/* LISTA DE POSTS */}

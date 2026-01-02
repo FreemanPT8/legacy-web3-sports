@@ -31,6 +31,13 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
 
 interface EducationStats {
   activeUsers?: number;
@@ -91,21 +98,21 @@ export default function AboutPage() {
 
       <main className="flex-1">
         {/* HERO */}
-        <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] py-16 text-white shadow-[0_25px_60px_rgba(3,10,25,0.8)] md:py-20">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-[#5af3ff]/10 blur-3xl md:h-60 md:w-60" />
-            <div className="absolute -bottom-16 -right-12 h-48 w-48 rounded-full bg-[#fdd87c]/10 blur-3xl md:h-72 md:w-72" />
-          </div>
-          <div className="container relative mx-auto px-4 text-center">
-            <p className="mb-4 text-[12px] uppercase tracking-[0.6em] text-cyan-200">
-              {t('about.mission')}
-            </p>
-            <h1 className="text-3xl font-bold md:text-5xl">
-              {t('about.title')}
-            </h1>
-            <p className="mx-auto mt-4 max-w-3xl text-base text-slate-200 md:text-xl">
-              {t('about.subtitle')}
-            </p>
+        <section className="py-16 md:py-20">
+          <div className="container mx-auto px-4">
+            <HeroSection className="text-center">
+              <HeroTextColumn className="mx-auto max-w-3xl space-y-4">
+                <HeroEyebrow className="text-cyan-200 mb-0">
+                  {t('about.mission')}
+                </HeroEyebrow>
+                <HeroTitle className="text-3xl md:text-5xl text-white">
+                  {t('about.title')}
+                </HeroTitle>
+                <HeroDescription className="text-base text-slate-200 md:text-xl">
+                  {t('about.subtitle')}
+                </HeroDescription>
+              </HeroTextColumn>
+            </HeroSection>
           </div>
         </section>
 

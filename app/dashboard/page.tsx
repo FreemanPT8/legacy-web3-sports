@@ -17,6 +17,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTitle,
+  HeroTextColumn,
+} from '@/components/sections/HeroSection';
 
 const DAILY_XP_LIMIT = 369;
 
@@ -255,23 +262,18 @@ export default function DashboardPage() {
 
       <main className="flex-1 py-12">
         <div className="mx-auto w-full max-w-6xl px-4 space-y-10">
-          <section className="relative space-y-4 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-6 shadow-[0_25px_60px_rgba(2,10,20,0.65)]">
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute -top-10 -left-10 h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl" />
-            </div>
-            <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
-              LEGACY XP
-            </p>
-            <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
-              {t('dashboard.welcomeBack').replace('{username}', user.username)}
-            </h1>
-            <p className="max-w-3xl text-sm text-slate-100">
-              {t('dashboard.trackProgress')}
-            </p>
-            {xpError && (
-              <p className="text-sm text-rose-400">{xpError}</p>
-            )}
-          </section>
+          <HeroSection className="px-6 py-6">
+            <HeroTextColumn className="space-y-3">
+              <HeroEyebrow>LEGACY XP</HeroEyebrow>
+              <HeroTitle>
+                {t('dashboard.welcomeBack').replace('{username}', user.username)}
+              </HeroTitle>
+              <HeroDescription className="max-w-3xl text-slate-100">
+                {t('dashboard.trackProgress')}
+              </HeroDescription>
+              {xpError && <p className="text-sm text-rose-400">{xpError}</p>}
+            </HeroTextColumn>
+          </HeroSection>
 
           <section className="grid gap-6 md:grid-cols-3">
             {/* XP TOTAL + HOJE + LIMITE */}

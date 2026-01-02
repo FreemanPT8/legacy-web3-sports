@@ -16,6 +16,15 @@ import { Button } from '@/components/ui/button';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useManagedMediaSetting } from '@/hooks/useManagedMediaSetting';
+import {
+  HeroContent,
+  HeroDescription,
+  HeroEyebrow,
+  HeroMedia,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
 import type { MediaAsset } from '@/types/builder';
 
 type UserEntry = {
@@ -532,23 +541,13 @@ type RankingEntry = {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto space-y-8">
-            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-10 shadow-2xl shadow-black/40">
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute -top-20 -right-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-                <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
-              </div>
-              <div className="relative grid gap-10 lg:grid-cols-2">
-                <div className="space-y-6">
+            <HeroSection>
+              <HeroContent>
+                <HeroTextColumn>
                   <div className="space-y-3">
-                    <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
-                      {t('nav.leaderboard')}
-                    </p>
-                    <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
-                      {t('leaderboard.title')}
-                    </h1>
-                    <p className="text-sm text-slate-300 md:text-base">
-                      {t('leaderboard.subtitle')}
-                    </p>
+                    <HeroEyebrow>{t('nav.leaderboard')}</HeroEyebrow>
+                    <HeroTitle>{t('leaderboard.title')}</HeroTitle>
+                    <HeroDescription>{t('leaderboard.subtitle')}</HeroDescription>
                   </div>
                   <Badge className="w-fit border border-white/10 bg-cyan-500/15 text-cyan-100">
                     {t('leaderboard.globalRankings')}
@@ -567,8 +566,8 @@ type RankingEntry = {
                       </div>
                     ))}
                   </div>
-                </div>
-                <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
+                </HeroTextColumn>
+                <HeroMedia>
                   <Image
                     src={heroMedia.assetUrl || HERO_IMAGE_FALLBACK}
                     alt={t('leaderboard.heroAlt')}
@@ -590,9 +589,9 @@ type RankingEntry = {
                       </Button>
                     </div>
                   )}
-                </div>
-              </div>
-            </section>
+                </HeroMedia>
+              </HeroContent>
+            </HeroSection>
             <section className="grid gap-4 md:grid-cols-3">
               {highlightSections.map((section) => (
                 <div

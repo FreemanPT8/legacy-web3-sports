@@ -28,6 +28,14 @@ import { COUNTRIES, HOUSES_OF_SPORTS, SPORTS_ROLES } from '@/lib/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  HeroContent,
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
+import {
   Mail,
   MessageSquare,
   User,
@@ -558,39 +566,22 @@ export default function OnboardingPage() {
 
       <main className="flex-1 bg-[#000c12]">
         {/* HERO alinhado com /sports e /sports/houses */}
-        <section className="border-b border-border relative overflow-hidden bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27]">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#5af3ff]/15 blur-3xl" />
-            <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-          </div>
-
-          <div className="relative z-10 max-w-5xl mx-auto px-4 py-10 md:py-14">
-            <div className="grid md:grid-cols-[2fr,1.2fr] gap-8 items-center">
-              <div>
-                <span className="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-100 mb-3 border border-white/10">
-                  LEGACY Onboarding — Sports & Web3
-                </span>
-
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[#fdd87c]">
+                {/* HERO alinhado com /sports e /sports/houses */}
+        <div className="px-4 py-10 md:py-14">
+          <HeroSection className="max-w-5xl mx-auto">
+            <HeroContent className="items-center gap-8 md:grid-cols-[2fr,1.2fr]">
+              <HeroTextColumn className="space-y-4">
+                <HeroEyebrow>LEGACY Onboarding ? Sports & Web3</HeroEyebrow>
+                <HeroTitle className="text-3xl md:text-4xl tracking-tight">
                   Onboarding personalizado para a tua jornada no LEGACY.
-                </h1>
-
-                <p className="mt-3 text-sm md:text-base text-slate-100 max-w-xl">
-                  Na área de Sports do LEGACY ficaste com o contexto geral. Nas
-                  Houses of Sports viste onde a comunidade está a nascer. Aqui,
-                  pedes ajuda para dar os primeiros passos: dizes quem és, de
-                  onde vens e o que procuras. É o passo que liga a tua realidade
-                  à educação séria em Blockchain, Web3 e à Apertum.
-                </p>
-
-                <p className="mt-3 text-xs text-slate-200 max-w-xl">
-                  Não interessa se és atleta, treinador, staff, empreendedor ou
-                  apenas alguém que quer entender este novo mundo sem seguir
-                  modas cegas. O objetivo é simples: educar primeiro, decidir
-                  depois — com alguém ao teu lado nos primeiros passos em vez
-                  de te atirar para um mar de termos técnicos sem rumo.
-                </p>
-              </div>
+                </HeroTitle>
+                <HeroDescription className="text-base text-slate-100 max-w-xl">
+                  Na ?rea de Sports do LEGACY ficaste com o contexto geral. Nas Houses of Sports viste onde a comunidade est? a nascer. Aqui, pedes ajuda para dar os primeiros passos: dizes quem ?s, de onde vens e o que procuras. ? o passo que liga a tua realidade ? educa??o s?ria em Blockchain, Web3 e ? Apertum.
+                </HeroDescription>
+                <HeroDescription className="text-xs text-slate-200 max-w-xl">
+                  N?o interessa se ?s atleta, treinador, staff, empreendedor ou apenas algu?m que quer entender este novo mundo sem seguir modas cegas. O objetivo ? simples: educar primeiro, decidir depois ? com algu?m ao teu lado nos primeiros passos em vez de te atirar para um mar de termos t?cnicos sem rumo.
+                </HeroDescription>
+              </HeroTextColumn>
 
               <div className="rounded-2xl border border-white/10 bg-[#04131b] p-5 text-xs text-slate-200 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
                 <h2 className="text-sm font-semibold text-heading mb-2 flex items-center gap-2">
@@ -599,31 +590,23 @@ export default function OnboardingPage() {
                 </h2>
                 <ol className="space-y-2 list-decimal list-inside">
                   <li>
-                    O teu pedido de onboarding entra numa fila interna ligada ao
-                    teu país, desporto (se fizer sentido) e tipo de perfil.
+                    O teu pedido de onboarding entra numa fila interna ligada ao teu pa?s, desporto (se fizer sentido) e House mais pr?xima.
                   </li>
                   <li>
-                    Alguém da equipa LEGACY ou de uma House revê a tua
-                    informação com calma.
+                    Algu?m da equipa LEGACY cruza os dados com as Houses ativas e indica qual o pr?ximo passo recomendado (Academia, House espec?fica, call com um mentor).
                   </li>
                   <li>
-                    Vais receber contacto por email ou Telegram em 24-48 horas
-                    com os próximos passos.
-                  </li>
-                  <li>
-                    Se fizer sentido, vais ser encaminhado para Houses, cursos e
-                    conteúdos privados alinhados com o teu momento.
+                    Recebes uma resposta oficial via email ou Telegram em 24-48 horas ?teis. Se for necess?rio marcar uma conversa, vamos agendar contigo.
                   </li>
                 </ol>
                 <p className="mt-3 text-[11px] text-slate-400">
-                  Tudo o que escreves aqui é tratado com respeito. O foco é
-                  educação e clareza — não hype, não promessas rápidas, não
-                  “ficar rico em 30 dias”.
+                  <strong>Nota:</strong> se j? tens conta autenticada no LEGACY, este pedido fica ligado ao teu perfil.
                 </p>
               </div>
-            </div>
-          </div>
-        </section>
+            </HeroContent>
+          </HeroSection>
+        </div>
+
 
         {/* FORMULÁRIO */}
         <section className="relative py-10">

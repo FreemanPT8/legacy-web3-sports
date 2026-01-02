@@ -11,6 +11,15 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  HeroContent,
+  HeroDescription,
+  HeroEyebrow,
+  HeroMedia,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
+import {
   CalendarCheck,
   Flame,
   ShieldCheck,
@@ -474,20 +483,18 @@ export default function EducationXpPage() {
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 space-y-10 max-w-6xl">
           {/* Hero */}
-          <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-12 shadow-2xl shadow-black/40">
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute -top-24 -right-16 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-              <div className="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl" />
-            </div>
-            <div className="relative grid gap-10 lg:grid-cols-2 items-center">
-              <div className="space-y-6">
+          <HeroSection>
+            <HeroContent className="items-center">
+              <HeroTextColumn>
                 <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">XP SYSTEM</p>
-                  <h1 className="text-4xl font-semibold text-[#fdd87c] md:text-5xl">
-                    {copy.heroTitle}
-                  </h1>
-                  <p className="text-base text-slate-100/95 leading-relaxed">{copy.heroIntro}</p>
-                  <p className="text-sm text-slate-300 leading-relaxed">{copy.heroSub}</p>
+                  <HeroEyebrow>XP SYSTEM</HeroEyebrow>
+                  <HeroTitle className="text-4xl md:text-5xl">{copy.heroTitle}</HeroTitle>
+                  <HeroDescription className="text-base text-slate-100/95 leading-relaxed">
+                    {copy.heroIntro}
+                  </HeroDescription>
+                  <HeroDescription className="text-slate-300 leading-relaxed">
+                    {copy.heroSub}
+                  </HeroDescription>
                 </div>
                 <Badge className="w-fit border border-white/10 bg-cyan-500/15 text-cyan-100">
                   {copy.heroBadge}
@@ -512,8 +519,8 @@ export default function EducationXpPage() {
                     );
                   })}
                 </div>
-              </div>
-              <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
+              </HeroTextColumn>
+              <HeroMedia>
                 <Image
                   src={HERO_IMAGE_FALLBACK}
                   alt="Legacy XP"
@@ -522,14 +529,14 @@ export default function EducationXpPage() {
                   className="object-cover opacity-90"
                 />
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#000c12]/80 via-[#031821]/20 to-transparent" />
-              </div>
-            </div>
+              </HeroMedia>
+            </HeroContent>
             {copy.glossaryNote && (
-              <div className="rounded-2xl border border-white/10 bg-[#031b26]/80 p-4 text-sm text-slate-200">
+              <div className="mt-6 rounded-2xl border border-white/10 bg-[#031b26]/80 p-4 text-sm text-slate-200">
                 {copy.glossaryNote}
               </div>
             )}
-          </section>
+          </HeroSection>
 
           {/* Error state */}
           {error && (

@@ -8,6 +8,13 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { SafeImage } from '@/app/components/SafeImage';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
 
 type HouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
@@ -120,27 +127,18 @@ export default function HousesPage() {
 
       <main className="flex-1 bg-[#000c12]">
         {/* HERO / INTRO */}
-        <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27]">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-32 -right-24 h-72 w-72 rounded-full bg-[#5af3ff]/15 blur-3xl" />
-            <div className="absolute -bottom-40 -left-24 h-80 w-80 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-          </div>
-
-          <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 md:py-16">
-            <div className="mx-auto max-w-5xl space-y-6">
+        <div className="px-6 py-12 md:py-16">
+          <HeroSection>
+            <HeroTextColumn className="mx-auto max-w-5xl space-y-6">
               <div className="space-y-4">
-                <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
-                  HOUSES OF SPORTS
-                </p>
-                <h1 className="text-3xl font-semibold text-[#fdd87c] md:text-4xl">
-                  Explora as Houses
-                </h1>
-                <p className="max-w-3xl text-sm text-slate-200 md:text-base">
+                <HeroEyebrow>HOUSES OF SPORTS</HeroEyebrow>
+                <HeroTitle className="text-3xl md:text-4xl">Explora as Houses</HeroTitle>
+                <HeroDescription className="max-w-3xl text-slate-200 md:text-base">
                   Cada House of Sports é uma comunidade que junta desporto, formação Web3 e networking local. Descobre onde estas Houses já estão ativas, quais estão em construção e as próximas a chegar ao ecossistema LEGACY.
-                </p>
-                <p className="max-w-3xl text-sm text-slate-200 md:text-base">
+                </HeroDescription>
+                <HeroDescription className="max-w-3xl text-slate-200 md:text-base">
                   Escolhe a House alinhada com o teu desporto e contexto ou usa este mapa para perceber onde podes liderar uma nova iniciativa.
-                </p>
+                </HeroDescription>
               </div>
 
               <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#04131b]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.65)] md:grid-cols-3 md:p-6">
@@ -174,7 +172,7 @@ export default function HousesPage() {
                     </li>
                     <li>
                       Aqui vês{' '}
-                      <strong>onde já existem comunidades a nascer</strong> — por
+                      <strong>onde já existem comunidades a nascer</strong> – por
                       desporto, país e estado das Houses (ativas, em
                       construção ou em desenvolvimento).
                     </li>
@@ -187,7 +185,7 @@ export default function HousesPage() {
                   </ul>
                   <p className="text-xs text-slate-200">
                     Não precisas de &quot;entrar em tudo&quot;. A ideia é
-                    perceber onde faz sentido colocar a tua energia — como
+                    perceber onde faz sentido colocar a tua energia – como
                     membro, como líder ou simplesmente como alguém que quer
                     aprender com estrutura.
                   </p>
@@ -201,7 +199,7 @@ export default function HousesPage() {
                     Quando te sentires pronto, faz o onboarding e diz-nos qual é
                     a tua relação com o desporto, o teu contexto e o que
                     queres construir. A partir daí a equipa LEGACY ajuda-te a
-                    encontrar a House certa — ou a preparar o terreno para
+                    encontrar a House certa – ou a preparar o terreno para
                     uma nova.
                   </p>
                   <div className="flex flex-wrap gap-3 pt-1">
@@ -223,9 +221,9 @@ export default function HousesPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
+            </HeroTextColumn>
+          </HeroSection>
+        </div>
 
         {/* LISTAS DE HOUSES */}
         <section className="relative px-6 py-12 md:py-16">

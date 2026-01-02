@@ -10,6 +10,14 @@ import { getMultilingualContent } from '@/lib/i18n';
 import { XP_LEVELS, getXpLevelLabel } from '@/lib/education/xpLevels';
 import { cn } from '@/lib/utils';
 import {
+  HeroContent,
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
+import {
   Card,
   CardContent,
   CardDescription,
@@ -176,101 +184,98 @@ export default function EducationPage() {
 
       <main className="flex-1 space-y-16">
         {/* HERO */}
-        <section className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] px-6 py-16 shadow-2xl shadow-black/40">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -left-14 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-            <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-[#5af3ff]/10 blur-3xl" />
-          </div>
-          <div className="relative mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-center">
-            <div className="relative z-10 flex-1 space-y-6">
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
-                {t('nav.education')}
-              </p>
-              <h1 className="text-4xl font-semibold leading-tight text-[#fdd87c] md:text-5xl">
-                {t('education.hero.title')}
-              </h1>
-              <p className="text-lg text-slate-100">
-                {t('education.hero.subtitle')}
-              </p>
-              <p className="text-sm text-slate-200">
-                {t('education.hero.description')}
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Button
-                  size="lg"
-                  asChild
-                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                >
-                  <Link href="/education/courses" className="flex items-center gap-2">
-                    {t('education.viewAll')} {t('education.courses')}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/40 text-white hover:bg-white/10"
-                  asChild
-                >
-                  <Link href="/education/xp" className="flex items-center gap-2">
-                    {t('education.learnMoreXP')}
-                    <BookOpen className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <p className="text-xs text-cyan-200/80">{t('home.trackProgress')}</p>
-            </div>
-
-            <div className="flex-1">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
-                  <CardHeader className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
+        <HeroSection className="px-6 py-16" overlayVariant="inverse">
+          <div className="relative mx-auto max-w-6xl">
+            <HeroContent className="lg:items-center">
+              <HeroTextColumn>
+                <div className="space-y-3">
+                  <HeroEyebrow>{t('nav.education')}</HeroEyebrow>
+                  <HeroTitle className="leading-tight md:text-5xl">
+                    {t('education.hero.title')}
+                  </HeroTitle>
+                  <HeroDescription className="text-base text-slate-100">
+                    {t('education.hero.subtitle')}
+                  </HeroDescription>
+                  <HeroDescription className="text-slate-200">
+                    {t('education.hero.description')}
+                  </HeroDescription>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <Button
+                    size="lg"
+                    asChild
+                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                  >
+                    <Link href="/education/courses" className="flex items-center gap-2">
+                      {t('education.viewAll')} {t('education.courses')}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/40 text-white hover:bg-white/10"
+                    asChild
+                  >
+                    <Link href="/education/xp" className="flex items-center gap-2">
+                      {t('education.learnMoreXP')}
                       <BookOpen className="h-4 w-4" />
-                      <span>{t('education.stats.courses')}</span>
-                    </div>
-                    <CardTitle className="text-3xl font-semibold text-white">
-                      {formatStat(stats?.totalCourses)}
-                    </CardTitle>
-                    <CardDescription className="text-xs text-slate-200">
-                      {t('home.structuredPaths')}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                    </Link>
+                  </Button>
+                </div>
+                <p className="text-xs text-cyan-200/80">{t('home.trackProgress')}</p>
+              </HeroTextColumn>
+              <div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
+                    <CardHeader className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
+                        <BookOpen className="h-4 w-4" />
+                        <span>{t('education.stats.courses')}</span>
+                      </div>
+                      <CardTitle className="text-3xl font-semibold text-white">
+                        {formatStat(stats?.totalCourses)}
+                      </CardTitle>
+                      <CardDescription className="text-xs text-slate-200">
+                        {t('home.structuredPaths')}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
 
-                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
-                  <CardHeader className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
-                      <Target className="h-4 w-4" />
-                      <span>{t('education.stats.lessons')}</span>
-                    </div>
-                    <CardTitle className="text-3xl font-semibold text-white">
-                      {formatStat(stats?.totalLessons)}
-                    </CardTitle>
-                    <CardDescription className="text-xs text-slate-200">
-                      {t('home.learnEarnDesc')}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                  <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
+                    <CardHeader className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
+                        <Target className="h-4 w-4" />
+                        <span>{t('education.stats.lessons')}</span>
+                      </div>
+                      <CardTitle className="text-3xl font-semibold text-white">
+                        {formatStat(stats?.totalLessons)}
+                      </CardTitle>
+                      <CardDescription className="text-xs text-slate-200">
+                        {t('home.learnEarnDesc')}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
 
-                <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
-                  <CardHeader className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
-                      <Users className="h-4 w-4" />
-                      <span>{t('education.stats.activeUsers')}</span>
-                    </div>
-                    <CardTitle className="text-3xl font-semibold text-white">
-                      {formatStat(stats?.activeUsers)}
-                    </CardTitle>
-                    <CardDescription className="text-xs text-slate-200">
-                      {t('home.personalizedOnboardingDesc')}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                  <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
+                    <CardHeader className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
+                        <Users className="h-4 w-4" />
+                        <span>{t('education.stats.activeUsers')}</span>
+                      </div>
+                      <CardTitle className="text-3xl font-semibold text-white">
+                        {formatStat(stats?.activeUsers)}
+                      </CardTitle>
+                      <CardDescription className="text-xs text-slate-200">
+                        {t('home.personalizedOnboardingDesc')}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </div>
               </div>
-            </div>
+            </HeroContent>
           </div>
-        </section>
+        </HeroSection>
 
         <section className="relative overflow-hidden bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] py-12">
           <div className="absolute inset-0 pointer-events-none">

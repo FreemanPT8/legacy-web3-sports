@@ -18,6 +18,14 @@ import {
   Check,
   Trash2
 } from 'lucide-react';
+import {
+  HeroContent,
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
 
 interface Notification {
   id: string;
@@ -155,22 +163,27 @@ export default function NotificationsPage() {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold mb-2 text-white">Notifications</h1>
-                <p className="text-muted-foreground">
-                  {unreadCount > 0
-                    ? `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
-                    : 'All caught up!'}
-                </p>
-              </div>
-              {unreadCount > 0 && (
-                <Button onClick={markAllAsRead} variant="outline">
-                  <Check className="h-4 w-4 mr-2" />
-                  Mark all as read
-                </Button>
-              )}
-            </div>
+            <HeroSection className="mb-6">
+              <HeroContent className="items-center">
+                <HeroTextColumn className="space-y-2">
+                  <HeroEyebrow>Alerts</HeroEyebrow>
+                  <HeroTitle className="text-white">Notifications</HeroTitle>
+                  <HeroDescription className="text-muted-foreground">
+                    {unreadCount > 0
+                      ? `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
+                      : 'All caught up!'}
+                  </HeroDescription>
+                </HeroTextColumn>
+                {unreadCount > 0 && (
+                  <div className="text-right">
+                    <Button onClick={markAllAsRead} variant="outline">
+                      <Check className="h-4 w-4 mr-2" />
+                      Mark all as read
+                    </Button>
+                  </div>
+                )}
+              </HeroContent>
+            </HeroSection>
 
             {loading ? (
               <Card className="bg-card border border-border">
