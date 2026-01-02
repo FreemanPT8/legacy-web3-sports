@@ -114,6 +114,15 @@ const legacyValues = [
   'Comunidade + Apertum',
 ];
 
+const testimonials = [
+  { quote: 'Finalmente um caminho limpo para aprender Web3 sem ruído.', role: 'Coach, PT' },
+  { quote: 'O glossário integrado mudou tudo. Aprendo sem me perder.', role: 'Atleta, ES' },
+  { quote: 'XP faz-me voltar. Não por vício, por consistência.', role: 'Gestor, BR' },
+  { quote: 'As Houses deram-me contexto real em vez de hype.', role: 'Fundadora, PT' },
+  { quote: 'Conteúdos curtos, XP auditado e zero promessas mágicas.', role: 'Analista, UK' },
+  { quote: 'Apertum + Legacy é comunidade de verdade.', role: 'Creator, US' },
+];
+
 const faqs = [
   {
     question: 'Isto é mesmo gratuito?',
@@ -659,9 +668,28 @@ export default function HomePage() {
           </div>
         </section>
 
-
-
-
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-18 -left-16 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-18 -right-14 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-6xl space-y-6">
+            <div className="flex flex-col gap-3">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">PROVA SOCIAL</p>
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">O que os beta testers dizem</h2>
+              <p className="text-sm text-slate-200">Sem números inflacionados. Apenas quem já testou o ecossistema Legacy.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {testimonials.map((testimonial) => (
+                <Card key={testimonial.quote} className="border border-white/10 bg-[#04131b] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
+                  <CardDescription className="text-sm text-slate-100">“{testimonial.quote}”</CardDescription>
+                  <p className="mt-4 text-xs uppercase tracking-[0.4em] text-cyan-200">{testimonial.role}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <section className="relative px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
