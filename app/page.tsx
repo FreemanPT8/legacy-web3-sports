@@ -83,6 +83,12 @@ const sevenDayWins = [
   'usar glossário integrado sem te perderes',
 ];
 
+const glossaryDemo = {
+  term: 'Apertum Blockchain',
+  definition: 'Rede modular focada em desporto e creators com XP registado on-chain.',
+  example: 'Ex.: Cada lição concluída gera XP e desbloqueia novas missões.',
+};
+
 const navigationHighlights = [
   {
     label: 'Academia Web3 (grátis)',
@@ -319,6 +325,64 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="relative px-6 py-16">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
+            <div className="absolute -top-16 -left-14 h-60 w-60 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -right-16 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-2">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">GLOSSÁRIO LEGACY</p>
+              <h2 className="text-3xl font-semibold text-[#fdd87c]">A arma principal para aprender rápido.</h2>
+              <p className="text-sm text-slate-200">Clicas na palavra. A definição aparece. Continuas a aprender.</p>
+              <p className="text-sm text-slate-200">Sem abrir separadores. Sem sair da aula. Sem te perder.</p>
+              <p className="text-xs text-slate-400">
+                {user ? 'Disponível directamente nas tuas aulas e leituras.' : 'Precisas de login para desbloquear o Glossário integrado.'}
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  variant="default"
+                  asChild
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                >
+                  <Link href={user ? '/education/glossary' : '/login'}>
+                    {user ? 'Abrir Glossário' : 'Entrar para usar'}
+                  </Link>
+                </Button>
+                {!user && (
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="border-white/40 text-white hover:bg-white/10"
+                  >
+                    <Link href="/signup">Criar conta</Link>
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="relative rounded-[32px] border border-white/10 bg-[#04131b] p-6 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
+              <div className="rounded-[24px] border border-white/10 bg-[#020f19] p-6">
+                <p className="text-sm text-slate-200">
+                  Aprende sobre a{' '}
+                  <span className="cursor-pointer border-b border-dotted border-cyan-300 text-white hover:text-cyan-200">
+                    {glossaryDemo.term}
+                  </span>{' '}
+                  em contexto real.
+                </p>
+                <div className="relative mt-6">
+                  <div className="absolute left-6 -top-3 h-3 w-3 rotate-45 border-l border-t border-white/20 bg-[#03131d]" />
+                  <Card className="border border-white/10 bg-[#03131d] p-4 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                    <CardTitle className="text-xs uppercase tracking-[0.4em] text-cyan-200">Definição instantânea</CardTitle>
+                    <CardDescription className="mt-2 text-sm text-slate-100">{glossaryDemo.definition}</CardDescription>
+                    <p className="mt-3 text-xs text-slate-300">{glossaryDemo.example}</p>
+                  </Card>
+                </div>
+                <p className="mt-4 text-xs text-slate-400">Demo visual do pop-up real dentro da Academia.</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="relative px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
