@@ -26,6 +26,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
+import { normalizeXpRequirementInput } from '@/lib/education/xpRequirement';
 import { removeReadMoreMarker } from '@/lib/read-more';
 import {
   Dialog,
@@ -691,10 +692,9 @@ const sanitizeCourseDescription = (html: string) =>
                               const lessonXP = getLessonXP(lesson);
                               const lessonHasReadMore =
                                 lesson.content_has_read_more ?? false;
-                              const requiredXP =
-                                typeof lesson.xp_required === 'number'
-                                  ? lesson.xp_required
-                                  : 0;
+                              const requiredXP = normalizeXpRequirementInput(
+                                lesson.xp_required,
+                              );
                               const isLocked =
                                 !isLessonCreator && requiredXP > userXP;
                               const missingXp = Math.max(

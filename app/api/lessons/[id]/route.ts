@@ -5,6 +5,7 @@ import { splitReadMore } from '@/lib/read-more';
 import { fetchLessonContext } from '@/lib/lesson-context';
 import { buildLessonIdVariants } from '@/lib/lesson-id';
 import { getDefaultAuthorName } from '@/lib/education/authorFallback';
+import { resolveLessonXpRequirement } from '@/lib/education/xpRequirement';
 
 interface RouteContext {
   params: { id: string };
@@ -188,6 +189,8 @@ export async function GET(
           (c.lesson_id ? completionIdSet.has(c.lesson_id) : true),
       );
 
+    const lessonXpRequired = resolveLessonXpRequirement(matchedLesson);
+
     const lesson = {
       id: matchedLesson.id,
       title: matchedLesson.title,
@@ -196,10 +199,7 @@ export async function GET(
       content_preview,
       content_has_read_more,
       xp_reward: resolvedXP,
-      xp_required:
-        typeof matchedLesson.xp_required === 'number'
-          ? matchedLesson.xp_required
-          : null,
+      xp_required: lessonXpRequired,
       estimated_time: resolvedEstimatedTime,
       order: matchedLesson.order,
       module_id: matchedLesson.module_id,

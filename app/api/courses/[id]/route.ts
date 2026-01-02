@@ -8,6 +8,7 @@ import {
   normalizeLessonIdForStorage,
 } from '@/lib/lesson-id';
 import { resolveCourseSlug } from '@/lib/education/unlockEngine';
+import { resolveLessonXpRequirement } from '@/lib/education/xpRequirement';
 import { getDefaultAuthorName } from '@/lib/education/authorFallback';
 
 interface RouteContext {
@@ -346,6 +347,7 @@ export async function GET(
                 resolveIdentityName(l.author),
                 l.author_id ? authorMap[l.author_id] : undefined,
               ) || defaultAuthorName;
+            const lessonXpRequired = resolveLessonXpRequirement(l);
 
             return {
               ...l,
@@ -354,6 +356,7 @@ export async function GET(
               isCreator: isLessonCreator,
               content_preview,
               content_has_read_more,
+              xp_required: lessonXpRequired,
             };
           });
 
