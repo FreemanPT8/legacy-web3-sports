@@ -2372,6 +2372,30 @@ export function getTranslation(lang: Language, key: string): string {
   return translations[lang]?.[key] || translations.en[key] || key;
 }
 
+const MULTILINGUAL_FALLBACK_ORDER: Language[] = ['pt', 'en', 'es', 'fr', 'it', 'de'];
+
+const sanitizeContentValue = (value?: string | null) =>
+  typeof value === 'string' ? value.replace(/<[^>]+>/g, '').trim() : '';
+
 export function getMultilingualContent(content: Record<string, string>, lang: Language): string {
-  return content[lang] || content.en || Object.values(content)[0] || '';
+  if (!content || typeof content !== 'object') {
+    return '';
+  }
+
+  const prioritizedOrder = [lang, ...MULTILINGUAL_FALLBACK_ORDER.filter((code) => code !== lang)];
+
+  for (const code of prioritizedOrder) {
+    const candidate = content[code];
+    if (sanitizeContentValue(candidate)) {
+      return candidate as string;
+    }
+  }
+
+  const firstNonEmpty = Object.values(content).find((value) => sanitizeContentValue(value));
+  if (firstNonEmpty) {
+    return firstNonEmpty;
+  }
+
+  const [firstRaw] = Object.values(content);
+  return typeof firstRaw === 'string' ? firstRaw : '';
 }
