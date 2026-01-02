@@ -258,12 +258,16 @@ export default function HomePage() {
               </div>
               <span className="text-sm text-slate-200">Alterna entre conteúdo público e privado com XP auditado.</span>
             </div>
+            <div className="space-y-2">
+              <p className="text-xl font-semibold text-white">XP não é um jogo. É o teu rasto de evolução.</p>
+              <p className="text-sm text-slate-200">Cada conteúdo consumido gera XP e mostra consistência ao longo do tempo.</p>
+            </div>
             <div className="grid gap-4 md:grid-cols-4">
               {[
-                { label: 'Aprende com blog público', value: '5 - 33 XP' },
+                { label: 'Leituras do blog', value: '5 - 33 XP' },
                 { label: 'Lições concluídas', value: '7 - 33 XP' },
                 { label: 'Streak 7 dias', value: '222 XP' },
-                { label: 'Streak 30 dias', value: '1.111 XP' },
+                { label: 'Leaderboard mundial', value: 'Prova social de consistência' },
               ].map((item) => (
                 <Card
                   key={item.label}
