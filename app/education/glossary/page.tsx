@@ -584,6 +584,14 @@ export default function GlossaryPage() {
     });
   }, []);
 
+  const activeLanguage: GlossaryLanguage = useMemo(() => {
+    if (LANGUAGES.includes(language as GlossaryLanguage)) {
+      return language as GlossaryLanguage;
+    }
+    return 'pt';
+  }, [language]);
+  const copy = UI_TEXT[activeLanguage];
+
   const registerCompletion = useCallback(
     async (termId: string) => {
       const token = getToken?.();
@@ -635,14 +643,6 @@ export default function GlossaryPage() {
     },
     [copy, getToken, persistUserXP],
   );
-
-  const activeLanguage: GlossaryLanguage = useMemo(() => {
-    if (LANGUAGES.includes(language as GlossaryLanguage)) {
-      return language as GlossaryLanguage;
-    }
-    return 'pt';
-  }, [language]);
-  const copy = UI_TEXT[activeLanguage];
 
   useEffect(() => {
     if (!user) return;
