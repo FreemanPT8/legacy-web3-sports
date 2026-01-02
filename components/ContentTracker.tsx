@@ -11,6 +11,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 export interface ContentTrackerProps {
@@ -49,6 +50,7 @@ export function ContentTracker({
   const retryAttemptsRef = useRef(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshUser } = useAuth();
+  const { t } = useLanguage();
 
   const noUser = !userId;
   const isCreator = !!isAuthor && !!userId;
@@ -150,7 +152,7 @@ export function ContentTracker({
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        setErrorMessage(result?.error || 'Não foi possível registar XP. Tenta novamente.');
+        setErrorMessage(result?.error || t('contentTracker.errorGeneric'));
         throw new Error(result?.error || 'Failed to register completion');
       }
 
@@ -175,7 +177,7 @@ export function ContentTracker({
     } catch (error) {
       console.error('Failed to complete content:', error);
       hasAwardedRef.current = false;
-      setErrorMessage('Não foi possível registar o XP. Nova tentativa automática...');
+      setErrorMessage(t('contentTracker.errorRetrying'));
       if (retryAttemptsRef.current < 3) {
         retryAttemptsRef.current += 1;
         setTimeout(() => {
@@ -184,7 +186,7 @@ export function ContentTracker({
           }
         }, 2000);
       } else {
-        setErrorMessage('Não conseguimos registar o XP. Volta a carregar a página para tentar novamente.');
+        setErrorMessage(t('contentTracker.errorMax'));
       }
     } finally {
       setIsAwarding(false);
@@ -198,9 +200,9 @@ export function ContentTracker({
       <div className="mb-4 rounded-xl border border-white/10 bg-[#031824] p-4 text-sm text-slate-100 flex items-start gap-3">
         <Info className="h-4 w-4 mt-0.5 text-cyan-300" />
         <div>
-          <p className="font-semibold text-white">Inicia sessão para registar o progresso.</p>
+          <p className="font-semibold text-white">{t('contentTracker.loginTitle')}</p>
           <p className="mt-1 text-xs text-slate-400">
-            Podes ler tudo, mas o XP só é registado quando tens sessão iniciada.
+            {t('contentTracker.loginDesc')}
           </p>
         </div>
       </div>
@@ -210,10 +212,9 @@ export function ContentTracker({
       <div className="mb-4 rounded-xl border border-white/10 bg-[#2c1800] p-4 text-sm text-amber-100 flex items-start gap-3">
         <Info className="h-4 w-4 mt-0.5 text-amber-400" />
         <div>
-          <p className="font-semibold text-white">És o criador deste conteúdo.</p>
+          <p className="font-semibold text-white">{t('contentTracker.creatorTitle')}</p>
           <p className="mt-1 text-xs text-amber-200/80">
-            Não ganhas XP ao consumir o teu próprio conteúdo. Recebes 19% do XP que cada utilizador
-            ganha na primeira conclusão.
+            {t('contentTracker.creatorDesc')}
           </p>
         </div>
       </div>
@@ -245,7 +246,7 @@ export function ContentTracker({
             onClick={() => setIsCollapsed(false)}
           >
             <CheckCircle2 className="h-4 w-4" />
-            XP registado
+            {t('contentTracker.xpRecorded')}
             <Maximize2 className="h-3 w-3" />
           </button>
         </div>
@@ -255,16 +256,16 @@ export function ContentTracker({
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5 text-emerald-300" />
               <div>
-                <p className="font-semibold text-white text-sm">Conteúdo concluído</p>
+                <p className="font-semibold text-white text-sm">{t('contentTracker.completedTitle')}</p>
                 <p className="mt-0.5 text-[11px] text-emerald-100">
-                  O XP desta leitura já foi registado.
+                  {t('contentTracker.completedDesc')}
                 </p>
               </div>
             </div>
             <button
               className="text-slate-300 hover:text-white"
               onClick={() => setIsCollapsed(true)}
-              aria-label="Minimizar tracker"
+              aria-label={t('contentTracker.minimize')}
             >
               <Minimize2 className="h-4 w-4" />
             </button>
@@ -289,7 +290,7 @@ export function ContentTracker({
             <div className="flex items-center justify-between">
               <span className="font-semibold text-white flex items-center gap-2">
                 <Timer className="h-3.5 w-3.5 text-cyan-300" />
-                Leitura em progresso
+                {t('contentTracker.inProgress')}
               </span>
               <div className="flex items-center gap-1">
                 <span className="flex items-center gap-1 text-cyan-200 font-semibold">
@@ -298,7 +299,7 @@ export function ContentTracker({
                 <button
                   className="text-slate-300 hover:text-white"
                   onClick={() => setIsCollapsed(true)}
-                  aria-label="Minimizar tracker"
+                  aria-label={t('contentTracker.minimize')}
                 >
                   <Minimize2 className="h-3.5 w-3.5" />
                 </button>
@@ -321,8 +322,8 @@ export function ContentTracker({
             </div>
 
             <p className="text-[10px] text-slate-400">
-              O XP será registado automaticamente
-              {isAwarding && ' · a atribuir XP'}
+              {t('contentTracker.autoRegister')}
+              {isAwarding && ` ${t('contentTracker.autoRegisterAwarding')}`}
             </p>
             {errorMessage && (
               <p className="text-[10px] text-rose-300">{errorMessage}</p>
