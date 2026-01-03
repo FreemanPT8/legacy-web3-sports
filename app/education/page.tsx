@@ -633,6 +633,48 @@ export default function EducationPage() {
       ),
     },
   ];
+  const academyStats = [
+    {
+      key: 'courses',
+      icon: BookOpen,
+      value: formatStat(stats?.totalCourses),
+      label: translate('education.stats.courses', 'Cursos'),
+      helper: translate(
+        'home.structuredPaths',
+        'Caminhos de aprendizagem estruturados para todos os níveis.',
+      ),
+    },
+    {
+      key: 'lessons',
+      icon: Target,
+      value: formatStat(stats?.totalLessons),
+      label: translate('education.stats.lessons', 'Lições'),
+      helper: translate(
+        'home.learnEarnDesc',
+        'Completa lições e artigos para ganhar XP. Cada ação conta.',
+      ),
+    },
+    {
+      key: 'users',
+      icon: Users,
+      value: formatStat(stats?.activeUsers),
+      label: translate('education.stats.activeUsers', 'Alunos ativos'),
+      helper: translate(
+        'home.personalizedOnboardingDesc',
+        'Percursos personalizados e uma academia viva.',
+      ),
+    },
+    {
+      key: 'xpDistributed',
+      icon: Zap,
+      value: formatStat(stats?.totalXPDistributed),
+      label: translate('education.stats.xpDistributed', 'XP distribuído'),
+      helper: translate(
+        'education.stats.xpHint',
+        'XP atribuído a toda a comunidade desde o lançamento.',
+      ),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
@@ -952,110 +994,69 @@ export default function EducationPage() {
                   </p>
                 </div>
               ) : (
-                <div className="mb-4 grid gap-6 md:grid-cols-4">
-                  <Card className="text-center border border-white/10 bg-[#04131b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
-                    <CardContent className="pt-6">
-                      <BookOpen className="h-10 w-10 text-primary mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-white">
-                        {stats?.totalCourses || 0}
+                <div className="grid gap-4 md:grid-cols-4">
+                  {academyStats.map((stat) => {
+                    const Icon = stat.icon;
+                    return (
+                      <div
+                        key={stat.key}
+                        className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-6 text-center shadow-lg shadow-black/40"
+                      >
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#021c27] text-cyan-100">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <p className="mt-4 text-3xl font-bold text-white">{stat.value}</p>
+                        <p className="text-sm text-slate-200">{stat.label}</p>
+                        <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                          {stat.helper}
+                        </p>
                       </div>
-                      <div className="text-sm text-slate-200">
-                        {t('education.stats.courses')}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="text-center border border-white/10 bg-[#04131b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
-                    <CardContent className="pt-6">
-                      <Target className="h-10 w-10 text-cyan-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-white">
-                        {stats?.totalLessons || 0}
-                      </div>
-                      <div className="text-sm text-slate-200">
-                        {t('education.stats.lessons')}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="text-center border border-white/10 bg-[#04131b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
-                    <CardContent className="pt-6">
-                      <Users className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-white">
-                        {stats?.activeUsers || 0}
-                      </div>
-                      <div className="text-sm text-slate-200">
-                        {t('education.stats.activeUsers')}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="text-center border border-white/10 bg-[#04131b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
-                    <CardContent className="pt-6">
-                      <Zap className="h-10 w-10 text-amber-400 mx-auto mb-3" />
-                      <div className="text-3xl font-bold text-white">
-                        {stats?.totalXPDistributed?.toLocaleString() || 0}
-                      </div>
-                      <div className="text-sm text-slate-200">
-                        {t('education.stats.xpDistributed')}
-                      </div>
-                    </CardContent>
-                  </Card>
+                    );
+                  })}
                 </div>
               )}
 
               {user ? (
-                <Card className="mb-4 border border-white/10 bg-[#04131b]/80 backdrop-blur">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Star className="h-6 w-6 text-amber-400" />
-                      {translate('education.myProgress', 'O teu progresso')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-3 gap-6">
-                      <div>
-                        <div className="text-sm text-cyan-100/80 mb-1">
-                          {translate('dashboard.currentXp', 'XP')}
-                        </div>
-                        <div className="text-2xl font-bold text-white">
-                          {user.xp_total} XP
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-cyan-100/80 mb-1">
-                          {translate('dashboard.level', 'Nível')}
-                        </div>
-                        <div className="text-xl font-semibold text-emerald-300">
-                          {getLevel(user.xp_total)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-cyan-100/80 mb-1">
-                          {translate('dashboard.streak', 'Streak')}
-                        </div>
-                        <div className="text-2xl font-bold text-white">
-                          {user.streak_count} {translate('dashboard.days', 'dias')}
-                        </div>
-                      </div>
+                <div className="rounded-3xl border border-white/15 bg-[#000c12]/50 p-6 shadow-lg shadow-black/40">
+                  <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.4em] text-cyan-200">
+                    <Star className="h-5 w-5 text-amber-300" />
+                    <span>{translate('education.myProgress', 'O teu progresso')}</span>
+                  </div>
+                  <div className="mt-6 grid gap-6 md:grid-cols-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                        {translate('dashboard.currentXp', 'XP')}
+                      </p>
+                      <p className="mt-2 text-2xl font-bold text-white">{user.xp_total} XP</p>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                        {translate('dashboard.level', 'Nível')}
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-emerald-300">
+                        {getLevel(user.xp_total)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                        {translate('dashboard.streak', 'Streak')}
+                      </p>
+                      <p className="mt-2 text-2xl font-bold text-white">
+                        {user.streak_count} {translate('dashboard.days', 'dias')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <Card className="border border-white/10 bg-[#04131b]/70 backdrop-blur">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Flag className="h-5 w-5 text-cyan-300" />
-                      {copy.loginGateTitle}
-                    </CardTitle>
-                    <CardDescription className="text-slate-200">
-                      {copy.loginGateDesc}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex gap-3">
+                <div className="rounded-3xl border border-white/15 bg-[#000c12]/50 p-6 shadow-lg shadow-black/40">
+                  <div className="flex items-center gap-2 text-white">
+                    <Flag className="h-5 w-5 text-cyan-300" />
+                    <p className="font-semibold">{copy.loginGateTitle}</p>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-200">{copy.loginGateDesc}</p>
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <Link href={gate('/education/courses')}>
-                      <Button
-                        className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                      >
+                      <Button className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
                         {copy.loginGateCta}
                       </Button>
                     </Link>
@@ -1067,8 +1068,8 @@ export default function EducationPage() {
                         {translate('cta.exploreBlog', 'Explorar Blog')}
                       </Button>
                     </Link>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -1104,13 +1105,13 @@ export default function EducationPage() {
               {previewLevels.map((item) => (
                 <div
                   key={`${item.title}-${item.range}-grid`}
-                  className="rounded-2xl border border-white/10 bg-[#04131b] px-4 py-6 text-center text-white"
+                  className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-6 text-center text-white shadow-lg shadow-black/40"
                 >
-                  <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                  <p className="text-[11px] uppercase tracking-[0.45em] text-cyan-300">
                     {item.title}
                   </p>
-                  <p className="mt-2 text-sm text-slate-200">{item.range}</p>
-                  <p className="mt-4 text-xs text-slate-200">
+                  <p className="mt-3 text-lg font-semibold text-white">{item.range}</p>
+                  <p className="mt-4 text-xs text-slate-300">
                     {translate('education.previewcta', 'Disponível após login.')}
                   </p>
                 </div>
