@@ -87,10 +87,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const totalXPDistributed = (xpData || []).reduce(
-      (sum, tx: any) => sum + (tx.xp_earned || 0),
+    let totalXPDistributed = (xpData || []).reduce(
+      (sum, tx: any) => sum + Number(tx.xp_earned || 0),
       0,
     );
+
+    if (!totalXPDistributed || Number.isNaN(totalXPDistributed)) {
+      const { data: userXpData, error: userXpError } = await supabase
+        .from('users')
+        .select('xp_total');
+
+      if (!userXpError) {
+        totalXPDistributed = (userXpData || []).reduce(
+          (sum, user: any) => sum + Number(user.xp_total || 0),
+          0,
+        );
+      }
+    }
 
     // 4) Top cursos (por nº de módulos)
     const topCourses =
