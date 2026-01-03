@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
@@ -29,25 +29,10 @@ import {
 
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import { buildFallbackProgressSummary } from '@/lib/education/fallbackSummary';
-import {
-  getLevelTranslation,
-  resolveLevelSlugFromCourse,
-  type LevelLanguage,
-} from '@/lib/education/xpLevels';
+import { getLevelTranslation, resolveLevelSlugFromCourse, type LevelLanguage } from '@/lib/education/xpLevels';
 import { START_HERE_FALLBACK_ID, START_HERE_SLUG } from '@/lib/education/unlockLogic';
 
-import {
-  BookOpen,
-  Award,
-  Lock,
-  ArrowRight,
-  CheckCircle,
-  PenSquare,
-  Users,
-  Target,
-  Zap,
-  Info,
-} from 'lucide-react';
+import { BookOpen, Award, Lock, ArrowRight, CheckCircle, PenSquare, Users } from 'lucide-react';
 
 type Lesson = {
   id: string;
@@ -99,12 +84,12 @@ type Course = {
 
 const USE_COURSE_HUB_V2 = process.env.NEXT_PUBLIC_EDU_COURSE_HUB_V2 === 'true';
 
-/** ---------- UI Tokens (coerência absoluta) ---------- */
+/** ---------- Typography + UI Tokens (coerência absoluta) ---------- */
 const UI = {
   eyebrow: 'text-xs uppercase tracking-[0.5em] text-cyan-300',
-  heroTitle: 'leading-[1.05] font-bold tracking-tight text-[#fdd87c] text-3xl sm:text-4xl md:text-5xl',
+  heroTitle: 'leading-[0.98] font-bold tracking-tight text-[#fdd87c] text-4xl sm:text-5xl md:text-6xl',
   sectionTitle: 'mt-3 text-3xl md:text-4xl font-bold tracking-tight text-[#fdd87c]',
-  sectionSubtitle: 'mt-3 text-sm text-slate-200',
+  sectionSubtitle: 'mt-4 text-sm text-slate-200',
   body: 'text-sm text-slate-200',
   bodyMuted: 'text-sm text-slate-300',
   highlight: 'text-xs text-cyan-200/80',
@@ -161,14 +146,6 @@ const formatTotalXP = (course: Course, modules: Module[]) => {
 
 const clamp0 = (n: number) => (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
 
-/** ---------- Scroll helper (Opção A) ---------- */
-const scrollToId = (id: string) => {
-  if (typeof window === 'undefined') return;
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
-
 export default function CoursesPage() {
   const router = useRouter();
   const { user, getToken } = useAuth();
@@ -193,6 +170,24 @@ export default function CoursesPage() {
     const val = t(key);
     return val === key ? fallback : val;
   };
+
+  const scrollToId = useCallback((id: string) => {
+    if (typeof window === 'undefined') return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const goPath = useCallback(() => {
+    setViewMode('path');
+    // dá tempo ao React para renderizar a secção
+    requestAnimationFrame(() => scrollToId('path'));
+  }, [scrollToId]);
+
+  const goCatalog = useCallback(() => {
+    setViewMode('catalog');
+    requestAnimationFrame(() => scrollToId('catalog'));
+  }, [scrollToId]);
 
   /** ---------------- Data fetch: legacy catalog (quando hub v2 está OFF) ---------------- */
   useEffect(() => {
@@ -314,15 +309,14 @@ export default function CoursesPage() {
     return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
   };
 
-  /** ---------------- “O teu próximo passo” ---------------- */
+  /** ---------------- “O teu próximo passo” (recomendação robusta) ---------------- */
   const nextStep = useMemo(() => {
+    // prioridade 1: COMEÇA AQUI se ainda não está concluído
     const startHereIncomplete = startCourseProgressPercent < 100;
 
     const startHereGuess =
       (!USE_COURSE_HUB_V2
-        ? courses.find(
-            (c) => (c.slug && c.slug === START_HERE_SLUG) || c.id === START_HERE_FALLBACK_ID,
-          )
+        ? courses.find((c) => (c.slug && c.slug === START_HERE_SLUG) || c.id === START_HERE_FALLBACK_ID)
         : null) || null;
 
     if (startHereIncomplete) {
@@ -330,7 +324,7 @@ export default function CoursesPage() {
         title: tr('courses.nextStep.startHereTitle', 'Continua o COMEÇA AQUI'),
         desc: tr(
           'courses.nextStep.startHereDesc',
-          'Este curso dá-te contexto, método e reduz decisões erradas mais à frente.',
+          'Se não concluíste, esta é a tua melhor decisão: base sólida, menos erros, mais velocidade.',
         ),
         ctaLabel: tr('courses.nextStep.continue', 'Continuar'),
         href: startHereGuess ? `/education/courses/${startHereGuess.id}` : '/education/courses',
@@ -339,13 +333,11 @@ export default function CoursesPage() {
       };
     }
 
+    // se não temos catálogo (hub v2), orientação simples
     if (USE_COURSE_HUB_V2 || courses.length === 0) {
       return {
         title: tr('courses.nextStep.generalTitle', 'Escolhe um passo com intenção'),
-        desc: tr(
-          'courses.nextStep.generalDesc',
-          'Segue o percurso sugerido ou entra no catálogo se já souberes o que procuras.',
-        ),
+        desc: tr('courses.nextStep.generalDesc', 'Segue o percurso sugerido ou abre o catálogo se já souberes o que procuras.'),
         ctaLabel: tr('courses.nextStep.openCatalog', 'Abrir catálogo'),
         href: '/education/courses',
         xpMissing: 0,
@@ -353,16 +345,14 @@ export default function CoursesPage() {
       };
     }
 
+    // próximo desbloqueio por XP
     const sorted = [...courses].sort((a, b) => (a.xp_threshold ?? 0) - (b.xp_threshold ?? 0));
     const nextLocked = sorted.find((c) => (c.xp_threshold ?? 0) > userXP) || null;
 
     if (!nextLocked) {
       return {
         title: tr('courses.nextStep.allUnlockedTitle', 'Tens acesso ao catálogo completo'),
-        desc: tr(
-          'courses.nextStep.allUnlockedDesc',
-          'Agora a diferença está na disciplina: escolhe um curso e termina-o.',
-        ),
+        desc: tr('courses.nextStep.allUnlockedDesc', 'Agora a diferença está na disciplina: escolhe um curso e termina-o.'),
         ctaLabel: tr('courses.nextStep.pickCourse', 'Escolher curso'),
         href: '/education/courses',
         xpMissing: 0,
@@ -373,7 +363,7 @@ export default function CoursesPage() {
     const xpRequired = clamp0(nextLocked.xp_threshold ?? 0);
     const missing = clamp0(xpRequired - userXP);
 
-    const title = getMultilingualContent(nextLocked.title, language);
+    const courseTitle = getMultilingualContent(nextLocked.title, language);
     const descriptionRaw = stripHtml(getMultilingualContent(nextLocked.description, language));
     const desc =
       descriptionRaw ||
@@ -386,7 +376,7 @@ export default function CoursesPage() {
       href: `/education/courses/${nextLocked.id}`,
       xpMissing: missing,
       xpRequired,
-      courseTitle: title,
+      courseTitle,
       mode: 'next_unlock' as const,
     };
   }, [courses, language, startCourseProgressPercent, tr, userXP]);
@@ -409,6 +399,7 @@ export default function CoursesPage() {
     },
   ];
 
+  // Loading screen (legacy)
   if (!USE_COURSE_HUB_V2 && loading) {
     return (
       <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
@@ -424,6 +415,7 @@ export default function CoursesPage() {
     );
   }
 
+  // Enquanto o redirect acontece, evita flash
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
@@ -433,18 +425,11 @@ export default function CoursesPage() {
             <div className="relative mx-auto max-w-4xl">
               <HeroContent className="text-center space-y-4">
                 <HeroEyebrow>{tr('courses.gate.eyebrow', 'ACADEMIA — CURSOS')}</HeroEyebrow>
-                <HeroTitle className={UI.heroTitle}>
-                  {tr('courses.gate.title', 'Conteúdo privado. Academia gratuita.')}
-                </HeroTitle>
+                <HeroTitle className={UI.heroTitle}>{tr('courses.gate.title', 'Conteúdo privado. Academia gratuita.')}</HeroTitle>
                 <HeroDescription className="text-base text-slate-100">
-                  {tr(
-                    'courses.gate.desc',
-                    'O login existe para guardar progresso, XP e desbloqueios. O conteúdo é gratuito.',
-                  )}
+                  {tr('courses.gate.desc', 'O login existe para guardar progresso, XP e desbloqueios. O conteúdo é gratuito.')}
                 </HeroDescription>
-                <HeroDescription className={UI.sectionSubtitle}>
-                  {tr('courses.gate.micro', 'Sem hype. Sem pressa. Com método.')}
-                </HeroDescription>
+                <HeroDescription className={UI.sectionSubtitle}>{tr('courses.gate.micro', 'Sem hype. Sem pressa. Com método.')}</HeroDescription>
                 <div className="pt-2">
                   <Button
                     onClick={() => router.push(`/login?next=${encodeURIComponent('/education/courses')}`)}
@@ -469,104 +454,98 @@ export default function CoursesPage() {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl space-y-10">
-
-            {/* HERO (limpo: sem painel MODO) */}
-            <HeroSection className="px-6 py-10" overlayVariant="inverse">
+            {/* HERO 95+ (menos ruído, mais posição) */}
+            <HeroSection className="px-6 py-10 md:py-12" overlayVariant="inverse">
               <div className="relative mx-auto max-w-6xl">
-                <HeroContent className="lg:items-start">
+                <HeroContent className="lg:items-center">
                   <HeroTextColumn>
-                    <HeroEyebrow>{tr('nav.courses', 'ACADEMIA — CURSOS')}</HeroEyebrow>
+                    <HeroEyebrow>{tr('nav.courses', 'CURSOS')}</HeroEyebrow>
 
                     <HeroTitle className={UI.heroTitle}>
-                      {tr('courses.hero.title', 'Aprende Web3 com método. Sem ruído.')}
+                      {tr('courses.hero99.title', 'Web3 não se aprende rápido. Aprende-se certo.')}
                     </HeroTitle>
 
-                    <HeroDescription className="text-sm md:text-base text-slate-100 max-w-xl">
-                      {tr('courses.hero.subtitle', 'Percurso dá-te sequência. Catálogo dá-te controlo. O resto é disciplina.')}
+                    <HeroDescription className="text-base text-slate-100 max-w-2xl">
+                      {tr(
+                        'courses.hero99.subtitle',
+                        'O Legacy dá-te um percurso com contexto e um catálogo com controlo. A diferença está no método — e no que escolhes ignorar.',
+                      )}
                     </HeroDescription>
 
-                    <p className={cn(UI.body, 'max-w-xl')}>
-                      {tr(
-                        'courses.hero.tension',
-                        'Conteúdo avançado sem base cria confiança falsa — e confiança falsa costuma sair cara.',
-                      )}
-                    </p>
-
-                    <div className="mt-4 inline-flex items-start gap-2 rounded-2xl border border-white/10 bg-[#000c12]/35 px-4 py-3 max-w-xl">
-                      <Info className="h-4 w-4 text-cyan-300 mt-[2px]" />
+                    <div className="mt-5 max-w-2xl rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3">
                       <p className={cn(UI.body, 'leading-relaxed')}>
-                        <span className="font-semibold text-white">{tr('courses.hero.tensionLead', 'Regra simples:')}</span>{' '}
-                        {tr('courses.hero.tensionDetail', 'um curso de cada vez. Termina. Só depois avanças.')}
+                        <span className="font-semibold text-white">
+                          {tr('courses.hero99.lawLabel', 'Regra nº1:')}
+                        </span>{' '}
+                        {tr(
+                          'courses.hero99.law',
+                          'Um curso de cada vez. Termina. Só depois avanças. Isto cria capacidade real.',
+                        )}
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 mt-5">
-                      <Button
-                        size="lg"
-                        className={cn(UI.ctaPrimary, 'px-6')}
-                        type="button"
-                        onClick={() => {
-                          setViewMode('path');
-                          requestAnimationFrame(() => scrollToId('path'));
-                        }}
-                      >
-                        {tr('courses.hero.primary', 'Seguir percurso')}
+                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                      <Button size="lg" onClick={goPath} className={cn(UI.ctaPrimary)}>
+                        {tr('courses.hero99.primary', 'Entrar no percurso')}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
 
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className={cn(UI.ctaOutline, 'px-6')}
-                        type="button"
-                        onClick={() => {
-                          setViewMode('catalog');
-                          requestAnimationFrame(() => scrollToId('catalog'));
-                        }}
-                      >
-                        {tr('courses.hero.secondary', 'Abrir catálogo')}
+                      <Button size="lg" variant="outline" onClick={goCatalog} className={cn(UI.ctaOutline)}>
+                        {tr('courses.hero99.secondary', 'Ver catálogo')}
                         <BookOpen className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
 
                     <p className={cn(UI.highlight, 'mt-3')}>
-                      {tr('courses.hero.note', 'Progresso, XP e desbloqueios ficam guardados no teu perfil.')}
+                      {tr('courses.hero99.note', 'Progresso, XP e desbloqueios ficam guardados no teu perfil.')}
                     </p>
                   </HeroTextColumn>
+
+                  {/* Coluna direita: “silêncio premium” (sem painel MODO aqui) */}
+                  <div className="hidden lg:block w-full">
+                    <div className="relative h-full min-h-[220px] rounded-3xl border border-white/10 bg-[#000c12]/35 backdrop-blur">
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute -top-14 -right-12 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
+                        <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                      </div>
+                      <div className="relative p-6 space-y-3">
+                        <p className={cn(UI.eyebrow, 'text-cyan-200')}>{tr('courses.hero99.rightEyebrow', 'DISCIPLINA')}</p>
+                        <p className={cn(UI.body, 'max-w-md')}>
+                          {tr(
+                            'courses.hero99.rightCopy',
+                            'A maioria perde dinheiro por aprender fora de ordem. Aqui aprendes por camadas: base, contexto, decisão.',
+                          )}
+                        </p>
+                        <p className={cn('text-xs text-slate-300')}>
+                          {tr('courses.hero99.rightMicro', 'Sem atalhos. Sem promessas. Só progresso verificável.')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </HeroContent>
               </div>
             </HeroSection>
 
-            {/* ✅ STICKY MODE BAR (premium, menos ruído, mais controlo) */}
-            <div className="sticky top-20 z-30">
+            {/* STICKY BAR (MODO + atalhos) */}
+            <div className="sticky top-4 z-30">
               <div className="mx-auto max-w-6xl">
-                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#000c12]/70 backdrop-blur shadow-[0_18px_55px_rgba(0,0,0,0.45)]">
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute -top-16 -right-20 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
-                    <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-                  </div>
+                <div
+                  className={cn(
+                    'rounded-2xl border border-white/10 bg-[#000c12]/70 backdrop-blur px-3 py-3 shadow-[0_18px_45px_rgba(0,0,0,0.35)]',
+                  )}
+                >
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className={cn(UI.eyebrow, 'text-cyan-200')}>{tr('courses.mode.label', 'MODO')}</span>
 
-                  <div className="relative flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    {/* Left: Toggle */}
-                    <div className="flex items-center gap-3">
-                      <p className={cn(UI.eyebrow, 'text-cyan-200 tracking-[0.45em] hidden sm:block')}>
-                        {tr('courses.modebar.eyebrow', 'MODO')}
-                      </p>
-
-                      <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/45 p-1">
+                      <div className="inline-flex items-center gap-1 rounded-2xl border border-white/10 bg-[#000c12]/50 p-1">
                         <Button
                           type="button"
                           size="sm"
-                          aria-pressed={viewMode === 'path'}
-                          onClick={() => {
-                            setViewMode('path');
-                            requestAnimationFrame(() => scrollToId('path'));
-                          }}
+                          onClick={goPath}
                           className={cn(
-                            'rounded-xl px-4 h-9',
-                            viewMode === 'path'
-                              ? 'bg-white/10 text-white'
-                              : 'bg-transparent text-slate-200 hover:bg-white/5',
+                            'rounded-xl px-4',
+                            viewMode === 'path' ? 'bg-white/10 text-white' : 'bg-transparent text-slate-200 hover:bg-white/5',
                           )}
                         >
                           {tr('courses.mode.path', 'Percurso')}
@@ -574,60 +553,47 @@ export default function CoursesPage() {
                         <Button
                           type="button"
                           size="sm"
-                          aria-pressed={viewMode === 'catalog'}
-                          onClick={() => {
-                            setViewMode('catalog');
-                            requestAnimationFrame(() => scrollToId('catalog'));
-                          }}
+                          onClick={goCatalog}
                           className={cn(
-                            'rounded-xl px-4 h-9',
-                            viewMode === 'catalog'
-                              ? 'bg-white/10 text-white'
-                              : 'bg-transparent text-slate-200 hover:bg-white/5',
+                            'rounded-xl px-4',
+                            viewMode === 'catalog' ? 'bg-white/10 text-white' : 'bg-transparent text-slate-200 hover:bg-white/5',
                           )}
                         >
                           {tr('courses.mode.catalog', 'Catálogo')}
                         </Button>
                       </div>
 
-                      <div className="hidden lg:flex items-center gap-2 rounded-full border border-white/10 bg-[#000c12]/35 px-3 py-2">
-                        <Info className="h-4 w-4 text-cyan-300" />
-                        <p className="text-xs text-slate-200">
-                          {tr('courses.modebar.rule', 'Um curso de cada vez. Termina. Só depois avanças.')}
-                        </p>
+                      <div className="hidden md:flex items-center gap-2 rounded-full border border-white/10 bg-[#000c12]/40 px-3 py-1">
+                        <span className="text-xs text-slate-200">
+                          <span className="text-slate-300">{tr('courses.mode.ruleLead', 'Regra:')}</span>{' '}
+                          {tr('courses.mode.rule', 'um curso de cada vez. Termina.')}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Right: Quick links + XP pill */}
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#000c12]/35 px-3 py-2">
-                        <span className="text-xs text-slate-300">
-                          {tr('courses.yourXP', 'O teu XP')}:{' '}
-                          <span className="font-semibold text-white">{userXP.toLocaleString()}</span>
-                        </span>
-                      </div>
+                      <span className="rounded-full border border-white/10 bg-[#000c12]/40 px-3 py-1 text-xs text-slate-200">
+                        {tr('courses.yourXP', 'O teu XP')}: <span className="font-semibold text-white">{userXP.toLocaleString()}</span>
+                      </span>
 
                       <Link href="/blog">
-                        <Button size="sm" variant="outline" className={cn(UI.ctaOutline, 'h-9')}>
+                        <Button size="sm" variant="outline" className={UI.ctaOutline}>
                           {tr('courses.quick.blog', 'Blog')}
                         </Button>
                       </Link>
                       <Link href="/education/glossary">
-                        <Button size="sm" variant="outline" className={cn(UI.ctaOutline, 'h-9')}>
+                        <Button size="sm" variant="outline" className={UI.ctaOutline}>
                           {tr('courses.quick.glossary', 'Glossário')}
                         </Button>
                       </Link>
                       <Link href="/education/xp">
-                        <Button size="sm" variant="outline" className={cn(UI.ctaOutline, 'h-9')}>
+                        <Button size="sm" variant="outline" className={UI.ctaOutline}>
                           {tr('courses.quick.xp', 'Como ganhar XP')}
                         </Button>
                       </Link>
                     </div>
                   </div>
                 </div>
-
-                {/* Spacer subtil para evitar "colar" demasiado ao hero */}
-                <div className="h-4" />
               </div>
             </div>
 
@@ -656,22 +622,13 @@ export default function CoursesPage() {
 
                   {nextStep.mode === 'next_unlock' && (nextStep as any).xpMissing > 0 ? (
                     <div className="mt-2 inline-flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-cyan-300" />
-                        <span className={UI.body}>
-                          {tr('courses.nextStep.missing', 'Faltam-te')}{' '}
-                          <span className="font-semibold text-white">
-                            {(nextStep as any).xpMissing.toLocaleString()}
-                          </span>{' '}
-                          XP
-                        </span>
-                      </div>
-                      <div className={cn('flex items-center gap-2', UI.body)}>
-                        <Zap className="h-4 w-4 text-[#fdd87c]" />
-                        <span>
-                          {tr('courses.nextStep.route', 'Rota rápida: 1 lição + 2 artigos + 5 termos no glossário.')}
-                        </span>
-                      </div>
+                      <span className={UI.body}>
+                        {tr('courses.nextStep.missing', 'Faltam-te')}{' '}
+                        <span className="font-semibold text-white">{(nextStep as any).xpMissing.toLocaleString()}</span> XP
+                      </span>
+                      <span className={cn('text-xs text-slate-300')}>
+                        {tr('courses.nextStep.route', 'Rota rápida: 1 lição + 2 artigos + 5 termos no glossário.')}
+                      </span>
                     </div>
                   ) : null}
                 </div>
@@ -698,15 +655,13 @@ export default function CoursesPage() {
                       </Link>
                     </div>
                   ) : (
-                    <p className={cn(UI.micro, 'text-slate-400')}>
-                      {tr('courses.nextStep.micro', 'Uma decisão. Um passo. Progresso real.')}
-                    </p>
+                    <p className={cn(UI.micro, 'text-slate-400')}>{tr('courses.nextStep.micro', 'Uma decisão. Um passo. Progresso real.')}</p>
                   )}
                 </div>
               </div>
             </section>
 
-            {/* START HERE HERO */}
+            {/* START HERE HERO (mantém) */}
             <section className={cn(UI.panel, 'px-6 py-8')}>
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute -top-16 -left-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
@@ -718,62 +673,50 @@ export default function CoursesPage() {
             </section>
 
             {/* PERCURSO (timeline + níveis) */}
-            <section id="path">
-              {viewMode === 'path' ? (
-                <>
-                  <section className={cn(UI.panel, 'px-6 py-6')}>
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute -top-20 -right-12 h-60 w-60 rounded-full bg-cyan-500/10 blur-3xl" />
-                      <div className="absolute -bottom-16 -left-12 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
-                    </div>
-                    <div className="relative space-y-3">
-                      <p className={UI.eyebrow}>{tr('courses.path.eyebrow', 'VISÃO')}</p>
-                      <h2 className={UI.sectionTitle}>
-                        {tr('courses.path.title', 'Níveis não são status. São contexto.')}
-                      </h2>
-                      <p className={UI.sectionSubtitle}>
-                        {tr(
-                          'courses.path.desc',
-                          'O mesmo curso pode ser útil — ou perigoso — dependendo do que já dominas. O percurso existe para reduzir ruído.',
-                        )}
-                      </p>
-                      <div className="pt-2">
-                        <LevelTimeline summary={progressSummary} state={progressState} />
-                      </div>
-                    </div>
-                  </section>
-
-                  <section id="levels" className={cn(UI.panel, 'px-6 py-8')}>
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute -top-16 -left-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-                      <div className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
-                    </div>
-                    <div className="relative">
-                      <LevelSections summary={progressSummary} />
-                    </div>
-                  </section>
-                </>
-              ) : (
-                <section className={cn(UI.panel, 'px-6 py-6')}>
+            {viewMode === 'path' ? (
+              <>
+                <section id="path" className={cn(UI.panel, 'px-6 py-6')}>
                   <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute -top-16 -right-12 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-                    <div className="absolute -bottom-20 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                    <div className="absolute -top-20 -right-12 h-60 w-60 rounded-full bg-cyan-500/10 blur-3xl" />
+                    <div className="absolute -bottom-16 -left-12 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
                   </div>
                   <div className="relative space-y-3">
-                    <p className={UI.eyebrow}>{tr('courses.catalog.eyebrow', 'MODO')}</p>
-                    <h2 className={UI.sectionTitle}>
-                      {tr('courses.catalog.title', 'Explorar serve para quem já sabe o que procura.')}
-                    </h2>
+                    <p className={UI.eyebrow}>{tr('courses.path.eyebrow', 'VISÃO')}</p>
+                    <h2 className={UI.sectionTitle}>{tr('courses.path.title', 'Níveis não são status. São contexto.')}</h2>
                     <p className={UI.sectionSubtitle}>
-                      {tr(
-                        'courses.catalog.desc',
-                        'Se estás no início, volta ao “Percurso”. É onde ganhas base mais rápido — e com menos ruído.',
-                      )}
+                      {tr('courses.path.desc', 'O mesmo curso pode ser útil — ou perigoso — dependendo do que já dominas. O percurso existe para reduzir ruído.')}
                     </p>
+                    <div className="pt-2">
+                      <LevelTimeline summary={progressSummary} state={progressState} />
+                    </div>
                   </div>
                 </section>
-              )}
-            </section>
+
+                <section id="levels" className={cn(UI.panel, 'px-6 py-8')}>
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute -top-16 -left-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                    <div className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+                  </div>
+                  <div className="relative">
+                    <LevelSections summary={progressSummary} />
+                  </div>
+                </section>
+              </>
+            ) : (
+              <section id="path" className={cn(UI.panel, 'px-6 py-6')}>
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute -top-16 -right-12 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+                  <div className="absolute -bottom-20 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                </div>
+                <div className="relative space-y-3">
+                  <p className={UI.eyebrow}>{tr('courses.catalog.eyebrow', 'MODO')}</p>
+                  <h2 className={UI.sectionTitle}>{tr('courses.catalog.title', 'Explorar serve para quem já sabe o que procura.')}</h2>
+                  <p className={UI.sectionSubtitle}>
+                    {tr('courses.catalog.desc', 'Se estás no início, volta ao “Percurso”. É onde ganhas base mais rápido — e com menos ruído.')}
+                  </p>
+                </div>
+              </section>
+            )}
 
             {/* CATÁLOGO / HUB */}
             <section id="catalog" className={cn(UI.panel, 'px-6 py-8')}>
@@ -787,10 +730,7 @@ export default function CoursesPage() {
                   <p className={UI.eyebrow}>{tr('courses.catalogHeader.eyebrow', 'CATÁLOGO')}</p>
                   <h2 className={UI.sectionTitle}>{tr('courses.mainTitle', 'Cursos')}</h2>
                   <p className={UI.sectionSubtitle}>
-                    {tr(
-                      'courses.mainSubtitle',
-                      'Cursos estruturados sobre Web3, a blockchain Apertum e o ecossistema. Ganhas XP com consistência — lições, blog e glossário.',
-                    )}
+                    {tr('courses.mainSubtitle', 'Cursos estruturados sobre Web3, a blockchain Apertum e o ecossistema. Ganhas XP com consistência — lições, blog e glossário.')}
                   </p>
                 </div>
 
@@ -814,9 +754,7 @@ export default function CoursesPage() {
                   <span>
                     {tr('courses.yourXP', 'O teu XP')}: <strong className="text-white">{userXP.toLocaleString()}</strong>
                   </span>
-                  <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
-                    {tr('courses.loggedIn', 'Sessão iniciada')}
-                  </span>
+                  <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">{tr('courses.loggedIn', 'Sessão iniciada')}</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -849,14 +787,13 @@ export default function CoursesPage() {
                       const description = stripHtml(getMultilingualContent(course.description, language));
 
                       const modulesArray: Module[] = Array.isArray(course.modules) ? (course.modules as Module[]) : [];
-
                       const totalModules = course.total_modules ?? modulesArray.length;
+
                       const totalLessons =
                         course.total_lessons ??
                         modulesArray.reduce((acc, m) => acc + (Array.isArray(m.lessons) ? m.lessons.length : 0), 0);
 
                       const totalXP = formatTotalXP(course, modulesArray);
-
                       const completionsCount =
                         course.completions_count ??
                         (course as any)?.completionsCount ??
@@ -1000,7 +937,7 @@ export default function CoursesPage() {
                                       </Button>
                                     </Link>
 
-                                    <Link href="/education">
+                                    <Link href="/education/xp">
                                       <Button size="sm" className={cn(UI.ctaPrimary, 'w-full')}>
                                         <span className="text-xs font-semibold">{tr('courses.gainXp', 'Ganhar XP')}</span>
                                         <ArrowRight className="ml-1 h-3 w-3" />
@@ -1009,10 +946,7 @@ export default function CoursesPage() {
                                   </div>
 
                                   <p className={cn(UI.micro, 'text-slate-400')}>
-                                    {tr(
-                                      'courses.locked.micro',
-                                      'Rota rápida: lições + blog + glossário. Consistência desbloqueia o resto.',
-                                    )}
+                                    {tr('courses.locked.micro', 'Rota rápida: lições + blog + glossário. Consistência desbloqueia o resto.')}
                                   </p>
                                 </>
                               ) : (
@@ -1022,8 +956,8 @@ export default function CoursesPage() {
                                     <span>{tr('courses.unlocked', 'Já podes aceder a este curso')}</span>
                                   </div>
 
-                                  <div className="flex items-center gap-2">
-                                    <Link href={`/education/courses/${course.id}`} className="flex-1">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <Link href={`/education/courses/${course.id}`}>
                                       <Button
                                         size="sm"
                                         variant="outline"
@@ -1033,7 +967,7 @@ export default function CoursesPage() {
                                       </Button>
                                     </Link>
 
-                                    <Link href={`/education/courses/${course.id}`} className="flex-1">
+                                    <Link href={`/education/courses/${course.id}`}>
                                       <Button size="sm" className={cn(UI.ctaPrimary, 'w-full')}>
                                         <span className="text-xs font-semibold">{tr('courses.viewDetails', 'Ver curso')}</span>
                                         <ArrowRight className="ml-1 h-3 w-3" />
@@ -1051,7 +985,6 @@ export default function CoursesPage() {
                 )}
               </div>
             </section>
-
           </div>
         </div>
 
