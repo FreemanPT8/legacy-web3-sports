@@ -145,6 +145,7 @@ const formatTotalXP = (course: Course, modules: Module[]) => {
 };
 
 const clamp0 = (n: number) => (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
+const isFlagTrue = (value: unknown): boolean => value === true;
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -803,7 +804,7 @@ export default function CoursesPage() {
                       const xpRequired = clamp0(course.xp_threshold ?? 0);
                       const isLocked = userXP < xpRequired;
 
-                      const isCourseCreator = !!course.isCreator;
+                      const isCourseCreator = isFlagTrue(course.isCreator);
                       const imageUrl = course.image_url || course.thumbnail_url || null;
                       const initials = getInitials(title);
 

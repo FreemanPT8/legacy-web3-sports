@@ -255,6 +255,8 @@ const getInitials = (text: string) => {
   return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
 };
 
+const isFlagTrue = (value: unknown): boolean => value === true;
+
 const pickAuthorName = (
   ...candidates: Array<string | null | undefined>
 ): string | undefined => {
@@ -401,7 +403,7 @@ const sanitizeCourseDescription = (html: string) =>
 
   const authorName = resolveCourseAuthorName(course, modules);
   const isCourseCreator =
-    !!course.isCreator ||
+    isFlagTrue(course.isCreator) ||
     (!!user &&
       ((course.author_id && course.author_id === user.id) ||
         (!course.author_id && isAdminUser)));
@@ -585,7 +587,7 @@ const sanitizeCourseDescription = (html: string) =>
                   );
 
                   const isModuleCreator =
-                    !!mod.isCreator ||
+                    isFlagTrue(mod.isCreator) ||
                     (!!user &&
                       ((mod.author_id &&
                         mod.author_id === user.id) ||
@@ -677,7 +679,7 @@ const sanitizeCourseDescription = (html: string) =>
                                 );
 
                               const isLessonCreator =
-                                !!lesson.isCreator ||
+                                isFlagTrue(lesson.isCreator) ||
                                 (!!user &&
                                   ((lesson.author_id &&
                                     lesson.author_id === user.id) ||
