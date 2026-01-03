@@ -27,6 +27,14 @@ import {
 } from '@/components/education/LevelTimeline';
 import { LevelSections } from '@/components/education/LevelSections';
 import { NextUnlockCTA } from '@/components/education/NextUnlockCTA';
+import {
+  HeroContent,
+  HeroDescription,
+  HeroEyebrow,
+  HeroSection,
+  HeroTextColumn,
+  HeroTitle,
+} from '@/components/sections/HeroSection';
 
 import type { ProgressSummary } from '@/lib/education/progressSummary';
 import { buildFallbackProgressSummary } from '@/lib/education/fallbackSummary';
@@ -105,18 +113,24 @@ const UI = {
   heroTitle: 'leading-tight font-bold tracking-tight text-[#fdd87c] text-4xl md:text-6xl',
   sectionTitle: 'mt-3 text-3xl md:text-4xl font-bold tracking-tight text-[#fdd87c]',
   sectionSubtitle: 'mt-4 text-sm text-slate-200',
+  body: 'text-sm text-slate-200',
+  bodyMuted: 'text-sm text-slate-300',
+  highlight: 'text-xs text-cyan-200/80',
   cardTitle: 'text-lg font-semibold text-white',
   cardDesc: 'text-sm text-slate-200 leading-relaxed',
-  micro: 'text-xs text-slate-300',
+  micro: 'text-xs text-slate-200',
   goldStatLabel: 'text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]',
   cyanValue: 'text-2xl font-semibold text-[#5af3ff]',
   panel:
     'relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_25px_60px_rgba(2,10,20,0.65)]',
+  cardSurface: 'rounded-2xl border border-white/10 bg-[#04131b]/80 backdrop-blur',
+  statCard:
+    'rounded-2xl border border-white/15 bg-[#000c12]/40 px-4 py-3 text-center shadow-lg shadow-black/40',
   haloCyan: 'absolute -top-20 -right-16 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl',
   haloGold: 'absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-[#fdd87c]/10 blur-3xl',
-  goldBtn:
-    'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] transition hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]',
-  outlineBtn: 'border-white/40 text-white hover:bg-white/10',
+  ctaPrimary:
+    'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]',
+  ctaOutline: 'border-white/40 text-white hover:bg-white/10',
 };
 
 const stripHtml = (value: string) =>
@@ -426,39 +440,35 @@ export default function CoursesPage() {
     return (
       <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
-        <main className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-xl">
-            <div className={cn(UI.panel, 'px-6 py-8')}>
-              <div className="absolute inset-0 pointer-events-none">
-                <div className={UI.haloCyan} />
-                <div className={UI.haloGold} />
-              </div>
-              <div className="relative text-center space-y-4">
-                <p className={UI.eyebrow}>{tr('courses.gate.eyebrow', 'ACADEMIA — CURSOS')}</p>
-                <h1 className={UI.heroTitle}>
+        <main className="flex-1">
+          <HeroSection className="px-6 py-16" overlayVariant="inverse">
+            <div className="relative mx-auto max-w-4xl">
+              <HeroContent className="text-center space-y-4">
+                <HeroEyebrow>{tr('courses.gate.eyebrow', 'ACADEMIA — CURSOS')}</HeroEyebrow>
+                <HeroTitle className={UI.heroTitle}>
                   {tr('courses.gate.title', 'Conteúdo privado. Academia gratuita.')}
-                </h1>
-                <p className={UI.sectionSubtitle}>
+                </HeroTitle>
+                <HeroDescription className="text-base text-slate-100">
                   {tr(
                     'courses.gate.desc',
                     'O login existe para guardar progresso, XP e desbloqueios. O conteúdo é gratuito.',
                   )}
-                </p>
+                </HeroDescription>
+                <HeroDescription className={UI.sectionSubtitle}>
+                  {tr('courses.gate.micro', 'Sem hype. Sem pressa. Com método.')}
+                </HeroDescription>
                 <div className="pt-2">
                   <Button
                     onClick={() => router.push(`/login?next=${encodeURIComponent('/education/courses')}`)}
-                    className={cn(UI.goldBtn, 'w-full sm:w-auto')}
+                    className={cn(UI.ctaPrimary, 'w-full sm:w-auto')}
                   >
                     {tr('courses.gate.cta', 'Entrar / Criar conta')}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
-                <p className={cn(UI.micro, 'text-slate-400')}>
-                  {tr('courses.gate.micro', 'Sem hype. Sem pressa. Com método.')}
-                </p>
-              </div>
+              </HeroContent>
             </div>
-          </div>
+          </HeroSection>
         </main>
         <Footer />
       </div>
@@ -472,92 +482,122 @@ export default function CoursesPage() {
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl space-y-10">
 
-            {/* HERO (2º layer) + intenção */}
-            <section className={cn(UI.panel, 'px-6 py-10')}>
-              <div className="absolute inset-0 pointer-events-none">
-                <div className={UI.haloCyan} />
-                <div className={UI.haloGold} />
-              </div>
-
-              <div className="relative space-y-6">
-                <div className="space-y-3">
-                  <p className={UI.eyebrow}>{tr('nav.courses', 'ACADEMIA — CURSOS')}</p>
-
-                  <h1 className={UI.heroTitle}>
-                    {tr('courses.hero.title', 'O teu percurso na Web3, organizado por níveis e intenção.')}
-                  </h1>
-
-                  <p className={UI.sectionSubtitle}>
-                    {tr(
-                      'courses.hero.subtitle',
-                      'Vês um caminho sugerido — e tens liberdade para criar o teu. Desbloqueios por XP existem para proteger a tua progressão, não para te prender.',
-                    )}
-                  </p>
-
-                  <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3">
-                    <p className="text-sm text-slate-200">
-                      <span className="font-semibold text-white">
-                        {tr('courses.hero.tensionLead', 'Nota importante:')}
-                      </span>{' '}
+            {/* HERO */}
+            <HeroSection className="px-6 py-16" overlayVariant="inverse">
+              <div className="relative mx-auto max-w-6xl">
+                <HeroContent className="lg:items-center">
+                  <HeroTextColumn>
+                    <HeroEyebrow>{tr('nav.courses', 'ACADEMIA — CURSOS')}</HeroEyebrow>
+                    <HeroTitle className={UI.heroTitle}>
+                      {tr('courses.hero.title', 'O teu percurso na Web3, organizado por níveis e intenção.')}
+                    </HeroTitle>
+                    <HeroDescription className="text-base text-slate-100">
+                      {tr(
+                        'courses.hero.subtitle',
+                        'Vês um caminho sugerido — e tens liberdade para criar o teu. Desbloqueios por XP protegem o teu progresso, não te prendem.',
+                      )}
+                    </HeroDescription>
+                    <HeroDescription className={UI.body}>
                       {tr(
                         'courses.hero.tension',
-                        'conteúdo avançado sem base cria confiança falsa — e confiança falsa costuma sair cara.',
+                        'Conteúdo avançado sem base cria confiança falsa — e confiança falsa costuma sair cara.',
+                      )}
+                    </HeroDescription>
+
+                    <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3">
+                      <p className={UI.body}>
+                        <span className="font-semibold text-white">
+                          {tr('courses.hero.tensionLead', 'Nota importante:')}
+                        </span>{' '}
+                        {tr(
+                          'courses.hero.tensionDetail',
+                          'Esta página existe para orientar quem leva isto a sério. Escolhe uma intenção e avança.',
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 mt-6">
+                      <Button size="lg" asChild className={UI.ctaPrimary}>
+                        <Link href="/education" className="flex items-center gap-2">
+                          {tr('courses.hero.primary', 'Voltar ao percurso')}
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+
+                      <Button size="lg" variant="outline" className={UI.ctaOutline} asChild>
+                        <Link href="/education/courses" className="flex items-center gap-2">
+                          {tr('courses.hero.secondary', 'Abrir catálogo')}
+                          <BookOpen className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
+
+                    <p className={cn(UI.highlight, 'mt-3')}>
+                      {tr('courses.hero.note', 'Progresso, XP e desbloqueios ficam guardados no teu perfil.')}
+                    </p>
+                  </HeroTextColumn>
+
+                  <div className="w-full rounded-3xl border border-white/10 bg-[#000c12]/50 p-6 backdrop-blur space-y-4">
+                    <p className={UI.eyebrow}>{tr('courses.hero.panelEyebrow', 'ESCOLHE COMO AVANÇAR')}</p>
+                    <p className={UI.body}>
+                      {tr(
+                        'courses.hero.panelCopy',
+                        'Seleciona o modo que precisas agora — percursos guiados para foco ou catálogo aberto para quem já sabe o que procura.',
                       )}
                     </p>
-                  </div>
-                </div>
 
-                {/* Toggle: Percurso vs Catálogo (não é filtro, é modo) */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/40 p-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => setViewMode('path')}
-                      className={cn(
-                        'rounded-xl px-4',
-                        viewMode === 'path'
-                          ? 'bg-white/10 text-white'
-                          : 'bg-transparent text-slate-200 hover:bg-white/5',
-                      )}
-                    >
-                      {tr('courses.mode.path', 'Percurso sugerido')}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => setViewMode('catalog')}
-                      className={cn(
-                        'rounded-xl px-4',
-                        viewMode === 'catalog'
-                          ? 'bg-white/10 text-white'
-                          : 'bg-transparent text-slate-200 hover:bg-white/5',
-                      )}
-                    >
-                      {tr('courses.mode.catalog', 'Explorar catálogo')}
-                    </Button>
-                  </div>
+                    <div className="inline-flex w-full flex-col gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 p-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/40 p-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setViewMode('path')}
+                          className={cn(
+                            'rounded-xl px-4',
+                            viewMode === 'path'
+                              ? 'bg-white/10 text-white'
+                              : 'bg-transparent text-slate-200 hover:bg-white/5',
+                          )}
+                        >
+                          {tr('courses.mode.path', 'Percurso sugerido')}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setViewMode('catalog')}
+                          className={cn(
+                            'rounded-xl px-4',
+                            viewMode === 'catalog'
+                              ? 'bg-white/10 text-white'
+                              : 'bg-transparent text-slate-200 hover:bg-white/5',
+                          )}
+                        >
+                          {tr('courses.mode.catalog', 'Explorar catálogo')}
+                        </Button>
+                      </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Link href="/blog">
-                      <Button size="sm" variant="outline" className={UI.outlineBtn}>
-                        {tr('courses.quick.blog', 'Blog')}
-                      </Button>
-                    </Link>
-                    <Link href="/education/glossary">
-                      <Button size="sm" variant="outline" className={UI.outlineBtn}>
-                        {tr('courses.quick.glossary', 'Glossário')}
-                      </Button>
-                    </Link>
-                    <Link href="/education/xp">
-                      <Button size="sm" variant="outline" className={UI.outlineBtn}>
-                        {tr('courses.quick.xp', 'Como ganhar XP')}
-                      </Button>
-                    </Link>
+                      <div className="flex flex-wrap gap-2">
+                        <Link href="/blog">
+                          <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                            {tr('courses.quick.blog', 'Blog')}
+                          </Button>
+                        </Link>
+                        <Link href="/education/glossary">
+                          <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                            {tr('courses.quick.glossary', 'Glossário')}
+                          </Button>
+                        </Link>
+                        <Link href="/education/xp">
+                          <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                            {tr('courses.quick.xp', 'Como ganhar XP')}
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </HeroContent>
               </div>
-            </section>
+            </HeroSection>
 
             {/* O TEU PRÓXIMO PASSO */}
             <section className={cn(UI.panel, 'px-6 py-8')}>
@@ -588,13 +628,13 @@ export default function CoursesPage() {
                     <div className="mt-2 inline-flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Target className="h-4 w-4 text-cyan-300" />
-                        <span className="text-sm text-slate-200">
+                        <span className={UI.body}>
                           {tr('courses.nextStep.missing', 'Faltam-te')}{' '}
                           <span className="font-semibold text-white">{nextStep.xpMissing.toLocaleString()}</span>{' '}
                           XP
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-200">
+                      <div className={cn('flex items-center gap-2', UI.body)}>
                         <Zap className="h-4 w-4 text-[#fdd87c]" />
                         <span>
                           {tr(
@@ -609,7 +649,7 @@ export default function CoursesPage() {
 
                 <div className="flex flex-col gap-3">
                   <Link href={nextStep.href}>
-                    <Button className={cn(UI.goldBtn, 'w-full')}>
+                    <Button className={cn(UI.ctaPrimary, 'w-full')}>
                       {nextStep.ctaLabel}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -618,12 +658,12 @@ export default function CoursesPage() {
                   {nextStep.mode === 'next_unlock' ? (
                     <div className="grid grid-cols-2 gap-3">
                       <Link href="/blog">
-                        <Button variant="outline" className={cn(UI.outlineBtn, 'w-full')}>
+                        <Button variant="outline" className={cn(UI.ctaOutline, 'w-full')}>
                           {tr('courses.nextStep.blogCta', 'Ganhar XP no blog')}
                         </Button>
                       </Link>
                       <Link href="/education/glossary">
-                        <Button variant="outline" className={cn(UI.outlineBtn, 'w-full')}>
+                        <Button variant="outline" className={cn(UI.ctaOutline, 'w-full')}>
                           {tr('courses.nextStep.glossaryCta', 'Ganhar XP no glossário')}
                         </Button>
                       </Link>
@@ -721,10 +761,7 @@ export default function CoursesPage() {
 
                 <div className="grid w-full gap-3 sm:grid-cols-3 lg:w-auto">
                   {courseOverviewStats.map((stat) => (
-                    <div
-                      key={stat.key}
-                      className="rounded-2xl border border-white/15 bg-[#000c12]/40 px-4 py-3 text-center shadow-lg shadow-black/40"
-                    >
+                    <div key={stat.key} className={UI.statCard}>
                       <p className={UI.goldStatLabel}>{stat.label}</p>
                       <p className={UI.cyanValue}>{stat.value}</p>
                     </div>
@@ -733,7 +770,12 @@ export default function CoursesPage() {
               </div>
 
               <div className="relative mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-[#000c12]/80 px-4 py-2 text-sm text-slate-300 md:text-base shadow-[0_10px_30px_rgba(3,12,20,0.5)]">
+                <div
+                  className={cn(
+                    'inline-flex items-center gap-3 rounded-full border border-white/15 bg-[#000c12]/80 px-4 py-2 md:text-base shadow-[0_10px_30px_rgba(3,12,20,0.5)]',
+                    UI.bodyMuted,
+                  )}
+                >
                   <span>
                     {tr('courses.yourXP', 'O teu XP')}:{' '}
                     <strong className="text-white">{userXP.toLocaleString()}</strong>
@@ -745,12 +787,12 @@ export default function CoursesPage() {
 
                 <div className="flex flex-wrap gap-2">
                   <Link href="/blog">
-                    <Button size="sm" variant="outline" className={UI.outlineBtn}>
+                    <Button size="sm" variant="outline" className={UI.ctaOutline}>
                       {tr('cta.exploreBlog', 'Explorar Blog')}
                     </Button>
                   </Link>
                   <Link href="/education/glossary">
-                    <Button size="sm" variant="outline" className={UI.outlineBtn}>
+                    <Button size="sm" variant="outline" className={UI.ctaOutline}>
                       {tr('cta.openGlossary', 'Abrir Glossário')}
                     </Button>
                   </Link>
@@ -804,7 +846,10 @@ export default function CoursesPage() {
                       return (
                         <Card
                           key={course.id}
-                          className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#04131b] shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/70 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]"
+                          className={cn(
+                            UI.cardSurface,
+                            'flex h-full flex-col overflow-hidden shadow-[0_30px_65px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/70 hover:shadow-[0_0_35px_rgba(34,211,238,0.35)]',
+                          )}
                         >
                           <div className="relative overflow-hidden border border-white/10 bg-[#000c12]">
                             {imageUrl ? (
@@ -865,7 +910,7 @@ export default function CoursesPage() {
                           </CardHeader>
 
                           <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0">
-                            <div className="flex flex-col gap-2 text-sm text-slate-200">
+                            <div className={cn('flex flex-col gap-2', UI.body)}>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <BookOpen className="h-4 w-4 text-[#5af3ff]" />
@@ -929,7 +974,7 @@ export default function CoursesPage() {
                                     </Link>
 
                                     <Link href="/education">
-                                      <Button size="sm" className={cn(UI.goldBtn, 'w-full')}>
+                                      <Button size="sm" className={cn(UI.ctaPrimary, 'w-full')}>
                                         <span className="text-xs font-semibold">
                                           {tr('courses.gainXp', 'Ganhar XP')}
                                         </span>
@@ -966,7 +1011,7 @@ export default function CoursesPage() {
                                     </Link>
 
                                     <Link href={`/education/courses/${course.id}`} className="flex-1">
-                                      <Button size="sm" className={cn(UI.goldBtn, 'w-full')}>
+                                      <Button size="sm" className={cn(UI.ctaPrimary, 'w-full')}>
                                         <span className="text-xs font-semibold">
                                           {tr('courses.viewDetails', 'Ver curso')}
                                         </span>
