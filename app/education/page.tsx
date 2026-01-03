@@ -532,6 +532,11 @@ export default function EducationPage() {
   const badgesNoteCopy = XP_BADGE_NOTE_COPY[educationLanguage];
   const badgeIconHint = BADGE_ICON_HINT_COPY[educationLanguage];
   const copy = LANDING_COPY[educationLanguage];
+  const translate = (key: string, fallback: string) => {
+    const value = t(key);
+    if (!value || value === key) return fallback;
+    return value;
+  };
 
   // Gate helper (preserva next)
   const gate = (path: string) =>
@@ -596,6 +601,38 @@ export default function EducationPage() {
 
   // Featured courses (evita paralisia: 1 destacado + 2)
   const featuredCourses = useMemo(() => topCourses.slice(0, 3), [topCourses]);
+  const heroHighlights = [
+    {
+      key: 'courses',
+      icon: BookOpen,
+      label: translate('education.stats.courses', 'Cursos'),
+      value: formatStat(stats?.totalCourses),
+      description: translate(
+        'home.structuredPaths',
+        'Caminhos de aprendizagem estruturados para todos os níveis.',
+      ),
+    },
+    {
+      key: 'lessons',
+      icon: Target,
+      label: translate('education.stats.lessons', 'Lições'),
+      value: formatStat(stats?.totalLessons),
+      description: translate(
+        'home.learnEarnDesc',
+        'Completa lições e artigos para ganhar XP. Cada ação conta.',
+      ),
+    },
+    {
+      key: 'users',
+      icon: Users,
+      label: translate('education.stats.activeUsers', 'Alunos ativos'),
+      value: formatStat(stats?.activeUsers),
+      description: translate(
+        'home.personalizedOnboardingDesc',
+        'Percursos personalizados para perfis ligados ao desporto e curiosos em Web3.',
+      ),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
@@ -612,15 +649,15 @@ export default function EducationPage() {
 
                   {/* título 99+ (fallback se ainda não tiveres i18n actualizado) */}
                   <HeroTitle className="leading-tight md:text-5xl">
-                    {t('education.hero.title') || copy.heroTitle}
+                    {translate('education.hero.title', copy.heroTitle)}
                   </HeroTitle>
 
                   <HeroDescription className="text-base text-slate-100">
-                    {t('education.hero.subtitle') || copy.heroSubtitle}
+                    {translate('education.hero.subtitle', copy.heroSubtitle)}
                   </HeroDescription>
 
                   <HeroDescription className="text-slate-200">
-                    {t('education.hero.description') || copy.heroTension}
+                    {translate('education.hero.description', copy.heroTension)}
                   </HeroDescription>
 
                   <p className="text-sm font-semibold text-cyan-200/90">
@@ -662,58 +699,35 @@ export default function EducationPage() {
                 </div>
 
                 <p className="text-xs text-cyan-200/80 mt-3">
-                  {t('home.trackProgress') ||
-                    'Progresso, XP e desbloqueios guardados no teu perfil.'}
+                  {translate(
+                    'home.trackProgress',
+                    'Progresso, XP e desbloqueios guardados no teu perfil.',
+                  )}
                 </p>
               </HeroTextColumn>
 
               <div>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
-                    <CardHeader className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
-                        <BookOpen className="h-4 w-4" />
-                        <span>{t('education.stats.courses')}</span>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {heroHighlights.map((highlight) => {
+                    const Icon = highlight.icon;
+                    return (
+                      <div
+                        key={highlight.key}
+                        className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-4 shadow-lg shadow-black/40 backdrop-blur-md"
+                      >
+                        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.35em] text-[#fdd87c]">
+                          <Icon className="h-4 w-4 text-cyan-200" />
+                          <span>{highlight.label}</span>
+                        </div>
+                        <p className="mt-2 text-3xl font-semibold text-[#5af3ff]">
+                          {highlight.value}
+                        </p>
+                        <p className="text-sm text-slate-300">
+                          {highlight.description}
+                        </p>
                       </div>
-                      <CardTitle className="text-3xl font-semibold text-white">
-                        {formatStat(stats?.totalCourses)}
-                      </CardTitle>
-                      <CardDescription className="text-xs text-slate-200">
-                        {t('home.structuredPaths') || 'Percursos estruturados e progressivos.'}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-
-                  <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
-                    <CardHeader className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
-                        <Target className="h-4 w-4" />
-                        <span>{t('education.stats.lessons')}</span>
-                      </div>
-                      <CardTitle className="text-3xl font-semibold text-white">
-                        {formatStat(stats?.totalLessons)}
-                      </CardTitle>
-                      <CardDescription className="text-xs text-slate-200">
-                        {t('home.learnEarnDesc') || 'Aprende e soma XP com consistência.'}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-
-                  <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
-                    <CardHeader className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cyan-300">
-                        <Users className="h-4 w-4" />
-                        <span>{t('education.stats.activeUsers')}</span>
-                      </div>
-                      <CardTitle className="text-3xl font-semibold text-white">
-                        {formatStat(stats?.activeUsers)}
-                      </CardTitle>
-                      <CardDescription className="text-xs text-slate-200">
-                        {t('home.personalizedOnboardingDesc') ||
-                          'Uma academia viva, em evolução.'}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                    );
+                  })}
                 </div>
               </div>
             </HeroContent>
@@ -765,7 +779,7 @@ export default function EducationPage() {
                       variant="outline"
                       className="border-white/40 text-white hover:bg-white/10"
                     >
-                      {t('cta.startJourney') || 'Criar conta'}
+                      {translate('cta.startJourney', 'Criar conta')}
                     </Button>
                   </Link>
                 ) : null}
@@ -776,26 +790,51 @@ export default function EducationPage() {
 
             {/* preview de níveis (mantém o teu sistema actual) */}
             <div className="rounded-3xl border border-white/10 bg-[#000c12]/60 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-              <h3 className="text-xl font-semibold text-white mb-4">
-                {t('education.previewLevels') || 'Pré-visualização dos níveis'}
-              </h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-xl font-semibold text-white">
+                  {translate(
+                    'education.previewLevels',
+                    'Pré-visualização dos níveis',
+                  )}
+                </h3>
+                <Badge
+                  variant="outline"
+                  className="border-cyan-400/50 bg-cyan-500/10 text-cyan-100"
+                >
+                  XP
+                </Badge>
+              </div>
 
-              <div className="space-y-3 text-sm">
-                {previewLevels.map((item) => (
+              <div className="mt-4 space-y-3">
+                {previewLevels.map((item, index) => (
                   <div
                     key={`${item.title}-${item.range}`}
-                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#04131b] px-4 py-3"
+                    className="flex items-center justify-between rounded-2xl border border-white/15 bg-[#000c12]/70 px-4 py-3 shadow-lg shadow-black/40"
                   >
-                    <span className="font-semibold text-white">{item.title}</span>
-                    <span className="text-slate-200">{item.range}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full border border-cyan-400/40 text-xs font-semibold text-[#fdd87c] flex items-center justify-center">
+                        #{index + 1}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white">{item.title}</p>
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-slate-300">
+                          {translate('education.previewcta', 'Disponível após login.')}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-100">
+                      {item.range}
+                    </span>
                   </div>
                 ))}
-
-                <p className="text-xs text-slate-200">
-                  {t('education.previewHint') ||
-                    'Regista-te para ver a timeline completa, badges e cursos disponíveis em cada nível.'}
-                </p>
               </div>
+
+              <p className="mt-4 text-xs text-slate-200">
+                {translate(
+                  'education.previewHint',
+                  'Regista-te para ver a timeline completa, badges e cursos disponíveis em cada nível.',
+                )}
+              </p>
             </div>
           </div>
         </section>
@@ -909,7 +948,7 @@ export default function EducationPage() {
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
                   <p className="mt-4 text-slate-200">
-                    {t('education.loadingStats') || 'A carregar estatísticas…'}
+                    {translate('education.loadingStats', 'A carregar estatísticas…')}
                   </p>
                 </div>
               ) : (
@@ -969,14 +1008,14 @@ export default function EducationPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white">
                       <Star className="h-6 w-6 text-amber-400" />
-                      {t('education.myProgress') || 'O teu progresso'}
+                      {translate('education.myProgress', 'O teu progresso')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid md:grid-cols-3 gap-6">
                       <div>
                         <div className="text-sm text-cyan-100/80 mb-1">
-                          {t('dashboard.currentXp') || 'XP'}
+                          {translate('dashboard.currentXp', 'XP')}
                         </div>
                         <div className="text-2xl font-bold text-white">
                           {user.xp_total} XP
@@ -984,7 +1023,7 @@ export default function EducationPage() {
                       </div>
                       <div>
                         <div className="text-sm text-cyan-100/80 mb-1">
-                          {t('dashboard.level') || 'Nível'}
+                          {translate('dashboard.level', 'Nível')}
                         </div>
                         <div className="text-xl font-semibold text-emerald-300">
                           {getLevel(user.xp_total)}
@@ -992,10 +1031,10 @@ export default function EducationPage() {
                       </div>
                       <div>
                         <div className="text-sm text-cyan-100/80 mb-1">
-                          {t('dashboard.streak') || 'Streak'}
+                          {translate('dashboard.streak', 'Streak')}
                         </div>
                         <div className="text-2xl font-bold text-white">
-                          {user.streak_count} {t('dashboard.days') || 'dias'}
+                          {user.streak_count} {translate('dashboard.days', 'dias')}
                         </div>
                       </div>
                     </div>
@@ -1025,7 +1064,7 @@ export default function EducationPage() {
                         variant="outline"
                         className="border-white/40 text-white hover:bg-white/10"
                       >
-                        {t('cta.exploreBlog') || 'Explorar Blog'}
+                        {translate('cta.exploreBlog', 'Explorar Blog')}
                       </Button>
                     </Link>
                   </CardContent>
@@ -1048,14 +1087,16 @@ export default function EducationPage() {
           <div className="relative mx-auto max-w-6xl px-6">
             <div className="text-center mb-8">
               <p className="text-xs uppercase tracking-[0.5em] text-cyan-400">
-                {t('education.levelsEyebrow') || 'Academia em níveis'}
+                {translate('education.levelsEyebrow', 'Academia em níveis')}
               </p>
               <h2 className="mt-2 text-3xl font-semibold text-[#fdd87c]">
-                {t('education.levelsTitle') || 'Conteúdos progressivos por patamar'}
+                {translate('education.levelsTitle', 'Conteúdos progressivos por patamar')}
               </h2>
               <p className="mt-2 text-sm text-slate-200">
-                {t('education.levelsDesc') ||
-                  'Cada nível tem cursos adequados ao teu momento. O XP desbloqueia o próximo passo.'}
+                {translate(
+                  'education.levelsDesc',
+                  'Cada nível tem cursos adequados ao teu momento. O XP desbloqueia o próximo passo.',
+                )}
               </p>
             </div>
 
@@ -1070,7 +1111,7 @@ export default function EducationPage() {
                   </p>
                   <p className="mt-2 text-sm text-slate-200">{item.range}</p>
                   <p className="mt-4 text-xs text-slate-200">
-                    {t('education.previewcta') || 'Disponível após login.'}
+                    {translate('education.previewcta', 'Disponível após login.')}
                   </p>
                 </div>
               ))}
@@ -1090,11 +1131,13 @@ export default function EducationPage() {
             <div className="mx-auto max-w-6xl">
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#fdd87c]">
-                  {t('education.featured.title') || 'Cursos em destaque'}
+                  {translate('education.featured.title', 'Cursos em destaque')}
                 </h2>
                 <p className="text-lg text-slate-200">
-                  {t('education.featuredDesc') ||
-                    'Um ponto de entrada sólido. Sem ruído. Sem paralisia por escolha.'}
+                  {translate(
+                    'education.featuredDesc',
+                    'Um ponto de entrada sólido. Sem ruído. Sem paralisia por escolha.',
+                  )}
                 </p>
               </div>
 
@@ -1107,7 +1150,7 @@ export default function EducationPage() {
                   <CardContent className="text-center py-12">
                     <BookOpen className="h-16 w-16 text-slate-200 mx-auto mb-4" />
                     <p className="text-slate-200">
-                      {t('education.noCourses') || 'Ainda não há cursos disponíveis.'}
+                      {translate('education.noCourses', 'Ainda não há cursos disponíveis.')}
                     </p>
                   </CardContent>
                 </Card>
@@ -1180,13 +1223,13 @@ export default function EducationPage() {
                                 className="w-full border-white/30 text-slate-200 hover:bg-white/10"
                                 disabled
                               >
-                                {t('education.unlockAt') || 'Desbloqueia em'}{' '}
+                                {translate('education.unlockAt', 'Desbloqueia em')}{' '}
                                 {course.xp_required} XP
                               </Button>
                             ) : (
                               <Link href={courseHref}>
                                 <Button className="w-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
-                                  {t('education.startCourse') || 'Iniciar curso'}
+                                  {translate('education.startCourse', 'Iniciar curso')}
                                 </Button>
                               </Link>
                             )}
@@ -1205,8 +1248,11 @@ export default function EducationPage() {
                     variant="outline"
                     className="border-white/40 text-white hover:bg-white/10"
                   >
-                    {t('education.viewAll') || t('dashboard.viewAll')}{' '}
-                    {t('education.courses')}
+                    {translate(
+                      'education.viewAll',
+                      translate('dashboard.viewAll', 'Ver tudo'),
+                    )}{' '}
+                    {translate('education.courses', 'Cursos')}
                   </Button>
                 </Link>
               </div>
@@ -1251,16 +1297,16 @@ export default function EducationPage() {
                       {copy.glossaryCta}
                     </Button>
                   </Link>
-                  <Link href="/blog">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-white/40 text-white hover:bg-white/10"
-                    >
-                      {t('cta.exploreBlog') || 'Explorar Blog'}
-                    </Button>
-                  </Link>
-                </div>
+                <Link href="/blog">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/40 text-white hover:bg-white/10"
+                  >
+                    {translate('cta.exploreBlog', 'Explorar Blog')}
+                  </Button>
+                </Link>
+              </div>
 
                 <p className="mt-3 text-xs text-slate-200">{copy.glossaryMicro}</p>
               </div>
@@ -1268,11 +1314,16 @@ export default function EducationPage() {
               <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
                 <CardHeader>
                   <CardTitle className="text-white">
-                    {t('education.glossaryDemoTitle') || 'Demo: definição instantânea'}
+                    {translate(
+                      'education.glossaryDemoTitle',
+                      'Demo: definição instantânea',
+                    )}
                   </CardTitle>
                   <CardDescription className="text-slate-200">
-                    {t('education.glossaryDemoDesc') ||
-                      'Dentro de uma aula ou artigo, clicas num termo e a definição aparece sem saíres da página.'}
+                    {translate(
+                      'education.glossaryDemoDesc',
+                      'Dentro de uma aula ou artigo, clicas num termo e a definição aparece sem saíres da página.',
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1338,7 +1389,10 @@ export default function EducationPage() {
                       variant="outline"
                       className="border-white/40 text-white hover:bg-white/10"
                     >
-                      {t('education.learnMoreXP') || 'Ver detalhes do sistema de XP'}
+                      {translate(
+                        'education.learnMoreXP',
+                        'Ver detalhes do sistema de XP',
+                      )}
                     </Button>
                   </Link>
                 </div>
@@ -1346,7 +1400,7 @@ export default function EducationPage() {
 
               <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#020b16] to-[#04131b] p-8 shadow-[0_25px_60px_rgba(3,10,25,0.65)]">
                 <h3 className="text-xl font-bold mb-6 text-center text-cyan-100">
-                  {t('education.xpLevels') || 'Níveis e XP'}
+                  {translate('education.xpLevels', 'Níveis e XP')}
                 </h3>
 
                 <div className="space-y-3 text-sm">
@@ -1425,7 +1479,7 @@ export default function EducationPage() {
                 <CardContent className="text-center py-12">
                   <Trophy className="h-16 w-16 text-slate-200 mx-auto mb-4" />
                   <p className="text-slate-200">
-                    {t('education.noLeaderboard') || 'Sem dados ainda.'}
+                    {translate('education.noLeaderboard', 'Sem dados ainda.')}
                   </p>
                 </CardContent>
               </Card>
@@ -1487,7 +1541,10 @@ export default function EducationPage() {
                       variant="outline"
                       className="border-white/40 text-white hover:bg-white/10"
                     >
-                      {t('education.viewFullLeaderboard') || 'Ver leaderboard completo'}
+                      {translate(
+                        'education.viewFullLeaderboard',
+                        'Ver leaderboard completo',
+                      )}
                     </Button>
                   </Link>
                 </div>
@@ -1538,7 +1595,7 @@ export default function EducationPage() {
                   variant="outline"
                   className="px-8 border-white/40 text-white hover:bg-white/10"
                 >
-                  {t('cta.exploreBlog') || 'Explorar Blog'}
+                  {translate('cta.exploreBlog', 'Explorar Blog')}
                 </Button>
               </Link>
             </div>
