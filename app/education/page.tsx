@@ -7,7 +7,11 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
-import { XP_LEVELS, getXpLevelLabel } from '@/lib/education/xpLevels';
+import {
+  XP_LEVELS,
+  getXpLevelLabel,
+  type XpLevelKey,
+} from '@/lib/education/xpLevels';
 import { cn } from '@/lib/utils';
 import {
   HeroContent,
@@ -503,6 +507,28 @@ export default function EducationPage() {
   const educationLanguage = resolveEducationLanguage(language);
   const xpLevelsCopy = XP_LEVEL_BLOCK_COPY[educationLanguage];
   const previewLevels = PREVIEW_LEVELS[educationLanguage];
+  const xpLevelsComplete = useMemo(() => {
+    const base = [...xpLevelsCopy];
+    const seen = new Set(base.map((level) => level.title.toLowerCase()));
+    const requiredKeys: XpLevelKey[] = ['hallOfFame', 'master', 'legend'];
+    requiredKeys.forEach((key) => {
+      const level = XP_LEVELS.find((item) => item.key === key);
+      if (!level) return;
+      const translation =
+        level.translations[educationLanguage] || level.translations.pt;
+      if (
+        translation &&
+        !seen.has(translation.title.toLowerCase())
+      ) {
+        base.push({
+          title: translation.title,
+          range: translation.range,
+        });
+        seen.add(translation.title.toLowerCase());
+      }
+    });
+    return base;
+  }, [xpLevelsCopy, educationLanguage]);
   const badgesNoteCopy = XP_BADGE_NOTE_COPY[educationLanguage];
   const badgeIconHint = BADGE_ICON_HINT_COPY[educationLanguage];
   const copy = LANDING_COPY[educationLanguage];
@@ -1324,7 +1350,7 @@ export default function EducationPage() {
                 </h3>
 
                 <div className="space-y-3 text-sm">
-                  {xpLevelsCopy.map((item) => (
+                  {xpLevelsComplete.map((item) => (
                     <div
                       key={`${item.title}-${item.range}`}
                       className="flex items-center justify-between rounded-lg border border-white/10 bg-[#04131b] px-4 py-3"
