@@ -474,6 +474,7 @@ export default function EducationPage() {
   const xpLevelsCopy = XP_LEVEL_BLOCK_COPY[educationLanguage];
   const previewLevels = PREVIEW_LEVELS[educationLanguage];
   const copy = LANDING_COPY[educationLanguage];
+  const preferTuTone = educationLanguage === 'pt';
 
   // --- Tipografia coerente (títulos dourados) ---
   const SECTION_TITLE_CLASS =
@@ -503,7 +504,12 @@ export default function EducationPage() {
   const badgesNoteCopy = XP_BADGE_NOTE_COPY[educationLanguage];
   const badgeIconHint = BADGE_ICON_HINT_COPY[educationLanguage];
 
-  const translate = (key: string, fallback: string) => {
+  const translate = (
+    key: string,
+    fallback: string,
+    options?: { preferFallback?: boolean },
+  ) => {
+    if (options?.preferFallback) return fallback;
     const value = t(key);
     if (!value || value === key) return fallback;
     return value;
@@ -580,7 +586,8 @@ export default function EducationPage() {
       value: formatStat(stats?.totalCourses),
       description: translate(
         'home.structuredPaths',
-        'Caminhos de aprendizagem estruturados para todos os níveis.',
+        'Caminhos de aprendizagem estruturados para o teu momento em Web3.',
+        { preferFallback: preferTuTone },
       ),
     },
     {
@@ -590,17 +597,22 @@ export default function EducationPage() {
       value: formatStat(stats?.totalLessons),
       description: translate(
         'home.learnEarnDesc',
-        'Completa lições e artigos para ganhar XP. Cada ação conta.',
+        'Completa lições e artigos para ganhar XP. Cada ação conta para o teu crescimento.',
+        { preferFallback: preferTuTone },
       ),
     },
     {
       key: 'users',
       icon: Users,
-      label: translate('education.stats.activeUsers', 'Alunos ativos'),
+      label:
+        educationLanguage === 'pt'
+          ? 'Utilizadores'
+          : translate('education.stats.activeUsers', 'Active users'),
       value: formatStat(stats?.activeUsers),
       description: translate(
         'home.personalizedOnboardingDesc',
-        'Percursos personalizados para perfis ligados ao desporto e curiosos em Web3.',
+        'Percursos personalizados orientados ao teu perfil desportivo e curiosidade em Web3.',
+        { preferFallback: preferTuTone },
       ),
     },
   ];
@@ -613,8 +625,11 @@ export default function EducationPage() {
       label: translate('education.stats.courses', 'Cursos'),
       helper: translate(
         'home.structuredPaths',
-        'Caminhos de aprendizagem estruturados para todos os níveis.',
+        'Caminhos de aprendizagem estruturados para o teu momento em Web3.',
+        { preferFallback: preferTuTone },
       ),
+      iconClass: 'bg-cyan-500/10 text-cyan-200',
+      valueClass: 'text-white',
     },
     {
       key: 'lessons',
@@ -623,22 +638,40 @@ export default function EducationPage() {
       label: translate('education.stats.lessons', 'Lições'),
       helper: translate(
         'home.learnEarnDesc',
-        'Completa lições e artigos para ganhar XP. Cada ação conta.',
+        'Completa lições e artigos para ganhar XP. Cada ação conta para o teu crescimento.',
+        { preferFallback: preferTuTone },
       ),
+      iconClass: 'bg-amber-500/10 text-amber-200',
+      valueClass: 'text-[#fdd87c]',
     },
     {
       key: 'users',
       icon: Users,
       value: formatStat(stats?.activeUsers),
-      label: translate('education.stats.activeUsers', 'Alunos ativos'),
-      helper: translate('home.personalizedOnboardingDesc', 'Percursos personalizados e uma academia viva.'),
+      label:
+        educationLanguage === 'pt'
+          ? 'Utilizadores'
+          : translate('education.stats.activeUsers', 'Active users'),
+      helper: translate(
+        'home.personalizedOnboardingDesc',
+        'Percursos personalizados orientados ao teu perfil desportivo e curiosidade em Web3.',
+        { preferFallback: preferTuTone },
+      ),
+      iconClass: 'bg-emerald-500/10 text-emerald-200',
+      valueClass: 'text-emerald-200',
     },
     {
       key: 'xpDistributed',
       icon: Zap,
       value: formatStat(stats?.totalXPDistributed),
       label: translate('education.stats.xpDistributed', 'XP distribuído'),
-      helper: translate('education.stats.xpHint', 'XP atribuído a toda a comunidade desde o lançamento.'),
+      helper: translate(
+        'education.stats.xpHint',
+        'XP atribuído a toda a comunidade desde o lançamento.',
+        { preferFallback: preferTuTone },
+      ),
+      iconClass: 'bg-[#fcb045]/10 text-[#fcb045]',
+      valueClass: 'text-[#fcb045]',
     },
   ];
 
@@ -657,15 +690,21 @@ export default function EducationPage() {
 
                   {/* Hero: mesmo lettering (bold + tracking), maior */}
                   <HeroTitle className={HERO_TITLE_CLASS}>
-                    {translate('education.hero.title', copy.heroTitle)}
+                    {translate('education.hero.title', copy.heroTitle, {
+                      preferFallback: preferTuTone,
+                    })}
                   </HeroTitle>
 
                   <HeroDescription className="text-base text-slate-100">
-                    {translate('education.hero.subtitle', copy.heroSubtitle)}
+                    {translate('education.hero.subtitle', copy.heroSubtitle, {
+                      preferFallback: preferTuTone,
+                    })}
                   </HeroDescription>
 
                   <HeroDescription className="text-slate-200">
-                    {translate('education.hero.description', copy.heroTension)}
+                    {translate('education.hero.description', copy.heroTension, {
+                      preferFallback: preferTuTone,
+                    })}
                   </HeroDescription>
 
                   <p className="text-sm font-semibold text-cyan-200/90">{copy.heroAnchor}</p>
@@ -702,7 +741,11 @@ export default function EducationPage() {
                 </div>
 
                 <p className="text-xs text-cyan-200/80 mt-3">
-                  {translate('home.trackProgress', 'Progresso, XP e desbloqueios guardados no teu perfil.')}
+                  {translate(
+                    'home.trackProgress',
+                    'Progresso, XP e desbloqueios guardados no teu perfil.',
+                    { preferFallback: preferTuTone },
+                  )}
                 </p>
               </HeroTextColumn>
 
@@ -926,14 +969,28 @@ export default function EducationPage() {
                     return (
                       <div
                         key={stat.key}
-                        className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-6 text-center shadow-lg shadow-black/40"
+                        className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#03111a] to-[#01060b] p-6 text-center shadow-lg shadow-black/40"
                       >
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#021c27] text-cyan-100">
+                        <div
+                          className={cn(
+                            'mx-auto flex h-12 w-12 items-center justify-center rounded-full',
+                            stat.iconClass,
+                          )}
+                        >
                           <Icon className="h-6 w-6" />
                         </div>
-                        <p className="mt-4 text-3xl font-bold text-white">{stat.value}</p>
-                        <p className="text-sm text-slate-200">{stat.label}</p>
-                        <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-slate-400">{stat.helper}</p>
+                        <p
+                          className={cn(
+                            'mt-4 text-3xl font-bold tracking-tight',
+                            stat.valueClass || 'text-white',
+                          )}
+                        >
+                          {stat.value}
+                        </p>
+                        <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">
+                          {stat.label}
+                        </p>
+                        <p className="mt-3 text-[13px] text-slate-200">{stat.helper}</p>
                       </div>
                     );
                   })}
@@ -1221,16 +1278,16 @@ export default function EducationPage() {
                 <CardContent>
                   <div className="rounded-2xl border border-white/10 bg-[#000c12]/60 p-4">
                     <p className="text-sm text-slate-200">
-                      “O conceito de{' '}
-                      <span className="text-cyan-200 underline underline-offset-4">slippage</span>{' '}
-                      torna-se relevante em mercados com baixa liquidez…”
+                      “Quando a{' '}
+                      <span className="text-cyan-200 underline underline-offset-4">FOMO</span>{' '}
+                      bate, o impulso é entrar em qualquer projecto só para não ficar de fora.”
                     </p>
 
                     <div className="mt-4 rounded-xl border border-white/10 bg-[#04131b] p-4">
-                      <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Slippage</p>
+                      <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">FOMO</p>
                       <p className="mt-2 text-sm text-slate-200">
-                        Diferença entre o preço esperado e o preço executado numa transacção, frequentemente causada por
-                        liquidez e movimento rápido.
+                        “Fear of Missing Out”. Emoção que leva a decisões precipitadas só para acompanhar o movimento de
+                        outros participantes. Reconhecer FOMO ajuda-te a manter método e evitar erros caros.
                       </p>
                     </div>
                   </div>
