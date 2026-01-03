@@ -46,7 +46,6 @@ import {
   Users,
   Target,
   Zap,
-  Info,
 } from 'lucide-react';
 
 type Lesson = {
@@ -102,34 +101,30 @@ const USE_COURSE_HUB_V2 = process.env.NEXT_PUBLIC_EDU_COURSE_HUB_V2 === 'true';
 /** ---------- Typography + UI Tokens (coerência absoluta) ---------- */
 const UI = {
   eyebrow: 'text-xs uppercase tracking-[0.5em] text-cyan-300',
-  heroTitle:
-    'leading-[1.03] font-bold tracking-tight text-[#fdd87c] text-4xl md:text-6xl',
-  sectionTitle: 'text-3xl md:text-4xl font-bold tracking-tight text-[#fdd87c]',
-  sectionSubtitle: 'text-sm text-slate-200',
+  heroTitle: 'leading-tight font-bold tracking-tight text-[#fdd87c] text-4xl md:text-6xl',
+  sectionTitle: 'mt-3 text-3xl md:text-4xl font-bold tracking-tight text-[#fdd87c]',
+  sectionSubtitle: 'mt-4 text-sm text-slate-200',
   body: 'text-sm text-slate-200',
   bodyMuted: 'text-sm text-slate-300',
-  micro: 'text-xs text-slate-200',
   highlight: 'text-xs text-cyan-200/80',
   cardTitle: 'text-lg font-semibold text-white',
   cardDesc: 'text-sm text-slate-200 leading-relaxed',
+  micro: 'text-xs text-slate-200',
   goldStatLabel: 'text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]',
   cyanValue: 'text-2xl font-semibold text-[#5af3ff]',
   panel:
     'relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_25px_60px_rgba(2,10,20,0.65)]',
-  surface:
-    'rounded-3xl border border-white/10 bg-[#000c12]/45 backdrop-blur shadow-[0_20px_55px_rgba(0,0,0,0.45)]',
   cardSurface: 'rounded-2xl border border-white/10 bg-[#04131b]/80 backdrop-blur',
-  statRow:
-    'mt-6 inline-flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-[#000c12]/35 px-4 py-3',
-  statDot: 'h-1.5 w-1.5 rounded-full bg-white/15',
-  statText: 'text-xs text-slate-200',
+  statCard:
+    'rounded-2xl border border-white/15 bg-[#000c12]/40 px-4 py-3 text-center shadow-lg shadow-black/40',
+  haloCyan: 'absolute -top-20 -right-16 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl',
+  haloGold: 'absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-[#fdd87c]/10 blur-3xl',
   ctaPrimary:
     'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]',
   ctaOutline: 'border-white/40 text-white hover:bg-white/10',
 };
 
-const stripHtml = (value: string) =>
-  value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+const stripHtml = (value: string) => value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
 const getModuleBonusXP = (module: Module) => {
   if (typeof module?.xp_reward === 'number') return module.xp_reward;
@@ -141,8 +136,7 @@ const getModuleBonusXP = (module: Module) => {
 const getCourseCompletionBonus = (course: Course) => {
   if (typeof course?.xp_reward === 'number') return course.xp_reward;
   if (typeof course?.xp_reward_on_complete === 'number') return course.xp_reward_on_complete;
-  if (typeof course?.curriculum?.metadata?.xpReward === 'number')
-    return course.curriculum.metadata.xpReward;
+  if (typeof course?.curriculum?.metadata?.xpReward === 'number') return course.curriculum.metadata.xpReward;
   return 0;
 };
 
@@ -166,6 +160,14 @@ const formatTotalXP = (course: Course, modules: Module[]) => {
 
 const clamp0 = (n: number) => (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
 
+/** ---------- Scroll helper (Opção A) ---------- */
+const scrollToId = (id: string) => {
+  if (typeof window === 'undefined') return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 export default function CoursesPage() {
   const router = useRouter();
   const { user, getToken } = useAuth();
@@ -183,7 +185,6 @@ export default function CoursesPage() {
   const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
   const [progressState, setProgressState] = useState<ProgressFetchState>('idle');
 
-  // Mantém o modo, mas tira-o do hero (vai para baixo da dobra)
   const [viewMode, setViewMode] = useState<'path' | 'catalog'>('path');
 
   const userXP = user?.xp_total || 0;
@@ -297,8 +298,7 @@ export default function CoursesPage() {
   const getLevelBadge = (course: Course) => {
     const baseClass =
       'border border-white/15 bg-cyan-500/15 text-cyan-100 text-[11px] uppercase tracking-[0.3em] rounded-full px-3 py-1';
-    const translation =
-      getLevelTranslation(resolveLevelSlugFromCourse(course as any), xpLevelLanguage) || null;
+    const translation = getLevelTranslation(resolveLevelSlugFromCourse(course as any), xpLevelLanguage) || null;
 
     return (
       <Badge variant="outline" className={baseClass}>
@@ -314,8 +314,9 @@ export default function CoursesPage() {
     return ((words[0][0] || '') + (words[1][0] || '')).toUpperCase();
   };
 
-  /** ---------------- “O teu próximo passo” (recomendação robusta sem inventar completions) ---------------- */
+  /** ---------------- “O teu próximo passo” (recomendação robusta) ---------------- */
   const nextStep = useMemo(() => {
+    // prioridade 1: COMEÇA AQUI se ainda não está concluído
     const startHereIncomplete = startCourseProgressPercent < 100;
 
     const startHereGuess =
@@ -330,7 +331,7 @@ export default function CoursesPage() {
         title: tr('courses.nextStep.startHereTitle', 'Continua o COMEÇA AQUI'),
         desc: tr(
           'courses.nextStep.startHereDesc',
-          'Este curso dá-te contexto e reduz decisões erradas mais à frente.',
+          'Este curso dá-te contexto, método e reduz decisões erradas mais à frente.',
         ),
         ctaLabel: tr('courses.nextStep.continue', 'Continuar'),
         href: startHereGuess ? `/education/courses/${startHereGuess.id}` : '/education/courses',
@@ -339,6 +340,7 @@ export default function CoursesPage() {
       };
     }
 
+    // se não temos catálogo (hub v2), mostramos orientação simples
     if (USE_COURSE_HUB_V2 || courses.length === 0) {
       return {
         title: tr('courses.nextStep.generalTitle', 'Escolhe um passo com intenção'),
@@ -353,6 +355,7 @@ export default function CoursesPage() {
       };
     }
 
+    // próximo desbloqueio por XP (o mais próximo acima do teu XP)
     const sorted = [...courses].sort((a, b) => (a.xp_threshold ?? 0) - (b.xp_threshold ?? 0));
     const nextLocked = sorted.find((c) => (c.xp_threshold ?? 0) > userXP) || null;
 
@@ -377,7 +380,7 @@ export default function CoursesPage() {
     const descriptionRaw = stripHtml(getMultilingualContent(nextLocked.description, language));
     const desc =
       descriptionRaw ||
-      tr('courses.nextStep.defaultLockedDesc', 'Este é o próximo desbloqueio lógico no teu patamar.');
+      tr('courses.nextStep.defaultLockedDesc', 'Este é o próximo desbloqueio lógico no teu patamar actual.');
 
     return {
       title: tr('courses.nextStep.lockedTitle', 'O teu próximo desbloqueio'),
@@ -395,9 +398,7 @@ export default function CoursesPage() {
     {
       key: 'courses',
       label: tr('courses.stats.availableCourses', 'Cursos ativos'),
-      value: USE_COURSE_HUB_V2
-        ? tr('courses.stats.hubActive', 'Hub ativo')
-        : courses.length.toString(),
+      value: USE_COURSE_HUB_V2 ? tr('courses.stats.hubActive', 'Hub ativo') : courses.length.toString(),
     },
     {
       key: 'badges',
@@ -441,19 +442,14 @@ export default function CoursesPage() {
                   {tr('courses.gate.title', 'Conteúdo privado. Academia gratuita.')}
                 </HeroTitle>
                 <HeroDescription className="text-base text-slate-100">
-                  {tr(
-                    'courses.gate.desc',
-                    'O login existe para guardar progresso, XP e desbloqueios. O conteúdo é gratuito.',
-                  )}
+                  {tr('courses.gate.desc', 'O login existe para guardar progresso, XP e desbloqueios. O conteúdo é gratuito.')}
                 </HeroDescription>
                 <HeroDescription className={UI.sectionSubtitle}>
                   {tr('courses.gate.micro', 'Sem hype. Sem pressa. Com método.')}
                 </HeroDescription>
                 <div className="pt-2">
                   <Button
-                    onClick={() =>
-                      router.push(`/login?next=${encodeURIComponent('/education/courses')}`)
-                    }
+                    onClick={() => router.push(`/login?next=${encodeURIComponent('/education/courses')}`)}
                     className={cn(UI.ctaPrimary, 'w-full sm:w-auto')}
                   >
                     {tr('courses.gate.cta', 'Entrar / Criar conta')}
@@ -469,178 +465,153 @@ export default function CoursesPage() {
     );
   }
 
-  const onPrimaryHeroClick = () => {
-    setViewMode('path');
-    // sem dependências extra; anchor nativo
-    const el = document.getElementById('mode');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl space-y-10">
-            {/* HERO 99+ (1 ideia, 1 CTA, 1 alternativa discreta) */}
+
+            {/* HERO */}
             <HeroSection className="px-6 py-16" overlayVariant="inverse">
               <div className="relative mx-auto max-w-6xl">
                 <HeroContent className="lg:items-center">
                   <HeroTextColumn>
-                    <HeroEyebrow>{tr('nav.courses', 'CURSOS')}</HeroEyebrow>
+                    <HeroEyebrow>{tr('nav.courses', 'ACADEMIA — CURSOS')}</HeroEyebrow>
                     <HeroTitle className={UI.heroTitle}>
-                      {tr('courses.hero99.title', 'Aprende Web3 com método. Sem ruído.')}
+                      {tr('courses.hero.title', 'O teu percurso na Web3, organizado por níveis e intenção.')}
                     </HeroTitle>
-
-                    <HeroDescription className="text-base text-slate-100 mt-3">
+                    <HeroDescription className="text-base text-slate-100">
                       {tr(
-                        'courses.hero99.subtitle',
-                        'Percurso dá-te contexto. Catálogo dá-te liberdade. O resto é disciplina.',
+                        'courses.hero.subtitle',
+                        'Vês um caminho sugerido — e tens liberdade para criar o teu. Desbloqueios por XP protegem o teu progresso, não te prendem.',
+                      )}
+                    </HeroDescription>
+                    <HeroDescription className={UI.body}>
+                      {tr(
+                        'courses.hero.tension',
+                        'Conteúdo avançado sem base cria confiança falsa — e confiança falsa costuma sair cara.',
                       )}
                     </HeroDescription>
 
-                    <HeroDescription className={cn(UI.body, 'mt-2')}>
-                      {tr(
-                        'courses.hero99.tension',
-                        'Conteúdo avançado sem base cria confiança falsa — e confiança falsa sai cara.',
-                      )}
-                    </HeroDescription>
-
-                    <div className="mt-6 flex flex-wrap items-center gap-4">
-                      <Button
-                        size="lg"
-                        className={cn(UI.ctaPrimary, 'min-w-[220px]')}
-                        onClick={onPrimaryHeroClick}
-                      >
-                        {tr('courses.hero99.primary', 'Começar pelo percurso')}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-
-                      <Link
-                        href="#catalog"
-                        onClick={() => setViewMode('catalog')}
-                        className="inline-flex items-center gap-2 text-sm text-slate-200 hover:text-white"
-                      >
-                        {tr('courses.hero99.secondary', 'Ver catálogo')}
-                        <span aria-hidden className="text-slate-400">
-                          →
-                        </span>
-                      </Link>
-                    </div>
-
-                    {/* Prova (sem chips grandes, sem painel) */}
-                    <div className={UI.statRow}>
-                      <span className={cn(UI.statText, 'font-semibold text-white')}>
-                        {tr('courses.hero99.statsLabel', 'Hoje:')}
-                      </span>
-                      <span className={UI.statText}>
-                        {tr('courses.hero99.xp', 'XP')}: <span className="font-semibold text-white">{userXP}</span>
-                      </span>
-                      <span className={UI.statDot} />
-                      <span className={UI.statText}>
-                        {tr('courses.hero99.badges', 'Badges')}: <span className="font-semibold text-white">{earnedBadges}</span>
-                      </span>
-                      <span className={UI.statDot} />
-                      <span className={UI.statText}>
-                        {tr('courses.hero99.langs', 'Idiomas')}: <span className="font-semibold text-white">{availableLanguagesCount}</span>
-                      </span>
-                    </div>
-
-                    <p className={cn(UI.highlight, 'mt-3')}>
-                      {tr('courses.hero99.note', 'Progresso, XP e desbloqueios ficam guardados no teu perfil.')}
-                    </p>
-                  </HeroTextColumn>
-
-                  {/* Direita: 1 card. Sem tabs. Sem botões. */}
-                  <div className={cn(UI.surface, 'w-full p-6')}>
-                    <p className={UI.eyebrow}>{tr('courses.hero99.ruleEyebrow', 'REGRA SIMPLES')}</p>
-                    <h3 className={cn('mt-3 text-lg font-semibold text-white')}>
-                      {tr('courses.hero99.ruleTitle', 'Um curso de cada vez.')}
-                    </h3>
-                    <p className={cn(UI.body, 'mt-2')}>
-                      {tr(
-                        'courses.hero99.ruleBody',
-                        'Termina. Só depois avanças. Isto cria capacidade real.',
-                      )}
-                    </p>
-                    <div className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-[#000c12]/35 px-4 py-3">
-                      <Info className="h-4 w-4 text-cyan-300 mt-0.5" />
-                      <p className={cn(UI.micro, 'text-slate-300')}>
-                        {tr('courses.hero99.ruleNote', 'Os desbloqueios protegem-te de atalhos fracos.')}
+                    <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3">
+                      <p className={UI.body}>
+                        <span className="font-semibold text-white">
+                          {tr('courses.hero.tensionLead', 'Nota importante:')}
+                        </span>{' '}
+                        {tr(
+                          'courses.hero.tensionDetail',
+                          'Esta página existe para orientar quem leva isto a sério. Escolhe uma intenção e avança.',
+                        )}
                       </p>
                     </div>
 
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      <Link href="/education/glossary" className="text-xs text-slate-300 hover:text-white">
-                        {tr('courses.hero99.quickGlossary', 'Glossário')}
-                      </Link>
-                      <span className="text-xs text-white/20">•</span>
-                      <Link href="/blog" className="text-xs text-slate-300 hover:text-white">
-                        {tr('courses.hero99.quickBlog', 'Blog')}
-                      </Link>
-                      <span className="text-xs text-white/20">•</span>
-                      <Link href="/education/xp" className="text-xs text-slate-300 hover:text-white">
-                        {tr('courses.hero99.quickXp', 'Como ganhar XP')}
-                      </Link>
+                    <div className="flex flex-wrap gap-4 mt-6">
+                      <Button
+                        size="lg"
+                        className={UI.ctaPrimary}
+                        type="button"
+                        onClick={() => {
+                          setViewMode('path');
+                          requestAnimationFrame(() => scrollToId('path'));
+                        }}
+                      >
+                        {tr('courses.hero.primary', 'Seguir percurso')}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className={UI.ctaOutline}
+                        type="button"
+                        onClick={() => {
+                          setViewMode('catalog');
+                          requestAnimationFrame(() => scrollToId('catalog'));
+                        }}
+                      >
+                        {tr('courses.hero.secondary', 'Abrir catálogo')}
+                        <BookOpen className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <p className={cn(UI.highlight, 'mt-3')}>
+                      {tr('courses.hero.note', 'Progresso, XP e desbloqueios ficam guardados no teu perfil.')}
+                    </p>
+                  </HeroTextColumn>
+
+                  <div className="w-full rounded-3xl border border-white/10 bg-[#000c12]/50 p-6 backdrop-blur space-y-4">
+                    <p className={UI.eyebrow}>{tr('courses.hero.panelEyebrow', 'MODO')}</p>
+                    <p className={UI.body}>
+                      {tr(
+                        'courses.hero.panelCopy',
+                        'Escolhe foco (percurso) ou liberdade (catálogo). Ao clicar, levo-te à secção certa.',
+                      )}
+                    </p>
+
+                    {/* MODO (Opção A: muda modo + scroll) */}
+                    <div className="inline-flex w-full flex-col gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 p-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/40 p-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          aria-pressed={viewMode === 'path'}
+                          onClick={() => {
+                            setViewMode('path');
+                            requestAnimationFrame(() => scrollToId('path'));
+                          }}
+                          className={cn(
+                            'rounded-xl px-4',
+                            viewMode === 'path'
+                              ? 'bg-white/10 text-white'
+                              : 'bg-transparent text-slate-200 hover:bg-white/5',
+                          )}
+                        >
+                          {tr('courses.mode.path', 'Percurso')}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          aria-pressed={viewMode === 'catalog'}
+                          onClick={() => {
+                            setViewMode('catalog');
+                            requestAnimationFrame(() => scrollToId('catalog'));
+                          }}
+                          className={cn(
+                            'rounded-xl px-4',
+                            viewMode === 'catalog'
+                              ? 'bg-white/10 text-white'
+                              : 'bg-transparent text-slate-200 hover:bg-white/5',
+                          )}
+                        >
+                          {tr('courses.mode.catalog', 'Catálogo')}
+                        </Button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Link href="/blog">
+                          <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                            {tr('courses.quick.blog', 'Blog')}
+                          </Button>
+                        </Link>
+                        <Link href="/education/glossary">
+                          <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                            {tr('courses.quick.glossary', 'Glossário')}
+                          </Button>
+                        </Link>
+                        <Link href="/education/xp">
+                          <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                            {tr('courses.quick.xp', 'Como ganhar XP')}
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </HeroContent>
               </div>
             </HeroSection>
 
-            {/* MODO (agora abaixo da dobra, para não poluir o hero) */}
-            <section id="mode" className={cn(UI.panel, 'px-6 py-6')}>
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute -top-16 -right-12 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-                <div className="absolute -bottom-20 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-              </div>
-
-              <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                <div className="space-y-2">
-                  <p className={UI.eyebrow}>{tr('courses.mode.eyebrow', 'MODO')}</p>
-                  <h2 className={UI.sectionTitle}>
-                    {tr('courses.mode.title', 'Escolhe foco. Ou escolhe liberdade.')}
-                  </h2>
-                  <p className={UI.sectionSubtitle}>
-                    {tr(
-                      'courses.mode.desc',
-                      'Percurso dá-te sequência e contexto. Catálogo dá-te controlo. Um não invalida o outro.',
-                    )}
-                  </p>
-                </div>
-
-                <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/35 p-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => setViewMode('path')}
-                    className={cn(
-                      'rounded-xl px-4',
-                      viewMode === 'path'
-                        ? 'bg-white/10 text-white'
-                        : 'bg-transparent text-slate-200 hover:bg-white/5',
-                    )}
-                  >
-                    {tr('courses.mode.path', 'Percurso')}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => setViewMode('catalog')}
-                    className={cn(
-                      'rounded-xl px-4',
-                      viewMode === 'catalog'
-                        ? 'bg-white/10 text-white'
-                        : 'bg-transparent text-slate-200 hover:bg-white/5',
-                    )}
-                  >
-                    {tr('courses.mode.catalog', 'Catálogo')}
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            {/* O TEU PRÓXIMO PASSO (mantém, mas sem excesso de CTAs) */}
+            {/* O TEU PRÓXIMO PASSO */}
             <section className={cn(UI.panel, 'px-6 py-8')}>
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute -top-20 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
@@ -655,7 +626,7 @@ export default function CoursesPage() {
                   <p className={UI.sectionSubtitle}>
                     {nextStep.mode === 'next_unlock' ? (
                       <>
-                        <span className="font-semibold text-white">{nextStep.courseTitle}</span>
+                        <span className="font-semibold text-white">{(nextStep as any).courseTitle}</span>
                         <span className="text-slate-200"> — {nextStep.desc}</span>
                       </>
                     ) : (
@@ -663,14 +634,14 @@ export default function CoursesPage() {
                     )}
                   </p>
 
-                  {nextStep.mode === 'next_unlock' && nextStep.xpMissing > 0 ? (
+                  {nextStep.mode === 'next_unlock' && (nextStep as any).xpMissing > 0 ? (
                     <div className="mt-2 inline-flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Target className="h-4 w-4 text-cyan-300" />
                         <span className={UI.body}>
                           {tr('courses.nextStep.missing', 'Faltam-te')}{' '}
                           <span className="font-semibold text-white">
-                            {nextStep.xpMissing.toLocaleString()}
+                            {(nextStep as any).xpMissing.toLocaleString()}
                           </span>{' '}
                           XP
                         </span>
@@ -678,10 +649,7 @@ export default function CoursesPage() {
                       <div className={cn('flex items-center gap-2', UI.body)}>
                         <Zap className="h-4 w-4 text-[#fdd87c]" />
                         <span>
-                          {tr(
-                            'courses.nextStep.route',
-                            'Rota rápida: 1 lição + 2 artigos + 5 termos no glossário.',
-                          )}
+                          {tr('courses.nextStep.route', 'Rota rápida: 1 lição + 2 artigos + 5 termos no glossário.')}
                         </span>
                       </div>
                     </div>
@@ -696,17 +664,19 @@ export default function CoursesPage() {
                     </Button>
                   </Link>
 
-                  {/* reduz CTAs: só 1 linha de links, não botões */}
                   {nextStep.mode === 'next_unlock' ? (
-                    <p className={cn(UI.micro, 'text-slate-400')}>
-                      <Link href="/blog" className="text-slate-300 hover:text-white">
-                        {tr('courses.nextStep.blogLink', 'Ganha XP no blog')}
+                    <div className="grid grid-cols-2 gap-3">
+                      <Link href="/blog">
+                        <Button variant="outline" className={cn(UI.ctaOutline, 'w-full')}>
+                          {tr('courses.nextStep.blogCta', 'Ganhar XP no blog')}
+                        </Button>
                       </Link>
-                      <span className="text-white/20"> · </span>
-                      <Link href="/education/glossary" className="text-slate-300 hover:text-white">
-                        {tr('courses.nextStep.glossaryLink', 'Ganha XP no glossário')}
+                      <Link href="/education/glossary">
+                        <Button variant="outline" className={cn(UI.ctaOutline, 'w-full')}>
+                          {tr('courses.nextStep.glossaryCta', 'Ganhar XP no glossário')}
+                        </Button>
                       </Link>
-                    </p>
+                    </div>
                   ) : (
                     <p className={cn(UI.micro, 'text-slate-400')}>
                       {tr('courses.nextStep.micro', 'Uma decisão. Um passo. Progresso real.')}
@@ -716,82 +686,80 @@ export default function CoursesPage() {
               </div>
             </section>
 
-            {/* COMEÇA AQUI (fica, mas já não tenta ser o hero) */}
+            {/* START HERE HERO */}
             <section className={cn(UI.panel, 'px-6 py-8')}>
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute -top-16 -left-10 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
                 <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
               </div>
               <div className="relative">
-                <StartHereHero
-                  summary={progressSummary}
-                  state={progressState}
-                  preferredLanguage={language}
-                />
+                <StartHereHero summary={progressSummary} state={progressState} preferredLanguage={language} />
               </div>
             </section>
 
             {/* PERCURSO (timeline + níveis) */}
-            {viewMode === 'path' ? (
-              <>
-                <section id="path" className={cn(UI.panel, 'px-6 py-6')}>
+            <section id="path">
+              {viewMode === 'path' ? (
+                <>
+                  <section className={cn(UI.panel, 'px-6 py-6')}>
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute -top-20 -right-12 h-60 w-60 rounded-full bg-cyan-500/10 blur-3xl" />
+                      <div className="absolute -bottom-16 -left-12 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
+                    </div>
+                    <div className="relative space-y-3">
+                      <p className={UI.eyebrow}>{tr('courses.path.eyebrow', 'VISÃO')}</p>
+                      <h2 className={UI.sectionTitle}>
+                        {tr('courses.path.title', 'Níveis não são status. São contexto.')}
+                      </h2>
+                      <p className={UI.sectionSubtitle}>
+                        {tr(
+                          'courses.path.desc',
+                          'O mesmo curso pode ser útil — ou perigoso — dependendo do que já dominas. O percurso existe para reduzir ruído.',
+                        )}
+                      </p>
+                      <div className="pt-2">
+                        <LevelTimeline summary={progressSummary} state={progressState} />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section id="levels" className={cn(UI.panel, 'px-6 py-8')}>
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute -top-16 -left-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                      <div className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+                    </div>
+                    <div className="relative">
+                      <LevelSections summary={progressSummary} />
+                    </div>
+                  </section>
+                </>
+              ) : (
+                <section className={cn(UI.panel, 'px-6 py-6')}>
                   <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute -top-20 -right-12 h-60 w-60 rounded-full bg-cyan-500/10 blur-3xl" />
-                    <div className="absolute -bottom-16 -left-12 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
+                    <div className="absolute -top-16 -right-12 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+                    <div className="absolute -bottom-20 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
                   </div>
                   <div className="relative space-y-3">
-                    <p className={UI.eyebrow}>{tr('courses.path.eyebrow', 'VISÃO')}</p>
+                    <p className={UI.eyebrow}>{tr('courses.catalog.eyebrow', 'MODO')}</p>
                     <h2 className={UI.sectionTitle}>
-                      {tr('courses.path.title', 'Níveis não são status. São contexto.')}
+                      {tr('courses.catalog.title', 'Explorar serve para quem já sabe o que procura.')}
                     </h2>
                     <p className={UI.sectionSubtitle}>
                       {tr(
-                        'courses.path.desc',
-                        'O mesmo curso pode ser útil — ou perigoso — dependendo do que já dominas. O percurso reduz ruído.',
+                        'courses.catalog.desc',
+                        'Se estás no início, volta ao “Percurso”. É onde ganhas base mais rápido — e com menos ruído.',
                       )}
                     </p>
-                    <div className="pt-2">
-                      <LevelTimeline summary={progressSummary} state={progressState} />
-                    </div>
                   </div>
                 </section>
-
-                <section id="levels" className={cn(UI.panel, 'px-6 py-8')}>
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute -top-16 -left-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-                    <div className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
-                  </div>
-                  <div className="relative">
-                    <LevelSections summary={progressSummary} />
-                  </div>
-                </section>
-              </>
-            ) : (
-              <section className={cn(UI.panel, 'px-6 py-6')}>
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute -top-16 -right-12 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-                  <div className="absolute -bottom-20 -left-16 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
-                </div>
-                <div className="relative space-y-3">
-                  <p className={UI.eyebrow}>{tr('courses.catalog.eyebrow', 'MODO')}</p>
-                  <h2 className={UI.sectionTitle}>
-                    {tr('courses.catalog.title', 'Explorar serve para quem já sabe o que procura.')}
-                  </h2>
-                  <p className={UI.sectionSubtitle}>
-                    {tr(
-                      'courses.catalog.desc',
-                      'Se estás no início, volta ao “Percurso”. A base constrói-se mais depressa — e com menos ruído.',
-                    )}
-                  </p>
-                </div>
-              </section>
-            )}
+              )}
+            </section>
 
             {/* CATÁLOGO / HUB */}
             <section id="catalog" className={cn(UI.panel, 'px-6 py-8')}>
               <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute -top-20 -right-16 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-                <div className="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                <div className={UI.haloCyan} />
+                <div className={UI.haloGold} />
               </div>
 
               <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -808,10 +776,7 @@ export default function CoursesPage() {
 
                 <div className="grid w-full gap-3 sm:grid-cols-3 lg:w-auto">
                   {courseOverviewStats.map((stat) => (
-                    <div
-                      key={stat.key}
-                      className="rounded-2xl border border-white/15 bg-[#000c12]/40 px-4 py-3 text-center shadow-lg shadow-black/40"
-                    >
+                    <div key={stat.key} className={UI.statCard}>
                       <p className={UI.goldStatLabel}>{stat.label}</p>
                       <p className={UI.cyanValue}>{stat.value}</p>
                     </div>
@@ -863,20 +828,16 @@ export default function CoursesPage() {
                       const title = getMultilingualContent(course.title, language);
                       const description = stripHtml(getMultilingualContent(course.description, language));
 
-                      const modulesArray: Module[] = Array.isArray(course.modules)
-                        ? (course.modules as Module[])
-                        : [];
+                      const modulesArray: Module[] = Array.isArray(course.modules) ? (course.modules as Module[]) : [];
 
                       const totalModules = course.total_modules ?? modulesArray.length;
 
                       const totalLessons =
                         course.total_lessons ??
-                        modulesArray.reduce(
-                          (acc, m) => acc + (Array.isArray(m.lessons) ? m.lessons.length : 0),
-                          0,
-                        );
+                        modulesArray.reduce((acc, m) => acc + (Array.isArray(m.lessons) ? m.lessons.length : 0), 0);
 
                       const totalXP = formatTotalXP(course, modulesArray);
+
                       const completionsCount =
                         course.completions_count ??
                         (course as any)?.completionsCount ??
@@ -991,7 +952,6 @@ export default function CoursesPage() {
                               </div>
                             </div>
 
-                            {/* CTAs por card: mantém 2 (info + ação), mas limpa o locked state */}
                             <div className="mt-2 flex flex-col gap-3">
                               {isLocked ? (
                                 <>
@@ -1023,21 +983,16 @@ export default function CoursesPage() {
                                       </Button>
                                     </Link>
 
-                                    <Link href="/education/xp">
+                                    <Link href="/education">
                                       <Button size="sm" className={cn(UI.ctaPrimary, 'w-full')}>
-                                        <span className="text-xs font-semibold">
-                                          {tr('courses.gainXp', 'Ganhar XP')}
-                                        </span>
+                                        <span className="text-xs font-semibold">{tr('courses.gainXp', 'Ganhar XP')}</span>
                                         <ArrowRight className="ml-1 h-3 w-3" />
                                       </Button>
                                     </Link>
                                   </div>
 
                                   <p className={cn(UI.micro, 'text-slate-400')}>
-                                    {tr(
-                                      'courses.locked.micro',
-                                      'Rota rápida: lições + blog + glossário. Consistência desbloqueia o resto.',
-                                    )}
+                                    {tr('courses.locked.micro', 'Rota rápida: lições + blog + glossário. Consistência desbloqueia o resto.')}
                                   </p>
                                 </>
                               ) : (
@@ -1080,6 +1035,7 @@ export default function CoursesPage() {
                 )}
               </div>
             </section>
+
           </div>
         </div>
 
