@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { awardXP, hasCompletedContent, markContentComplete } from '@/lib/xp';
+import {
+  XP_REWARDS,
+  awardXP,
+  hasCompletedContent,
+  markContentComplete,
+} from '@/lib/xp';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 interface RouteContext {
@@ -70,6 +75,8 @@ export async function POST(
 
     const authorId = (post.author_id as string | null) || null;
     const basePostXP = normalizeXpReward(post.xp_reward);
+    const effectivePostXP =
+      basePostXP > 0 ? basePostXP : XP_REWARDS.BLOG_MIN;
 
     // 2) Já completou este artigo?
     const alreadyCompleted = await hasCompletedContent(
@@ -89,9 +96,12 @@ export async function POST(
     // 3) Definir XP efectivo para o leitor
     //    – criador não ganha XP por ler o próprio artigo
     const requestedXp = normalizeXpReward(
-      typeof xpEarned === 'undefined' ? basePostXP : xpEarned,
+      typeof xpEarned === 'undefined' ? effectivePostXP : xpEarned,
     );
-    const safeReaderXP = Math.max(0, Math.min(requestedXp, basePostXP));
+    const safeReaderXP = Math.max(
+      0,
+      Math.min(requestedXp, effectivePostXP),
+    );
     const effectiveXpForReader =
       authorId && authorId === userId ? 0 : safeReaderXP;
 

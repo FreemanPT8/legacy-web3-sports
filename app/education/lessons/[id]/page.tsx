@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
 import { getDefaultAuthorName } from '@/lib/education/authorFallback';
+import { XP_REWARDS } from '@/lib/xp';
 
 import {
   ArrowLeft,
@@ -246,6 +247,10 @@ export default function LessonPage() {
     removeReadMoreMarker(getLocalizedValue(lesson.content)),
   );
   const moduleTitle = getLocalizedValue(module.title);
+  const lessonXpReward = Math.max(
+    typeof lesson.xp_reward === 'number' ? lesson.xp_reward : 0,
+    XP_REWARDS.LESSON_MIN,
+  );
 
   const availableLanguages = getAvailableLanguages(
     getLanguageSource(lesson.title),
@@ -294,7 +299,8 @@ export default function LessonPage() {
       prev
         ? {
             completedCount: prev.completedCount + (alreadyCompleted ? 0 : 1),
-            totalXpDistributed: prev.totalXpDistributed + (alreadyCompleted ? 0 : lesson.xp_reward),
+            totalXpDistributed:
+              prev.totalXpDistributed + (alreadyCompleted ? 0 : lessonXpReward),
           }
         : prev,
     );
@@ -385,7 +391,7 @@ export default function LessonPage() {
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4 text-cyan-300" />
                     <span>
-                      {lesson.xp_reward}{' '}
+                      {lessonXpReward}{' '}
                       {tr('lessons.xpReward', 'XP por conclusão')}
                     </span>
                   </div>
@@ -447,7 +453,7 @@ export default function LessonPage() {
                     userId={user?.id ?? null}
                     contentId={lesson.id}
                     contentType="lesson"
-                    xpReward={lesson.xp_reward}
+                    xpReward={lessonXpReward}
                     estimatedMinutes={durationMinutes}
                     initialCompleted={isCompleted && !isCreator}
                     isAuthor={isCreator}
@@ -473,7 +479,7 @@ export default function LessonPage() {
                     {tr(
                       'lessons.completedDescription',
                       'Ganhaste {xp} XP por completar esta lição.',
-                    ).replace('{xp}', String(lesson.xp_reward))}
+                    ).replace('{xp}', String(lessonXpReward))}
                   </p>
                 </CardContent>
               </Card>

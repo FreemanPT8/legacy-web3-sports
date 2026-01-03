@@ -1,6 +1,7 @@
 // app/api/lessons/[id]/complete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  XP_REWARDS,
   awardXP,
   hasCompletedContent,
   markContentComplete,
@@ -47,6 +48,8 @@ export async function POST(
 
     const resolvedAuthorId = lessonContext.resolvedAuthorId;
     const baseLessonXP = Math.max(0, lessonContext.resolvedXP || 0);
+    const effectiveLessonXP =
+      baseLessonXP > 0 ? baseLessonXP : XP_REWARDS.LESSON_MIN;
 
     const alreadyCompleted = await hasCompletedContent(userId, id, 'lesson');
 
@@ -61,9 +64,12 @@ export async function POST(
     const requestedXp =
       typeof xpEarned === 'number' && Number.isFinite(xpEarned)
         ? xpEarned
-        : baseLessonXP;
+        : effectiveLessonXP;
 
-    const safeReaderXP = Math.max(0, Math.min(requestedXp, baseLessonXP));
+    const safeReaderXP = Math.max(
+      0,
+      Math.min(requestedXp, effectiveLessonXP),
+    );
     const effectiveXpForReader =
       resolvedAuthorId && resolvedAuthorId === userId ? 0 : safeReaderXP;
 

@@ -23,6 +23,7 @@ import {
   PenSquare,
   Award,
 } from 'lucide-react';
+import { XP_REWARDS } from '@/lib/xp';
 import { ContentTracker } from '@/components/ContentTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -255,7 +256,8 @@ export default function BlogPostPage() {
   const htmlContent = renderGlossaryTokens(
     removeReadMoreMarker(pickTranslation(post.content, '')),
   );
-  const xpReward = normalizeXpReward(post.xp_reward);
+  const xpRewardRaw = normalizeXpReward(post.xp_reward);
+  const xpReward = Math.max(xpRewardRaw, XP_REWARDS.BLOG_MIN);
   const estimatedMinutes =
     typeof post.reading_time === 'number' ? post.reading_time : 5;
 
