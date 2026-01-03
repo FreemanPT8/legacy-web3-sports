@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+
 import { getMultilingualContent } from '@/lib/i18n';
 import {
   XP_LEVELS,
@@ -13,6 +16,7 @@ import {
   type XpLevelKey,
 } from '@/lib/education/xpLevels';
 import { cn } from '@/lib/utils';
+
 import {
   HeroContent,
   HeroDescription,
@@ -21,6 +25,7 @@ import {
   HeroTextColumn,
   HeroTitle,
 } from '@/components/sections/HeroSection';
+
 import {
   Card,
   CardContent,
@@ -30,6 +35,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
 import {
   ArrowRight,
   Award,
@@ -81,11 +87,7 @@ const LANDING_COPY: Record<
     infantilEyebrow: string;
     infantilTitle: string;
     infantilDesc: string;
-    infantilCourses: {
-      title: string;
-      desc: string;
-      id: 'I' | 'II' | 'III';
-    }[];
+    infantilCourses: { title: string; desc: string; id: 'I' | 'II' | 'III' }[];
     infantilCta: string;
     infantilMicro: string;
 
@@ -157,27 +159,22 @@ const LANDING_COPY: Record<
     infantilCourses: [
       {
         id: 'I',
-        title:
-          'O Dinheiro Antes de Ti: História, Padrões e Falhanços Inevitáveis',
-        desc:
-          'Como o dinheiro evoluiu, porque falha e porque os ciclos regressam com nomes diferentes.',
+        title: 'O Dinheiro Antes de Ti: História, Padrões e Falhanços Inevitáveis',
+        desc: 'Como o dinheiro evoluiu, porque falha e porque os ciclos regressam com nomes diferentes.',
       },
       {
         id: 'II',
         title: 'O Sistema Em Que Vives: Moeda, Dívida e Psicologia',
-        desc:
-          'Como o sistema molda decisões, risco, comportamento e dependência — e porque isso importa em Web3.',
+        desc: 'Como o sistema molda decisões, risco, comportamento e dependência — e porque isso importa em Web3.',
       },
       {
         id: 'III',
         title: 'O QUE VEM A SEGUIR (E COMO NÃO FICAR PARA TRÁS)',
-        desc:
-          'Um mapa honesto do que está a mudar, do que é inevitável e do que distingue adaptação de negação.',
+        desc: 'Um mapa honesto do que está a mudar, do que é inevitável e do que distingue adaptação de negação.',
       },
     ],
     infantilCta: 'Ver Cursos do Nível Infantil',
-    infantilMicro:
-      'Podes ver os cursos aqui. Para abrir e progredir, precisas de login.',
+    infantilMicro: 'Podes ver os cursos aqui. Para abrir e progredir, precisas de login.',
 
     glossaryEyebrow: 'GLOSSÁRIO LEGACY',
     glossaryTitle: 'Aprende sem interromper o raciocínio.',
@@ -198,18 +195,15 @@ const LANDING_COPY: Record<
     xpPillars: [
       {
         title: 'Competição saudável',
-        desc:
-          'Performance e disciplina contam — e ficam visíveis ao longo do tempo.',
+        desc: 'Performance e disciplina contam — e ficam visíveis ao longo do tempo.',
       },
       {
         title: 'Filtro de maturidade',
-        desc:
-          'Distingue interessados de desinteressados. Ajuda a orientar o que desbloqueia.',
+        desc: 'Distingue interessados de desinteressados. Ajuda a orientar o que desbloqueia.',
       },
       {
         title: 'Preparação para prática',
-        desc:
-          'Quando chegas a níveis mais altos, entras em conteúdos que exigem base, contexto e responsabilidade.',
+        desc: 'Quando chegas a níveis mais altos, entras em conteúdos que exigem base, contexto e responsabilidade.',
       },
     ],
 
@@ -217,30 +211,27 @@ const LANDING_COPY: Record<
     leaderboardTitle: 'A performance fica visível.',
     leaderboardDesc:
       'O leaderboard mostra quem aparece, quem aprende e quem progride. Aqui não existe “hype”. Existe continuidade.',
-    leaderboardMicro:
-      'Leaderboard completo é conteúdo privado (login).',
+    leaderboardMicro: 'Leaderboard completo é conteúdo privado (login).',
 
     finalTitle: 'Começa como Cadete. Evolui como alguém que leva isto a sério.',
     finalDesc:
       'Se queres entrar na Web3 com clareza — e não por impulso — começa pelo percurso certo. O COMEÇA AQUI dá-te contexto e põe-te no caminho.',
     finalPrimary: 'Começar o COMEÇA AQUI',
     finalSecondary: 'Explorar a Academia',
-    finalMicro:
-      'Registo gratuito. Progresso guardado. Desbloqueios por XP.',
+    finalMicro: 'Registo gratuito. Progresso guardado. Desbloqueios por XP.',
 
     loginGateTitle: 'Conteúdo privado. Academia gratuita.',
-    loginGateDesc:
-      'O conteúdo é gratuito. O login serve para guardar progresso, XP e desbloqueios.',
+    loginGateDesc: 'O conteúdo é gratuito. O login serve para guardar progresso, XP e desbloqueios.',
     loginGateCta: 'Entrar / Criar conta',
   },
+
   es: {
     heroTitle: 'Academia Web3 Gratuita con foco en la blockchain Apertum',
     heroSubtitle:
       'Educación estructurada para hombres y mujeres, en cualquier parte del mundo. Atención especial al deporte, pero abierta a cualquiera con curiosidad y criterio.',
     heroTension:
       'Web3 ya es el presente. Quien entra sin base suele aprender de la forma más cara: error, ruido y prisa.',
-    heroTrust:
-      'Sin coste. Sin promesas fáciles. Progresión por niveles y XP para aprender con método.',
+    heroTrust: 'Sin coste. Sin promesas fáciles. Progresión por niveles y XP para aprender con método.',
     heroPrimaryCta: 'Empezar como Cadete (EMPIEZA AQUÍ)',
     heroSecondaryCta: 'Explorar la Academia',
     heroAnchor: 'Educación antes de exposición.',
@@ -273,37 +264,28 @@ const LANDING_COPY: Record<
     infantilCourses: [
       {
         id: 'I',
-        title:
-          'El Dinero Antes de Ti: Historia, Patrones y Fallos Inevitables',
-        desc:
-          'Cómo evolucionó el dinero, por qué falla y por qué los ciclos vuelven.',
+        title: 'El Dinero Antes de Ti: Historia, Patrones y Fallos Inevitables',
+        desc: 'Cómo evolucionó el dinero, por qué falla y por qué los ciclos vuelven.',
       },
       {
         id: 'II',
         title: 'El Sistema en el que Vives: Moneda, Deuda y Psicología',
-        desc:
-          'Cómo el sistema moldea decisiones, riesgo y comportamiento — y por qué importa en Web3.',
+        desc: 'Cómo el sistema moldea decisiones, riesgo y comportamiento — y por qué importa en Web3.',
       },
       {
         id: 'III',
         title: 'LO QUE VIENE (Y CÓMO NO QUEDARTE ATRÁS)',
-        desc:
-          'Un mapa honesto de lo que cambia y de lo que distingue adaptación de negación.',
+        desc: 'Un mapa honesto de lo que cambia y de lo que distingue adaptación de negación.',
       },
     ],
     infantilCta: 'Ver cursos del nivel Infantil',
-    infantilMicro:
-      'Puedes ver los cursos aquí. Para abrir y progresar, necesitas login.',
+    infantilMicro: 'Puedes ver los cursos aquí. Para abrir y progresar, necesitas login.',
 
     glossaryEyebrow: 'GLOSARIO LEGACY',
     glossaryTitle: 'Aprende sin romper el hilo.',
     glossaryDesc:
       'Los términos técnicos frenan a mucha gente. En LEGACY, las palabras clave son clicables: aparece la definición y sigues.',
-    glossaryBullets: [
-      'Definiciones claras y actualizadas',
-      'Integrado en lecciones y blog',
-      'Reduce ruido y acelera aprendizaje',
-    ],
+    glossaryBullets: ['Definiciones claras y actualizadas', 'Integrado en lecciones y blog', 'Reduce ruido y acelera aprendizaje'],
     glossaryCta: 'Abrir glosario',
     glossaryMicro: 'El glosario es contenido privado. Requiere login.',
 
@@ -312,25 +294,14 @@ const LANDING_COPY: Record<
     xpDesc:
       'En un ecosistema con mentalidad deportiva, competir es natural. XP mide performance y consistencia y filtra madurez: indica quién está preparado para contenidos más prácticos — incluso en Apertum.',
     xpPillars: [
-      {
-        title: 'Competición saludable',
-        desc: 'Disciplina y continuidad cuentan y se ven.',
-      },
-      {
-        title: 'Filtro de madurez',
-        desc: 'Separa interés real de desinterés y orienta desbloqueos.',
-      },
-      {
-        title: 'Preparación práctica',
-        desc:
-          'Los niveles altos exigen base y responsabilidad para “meter mano” a herramientas reales.',
-      },
+      { title: 'Competición saludable', desc: 'Disciplina y continuidad cuentan y se ven.' },
+      { title: 'Filtro de madurez', desc: 'Separa interés real de desinterés y orienta desbloqueos.' },
+      { title: 'Preparación práctica', desc: 'Los niveles altos exigen base y responsabilidad para “meter mano” a herramientas reales.' },
     ],
 
     leaderboardEyebrow: 'LEADERBOARD',
     leaderboardTitle: 'La performance se vuelve visible.',
-    leaderboardDesc:
-      'Muestra quién aparece, aprende y progresa. Aquí no hay hype. Hay continuidad.',
+    leaderboardDesc: 'Muestra quién aparece, aprende y progresa. Aquí no hay hype. Hay continuidad.',
     leaderboardMicro: 'Leaderboard completo requiere login.',
 
     finalTitle: 'Empieza como Cadete. Evoluciona con seriedad.',
@@ -341,18 +312,17 @@ const LANDING_COPY: Record<
     finalMicro: 'Registro gratuito. Progreso guardado. Desbloqueos por XP.',
 
     loginGateTitle: 'Contenido privado. Academia gratuita.',
-    loginGateDesc:
-      'El contenido es gratuito. El login guarda progreso, XP y desbloqueos.',
+    loginGateDesc: 'El contenido es gratuito. El login guarda progreso, XP y desbloqueos.',
     loginGateCta: 'Entrar / Crear cuenta',
   },
+
   en: {
     heroTitle: 'Free Web3 Academy focused on the Apertum Blockchain',
     heroSubtitle:
       'Structured education for men and women worldwide. Special attention to sports professionals and enthusiasts — open to anyone with real curiosity and discipline.',
     heroTension:
       'Web3 is not “the future”. It’s the present taking shape. Without literacy, most people learn the expensive way: mistakes, noise, and speed.',
-    heroTrust:
-      'No cost. No easy promises. Level + XP progression to learn with method and consistency.',
+    heroTrust: 'No cost. No easy promises. Level + XP progression to learn with method and consistency.',
     heroPrimaryCta: 'Start as Cadet (START HERE)',
     heroSecondaryCta: 'Explore the Academy',
     heroAnchor: 'Education before exposure.',
@@ -368,15 +338,13 @@ const LANDING_COPY: Record<
       'What this academy does — and what it refuses to do',
     ],
     cadetCta: 'Open the START HERE course',
-    cadetMicro:
-      'You can preview without login. To save progress, earn XP and unlock levels, you must log in.',
+    cadetMicro: 'You can preview without login. To save progress, earn XP and unlock levels, you must log in.',
 
     progressionEyebrow: 'LEVEL PROGRESSION',
     progressionTitle: 'Maturity before complexity.',
     progressionDesc:
       'Each level requires a specific XP amount to unlock the next. Inside each level you get content that fits your stage — so you reach practical work with real foundations.',
-    progressionLine:
-      'Yes, XP also supports competition — and above all, it filters real interest and readiness.',
+    progressionLine: 'Yes, XP also supports competition — and above all, it filters real interest and readiness.',
 
     infantilEyebrow: 'INFANTIL LEVEL — THEORETICAL BASE',
     infantilTitle: 'Before Web3, understand the money game.',
@@ -386,35 +354,27 @@ const LANDING_COPY: Record<
       {
         id: 'I',
         title: 'Money Before You: History, Patterns and Inevitable Failures',
-        desc:
-          'How money evolved, why it fails, and why cycles repeat under new names.',
+        desc: 'How money evolved, why it fails, and why cycles repeat under new names.',
       },
       {
         id: 'II',
         title: 'The System You Live In: Currency, Debt and Psychology',
-        desc:
-          'How systems shape decisions, risk and behavior — and why it matters in Web3.',
+        desc: 'How systems shape decisions, risk and behavior — and why it matters in Web3.',
       },
       {
         id: 'III',
         title: 'WHAT COMES NEXT (AND HOW NOT TO FALL BEHIND)',
-        desc:
-          'A clear map of what’s changing and what separates adaptation from denial.',
+        desc: 'A clear map of what’s changing and what separates adaptation from denial.',
       },
     ],
     infantilCta: 'See Infantil Level courses',
-    infantilMicro:
-      'You can preview courses here. To open and progress, you must log in.',
+    infantilMicro: 'You can preview courses here. To open and progress, you must log in.',
 
     glossaryEyebrow: 'LEGACY GLOSSARY',
     glossaryTitle: 'Learn without breaking your flow.',
     glossaryDesc:
       'Technical terms are where people stall. In LEGACY, keywords are clickable: the definition appears and you keep going — no tab switching.',
-    glossaryBullets: [
-      'Clear, deep, evolving definitions',
-      'Integrated in lessons and blog posts',
-      'Less noise. More real learning',
-    ],
+    glossaryBullets: ['Clear, deep, evolving definitions', 'Integrated in lessons and blog posts', 'Less noise. More real learning'],
     glossaryCta: 'Open Glossary',
     glossaryMicro: 'The glossary is private content. Login required.',
 
@@ -423,25 +383,14 @@ const LANDING_COPY: Record<
     xpDesc:
       'In a sports-minded ecosystem, competition is natural. XP measures performance and consistency and filters maturity: it shows who is ready for more demanding, practical content — including real work in Apertum.',
     xpPillars: [
-      {
-        title: 'Healthy competition',
-        desc: 'Discipline and consistency matter — and become visible.',
-      },
-      {
-        title: 'Maturity filter',
-        desc: 'Separates real interest from noise and guides unlocks.',
-      },
-      {
-        title: 'Practical readiness',
-        desc:
-          'Higher levels require foundations and responsibility for hands-on work.',
-      },
+      { title: 'Healthy competition', desc: 'Discipline and consistency matter — and become visible.' },
+      { title: 'Maturity filter', desc: 'Separates real interest from noise and guides unlocks.' },
+      { title: 'Practical readiness', desc: 'Higher levels require foundations and responsibility for hands-on work.' },
     ],
 
     leaderboardEyebrow: 'LEADERBOARD',
     leaderboardTitle: 'Performance becomes visible.',
-    leaderboardDesc:
-      'It shows who shows up, learns and progresses. No hype — just continuity.',
+    leaderboardDesc: 'It shows who shows up, learns and progresses. No hype — just continuity.',
     leaderboardMicro: 'Full leaderboard requires login.',
 
     finalTitle: 'Start as a Cadet. Evolve with seriousness.',
@@ -452,8 +401,7 @@ const LANDING_COPY: Record<
     finalMicro: 'Free registration. Saved progress. XP unlocks.',
 
     loginGateTitle: 'Private content. Free academy.',
-    loginGateDesc:
-      'Content is free. Login is for saving progress, XP and unlocks.',
+    loginGateDesc: 'Content is free. Login is for saving progress, XP and unlocks.',
     loginGateCta: 'Log in / Create account',
   },
 };
@@ -464,21 +412,17 @@ const buildLevelCopy = (lang: EducationLanguage) =>
     range: level.translations[lang].range,
   }));
 
-const XP_LEVEL_BLOCK_COPY: Record<
-  EducationLanguage,
-  { title: string; range: string }[]
-> = {
+const XP_LEVEL_BLOCK_COPY: Record<EducationLanguage, { title: string; range: string }[]> = {
   pt: buildLevelCopy('pt'),
   es: buildLevelCopy('es'),
   en: buildLevelCopy('en'),
 };
 
-const PREVIEW_LEVELS: Record<EducationLanguage, { title: string; range: string }[]> =
-  {
-    pt: XP_LEVEL_BLOCK_COPY.pt.slice(0, 4),
-    es: XP_LEVEL_BLOCK_COPY.es.slice(0, 4),
-    en: XP_LEVEL_BLOCK_COPY.en.slice(0, 4),
-  };
+const PREVIEW_LEVELS: Record<EducationLanguage, { title: string; range: string }[]> = {
+  pt: XP_LEVEL_BLOCK_COPY.pt.slice(0, 4),
+  es: XP_LEVEL_BLOCK_COPY.es.slice(0, 4),
+  en: XP_LEVEL_BLOCK_COPY.en.slice(0, 4),
+};
 
 const BADGE_TIER_THRESHOLD = 2222;
 
@@ -496,42 +440,48 @@ const BADGE_ICON_HINT_COPY: Record<EducationLanguage, string> = {
 
 const isBadgeTier = (xp: number) => xp >= BADGE_TIER_THRESHOLD;
 
+type EducationStats = {
+  totalCourses?: number;
+  totalLessons?: number;
+  activeUsers?: number;
+  totalXPDistributed?: number;
+};
+
+type LeaderboardEntry = {
+  id: string;
+  username: string;
+  country?: string;
+  xp_total: number;
+};
+
+type CourseModule = { lessons?: unknown[] };
+type Course = {
+  id: string;
+  title: any;
+  description: any;
+  level: 'beginner' | 'intermediate' | 'advanced' | string;
+  xp_required: number;
+  modules?: CourseModule[];
+};
+
 export default function EducationPage() {
   const { user } = useAuth();
   const { language, t } = useLanguage();
-  const [stats, setStats] = useState<any>(null);
-  const [topCourses, setTopCourses] = useState<any[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+
+  const [stats, setStats] = useState<EducationStats | null>(null);
+  const [topCourses, setTopCourses] = useState<Course[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const educationLanguage = resolveEducationLanguage(language);
+  const copy = LANDING_COPY[educationLanguage];
+
   const xpLevelsCopy = XP_LEVEL_BLOCK_COPY[educationLanguage];
   const previewLevels = PREVIEW_LEVELS[educationLanguage];
-  const xpLevelsComplete = useMemo(() => {
-    const base = [...xpLevelsCopy];
-    const seen = new Set(base.map((level) => level.title.toLowerCase()));
-    const requiredKeys: XpLevelKey[] = ['hallOfFame', 'master', 'legend'];
-    requiredKeys.forEach((key) => {
-      const level = XP_LEVELS.find((item) => item.key === key);
-      if (!level) return;
-      const translation =
-        level.translations[educationLanguage] || level.translations.pt;
-      if (
-        translation &&
-        !seen.has(translation.title.toLowerCase())
-      ) {
-        base.push({
-          title: translation.title,
-          range: translation.range,
-        });
-        seen.add(translation.title.toLowerCase());
-      }
-    });
-    return base;
-  }, [xpLevelsCopy, educationLanguage]);
+
   const badgesNoteCopy = XP_BADGE_NOTE_COPY[educationLanguage];
   const badgeIconHint = BADGE_ICON_HINT_COPY[educationLanguage];
-  const copy = LANDING_COPY[educationLanguage];
+
   const translate = (key: string, fallback: string) => {
     const value = t(key);
     if (!value || value === key) return fallback;
@@ -539,23 +489,44 @@ export default function EducationPage() {
   };
 
   // Gate helper (preserva next)
-  const gate = (path: string) =>
-    user ? path : `/login?next=${encodeURIComponent(path)}`;
+  const gate = (path: string) => (user ? path : `/login?next=${encodeURIComponent(path)}`);
+
+  const xpLevelsComplete = useMemo(() => {
+    const base = [...xpLevelsCopy];
+    const seen = new Set(base.map((level) => level.title.toLowerCase()));
+
+    const requiredKeys: XpLevelKey[] = ['hallOfFame', 'master', 'legend'];
+    requiredKeys.forEach((key) => {
+      const level = XP_LEVELS.find((item) => item.key === key);
+      if (!level) return;
+
+      const translation = level.translations[educationLanguage] || level.translations.pt;
+      if (translation && !seen.has(translation.title.toLowerCase())) {
+        base.push({ title: translation.title, range: translation.range });
+        seen.add(translation.title.toLowerCase());
+      }
+    });
+
+    return base;
+  }, [xpLevelsCopy, educationLanguage]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch('/api/education/stats');
         const data = await response.json();
-        if (data.success) {
-          setStats(data.stats);
-          setTopCourses(data.topCourses);
-          setLeaderboard(data.topLeaderboard);
+
+        if (data?.success) {
+          setStats(data.stats || null);
+          setTopCourses(Array.isArray(data.topCourses) ? data.topCourses : []);
+          setLeaderboard(Array.isArray(data.topLeaderboard) ? data.topLeaderboard : []);
         }
       } catch (error) {
+        // Sem ruido visual; logs só em consola
         console.error('Failed to fetch education stats:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchData();
@@ -593,86 +564,70 @@ export default function EducationPage() {
   const getLevel = (xp: number) => getXpLevelLabel(xp);
 
   const formatStat = (value?: number | null) => {
-    if (value === null || value === undefined) {
-      return loading ? '...' : '0';
-    }
+    if (value === null || value === undefined) return loading ? '...' : '0';
     return value.toLocaleString();
   };
 
   // Featured courses (evita paralisia: 1 destacado + 2)
   const featuredCourses = useMemo(() => topCourses.slice(0, 3), [topCourses]);
+
+  // Paleta / CTA (evita repetição e mantém consistência)
+  const CTA_PRIMARY =
+    'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]';
+  const CTA_OUTLINE = 'border-white/40 text-white hover:bg-white/10';
+
   const heroHighlights = [
     {
       key: 'courses',
       icon: BookOpen,
       label: translate('education.stats.courses', 'Cursos'),
       value: formatStat(stats?.totalCourses),
-      description: translate(
-        'home.structuredPaths',
-        'Caminhos de aprendizagem estruturados para todos os níveis.',
-      ),
+      description: translate('home.structuredPaths', 'Caminhos de aprendizagem estruturados para todos os níveis.'),
     },
     {
       key: 'lessons',
       icon: Target,
       label: translate('education.stats.lessons', 'Lições'),
       value: formatStat(stats?.totalLessons),
-      description: translate(
-        'home.learnEarnDesc',
-        'Completa lições e artigos para ganhar XP. Cada ação conta.',
-      ),
+      description: translate('home.learnEarnDesc', 'Completa lições e artigos para ganhar XP. Cada ação conta.'),
     },
     {
       key: 'users',
       icon: Users,
       label: translate('education.stats.activeUsers', 'Alunos ativos'),
       value: formatStat(stats?.activeUsers),
-      description: translate(
-        'home.personalizedOnboardingDesc',
-        'Percursos personalizados para perfis ligados ao desporto e curiosos em Web3.',
-      ),
+      description: translate('home.personalizedOnboardingDesc', 'Percursos personalizados para perfis ligados ao desporto e curiosos em Web3.'),
     },
   ];
+
   const academyStats = [
     {
       key: 'courses',
       icon: BookOpen,
       value: formatStat(stats?.totalCourses),
       label: translate('education.stats.courses', 'Cursos'),
-      helper: translate(
-        'home.structuredPaths',
-        'Caminhos de aprendizagem estruturados para todos os níveis.',
-      ),
+      helper: translate('home.structuredPaths', 'Caminhos de aprendizagem estruturados para todos os níveis.'),
     },
     {
       key: 'lessons',
       icon: Target,
       value: formatStat(stats?.totalLessons),
       label: translate('education.stats.lessons', 'Lições'),
-      helper: translate(
-        'home.learnEarnDesc',
-        'Completa lições e artigos para ganhar XP. Cada ação conta.',
-      ),
+      helper: translate('home.learnEarnDesc', 'Completa lições e artigos para ganhar XP. Cada ação conta.'),
     },
     {
       key: 'users',
       icon: Users,
       value: formatStat(stats?.activeUsers),
       label: translate('education.stats.activeUsers', 'Alunos ativos'),
-      helper: translate(
-        'home.personalizedOnboardingDesc',
-        'Percursos personalizados e uma academia viva.',
-      ),
+      helper: translate('home.personalizedOnboardingDesc', 'Percursos personalizados e uma academia viva.'),
     },
     {
       key: 'xpDistributed',
       icon: Zap,
       value: formatStat(stats?.totalXPDistributed),
       label: translate('education.stats.xpDistributed', 'XP distribuído'),
-      helper: translate(
-        'education.stats.xpHint',
-        'XP atribuído a toda a comunidade desde o lançamento.',
-      ),
+      helper: translate('education.stats.xpHint', 'XP atribuído a toda a comunidade desde o lançamento.'),
     },
   ];
 
@@ -689,7 +644,6 @@ export default function EducationPage() {
                 <div className="space-y-3">
                   <HeroEyebrow>{t('nav.education')}</HeroEyebrow>
 
-                  {/* título 99+ (fallback se ainda não tiveres i18n actualizado) */}
                   <HeroTitle className="leading-tight md:text-5xl">
                     {translate('education.hero.title', copy.heroTitle)}
                   </HeroTitle>
@@ -702,20 +656,12 @@ export default function EducationPage() {
                     {translate('education.hero.description', copy.heroTension)}
                   </HeroDescription>
 
-                  <p className="text-sm font-semibold text-cyan-200/90">
-                    {copy.heroAnchor}
-                  </p>
-
+                  <p className="text-sm font-semibold text-cyan-200/90">{copy.heroAnchor}</p>
                   <p className="text-xs text-slate-200">{copy.heroTrust}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-4 mt-6">
-                  {/* CTA dominante: Começa Aqui (Cadete) */}
-                  <Button
-                    size="lg"
-                    asChild
-                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                  >
+                  <Button size="lg" asChild className={CTA_PRIMARY}>
                     <Link
                       href={gate('/education/courses')}
                       className="flex items-center gap-2"
@@ -726,13 +672,7 @@ export default function EducationPage() {
                     </Link>
                   </Button>
 
-                  {/* Secundário: Explorar */}
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-white/40 text-white hover:bg-white/10"
-                    asChild
-                  >
+                  <Button size="lg" variant="outline" className={CTA_OUTLINE} asChild>
                     <Link href="/education/courses" className="flex items-center gap-2">
                       {copy.heroSecondaryCta}
                       <BookOpen className="h-4 w-4" />
@@ -741,10 +681,7 @@ export default function EducationPage() {
                 </div>
 
                 <p className="text-xs text-cyan-200/80 mt-3">
-                  {translate(
-                    'home.trackProgress',
-                    'Progresso, XP e desbloqueios guardados no teu perfil.',
-                  )}
+                  {translate('home.trackProgress', 'Progresso, XP e desbloqueios guardados no teu perfil.')}
                 </p>
               </HeroTextColumn>
 
@@ -761,12 +698,9 @@ export default function EducationPage() {
                           <Icon className="h-4 w-4 text-cyan-200" />
                           <span>{highlight.label}</span>
                         </div>
-                        <p className="mt-2 text-3xl font-semibold text-[#5af3ff]">
-                          {highlight.value}
-                        </p>
-                        <p className="text-sm text-slate-300">
-                          {highlight.description}
-                        </p>
+
+                        <p className="mt-2 text-3xl font-semibold text-[#5af3ff]">{highlight.value}</p>
+                        <p className="text-sm text-slate-300">{highlight.description}</p>
                       </div>
                     );
                   })}
@@ -776,7 +710,7 @@ export default function EducationPage() {
           </div>
         </HeroSection>
 
-        {/* START HERE (CADETE) — bloco de conversão */}
+        {/* START HERE (CADETE) */}
         <section className="relative overflow-hidden bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] py-12">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-16 -right-14 h-56 w-56 rounded-full bg-[#5af3ff]/10 blur-3xl" />
@@ -785,13 +719,9 @@ export default function EducationPage() {
 
           <div className="relative mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-2">
             <div>
-              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
-                {copy.cadetEyebrow}
-              </p>
+              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">{copy.cadetEyebrow}</p>
 
-              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">
-                {copy.cadetTitle}
-              </h2>
+              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">{copy.cadetTitle}</h2>
 
               <p className="mt-3 text-sm text-slate-200">{copy.cadetDesc}</p>
 
@@ -805,44 +735,27 @@ export default function EducationPage() {
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <Link href={gate('/education/courses')}>
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                  >
-                    {copy.cadetCta}
-                  </Button>
-                </Link>
+                <Button size="lg" asChild className={CTA_PRIMARY}>
+                  <Link href={gate('/education/courses')}>{copy.cadetCta}</Link>
+                </Button>
 
                 {!user ? (
-                  <Link href="/signup">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-white/40 text-white hover:bg-white/10"
-                    >
-                      {translate('cta.startJourney', 'Criar conta')}
-                    </Button>
-                  </Link>
+                  <Button size="lg" variant="outline" className={CTA_OUTLINE} asChild>
+                    <Link href="/signup">{translate('cta.startJourney', 'Criar conta')}</Link>
+                  </Button>
                 ) : null}
               </div>
 
               <p className="mt-3 text-xs text-slate-200">{copy.cadetMicro}</p>
             </div>
 
-            {/* preview de níveis (mantém o teu sistema actual) */}
+            {/* Preview de níveis */}
             <div className="rounded-3xl border border-white/10 bg-[#000c12]/60 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-xl font-semibold text-white">
-                  {translate(
-                    'education.previewLevels',
-                    'Pré-visualização dos níveis',
-                  )}
+                  {translate('education.previewLevels', 'Pré-visualização dos níveis')}
                 </h3>
-                <Badge
-                  variant="outline"
-                  className="border-cyan-400/50 bg-cyan-500/10 text-cyan-100"
-                >
+                <Badge variant="outline" className="border-cyan-400/50 bg-cyan-500/10 text-cyan-100">
                   XP
                 </Badge>
               </div>
@@ -864,6 +777,7 @@ export default function EducationPage() {
                         </p>
                       </div>
                     </div>
+
                     <span className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-100">
                       {item.range}
                     </span>
@@ -881,7 +795,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* PROGRESSÃO — framing certo */}
+        {/* PROGRESSÃO */}
         <section className="relative overflow-hidden py-10">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
@@ -891,13 +805,10 @@ export default function EducationPage() {
 
           <div className="relative mx-auto max-w-6xl px-6">
             <div className="rounded-3xl border border-white/10 bg-[#04131b]/70 backdrop-blur p-8 shadow-[0_25px_60px_rgba(0,0,0,0.45)]">
-              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
-                {copy.progressionEyebrow}
-              </p>
-              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">
-                {copy.progressionTitle}
-              </h2>
+              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">{copy.progressionEyebrow}</p>
+              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">{copy.progressionTitle}</h2>
               <p className="mt-3 text-sm text-slate-200">{copy.progressionDesc}</p>
+
               <p className="mt-4 text-sm text-cyan-100/90 flex items-start gap-2">
                 <TrendingUp className="h-4 w-4 text-cyan-300 mt-[2px]" />
                 <span>{copy.progressionLine}</span>
@@ -906,7 +817,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* NÍVEL INFANTIL — 3 cursos iniciais */}
+        {/* NÍVEL INFANTIL */}
         <section className="relative overflow-hidden py-16">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
@@ -916,15 +827,9 @@ export default function EducationPage() {
 
           <div className="relative mx-auto max-w-6xl px-6">
             <div className="text-center mb-10">
-              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
-                {copy.infantilEyebrow}
-              </p>
-              <h2 className="mt-3 text-3xl md:text-4xl font-semibold text-[#fdd87c]">
-                {copy.infantilTitle}
-              </h2>
-              <p className="mt-3 text-sm text-slate-200 max-w-3xl mx-auto">
-                {copy.infantilDesc}
-              </p>
+              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">{copy.infantilEyebrow}</p>
+              <h2 className="mt-3 text-3xl md:text-4xl font-semibold text-[#fdd87c]">{copy.infantilTitle}</h2>
+              <p className="mt-3 text-sm text-slate-200 max-w-3xl mx-auto">{copy.infantilDesc}</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -935,17 +840,12 @@ export default function EducationPage() {
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <Badge
-                        variant="outline"
-                        className="border-[#5af3ff]/50 bg-[#00141f]/80 text-[#5af3ff]"
-                      >
+                      <Badge variant="outline" className="border-[#5af3ff]/50 bg-[#00141f]/80 text-[#5af3ff]">
                         {c.id}
                       </Badge>
 
                       {!user ? (
-                        <Badge className="border border-white/20 bg-[#000c12] text-slate-200">
-                          Login
-                        </Badge>
+                        <Badge className="border border-white/20 bg-[#000c12] text-slate-200">Login</Badge>
                       ) : (
                         <Badge className="border border-[#34d399]/30 bg-[#04131b] text-emerald-200">
                           Desbloqueável por XP
@@ -953,22 +853,14 @@ export default function EducationPage() {
                       )}
                     </div>
 
-                    <CardTitle className="text-xl text-white mt-3">
-                      {c.title}
-                    </CardTitle>
-                    <CardDescription className="text-slate-200">
-                      {c.desc}
-                    </CardDescription>
+                    <CardTitle className="text-xl text-white mt-3">{c.title}</CardTitle>
+                    <CardDescription className="text-slate-200">{c.desc}</CardDescription>
                   </CardHeader>
 
                   <CardContent>
-                    <Link href={gate('/education/courses')}>
-                      <Button
-                        className="w-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                      >
-                        {copy.infantilCta}
-                      </Button>
-                    </Link>
+                    <Button asChild className={cn('w-full', CTA_PRIMARY)}>
+                      <Link href={gate('/education/courses')}>{copy.infantilCta}</Link>
+                    </Button>
                     <p className="text-xs text-slate-200 mt-3">{copy.infantilMicro}</p>
                   </CardContent>
                 </Card>
@@ -988,10 +880,8 @@ export default function EducationPage() {
             <div className="space-y-10">
               {loading ? (
                 <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-                  <p className="mt-4 text-slate-200">
-                    {translate('education.loadingStats', 'A carregar estatísticas…')}
-                  </p>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/40 mx-auto" />
+                  <p className="mt-4 text-slate-200">{translate('education.loadingStats', 'A carregar estatísticas…')}</p>
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-4">
@@ -1005,11 +895,10 @@ export default function EducationPage() {
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#021c27] text-cyan-100">
                           <Icon className="h-6 w-6" />
                         </div>
+
                         <p className="mt-4 text-3xl font-bold text-white">{stat.value}</p>
                         <p className="text-sm text-slate-200">{stat.label}</p>
-                        <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-slate-400">
-                          {stat.helper}
-                        </p>
+                        <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-slate-400">{stat.helper}</p>
                       </div>
                     );
                   })}
@@ -1022,6 +911,7 @@ export default function EducationPage() {
                     <Star className="h-5 w-5 text-amber-300" />
                     <span>{translate('education.myProgress', 'O teu progresso')}</span>
                   </div>
+
                   <div className="mt-6 grid gap-6 md:grid-cols-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
@@ -1029,14 +919,14 @@ export default function EducationPage() {
                       </p>
                       <p className="mt-2 text-2xl font-bold text-white">{user.xp_total} XP</p>
                     </div>
+
                     <div>
                       <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
                         {translate('dashboard.level', 'Nível')}
                       </p>
-                      <p className="mt-2 text-xl font-semibold text-emerald-300">
-                        {getLevel(user.xp_total)}
-                      </p>
+                      <p className="mt-2 text-xl font-semibold text-emerald-300">{getLevel(user.xp_total)}</p>
                     </div>
+
                     <div>
                       <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
                         {translate('dashboard.streak', 'Streak')}
@@ -1053,21 +943,17 @@ export default function EducationPage() {
                     <Flag className="h-5 w-5 text-cyan-300" />
                     <p className="font-semibold">{copy.loginGateTitle}</p>
                   </div>
+
                   <p className="mt-2 text-sm text-slate-200">{copy.loginGateDesc}</p>
+
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <Link href={gate('/education/courses')}>
-                      <Button className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
-                        {copy.loginGateCta}
-                      </Button>
-                    </Link>
-                    <Link href="/blog">
-                      <Button
-                        variant="outline"
-                        className="border-white/40 text-white hover:bg-white/10"
-                      >
-                        {translate('cta.exploreBlog', 'Explorar Blog')}
-                      </Button>
-                    </Link>
+                    <Button asChild className={CTA_PRIMARY}>
+                      <Link href={gate('/education/courses')}>{copy.loginGateCta}</Link>
+                    </Button>
+
+                    <Button asChild variant="outline" className={CTA_OUTLINE}>
+                      <Link href="/blog">{translate('cta.exploreBlog', 'Explorar Blog')}</Link>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -1075,7 +961,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* LEVELS (mantém) */}
+        {/* LEVELS */}
         <section
           className="relative overflow-hidden bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] py-12"
           id="levels"
@@ -1107,9 +993,7 @@ export default function EducationPage() {
                   key={`${item.title}-${item.range}-grid`}
                   className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-6 text-center text-white shadow-lg shadow-black/40"
                 >
-                  <p className="text-[11px] uppercase tracking-[0.45em] text-cyan-300">
-                    {item.title}
-                  </p>
+                  <p className="text-[11px] uppercase tracking-[0.45em] text-cyan-300">{item.title}</p>
                   <p className="mt-3 text-lg font-semibold text-white">{item.range}</p>
                   <p className="mt-4 text-xs text-slate-300">
                     {translate('education.previewcta', 'Disponível após login.')}
@@ -1120,7 +1004,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* CURSOS EM DESTAQUE (com gating de guest) */}
+        {/* CURSOS EM DESTAQUE */}
         <section className="relative overflow-hidden py-16">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
@@ -1135,43 +1019,34 @@ export default function EducationPage() {
                   {translate('education.featured.title', 'Cursos em destaque')}
                 </h2>
                 <p className="text-lg text-slate-200">
-                  {translate(
-                    'education.featuredDesc',
-                    'Um ponto de entrada sólido. Sem ruído. Sem paralisia por escolha.',
-                  )}
+                  {translate('education.featuredDesc', 'Um ponto de entrada sólido. Sem ruído. Sem paralisia por escolha.')}
                 </p>
               </div>
 
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/40 mx-auto" />
                 </div>
               ) : featuredCourses.length === 0 ? (
                 <Card className="border border-white/10 bg-[#04131b]">
                   <CardContent className="text-center py-12">
                     <BookOpen className="h-16 w-16 text-slate-200 mx-auto mb-4" />
-                    <p className="text-slate-200">
-                      {translate('education.noCourses', 'Ainda não há cursos disponíveis.')}
-                    </p>
+                    <p className="text-slate-200">{translate('education.noCourses', 'Ainda não há cursos disponíveis.')}</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
                   {featuredCourses.map((course, idx) => {
                     const title = getMultilingualContent(course.title, language);
-                    const description = getMultilingualContent(
-                      course.description,
-                      language,
-                    );
+                    const description = getMultilingualContent(course.description, language);
 
-                    const isLockedByXp =
-                      course.xp_required > (user?.xp_total || 0);
+                    const requiredXp = Number(course.xp_required || 0);
+                    const userXp = Number(user?.xp_total || 0);
+                    const isLockedByXp = requiredXp > userXp;
 
-                    const modulesArray = Array.isArray(course.modules)
-                      ? course.modules
-                      : [];
+                    const modulesArray = Array.isArray(course.modules) ? course.modules : [];
                     const lessonsCount = modulesArray.reduce((acc: number, mod: any) => {
-                      const lessonsArray = Array.isArray(mod.lessons) ? mod.lessons : [];
+                      const lessonsArray = Array.isArray(mod?.lessons) ? mod.lessons : [];
                       return acc + lessonsArray.length;
                     }, 0);
 
@@ -1189,17 +1064,17 @@ export default function EducationPage() {
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
                             {getLevelBadge(course.level)}
+
                             <Badge
                               variant="outline"
                               className="border-[#5af3ff]/50 bg-[#00141f]/80 text-[#5af3ff]"
                             >
-                              {course.xp_required} XP
+                              {requiredXp} XP
                             </Badge>
                           </div>
+
                           <CardTitle className="text-xl text-white">{title}</CardTitle>
-                          <CardDescription className="line-clamp-2 text-slate-200">
-                            {description}
-                          </CardDescription>
+                          <CardDescription className="line-clamp-2 text-slate-200">{description}</CardDescription>
                         </CardHeader>
 
                         <CardContent>
@@ -1207,32 +1082,26 @@ export default function EducationPage() {
                             <div className="flex items-center gap-2 text-sm text-slate-200">
                               <BookOpen className="h-4 w-4 text-cyan-300" />
                               <span>
-                                {modulesArray.length} {t('education.modules')} /{' '}
-                                {lessonsCount} {t('education.lessons')}
+                                {modulesArray.length} {t('education.modules')} / {lessonsCount} {t('education.lessons')}
                               </span>
                             </div>
 
                             {!user ? (
-                              <Link href={startHref}>
-                                <Button className="w-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
-                                  {copy.loginGateCta}
-                                </Button>
-                              </Link>
+                              <Button asChild className={cn('w-full', CTA_PRIMARY)}>
+                                <Link href={startHref}>{copy.loginGateCta}</Link>
+                              </Button>
                             ) : isLockedByXp ? (
                               <Button
                                 variant="outline"
                                 className="w-full border-white/30 text-slate-200 hover:bg-white/10"
                                 disabled
                               >
-                                {translate('education.unlockAt', 'Desbloqueia em')}{' '}
-                                {course.xp_required} XP
+                                {translate('education.unlockAt', 'Desbloqueia em')} {requiredXp} XP
                               </Button>
                             ) : (
-                              <Link href={courseHref}>
-                                <Button className="w-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
-                                  {translate('education.startCourse', 'Iniciar curso')}
-                                </Button>
-                              </Link>
+                              <Button asChild className={cn('w-full', CTA_PRIMARY)}>
+                                <Link href={courseHref}>{translate('education.startCourse', 'Iniciar curso')}</Link>
+                              </Button>
                             )}
                           </div>
                         </CardContent>
@@ -1243,25 +1112,18 @@ export default function EducationPage() {
               )}
 
               <div className="text-center">
-                <Link href={gate('/education/courses')}>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-white/40 text-white hover:bg-white/10"
-                  >
-                    {translate(
-                      'education.viewAll',
-                      translate('dashboard.viewAll', 'Ver tudo'),
-                    )}{' '}
+                <Button size="lg" variant="outline" className={CTA_OUTLINE} asChild>
+                  <Link href={gate('/education/courses')}>
+                    {translate('education.viewAll', translate('dashboard.viewAll', 'Ver tudo'))}{' '}
                     {translate('education.courses', 'Cursos')}
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
         </section>
 
-        {/* GLOSSÁRIO (gated) */}
+        {/* GLOSSÁRIO */}
         <section className="relative overflow-hidden px-6 py-14">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
@@ -1272,12 +1134,8 @@ export default function EducationPage() {
           <div className="relative mx-auto max-w-6xl">
             <div className="grid items-center gap-10 md:grid-cols-2">
               <div>
-                <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
-                  {copy.glossaryEyebrow}
-                </p>
-                <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[#fdd87c]">
-                  {copy.glossaryTitle}
-                </h2>
+                <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">{copy.glossaryEyebrow}</p>
+                <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[#fdd87c]">{copy.glossaryTitle}</h2>
                 <p className="mt-4 text-sm text-slate-200">{copy.glossaryDesc}</p>
 
                 <div className="mt-6 space-y-3 text-sm text-slate-200">
@@ -1290,24 +1148,14 @@ export default function EducationPage() {
                 </div>
 
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link href={gate('/education/glossary')}>
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                    >
-                      {copy.glossaryCta}
-                    </Button>
-                  </Link>
-                <Link href="/blog">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-white/40 text-white hover:bg-white/10"
-                  >
-                    {translate('cta.exploreBlog', 'Explorar Blog')}
+                  <Button size="lg" asChild className={CTA_PRIMARY}>
+                    <Link href={gate('/education/glossary')}>{copy.glossaryCta}</Link>
                   </Button>
-                </Link>
-              </div>
+
+                  <Button size="lg" variant="outline" className={CTA_OUTLINE} asChild>
+                    <Link href="/blog">{translate('cta.exploreBlog', 'Explorar Blog')}</Link>
+                  </Button>
+                </div>
 
                 <p className="mt-3 text-xs text-slate-200">{copy.glossaryMicro}</p>
               </div>
@@ -1315,10 +1163,7 @@ export default function EducationPage() {
               <Card className="border border-white/10 bg-[#04131b]/80 backdrop-blur">
                 <CardHeader>
                   <CardTitle className="text-white">
-                    {translate(
-                      'education.glossaryDemoTitle',
-                      'Demo: definição instantânea',
-                    )}
+                    {translate('education.glossaryDemoTitle', 'Demo: definição instantânea')}
                   </CardTitle>
                   <CardDescription className="text-slate-200">
                     {translate(
@@ -1327,22 +1172,20 @@ export default function EducationPage() {
                     )}
                   </CardDescription>
                 </CardHeader>
+
                 <CardContent>
                   <div className="rounded-2xl border border-white/10 bg-[#000c12]/60 p-4">
                     <p className="text-sm text-slate-200">
                       “O conceito de{' '}
-                      <span className="text-cyan-200 underline underline-offset-4">
-                        slippage
-                      </span>{' '}
-                      torna-se relevante em mercados com baixa liquidez…”
+                      <span className="text-cyan-200 underline underline-offset-4">slippage</span> torna-se relevante em
+                      mercados com baixa liquidez…”
                     </p>
+
                     <div className="mt-4 rounded-xl border border-white/10 bg-[#04131b] p-4">
-                      <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
-                        Slippage
-                      </p>
+                      <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Slippage</p>
                       <p className="mt-2 text-sm text-slate-200">
-                        Diferença entre o preço esperado e o preço executado numa
-                        transacção, frequentemente causada por liquidez e movimento rápido.
+                        Diferença entre o preço esperado e o preço executado numa transacção, frequentemente causada por
+                        liquidez e movimento rápido.
                       </p>
                     </div>
                   </div>
@@ -1352,7 +1195,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* SISTEMA DE XP (reposicionado: competição + filtro + preparação) */}
+        {/* SISTEMA DE XP */}
         <section className="relative overflow-hidden px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
@@ -1363,12 +1206,8 @@ export default function EducationPage() {
           <div className="relative mx-auto max-w-6xl">
             <div className="grid items-center gap-12 md:grid-cols-2">
               <div>
-                <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
-                  {copy.xpEyebrow}
-                </p>
-                <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[#fdd87c]">
-                  {copy.xpTitle}
-                </h2>
+                <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">{copy.xpEyebrow}</p>
+                <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[#fdd87c]">{copy.xpTitle}</h2>
                 <p className="mt-4 text-sm text-slate-200">{copy.xpDesc}</p>
 
                 <div className="mt-6 space-y-4 text-sm">
@@ -1384,18 +1223,11 @@ export default function EducationPage() {
                 </div>
 
                 <div className="mt-8">
-                  <Link href={gate('/education/xp')}>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-white/40 text-white hover:bg-white/10"
-                    >
-                      {translate(
-                        'education.learnMoreXP',
-                        'Ver detalhes do sistema de XP',
-                      )}
-                    </Button>
-                  </Link>
+                  <Button size="lg" variant="outline" className={CTA_OUTLINE} asChild>
+                    <Link href={gate('/education/xp')}>
+                      {translate('education.learnMoreXP', 'Ver detalhes do sistema de XP')}
+                    </Link>
+                  </Button>
                 </div>
               </div>
 
@@ -1417,7 +1249,7 @@ export default function EducationPage() {
                 </div>
 
                 <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-100">
-                  <Award className="h-4 w-4 text-amber-300" />
+                  <Award className="h-4 w-4 text-amber-300 mt-[2px]" />
                   <p className="text-left text-amber-50">{badgesNoteCopy}</p>
                 </div>
               </div>
@@ -1425,7 +1257,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* LEADERBOARD (gated) */}
+        {/* LEADERBOARD */}
         <section className="relative overflow-hidden px-6 py-16">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#031b27]" />
@@ -1435,15 +1267,9 @@ export default function EducationPage() {
 
           <div className="relative mx-auto max-w-6xl">
             <div className="text-center mb-10">
-              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">
-                {copy.leaderboardEyebrow}
-              </p>
-              <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[#fdd87c]">
-                {copy.leaderboardTitle}
-              </h2>
-              <p className="mt-3 text-sm text-slate-200 max-w-2xl mx-auto">
-                {copy.leaderboardDesc}
-              </p>
+              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">{copy.leaderboardEyebrow}</p>
+              <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[#fdd87c]">{copy.leaderboardTitle}</h2>
+              <p className="mt-3 text-sm text-slate-200 max-w-2xl mx-auto">{copy.leaderboardDesc}</p>
               <p className="mt-2 text-xs text-slate-200">{copy.leaderboardMicro}</p>
             </div>
 
@@ -1456,105 +1282,81 @@ export default function EducationPage() {
               <Card className="border border-white/10 bg-[#04131b]/70 backdrop-blur">
                 <CardHeader>
                   <CardTitle className="text-white">{copy.loginGateTitle}</CardTitle>
-                  <CardDescription className="text-slate-200">
-                    {copy.loginGateDesc}
-                  </CardDescription>
+                  <CardDescription className="text-slate-200">{copy.loginGateDesc}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <Link href={gate('/education/leaderboard')}>
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                    >
-                      {copy.loginGateCta}
-                    </Button>
-                  </Link>
+                  <Button size="lg" asChild className={CTA_PRIMARY}>
+                    <Link href={gate('/education/leaderboard')}>{copy.loginGateCta}</Link>
+                  </Button>
                 </CardContent>
               </Card>
             ) : loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/40 mx-auto" />
               </div>
             ) : leaderboard.length === 0 ? (
               <Card className="border border-white/10 bg-[#04131b]">
                 <CardContent className="text-center py-12">
                   <Trophy className="h-16 w-16 text-slate-200 mx-auto mb-4" />
-                  <p className="text-slate-200">
-                    {translate('education.noLeaderboard', 'Sem dados ainda.')}
-                  </p>
+                  <p className="text-slate-200">{translate('education.noLeaderboard', 'Sem dados ainda.')}</p>
                 </CardContent>
               </Card>
             ) : (
               <>
                 <div className="space-y-4 mb-8">
-                  {leaderboard.slice(0, 5).map((learner, index) => (
-                    <Card
-                      key={learner.id}
-                      className={cn(
-                        'border border-white/10 bg-[#04131b]',
-                        index < 3 ? 'ring-1 ring-primary/60' : '',
-                      )}
-                    >
-                      <CardContent className="flex items-center gap-4 p-6">
-                        <div
-                          className={`text-2xl font-bold ${
-                            index === 0
-                              ? 'text-amber-400'
-                              : index === 1
-                              ? 'text-white'
-                              : index === 2
-                              ? 'text-orange-400'
-                              : 'text-slate-300'
-                          }`}
-                        >
-                          #{index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-semibold text-lg text-white">
-                            {learner.username}
+                  {leaderboard.slice(0, 5).map((learner, index) => {
+                    const rankColor =
+                      index === 0
+                        ? 'text-amber-400'
+                        : index === 1
+                        ? 'text-white'
+                        : index === 2
+                        ? 'text-orange-400'
+                        : 'text-slate-300';
+
+                    return (
+                      <Card
+                        key={learner.id}
+                        className={cn('border border-white/10 bg-[#04131b]', index < 3 ? 'ring-1 ring-cyan-400/20' : '')}
+                      >
+                        <CardContent className="flex items-center gap-4 p-6">
+                          <div className={cn('text-2xl font-bold', rankColor)}>#{index + 1}</div>
+
+                          <div className="flex-1">
+                            <div className="font-semibold text-lg text-white">{learner.username}</div>
+                            <div className="text-sm text-slate-200">{learner.country || '—'}</div>
                           </div>
-                          <div className="text-sm text-slate-200">
-                            {learner.country}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {isBadgeTier(learner.xp_total) && (
-                              <span className="inline-flex" title={badgeIconHint}>
-                                <Award className="h-4 w-4 text-amber-300" />
-                              </span>
-                            )}
-                            <div className="text-2xl font-bold text-primary">
-                              {learner.xp_total}
+
+                          <div className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {isBadgeTier(learner.xp_total) && (
+                                <span className="inline-flex" title={badgeIconHint}>
+                                  <Award className="h-4 w-4 text-amber-300" />
+                                </span>
+                              )}
+                              <div className="text-2xl font-bold text-[#5af3ff]">{learner.xp_total}</div>
                             </div>
+                            <div className="text-sm text-slate-200">XP</div>
                           </div>
-                          <div className="text-sm text-slate-200">XP</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
 
                 <div className="text-center">
-                  <Link href="/education/leaderboard">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-white/40 text-white hover:bg-white/10"
-                    >
-                      {translate(
-                        'education.viewFullLeaderboard',
-                        'Ver leaderboard completo',
-                      )}
-                    </Button>
-                  </Link>
+                  <Button size="lg" variant="outline" className={CTA_OUTLINE} asChild>
+                    <Link href={gate('/education/leaderboard')}>
+                      {translate('education.viewFullLeaderboard', 'Ver leaderboard completo')}
+                    </Link>
+                  </Button>
                 </div>
               </>
             )}
           </div>
         </section>
 
-        {/* CTA FINAL (eco do hero) */}
+        {/* CTA FINAL */}
         <section className="relative overflow-hidden py-16">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27]" />
@@ -1563,42 +1365,21 @@ export default function EducationPage() {
           </div>
 
           <div className="relative mx-auto max-w-5xl px-6 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#fdd87c]">
-              {copy.finalTitle}
-            </h2>
-            <p className="text-sm text-slate-200 mb-8 max-w-2xl mx-auto">
-              {copy.finalDesc}
-            </p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#fdd87c]">{copy.finalTitle}</h2>
+            <p className="text-sm text-slate-200 mb-8 max-w-2xl mx-auto">{copy.finalDesc}</p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href={gate('/education/courses')}>
-                <Button
-                  size="lg"
-                  className="px-8 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                >
-                  {copy.finalPrimary}
-                </Button>
-              </Link>
+              <Button size="lg" asChild className={cn('px-8', CTA_PRIMARY)}>
+                <Link href={gate('/education/courses')}>{copy.finalPrimary}</Link>
+              </Button>
 
-              <Link href="/education/courses">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="px-8 border-white/40 text-white hover:bg-white/10"
-                >
-                  {copy.finalSecondary}
-                </Button>
-              </Link>
+              <Button size="lg" variant="outline" className={cn('px-8', CTA_OUTLINE)} asChild>
+                <Link href="/education/courses">{copy.finalSecondary}</Link>
+              </Button>
 
-              <Link href="/blog">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="px-8 border-white/40 text-white hover:bg-white/10"
-                >
-                  {translate('cta.exploreBlog', 'Explorar Blog')}
-                </Button>
-              </Link>
+              <Button size="lg" variant="outline" className={cn('px-8', CTA_OUTLINE)} asChild>
+                <Link href="/blog">{translate('cta.exploreBlog', 'Explorar Blog')}</Link>
+              </Button>
             </div>
 
             <p className="mt-3 text-xs text-slate-200">{copy.finalMicro}</p>
