@@ -101,10 +101,10 @@ const USE_COURSE_HUB_V2 = process.env.NEXT_PUBLIC_EDU_COURSE_HUB_V2 === 'true';
 
 /** ---------- Typography + UI Tokens (coerência absoluta) ---------- */
 const UI = {
-  eyebrow: 'text-[11px] uppercase tracking-[0.5em] text-cyan-300',
-  heroTitle: 'text-4xl md:text-5xl font-bold tracking-tight text-white',
-  sectionTitle: 'text-2xl md:text-3xl font-bold text-[#fdd87c] tracking-tight',
-  sectionSubtitle: 'text-sm md:text-base text-slate-200 leading-relaxed',
+  eyebrow: 'text-xs uppercase tracking-[0.5em] text-cyan-300',
+  heroTitle: 'leading-tight font-bold tracking-tight text-[#fdd87c] text-4xl md:text-6xl',
+  sectionTitle: 'mt-3 text-3xl md:text-4xl font-bold tracking-tight text-[#fdd87c]',
+  sectionSubtitle: 'mt-4 text-sm text-slate-200',
   cardTitle: 'text-lg font-semibold text-white',
   cardDesc: 'text-sm text-slate-200 leading-relaxed',
   micro: 'text-xs text-slate-300',
