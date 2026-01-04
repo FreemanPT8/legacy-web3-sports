@@ -1176,6 +1176,7 @@ export default function EducationXpPage() {
                                   </div>
                                 );
                               })}
+                              {p.key === 'quick' ? <div className="h-9" aria-hidden="true" /> : null}
                             </div>
                           )}
 
