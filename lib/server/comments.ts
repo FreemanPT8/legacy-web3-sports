@@ -386,7 +386,7 @@ async function loadViewerReactions(
     map[id] = formatViewerReactions();
   });
 
-  data.forEach((reaction) => {
+  data.forEach((reaction: { comment_id: string; emoji_type: string }) => {
     if (!map[reaction.comment_id]) {
       map[reaction.comment_id] = formatViewerReactions();
     }
