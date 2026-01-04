@@ -8,6 +8,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { SafeImage } from '@/app/components/SafeImage';
 import { Loader2, ArrowLeft, Users, User, Trophy } from 'lucide-react';
+import { ContentComments } from '@/components/comments/ContentComments';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -428,6 +429,13 @@ export default function PublicHouseProfilePage() {
               personalizado.
             </p>
           </div>
+
+          <ContentComments
+            contentId={house.id}
+            contentType="house"
+            houseId={house.id}
+            title="Comentários privados desta House"
+          />
 
           {/* CTA final */}
           <div className="border-t border-slate-800 pt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
