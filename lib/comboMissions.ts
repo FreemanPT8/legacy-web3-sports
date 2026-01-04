@@ -1,5 +1,3 @@
-'use server';
-
 import { supabase, supabaseAdmin } from './supabase';
 import { getTodayCETDate } from './timezone';
 import { awardXP } from './xp';
