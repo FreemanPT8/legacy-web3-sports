@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Award,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 
 import { Header } from '@/components/layout/Header';
@@ -24,6 +25,7 @@ import {
   HeroTitle,
   HeroTextColumn,
 } from '@/components/sections/HeroSection';
+import type { ComboProgressState, ComboMissionMeta, ComboKey } from '@/lib/comboMissions';
 
 const DAILY_XP_LIMIT = 369;
 
@@ -68,6 +70,9 @@ export default function DashboardPage() {
 
   const [missions, setMissions] = useState<any[]>([]);
   const [loadingMissions, setLoadingMissions] = useState(true);
+  const [comboProgress, setComboProgress] = useState<ComboProgressState | null>(null);
+  const [comboMeta, setComboMeta] = useState<Record<ComboKey, ComboMissionMeta> | null>(null);
+  const [comboError, setComboError] = useState<string | null>(null);
 
   const [streak, setStreak] = useState(0);
   const [longStreak, setLongStreak] = useState(0);
@@ -91,13 +96,51 @@ export default function DashboardPage() {
   const fetchMissions = useCallback(async () => {
     if (!user) return;
     try {
+      setComboError(null);
       const response = await fetch(`/api/missions/generate?userId=${user.id}`);
       const data = await response.json();
       if (data.success) {
         setMissions(data.missions || []);
+        if (data.combo_progress) {
+          setComboProgress(data.combo_progress as ComboProgressState);
+        }
+        if (Array.isArray(data.missions)) {
+          const mapping: Record<ComboKey, ComboMissionMeta> = {
+            quick: { xp: 15, completed: false },
+            base: { xp: 21, completed: false },
+            serious: { xp: 33, completed: false },
+          };
+          data.missions.forEach((mission: any) => {
+            const missionType: string | undefined = mission?.type;
+            if (!missionType) return;
+            const missionData = Array.isArray(mission.user_missions)
+              ? mission.user_missions[0]
+              : mission.user_missions;
+            if (missionType === 'combo_quick') {
+              mapping.quick = {
+                xp: mission?.xp_reward ?? 15,
+                completed: Boolean(missionData?.completed),
+              };
+            } else if (missionType === 'combo_base') {
+              mapping.base = {
+                xp: mission?.xp_reward ?? 21,
+                completed: Boolean(missionData?.completed),
+              };
+            } else if (missionType === 'combo_serious') {
+              mapping.serious = {
+                xp: mission?.xp_reward ?? 33,
+                completed: Boolean(missionData?.completed),
+              };
+            }
+          });
+          setComboMeta(mapping);
+        }
+      } else if (data.error) {
+        setComboError(data.error as string);
       }
     } catch (error) {
       console.error('Failed to fetch missions:', error);
+      setComboError(t('dashboard.comboError') || 'Erro ao carregar combo diário.');
     } finally {
       setLoadingMissions(false);
     }
@@ -431,52 +474,157 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {comboError && (
+                      <p className="text-sm text-rose-300">{comboError}</p>
+                    )}
+                    {comboProgress && !comboError && (
+                      <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-slate-200">
+                        <p className="font-semibold text-white">
+                          {t('dashboard.comboProgress') || 'Progresso das Rotas Diárias'}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {t('dashboard.comboHint') ||
+                            'Consumos acumulam durante o dia e reiniciam às 00h CET.'}
+                        </p>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                          {[
+                            { key: 'glossary', label: t('dashboard.glossaryTerms') || 'Glossário' },
+                            { key: 'blog', label: t('dashboard.blogReads') || 'Blog' },
+                            { key: 'lesson', label: t('dashboard.lessons') || 'Lições' },
+                          ].map((item) => (
+                            <div
+                              key={item.key}
+                              className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                                  {item.label}
+                                </span>
+                                <Sparkles className="h-3 w-3 text-[#fdd87c]" />
+                              </div>
+                              <p className="mt-1 text-base font-semibold text-white">
+                                {(comboProgress as any)[item.key]}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {missions.map((mission: any) => {
                       const missionData = Array.isArray(mission.user_missions)
                         ? mission.user_missions[0]
                         : mission.user_missions;
                       const progress = missionData?.progress || 0;
                       const completed = missionData?.completed || false;
+                      const missionType: string | undefined = mission?.type;
+                      const isCombo =
+                        missionType === 'combo_quick' ||
+                        missionType === 'combo_base' ||
+                        missionType === 'combo_serious';
+
+                      const comboTag =
+                        missionType === 'combo_quick'
+                          ? t('dashboard.comboQuick') || 'Rota Rápida'
+                          : missionType === 'combo_base'
+                          ? t('dashboard.comboBase') || 'Rota Base'
+                          : missionType === 'combo_serious'
+                          ? t('dashboard.comboSerious') || 'Rota Séria'
+                          : null;
+
+                      const comboCounters = comboProgress && isCombo
+                        ? {
+                            glossary: comboProgress.glossary_count,
+                            blog: comboProgress.blog_count,
+                            lesson: comboProgress.lesson_count,
+                          }
+                        : null;
+
+                      const comboRequirements =
+                        missionType === 'combo_quick'
+                          ? { glossary: 3, blog: 1, lesson: 0 }
+                          : missionType === 'combo_base'
+                          ? { glossary: 5, blog: 1, lesson: 1 }
+                          : missionType === 'combo_serious'
+                          ? { glossary: 10, blog: 2, lesson: 2 }
+                          : null;
 
                       return (
                         <div
                           key={mission.id}
-                          className={`flex items-center justify-between rounded-2xl border p-4 ${
+                          className={`rounded-2xl border p-4 ${
                             completed
                               ? 'border-emerald-500/60 bg-emerald-500/10'
                               : 'border-white/10 bg-black/30'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
-                            {completed && (
-                              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                            )}
-                            <div>
-                              <p
-                                className={`font-medium ${
-                                  completed ? 'text-emerald-300' : 'text-white'
-                                }`}
-                              >
-                                {mission.description}
-                              </p>
-                              <p className="text-sm text-slate-300">
-                                {progress}/{mission.target_count}{' '}
-                                {t('dashboard.completed')}
-                              </p>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              {completed && (
+                                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                              )}
+                              <div>
+                                {comboTag && (
+                                  <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                                    {comboTag}
+                                  </p>
+                                )}
+                                <p
+                                  className={`font-medium ${
+                                    completed ? 'text-emerald-300' : 'text-white'
+                                  }`}
+                                >
+                                  {mission.description}
+                                </p>
+                                <p className="text-sm text-slate-300">
+                                  {progress}/{mission.target_count}{' '}
+                                  {t('dashboard.completed')}
+                                </p>
+                              </div>
                             </div>
+                            <Badge
+                              variant={completed ? 'default' : 'outline'}
+                              className={
+                                completed
+                                  ? 'bg-emerald-500 text-emerald-50'
+                                  : 'border-white/20 text-slate-200'
+                              }
+                            >
+                              {completed
+                                ? t('dashboard.completedMission')
+                                : `+${mission.xp_reward} XP`}
+                            </Badge>
                           </div>
-                          <Badge
-                            variant={completed ? 'default' : 'outline'}
-                            className={
-                              completed
-                                ? 'bg-emerald-500 text-emerald-50'
-                                : 'border-white/20 text-slate-200'
-                            }
-                          >
-                            {completed
-                              ? t('dashboard.completedMission')
-                              : `+${mission.xp_reward} XP`}
-                          </Badge>
+                          {comboCounters && comboRequirements && (
+                            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                              {(['glossary', 'blog', 'lesson'] as Array<
+                                'glossary' | 'blog' | 'lesson'
+                              >).map((key) => {
+                                const required = comboRequirements[key];
+                                if (!required) return null;
+                                const value = comboCounters[key];
+                                return (
+                                  <div
+                                    key={`${mission.id}-${key}`}
+                                    className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                                        {key === 'glossary'
+                                          ? t('dashboard.glossaryTerms') || 'Glossário'
+                                          : key === 'blog'
+                                          ? t('dashboard.blogReads') || 'Blog'
+                                          : t('dashboard.lessons') || 'Lições'}
+                                      </span>
+                                      <Sparkles className="h-3 w-3 text-[#fdd87c]" />
+                                    </div>
+                                    <p className="mt-1 text-base font-semibold text-white">
+                                      {Math.min(value, required)}/{required}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

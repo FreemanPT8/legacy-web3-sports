@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCcw, Target, Trophy } from 'lucide-react';
+import { Loader2, RefreshCcw, Target, Trophy, CheckCircle2, Sparkles } from 'lucide-react';
+import type { ComboProgressState, ComboMissionMeta, ComboKey } from '@/lib/comboMissions';
 
 type MissionProgress = {
   progress: number;
@@ -39,6 +40,9 @@ export default function AdminMissionsPage() {
   const [loadingMissions, setLoadingMissions] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [comboProgress, setComboProgress] = useState<ComboProgressState | null>(null);
+  const [comboMeta, setComboMeta] = useState<Record<ComboKey, ComboMissionMeta> | null>(null);
+  const [comboError, setComboError] = useState<string | null>(null);
 
   const isAdmin =
     !!user && (user.role === 'Admin' || user.role === 'Super Admin');
@@ -53,6 +57,7 @@ export default function AdminMissionsPage() {
     if (!user) return;
     setLoadingMissions(true);
     try {
+      setComboError(null);
       const response = await fetch(
         `/api/missions/generate?userId=${encodeURIComponent(user.id)}`,
         { cache: 'no-store' },
@@ -62,11 +67,46 @@ export default function AdminMissionsPage() {
         throw new Error(data.error || 'Failed to load missions.');
       }
       setMissions(Array.isArray(data.missions) ? data.missions : []);
+      if (data.combo_progress) {
+        setComboProgress(data.combo_progress as ComboProgressState);
+      }
+      if (Array.isArray(data.missions)) {
+        const mapping: Record<ComboKey, ComboMissionMeta> = {
+          quick: { xp: 15, completed: false },
+          base: { xp: 21, completed: false },
+          serious: { xp: 33, completed: false },
+        };
+        data.missions.forEach((mission: any) => {
+          const missionType: string | undefined = mission?.type;
+          if (!missionType) return;
+          const missionData = Array.isArray(mission.user_missions)
+            ? mission.user_missions[0]
+            : mission.user_missions;
+          if (missionType === 'combo_quick') {
+            mapping.quick = {
+              xp: mission?.xp_reward ?? 15,
+              completed: Boolean(missionData?.completed),
+            };
+          } else if (missionType === 'combo_base') {
+            mapping.base = {
+              xp: mission?.xp_reward ?? 21,
+              completed: Boolean(missionData?.completed),
+            };
+          } else if (missionType === 'combo_serious') {
+            mapping.serious = {
+              xp: mission?.xp_reward ?? 33,
+              completed: Boolean(missionData?.completed),
+            };
+          }
+        });
+        setComboMeta(mapping);
+      }
       setError(null);
     } catch (err: any) {
       console.error('Admin missions fetch error', err);
       setError(err?.message || 'Failed to load missions.');
       setMissions([]);
+      setComboError(err?.message || 'Failed to load combo progress.');
     } finally {
       setLoadingMissions(false);
     }
@@ -205,6 +245,119 @@ export default function AdminMissionsPage() {
               </Button>
             </div>
           </div>
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-2">
+          <Card className="border border-white/10 bg-black/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-5 w-5 text-[#fdd87c]" />
+                Progresso das Rotas Diárias
+              </CardTitle>
+              <CardDescription>
+                Consumos acumulam durante o dia e reiniciam às 00h CET para cada utilizador.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {comboProgress ? (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {['glossary', 'blog', 'lesson'].map((key) => (
+                      <div
+                        key={key}
+                        className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200"
+                      >
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                          {key === 'glossary'
+                            ? 'Glossário'
+                            : key === 'blog'
+                            ? 'Blog'
+                            : 'Lições'}
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold text-white">
+                          {(comboProgress as any)[`${key}_count`]}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  {comboMeta && (
+                    <div className="mt-4 space-y-2">
+                      {(['quick', 'base', 'serious'] as ComboKey[]).map((key) => (
+                        <div
+                          key={key}
+                          className={`flex items-center justify-between rounded-xl border px-3 py-2 ${
+                            comboMeta[key]?.completed
+                              ? 'border-emerald-400/50 bg-emerald-500/10'
+                              : 'border-white/10 bg-black/20'
+                          }`}
+                        >
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">
+                              {key === 'quick'
+                                ? 'Rota Rápida'
+                                : key === 'base'
+                                ? 'Rota Base'
+                                : 'Rota Séria'}
+                            </p>
+                            <p className="text-sm text-slate-100">
+                              {comboMeta[key]?.completed
+                                ? 'XP extra já creditado'
+                                : 'Aguardando conclusão'}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={comboMeta[key]?.completed ? 'default' : 'outline'}
+                            className={
+                              comboMeta[key]?.completed
+                                ? 'bg-emerald-500 text-emerald-50'
+                                : 'border-white/20 text-white'
+                            }
+                          >
+                            +{comboMeta[key]?.xp ?? 0} XP
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : comboError ? (
+                <p className="text-sm text-rose-400">{comboError}</p>
+              ) : (
+                <p className="text-sm text-slate-400">Sem dados de combo para este utilizador.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border border-white/10 bg-black/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Target className="h-5 w-5 text-cyan-300" />
+                Visão Geral
+              </CardTitle>
+              <CardDescription>
+                Total de missões, XP potencial e progresso médio do utilizador selecionado.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">Ativas</p>
+                  <p className="text-2xl font-semibold text-white">{stats.total}</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">XP Potencial</p>
+                  <p className="text-2xl font-semibold text-white">{stats.xpPotential}</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">XP Creditado</p>
+                  <p className="text-2xl font-semibold text-white">{stats.xpCompleted}</p>
+                </div>
+              </div>
+              <p className="mt-3 text-sm text-slate-300">
+                {stats.completed}/{stats.total} concluídas · Progresso médio {stats.avgProgress}%.
+              </p>
+            </CardContent>
+          </Card>
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
