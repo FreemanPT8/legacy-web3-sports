@@ -840,7 +840,11 @@ export default function CoursesPage() {
 
                           <CardHeader className="space-y-3 pb-3">
                             <div>
-                              <CardTitle className={UI.cardTitle}>{title}</CardTitle>
+                              <CardTitle
+                                className={cn(UI.cardTitle, 'line-clamp-2 min-h-[3.25rem] leading-snug')}
+                              >
+                                {title}
+                              </CardTitle>
 
                               {isCourseCreator && (
                                 <div className="mt-2">
