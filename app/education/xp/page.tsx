@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -14,17 +13,24 @@ import {
   HeroContent,
   HeroDescription,
   HeroEyebrow,
-  HeroMedia,
   HeroSection,
   HeroTextColumn,
   HeroTitle,
 } from '@/components/sections/HeroSection';
+import { cn } from '@/lib/utils';
 import {
+  ArrowRight,
+  BookOpen,
   CalendarCheck,
   Flame,
   ShieldCheck,
   Sparkles,
   Trophy,
+  BarChart3,
+  Target,
+  CheckCircle2,
+  Lock,
+  Eye,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -61,212 +67,321 @@ type ApiResponse =
   | { success: true; rewards: XpReward[]; limits: XpLimit[]; thresholds: XpThreshold[] }
   | { success: false; error: string };
 
-const HERO_IMAGE_FALLBACK =
-  process.env.NEXT_PUBLIC_XP_HERO_IMAGE ||
-  'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80';
+type CopyPack = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  manifestoTitle: string;
+  manifestoPoints: string[];
+  badge: string;
 
-const XP_COPY: Record<
-  SupportedCopyLang,
-  {
-    heroTitle: string;
-    heroIntro: string;
-    heroSub: string;
-    heroBadge: string;
-    heroHighlights: Array<{
-      label: string;
-      value: string;
-      detail: string;
-      icon: typeof ShieldCheck;
-    }>;
-    rewardsKicker: string;
-    rewardsTitle: string;
-    rewardsDescription: string;
-    streaksKicker: string;
-    streaksIntro: string;
-    streaksPoints: string[];
-    monitoringTitle: string;
-    monitoringBody: string;
-    alertsTitle: string;
-    alertsBody: string;
-    thresholdsKicker: string;
-    thresholdsTitle: string;
-    thresholdsDescription: string;
-    levelNote: string;
-    unlockNote: string;
-    glossaryNote: string;
-  }
-> = {
+  stickyLabel: string;
+  ctaLeaderboard: string;
+  ctaGlossary: string;
+  ctaBlog: string;
+  ctaCourses: string;
+
+  todayKicker: string;
+  todayTitle: string;
+  todayDesc: string;
+
+  rewardsKicker: string;
+  rewardsTitle: string;
+  rewardsDesc: string;
+
+  consistencyKicker: string;
+  consistencyTitle: string;
+  consistencyIntro: string;
+  consistencyPoints: string[];
+  monitoringTitle: string;
+  monitoringBody: string;
+
+  thresholdsKicker: string;
+  thresholdsTitle: string;
+  thresholdsDesc: string;
+  levelNote: string;
+  unlockNote: string;
+
+  glossaryNote: string;
+  errorsFallback: string;
+  loadingRewards: string;
+  loadingThresholds: string;
+  noThresholds: string;
+
+  gateTitle: string;
+  gateDesc: string;
+  gateLogin: string;
+  gateSignup: string;
+
+  planQuick: string;
+  planBase: string;
+  planSerious: string;
+  planCTA: string;
+
+  planQuickDesc: string;
+  planBaseDesc: string;
+  planSeriousDesc: string;
+
+  rangeLabel: string;
+  creatorBonusLabel: string;
+  officialRulesLabel: string;
+};
+
+const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
   pt: {
-    heroTitle: 'XP do Legacy',
-    heroIntro:
-      'O Legacy recompensa aprendizagem, criação e participação real. O modelo completo está documentado aqui e explica, passo a passo, como cada ação é creditada.',
-    heroSub:
-      'Nenhum XP é creditado apenas pelo login; é preciso ganhar crédito legítimo completando lições, lendo conteúdos ou contribuindo no fórum.',
-    heroBadge: 'Legacy XP — Sistema oficial',
-    heroHighlights: [
-      {
-        label: 'Limite diário global',
-        value: '369 XP',
-        detail:
-          'Só este valor pode ser somado num dia útil. Depois disso, o conteúdo permanece aberto, mas o XP não acumula.',
-        icon: ShieldCheck,
-      },
-      {
-        label: '7 dias com XP ganho',
-        value: '222 XP',
-        detail:
-          'Streak curto: exige XP confirmado todos os dias. Login não basta; faltar um dia reinicia a contagem.',
-        icon: Flame,
-      },
-      {
-        label: '30 dias com XP ganho',
-        value: '1.111 XP',
-        detail:
-          'Streak longo: recompensa quem mantém XP real todos os dias durante 30 dias consecutivos.',
-        icon: CalendarCheck,
-      },
+    eyebrow: 'SISTEMA XP',
+    title: 'XP não é um jogo. É um filtro.',
+    subtitle:
+      'Serve para separar curiosidade de compromisso. Para te obrigar a ganhar base. Para provar consistência antes de desbloquear camadas mais exigentes.',
+    manifestoTitle: 'Porque existe XP',
+    manifestoPoints: [
+      'Filtra quem “anda a ver” de quem executa.',
+      'Reduz atalhos fracos: aprender fora de ordem cria confiança falsa.',
+      'Sinaliza quem merece desbloqueios e acompanhamento mais próximo.',
     ],
-    rewardsKicker: 'Recompensas',
-    rewardsTitle: 'Cada ação devolve XP por esforço real',
-    rewardsDescription:
-      'XP é um sinal público: quem aprende, cria e contribui cresce. Todos os intervalos aqui são oficiais e auditáveis.',
-    streaksKicker: 'Streaks & consistência',
-    streaksIntro:
-      'Streaks existem para premiar consistência real, não apenas presença. A contagem é zerada se algum dia passar sem XP.',
-    streaksPoints: [
-      'Ganhar XP todos os dias é obrigatório para manter um streak.',
-      'Streak de 7 dias rende 222 XP; streak de 30 dias rende 1.111 XP.',
-      'Conclusões de lições e leituras contam uma única vez por utilizador e impedem criadores de ler o próprio conteúdo para ganhar XP.',
+    badge: 'Legacy XP — Sistema oficial',
+
+    stickyLabel: 'Atalhos',
+    ctaLeaderboard: 'Leaderboard',
+    ctaGlossary: 'Glossário',
+    ctaBlog: 'Blog',
+    ctaCourses: 'Cursos',
+
+    todayKicker: 'PLANO',
+    todayTitle: 'O teu plano de hoje',
+    todayDesc:
+      'Escolhe uma rota. Faz. Fecha. Volta amanhã. Isto é como se ganha vantagem — sem teatro e sem pressa.',
+
+    rewardsKicker: 'REGRAS',
+    rewardsTitle: 'Como se ganha XP (regras oficiais)',
+    rewardsDesc:
+      'Isto é referência, não é ruído: intervalos oficiais, auditáveis, e desenhados para premiar esforço real.',
+
+    consistencyKicker: 'CONSISTÊNCIA',
+    consistencyTitle: 'Streaks existem para premiar disciplina real',
+    consistencyIntro:
+      'Streaks não contam presença. Contam XP ganho. Um dia sem XP e a contagem reinicia.',
+    consistencyPoints: [
+      'Limite diário global: 369 XP.',
+      'Streak de 7 dias: 222 XP (XP ganho em 7 dias seguidos).',
+      'Streak de 30 dias: 1.111 XP (XP ganho em 30 dias seguidos).',
     ],
-    monitoringTitle: 'Como monitorizamos',
+    monitoringTitle: 'Fair Play',
     monitoringBody:
-      'Leituras e lições só contam uma vez por utilizador. Criadores não recebem XP ao consumir o próprio conteúdo; ganham 19% quando outros completam.',
-    alertsTitle: 'Alertas automáticos',
-    alertsBody:
-      'Quando um streak fecha, o Legacy envia uma notificação oficial e atualiza o histórico público da tua conta.',
-    thresholdsKicker: 'Progressão e thresholds',
-    thresholdsTitle: 'Cada milestone desbloqueia acesso extra',
-    thresholdsDescription:
-      'O XP total determina privilégios, reputação e desbloqueios. Vê abaixo o que precisas para cada etapa.',
+      'Lições e leituras contam uma vez por utilizador. Criadores não ganham XP ao consumir o próprio conteúdo. O bónus de criador existe quando outros completam — não quando o autor “faz farming”.',
+
+    thresholdsKicker: 'DESBLOQUEIOS',
+    thresholdsTitle: 'Milestones: XP total desbloqueia acesso extra',
+    thresholdsDesc:
+      'O teu XP total determina o que podes desbloquear. Não é status. É contexto e responsabilidade.',
     levelNote: 'Nível = XP total / 100 (arredondado para baixo).',
-    unlockNote: 'Ao atingir novos marcos, desbloqueias casas, fóruns privados, missões e desafios.',
+    unlockNote:
+      'Ao atingir marcos, desbloqueias casas, fóruns privados, missões e desafios. O objectivo é elevar o padrão, não coleccionar “pontos”.',
+
     glossaryNote:
-      'Glossário Legacy: cada Progress Reading de 30 segundos regista 2 XP por termo e só conta uma vez por utilizador (inclui o autor). Não existe bónus extra para criadores quando outros completam.',
+      'Glossário Legacy: cada leitura validada (progress reading) dá 2 XP por termo e só conta uma vez por utilizador (inclui o autor). Não existe bónus extra para criadores neste caso.',
+    errorsFallback: 'Falha ao carregar dados de XP.',
+    loadingRewards: 'A carregar regras...',
+    loadingThresholds: 'A carregar desbloqueios...',
+    noThresholds:
+      'Ainda não há milestones publicados. (Admin: adiciona-os no painel /admin/xp.)',
+
+    gateTitle: 'Inicia sessão para ver o teu XP',
+    gateDesc:
+      'Esta página é privada porque XP existe para guardar progresso real, desbloqueios e consistência — não para “espreitar”.',
+    gateLogin: 'Iniciar sessão',
+    gateSignup: 'Criar conta',
+
+    planQuick: 'Rota Rápida',
+    planBase: 'Rota Base',
+    planSerious: 'Rota Séria',
+    planCTA: 'Executar',
+
+    planQuickDesc: '5 termos no glossário + 1 leitura curta no blog.',
+    planBaseDesc: '1 lição + 1 artigo + 5 termos no glossário.',
+    planSeriousDesc: '2 lições + 2 artigos + 10 termos no glossário.',
+
+    rangeLabel: 'Intervalo',
+    creatorBonusLabel: 'Bónus de criador',
+    officialRulesLabel: 'Regras oficiais',
   },
   es: {
-    heroTitle: 'XP de Legacy',
-    heroIntro:
-      'Legacy recompensa aprendizaje, creación y participación reales. Aquí está documentado el modelo completo y cómo se acredita cada acción.',
-    heroSub:
-      'No se otorga XP solo por iniciar sesión; debes conseguirlo completando lecciones, leyendo contenidos o aportando al foro.',
-    heroBadge: 'Legacy XP — Sistema oficial',
-    heroHighlights: [
-      {
-        label: 'Límite diario global',
-        value: '369 XP',
-        detail:
-          'Solo este valor se suma en un día. Después, el contenido sigue abierto pero el XP deja de acumular.',
-        icon: ShieldCheck,
-      },
-      {
-        label: '7 días con XP ganado',
-        value: '222 XP',
-        detail:
-          'Streak corto: requiere XP confirmado cada día. El inicio de sesión no basta; faltar un día reinicia la cuenta.',
-        icon: Flame,
-      },
-      {
-        label: '30 días con XP ganado',
-        value: '1.111 XP',
-        detail:
-          'Streak largo: premia a quien mantiene XP real durante 30 días consecutivos.',
-        icon: CalendarCheck,
-      },
+    eyebrow: 'SISTEMA XP',
+    title: 'XP no es un juego. Es un filtro.',
+    subtitle:
+      'Sirve para separar curiosidad de compromiso. Para obligarte a construir base. Para probar consistencia antes de desbloquear capas más exigentes.',
+    manifestoTitle: 'Por qué existe XP',
+    manifestoPoints: [
+      'Filtra a quien “mira” de quien ejecuta.',
+      'Reduce atajos débiles: aprender fuera de orden crea falsa confianza.',
+      'Señala quién merece desbloqueos y acompañamiento más cercano.',
     ],
-    rewardsKicker: 'Recompensas',
-    rewardsTitle: 'Cada acción devuelve XP por esfuerzo real',
-    rewardsDescription:
-      'El XP es una señal pública: quien aprende, crea y contribuye avanza. Estos intervalos son oficiales y auditables.',
-    streaksKicker: 'Streaks y consistencia',
-    streaksIntro:
-      'Los streaks existen para premiar consistencia real. Si un día pasa sin XP, la racha se reinicia.',
-    streaksPoints: [
-      'Ganar XP cada día es obligatorio para mantener una racha.',
-      'La racha de 7 días otorga 222 XP; la de 30 días otorga 1.111 XP.',
-      'Lecciones y lecturas cuentan una sola vez por usuario e impiden que los creadores se otorguen XP leyendo su propio contenido.',
+    badge: 'Legacy XP — Sistema oficial',
+
+    stickyLabel: 'Atajos',
+    ctaLeaderboard: 'Leaderboard',
+    ctaGlossary: 'Glosario',
+    ctaBlog: 'Blog',
+    ctaCourses: 'Cursos',
+
+    todayKicker: 'PLAN',
+    todayTitle: 'Tu plan de hoy',
+    todayDesc:
+      'Elige una ruta. Hazla. Ciérrala. Vuelve mañana. Así se gana ventaja — sin teatro y sin prisa.',
+
+    rewardsKicker: 'REGLAS',
+    rewardsTitle: 'Cómo se gana XP (reglas oficiales)',
+    rewardsDesc:
+      'Esto es referencia, no ruido: intervalos oficiales, auditables, diseñados para premiar esfuerzo real.',
+
+    consistencyKicker: 'CONSISTENCIA',
+    consistencyTitle: 'Los streaks premian disciplina real',
+    consistencyIntro:
+      'Los streaks no cuentan presencia. Cuentan XP ganado. Un día sin XP y la racha se reinicia.',
+    consistencyPoints: [
+      'Límite diario global: 369 XP.',
+      'Racha de 7 días: 222 XP (XP ganado 7 días seguidos).',
+      'Racha de 30 días: 1.111 XP (XP ganado 30 días seguidos).',
     ],
-    monitoringTitle: 'Cómo lo monitorizamos',
+    monitoringTitle: 'Fair Play',
     monitoringBody:
-      'Una lectura o lección solo cuenta una vez por usuario. Los creadores no reciben XP al consumir su propio contenido; obtienen 19% cuando otros lo completan.',
-    alertsTitle: 'Alertas automáticas',
-    alertsBody:
-      'Cuando cierras una racha, Legacy envía una notificación oficial y actualiza el historial público de tu cuenta.',
-    thresholdsKicker: 'Progresión y thresholds',
-    thresholdsTitle: 'Cada hito desbloquea acceso extra',
-    thresholdsDescription:
-      'El XP total define privilegios, reputación y desbloqueos. Consulta cuánto XP necesitas en cada etapa.',
+      'Lecciones y lecturas cuentan una vez por usuario. Los creadores no ganan XP al consumir su propio contenido. El bonus de creador existe cuando otros completan — no con “farming”.',
+
+    thresholdsKicker: 'DESBLOQUEOS',
+    thresholdsTitle: 'Hitos: XP total desbloquea acceso extra',
+    thresholdsDesc:
+      'Tu XP total define lo que puedes desbloquear. No es status. Es contexto y responsabilidad.',
     levelNote: 'Nivel = XP total / 100 (redondeado hacia abajo).',
-    unlockNote: 'Cada nuevo hito abre casas, foros privados, misiones y desafíos especiales.',
+    unlockNote:
+      'Al alcanzar hitos, desbloqueas casas, foros privados, misiones y desafíos. El objetivo es elevar el estándar, no coleccionar “puntos”.',
+
     glossaryNote:
-      'Glosario Legacy: cada Progress Reading de 30 segundos otorga 2 XP por término y cuenta solo una vez por usuario (incluye al autor). No hay bono adicional para creadores cuando otros completan.',
+      'Glosario Legacy: cada lectura validada da 2 XP por término y cuenta una sola vez por usuario (incluye al autor). No hay bonus extra para creadores en este caso.',
+    errorsFallback: 'Error al cargar datos de XP.',
+    loadingRewards: 'Cargando reglas...',
+    loadingThresholds: 'Cargando desbloqueos...',
+    noThresholds:
+      'Aún no hay hitos publicados. (Admin: añádelos en /admin/xp.)',
+
+    gateTitle: 'Inicia sesión para ver tu XP',
+    gateDesc:
+      'Esta página es privada porque XP existe para guardar progreso real, desbloqueos y consistencia — no para “curiosear”.',
+    gateLogin: 'Iniciar sesión',
+    gateSignup: 'Crear cuenta',
+
+    planQuick: 'Ruta Rápida',
+    planBase: 'Ruta Base',
+    planSerious: 'Ruta Seria',
+    planCTA: 'Ejecutar',
+
+    planQuickDesc: '5 términos en glosario + 1 lectura corta en blog.',
+    planBaseDesc: '1 lección + 1 artículo + 5 términos en glosario.',
+    planSeriousDesc: '2 lecciones + 2 artículos + 10 términos en glosario.',
+
+    rangeLabel: 'Rango',
+    creatorBonusLabel: 'Bonus de creador',
+    officialRulesLabel: 'Reglas oficiales',
   },
   en: {
-    heroTitle: 'Legacy XP',
-    heroIntro:
-      'Legacy rewards learning, creation, and genuine participation. This page documents the entire model and shows how every action is credited.',
-    heroSub:
-      'No XP is granted just for logging in—you need to earn it by completing lessons, reading content, or contributing to the forum.',
-    heroBadge: 'Legacy XP — Official system',
-    heroHighlights: [
-      {
-        label: 'Global daily limit',
-        value: '369 XP',
-        detail:
-          'Only this amount counts each day. After that, content stays open but XP stops increasing.',
-        icon: ShieldCheck,
-      },
-      {
-        label: '7 days with XP',
-        value: '222 XP',
-        detail:
-          'Short streak: requires verified XP every day. Missing a day resets the counter.',
-        icon: Flame,
-      },
-      {
-        label: '30 days with XP',
-        value: '1,111 XP',
-        detail:
-          'Long streak: rewards people who keep earning real XP for 30 consecutive days.',
-        icon: CalendarCheck,
-      },
+    eyebrow: 'XP SYSTEM',
+    title: 'XP is not a game. It’s a filter.',
+    subtitle:
+      'It separates curiosity from commitment. It forces a foundation. It proves consistency before unlocking higher layers.',
+    manifestoTitle: 'Why XP exists',
+    manifestoPoints: [
+      'Filters “just browsing” from execution.',
+      'Prevents weak shortcuts: learning out of order creates fake confidence.',
+      'Signals who deserves unlocks and closer guidance.',
     ],
-    rewardsKicker: 'Rewards',
-    rewardsTitle: 'Every action returns XP for real effort',
-    rewardsDescription:
-      'XP is a public signal: those who learn, build, and show up progress. These intervals are official and auditable.',
-    streaksKicker: 'Streaks & consistency',
-    streaksIntro:
-      'Streaks exist to reward real consistency. Skip a day without XP and the streak restarts.',
-    streaksPoints: [
-      'Earning XP every day is mandatory to keep a streak.',
-      'A 7-day streak yields 222 XP; a 30-day streak yields 1,111 XP.',
-      'Lessons and reads count once per user and prevent creators from farming their own content.',
+    badge: 'Legacy XP — Official system',
+
+    stickyLabel: 'Shortcuts',
+    ctaLeaderboard: 'Leaderboard',
+    ctaGlossary: 'Glossary',
+    ctaBlog: 'Blog',
+    ctaCourses: 'Courses',
+
+    todayKicker: 'PLAN',
+    todayTitle: 'Your plan for today',
+    todayDesc:
+      'Pick a route. Do it. Close it. Come back tomorrow. That’s how you build advantage — without noise.',
+
+    rewardsKicker: 'RULES',
+    rewardsTitle: 'How XP is earned (official rules)',
+    rewardsDesc:
+      'Reference, not noise: official, auditable ranges designed to reward real effort.',
+
+    consistencyKicker: 'CONSISTENCY',
+    consistencyTitle: 'Streaks reward real discipline',
+    consistencyIntro:
+      'Streaks don’t count presence. They count XP earned. One day without XP resets the streak.',
+    consistencyPoints: [
+      'Global daily cap: 369 XP.',
+      '7-day streak: 222 XP (XP earned 7 days in a row).',
+      '30-day streak: 1,111 XP (XP earned 30 days in a row).',
     ],
-    monitoringTitle: 'How we monitor',
+    monitoringTitle: 'Fair Play',
     monitoringBody:
-      'Lessons/articles count once per user. Creators don’t earn XP by consuming their own content; they get 19% whenever someone else completes it.',
-    alertsTitle: 'Automatic alerts',
-    alertsBody:
-      'When you finish a streak, Legacy sends an official notification and updates your public history.',
-    thresholdsKicker: 'Progression & thresholds',
-    thresholdsTitle: 'Every milestone unlocks extra access',
-    thresholdsDescription:
-      'Total XP defines privileges, reputation, and unlocks. Check how much XP each stage requires.',
+      'Lessons and reads count once per user. Creators don’t earn XP by consuming their own content. Creator bonus happens when others complete it — not via farming.',
+
+    thresholdsKicker: 'UNLOCKS',
+    thresholdsTitle: 'Milestones: total XP unlocks extra access',
+    thresholdsDesc:
+      'Your total XP defines what you can unlock. Not status. Context and responsibility.',
     levelNote: 'Level = total XP / 100 (rounded down).',
-    unlockNote: 'Hitting new milestones opens houses, private forums, missions, and special challenges.',
+    unlockNote:
+      'Hit milestones to unlock houses, private forums, missions, and challenges. The goal is standards, not points.',
+
     glossaryNote:
-      'Legacy Glossary: every 30-second Progress Reading grants 2 XP per term and counts only once per user (including the author). There is no creator bonus when others complete it.',
+      'Legacy Glossary: each validated progress reading grants 2 XP per term and counts once per user (including the author). No creator bonus applies here.',
+    errorsFallback: 'Failed to load XP data.',
+    loadingRewards: 'Loading rules...',
+    loadingThresholds: 'Loading unlocks...',
+    noThresholds: 'No milestones published yet. (Admin: add them in /admin/xp.)',
+
+    gateTitle: 'Sign in to view your XP',
+    gateDesc:
+      'This page is private because XP exists to track real progress, unlocks, and consistency — not browsing.',
+    gateLogin: 'Log in',
+    gateSignup: 'Create account',
+
+    planQuick: 'Quick Route',
+    planBase: 'Base Route',
+    planSerious: 'Serious Route',
+    planCTA: 'Execute',
+
+    planQuickDesc: '5 glossary terms + 1 short blog read.',
+    planBaseDesc: '1 lesson + 1 article + 5 glossary terms.',
+    planSeriousDesc: '2 lessons + 2 articles + 10 glossary terms.',
+
+    rangeLabel: 'Range',
+    creatorBonusLabel: 'Creator bonus',
+    officialRulesLabel: 'Official rules',
   },
+};
+
+/** ---------- UI tokens (coerência com o teu sistema visual dark premium) ---------- */
+const UI = {
+  eyebrow: 'text-xs uppercase tracking-[0.5em] text-cyan-300',
+  heroTitle: 'leading-tight font-bold tracking-tight text-[#fdd87c] text-4xl md:text-6xl',
+  sectionTitle: 'mt-2 text-3xl md:text-4xl font-bold tracking-tight text-[#fdd87c]',
+  sectionSubtitle: 'mt-3 text-sm text-slate-200',
+  body: 'text-sm text-slate-200',
+  bodyMuted: 'text-sm text-slate-300',
+  micro: 'text-xs text-slate-300',
+  cardTitle: 'text-lg font-semibold text-white',
+  goldStatLabel: 'text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]',
+  cyanValue: 'text-2xl font-semibold text-[#5af3ff]',
+  panel:
+    'relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27] shadow-[0_25px_60px_rgba(2,10,20,0.65)]',
+  cardSurface: 'rounded-2xl border border-white/10 bg-[#04131b]/80 backdrop-blur',
+  statCard:
+    'rounded-2xl border border-white/15 bg-[#000c12]/40 px-4 py-3 text-center shadow-lg shadow-black/40',
+  haloCyan: 'absolute -top-20 -right-16 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl',
+  haloGold: 'absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-[#fdd87c]/10 blur-3xl',
+  ctaPrimary:
+    'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]',
+  ctaOutline: 'border-white/40 text-white hover:bg-white/10',
 };
 
 const rewardMetadata: Record<
@@ -277,87 +392,44 @@ const rewardMetadata: Record<
   }
 > = {
   lesson_complete: {
-    title: {
-      pt: 'Lição concluída',
-      es: 'Lección completada',
-      en: 'Lesson completed',
-    },
+    title: { pt: 'Lição concluída', es: 'Lección completada', en: 'Lesson completed' },
     creatorBonus: {
-      pt: '+19% quando outros completam a tua lição — exclusivo para criadores.',
-      es: '+19% cuando otros completan tu lección — exclusivo para creadores.',
-      en: '+19% whenever someone completes your lesson—creator-only bonus.',
+      pt: '+19% quando outros completam a tua lição (criador).',
+      es: '+19% cuando otros completan tu lección (creador).',
+      en: '+19% when others complete your lesson (creator).',
     },
   },
   blog_read: {
-    title: {
-      pt: 'Artigo lido',
-      es: 'Artículo leído',
-      en: 'Article read',
-    },
+    title: { pt: 'Artigo lido', es: 'Artículo leído', en: 'Article read' },
     creatorBonus: {
-      pt: '+19% quando outros leem o teu artigo — exclusivo para criadores.',
-      es: '+19% cuando otros leen tu artículo — exclusivo para creadores.',
-      en: '+19% whenever someone else reads your article—creator-only bonus.',
+      pt: '+19% quando outros leem o teu artigo (criador).',
+      es: '+19% cuando otros leen tu artículo (creador).',
+      en: '+19% when others read your article (creator).',
     },
   },
   profile_complete: {
-    title: {
-      pt: 'Perfil completo',
-      es: 'Perfil completado',
-      en: 'Profile completed',
-    },
+    title: { pt: 'Perfil completo', es: 'Perfil completado', en: 'Profile completed' },
   },
-  forum_post: {
-    title: {
-      pt: 'Publicação no fórum',
-      es: 'Publicación en el foro',
-      en: 'Forum post',
-    },
-  },
-  forum_topic: {
-    title: {
-      pt: 'Tópico no fórum',
-      es: 'Tema en el foro',
-      en: 'Forum topic',
-    },
-  },
+  forum_post: { title: { pt: 'Publicação no fórum', es: 'Publicación en el foro', en: 'Forum post' } },
+  forum_topic: { title: { pt: 'Tópico no fórum', es: 'Tema en el foro', en: 'Forum topic' } },
   forum_comment: {
-    title: {
-      pt: 'Comentário no fórum',
-      es: 'Comentario en el foro',
-      en: 'Forum comment',
-    },
+    title: { pt: 'Comentário no fórum', es: 'Comentario en el foro', en: 'Forum comment' },
     creatorBonus: {
-      pt: '+0.5% quando outros interagem com o teu comentário – exclusivo para criadores.',
-      es: '+0,5% cuando otros interactúan con tu comentario – exclusivo para creadores.',
-      en: '+0.5% whenever someone interacts with your comment—creator-only bonus.',
+      pt: '+0,5 XP por like relevante (quando aplicável).',
+      es: '+0,5 XP por like relevante (cuando aplique).',
+      en: '+0.5 XP per relevant like (when applicable).',
     },
   },
   glossary_term_read: {
-    title: {
-      pt: 'Glossário Legacy – termo lido',
-      es: 'Glosario Legacy – término leído',
-      en: 'Legacy Glossary – term read',
-    },
+    title: { pt: 'Glossário – termo lido', es: 'Glosario – término leído', en: 'Glossary – term read' },
   },
-  mission_daily: {
-    title: {
-      pt: 'Missão diária',
-      es: 'Misión diaria',
-      en: 'Daily mission',
-    },
-  },
+  mission_daily: { title: { pt: 'Missão diária', es: 'Misión diaria', en: 'Daily mission' } },
 };
 
-const getRewardMeta = (
-  action: string,
-  language: SupportedCopyLang,
-): { title: string; creatorBonus?: string } => {
+const getRewardMeta = (action: string, language: SupportedCopyLang): { title: string; creatorBonus?: string } => {
   const meta = rewardMetadata[action];
   if (!meta) {
-    const fallback = action
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+    const fallback = action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
     return { title: fallback };
   }
   return {
@@ -366,16 +438,36 @@ const getRewardMeta = (
   };
 };
 
+const formatRange = (min: number | null, max: number | null) => {
+  const a = typeof min === 'number' ? min : 0;
+  const b = typeof max === 'number' ? max : 0;
+  if (a === b) return `${a} XP`;
+  return `${a}–${b} XP`;
+};
+
+const clamp0 = (n: number) => (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
+
+const getLang = (language: string): SupportedCopyLang => {
+  if (language === 'pt' || language === 'es' || language === 'en') return language;
+  return 'en';
+};
+
 export default function EducationXpPage() {
-  const { user } = useAuth();
-  const { language } = useLanguage();
+  const { user, getToken } = useAuth();
+  const { language: langRaw } = useLanguage();
+
+  const language = getLang(langRaw as string);
   const copy = XP_COPY[language] ?? XP_COPY.en;
+
   const [xpData, setXpData] = useState<EducationXpData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const userXP = user?.xp_total ?? 0;
+
   useEffect(() => {
     let active = true;
+
     if (!user) {
       setXpData(null);
       setLoading(false);
@@ -385,9 +477,18 @@ export default function EducationXpPage() {
     const fetchXp = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/education/xp', { cache: 'no-store' });
+        const token = getToken?.();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const response = await fetch('/api/education/xp', {
+          cache: 'no-store',
+          headers,
+        });
+
         const data = (await response.json()) as ApiResponse;
         if (!active) return;
+
         if (data.success) {
           setXpData({
             rewards: data.rewards ?? [],
@@ -396,78 +497,143 @@ export default function EducationXpPage() {
           });
           setError(null);
         } else {
-          setError(data.error || 'Failed to load XP metadata.');
+          setError(data.error || copy.errorsFallback);
         }
-      } catch (err) {
+      } catch {
         if (!active) return;
-        setError('Failed to load XP metadata.');
+        setError(copy.errorsFallback);
       } finally {
         if (active) setLoading(false);
       }
     };
-    fetchXp();
+
+    void fetchXp();
+
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [user, getToken, copy.errorsFallback]);
 
-  const visibleRewards = useMemo(() => {
-    const hiddenActions = new Set([
-      'streak_7',
-      'streak_30',
-      'forum_post',
-      'forum_topic',
-      'forum_comment',
-    ]);
-    return (xpData?.rewards ?? []).filter(
-      (reward) => !hiddenActions.has(reward.action_type),
-    );
+  /** ---------- Dados derivados ---------- */
+  const rewardMap = useMemo(() => {
+    const map = new Map<string, XpReward>();
+    (xpData?.rewards ?? []).forEach((r) => map.set(r.action_type, r));
+    return map;
   }, [xpData?.rewards]);
 
-  const thresholdTable = xpData?.thresholds ?? [];
+  const dailyCap = useMemo(() => {
+    // tenta ler de limits/metadata; fallback para o valor oficial do copy
+    // (mantemos o número do copy como fonte de verdade visual)
+    return 369;
+  }, []);
 
+  const visibleRewards = useMemo(() => {
+    // Mantém referência útil sem ruído: esconde o que já explicamos em “Consistência”
+    const hiddenActions = new Set(['streak_7', 'streak_30']);
+    return (xpData?.rewards ?? []).filter((r) => !hiddenActions.has(r.action_type));
+  }, [xpData?.rewards]);
+
+  const groupedRewards = useMemo(() => {
+    const r = visibleRewards;
+
+    const group = {
+      learn: [] as XpReward[],
+      profile: [] as XpReward[],
+      contribute: [] as XpReward[],
+      consistency: [] as XpReward[],
+      other: [] as XpReward[],
+    };
+
+    r.forEach((item) => {
+      const a = item.action_type;
+      if (a === 'lesson_complete' || a === 'blog_read' || a === 'glossary_term_read') group.learn.push(item);
+      else if (a === 'profile_complete') group.profile.push(item);
+      else if (a.startsWith('forum_')) group.contribute.push(item);
+      else if (a.startsWith('mission_') || a.startsWith('streak_')) group.consistency.push(item);
+      else group.other.push(item);
+    });
+
+    return group;
+  }, [visibleRewards]);
+
+  const thresholds = xpData?.thresholds ?? [];
+
+  /** ---------- Planos do dia (estimativas baseadas em mínimos oficiais) ---------- */
+  const minLesson = clamp0(rewardMap.get('lesson_complete')?.min_xp ?? 0);
+  const minBlog = clamp0(rewardMap.get('blog_read')?.min_xp ?? 0);
+  const minGlossary = clamp0(rewardMap.get('glossary_term_read')?.min_xp ?? 0);
+
+  const quickMin = minGlossary * 5 + minBlog * 1;
+  const baseMin = minLesson * 1 + minBlog * 1 + minGlossary * 5;
+  const seriousMin = minLesson * 2 + minBlog * 2 + minGlossary * 10;
+
+  const planCards = [
+    {
+      key: 'quick',
+      title: copy.planQuick,
+      desc: copy.planQuickDesc,
+      xpHint: minGlossary || minBlog ? `${quickMin}+ XP` : '—',
+      icon: Eye,
+      href: '/education/glossary',
+      cta: copy.planCTA,
+    },
+    {
+      key: 'base',
+      title: copy.planBase,
+      desc: copy.planBaseDesc,
+      xpHint: minLesson || minBlog || minGlossary ? `${baseMin}+ XP` : '—',
+      icon: Target,
+      href: '/education',
+      cta: copy.planCTA,
+      featured: true,
+    },
+    {
+      key: 'serious',
+      title: copy.planSerious,
+      desc: copy.planSeriousDesc,
+      xpHint: minLesson || minBlog || minGlossary ? `${seriousMin}+ XP` : '—',
+      icon: CheckCircle2,
+      href: '/education/courses',
+      cta: copy.planCTA,
+    },
+  ];
+
+  /** ---------- Gate (página fechada) ---------- */
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
         <Header />
         <main className="flex-1 flex items-center">
           <div className="container mx-auto max-w-3xl px-4">
-            <Card className="border border-white/10 bg-[#03141d] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
-              <CardContent className="py-10 space-y-4 text-center">
-                <h1 className="text-3xl font-semibold text-white">
-                  {language === 'es'
-                    ? 'Inicia sesión para ver tu XP'
-                    : language === 'pt'
-                    ? 'Inicia sessão para ver o teu XP'
-                    : 'Sign in to view your XP'}
-                </h1>
-                <p className="text-sm text-slate-300">
-                  {language === 'es'
-                    ? 'El modelo XP es exclusivo para miembros conectados. Entra para seguir tu progreso real.'
-                    : language === 'pt'
-                    ? 'O modelo XP é exclusivo para membros autenticados. Entra para acompanhar o teu progresso real.'
-                    : 'The XP model is exclusive to signed-in members. Log in to track your real progress.'}
-                </p>
-                <div className="flex justify-center gap-4">
+            <Card className={cn(UI.panel, 'p-0')}>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className={UI.haloCyan} />
+                <div className={UI.haloGold} />
+              </div>
+              <CardContent className="relative py-10 space-y-5 text-center">
+                <p className={UI.eyebrow}>{copy.eyebrow}</p>
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[#fdd87c]">{copy.gateTitle}</h1>
+                <p className="text-sm text-slate-200 max-w-2xl mx-auto">{copy.gateDesc}</p>
+                <div className="flex justify-center flex-wrap gap-3 pt-2">
                   <Link href="/login">
-                    <Button className="px-8">
-                      {language === 'es'
-                        ? 'Iniciar sesión'
-                        : language === 'pt'
-                        ? 'Iniciar sessão'
-                        : 'Log in'}
+                    <Button className={cn(UI.ctaPrimary, 'px-8')}>
+                      {copy.gateLogin}
+                      <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                   <Link href="/signup">
-                    <Button variant="outline" className="px-8 border-white/40 text-white">
-                      {language === 'es'
-                        ? 'Crear cuenta'
-                        : language === 'pt'
-                        ? 'Criar conta'
-                        : 'Create account'}
+                    <Button variant="outline" className={cn(UI.ctaOutline, 'px-8')}>
+                      {copy.gateSignup}
                     </Button>
                   </Link>
                 </div>
+                <p className={cn(UI.micro, 'text-slate-400')}>
+                  {language === 'pt'
+                    ? 'XP existe para progresso real — não para “ver como funciona”.'
+                    : language === 'es'
+                    ? 'XP existe para progreso real — no para “curiosear”.'
+                    : 'XP exists for real progress — not browsing.'}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -480,234 +646,641 @@ export default function EducationXpPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
       <Header />
-      <main className="flex-1 py-12">
-        <div className="container mx-auto px-4 space-y-10 max-w-6xl">
-          {/* Hero */}
-          <HeroSection>
-            <HeroContent className="items-center">
-              <HeroTextColumn>
-                <div className="space-y-3">
-                  <HeroEyebrow>XP SYSTEM</HeroEyebrow>
-                  <HeroTitle className="text-4xl md:text-5xl">{copy.heroTitle}</HeroTitle>
-                  <HeroDescription className="text-base text-slate-100/95 leading-relaxed">
-                    {copy.heroIntro}
-                  </HeroDescription>
-                  <HeroDescription className="text-slate-300 leading-relaxed">
-                    {copy.heroSub}
-                  </HeroDescription>
+
+      <main className="flex-1 py-8">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-6xl space-y-8">
+            {/* HERO (curto, sério, sem stock) */}
+            <HeroSection className="px-0 py-0" overlayVariant="inverse">
+              <section className={cn(UI.panel, 'px-6 py-10')}>
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className={UI.haloCyan} />
+                  <div className={UI.haloGold} />
                 </div>
-                <Badge className="w-fit border border-white/10 bg-cyan-500/15 text-cyan-100">
-                  {copy.heroBadge}
-                </Badge>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {copy.heroHighlights.map((highlight) => {
-                    const Icon = highlight.icon;
-                    return (
-                      <div
-                        key={highlight.label}
-                        className="rounded-2xl border border-white/15 bg-[#000c12]/40 p-4 shadow-lg shadow-black/40"
-                      >
-                        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
-                          <Icon className="h-4 w-4 text-cyan-300" />
-                          {highlight.label}
-                        </div>
-                        <p className="text-3xl font-semibold text-[#5af3ff] mt-2">
-                          {highlight.value}
-                        </p>
-                        <p className="text-sm text-slate-300 mt-1">{highlight.detail}</p>
+
+                <HeroContent className="relative lg:items-center">
+                  <HeroTextColumn>
+                    <div className="space-y-4">
+                      <HeroEyebrow className={UI.eyebrow}>{copy.eyebrow}</HeroEyebrow>
+
+                      <HeroTitle className={UI.heroTitle}>{copy.title}</HeroTitle>
+
+                      <HeroDescription className="text-base text-slate-100 leading-relaxed max-w-2xl">
+                        {copy.subtitle}
+                      </HeroDescription>
+
+                      <div className={cn(UI.cardSurface, 'p-4')}>
+                        <p className={cn(UI.goldStatLabel, 'mb-2')}>{copy.manifestoTitle}</p>
+                        <ul className="space-y-2">
+                          {copy.manifestoPoints.map((p) => (
+                            <li key={p} className={cn(UI.body, 'flex gap-2')}>
+                              <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300/80" />
+                              <span>{p}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
+
+                      <div className="flex flex-wrap gap-3 pt-1">
+                        <Link href="/education/xp/leaderboard">
+                          <Button className={cn(UI.ctaPrimary)}>
+                            {copy.ctaLeaderboard}
+                            <BarChart3 className="ml-2 h-4 w-4" />
+                          </Button>
+                        </Link>
+
+                        <Link href="/education">
+                          <Button variant="outline" className={cn(UI.ctaOutline)}>
+                            {copy.ctaCourses}
+                            <BookOpen className="ml-2 h-4 w-4" />
+                          </Button>
+                        </Link>
+
+                        <Badge className="border border-white/10 bg-cyan-500/15 text-cyan-100">
+                          {copy.badge}
+                        </Badge>
+                      </div>
+
+                      <p className={cn(UI.micro, 'text-slate-400')}>
+                        {language === 'pt'
+                          ? 'O conteúdo é livre. O progresso é merecido.'
+                          : language === 'es'
+                          ? 'El contenido es libre. El progreso se gana.'
+                          : 'Content is open. Progress is earned.'}
+                      </p>
+                    </div>
+                  </HeroTextColumn>
+
+                  {/* Painel abstracto (sem imagem stock) */}
+                  <div className="relative w-full">
+                    <div className={cn(UI.cardSurface, 'p-5')}>
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className={UI.goldStatLabel}>{copy.officialRulesLabel}</p>
+                          <p className={cn(UI.body, 'mt-1')}>
+                            {language === 'pt'
+                              ? 'Limite diário global e streaks existem para travar spam e premiar disciplina.'
+                              : language === 'es'
+                              ? 'El límite diario y los streaks frenan spam y premian disciplina.'
+                              : 'Daily cap and streaks stop spam and reward discipline.'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/50 px-3 py-2">
+                          <Lock className="h-4 w-4 text-[#fdd87c]" />
+                          <span className={cn(UI.body, 'text-white')}>
+                            {language === 'pt' ? 'Privado' : language === 'es' ? 'Privado' : 'Private'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div className={cn('rounded-2xl border border-white/10 bg-[#000c12]/40 p-4')}>
+                          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
+                            <ShieldCheck className="h-4 w-4 text-cyan-300" />
+                            {language === 'pt' ? 'Limite diário' : language === 'es' ? 'Límite diario' : 'Daily cap'}
+                          </div>
+                          <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>{dailyCap} XP</p>
+                          <p className={cn(UI.micro, 'mt-1')}>
+                            {language === 'pt'
+                              ? 'Depois disso, aprendes na mesma — mas não acumulas XP.'
+                              : language === 'es'
+                              ? 'Después, sigues aprendiendo — pero no acumulas XP.'
+                              : 'After that, you can still learn — XP stops accumulating.'}
+                          </p>
+                        </div>
+
+                        <div className={cn('rounded-2xl border border-white/10 bg-[#000c12]/40 p-4')}>
+                          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
+                            <Flame className="h-4 w-4 text-cyan-300" />
+                            7 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
+                          </div>
+                          <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>222 XP</p>
+                          <p className={cn(UI.micro, 'mt-1')}>
+                            {language === 'pt'
+                              ? 'XP ganho todos os dias. Sem desculpas.'
+                              : language === 'es'
+                              ? 'XP ganado cada día. Sin excusas.'
+                              : 'XP earned daily. No excuses.'}
+                          </p>
+                        </div>
+
+                        <div className={cn('rounded-2xl border border-white/10 bg-[#000c12]/40 p-4')}>
+                          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
+                            <CalendarCheck className="h-4 w-4 text-cyan-300" />
+                            30 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
+                          </div>
+                          <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>1.111 XP</p>
+                          <p className={cn(UI.micro, 'mt-1')}>
+                            {language === 'pt'
+                              ? 'A disciplina que muda o teu ritmo.'
+                              : language === 'es'
+                              ? 'La disciplina que cambia tu ritmo.'
+                              : 'Discipline that changes your pace.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-[#000c12]/60 px-4 py-2">
+                          <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                            {language === 'pt' ? 'O teu XP' : language === 'es' ? 'Tu XP' : 'Your XP'}
+                          </span>
+                          <span className="text-white font-semibold">{userXP.toLocaleString()}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Link href="/education/glossary">
+                            <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                              {copy.ctaGlossary}
+                            </Button>
+                          </Link>
+                          <Link href="/blog">
+                            <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                              {copy.ctaBlog}
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </HeroContent>
+
+                <div className="relative mt-5 rounded-2xl border border-white/10 bg-[#031b26]/70 p-4">
+                  <p className={cn(UI.body, 'text-slate-100')}>
+                    <span className="font-semibold text-white">
+                      {language === 'pt' ? 'Nota:' : language === 'es' ? 'Nota:' : 'Note:'}
+                    </span>{' '}
+                    {copy.glossaryNote}
+                  </p>
+                </div>
+              </section>
+            </HeroSection>
+
+            {/* STICKY BAR (premium, utilitária) */}
+            <div className="sticky top-16 z-40">
+              <div className={cn(UI.cardSurface, 'px-4 py-3')}>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn(UI.goldStatLabel, 'text-[#fdd87c]')}>{copy.stickyLabel}</span>
+
+                    <Link href="/education/xp/leaderboard">
+                      <Button size="sm" className={cn(UI.ctaPrimary)}>
+                        {copy.ctaLeaderboard}
+                        <BarChart3 className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+
+                    <Link href="/education">
+                      <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                        {copy.ctaCourses}
+                      </Button>
+                    </Link>
+
+                    <Link href="/education/glossary">
+                      <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                        {copy.ctaGlossary}
+                      </Button>
+                    </Link>
+
+                    <Link href="/blog">
+                      <Button size="sm" variant="outline" className={UI.ctaOutline}>
+                        {copy.ctaBlog}
+                      </Button>
+                    </Link>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 md:justify-end">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#000c12]/50 px-3 py-2">
+                      <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                        {language === 'pt' ? 'XP' : 'XP'}
+                      </span>
+                      <span className="text-white font-semibold">{userXP.toLocaleString()}</span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#000c12]/50 px-3 py-2">
+                      <Sparkles className="h-4 w-4 text-[#fdd87c]" />
+                      <span className={cn(UI.micro, 'text-slate-200')}>{copy.levelNote}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ERRO */}
+            {error && (
+              <Card className="border border-rose-500/40 bg-rose-950/60">
+                <CardContent className="py-4">
+                  <p className="text-sm text-rose-100">{error}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* O TEU PLANO DE HOJE */}
+            <section className={cn(UI.panel, 'px-6 py-8')}>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-20 -left-16 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+                <div className="absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
+              </div>
+
+              <div className="relative">
+                <p className={UI.eyebrow}>{copy.todayKicker}</p>
+                <h2 className={UI.sectionTitle}>{copy.todayTitle}</h2>
+                <p className={UI.sectionSubtitle}>{copy.todayDesc}</p>
+
+                <div className="mt-6 grid gap-4 lg:grid-cols-3">
+                  {planCards.map((p) => {
+                    const Icon = p.icon;
+                    return (
+                      <Card
+                        key={p.key}
+                        className={cn(
+                          UI.cardSurface,
+                          'overflow-hidden transition hover:border-cyan-400/60 hover:shadow-[0_0_35px_rgba(34,211,238,0.22)]',
+                          p.featured ? 'border-[#fdd87c]/30' : '',
+                        )}
+                      >
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className={cn(UI.goldStatLabel, p.featured ? 'text-[#fdd87c]' : '')}>{p.title}</p>
+                              <p className={cn(UI.body, 'mt-2')}>{p.desc}</p>
+                            </div>
+
+                            <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/40 px-3 py-2">
+                              <Icon className="h-4 w-4 text-cyan-300" />
+                              <span className="text-sm font-semibold text-white">{p.xpHint}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <span className={cn(UI.micro, 'text-slate-400')}>
+                              {language === 'pt'
+                                ? 'Estimativa baseada em mínimos oficiais.'
+                                : language === 'es'
+                                ? 'Estimación basada en mínimos oficiales.'
+                                : 'Estimate based on official minimums.'}
+                            </span>
+
+                            <Link href={p.href}>
+                              <Button size="sm" className={cn(UI.ctaPrimary)}>
+                                {p.cta}
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
                   })}
                 </div>
-              </HeroTextColumn>
-              <HeroMedia>
-                <Image
-                  src={HERO_IMAGE_FALLBACK}
-                  alt="Legacy XP"
-                  fill
-                  priority
-                  className="object-cover opacity-90"
-                />
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#000c12]/80 via-[#031821]/20 to-transparent" />
-              </HeroMedia>
-            </HeroContent>
-            {copy.glossaryNote && (
-              <div className="mt-6 rounded-2xl border border-white/10 bg-[#031b26]/80 p-4 text-sm text-slate-200">
-                {copy.glossaryNote}
               </div>
-            )}
-          </HeroSection>
+            </section>
 
-          {/* Error state */}
-          {error && (
-            <Card className="bg-rose-950/80 border border-rose-600/80">
-              <CardContent className="space-y-2 py-4">
-                <p className="text-sm text-rose-100">{error}</p>
-              </CardContent>
-            </Card>
-          )}
+            {/* REGRAS OFICIAIS */}
+            <section className={cn(UI.panel, 'px-6 py-8')}>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className={UI.haloCyan} />
+                <div className={UI.haloGold} />
+              </div>
 
-          {/* Rewards */}
-          <section className="space-y-5">
-            <div className="flex flex-col gap-3">
-              <p className="text-sm font-semibold text-amber-300 uppercase tracking-[0.2em]">
-                {copy.rewardsKicker}
-              </p>
-              <h2 className="text-2xl font-bold text-white">{copy.rewardsTitle}</h2>
-              <p className="text-sm text-slate-300">{copy.rewardsDescription}</p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {visibleRewards.length === 0 ? (
-                <Card className="bg-[#000c12] border border-white/10">
-                  <CardContent className="py-6">
-                    <p className="text-sm text-slate-300">
-                      {loading ? 'Carregando...' : 'Ainda não existem regras publicadas.'}
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                visibleRewards.map((reward) => {
-                  const range =
-                    reward.min_xp === reward.max_xp
-                      ? `${reward.min_xp ?? 0} XP`
-                      : `${reward.min_xp ?? 0} - ${reward.max_xp ?? 0} XP`;
-                  const meta = getRewardMeta(reward.action_type, language);
+              <div className="relative">
+                <p className={UI.eyebrow}>{copy.rewardsKicker}</p>
+                <h2 className={UI.sectionTitle}>{copy.rewardsTitle}</h2>
+                <p className={UI.sectionSubtitle}>{copy.rewardsDesc}</p>
 
-                  return (
-                    <Card
-                      key={reward.action_type}
-                      className="bg-[#05212b] border border-white/10 transition hover:border-cyan-400/60 hover:-translate-y-0.5"
-                    >
-                      <CardContent className="space-y-3 text-sm text-slate-200 py-5">
-                        <div className="flex justify-between items-center gap-4">
-                          <div>
-                            <h3 className="text-base font-semibold text-primary">{meta.title}</h3>
-                          </div>
-                          <span className="rounded-full border border-white/20 px-3 py-1 text-xs uppercase tracking-wide text-white">
-                            {range}
-                          </span>
+                <div className="mt-6 grid gap-4 lg:grid-cols-12">
+                  {/* Aprender */}
+                  <div className="lg:col-span-6">
+                    <Card className={cn(UI.cardSurface, 'h-full')}>
+                      <CardContent className="p-5">
+                        <p className={UI.goldStatLabel}>
+                          {language === 'pt' ? 'Aprender' : language === 'es' ? 'Aprender' : 'Learn'}
+                        </p>
+                        <p className={cn(UI.micro, 'mt-1 text-slate-400')}>
+                          {language === 'pt'
+                            ? 'A base: lições, leituras e glossário.'
+                            : language === 'es'
+                            ? 'La base: lecciones, lecturas y glosario.'
+                            : 'The foundation: lessons, reads, glossary.'}
+                        </p>
+
+                        <div className="mt-4 grid gap-3">
+                          {(groupedRewards.learn.length ? groupedRewards.learn : []).map((reward) => {
+                            const meta = getRewardMeta(reward.action_type, language);
+                            return (
+                              <div
+                                key={reward.action_type}
+                                className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-white">{meta.title}</p>
+                                  <span className="rounded-full border border-white/15 bg-[#000c12]/30 px-3 py-1 text-xs text-slate-200">
+                                    {copy.rangeLabel}: {formatRange(reward.min_xp, reward.max_xp)}
+                                  </span>
+                                </div>
+                                {meta.creatorBonus ? (
+                                  <p className={cn(UI.micro, 'mt-2 text-slate-300')}>
+                                    <span className="text-cyan-200">{copy.creatorBonusLabel}:</span> {meta.creatorBonus}
+                                  </p>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+
+                          {!groupedRewards.learn.length && (
+                            <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                              <p className={UI.bodyMuted}>{loading ? copy.loadingRewards : '—'}</p>
+                            </div>
+                          )}
                         </div>
-                        {meta.creatorBonus && (
-                          <p className="text-xs text-slate-300">{meta.creatorBonus}</p>
-                        )}
                       </CardContent>
                     </Card>
-                  );
-                })
-              )}
-            </div>
-          </section>
-
-          {/* Limits & streaks */}
-          <section className="space-y-4">
-            <Card className="bg-[#05212b] border border-white/10">
-              <CardContent className="grid gap-6 py-6 md:grid-cols-2">
-                <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-amber-300">
-                    {copy.streaksKicker}
-                  </p>
-                  <p className="text-sm text-slate-200">{copy.streaksIntro}</p>
-                  <ul className="space-y-2 list-disc pl-5 text-sm text-slate-200">
-                    {copy.streaksPoints.map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-[#000c12]/80 p-4 space-y-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                      {copy.monitoringTitle}
-                    </p>
-                    <p className="text-sm text-slate-300">{copy.monitoringBody}</p>
                   </div>
-                  <div className="border-t border-white/10 pt-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                      {copy.alertsTitle}
-                    </p>
-                    <p className="text-sm text-slate-300">{copy.alertsBody}</p>
+
+                  {/* Perfil + Contribuir */}
+                  <div className="lg:col-span-6 grid gap-4">
+                    <Card className={cn(UI.cardSurface)}>
+                      <CardContent className="p-5">
+                        <p className={UI.goldStatLabel}>
+                          {language === 'pt' ? 'Perfil' : language === 'es' ? 'Perfil' : 'Profile'}
+                        </p>
+                        <p className={cn(UI.micro, 'mt-1 text-slate-400')}>
+                          {language === 'pt'
+                            ? 'Credibilidade mínima para acompanhar o teu progresso.'
+                            : language === 'es'
+                            ? 'Credibilidad mínima para seguir tu progreso.'
+                            : 'Minimum credibility to track your progress.'}
+                        </p>
+
+                        <div className="mt-4 grid gap-3">
+                          {(groupedRewards.profile.length ? groupedRewards.profile : []).map((reward) => {
+                            const meta = getRewardMeta(reward.action_type, language);
+                            return (
+                              <div
+                                key={reward.action_type}
+                                className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-white">{meta.title}</p>
+                                  <span className="rounded-full border border-white/15 bg-[#000c12]/30 px-3 py-1 text-xs text-slate-200">
+                                    {formatRange(reward.min_xp, reward.max_xp)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {!groupedRewards.profile.length && (
+                            <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                              <p className={UI.bodyMuted}>{loading ? copy.loadingRewards : '—'}</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className={cn(UI.cardSurface)}>
+                      <CardContent className="p-5">
+                        <p className={UI.goldStatLabel}>
+                          {language === 'pt' ? 'Contribuir' : language === 'es' ? 'Contribuir' : 'Contribute'}
+                        </p>
+                        <p className={cn(UI.micro, 'mt-1 text-slate-400')}>
+                          {language === 'pt'
+                            ? 'Fórum: valor real, sem spam.'
+                            : language === 'es'
+                            ? 'Foro: valor real, sin spam.'
+                            : 'Forum: real value, no spam.'}
+                        </p>
+
+                        <div className="mt-4 grid gap-3">
+                          {(groupedRewards.contribute.length ? groupedRewards.contribute : []).map((reward) => {
+                            const meta = getRewardMeta(reward.action_type, language);
+                            return (
+                              <div
+                                key={reward.action_type}
+                                className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-white">{meta.title}</p>
+                                  <span className="rounded-full border border-white/15 bg-[#000c12]/30 px-3 py-1 text-xs text-slate-200">
+                                    {formatRange(reward.min_xp, reward.max_xp)}
+                                  </span>
+                                </div>
+                                {meta.creatorBonus ? (
+                                  <p className={cn(UI.micro, 'mt-2 text-slate-300')}>
+                                    <span className="text-cyan-200">{copy.creatorBonusLabel}:</span> {meta.creatorBonus}
+                                  </p>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+
+                          {!groupedRewards.contribute.length && (
+                            <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                              <p className={UI.bodyMuted}>{loading ? copy.loadingRewards : '—'}</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </section>
 
-          {/* Thresholds */}
-          <section className="space-y-4">
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold text-amber-300 uppercase tracking-[0.2em]">
-                {copy.thresholdsKicker}
-              </p>
-              <h2 className="text-2xl font-bold text-white">{copy.thresholdsTitle}</h2>
-              <p className="text-sm text-slate-300">{copy.thresholdsDescription}</p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {thresholdTable.length === 0 ? (
-                <Card className="bg-[#05212b] border border-white/10">
-                  <CardContent className="py-5">
-                    <p className="text-sm text-slate-200">
-                      {loading
-                        ? 'Carregando thresholds...'
-                        : 'Ainda não há thresholds publicados. A equipa admin pode adicioná-los no painel /admin/xp.'}
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                thresholdTable.map((threshold) => {
-                  const needsXpText =
-                    language === 'es'
-                      ? `Necesitas ${threshold.xp_total} XP totales`
-                      : language === 'en'
-                      ? `You need ${threshold.xp_total} total XP`
-                      : `Precisas de ${threshold.xp_total} XP totais`;
-                  const featureTitle = threshold.feature_name;
-                  const extraHint =
-                    !threshold.description && /compet/i.test(featureTitle)
-                      ? {
-                          pt: 'Acesso às provas oficiais do Legacy representando a tua casa ou país.',
-                          es: 'Acceso a las competiciones oficiales de Legacy representando tu casa o país.',
-                          en: 'Access to Legacy’s official competitions representing your house or country.',
-                        }[language]
-                      : threshold.description;
-
-                  return (
-                    <Card
-                      key={`${threshold.xp_total}-${threshold.feature_name}`}
-                      className="bg-[#05212b] border border-white/10 hover:border-cyan-400/50 transition"
-                    >
-                      <CardContent className="space-y-3 py-5">
-                        <div className="flex items-center justify-between text-sm text-slate-300">
-                          <span>{needsXpText}</span>
-                          <Badge variant="outline" className="text-white border-white/30">
-                            {language === 'es'
-                              ? 'Desbloqueo'
-                              : language === 'en'
-                              ? 'Unlock'
-                              : 'Desbloqueio'}
+                {/* Fair Play / Auditoria */}
+                <div className="mt-6 grid gap-4 lg:grid-cols-12">
+                  <div className="lg:col-span-7">
+                    <Card className={cn(UI.cardSurface)}>
+                      <CardContent className="p-5">
+                        <p className={UI.goldStatLabel}>{copy.monitoringTitle}</p>
+                        <p className={cn(UI.body, 'mt-2')}>{copy.monitoringBody}</p>
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className="border-white/20 bg-[#000c12]/30 text-slate-200">
+                            {language === 'pt' ? 'Anti-spam' : language === 'es' ? 'Anti-spam' : 'Anti-spam'}
+                          </Badge>
+                          <Badge variant="outline" className="border-white/20 bg-[#000c12]/30 text-slate-200">
+                            {language === 'pt' ? 'Sem farming' : language === 'es' ? 'Sin farming' : 'No farming'}
+                          </Badge>
+                          <Badge variant="outline" className="border-white/20 bg-[#000c12]/30 text-slate-200">
+                            {language === 'pt' ? '1x por utilizador' : language === 'es' ? '1x por usuario' : 'Once per user'}
                           </Badge>
                         </div>
-                        <p className="text-lg font-semibold text-primary">{featureTitle}</p>
-                        {extraHint && <p className="text-sm text-slate-200">{extraHint}</p>}
                       </CardContent>
                     </Card>
-                  );
-                })
-              )}
-            </div>
-            <Card className="bg-[#05212b] border border-white/10">
-              <CardContent className="space-y-3 text-sm text-slate-200 py-4">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="h-5 w-5 text-amber-300" />
-                  <p>{copy.levelNote}</p>
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <Card className={cn(UI.cardSurface)}>
+                      <CardContent className="p-5">
+                        <p className={UI.goldStatLabel}>
+                          {language === 'pt' ? 'Liga à evidência' : language === 'es' ? 'Evidencia' : 'Evidence'}
+                        </p>
+                        <p className={cn(UI.body, 'mt-2')}>
+                          {language === 'pt'
+                            ? 'Leaderboard não é ego. É consistência visível. Mostra quem aparece, termina e volta.'
+                            : language === 'es'
+                            ? 'El leaderboard no es ego. Es consistencia visible. Muestra quién aparece, termina y vuelve.'
+                            : 'Leaderboard is not ego. It’s visible consistency. It shows who shows up, finishes, and returns.'}
+                        </p>
+                        <div className="mt-4">
+                          <Link href="/education/xp/leaderboard">
+                            <Button className={cn(UI.ctaPrimary, 'w-full')}>
+                              {copy.ctaLeaderboard}
+                              <BarChart3 className="ml-2 h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                        <p className={cn(UI.micro, 'mt-2 text-slate-400')}>
+                          {language === 'pt'
+                            ? 'Compete contra o “tu de ontem”.'
+                            : language === 'es'
+                            ? 'Compite contra tu “yo de ayer”.'
+                            : 'Compete against yesterday you.'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Trophy className="h-5 w-5 text-emerald-300" />
-                  <p>{copy.unlockNote}</p>
+              </div>
+            </section>
+
+            {/* CONSISTÊNCIA */}
+            <section className={cn(UI.panel, 'px-6 py-8')}>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-16 -left-16 h-60 w-60 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+                <div className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-[#5af3ff]/10 blur-3xl" />
+              </div>
+
+              <div className="relative grid gap-6 lg:grid-cols-12 lg:items-start">
+                <div className="lg:col-span-7 space-y-3">
+                  <p className={UI.eyebrow}>{copy.consistencyKicker}</p>
+                  <h2 className={UI.sectionTitle}>{copy.consistencyTitle}</h2>
+                  <p className={UI.sectionSubtitle}>{copy.consistencyIntro}</p>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div className={cn(UI.cardSurface, 'p-4')}>
+                      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
+                        <ShieldCheck className="h-4 w-4 text-cyan-300" />
+                        {language === 'pt' ? 'Limite diário' : language === 'es' ? 'Límite diario' : 'Daily cap'}
+                      </div>
+                      <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>369 XP</p>
+                      <p className={cn(UI.micro, 'mt-1')}>{copy.consistencyPoints[0]}</p>
+                    </div>
+
+                    <div className={cn(UI.cardSurface, 'p-4')}>
+                      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
+                        <Flame className="h-4 w-4 text-cyan-300" />
+                        7 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
+                      </div>
+                      <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>222 XP</p>
+                      <p className={cn(UI.micro, 'mt-1')}>{copy.consistencyPoints[1]}</p>
+                    </div>
+
+                    <div className={cn(UI.cardSurface, 'p-4')}>
+                      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
+                        <CalendarCheck className="h-4 w-4 text-cyan-300" />
+                        30 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
+                      </div>
+                      <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>1.111 XP</p>
+                      <p className={cn(UI.micro, 'mt-1')}>{copy.consistencyPoints[2]}</p>
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </section>
+
+                <div className="lg:col-span-5">
+                  <Card className={cn(UI.cardSurface)}>
+                    <CardContent className="p-5 space-y-4">
+                      <p className={UI.goldStatLabel}>
+                        {language === 'pt' ? 'Regra simples' : language === 'es' ? 'Regla simple' : 'Simple rule'}
+                      </p>
+                      <p className={cn(UI.body, 'text-slate-100')}>
+                        {language === 'pt'
+                          ? 'Um curso de cada vez. Termina. Só depois avanças. Isto cria capacidade real.'
+                          : language === 'es'
+                          ? 'Un curso a la vez. Termina. Luego avanzas. Esto crea capacidad real.'
+                          : 'One course at a time. Finish it. Then move forward. That builds real capacity.'}
+                      </p>
+                      <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                        <p className={UI.goldStatLabel}>
+                          {language === 'pt' ? 'Dica de execução' : language === 'es' ? 'Consejo' : 'Execution tip'}
+                        </p>
+                        <p className={cn(UI.body, 'mt-2')}>
+                          {language === 'pt'
+                            ? 'Se falhas um dia, não dramatizes. Recomeça no dia seguinte. O streak existe para treinar disciplina, não para te castigar.'
+                            : language === 'es'
+                            ? 'Si fallas un día, no dramatices. Reinicia al día siguiente. El streak entrena disciplina, no castigo.'
+                            : 'If you miss a day, don’t dramatise. Restart tomorrow. Streaks train discipline, not punishment.'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </section>
+
+            {/* DESBLOQUEIOS */}
+            <section className={cn(UI.panel, 'px-6 py-8')}>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-16 -right-12 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+                <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-[#fdd87c]/10 blur-3xl" />
+              </div>
+
+              <div className="relative space-y-5">
+                <div className="space-y-2">
+                  <p className={UI.eyebrow}>{copy.thresholdsKicker}</p>
+                  <h2 className={UI.sectionTitle}>{copy.thresholdsTitle}</h2>
+                  <p className={UI.sectionSubtitle}>{copy.thresholdsDesc}</p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  {thresholds.length === 0 ? (
+                    <Card className={cn(UI.cardSurface)}>
+                      <CardContent className="py-6">
+                        <p className={UI.bodyMuted}>{loading ? copy.loadingThresholds : copy.noThresholds}</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    thresholds.map((t) => {
+                      const needs =
+                        language === 'pt'
+                          ? `Precisas de ${t.xp_total} XP totais`
+                          : language === 'es'
+                          ? `Necesitas ${t.xp_total} XP totales`
+                          : `You need ${t.xp_total} total XP`;
+
+                      return (
+                        <Card key={`${t.xp_total}-${t.feature_name}`} className={cn(UI.cardSurface)}>
+                          <CardContent className="p-5 space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className={cn(UI.micro, 'text-slate-300')}>{needs}</span>
+                              <Badge variant="outline" className="border-white/20 bg-[#000c12]/30 text-slate-200">
+                                {language === 'pt' ? 'Desbloqueio' : language === 'es' ? 'Desbloqueo' : 'Unlock'}
+                              </Badge>
+                            </div>
+                            <p className={cn(UI.cardTitle)}>{t.feature_name}</p>
+                            {t.description ? <p className={UI.body}>{t.description}</p> : null}
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  )}
+                </div>
+
+                <Card className={cn(UI.cardSurface)}>
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="h-5 w-5 text-[#fdd87c]" />
+                      <p className={UI.body}>{copy.levelNote}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Trophy className="h-5 w-5 text-emerald-300" />
+                      <p className={UI.body}>{copy.unlockNote}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+          </div>
         </div>
       </main>
+
       <Footer />
     </div>
   );
