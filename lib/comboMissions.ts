@@ -6,9 +6,10 @@ import { logger } from './logger';
 const db = supabaseAdmin ?? supabase;
 
 export type ComboEventType = 'lesson' | 'blog' | 'glossary';
+export type ComboKey = 'quick' | 'base' | 'serious';
 
 type ComboDefinition = {
-  key: 'quick' | 'base' | 'serious';
+  key: ComboKey;
   missionType: string;
   label: string;
   requirements: {
@@ -54,6 +55,33 @@ type ComboProgressRow = {
   base_completed: boolean;
   serious_completed: boolean;
 };
+
+export type ComboProgressState = {
+  glossary_count: number;
+  blog_count: number;
+  lesson_count: number;
+  quick_completed: boolean;
+  base_completed: boolean;
+  serious_completed: boolean;
+};
+
+export type ComboMissionMeta = {
+  xp: number;
+  completed: boolean;
+};
+
+const BASE_PROGRESS_STATE: ComboProgressState = {
+  glossary_count: 0,
+  blog_count: 0,
+  lesson_count: 0,
+  quick_completed: false,
+  base_completed: false,
+  serious_completed: false,
+};
+
+const createEmptyProgress = (): ComboProgressState => ({
+  ...BASE_PROGRESS_STATE,
+});
 
 async function getComboProgress(
   userId: string,
@@ -224,19 +252,18 @@ export async function recordComboEvent(
   }
 }
 
-export async function getComboProgressForUser(userId: string) {
+export async function getComboProgressForUser(userId: string): Promise<ComboProgressState> {
   const comboDate = getTodayCETDate();
   const existing = await getComboProgress(userId, comboDate);
-  return (
-    existing ?? {
-      glossary_count: 0,
-      blog_count: 0,
-      lesson_count: 0,
-      quick_completed: false,
-      base_completed: false,
-      serious_completed: false,
-    }
-  );
+  if (!existing) return createEmptyProgress();
+  return {
+    glossary_count: existing.glossary_count,
+    blog_count: existing.blog_count,
+    lesson_count: existing.lesson_count,
+    quick_completed: existing.quick_completed,
+    base_completed: existing.base_completed,
+    serious_completed: existing.serious_completed,
+  };
 }
 
 export const comboDefinitions = COMBO_DEFINITIONS;
