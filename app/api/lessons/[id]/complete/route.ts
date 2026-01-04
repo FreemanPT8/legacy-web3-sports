@@ -7,6 +7,7 @@ import {
   markContentComplete,
 } from '@/lib/xp';
 import { fetchLessonContext } from '@/lib/lesson-context';
+import { recordComboEvent } from '@/lib/comboMissions';
 
 interface RouteContext {
   params: { id: string };
@@ -142,6 +143,8 @@ export async function POST(
         }
       }
     }
+
+    await recordComboEvent(userId, 'lesson');
 
     return NextResponse.json({
       success: true,

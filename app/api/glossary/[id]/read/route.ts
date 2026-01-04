@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { awardXP } from '@/lib/xp';
+import { recordComboEvent } from '@/lib/comboMissions';
 
 const db = supabaseAdmin ?? supabase;
 const GLOSSARY_XP = 2;
@@ -105,6 +106,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         { status: 500 },
       );
     }
+
+    await recordComboEvent(userId, 'glossary');
 
     return NextResponse.json({
       success: true,

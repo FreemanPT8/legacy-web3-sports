@@ -6,6 +6,7 @@ import {
   markContentComplete,
 } from '@/lib/xp';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { recordComboEvent } from '@/lib/comboMissions';
 
 interface RouteContext {
   params: { id: string };
@@ -174,6 +175,8 @@ export async function POST(
         }
       }
     }
+
+    await recordComboEvent(userId, 'blog');
 
     return NextResponse.json({
       success: true,

@@ -2,20 +2,20 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { verifyAuth } from '@/lib/auth';
+import { getTodayCETDate } from '@/lib/timezone';
+import { comboDefinitions, getComboProgressForUser } from '@/lib/comboMissions';
 
-const MISSION_TYPES = [
-  { type: 'complete_lesson', description: 'Complete any lesson', xp: 12, target: 1 },
-  { type: 'read_blog', description: 'Read a blog article', xp: 12, target: 1 },
-  { type: 'forum_comment', description: 'Comment on a forum post', xp: 12, target: 1 },
-  { type: 'daily_login', description: 'Log in to the platform', xp: 12, target: 1 },
-  { type: 'earn_xp', description: 'Earn 25 XP today', xp: 12, target: 25 },
-  { type: 'complete_lessons', description: 'Complete 2 lessons', xp: 12, target: 2 },
-];
-
-function selectRandomMissions(count: number) {
-  const shuffled = [...MISSION_TYPES].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}
+const COMBO_MISSIONS = comboDefinitions.map((combo) => ({
+  type: combo.missionType,
+  description: combo.label,
+  xp: combo.xp,
+  target: 1,
+  metadata: {
+    combo: combo.key,
+    requirements: combo.requirements,
+    xp: combo.xp,
+  },
+}));
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         { status: 403 }
       );
     }
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayCETDate();
 
     const { data: existingMissions } = await supabase
       .from('daily_missions')
@@ -50,15 +50,14 @@ export async function POST(request: Request) {
       });
     }
 
-    const selectedMissions = selectRandomMissions(3);
-
-    const missionsToInsert = selectedMissions.map(mission => ({
+    const missionsToInsert = COMBO_MISSIONS.map(mission => ({
       date: today,
       type: mission.type,
       description: mission.description,
       xp_reward: mission.xp,
       target_count: mission.target,
-      is_active: true
+      is_active: true,
+      metadata: mission.metadata,
     }));
 
     const { data: insertedMissions, error: insertError } = await supabase
@@ -123,7 +122,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayCETDate();
 
     const { data: dailyMissions, error: missionsError } = await supabase
       .from('daily_missions')
@@ -181,6 +180,7 @@ export async function GET(request: Request) {
       description: mission.description,
       xp_reward: mission.xp_reward,
       target_count: mission.target_count,
+      metadata: mission.metadata ?? {},
       user_missions: userMissionsMap.get(mission.id) || {
         progress: 0,
         completed: false,
@@ -188,9 +188,12 @@ export async function GET(request: Request) {
       }
     }));
 
+    const comboProgress = await getComboProgressForUser(userId);
+
     return NextResponse.json({
       success: true,
-      missions: missionsWithProgress
+      missions: missionsWithProgress,
+      combo_progress: comboProgress,
     });
   } catch (error) {
     logger.error('Error:', error);
