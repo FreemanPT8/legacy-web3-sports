@@ -231,16 +231,6 @@ export const Header = memo(function Header() {
                 </NavigationMenuItem>
               )}
 
-              {/* FORUM (XP >= 369) */}
-              {user && user.xp_total >= 369 && (
-                <NavigationMenuItem>
-                  <Link href="/forum" legacyBehavior passHref>
-                    <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white">
-                      {t('nav.forum')}
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
-              )}
             </NavigationMenuList>
           </NavigationMenu>
         </div>
@@ -487,15 +477,6 @@ export const Header = memo(function Header() {
                 >
                   {t('nav.events')}
                 </Link>
-                {user && user.xp_total >= 369 && (
-                  <Link
-                    href="/forum"
-                    onClick={() => setMobileOpen(false)}
-                    className="text-lg"
-                  >
-                    {t('nav.forum')}
-                  </Link>
-                )}
 
                 {user && (
                 <div className="border-t border-white/10 pt-4 mt-4">

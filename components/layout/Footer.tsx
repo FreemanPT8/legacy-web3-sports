@@ -126,14 +126,6 @@ export const Footer = memo(function Footer() {
                   {t('nav.about')}
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/forum"
-                  className="text-sm text-gray-400 hover:text-sky-400 transition-colors"
-                >
-                  {t('nav.forum')}
-                </Link>
-              </li>
             </ul>
           </div>
         </div>
