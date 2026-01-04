@@ -121,6 +121,9 @@ type CopyPack = {
   planQuickDesc: string;
   planBaseDesc: string;
   planSeriousDesc: string;
+  planQuickXP: string;
+  planBaseXP: string;
+  planSeriousXP: string;
 
   rangeLabel: string;
   creatorBonusLabel: string;
@@ -197,9 +200,12 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
     planSerious: 'Rota Séria',
     planCTA: 'Executar',
 
-    planQuickDesc: '5 termos no glossário + 1 leitura curta no blog.',
-    planBaseDesc: '1 lição + 1 artigo + 5 termos no glossário.',
-    planSeriousDesc: '2 lições + 2 artigos + 10 termos no glossário.',
+    planQuickDesc: '3 termos no glossário + 1 leitura de blog.',
+    planBaseDesc: '1 lição + 1 blog post + 5 termos no glossário.',
+    planSeriousDesc: '2 lições + 2 blog posts + 10 termos no glossário.',
+    planQuickXP: '15 XP extra',
+    planBaseXP: '21 XP extra',
+    planSeriousXP: '33 XP extra',
 
     rangeLabel: 'Intervalo',
     creatorBonusLabel: 'Bónus de criador',
@@ -274,9 +280,12 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
     planSerious: 'Ruta Seria',
     planCTA: 'Ejecutar',
 
-    planQuickDesc: '5 términos en glosario + 1 lectura corta en blog.',
-    planBaseDesc: '1 lección + 1 artículo + 5 términos en glosario.',
-    planSeriousDesc: '2 lecciones + 2 artículos + 10 términos en glosario.',
+    planQuickDesc: '3 términos en el glosario + 1 lectura de blog.',
+    planBaseDesc: '1 lección + 1 blog post + 5 términos en el glosario.',
+    planSeriousDesc: '2 lecciones + 2 blog posts + 10 términos en el glosario.',
+    planQuickXP: '15 XP extra',
+    planBaseXP: '21 XP extra',
+    planSeriousXP: '33 XP extra',
 
     rangeLabel: 'Rango',
     creatorBonusLabel: 'Bonus de creador',
@@ -350,9 +359,12 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
     planSerious: 'Serious Route',
     planCTA: 'Execute',
 
-    planQuickDesc: '5 glossary terms + 1 short blog read.',
-    planBaseDesc: '1 lesson + 1 article + 5 glossary terms.',
-    planSeriousDesc: '2 lessons + 2 articles + 10 glossary terms.',
+    planQuickDesc: '3 glossary terms + 1 blog read.',
+    planBaseDesc: '1 lesson + 1 blog post + 5 glossary terms.',
+    planSeriousDesc: '2 lessons + 2 blog posts + 10 glossary terms.',
+    planQuickXP: '15 XP extra',
+    planBaseXP: '21 XP extra',
+    planSeriousXP: '33 XP extra',
 
     rangeLabel: 'Range',
     creatorBonusLabel: 'Creator bonus',
@@ -579,16 +591,22 @@ export default function EducationXpPage() {
   const minBlog = clamp0(rewardMap.get('blog_read')?.min_xp ?? 0);
   const minGlossary = clamp0(rewardMap.get('glossary_term_read')?.min_xp ?? 0);
 
-  const quickMin = minGlossary * 5 + minBlog * 1;
+  const quickMin = minGlossary * 3 + minBlog * 1;
   const baseMin = minLesson * 1 + minBlog * 1 + minGlossary * 5;
   const seriousMin = minLesson * 2 + minBlog * 2 + minGlossary * 10;
+
+  const quickXPLabel = copy.planQuickXP || (minGlossary || minBlog ? `${quickMin}+ XP` : '—');
+  const baseXPLabel =
+    copy.planBaseXP || (minLesson || minBlog || minGlossary ? `${baseMin}+ XP` : '—');
+  const seriousXPLabel =
+    copy.planSeriousXP || (minLesson || minBlog || minGlossary ? `${seriousMin}+ XP` : '—');
 
   const planCards = [
     {
       key: 'quick',
       title: copy.planQuick,
       desc: copy.planQuickDesc,
-      xpHint: minGlossary || minBlog ? `${quickMin}+ XP` : '—',
+      xpHint: quickXPLabel,
       icon: Eye,
       href: '/education/glossary',
       cta: copy.planCTA,
@@ -597,7 +615,7 @@ export default function EducationXpPage() {
       key: 'base',
       title: copy.planBase,
       desc: copy.planBaseDesc,
-      xpHint: minLesson || minBlog || minGlossary ? `${baseMin}+ XP` : '—',
+      xpHint: baseXPLabel,
       icon: Target,
       href: '/education',
       cta: copy.planCTA,
@@ -607,7 +625,7 @@ export default function EducationXpPage() {
       key: 'serious',
       title: copy.planSerious,
       desc: copy.planSeriousDesc,
-      xpHint: minLesson || minBlog || minGlossary ? `${seriousMin}+ XP` : '—',
+      xpHint: seriousXPLabel,
       icon: CheckCircle2,
       href: '/education/courses',
       cta: copy.planCTA,
