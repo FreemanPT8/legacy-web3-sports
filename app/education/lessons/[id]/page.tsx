@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ContentTracker } from '@/components/ContentTracker';
+import { ContentComments } from '@/components/comments/ContentComments';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMultilingualContent } from '@/lib/i18n';
@@ -484,6 +485,12 @@ export default function LessonPage() {
                 </CardContent>
               </Card>
             )}
+
+            <ContentComments
+              contentId={lesson.id}
+              contentType="lesson"
+              title="Comentários privados desta lição"
+            />
 
             {/* NAVIGATION */}
             <div className="flex justify-between gap-4">
