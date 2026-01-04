@@ -430,6 +430,7 @@ const REWARD_HIGHLIGHT_ACTIONS = new Set([
   'lesson_complete',
   'profile_complete',
   'blog_read',
+  'glossary_term_read',
   'forum_post',
   'forum_topic',
   'forum_comment',
