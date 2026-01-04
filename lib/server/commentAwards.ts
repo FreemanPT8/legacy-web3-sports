@@ -103,10 +103,10 @@ export async function runWeeklyCommentAward(referenceDate?: Date): Promise<Comme
     };
   }
 
-  const enriched = comments
-    .map((row) => {
+  const enriched = (comments as CommentRow[])
+    .map((row: CommentRow) => {
       const points = (row.positive_count ?? 0) + 2 * (row.fire_count ?? 0);
-      return { row: row as CommentRow, points };
+      return { row, points };
     })
     .filter((entry) => entry.points > 0)
     .sort((a, b) => {
