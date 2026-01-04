@@ -426,6 +426,21 @@ const rewardMetadata: Record<
   mission_daily: { title: { pt: 'Missão diária', es: 'Misión diaria', en: 'Daily mission' } },
 };
 
+const REWARD_HIGHLIGHT_ACTIONS = new Set([
+  'lesson_complete',
+  'profile_complete',
+  'blog_read',
+  'forum_post',
+  'forum_topic',
+  'forum_comment',
+]);
+
+const HIGHLIGHT_TITLE_CLASS =
+  'text-[#5af3ff] drop-shadow-[0_0_12px_rgba(90,243,255,0.55)]';
+
+const getRewardTitleClass = (action: string) =>
+  REWARD_HIGHLIGHT_ACTIONS.has(action) ? HIGHLIGHT_TITLE_CLASS : 'text-white';
+
 const getRewardMeta = (action: string, language: SupportedCopyLang): { title: string; creatorBonus?: string } => {
   const meta = rewardMetadata[action];
   if (!meta) {
@@ -971,7 +986,9 @@ export default function EducationXpPage() {
                                 className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <p className="text-sm font-semibold text-white">{meta.title}</p>
+                                  <p className={cn('text-sm font-semibold', getRewardTitleClass(reward.action_type))}>
+                                    {meta.title}
+                                  </p>
                                   <span className="rounded-full border border-white/15 bg-[#000c12]/30 px-3 py-1 text-xs text-slate-200">
                                     {copy.rangeLabel}: {formatRange(reward.min_xp, reward.max_xp)}
                                   </span>
@@ -1019,7 +1036,9 @@ export default function EducationXpPage() {
                                 className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <p className="text-sm font-semibold text-white">{meta.title}</p>
+                                  <p className={cn('text-sm font-semibold', getRewardTitleClass(reward.action_type))}>
+                                    {meta.title}
+                                  </p>
                                   <span className="rounded-full border border-white/15 bg-[#000c12]/30 px-3 py-1 text-xs text-slate-200">
                                     {formatRange(reward.min_xp, reward.max_xp)}
                                   </span>
@@ -1059,7 +1078,9 @@ export default function EducationXpPage() {
                                 className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <p className="text-sm font-semibold text-white">{meta.title}</p>
+                                  <p className={cn('text-sm font-semibold', getRewardTitleClass(reward.action_type))}>
+                                    {meta.title}
+                                  </p>
                                   <span className="rounded-full border border-white/15 bg-[#000c12]/30 px-3 py-1 text-xs text-slate-200">
                                     {formatRange(reward.min_xp, reward.max_xp)}
                                   </span>
@@ -1254,7 +1275,7 @@ export default function EducationXpPage() {
                                 {language === 'pt' ? 'Desbloqueio' : language === 'es' ? 'Desbloqueo' : 'Unlock'}
                               </Badge>
                             </div>
-                            <p className={cn(UI.cardTitle)}>{t.feature_name}</p>
+                            <p className={cn(UI.cardTitle, HIGHLIGHT_TITLE_CLASS)}>{t.feature_name}</p>
                             {t.description ? <p className={UI.body}>{t.description}</p> : null}
                           </CardContent>
                         </Card>
