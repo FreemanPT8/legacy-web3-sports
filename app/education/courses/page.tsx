@@ -835,6 +835,33 @@ export default function CoursesPage() {
                               </div>
                             )}
 
+                            {(isCourseCreator || xpRequired > 0) && (
+                              <div className="absolute left-3 right-16 top-3 flex flex-wrap items-center gap-2">
+                                {isCourseCreator && (
+                                  <Badge className="flex items-center gap-1 border-white/20 bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-white">
+                                    <PenSquare className="h-3 w-3" />
+                                    {tr('courses.creator', 'Creator')}
+                                  </Badge>
+                                )}
+                                {xpRequired > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-[#fdd87c]/40 bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-[#fdd87c]"
+                                  >
+                                    {xpRequired} XP
+                                  </Badge>
+                                )}
+                                {isLocked && xpRequired > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-white/30 bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-slate-100"
+                                  >
+                                    {tr('courses.preparing', 'Em preparação')}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+
                             <div className="absolute right-3 top-3">{getLevelBadge(course)}</div>
                           </div>
 
@@ -845,34 +872,6 @@ export default function CoursesPage() {
                               >
                                 {title}
                               </CardTitle>
-
-                              {isCourseCreator && (
-                                <div className="mt-2">
-                                  <Badge className="flex w-fit items-center gap-1 border border-white/20 bg-[#14718f] text-white">
-                                    <PenSquare className="h-3 w-3" />
-                                    Creator
-                                  </Badge>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              {xpRequired > 0 && (
-                                <Badge
-                                  variant="outline"
-                                  className="border-[#fdd87c]/40 bg-[#fdd87c]/10 text-[#fdd87c] text-[11px] uppercase tracking-[0.3em]"
-                                >
-                                  {xpRequired} XP
-                                </Badge>
-                              )}
-                              {isLocked && xpRequired > 0 ? (
-                                <Badge
-                                  variant="outline"
-                                  className="border-white/20 bg-[#000c12]/40 text-slate-200 text-[11px] uppercase tracking-[0.3em]"
-                                >
-                                  {tr('courses.preparing', 'Em preparação')}
-                                </Badge>
-                              ) : null}
                             </div>
 
                             <CardDescription className={cn(UI.cardDesc, 'line-clamp-4 min-h-[72px]')}>
