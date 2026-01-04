@@ -463,7 +463,7 @@ export async function listComments(
     .in('id', authorIds);
 
   const authorMap = new Map<string, CommentAuthor>();
-  (authorsData ?? []).forEach((author) => {
+  (authorsData ?? []).forEach((author: { id: string; username: string | null; full_name?: string | null; avatar_url?: string | null; role?: UserRole }) => {
     authorMap.set(author.id, {
       id: author.id,
       username: author.username,
