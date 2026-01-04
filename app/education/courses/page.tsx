@@ -856,7 +856,7 @@ export default function CoursesPage() {
                               )}
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
                               {xpRequired > 0 && (
                                 <Badge
                                   variant="outline"
@@ -949,10 +949,6 @@ export default function CoursesPage() {
                                       </Button>
                                     </Link>
                                   </div>
-
-                                  <p className={cn(UI.micro, 'text-slate-400')}>
-                                    {tr('courses.locked.micro', 'Rota rápida: lições + blog + glossário. Consistência desbloqueia o resto.')}
-                                  </p>
                                 </>
                               ) : (
                                 <>
