@@ -67,6 +67,22 @@ type ApiResponse =
   | { success: true; rewards: XpReward[]; limits: XpLimit[]; thresholds: XpThreshold[] }
   | { success: false; error: string };
 
+type ComboKey = 'quick' | 'base' | 'serious';
+
+type ComboProgressState = {
+  glossary_count: number;
+  blog_count: number;
+  lesson_count: number;
+  quick_completed: boolean;
+  base_completed: boolean;
+  serious_completed: boolean;
+};
+
+type ComboMissionMeta = {
+  xp: number;
+  completed: boolean;
+};
+
 type CopyPack = {
   eyebrow: string;
   title: string;
@@ -372,6 +388,63 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
   },
 };
 
+const DEFAULT_COMBO_PROGRESS: ComboProgressState = {
+  glossary_count: 0,
+  blog_count: 0,
+  lesson_count: 0,
+  quick_completed: false,
+  base_completed: false,
+  serious_completed: false,
+};
+
+const COMBO_REQUIREMENTS: Record<ComboKey, { glossary: number; blog: number; lesson: number }> = {
+  quick: { glossary: 3, blog: 1, lesson: 0 },
+  base: { glossary: 5, blog: 1, lesson: 1 },
+  serious: { glossary: 10, blog: 2, lesson: 2 },
+};
+
+const MISSION_TYPE_BY_KEY: Record<ComboKey, string> = {
+  quick: 'combo_quick',
+  base: 'combo_base',
+  serious: 'combo_serious',
+};
+
+const DEFAULT_COMBO_META: Record<ComboKey, ComboMissionMeta> = {
+  quick: { xp: 15, completed: false },
+  base: { xp: 21, completed: false },
+  serious: { xp: 33, completed: false },
+};
+
+const COMBO_KEYS: ComboKey[] = ['quick', 'base', 'serious'];
+
+const COMBO_KEY_BY_MISSION: Record<string, ComboKey> = COMBO_KEYS.reduce((acc, key) => {
+  acc[MISSION_TYPE_BY_KEY[key]] = key;
+  return acc;
+}, {} as Record<string, ComboKey>);
+
+const REQUIREMENT_ORDER = ['glossary', 'blog', 'lesson'] as const;
+
+type RequirementKey = (typeof REQUIREMENT_ORDER)[number];
+
+const REQUIREMENT_LABELS: Record<RequirementKey, Record<SupportedCopyLang, string>> = {
+  glossary: { pt: 'Termos no glossário', es: 'Términos en el glosario', en: 'Glossary terms' },
+  blog: { pt: 'Leituras no blog', es: 'Lecturas en el blog', en: 'Blog reads' },
+  lesson: { pt: 'Lições', es: 'Lecciones', en: 'Lessons' },
+};
+
+const COMPLETED_LABELS: Record<SupportedCopyLang, string> = {
+  pt: 'Concluída',
+  es: 'Completada',
+  en: 'Completed',
+};
+
+const createDefaultComboMeta = (): Record<ComboKey, ComboMissionMeta> => {
+  return COMBO_KEYS.reduce((acc, key) => {
+    acc[key] = { ...DEFAULT_COMBO_META[key] };
+    return acc;
+  }, {} as Record<ComboKey, ComboMissionMeta>);
+};
+
 /** ---------- UI tokens (coerência com o teu sistema visual dark premium) ---------- */
 const UI = {
   eyebrow: 'text-xs uppercase tracking-[0.5em] text-cyan-300',
@@ -490,6 +563,12 @@ export default function EducationXpPage() {
   const [xpData, setXpData] = useState<EducationXpData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [comboProgress, setComboProgress] = useState<ComboProgressState>(DEFAULT_COMBO_PROGRESS);
+  const [comboMissionState, setComboMissionState] = useState<Record<ComboKey, ComboMissionMeta>>(
+    createDefaultComboMeta(),
+  );
+  const [comboLoading, setComboLoading] = useState(true);
+  const [comboError, setComboError] = useState<string | null>(null);
 
   const userXP = user?.xp_total ?? 0;
 
@@ -542,6 +621,73 @@ export default function EducationXpPage() {
     };
   }, [user, getToken, copy.errorsFallback]);
 
+  useEffect(() => {
+    if (!user) {
+      setComboProgress(DEFAULT_COMBO_PROGRESS);
+      setComboMissionState(createDefaultComboMeta());
+      setComboLoading(false);
+      setComboError(null);
+      return;
+    }
+
+    let active = true;
+
+    const fetchCombos = async () => {
+      try {
+        setComboLoading(true);
+        setComboError(null);
+        const token = getToken?.();
+        const headers: HeadersInit = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const response = await fetch(`/api/missions/generate?userId=${user.id}`, {
+          cache: 'no-store',
+          headers,
+        });
+
+        const data = await response.json();
+        if (!active) return;
+
+        if (data.success) {
+          const mergedProgress: ComboProgressState = {
+            ...DEFAULT_COMBO_PROGRESS,
+            ...(data.combo_progress ?? {}),
+          };
+
+          const missionMeta = createDefaultComboMeta();
+          (data.missions || []).forEach((mission: any) => {
+            if (!mission?.type) return;
+            const comboKey = COMBO_KEY_BY_MISSION[mission.type as string];
+            if (!comboKey) return;
+            const missionData = Array.isArray(mission.user_missions)
+              ? mission.user_missions[0]
+              : mission.user_missions;
+            missionMeta[comboKey] = {
+              xp: typeof mission?.xp_reward === 'number' ? mission.xp_reward : DEFAULT_COMBO_META[comboKey].xp,
+              completed: Boolean(missionData?.completed),
+            };
+          });
+
+          setComboProgress(mergedProgress);
+          setComboMissionState(missionMeta);
+        } else {
+          setComboError(data.error || copy.errorsFallback);
+        }
+      } catch (err) {
+        if (!active) return;
+        setComboError(copy.errorsFallback);
+      } finally {
+        if (active) setComboLoading(false);
+      }
+    };
+
+    void fetchCombos();
+
+    return () => {
+      active = false;
+    };
+  }, [user, getToken, copy.errorsFallback]);
+
   /** ---------- Dados derivados ---------- */
   const rewardMap = useMemo(() => {
     const map = new Map<string, XpReward>();
@@ -586,51 +732,71 @@ export default function EducationXpPage() {
 
   const thresholds = xpData?.thresholds ?? [];
 
-  /** ---------- Planos do dia (estimativas baseadas em mínimos oficiais) ---------- */
-  const minLesson = clamp0(rewardMap.get('lesson_complete')?.min_xp ?? 0);
-  const minBlog = clamp0(rewardMap.get('blog_read')?.min_xp ?? 0);
-  const minGlossary = clamp0(rewardMap.get('glossary_term_read')?.min_xp ?? 0);
+  const xpFallbackByKey: Record<ComboKey, string> = {
+    quick: copy.planQuickXP || '+15 XP',
+    base: copy.planBaseXP || '+21 XP',
+    serious: copy.planSeriousXP || '+33 XP',
+  };
 
-  const quickMin = minGlossary * 3 + minBlog * 1;
-  const baseMin = minLesson * 1 + minBlog * 1 + minGlossary * 5;
-  const seriousMin = minLesson * 2 + minBlog * 2 + minGlossary * 10;
+  const planCardBase: Record<ComboKey, { title: string; desc: string; href: string; icon: typeof Eye; featured?: boolean }> = {
+    quick: { title: copy.planQuick, desc: copy.planQuickDesc, href: '/education/glossary', icon: Eye },
+    base: { title: copy.planBase, desc: copy.planBaseDesc, href: '/education', icon: Target, featured: true },
+    serious: { title: copy.planSerious, desc: copy.planSeriousDesc, href: '/education/courses', icon: CheckCircle2 },
+  };
 
-  const quickXPLabel = copy.planQuickXP || (minGlossary || minBlog ? `${quickMin}+ XP` : '—');
-  const baseXPLabel =
-    copy.planBaseXP || (minLesson || minBlog || minGlossary ? `${baseMin}+ XP` : '—');
-  const seriousXPLabel =
-    copy.planSeriousXP || (minLesson || minBlog || minGlossary ? `${seriousMin}+ XP` : '—');
+  const comboCounts: Record<RequirementKey, number> = {
+    glossary: comboProgress.glossary_count,
+    blog: comboProgress.blog_count,
+    lesson: comboProgress.lesson_count,
+  };
 
-  const planCards = [
-    {
-      key: 'quick',
-      title: copy.planQuick,
-      desc: copy.planQuickDesc,
-      xpHint: quickXPLabel,
-      icon: Eye,
-      href: '/education/glossary',
+  const planCards = COMBO_KEYS.map((comboKey) => {
+    const base = planCardBase[comboKey];
+    const missionMeta = comboMissionState[comboKey];
+    const xpHint = missionMeta?.xp ? `+${missionMeta.xp} XP` : xpFallbackByKey[comboKey];
+
+    return {
+      key: comboKey,
+      title: base.title,
+      desc: base.desc,
+      xpHint,
+      icon: base.icon,
+      href: base.href,
       cta: copy.planCTA,
-    },
-    {
-      key: 'base',
-      title: copy.planBase,
-      desc: copy.planBaseDesc,
-      xpHint: baseXPLabel,
-      icon: Target,
-      href: '/education',
-      cta: copy.planCTA,
-      featured: true,
-    },
-    {
-      key: 'serious',
-      title: copy.planSerious,
-      desc: copy.planSeriousDesc,
-      xpHint: seriousXPLabel,
-      icon: CheckCircle2,
-      href: '/education/courses',
-      cta: copy.planCTA,
-    },
-  ];
+      featured: base.featured,
+      requirements: COMBO_REQUIREMENTS[comboKey],
+      completed: missionMeta?.completed ?? false,
+    };
+  });
+
+  const summaryItems = REQUIREMENT_ORDER.map((reqKey) => ({
+    key: reqKey,
+    label: REQUIREMENT_LABELS[reqKey][language],
+    value: comboCounts[reqKey],
+  }));
+
+  const comboLoadingText =
+    language === 'pt'
+      ? 'A atualizar o progresso diário...'
+      : language === 'es'
+      ? 'Actualizando el progreso diario...'
+      : 'Updating daily progress...';
+
+  const comboAccumulationText =
+    language === 'pt'
+      ? 'Consumos acumulam durante o dia e reiniciam às 00h CET.'
+      : language === 'es'
+      ? 'Se acumula todo lo que consumes y reinicia a las 00h CET.'
+      : 'All progress stacks during the day and resets at 00:00 CET.';
+
+  const comboCompletedNote =
+    language === 'pt'
+      ? 'XP extra já creditado hoje.'
+      : language === 'es'
+      ? 'XP extra ya acreditado hoy.'
+      : 'Bonus XP already granted today.';
+
+  const completedLabel = COMPLETED_LABELS[language];
 
   /** ---------- Gate (página fechada) ---------- */
   if (!user) {
@@ -919,6 +1085,25 @@ export default function EducationXpPage() {
                 <h2 className={UI.sectionTitle}>{copy.todayTitle}</h2>
                 <p className={UI.sectionSubtitle}>{copy.todayDesc}</p>
 
+                <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-200">
+                  {summaryItems.map((item) => (
+                    <div
+                      key={item.key}
+                      className="rounded-full border border-white/10 bg-[#000c12]/40 px-3 py-1 text-xs uppercase tracking-[0.3em] text-cyan-200"
+                    >
+                      {item.label}: <span className="text-white text-base normal-case">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {comboError ? (
+                  <p className="mt-3 text-sm text-rose-400">{comboError}</p>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-300">
+                    {comboLoading ? comboLoadingText : comboAccumulationText}
+                  </p>
+                )}
+
                 <div className="mt-6 grid gap-4 lg:grid-cols-3">
                   {planCards.map((p) => {
                     const Icon = p.icon;
@@ -931,32 +1116,78 @@ export default function EducationXpPage() {
                           p.featured ? 'border-[#fdd87c]/30' : '',
                         )}
                       >
-                        <CardContent className="p-5">
+                        <CardContent className="p-5 space-y-4">
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className={cn(UI.goldStatLabel, p.featured ? 'text-[#fdd87c]' : '')}>{p.title}</p>
                               <p className={cn(UI.body, 'mt-2')}>{p.desc}</p>
                             </div>
 
-                            <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#000c12]/40 px-3 py-2">
-                              <Icon className="h-4 w-4 text-cyan-300" />
-                              <span className="text-sm font-semibold text-white">{p.xpHint}</span>
+                            <div
+                              className={cn(
+                                'flex items-center gap-2 rounded-2xl border px-3 py-2',
+                                p.completed
+                                  ? 'border-emerald-500/60 bg-emerald-500/15'
+                                  : 'border-white/10 bg-[#000c12]/40',
+                              )}
+                            >
+                              <Icon className={cn('h-4 w-4', p.completed ? 'text-emerald-300' : 'text-cyan-300')} />
+                              <span
+                                className={cn(
+                                  'text-sm font-semibold',
+                                  p.completed ? 'text-emerald-100' : 'text-white',
+                                )}
+                              >
+                                {p.xpHint}
+                              </span>
                             </div>
                           </div>
 
-                          <div className="mt-4 flex items-center justify-between gap-3">
-                            <span className={cn(UI.micro, 'text-slate-400')}>
-                              {language === 'pt'
-                                ? 'Estimativa baseada em mínimos oficiais.'
-                                : language === 'es'
-                                ? 'Estimación basada en mínimos oficiales.'
-                                : 'Estimate based on official minimums.'}
+                          {comboLoading ? (
+                            <p className="text-sm text-slate-400">{comboLoadingText}</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {REQUIREMENT_ORDER.map((reqKey) => {
+                                const required = p.requirements[reqKey];
+                                if (!required) return null;
+                                const value = comboCounts[reqKey];
+                                const met = value >= required;
+                                return (
+                                  <div
+                                    key={`${p.key}-${reqKey}`}
+                                    className={cn(
+                                      'flex items-center justify-between rounded-xl border px-3 py-2',
+                                      met ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/10 bg-[#000c12]/40',
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {met ? (
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                                      ) : (
+                                        <div className="h-4 w-4 rounded-full border border-white/30" />
+                                      )}
+                                      <span className={cn('text-sm', met ? 'text-emerald-100' : 'text-slate-200')}>
+                                        {REQUIREMENT_LABELS[reqKey][language]}
+                                      </span>
+                                    </div>
+                                    <span className="text-sm text-white">
+                                      {Math.min(value, required)}/{required}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between gap-3">
+                            <span className={cn(UI.micro, p.completed ? 'text-emerald-300' : 'text-slate-400')}>
+                              {p.completed ? comboCompletedNote : comboAccumulationText}
                             </span>
 
                             <Link href={p.href}>
-                              <Button size="sm" className={cn(UI.ctaPrimary)}>
-                                {p.cta}
-                                <ArrowRight className="ml-2 h-4 w-4" />
+                              <Button size="sm" className={cn(UI.ctaPrimary)} disabled={p.completed}>
+                                {p.completed ? completedLabel : p.cta}
+                                {!p.completed && <ArrowRight className="ml-2 h-4 w-4" />}
                               </Button>
                             </Link>
                           </div>
