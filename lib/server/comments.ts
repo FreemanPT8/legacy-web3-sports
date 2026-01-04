@@ -466,9 +466,9 @@ export async function listComments(
   (authorsData ?? []).forEach((author: { id: string; username: string | null; full_name?: string | null; avatar_url?: string | null; role?: UserRole }) => {
     authorMap.set(author.id, {
       id: author.id,
-      username: author.username,
-      full_name: author.full_name,
-      avatar_url: author.avatar_url,
+      username: author.username ?? null,
+      full_name: author.full_name ?? null,
+      avatar_url: author.avatar_url ?? null,
       role: ensureUserRole(author.role),
     });
   });
