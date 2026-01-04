@@ -6,37 +6,56 @@ Successfully implemented the remaining 5% of features to bring the LEGACY platfo
 
 ---
 
-## 1. Daily Missions System ✅
+## 1. Daily Combo Missions ✅
 
 ### Implementation
-- **API Endpoints:**
-  - `POST /api/missions/generate` - Generate 3 random daily missions
-  - `GET /api/missions/generate?userId=X` - Fetch user's missions
-  - `POST /api/missions/complete` - Complete a mission and award XP
+- **Tabelas & metadata**
+  - `daily_combo_progress` (nova) guarda contadores diários por utilizador (glossário, blog, lições + flags de conclusão).
+  - `daily_missions` recebeu três entradas fixas (`combo_quick`, `combo_base`, `combo_serious`) consumidas por `user_missions`.
+- **Biblioteca:** `lib/comboMissions.ts` expõe `recordComboEvent()`, `getComboProgressForUser()` e `comboDefinitions` (fonte de verdade das rotas).
+- **API:** 
+  - `POST /api/missions/generate` (cron às 00h CET) ativa as três missões oficiais do dia.
+  - `GET /api/missions/generate?userId=X` retorna `missions` + o bloco `combo_progress` usado pelo dashboard e `/education/xp`.
+- **XP service:** `awardXP()` é chamado automaticamente quando um combo fecha, registando `daily_combo` em `xp_transactions`.
+- **UI integradas:** `/education/xp`, `/dashboard` e `/admin/missions` renderizam o mesmo estado com CTAs bloqueados após conclusão.
 
-### Features
-- Automatic generation of 3 random missions per day
-- 6 mission types: complete lessons, read blog, forum comments, daily login, earn XP, etc.
-- Progress tracking per user
-- Automatic XP rewards on completion (+12 XP per mission)
-- Dashboard integration with real-time updates
-- Visual completion status with checkmarks
+### Rotas oficiais (acumulativas, reset CET)
+| Combo | Requisitos | XP Extra |
+|-------|------------|----------|
+| **Rota Rápida** | 3 termos de glossário + 1 blog post lido | **+15 XP** |
+| **Rota Base** | 5 termos de glossário (conta os 3 anteriores) + 1 blog + 1 lição | **+21 XP** |
+| **Rota Séria** | 10 termos de glossário + 2 blogs + 2 lições | **+33 XP** |
 
-### Usage
+- Os consumos acumulam-se ao longo do dia; sempre que os requisitos de uma rota são atingidos pela primeira vez, o XP extra cai automaticamente e a missão fica marcada como completa.
+- O relógio reinicia às **00h CET**. No refresh do dia seguinte, os contadores voltam a zero e as três rotas regressam a “Executar”.
+
+### Fluxo do utilizador
+1. Learners continuam a usar glossário, blog e lições normalmente (manual ou através das sugestões do Plano diário em `/education/xp`).
+2. Cada evento relevante dispara `recordComboEvent(userId, 'lesson' | 'blog' | 'glossary')`, atualizando `daily_combo_progress`.
+3. Assim que uma rota cumpre os requisitos, `completeMission()` marca o registo em `user_missions`, chama `awardXP()` e notifica o front-end via `GET /api/missions/generate`.
+4. Dashboard, `/education/xp` e `/admin/missions` mostram contadores sincronizados (badges verdes, CTA desativado e tooltip com XP ganho).
+
+### Exemplo de utilização
 ```typescript
-// Generate daily missions (run via cron at midnight)
-POST /api/missions/generate
+import { recordComboEvent } from '@/lib/comboMissions';
 
-// Fetch user missions
-GET /api/missions/generate?userId=user-id
+// Cada consumo válido chama o evento respetivo
+await recordComboEvent(userId, 'glossary'); // 1 termo
+await recordComboEvent(userId, 'blog');     // leitura completa
+await recordComboEvent(userId, 'lesson');   // lição concluída
 
-// Complete a mission
-POST /api/missions/complete
-Body: { userId, missionId, progress }
+// Front-end obtém progresso e missões
+const response = await fetch(`/api/missions/generate?userId=${userId}`);
+const { missions, combo_progress } = await response.json();
 ```
 
----
+### Superfícies atualizadas
+- `/education/xp`: cards “Rota Rápida/Base/Séria” com contadores ao vivo, requisitos oficiais e botões Executar/Ganháste XP.
+- `/dashboard`: módulo “Missões Diárias” mostra progresso resumido e reforça o reset CET.
+- `/admin/missions`: admins visualizam `combo_progress` para qualquer utilizador + podem regenerar o dia corrente.
+- Documentação: `docs/DAILY_COMBO_QA.md` cobre o plano de QA manual para regressões futuras.
 
+---
 ## 2. Streak Tracking Automation ✅
 
 ### Implementation
