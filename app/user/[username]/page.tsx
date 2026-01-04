@@ -17,8 +17,7 @@ import {
   BookOpen,
   MessageSquare,
   Calendar,
-  Zap,
-  TrendingUp
+  Zap
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -34,8 +33,7 @@ interface UserProfile {
   stats: {
     lessonsCompleted: number;
     articlesRead: number;
-    forumPosts: number;
-    forumTopics: number;
+    commentsAuthored: number;
     rank: number;
   };
   recentActivity: Array<{
@@ -106,7 +104,7 @@ export default function UserProfilePage() {
             <CardContent className="text-center py-12">
               <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">User Not Found</h3>
-              <p className="text-muted-foreground mb-4">This user doesn't exist.</p>
+              <p className="text-muted-foreground mb-4">This user doesn&apos;t exist.</p>
               <Link href="/education/leaderboard">
                 <Button>View Leaderboard</Button>
               </Link>
@@ -212,13 +210,13 @@ export default function UserProfilePage() {
               <Card className="bg-card border border-border">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Forum Topics
+                    Comments Shared
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-purple-600" />
-                    <span className="text-2xl font-bold">{profile.stats.forumTopics}</span>
+                    <MessageSquare className="h-5 w-5 text-sky-500" />
+                    <span className="text-2xl font-bold">{profile.stats.commentsAuthored}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -226,13 +224,13 @@ export default function UserProfilePage() {
               <Card className="bg-card border border-border">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Forum Posts
+                    Active Streak
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-orange-600" />
-                    <span className="text-2xl font-bold">{profile.stats.forumPosts}</span>
+                    <Zap className="h-5 w-5 text-orange-500" />
+                    <span className="text-2xl font-bold">{profile.streak_count}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -311,15 +309,23 @@ export default function UserProfilePage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Forum Topics Created</span>
+                        <span className="text-muted-foreground">Private Comments Shared</span>
                         <span className="font-bold text-primary">
-                          {profile.stats.forumTopics}
+                          {profile.stats.commentsAuthored}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Forum Posts</span>
+                        <span className="text-muted-foreground">Comment Access</span>
                         <span className="font-bold text-primary">
-                          {profile.stats.forumPosts}
+                          {profile.xp_total >= 369
+                            ? 'Unlocked'
+                            : `Locked (${Math.max(369 - profile.xp_total, 0)} XP left)`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Active Streak</span>
+                        <span className="font-bold text-primary">
+                          {profile.streak_count}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">

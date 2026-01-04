@@ -31,15 +31,14 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    const { count: forumTopics } = await supabase
-      .from('forum_topics')
-      .select('*', { count: 'exact', head: true })
-      .eq('author_id', user.id);
-
-    const { count: forumPosts } = await supabase
-      .from('forum_posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('author_id', user.id);
+    const {
+      data: commentRows,
+      count: commentsAuthored,
+    } = await supabase
+      .from('content_comments')
+      .select('positive_count, fire_count', { count: 'exact' })
+      .eq('author_id', user.id)
+      .is('deleted_at', null);
 
     const { data: allUsers } = await supabase
       .from('users')
@@ -56,19 +55,21 @@ export async function GET(request: NextRequest) {
     const xpBreakdown = {
       lessons: 0,
       articles: 0,
-      forum: 0,
+      community: 0,
       missions: 0,
       streaks: 0,
       profile: 0,
     };
 
     (xpTransactions || []).forEach((tx) => {
-      if (tx.reason === 'lesson_complete') xpBreakdown.lessons += tx.amount;
-      else if (tx.reason === 'article_read') xpBreakdown.articles += tx.amount;
-      else if (tx.reason.includes('forum')) xpBreakdown.forum += tx.amount;
-      else if (tx.reason === 'daily_mission') xpBreakdown.missions += tx.amount;
-      else if (tx.reason === 'streak_bonus') xpBreakdown.streaks += tx.amount;
-      else if (tx.reason.includes('profile')) xpBreakdown.profile += tx.amount;
+      const reason = tx.reason || '';
+      if (reason === 'lesson_complete') xpBreakdown.lessons += tx.amount;
+      else if (reason === 'article_read') xpBreakdown.articles += tx.amount;
+      else if (reason.includes('forum') || reason.includes('comment'))
+        xpBreakdown.community += tx.amount;
+      else if (reason === 'daily_mission') xpBreakdown.missions += tx.amount;
+      else if (reason === 'streak_bonus') xpBreakdown.streaks += tx.amount;
+      else if (reason.includes('profile')) xpBreakdown.profile += tx.amount;
     });
 
     const { data: recentXP } = await supabase
@@ -87,6 +88,24 @@ export async function GET(request: NextRequest) {
         date: new Date(tx.created_at).toLocaleDateString(),
         xp: tx.amount,
       }));
+
+    type CommentAggregate = {
+      positive_count: number | null;
+      fire_count: number | null;
+    };
+
+    const commentAggregates = (commentRows || []) as CommentAggregate[];
+
+    const reactionTotals = commentAggregates.reduce(
+      (acc, row) => ({
+        positive: acc.positive + (row.positive_count ?? 0),
+        fire: acc.fire + (row.fire_count ?? 0),
+      }),
+      { positive: 0, fire: 0 }
+    );
+
+    const reactionPoints =
+      reactionTotals.positive + reactionTotals.fire * 2;
 
     return NextResponse.json({
       success: true,
@@ -107,10 +126,11 @@ export async function GET(request: NextRequest) {
           totalReadingTime: (articlesRead || 0) * 5,
         },
         community: {
-          forumTopics: forumTopics || 0,
-          forumPosts: forumPosts || 0,
-          forumLikes: 0,
-          totalContributions: (forumTopics || 0) + (forumPosts || 0),
+          commentsAuthored: commentsAuthored || 0,
+          positiveReactions: reactionTotals.positive,
+          fireReactions: reactionTotals.fire,
+          reactionPoints,
+          totalContributions: commentsAuthored || 0,
         },
         xpBreakdown,
         recentAchievements,
@@ -131,6 +151,9 @@ function getAchievementTitle(reason: string, amount: number): string {
     streak_bonus: 'Streak Champion',
     daily_mission: 'Mission Complete',
     forum_topic: 'Discussion Starter',
+    forum_post: 'Forum Contributor',
+    forum_comment: 'Forum Participant',
+    comment_weekly_top: 'Comment of the Week',
     profile_bio: 'Profile Complete',
   };
 
@@ -144,6 +167,9 @@ function getAchievementDescription(reason: string): string {
     streak_bonus: 'Maintained a 7-day streak',
     daily_mission: 'Completed a daily mission',
     forum_topic: 'Created a forum topic',
+    forum_post: 'Posted in the forum',
+    forum_comment: 'Commented in the forum',
+    comment_weekly_top: 'Won Comment of the Week',
     profile_bio: 'Added profile bio',
   };
 

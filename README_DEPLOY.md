@@ -129,7 +129,7 @@ vercel.json                → Config Vercel
 - ✅ dashboard.unlockedFeatures
 - ✅ dashboard.basicCourses
 - ✅ dashboard.profileEditing
-- ✅ dashboard.forumReadAccess
+- ✅ dashboard.privateCommentsAccess
 - ✅ dashboard.hallOfFame
 - ✅ E mais 18 chaves...
 

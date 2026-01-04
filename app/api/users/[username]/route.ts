@@ -31,15 +31,11 @@ export async function GET(
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    const { count: topicsCount } = await supabase
-      .from('forum_topics')
+    const { count: commentsAuthored } = await supabase
+      .from('content_comments')
       .select('*', { count: 'exact', head: true })
-      .eq('author_id', user.id);
-
-    const { count: postsCount } = await supabase
-      .from('forum_posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('author_id', user.id);
+      .eq('author_id', user.id)
+      .is('deleted_at', null);
 
     const { data: allUsers } = await supabase
       .from('users')
@@ -77,8 +73,7 @@ export async function GET(
         stats: {
           lessonsCompleted: lessonsCount || 0,
           articlesRead: articlesCount || 0,
-          forumTopics: topicsCount || 0,
-          forumPosts: postsCount || 0,
+          commentsAuthored: commentsAuthored || 0,
           rank,
         },
         recentActivity,
@@ -102,6 +97,7 @@ function getActivityDescription(reason: string): string {
     forum_post: 'Posted in forum',
     forum_topic: 'Created forum topic',
     forum_comment: 'Commented in forum',
+    comment_weekly_top: 'Won Comment of the Week',
     daily_mission: 'Completed daily mission',
     streak_bonus: 'Earned streak bonus',
   };

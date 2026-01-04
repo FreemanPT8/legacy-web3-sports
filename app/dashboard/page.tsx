@@ -647,9 +647,7 @@ export default function DashboardPage() {
                   {[
                     { threshold: 0, label: t('dashboard.basicCourses') },
                     { threshold: 99, label: `${t('dashboard.profileEditing')} (99 XP)` },
-                    { threshold: 369, label: `${t('dashboard.forumReadAccess')} (369 XP)` },
-                    { threshold: 444, label: `${t('dashboard.forumInteract')} (444 XP)` },
-                    { threshold: 555, label: `${t('dashboard.forumPostCreate')} (555 XP)` },
+                    { threshold: 369, label: `${t('dashboard.privateCommentsAccess')} (369 XP)` },
                     { threshold: 3333, label: `${t('dashboard.hallOfFame')} (3333 XP)` },
                   ].map((item) => {
                     const unlocked = xpTotal >= item.threshold;
