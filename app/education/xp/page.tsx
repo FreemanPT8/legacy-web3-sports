@@ -11,11 +11,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
 import {
-
   OnboardingPopup,
-
   type OnboardingPopupData,
-
 } from '@/components/education/OnboardingPopup';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,14 +26,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 import {
-
   useOnboardingQueue,
-
   type QueueLog,
-
   type QueueLogAction,
-
 } from '@/hooks/useOnboardingQueue';
+import { fetchHouseOnboardingData, type HouseOnboardingSequence } from '@/data/onboarding-demo';
 
 import {
 
@@ -1576,43 +1570,78 @@ export default function EducationXpPage() {
     canDeliver,
   } = useOnboardingQueue();
 
+  const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
+  const [houseLoading, setHouseLoading] = useState(false);
+  const [houseError, setHouseError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setHouseLoading(true);
+    setHouseError(null);
+    fetchHouseOnboardingData(houseLabel)
+      .then((data) => {
+        if (!active) return;
+        setHouseSequence(data);
+        resetQueue(data.popups);
+      })
+      .catch(() => {
+        if (!active) return;
+        setHouseSequence(null);
+        setHouseError(
+          language === 'pt'
+            ? 'Falha ao carregar dados reais. A mostrar sequência demo.'
+            : language === 'es'
+            ? 'Error al cargar datos reales. Mostrando demo.'
+            : 'Failed to load live data. Showing demo sequence.',
+        );
+        resetQueue(buildDemoQueue(houseLabel));
+      })
+      .finally(() => {
+        if (active) setHouseLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [houseLabel, buildDemoQueue, resetQueue, language]);
+
   const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
   const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
   const houseLabel = (rawHouseName || 'Sport').toString().toUpperCase();
 
-  const demoQueue = useMemo<OnboardingPopupData[]>(() => {
-    const applyHouse = (text: string) => text.replace('{{HOUSE}}', houseLabel);
-    const welcomeStep = onboardingCopy.steps[0];
-    const autonomyStep = onboardingCopy.steps[2];
-    return [
-      {
-        id: `popup-${language}-welcome`,
-        house: houseLabel,
-        xpGate: welcomeStep?.trigger ?? 'XP 0',
-        title: applyHouse(demoCopy.welcome.title),
-        body: applyHouse(demoCopy.welcome.body),
-        highlights: demoCopy.welcome.highlights.map(applyHouse),
-        badgeLabel: demoCopy.welcome.badge,
-        primaryCta: { label: demoCopy.welcome.primary, href: '/education/xp' },
-        secondaryCta: { label: demoCopy.welcome.secondary, href: '/education/houses' },
-      },
-      {
-        id: `popup-${language}-autonomy`,
-        house: houseLabel,
-        xpGate: autonomyStep?.trigger ?? 'XP 130',
-        title: applyHouse(demoCopy.autonomy.title),
-        body: applyHouse(demoCopy.autonomy.body),
-        highlights: demoCopy.autonomy.highlights.map(applyHouse),
-        badgeLabel: demoCopy.autonomy.badge,
-        primaryCta: { label: demoCopy.autonomy.primary, href: '/education/courses' },
-        secondaryCta: { label: demoCopy.autonomy.secondary, href: '/education/houses' },
-      },
-    ];
-  }, [demoCopy, houseLabel, language, onboardingCopy]);
+  const buildDemoQueue = useCallback(
+    (houseName: string): OnboardingPopupData[] => {
+      const applyHouse = (text: string) => text.replace('{{HOUSE}}', houseName);
+      const welcomeStep = onboardingCopy.steps[0];
+      const autonomyStep = onboardingCopy.steps[2];
+      return [
+        {
+          id: `popup-${language}-welcome`,
+          house: houseName,
+          xpGate: welcomeStep?.trigger ?? 'XP 0',
+          title: applyHouse(demoCopy.welcome.title),
+          body: applyHouse(demoCopy.welcome.body),
+          highlights: demoCopy.welcome.highlights.map(applyHouse),
+          badgeLabel: demoCopy.welcome.badge,
+          primaryCta: { label: demoCopy.welcome.primary, href: '/education/xp' },
+          secondaryCta: { label: demoCopy.welcome.secondary, href: '/education/houses' },
+        },
+        {
+          id: `popup-${language}-autonomy`,
+          house: houseName,
+          xpGate: autonomyStep?.trigger ?? 'XP 130',
+          title: applyHouse(demoCopy.autonomy.title),
+          body: applyHouse(demoCopy.autonomy.body),
+          highlights: demoCopy.autonomy.highlights.map(applyHouse),
+          badgeLabel: demoCopy.autonomy.badge,
+          primaryCta: { label: demoCopy.autonomy.primary, href: '/education/courses' },
+          secondaryCta: { label: demoCopy.autonomy.secondary, href: '/education/houses' },
+        },
+      ];
+    },
+    [demoCopy, language, onboardingCopy],
+  );
 
-  useEffect(() => {
-    resetQueue(demoQueue);
-  }, [demoQueue, resetQueue]);
+  const demoQueue = useMemo(() => buildDemoQueue(houseLabel), [buildDemoQueue, houseLabel]);
 
   const logLabels = demoCopy.logLabels;
   const cooldownCopy = demoCopy.cooldown;
@@ -1632,12 +1661,80 @@ export default function EducationXpPage() {
       : cooldownReason === 'weekly'
       ? cooldownCopy.weekly
       : cooldownCopy.idle;
-  const resetLabel =
+  const queueSource = houseSequence?.popups?.length ? houseSequence.popups : demoQueue;
+  const analytics = houseSequence?.analytics;
+  const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
+  const fmtNumber = (value?: number) => (typeof value === 'number' ? value.toLocaleString() : '--');
+  const analyticsLabels =
     language === 'pt'
-      ? 'Repor sequência demo'
+      ? {
+          ctr: 'CTR global',
+          completion: 'Conclusão checklist',
+          approvals: 'Pedidos DAO1',
+          blocked: 'Bloqueios',
+        }
       : language === 'es'
-      ? 'Reiniciar demo'
-      : 'Reset demo sequence';
+      ? {
+          ctr: 'CTR global',
+          completion: 'Finalización checklist',
+          approvals: 'Solicitudes DAO1',
+          blocked: 'Bloqueos',
+        }
+      : {
+          ctr: 'Global CTR',
+          completion: 'Checklist completion',
+          approvals: 'DAO1 requests',
+          blocked: 'Blocked attempts',
+        };
+
+  const analyticsDescriptions =
+    language === 'pt'
+      ? [
+          'Cliques por pop-up',
+          'Percentagem que conclui os 3 passos',
+          'Pedidos manuais recebidos',
+          'Tentativas bloqueadas pelo motor',
+        ]
+      : language === 'es'
+      ? [
+          'Clicks por pop-up',
+          'Porcentaje que completa los 3 pasos',
+          'Solicitudes manuales recibidas',
+          'Intentos bloqueados por el motor',
+        ]
+      : [
+          'Clicks per pop-up',
+          'Share completing the 3 steps',
+          'Manual requests received',
+          'Attempts blocked by the engine',
+        ];
+
+  const analyticsCards = [
+    { label: analyticsLabels.ctr, value: fmtPercent(analytics?.ctr), desc: analyticsDescriptions[0] },
+    { label: analyticsLabels.completion, value: fmtPercent(analytics?.completionRate), desc: analyticsDescriptions[1] },
+    { label: analyticsLabels.approvals, value: fmtNumber(analytics?.manualApprovals), desc: analyticsDescriptions[2] },
+    { label: analyticsLabels.blocked, value: fmtNumber(analytics?.blockedAttempts), desc: analyticsDescriptions[3] },
+  ];
+
+  const queueSourceLabel = houseSequence
+    ? `${houseSequence.house} · ${houseSequence.sport}`
+    : language === 'pt'
+    ? 'Demo oficial Legacy'
+    : language === 'es'
+    ? 'Demo oficial Legacy'
+    : 'Legacy demo sequence';
+
+  const queueResetLabel = houseSequence
+    ? language === 'pt'
+      ? 'Recarregar sequência da House'
+      : language === 'es'
+      ? 'Recargar secuencia de la House'
+      : 'Reload House sequence'
+    : language === 'pt'
+    ? 'Repor sequência demo'
+    : language === 'es'
+    ? 'Reiniciar demo'
+    : 'Reset demo sequence';
 
   const handlePopupAction = useCallback(
     ({ action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
@@ -3641,6 +3738,27 @@ export default function EducationXpPage() {
                   <p className={UI.eyebrow}>{onboardingCopy.eyebrow}</p>
                   <h2 className={UI.sectionTitle}>{onboardingCopy.title}</h2>
                   <p className={UI.sectionSubtitle}>{onboardingCopy.subtitle}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-300">
+                    <span className="rounded-full border border-white/10 bg-[#000c12]/40 px-3 py-1">
+                      {language === 'pt'
+                        ? `Sequência ativa: ${queueSourceLabel}`
+                        : language === 'es'
+                        ? `Secuencia activa: ${queueSourceLabel}`
+                        : `Active sequence: ${queueSourceLabel}`}
+                    </span>
+                    {houseLoading ? (
+                      <span className="text-cyan-200">
+                        {language === 'pt'
+                          ? 'A sincronizar com o Painel Admin...'
+                          : language === 'es'
+                          ? 'Sincronizando con el Panel Admin...'
+                          : 'Syncing with Admin Panel...'}
+                      </span>
+                    ) : null}
+                  </div>
+                  {houseError ? (
+                    <p className="mt-2 text-sm text-amber-200">{houseError}</p>
+                  ) : null}
                 </div>
 
                 <div className="space-y-3">
@@ -3732,13 +3850,22 @@ export default function EducationXpPage() {
                   <Card className={cn(UI.cardSurface, 'h-full')}>
                     <CardContent className="p-5 space-y-4">
                       <div className="flex items-center justify-between gap-3">
-                        <p className={UI.cardTitle}>
-                          {language === 'pt'
-                            ? 'Fila de pop-ups (demo)'
-                            : language === 'es'
-                            ? 'Fila de pop-ups (demo)'
-                            : 'Pop-up queue (demo)'}
-                        </p>
+                        <div>
+                          <p className={UI.cardTitle}>
+                            {language === 'pt'
+                              ? houseSequence
+                                ? 'Fila de pop-ups (House)'
+                                : 'Fila de pop-ups (demo)'
+                              : language === 'es'
+                              ? houseSequence
+                                ? 'Fila de pop-ups (House)'
+                                : 'Fila de pop-ups (demo)'
+                              : houseSequence
+                              ? 'Pop-up queue (House)'
+                              : 'Pop-up queue (demo)'}
+                          </p>
+                          <p className={cn(UI.micro, 'text-slate-400')}>{queueSourceLabel}</p>
+                        </div>
                         <Badge
                           variant="outline"
                           className={cn(
@@ -3788,10 +3915,10 @@ export default function EducationXpPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => resetQueue(demoQueue)}
+                        onClick={() => resetQueue(queueSource)}
                         className="border-white/30 text-white hover:bg-white/10"
                       >
-                        {resetLabel}
+                        {queueResetLabel}
                       </Button>
                     </CardContent>
                   </Card>
@@ -3828,6 +3955,18 @@ export default function EducationXpPage() {
                       )}
                     </CardContent>
                   </Card>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {analyticsCards.map((card) => (
+                    <Card key={card.label} className={cn(UI.cardSurface, 'h-full')}>
+                      <CardContent className="p-4 space-y-2">
+                        <p className={UI.micro}>{card.label}</p>
+                        <p className="text-3xl font-semibold text-white">{card.value}</p>
+                        <p className={cn(UI.bodyMuted, 'text-xs')}>{card.desc}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </div>
             </section>
