@@ -183,11 +183,10 @@ find app/api -name "route.ts" | wc -l
 /events .......................... Eventos
 ```
 
-#### Forum (3)
+#### Comentários Privados / Legacy Forum
 ```
-/forum ........................... Lista de salas
-/forum/[roomId] .................. Sala específica
-/forum/topic/[topicId] ........... Tópico específico
+/forum ........................... Aviso sobre comentários privados (rota legada)
+/forum/* .......................... Redireciona para aviso e instruções de desbloqueio (legado)
 ```
 
 #### Blog (3)
@@ -219,7 +218,7 @@ find app/api -name "route.ts" | wc -l
 /admin/blog/create ............... Criar post ✅ LINK CORRIGIDO
 /admin/xp ........................ Gestão de XP ✅
 /admin/onboarding ................ Submissões de onboarding ✅
-/admin/forum ..................... Moderação do fórum ✅ NOVA
+/admin/forum ..................... Comentários privados (aviso legacy) ✅ NOVA
 /admin/analytics ................. Análises e métricas ✅
 /admin/settings .................. Configurações ✅ NOVA
 ```
