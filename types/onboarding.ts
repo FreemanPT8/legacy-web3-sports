@@ -24,3 +24,13 @@ export type HouseOnboardingSequence = {
   popups: OnboardingPopup[];
   analytics: HouseOnboardingAnalytics;
 };
+
+export type OnboardingLogAction = 'delivered' | 'primary' | 'secondary' | 'dismiss';
+
+export type OnboardingLogEntry = {
+  id: string;
+  popupId: string;
+  action: OnboardingLogAction;
+  timestamp: number;
+  house: string;
+};

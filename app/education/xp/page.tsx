@@ -1615,6 +1615,11 @@ export default function EducationXpPage() {
     };
   }, [houseLabel, buildDemoQueue, resetQueue, language]);
 
+  useEffect(() => {
+    if (!activePopup) return;
+    void logRemoteAction(activePopup.id, 'delivered');
+  }, [activePopup, logRemoteAction]);
+
   const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
   const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
   const houseLabel = (rawHouseName || 'Sport').toString().toUpperCase();
@@ -1672,6 +1677,20 @@ export default function EducationXpPage() {
       : cooldownReason === 'weekly'
       ? cooldownCopy.weekly
       : cooldownCopy.idle;
+  const logRemoteAction = useCallback(
+    async (popupId: string, action: QueueLogAction) => {
+      try {
+        await fetch('/api/onboarding/logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ popupId, action, house: houseLabel }),
+        });
+      } catch (error) {
+        console.error('[education/xp] Failed to log action', error);
+      }
+    },
+    [houseLabel],
+  );
   const queueSource = houseSequence?.popups?.length ? houseSequence.popups : demoQueue;
   const analytics = houseSequence?.analytics;
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
@@ -1748,10 +1767,11 @@ export default function EducationXpPage() {
     : 'Reset demo sequence';
 
   const handlePopupAction = useCallback(
-    ({ action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
+    ({ id, action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
       recordAction(action);
+      void logRemoteAction(id, action);
     },
-    [recordAction],
+    [recordAction, logRemoteAction],
   );
 
 

@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { OnboardingPopup, type OnboardingPopupData } from '@/components/education/OnboardingPopup';
-import { fetchHouseOnboardingData } from '@/data/onboarding-demo';
-import { Loader2, RefreshCcw, MonitorPlay, Save } from 'lucide-react';
+import type { HouseOnboardingSequence } from '@/types/onboarding';
+import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown } from 'lucide-react';
 
 const DEFAULT_DRAFT: OnboardingPopupData = {
   id: 'draft-popup',
@@ -34,6 +34,8 @@ export default function AdminOnboardingPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
+  const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>([DEFAULT_DRAFT]);
 
   const resolvedDraft = useMemo<OnboardingPopupData>(() => {
     const highlights =
@@ -52,12 +54,21 @@ export default function AdminOnboardingPage() {
     setLoading(true);
     setStatus(null);
     try {
-      const data = await fetchHouseOnboardingData(houseKey);
-      const popup = data.popups[0] ?? DEFAULT_DRAFT;
+      const response = await fetch(`/api/onboarding/house?house=${encodeURIComponent(houseKey)}`, {
+        cache: 'no-store',
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to sync');
+      const popup = data.sequence.popups[0] ?? DEFAULT_DRAFT;
+      setHouseSequence(data.sequence);
+      setSequenceDraft(data.sequence.popups);
       setDraft(popup);
       setHighlightsInput((popup.highlights ?? []).join('\n'));
-      setStatus(`Sequência importada de ${data.house}.`);
-    } catch {
+      setStatus(`Sequência importada de ${data.sequence.house}.`);
+    } catch (error) {
+      console.error('[admin/onboarding] sync failed', error);
+      setHouseSequence(null);
+      setSequenceDraft([]);
       setStatus('Falha ao sincronizar. Mantém o rascunho atual.');
     } finally {
       setLoading(false);
@@ -87,6 +98,41 @@ export default function AdminOnboardingPage() {
 
   const handleSave = () => {
     setStatus('Rascunho guardado localmente. Integração real ligará ao Painel Admin.');
+  };
+
+  const handleSelectPopup = (popup: OnboardingPopupData) => {
+    setDraft(popup);
+    setHighlightsInput((popup.highlights ?? []).join('\n'));
+    setStatus(`Pop-up "${popup.title}" selecionado para edição.`);
+  };
+
+  const handleDuplicatePopup = (index: number) => {
+    setSequenceDraft((prev) => {
+      const copy = [...prev];
+      const base = copy[index];
+      if (!base) return prev;
+      const duplicated: OnboardingPopupData = {
+        ...base,
+        id: `${base.id}-copy-${Date.now()}`,
+        title: `${base.title} (cópia)`,
+      };
+      copy.splice(index + 1, 0, duplicated);
+      setStatus('Pop-up duplicado (não persistido).');
+      return copy;
+    });
+  };
+
+  const handleMovePopup = (index: number, direction: 'up' | 'down') => {
+    setSequenceDraft((prev) => {
+      const copy = [...prev];
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= copy.length) return prev;
+      const temp = copy[index];
+      copy[index] = copy[newIndex];
+      copy[newIndex] = temp;
+      setStatus('Ordem atualizada (não persistido).');
+      return copy;
+    });
   };
 
   return (
@@ -128,6 +174,62 @@ export default function AdminOnboardingPage() {
             {status ? <p className="text-sm text-emerald-200">{status}</p> : null}
           </CardContent>
         </Card>
+
+        {sequenceDraft.length ? (
+          <Card className="border-white/10 bg-[#04131b]/80">
+            <CardContent className="space-y-4 p-6">
+              <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                    {houseSequence ? `${houseSequence.house} · ${houseSequence.sport}` : 'Sequência carregada'}
+                  </p>
+                  <h2 className="text-xl font-semibold text-white">
+                    {houseSequence ? 'Pop-ups da House' : 'Pop-ups (demo)'}
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-400">
+                  {sequenceDraft.length} {sequenceDraft.length === 1 ? 'mensagem' : 'mensagens'}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {sequenceDraft.map((popup, index) => (
+                  <div
+                    key={popup.id}
+                    className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
+                  >
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">{popup.xpGate ?? 'XP —'}</p>
+                        <p className="text-lg font-semibold text-white">{popup.title}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleMovePopup(index, 'up')} disabled={index === 0}>
+                          <ArrowUp className="mr-1 h-4 w-4" /> Up
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleMovePopup(index, 'down')}
+                          disabled={index === sequenceDraft.length - 1}
+                        >
+                          <ArrowDown className="mr-1 h-4 w-4" /> Down
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDuplicatePopup(index)}>
+                          <Copy className="mr-1 h-4 w-4" /> Duplicar
+                        </Button>
+                        <Button size="sm" onClick={() => handleSelectPopup(popup)}>
+                          Editar
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-300 line-clamp-2">{popup.body}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-5 p-6">
