@@ -1536,6 +1536,10 @@ export default function EducationXpPage() {
 
   const demoCopy = POPUP_DEMO_TEXT[language] ?? POPUP_DEMO_TEXT.en;
 
+  const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
+  const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
+  const houseLabel = (rawHouseName || 'Sport').toString().toUpperCase();
+
 
 
   const [xpData, setXpData] = useState<EducationXpData | null>(null);
@@ -1774,9 +1778,6 @@ export default function EducationXpPage() {
 
 
   const userXP = user?.xp_total ?? 0;
-  const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
-  const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
-  const houseLabel = (rawHouseName || 'Sport').toString().toUpperCase();
 
 
 
