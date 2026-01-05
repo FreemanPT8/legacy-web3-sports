@@ -1574,6 +1574,21 @@ export default function EducationXpPage() {
   );
   const demoQueue = useMemo(() => buildDemoQueue(houseLabel), [buildDemoQueue, houseLabel]);
 
+  const logRemoteAction = useCallback(
+    async (popupId: string, action: QueueLogAction) => {
+      try {
+        await fetch('/api/onboarding/logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ popupId, action, house: houseLabel }),
+        });
+      } catch (error) {
+        console.error('[education/xp] Failed to log action', error);
+      }
+    },
+    [houseLabel],
+  );
+
 
 
 
@@ -1679,20 +1694,6 @@ export default function EducationXpPage() {
       : cooldownReason === 'weekly'
       ? cooldownCopy.weekly
       : cooldownCopy.idle;
-  const logRemoteAction = useCallback(
-    async (popupId: string, action: QueueLogAction) => {
-      try {
-        await fetch('/api/onboarding/logs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ popupId, action, house: houseLabel }),
-        });
-      } catch (error) {
-        console.error('[education/xp] Failed to log action', error);
-      }
-    },
-    [houseLabel],
-  );
   const queueSource = houseSequence?.popups?.length ? houseSequence.popups : demoQueue;
   const analytics = houseSequence?.analytics;
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
