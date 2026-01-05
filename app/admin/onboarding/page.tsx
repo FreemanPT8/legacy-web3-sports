@@ -172,7 +172,7 @@ export default function AdminOnboardingPage() {
           <CardContent className="space-y-3 p-6">
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Termo de Responsabilidade</p>
             <p className="text-lg font-semibold text-white">Heads confirmam que seguem o Termo antes de editar pop-ups.</p>
-            <p className="text-sm text-slate-300">Sem aceita??o ativa (_<=90 dias_), o painel permanece em modo de leitura.</p>
+            <p className="text-sm text-slate-300">Sem aceitacao ativa (&lt;= 90 dias), o painel permanece em modo de leitura.</p>
             <div className="flex flex-wrap items-center gap-3">
               {acceptedAt ? (
                 <span className="text-xs text-emerald-300">Aceite em {new Date(acceptedAt).toLocaleString()}</span>
@@ -185,9 +185,7 @@ export default function AdminOnboardingPage() {
             </div>
           </CardContent>
         </Card>
-
         <div className={cn('flex flex-col gap-6', editingDisabled && 'pointer-events-none opacity-40')}>
-
         <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-4 p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
@@ -417,11 +415,6 @@ export default function AdminOnboardingPage() {
             </div>
           </CardContent>
         </Card>
-
-        </div>
-        {!isAccepted ? (
-          <p className="text-sm text-amber-300">Aceita o Termo para editar e publicar pop-ups.</p>
-        ) : null}
 
         </div>
         {!isAccepted ? (
