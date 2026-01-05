@@ -534,7 +534,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'education.xp.dailyStreak': 'Daily Streak',
     'education.xp.dailyStreakDesc': 'Log in and complete at least one learning activity each day to build your streak. Complete a 7-day streak to earn a massive 222 XP bonus!',
     'education.xp.dailyMissions': 'Daily Missions',
-    'education.xp.dailyMissionsDesc': 'Each day, you receive 3 random missions worth 12 XP each. These can include reading articles, completing lessons, or participating in the forum. Complete all three for 36 XP daily.',
+    'education.xp.dailyMissionsDesc': 'Each day, you receive 3 random missions worth 12 XP each. These can include reading articles, completing lessons, or sharing private comments with emoji reactions. Complete all three for 36 XP daily.',
     'education.xp.masteryStrategies': 'Mastery Strategies',
     'education.xp.strategy1': 'Start with daily missions first thing each morning',
     'education.xp.strategy2': 'Build your 7-day streak for the bonus XP (222 XP total)',
