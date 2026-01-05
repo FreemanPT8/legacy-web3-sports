@@ -109,7 +109,7 @@ Visit [http://localhost:3000](http://localhost:3000)
   /profile             # User profile
   /education           # Courses, leaderboard, XP guide
   /blog                # Blog articles
-  /forum               # Community forum (legacy, being replaced)
+  /forum               # Legacy forum (being retired in favor of private comments)
   /sports              # Houses & onboarding
   /admin               # Admin dashboard
   /api                 # 15 API routes
