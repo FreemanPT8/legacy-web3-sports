@@ -423,6 +423,11 @@ export default function AdminOnboardingPage() {
           <p className="text-sm text-amber-300">Aceita o Termo para editar e publicar pop-ups.</p>
         ) : null}
 
+        </div>
+        {!isAccepted ? (
+          <p className="text-sm text-amber-300">Aceita o Termo para editar e publicar pop-ups.</p>
+        ) : null}
+
       </main>
 
       <Footer />
