@@ -100,7 +100,7 @@ They will:
 - [x] Complete daily missions
 - [x] Build 7-day streaks for bonus XP
 - [x] Unlock profile at 99 XP
-- [x] Access forum at 369 XP
+- [x] Unlock private comments at 369 XP
 
 ---
 

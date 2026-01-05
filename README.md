@@ -23,7 +23,7 @@ A comprehensive gamified education platform for sports professionals learning ab
 - ✅ XP transactions and tracking
 - ✅ Courses, modules, and lessons
 - ✅ Blog posts with multilingual support
-- ✅ Forum (rooms, topics, posts)
+- ✅ Private comments (content comments + reactions system)
 - ✅ Daily missions system
 - ✅ Onboarding and contact forms
 - ✅ Content likes and engagement tracking
@@ -109,7 +109,7 @@ Visit [http://localhost:3000](http://localhost:3000)
   /profile             # User profile
   /education           # Courses, leaderboard, XP guide
   /blog                # Blog articles
-  /forum               # Community forum
+  /forum               # Community forum (legacy, being replaced)
   /sports              # Houses & onboarding
   /admin               # Admin dashboard
   /api                 # 15 API routes
@@ -149,14 +149,12 @@ npm run seed         # Seed sample data
 | Add DAO1 DID NFT | +33 XP | Once |
 | Daily mission | +12 XP | 3/day |
 | 7-day streak | +222 XP | Weekly |
-| Forum comment | +5 XP | 25 XP/day |
+| Comment of the Week badge | +88 XP | Weekly winner |
 
 ### XP Unlocks
 
 - **99 XP** - Edit your profile
-- **369 XP** - Read forum posts
-- **444 XP** - Comment and interact
-- **555 XP** - Create forum topics
+- **369 XP** - Unlock private comments & emoji reactions
 - **3333 XP** - Hall of Fame
 
 ## Multi-language Support

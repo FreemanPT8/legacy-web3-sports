@@ -1064,41 +1064,39 @@ type CommentRulesCopy = {
 
 const COMMENT_RULES_COPY: Record<SupportedCopyLang, CommentRulesCopy> = {
   pt: {
-    title: 'Sistema de coment?rios privados',
-    intro: 'Desbloqueias aos 369 XP e partilhas contexto dentro de li??es, blog posts e Houses com login feito.',
+    title: 'Sistema de comentarios privados',
+    intro: 'Desbloqueias aos 369 XP e partilhas contexto dentro de licoes, blog posts e Houses com login feito.',
     points: [
-      '0 XP base: coment?rios servem para contexto, n?o para farmar.',
-      'Limites di?rios: 8 coment?rios por membro (33 para Super Admin, Admin, Heads e Moderadores).',
-      'Emojis: +1 (5/dia), ?? (1/dia), -1 (1/dia). Nenhum gera XP direto.',
-      'Casas/Houses s?o privadas: s? administra??o, moderadores e membros dessa House leem.',
+      '0 XP base: comentarios servem para contexto, nao para farming.',
+      'Limites diarios: 8 comentarios por dia para membros (33 para Super Admin, Admin, Heads e Moderadores).',
+      'Limites de emoji: +1 (5/dia), fogo (1/dia) e -1 (1/dia). Nenhum gera XP direto.',
+      'Casas sao privadas: apenas administracao, moderadores e membros dessa House leem.',
     ],
-    badge: 'Coment?rio p?blico com mais pontos (positivo + 2???) na semana recebe 88 XP + badge ?? Coment?rio da Semana.',
+    badge: 'O comentario publico com mais reaction points (positivo + 2*fogo) na semana recebe 88 XP + o badge "Comentario da Semana".',
   },
   es: {
     title: 'Sistema de comentarios privados',
     intro: 'Se desbloquea a los 369 XP para que solo miembros comprometidos comenten en lecciones, posts y Houses.',
     points: [
       '0 XP base: comentar sirve para aportar contexto, no para farmear.',
-      'L?mites diarios: 8 comentarios por miembro (33 para Super Admin, Admin, Heads y Moderadores).',
-      'Emojis: +1 (5/d?a), ?? (1/d?a), -1 (1/d?a). Ninguno entrega XP directo.',
-      'Los comentarios en Houses privadas s?lo son visibles para admins, moderadores y miembros de esa House.',
+      'Limites diarios: 8 comentarios por miembro (33 para Super Admin, Admin, Heads y Moderadores).',
+      'Limites de emoji: +1 (5/dia), fuego (1/dia) y -1 (1/dia). Ninguno da XP directo.',
+      'Los comentarios en Houses privadas solo son visibles para administradores, moderadores y miembros de esa House.',
     ],
-    badge: 'El comentario p?blico con m?s puntos (positivo + 2???) en la semana recibe 88 XP + el badge ?? Comentario de la Semana.',
+    badge: 'El comentario publico con mas reaction points (positivo + 2*fuego) en la semana gana 88 XP + el badge "Comentario de la Semana".',
   },
   en: {
     title: 'Private comments system',
     intro: 'Unlocks at 369 XP so committed members interact inside lessons, blog posts, and Houses.',
     points: [
-      '0 XP base: comments exist for context, not for farming.',
+      '0 XP base: comments exist for context, not XP farming.',
       'Daily limits: 8 comments per member (33 for Super Admin, Admin, Heads, and Moderators).',
-      'Emojis: +1 (5/day), ?? (1/day), -1 (1/day). None award XP directly.',
-      'House comments stay private to admins, moderators, and members of that House.',
+      'Emoji limits: +1 (5/day), fire (1/day), -1 (1/day). None award XP directly.',
+      'House conversations stay private to admins, moderators, and members of that House.',
     ],
-    badge: 'The public comment with the most points (positive + 2???) in the week earns 88 XP + the ?? Comment of the Week badge.',
+    badge: 'The public comment with the most reaction points (positive + 2*fire) each week earns 88 XP and the "Comment of the Week" badge.',
   },
 };
-
-
 
 const formatRange = (min: number | null, max: number | null) => {
 
@@ -2655,7 +2653,7 @@ export default function EducationXpPage() {
 
                           {language === 'pt'
 
-                            ? 'FÃ³rum: valor real, sem spam.'
+                            ? 'Comentarios privados desbloqueiam aos 369 XP e vivem dentro de licoes, blog posts e Houses.'
 
                             : language === 'es'
 

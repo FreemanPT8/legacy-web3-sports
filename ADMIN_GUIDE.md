@@ -210,9 +210,7 @@ WHERE username = 'username_here';
 These are the default XP thresholds users need to unlock features:
 
 - **99 XP** - Profile editing unlocked
-- **369 XP** - Forum read access
-- **444 XP** - Forum interactions (like, reply)
-- **555 XP** - Create forum topics
+- **369 XP** - Unlock private comments & emoji reactions
 - **3333 XP** - Hall of Fame access
 
 ---

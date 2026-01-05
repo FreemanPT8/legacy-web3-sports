@@ -48,7 +48,7 @@ UPDATE users SET role = 'Super Admin' WHERE email = 'SEU_EMAIL';
 - ✅ Dashboard com XP, missões, sequência
 - ✅ Cursos e lições
 - ✅ Blog multilíngue
-- ✅ Fórum (desbloqueia aos 369 XP)
+- ✅ Comentários privados (desbloqueiam aos 369 XP)
 - ✅ Sistema de níveis e badges
 - ✅ Notificações em tempo real
 
@@ -58,7 +58,7 @@ UPDATE users SET role = 'Super Admin' WHERE email = 'SEU_EMAIL';
 - ✅ Gestão de cursos e lições
 - ✅ Gestão de blog
 - ✅ Gestão de eventos
-- ✅ Moderação do fórum
+- ✅ Moderação das Houses e comentários privados
 - ✅ Sistema de XP manual
 - ✅ Analytics da plataforma
 

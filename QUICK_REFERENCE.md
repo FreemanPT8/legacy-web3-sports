@@ -98,7 +98,7 @@ WHERE username = 'username_here';
 
 | Role | Can Do |
 |------|--------|
-| **Member** | • Use platform<br>• Earn XP<br>• Complete courses<br>• Read blog<br>• Access forum (with XP) |
+| **Member** | • Use platform<br>• Earn XP<br>• Complete courses<br>• Read blog<br>• Unlock private comments at 369 XP |
 | **Admin** | • All Member features<br>• Create courses<br>• Create blog posts<br>• View users<br>• Promote to Admin<br>• Award XP |
 | **Super Admin** | • All Admin features<br>• Promote to Super Admin<br>• Modify other Super Admins<br>• Full platform control |
 
@@ -110,9 +110,7 @@ WHERE username = 'username_here';
 |----|---------|
 | 0 | Registration complete |
 | 99 | Profile editing |
-| 369 | Forum read access |
-| 444 | Forum interactions |
-| 555 | Create forum topics |
+| 369 | Private comments & emoji reactions |
 | 3333 | Hall of Fame |
 
 ---

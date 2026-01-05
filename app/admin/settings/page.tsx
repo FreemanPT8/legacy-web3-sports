@@ -30,7 +30,7 @@ const generalSettings = [
 
 const xpSettings = [
   { label: 'Profile unlock', value: '99 XP required' },
-  { label: 'Forum access', value: '369 XP required' },
+  { label: 'Private comments & reactions', value: '369 XP required' },
   { label: '7 day streak bonus', value: '222 XP reward' },
   { label: 'Daily mission XP', value: '12 XP per mission' },
 ];
