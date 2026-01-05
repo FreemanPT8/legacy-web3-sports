@@ -30,7 +30,7 @@ import {
   type QueueLog,
   type QueueLogAction,
 } from '@/hooks/useOnboardingQueue';
-import { fetchHouseOnboardingData, type HouseOnboardingSequence } from '@/data/onboarding-demo';
+import type { HouseOnboardingSequence } from '@/types/onboarding';
 
 import {
 
@@ -1576,16 +1576,26 @@ export default function EducationXpPage() {
 
   useEffect(() => {
     let active = true;
-    setHouseLoading(true);
-    setHouseError(null);
-    fetchHouseOnboardingData(houseLabel)
-      .then((data) => {
+    const load = async () => {
+      try {
+        setHouseLoading(true);
+        setHouseError(null);
+        const response = await fetch(`/api/onboarding/house?house=${encodeURIComponent(houseLabel)}`, {
+          cache: 'no-store',
+        });
+        const data = (await response.json()) as
+          | { success: true; sequence: HouseOnboardingSequence }
+          | { success: false; error?: string };
         if (!active) return;
-        setHouseSequence(data);
-        resetQueue(data.popups);
-      })
-      .catch(() => {
+        if (response.ok && data.success) {
+          setHouseSequence(data.sequence);
+          resetQueue(data.sequence.popups);
+        } else {
+          throw new Error(data.error || 'Failed to load onboarding data.');
+        }
+      } catch (err) {
         if (!active) return;
+        console.error('[education/xp] onboarding fetch failed', err);
         setHouseSequence(null);
         setHouseError(
           language === 'pt'
@@ -1595,10 +1605,11 @@ export default function EducationXpPage() {
             : 'Failed to load live data. Showing demo sequence.',
         );
         resetQueue(buildDemoQueue(houseLabel));
-      })
-      .finally(() => {
+      } finally {
         if (active) setHouseLoading(false);
-      });
+      }
+    };
+    void load();
     return () => {
       active = false;
     };

@@ -1,19 +1,4 @@
-import type { OnboardingPopupData } from '@/components/education/OnboardingPopup';
-
-export type HouseOnboardingAnalytics = {
-  ctr: number;
-  completionRate: number;
-  manualApprovals: number;
-  blockedAttempts: number;
-};
-
-export type HouseOnboardingSequence = {
-  house: string;
-  sport: string;
-  head: string;
-  popups: OnboardingPopupData[];
-  analytics: HouseOnboardingAnalytics;
-};
+import type { HouseOnboardingSequence } from '@/types/onboarding';
 
 const BASE_DEMO: Record<string, HouseOnboardingSequence> = {
   LEGACY: {
