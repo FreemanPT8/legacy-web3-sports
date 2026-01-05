@@ -1583,16 +1583,17 @@ export default function EducationXpPage() {
         const response = await fetch(`/api/onboarding/house?house=${encodeURIComponent(houseLabel)}`, {
           cache: 'no-store',
         });
-        const data = (await response.json()) as
+        type OnboardingResponse =
           | { success: true; sequence: HouseOnboardingSequence }
           | { success: false; error?: string };
+        const data = (await response.json()) as OnboardingResponse;
         if (!active) return;
-        if (response.ok && data.success) {
-          setHouseSequence(data.sequence);
-          resetQueue(data.sequence.popups);
-        } else {
-          throw new Error(data.error || 'Failed to load onboarding data.');
+        if (!response.ok || !data.success) {
+          const message = data.success ? 'Failed to load onboarding data.' : data.error || 'Failed to load onboarding data.';
+          throw new Error(message);
         }
+        setHouseSequence(data.sequence);
+        resetQueue(data.sequence.popups);
       } catch (err) {
         if (!active) return;
         console.error('[education/xp] onboarding fetch failed', err);
