@@ -1540,6 +1540,41 @@ export default function EducationXpPage() {
   const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
   const houseLabel = (rawHouseName || 'Sport').toString().toUpperCase();
 
+  const buildDemoQueue = useCallback(
+    (houseName: string): OnboardingPopupData[] => {
+      const applyHouse = (text: string) => text.replace('{{HOUSE}}', houseName);
+      const welcomeStep = onboardingCopy.steps[0];
+      const autonomyStep = onboardingCopy.steps[2];
+      return [
+        {
+          id: `popup-${language}-welcome`,
+          house: houseName,
+          xpGate: welcomeStep?.trigger ?? 'XP 0',
+          title: applyHouse(demoCopy.welcome.title),
+          body: applyHouse(demoCopy.welcome.body),
+          highlights: demoCopy.welcome.highlights.map(applyHouse),
+          badgeLabel: demoCopy.welcome.badge,
+          primaryCta: { label: demoCopy.welcome.primary, href: '/education/xp' },
+          secondaryCta: { label: demoCopy.welcome.secondary, href: '/education/houses' },
+        },
+        {
+          id: `popup-${language}-autonomy`,
+          house: houseName,
+          xpGate: autonomyStep?.trigger ?? 'XP 130',
+          title: applyHouse(demoCopy.autonomy.title),
+          body: applyHouse(demoCopy.autonomy.body),
+          highlights: demoCopy.autonomy.highlights.map(applyHouse),
+          badgeLabel: demoCopy.autonomy.badge,
+          primaryCta: { label: demoCopy.autonomy.primary, href: '/education/courses' },
+          secondaryCta: { label: demoCopy.autonomy.secondary, href: '/education/houses' },
+        },
+      ];
+    },
+    [demoCopy, language, onboardingCopy],
+  );
+  const demoQueue = useMemo(() => buildDemoQueue(houseLabel), [buildDemoQueue, houseLabel]);
+
+
 
 
   const [xpData, setXpData] = useState<EducationXpData | null>(null);
@@ -1625,40 +1660,6 @@ export default function EducationXpPage() {
     void logRemoteAction(activePopup.id, 'delivered');
   }, [activePopup, logRemoteAction]);
 
-  const buildDemoQueue = useCallback(
-    (houseName: string): OnboardingPopupData[] => {
-      const applyHouse = (text: string) => text.replace('{{HOUSE}}', houseName);
-      const welcomeStep = onboardingCopy.steps[0];
-      const autonomyStep = onboardingCopy.steps[2];
-      return [
-        {
-          id: `popup-${language}-welcome`,
-          house: houseName,
-          xpGate: welcomeStep?.trigger ?? 'XP 0',
-          title: applyHouse(demoCopy.welcome.title),
-          body: applyHouse(demoCopy.welcome.body),
-          highlights: demoCopy.welcome.highlights.map(applyHouse),
-          badgeLabel: demoCopy.welcome.badge,
-          primaryCta: { label: demoCopy.welcome.primary, href: '/education/xp' },
-          secondaryCta: { label: demoCopy.welcome.secondary, href: '/education/houses' },
-        },
-        {
-          id: `popup-${language}-autonomy`,
-          house: houseName,
-          xpGate: autonomyStep?.trigger ?? 'XP 130',
-          title: applyHouse(demoCopy.autonomy.title),
-          body: applyHouse(demoCopy.autonomy.body),
-          highlights: demoCopy.autonomy.highlights.map(applyHouse),
-          badgeLabel: demoCopy.autonomy.badge,
-          primaryCta: { label: demoCopy.autonomy.primary, href: '/education/courses' },
-          secondaryCta: { label: demoCopy.autonomy.secondary, href: '/education/houses' },
-        },
-      ];
-    },
-    [demoCopy, language, onboardingCopy],
-  );
-
-  const demoQueue = useMemo(() => buildDemoQueue(houseLabel), [buildDemoQueue, houseLabel]);
 
   const logLabels = demoCopy.logLabels;
   const cooldownCopy = demoCopy.cooldown;
