@@ -289,7 +289,37 @@ type CopyPack = {
   creatorBonusLabel: string;
 
   officialRulesLabel: string;
+};
 
+type OnboardingFeatureCopy = {
+  title: string;
+  description: string;
+};
+
+type OnboardingStepCopy = {
+  tag: string;
+  trigger: string;
+  focus: string;
+  cta: string;
+  note: string;
+};
+
+type OnboardingCopy = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  featuresTitle: string;
+  featuresSubtitle: string;
+  features: OnboardingFeatureCopy[];
+  sequenceTitle: string;
+  sequenceSubtitle: string;
+  stepLabels: { trigger: string; focus: string; cta: string };
+  steps: OnboardingStepCopy[];
+  governanceTitle: string;
+  governanceSubtitle: string;
+  governancePoints: string[];
+  noteLabel: string;
+  blockingNote: string;
 };
 
 
@@ -935,7 +965,233 @@ const UI = {
     'bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]',
 
   ctaOutline: 'border-white/40 text-white hover:bg-white/10',
+};
 
+const ONBOARDING_FEATURE_ICONS: Array<typeof Eye> = [Eye, Target, Lock];
+
+const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
+  pt: {
+    eyebrow: 'ONBOARDING PERSONALIZADO',
+    title: 'As Houses controlam o ritmo.',
+    subtitle:
+      'Heads definem pop-ups, triggers e copy direto no Painel Admin. O programa continua justo, auditavel e em tres idiomas.',
+    featuresTitle: 'Infraestrutura oficial',
+    featuresSubtitle: 'Sequencias usam a mesma paleta escura de /education: gradiente, bordas suaves e destaques ciano/dourado.',
+    features: [
+      {
+        title: 'Painel Admin das Houses',
+        description: 'Heads desenham sequencias, idiomas e CTAs com versoes, logs e revisoes antes de publicar.',
+      },
+      {
+        title: 'Triggers por XP + conteudo',
+        description: 'Pop-ups podem disparar por milestones ou ao concluir licoes, cursos e blog posts especificos.',
+      },
+      {
+        title: 'Governanca e bloqueio de 3 s',
+        description: 'Mensagens respeitam limites 1/dia e 3/semana com bloqueio anti-fechar e auditoria automatica.',
+      },
+    ],
+    sequenceTitle: 'Sequencia oficial (exemplo)',
+    sequenceSubtitle: 'Modelo base para o piloto antes de cada House adaptar o seu plano.',
+    stepLabels: { trigger: 'Trigger', focus: 'Foco', cta: 'CTA' },
+    steps: [
+      {
+        tag: 'P1',
+        trigger: 'XP 0 - primeiro login',
+        focus: 'Boas-vindas + checklist essencial',
+        cta: 'Checklist inicial',
+        note: 'Define a expectativa da House e apresenta o ecossistema Apertum.',
+      },
+      {
+        tag: 'P2',
+        trigger: 'Evento: Glossario basico concluido',
+        focus: 'Sequencia perfil > glossario > curso Comeca Aqui',
+        cta: 'Seguir caminho recomendado',
+        note: 'Mostra itens pendentes antes de libertar conteudos mais avancados.',
+      },
+      {
+        tag: 'P3',
+        trigger: 'XP 130 + curso Comeca Aqui concluido',
+        focus: 'Autonomia tecnica com tutorial Metamask',
+        cta: 'Abrir tutorial seguro',
+        note: 'Bloqueia features Web3 ate o utilizador concluir o tutorial.',
+      },
+      {
+        tag: 'P4',
+        trigger: 'XP 260 + leitura DAO1 briefing',
+        focus: 'Ecosistema Apertum/DAO1 com aviso de riscos',
+        cta: 'Formulario DAO1',
+        note: 'Pedido chega ao Head para aprovacao manual e logs ficam guardados.',
+      },
+      {
+        tag: 'P5',
+        trigger: 'XP 500 ou curso House finalizado',
+        focus: 'Integracao House Hub + contacto opcional',
+        cta: 'Abrir House Hub',
+        note: 'Liberta broadcast, pedidos de ajuda e interacao com membros.',
+      },
+    ],
+    governanceTitle: 'Governanca e suporte',
+    governanceSubtitle: 'Tudo segue o Termo oficial e auditoria continua.',
+    governancePoints: [
+      'Heads gerem sequencias no Painel Admin com historico completo.',
+      'Termo de responsabilidade precisa estar assinado antes de editar pop-ups.',
+      'Motor aplica os limites globais (1 pop-up por dia e 3 por semana).',
+      'Logs guardam trigger, idioma, CTA clicado e cumprimento do bloqueio de 3 s.',
+      'Mapa do utilizador mostra pop-ups enviados, triggers futuros e pedidos pendentes.',
+    ],
+    noteLabel: 'Nota oficial',
+    blockingNote:
+      'Quando um pop-up abre, o utilizador espera 3 segundos antes de fechar ou navegar. Depois disso continua opcional e sem pressao.',
+  },
+  es: {
+    eyebrow: 'ONBOARDING PERSONALIZADO',
+    title: 'Las Houses controlan el ritmo.',
+    subtitle:
+      'Los Heads definen pop-ups, triggers y copy dentro del Panel Admin. El onboarding sigue justo, auditado y en tres idiomas.',
+    featuresTitle: 'Infraestructura oficial',
+    featuresSubtitle: 'Los flujos usan la misma paleta oscura de /education con gradientes, bordes suaves y brillos cian/dorado.',
+    features: [
+      {
+        title: 'Panel Admin de las Houses',
+        description: 'Heads disenan secuencias, idiomas y CTAs con versiones y registros antes de publicar.',
+      },
+      {
+        title: 'Triggers por XP + contenido',
+        description: 'Los pop-ups se activan por hitos de XP o al terminar lecciones, cursos y articulos clave.',
+      },
+      {
+        title: 'Gobernanza y bloqueo de 3 s',
+        description: 'Mensajes respetan limites 1/dia y 3/semana con bloqueo anti-cierre y auditoria automatica.',
+      },
+    ],
+    sequenceTitle: 'Secuencia oficial (ejemplo)',
+    sequenceSubtitle: 'Modelo base para el piloto antes de que cada House adapte su plan.',
+    stepLabels: { trigger: 'Trigger', focus: 'Foco', cta: 'CTA' },
+    steps: [
+      {
+        tag: 'P1',
+        trigger: 'XP 0 - primer login',
+        focus: 'Bienvenida + checklist esencial',
+        cta: 'Checklist inicial',
+        note: 'Define expectativas y presenta la House y el ecosistema.',
+      },
+      {
+        tag: 'P2',
+        trigger: 'Evento: glosario basico completado',
+        focus: 'Secuencia perfil > glosario > curso Empieza Aqui',
+        cta: 'Seguir camino recomendado',
+        note: 'Recuerda las tareas pendientes antes de abrir contenido avanzado.',
+      },
+      {
+        tag: 'P3',
+        trigger: 'XP 130 + curso Empieza Aqui completado',
+        focus: 'Autonomia tecnica con tutorial Metamask',
+        cta: 'Abrir tutorial seguro',
+        note: 'Bloquea funciones Web3 hasta que el usuario termina el tutorial.',
+      },
+      {
+        tag: 'P4',
+        trigger: 'XP 260 + lectura DAO1 briefing',
+        focus: 'Ecosistema Apertum/DAO1 con aviso de riesgos',
+        cta: 'Formulario DAO1',
+        note: 'Solicitud llega al Head para aprobacion manual con registro.',
+      },
+      {
+        tag: 'P5',
+        trigger: 'XP 500 o curso House finalizado',
+        focus: 'Integracion House Hub + contacto opcional',
+        cta: 'Abrir House Hub',
+        note: 'Desbloquea broadcasts, pedidos de ayuda y colaboracion.',
+      },
+    ],
+    governanceTitle: 'Gobernanza y soporte',
+    governanceSubtitle: 'Todo sigue el Termino oficial y auditoria continua.',
+    governancePoints: [
+      'Heads gestionan secuencias en el Panel Admin con historial completo.',
+      'El Termino de responsabilidad debe firmarse antes de editar pop-ups.',
+      'El motor aplica los limites globales (1 pop-up por dia y 3 por semana).',
+      'Los logs guardan trigger, idioma, CTA y cumplimiento del bloqueo de 3 s.',
+      'El mapa del usuario muestra pop-ups enviados, triggers futuros y solicitudes.',
+    ],
+    noteLabel: 'Nota oficial',
+    blockingNote:
+      'Cuando aparece un pop-up, el usuario espera 3 segundos antes de cerrar o salir. Despues todo sigue opcional.',
+  },
+  en: {
+    eyebrow: 'PERSONALIZED ONBOARDING',
+    title: 'Houses control the pace.',
+    subtitle:
+      'Heads design pop-ups, triggers, and copy inside the Admin Panel so onboarding stays fair, auditable, and multilingual.',
+    featuresTitle: 'Official infrastructure',
+    featuresSubtitle: 'Flows keep the /education palette: deep gradients, subtle borders, cyan and gold highlights.',
+    features: [
+      {
+        title: 'House Admin panel',
+        description: 'Heads craft sequences, languages, and CTAs with versioning, logs, and review gates.',
+      },
+      {
+        title: 'XP + content triggers',
+        description: 'Pop-ups fire on milestones or when lessons, courses, and blog posts are completed.',
+      },
+      {
+        title: 'Governance + 3 s lock',
+        description: 'Messages honor the 1/day and 3/week cap with a 3 second lock and automated auditing.',
+      },
+    ],
+    sequenceTitle: 'Official sequence (example)',
+    sequenceSubtitle: 'Baseline for the pilot before each House tunes its own flow.',
+    stepLabels: { trigger: 'Trigger', focus: 'Focus', cta: 'CTA' },
+    steps: [
+      {
+        tag: 'P1',
+        trigger: 'XP 0 - first login',
+        focus: 'Welcome + essential checklist',
+        cta: 'Start checklist',
+        note: 'Sets the House expectation and introduces the Apertum ecosystem.',
+      },
+      {
+        tag: 'P2',
+        trigger: 'Event: basic glossary complete',
+        focus: 'Profile > glossary > Start Here course sequence',
+        cta: 'Follow recommended path',
+        note: 'Surfaces pending actions before unlocking advanced content.',
+      },
+      {
+        tag: 'P3',
+        trigger: 'XP 130 + Start Here course finished',
+        focus: 'Technical autonomy with Metamask tutorial',
+        cta: 'Open safe tutorial',
+        note: 'Locks advanced Web3 actions until the tutorial is completed.',
+      },
+      {
+        tag: 'P4',
+        trigger: 'XP 260 + DAO1 briefing read',
+        focus: 'Apertum/DAO1 ecosystem with risk disclosure',
+        cta: 'DAO1 access form',
+        note: 'Submission routes to the Head for manual approval with logging.',
+      },
+      {
+        tag: 'P5',
+        trigger: 'XP 500 or House course complete',
+        focus: 'House Hub integration + optional human contact',
+        cta: 'Open House Hub',
+        note: 'Unlocks broadcasts, help requests, and peer collaboration.',
+      },
+    ],
+    governanceTitle: 'Governance and support',
+    governanceSubtitle: 'Bound to the official Term and continuous auditing.',
+    governancePoints: [
+      'Heads manage sequences in the Admin Panel with full history.',
+      'Responsibility Term must be signed before editing any pop-up.',
+      'The engine enforces the global limits (1 per day, 3 per week).',
+      'Logs keep trigger, language, CTA clicks, and the 3 second lock proof.',
+      'User map displays sent pop-ups, upcoming triggers, and pending requests.',
+    ],
+    noteLabel: 'Official note',
+    blockingNote:
+      'Every pop-up stays fixed for 3 seconds before the user can close or navigate away. After that, the experience remains optional and pressure-free.',
+  },
 };
 
 
@@ -1139,6 +1395,8 @@ export default function EducationXpPage() {
   const copy = XP_COPY[language] ?? XP_COPY.en;
 
   const commentRulesCopy = COMMENT_RULES_COPY[language] ?? COMMENT_RULES_COPY.en;
+
+  const onboardingCopy = ONBOARDING_COPY[language] ?? ONBOARDING_COPY.en;
 
 
 
@@ -3141,6 +3399,107 @@ export default function EducationXpPage() {
 
               </div>
 
+            </section>
+
+            {/* ONBOARDING PERSONALIZADO */}
+            <section className={cn(UI.panel, 'px-6 py-8')}>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-16 -left-12 h-60 w-60 rounded-full bg-[#062030]/50 blur-3xl" />
+                <div className="absolute -bottom-20 -right-10 h-72 w-72 rounded-full bg-[#031d2a]/60 blur-3xl" />
+              </div>
+
+              <div className="relative space-y-6">
+                <div>
+                  <p className={UI.eyebrow}>{onboardingCopy.eyebrow}</p>
+                  <h2 className={UI.sectionTitle}>{onboardingCopy.title}</h2>
+                  <p className={UI.sectionSubtitle}>{onboardingCopy.subtitle}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                    <h3 className={UI.cardTitle}>{onboardingCopy.featuresTitle}</h3>
+                    <p className={cn(UI.bodyMuted, 'max-w-2xl')}>{onboardingCopy.featuresSubtitle}</p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {onboardingCopy.features.map((feature, index) => {
+                      const Icon = ONBOARDING_FEATURE_ICONS[index] ?? Sparkles;
+                      return (
+                        <Card key={feature.title} className={cn(UI.cardSurface, 'h-full')}>
+                          <CardContent className="p-5 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className="rounded-full border border-white/10 bg-[#000c12]/40 p-2">
+                                <Icon className="h-4 w-4 text-cyan-300" />
+                              </div>
+                              <p className={UI.cardTitle}>{feature.title}</p>
+                            </div>
+                            <p className={UI.body}>{feature.description}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                    <h3 className={UI.cardTitle}>{onboardingCopy.sequenceTitle}</h3>
+                    <p className={cn(UI.bodyMuted, 'max-w-2xl')}>{onboardingCopy.sequenceSubtitle}</p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {onboardingCopy.steps.map((step) => (
+                      <Card key={step.tag} className={cn(UI.cardSurface, 'h-full border-white/15')}>
+                        <CardContent className="p-5 space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <Badge variant="outline" className="border-cyan-400/40 bg-[#000c12]/40 text-cyan-200">
+                              {step.tag}
+                            </Badge>
+                            <span className={cn(UI.micro, 'text-slate-200')}>
+                              {onboardingCopy.stepLabels.trigger}: {step.trigger}
+                            </span>
+                          </div>
+                          <div>
+                            <p className={cn(UI.micro, 'text-slate-400')}>{onboardingCopy.stepLabels.focus}</p>
+                            <p className={cn(UI.cardTitle, 'text-[#fdd87c]')}>{step.focus}</p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-100">
+                            <Badge className="border-white/15 bg-[#000c12]/40">{onboardingCopy.stepLabels.cta}</Badge>
+                            <span>{step.cta}</span>
+                          </div>
+                          <p className={cn(UI.bodyMuted)}>{step.note}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="lg:col-span-2">
+                    <Card className={cn(UI.cardSurface, 'h-full')}>
+                      <CardContent className="p-5 space-y-3">
+                        <h3 className={UI.cardTitle}>{onboardingCopy.governanceTitle}</h3>
+                        <p className={UI.body}>{onboardingCopy.governanceSubtitle}</p>
+                        <ul className="mt-3 space-y-2 text-sm text-slate-200">
+                          {onboardingCopy.governancePoints.map((point) => (
+                            <li key={point} className="flex items-start gap-2">
+                              <span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div>
+                    <Card className={cn(UI.cardSurface, 'h-full border-amber-300/40')}>
+                      <CardContent className="p-5 space-y-2">
+                        <p className={UI.goldStatLabel}>{onboardingCopy.noteLabel}</p>
+                        <p className={cn(UI.body, 'text-slate-100')}>{onboardingCopy.blockingNote}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
             </section>
 
           </div>
