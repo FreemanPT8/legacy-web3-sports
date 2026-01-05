@@ -2,13 +2,21 @@
 
 
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 
 import { Footer } from '@/components/layout/Footer';
+
+import {
+
+  OnboardingPopup,
+
+  type OnboardingPopupData,
+
+} from '@/components/education/OnboardingPopup';
 
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -19,6 +27,16 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { useAuth } from '@/contexts/AuthContext';
+
+import {
+
+  useOnboardingQueue,
+
+  type QueueLog,
+
+  type QueueLogAction,
+
+} from '@/hooks/useOnboardingQueue';
 
 import {
 
@@ -1194,6 +1212,130 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
   },
 };
 
+type DemoPopupEntry = {
+  title: string;
+  body: string;
+  highlights: string[];
+  primary: string;
+  secondary: string;
+  badge: string;
+};
+
+type DemoPopupCopy = {
+  welcome: DemoPopupEntry;
+  autonomy: DemoPopupEntry;
+  cooldown: { daily: string; weekly: string; idle: string };
+  logLabels: Record<QueueLogAction, string>;
+};
+
+const POPUP_DEMO_TEXT: Record<SupportedCopyLang, DemoPopupCopy> = {
+  pt: {
+    welcome: {
+      title: 'Bem-vindo à House oficial',
+      body: 'Heads usam este pop-up para te alinhar logo no XP 0. Aos 3 segundos já podes fechar ou seguir.',
+      highlights: [
+        'Checklist essencial garante que todos começam com o mesmo contexto.',
+        'CTA secundário abre o House Guide e continua opcional.',
+      ],
+      primary: 'Começar pelos 3 passos',
+      secondary: 'Ver House Guide',
+      badge: 'XP 0 - Mensagem oficial',
+    },
+    autonomy: {
+      title: 'Autonomia técnica sem pânico',
+      body: 'Antes de mexeres em wallets reais, os Heads guiam-te por um tutorial Metamask seguro.',
+      highlights: [
+        'Inclui passo-a-passo auditável e validação manual.',
+        'Sem tutorial, as funcionalidades Web3 ficam bloqueadas.',
+      ],
+      primary: 'Abrir tutorial seguro',
+      secondary: 'Falar com a House',
+      badge: 'XP 130 - Autonomia',
+    },
+    cooldown: {
+      daily: 'Já enviaste 1 pop-up hoje. Espera até amanhã para o próximo.',
+      weekly: 'Limite semanal atingido (3). A fila aguarda a próxima janela.',
+      idle: 'Sem mensagens pendentes — triggers aguardam novo evento.',
+    },
+    logLabels: {
+      delivered: 'Mostrado',
+      primary: 'CTA principal',
+      secondary: 'CTA secundária',
+      dismiss: 'Fechado',
+    },
+  },
+  es: {
+    welcome: {
+      title: 'Bienvenido a la House oficial',
+      body: 'Los Heads usan este pop-up para alinearte en XP 0. Tras 3 segundos puedes cerrar o seguir.',
+      highlights: [
+        'El checklist asegura que todos empiezan con el mismo contexto.',
+        'El CTA secundario abre la guía de la House (siempre opcional).',
+      ],
+      primary: 'Empezar con los 3 pasos',
+      secondary: 'Ver House Guide',
+      badge: 'XP 0 - Mensaje oficial',
+    },
+    autonomy: {
+      title: 'Autonomía técnica sin drama',
+      body: 'Antes de tocar wallets reales, los Heads te guían por un tutorial seguro de Metamask.',
+      highlights: [
+        'Incluye paso a paso auditado y validación manual.',
+        'Sin este tutorial, las funciones Web3 quedan bloqueadas.',
+      ],
+      primary: 'Abrir tutorial seguro',
+      secondary: 'Hablar con la House',
+      badge: 'XP 130 - Autonomía',
+    },
+    cooldown: {
+      daily: 'Ya viste 1 pop-up hoy. El siguiente llega mañana.',
+      weekly: 'Límite semanal (3) alcanzado. Espera la próxima ventana.',
+      idle: 'Sin mensajes pendientes — esperando nuevo trigger.',
+    },
+    logLabels: {
+      delivered: 'Mostrado',
+      primary: 'CTA principal',
+      secondary: 'CTA secundaria',
+      dismiss: 'Cerrado',
+    },
+  },
+  en: {
+    welcome: {
+      title: 'Welcome to the official House',
+      body: 'Heads use this pop-up to align you right at XP 0. After 3 seconds you can close or continue.',
+      highlights: [
+        'The essential checklist keeps everyone on the same context.',
+        'The secondary CTA opens the House Guide — always optional.',
+      ],
+      primary: 'Start the 3 steps',
+      secondary: 'View House Guide',
+      badge: 'XP 0 - Official message',
+    },
+    autonomy: {
+      title: 'Technical autonomy without panic',
+      body: 'Before touching real wallets, Heads guide you through a safe Metamask tutorial.',
+      highlights: [
+        'Includes an auditable step-by-step plus manual validation.',
+        'Without it, advanced Web3 features stay locked.',
+      ],
+      primary: 'Open safe tutorial',
+      secondary: 'Talk to the House',
+      badge: 'XP 130 - Autonomy',
+    },
+    cooldown: {
+      daily: 'Daily limit reached (1). Next message unlocks tomorrow.',
+      weekly: 'Weekly limit hit (3). Queue waits for the next window.',
+      idle: 'No pending pop-ups — waiting for the next trigger.',
+    },
+    logLabels: {
+      delivered: 'Displayed',
+      primary: 'Primary CTA',
+      secondary: 'Secondary CTA',
+      dismiss: 'Dismissed',
+    },
+  },
+};
+
 
 
 const rewardMetadata: Record<
@@ -1398,6 +1540,8 @@ export default function EducationXpPage() {
 
   const onboardingCopy = ONBOARDING_COPY[language] ?? ONBOARDING_COPY.en;
 
+  const demoCopy = POPUP_DEMO_TEXT[language] ?? POPUP_DEMO_TEXT.en;
+
 
 
   const [xpData, setXpData] = useState<EducationXpData | null>(null);
@@ -1417,6 +1561,90 @@ export default function EducationXpPage() {
   const [comboLoading, setComboLoading] = useState(true);
 
   const [comboError, setComboError] = useState<string | null>(null);
+
+  const {
+    activePopup,
+    resetQueue,
+    recordAction,
+    logs: popupLogs,
+    pending: pendingPopups,
+    deliveredToday,
+    deliveredWeek,
+    dailyLimit,
+    weeklyLimit,
+    cooldownReason,
+    canDeliver,
+  } = useOnboardingQueue();
+
+  const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
+  const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
+  const houseLabel = (rawHouseName || 'Sport').toString().toUpperCase();
+
+  const demoQueue = useMemo<OnboardingPopupData[]>(() => {
+    const applyHouse = (text: string) => text.replace('{{HOUSE}}', houseLabel);
+    const welcomeStep = onboardingCopy.steps[0];
+    const autonomyStep = onboardingCopy.steps[2];
+    return [
+      {
+        id: `popup-${language}-welcome`,
+        house: houseLabel,
+        xpGate: welcomeStep?.trigger ?? 'XP 0',
+        title: applyHouse(demoCopy.welcome.title),
+        body: applyHouse(demoCopy.welcome.body),
+        highlights: demoCopy.welcome.highlights.map(applyHouse),
+        badgeLabel: demoCopy.welcome.badge,
+        primaryCta: { label: demoCopy.welcome.primary, href: '/education/xp' },
+        secondaryCta: { label: demoCopy.welcome.secondary, href: '/education/houses' },
+      },
+      {
+        id: `popup-${language}-autonomy`,
+        house: houseLabel,
+        xpGate: autonomyStep?.trigger ?? 'XP 130',
+        title: applyHouse(demoCopy.autonomy.title),
+        body: applyHouse(demoCopy.autonomy.body),
+        highlights: demoCopy.autonomy.highlights.map(applyHouse),
+        badgeLabel: demoCopy.autonomy.badge,
+        primaryCta: { label: demoCopy.autonomy.primary, href: '/education/courses' },
+        secondaryCta: { label: demoCopy.autonomy.secondary, href: '/education/houses' },
+      },
+    ];
+  }, [demoCopy, houseLabel, language, onboardingCopy]);
+
+  useEffect(() => {
+    resetQueue(demoQueue);
+  }, [demoQueue, resetQueue]);
+
+  const logLabels = demoCopy.logLabels;
+  const cooldownCopy = demoCopy.cooldown;
+  const lastLogs = useMemo(() => popupLogs.slice(-5).reverse(), [popupLogs]);
+  const locale = language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US';
+  const formatLogTime = useCallback(
+    (timestamp: number) =>
+      new Date(timestamp).toLocaleTimeString(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    [locale],
+  );
+  const cooldownMessage =
+    cooldownReason === 'daily'
+      ? cooldownCopy.daily
+      : cooldownReason === 'weekly'
+      ? cooldownCopy.weekly
+      : cooldownCopy.idle;
+  const resetLabel =
+    language === 'pt'
+      ? 'Repor sequência demo'
+      : language === 'es'
+      ? 'Reiniciar demo'
+      : 'Reset demo sequence';
+
+  const handlePopupAction = useCallback(
+    ({ action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
+      recordAction(action);
+    },
+    [recordAction],
+  );
 
 
 
@@ -3499,6 +3727,108 @@ export default function EducationXpPage() {
                     </Card>
                   </div>
                 </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Card className={cn(UI.cardSurface, 'h-full')}>
+                    <CardContent className="p-5 space-y-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className={UI.cardTitle}>
+                          {language === 'pt'
+                            ? 'Fila de pop-ups (demo)'
+                            : language === 'es'
+                            ? 'Fila de pop-ups (demo)'
+                            : 'Pop-up queue (demo)'}
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'border-white/20 bg-[#000c12]/40 text-xs',
+                            canDeliver ? 'text-emerald-200' : 'text-amber-200',
+                          )}
+                        >
+                          {canDeliver
+                            ? language === 'pt'
+                              ? 'A enviar'
+                              : language === 'es'
+                              ? 'Enviando'
+                              : 'Delivering'
+                            : language === 'pt'
+                            ? 'Cooldown'
+                            : language === 'es'
+                            ? 'Cooldown'
+                            : 'Cooldown'}
+                        </Badge>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-center">
+                          <p className={UI.micro}>{language === 'pt' ? 'Pendentes' : language === 'es' ? 'Pendientes' : 'Pending'}</p>
+                          <p className="text-2xl font-semibold text-white">{pendingPopups}</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-center">
+                          <p className={UI.micro}>
+                            {language === 'pt' ? 'Hoje' : language === 'es' ? 'Hoy' : 'Today'}
+                          </p>
+                          <p className="text-2xl font-semibold text-white">
+                            {deliveredToday}/{dailyLimit}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-center">
+                          <p className={UI.micro}>
+                            {language === 'pt' ? 'Semana' : language === 'es' ? 'Semana' : 'Week'}
+                          </p>
+                          <p className="text-2xl font-semibold text-white">
+                            {deliveredWeek}/{weeklyLimit}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className={cn(UI.bodyMuted, 'text-sm')}>{cooldownMessage}</p>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => resetQueue(demoQueue)}
+                        className="border-white/30 text-white hover:bg-white/10"
+                      >
+                        {resetLabel}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className={cn(UI.cardSurface, 'h-full')}>
+                    <CardContent className="p-5 space-y-3">
+                      <p className={UI.cardTitle}>
+                        {language === 'pt'
+                          ? 'Logs recentes'
+                          : language === 'es'
+                          ? 'Logs recientes'
+                          : 'Recent logs'}
+                      </p>
+                      {lastLogs.length ? (
+                        <ul className="space-y-2">
+                          {lastLogs.map((log) => (
+                            <li
+                              key={`${log.popupId}-${log.timestamp}`}
+                              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#000c12]/40 px-3 py-2"
+                            >
+                              <span className="font-mono text-xs text-slate-400">{formatLogTime(log.timestamp)}</span>
+                              <span className="text-sm text-slate-100">{logLabels[log.action]}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className={cn(UI.bodyMuted, 'text-sm')}>
+                          {language === 'pt'
+                            ? 'Ainda sem interações.'
+                            : language === 'es'
+                            ? 'Sin interacciones todavía.'
+                            : 'No interactions yet.'}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </section>
 
@@ -3511,6 +3841,10 @@ export default function EducationXpPage() {
 
 
       <Footer />
+
+      {activePopup ? (
+        <OnboardingPopup data={activePopup} open lockSeconds={3} onAction={handlePopupAction} />
+      ) : null}
 
     </div>
 
