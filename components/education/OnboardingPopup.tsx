@@ -7,22 +7,13 @@ import { X, Clock3, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { OnboardingPopup as OnboardingPopupShape } from '@/types/onboarding';
+
+export type OnboardingPopupData = OnboardingPopupShape;
 
 export type OnboardingPopupAction =
   | { type: 'primary' | 'secondary'; label: string; href?: string; onClick?: () => void }
   | { type: 'dismiss' };
-
-export type OnboardingPopupData = {
-  id: string;
-  house: string;
-  xpGate?: string;
-  title: string;
-  body: string;
-  highlights?: string[];
-  badgeLabel?: string;
-  primaryCta?: { label: string; href?: string; onClick?: () => void };
-  secondaryCta?: { label: string; href?: string; onClick?: () => void };
-};
 
 type OnboardingPopupProps = {
   data: OnboardingPopupData | null;
@@ -39,6 +30,28 @@ export function OnboardingPopup({ data, open, lockSeconds = 3, onClose, onAction
   const [lockActive, setLockActive] = useState(true);
   const [remaining, setRemaining] = useState(lockSeconds);
   const lastId = useRef<string | null>(null);
+  const triggerDescription = useMemo(() => {
+    if (!data) return null;
+    if (data.trigger?.type === 'xp') {
+      if (typeof data.trigger.value === 'number') {
+        const xpText = data.trigger.label ?? `XP ≥ ${data.trigger.value}`;
+        return xpText;
+      }
+      return data.trigger.label ?? data.xpGate ?? null;
+    }
+    if (data.trigger?.type === 'content') {
+      const baseLabel =
+        data.trigger.label ??
+        (data.trigger.contentType === 'blog'
+          ? 'Blog concluído'
+          : data.trigger.contentType === 'course'
+          ? 'Curso concluído'
+          : 'Lição concluída');
+      const target = data.trigger.contentTitle ?? data.trigger.contentId;
+      return target ? `${baseLabel}: ${target}` : baseLabel;
+    }
+    return data.xpGate ?? null;
+  }, [data]);
 
   useEffect(() => {
     if (!open || !data) return;
@@ -137,7 +150,7 @@ export function OnboardingPopup({ data, open, lockSeconds = 3, onClose, onAction
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-200">House of {data.house}</p>
-              {data.xpGate ? <p className="text-xs text-slate-300">Trigger: {data.xpGate}</p> : null}
+              {triggerDescription ? <p className="text-xs text-slate-300">Trigger: {triggerDescription}</p> : null}
             </div>
             <Button
               variant="ghost"

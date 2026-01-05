@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { OnboardingPopup, type OnboardingPopupData } from '@/components/education/OnboardingPopup';
-import type { HouseOnboardingSequence, OnboardingLogEntry } from '@/types/onboarding';
+import type { HouseOnboardingSequence, OnboardingLogEntry, OnboardingTrigger } from '@/types/onboarding';
 import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
 import { useTermAgreement } from '@/hooks/useTermAgreement';
 import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown } from 'lucide-react';
@@ -21,6 +21,17 @@ const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', {
   secondary: { label: 'CTA secund?ria' },
   dismiss: { label: 'Fechados' },
 };
+
+const TRIGGER_TYPE_OPTIONS = [
+  { value: 'xp', label: 'XP milestone' },
+  { value: 'content', label: 'Conteudo concluido' },
+] as const;
+
+const CONTENT_TRIGGER_TYPES = [
+  { value: 'lesson', label: 'Licao / modulo' },
+  { value: 'course', label: 'Curso' },
+  { value: 'blog', label: 'Artigo do blog' },
+] as const;
 
 const DEFAULT_DRAFT: OnboardingPopupData = {
   id: 'draft-popup',
@@ -35,6 +46,7 @@ const DEFAULT_DRAFT: OnboardingPopupData = {
   badgeLabel: 'Rascunho',
   primaryCta: { label: 'CTA principal', href: '/education/xp' },
   secondaryCta: { label: 'CTA secundária', href: '/education/houses' },
+  trigger: { type: 'xp', value: 0, label: 'XP 0 - primeiro login' },
 };
 
 export default function AdminOnboardingPage() {
@@ -57,6 +69,35 @@ export default function AdminOnboardingPage() {
   }, [liveLogs]);
   const latestLogs = useMemo(() => liveLogs.slice(0, 10), [liveLogs]);
 
+  const normalizeTrigger = useCallback((popup: OnboardingPopupData): OnboardingPopupData => {
+    if (popup.trigger) {
+      if (popup.trigger.type === 'xp') {
+        const safeValue = Number.isFinite(popup.trigger.value) ? popup.trigger.value : 0;
+        return {
+          ...popup,
+          trigger: { ...popup.trigger, value: safeValue },
+        };
+      }
+      return {
+        ...popup,
+        trigger: {
+          ...popup.trigger,
+          contentType: popup.trigger.contentType ?? 'lesson',
+          contentId: popup.trigger.contentId ?? '',
+          contentTitle: popup.trigger.contentTitle ?? '',
+        },
+      };
+    }
+    const fallbackValue =
+      typeof popup.xpGate === 'string'
+        ? Number.parseInt(popup.xpGate.replace(/[^0-9]/g, ''), 10) || 0
+        : 0;
+    return {
+      ...popup,
+      trigger: { type: 'xp', value: fallbackValue, label: popup.xpGate },
+    };
+  }, []);
+
   const resolvedDraft = useMemo<OnboardingPopupData>(() => {
     const highlights =
       highlightsInput
@@ -70,6 +111,11 @@ export default function AdminOnboardingPage() {
     };
   }, [draft, highlightsInput, houseKey]);
 
+  const triggerType = draft.trigger?.type ?? 'xp';
+  const xpTriggerValue = draft.trigger?.type === 'xp' ? draft.trigger.value ?? 0 : 0;
+  const triggerLabelValue = draft.trigger?.label ?? '';
+  const contentTrigger = draft.trigger?.type === 'content' ? draft.trigger : null;
+
   const handleLoadHouse = async () => {
     setLoading(true);
     setStatus(null);
@@ -79,12 +125,16 @@ export default function AdminOnboardingPage() {
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Failed to sync');
-      const popup = data.sequence.popups[0] ?? DEFAULT_DRAFT;
-      setHouseSequence(data.sequence);
-      setSequenceDraft(data.sequence.popups);
+      const normalizedSequence = {
+        ...data.sequence,
+        popups: data.sequence.popups.map((popup: OnboardingPopupData) => normalizeTrigger(popup)),
+      };
+      const popup = normalizedSequence.popups[0] ?? normalizeTrigger(DEFAULT_DRAFT);
+      setHouseSequence(normalizedSequence);
+      setSequenceDraft(normalizedSequence.popups);
       setDraft(popup);
       setHighlightsInput((popup.highlights ?? []).join('\n'));
-      setStatus(`Sequência importada de ${data.sequence.house}.`);
+      setStatus('Sequencia importada de ' + data.sequence.house + '.');
     } catch (error) {
       console.error('[admin/onboarding] sync failed', error);
       setHouseSequence(null);
@@ -121,9 +171,10 @@ export default function AdminOnboardingPage() {
   };
 
   const handleSelectPopup = (popup: OnboardingPopupData) => {
-    setDraft(popup);
-    setHighlightsInput((popup.highlights ?? []).join('\n'));
-    setStatus(`Pop-up "${popup.title}" selecionado para edição.`);
+    const normalized = normalizeTrigger(popup);
+    setDraft(normalized);
+    setHighlightsInput((normalized.highlights ?? []).join('\n'));
+    setStatus('Pop-up ' + normalized.title + ' selecionado para edicao.');
   };
 
   const handleDuplicatePopup = (index: number) => {
@@ -131,13 +182,13 @@ export default function AdminOnboardingPage() {
       const copy = [...prev];
       const base = copy[index];
       if (!base) return prev;
-      const duplicated: OnboardingPopupData = {
+      const duplicated: OnboardingPopupData = normalizeTrigger({
         ...base,
-        id: `${base.id}-copy-${Date.now()}`,
-        title: `${base.title} (cópia)`,
-      };
+        id: base.id + '-copy-' + Date.now(),
+        title: base.title + ' (copia)',
+      });
       copy.splice(index + 1, 0, duplicated);
-      setStatus('Pop-up duplicado (não persistido).');
+      setStatus('Pop-up duplicado (nao persistido).');
       return copy;
     });
   };
@@ -152,6 +203,77 @@ export default function AdminOnboardingPage() {
       copy[newIndex] = temp;
       setStatus('Ordem atualizada (não persistido).');
       return copy;
+    });
+  };
+
+  const handleTriggerTypeChange = (type: 'xp' | 'content') => {
+    setDraft((prev) => {
+      if (type === 'xp') {
+        const nextValue =
+          prev.trigger?.type === 'xp' && Number.isFinite(prev.trigger.value) ? prev.trigger.value : 0;
+        return {
+          ...prev,
+          trigger: { type: 'xp', value: nextValue, label: prev.trigger?.label },
+        };
+      }
+      const prevContent = prev.trigger?.type === 'content' ? prev.trigger : undefined;
+      return {
+        ...prev,
+        trigger: {
+          type: 'content',
+          contentType: prevContent?.contentType ?? 'lesson',
+          contentId: prevContent?.contentId ?? '',
+          contentTitle: prevContent?.contentTitle ?? '',
+          label: prev.trigger?.label,
+        },
+      };
+    });
+  };
+
+  const handleTriggerLabelChange = (label: string) => {
+    setDraft((prev) => {
+      if (!prev.trigger) {
+        return { ...prev, trigger: { type: 'xp', value: 0, label } };
+      }
+      return {
+        ...prev,
+        trigger: { ...prev.trigger, label },
+      };
+    });
+  };
+
+  const handleTriggerValueChange = (value: number) => {
+    const safeValue = Number.isFinite(value) ? value : 0;
+    setDraft((prev) => {
+      if (prev.trigger?.type === 'xp') {
+        return { ...prev, trigger: { ...prev.trigger, value: safeValue } };
+      }
+      return { ...prev, trigger: { type: 'xp', value: safeValue, label: prev.trigger?.label } };
+    });
+  };
+
+  const handleContentTriggerChange = (key: 'contentType' | 'contentId' | 'contentTitle', value: string) => {
+    setDraft((prev) => {
+      const base: Extract<OnboardingTrigger, { type: 'content' }> =
+        prev.trigger?.type === 'content'
+          ? prev.trigger
+          : { type: 'content', contentType: 'lesson', contentId: '', contentTitle: '', label: prev.trigger?.label };
+      if (key === 'contentType') {
+        return {
+          ...prev,
+          trigger: { ...base, contentType: value as Extract<OnboardingTrigger, { type: 'content' }>['contentType'] },
+        };
+      }
+      if (key === 'contentId') {
+        return {
+          ...prev,
+          trigger: { ...base, contentId: value },
+        };
+      }
+      return {
+        ...prev,
+        trigger: { ...base, contentTitle: value },
+      };
     });
   };
 
@@ -325,7 +447,7 @@ export default function AdminOnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.3em] text-slate-400">XP / Trigger</label>
+                <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Trigger (texto visivel)</label>
                 <Input
                   value={draft.xpGate ?? ''}
                   onChange={(event) => handleDraftChange('xpGate', event.target.value)}
@@ -333,6 +455,86 @@ export default function AdminOnboardingPage() {
                 />
               </div>
             </div>
+
+            <div className="rounded-2xl border border-dashed border-white/10 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Trigger real (motor)</p>
+              <p className="text-xs text-slate-400">Define se este pop-up depende de XP ou de conteudo concluido.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {TRIGGER_TYPE_OPTIONS.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleTriggerTypeChange(option.value)}
+                    className={cn(
+                      'border-white/20 text-white hover:bg-white/10',
+                      triggerType === option.value && 'border-cyan-400/60 bg-cyan-500/10 text-cyan-100',
+                    )}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Label interno</label>
+                  <Input
+                    value={triggerLabelValue}
+                    onChange={(event) => handleTriggerLabelChange(event.target.value)}
+                    placeholder="XP 0 - primeiro login"
+                    className="mt-2 border-white/10 bg-[#010913]"
+                  />
+                </div>
+                {triggerType === 'xp' ? (
+                  <div>
+                    <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Valor minimo de XP</label>
+                    <Input
+                      type="number"
+                      value={xpTriggerValue}
+                      onChange={(event) => handleTriggerValueChange(Number(event.target.value) || 0)}
+                      className="mt-2 border-white/10 bg-[#010913]"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Tipo de conteudo</label>
+                      <select
+                        value={contentTrigger?.contentType ?? 'lesson'}
+                        onChange={(event) => handleContentTriggerChange('contentType', event.target.value)}
+                        className="mt-2 w-full rounded-md border border-white/10 bg-[#010913] px-3 py-2 text-sm text-white"
+                      >
+                        {CONTENT_TRIGGER_TYPES.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs uppercase tracking-[0.3em] text-slate-400">ID ou slug oficial</label>
+                      <Input
+                        value={contentTrigger?.contentId ?? ''}
+                        onChange={(event) => handleContentTriggerChange('contentId', event.target.value)}
+                        placeholder="/blog/dao1 ou lesson-id"
+                        className="mt-2 border-white/10 bg-[#010913]"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Nome visivel</label>
+                      <Input
+                        value={contentTrigger?.contentTitle ?? ''}
+                        onChange={(event) => handleContentTriggerChange('contentTitle', event.target.value)}
+                        placeholder="DAO1 briefing ou Licao #3"
+                        className="mt-2 border-white/10 bg-[#010913]"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
 
             <div>
               <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Título</label>

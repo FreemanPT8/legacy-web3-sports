@@ -16,6 +16,7 @@ const BASE_DEMO: Record<string, HouseOnboardingSequence> = {
         id: 'legacy-welcome',
         house: 'Legacy',
         xpGate: 'XP 0',
+        trigger: { type: 'xp', value: 0, label: 'XP 0 - primeiro login' },
         title: 'Bem-vindo à House oficial do Legacy',
         body: 'Esta é a sequência fundacional: 3 passos essenciais, Glossário e o curso Começa Aqui para eliminar atalhos.',
         highlights: [
@@ -30,6 +31,7 @@ const BASE_DEMO: Record<string, HouseOnboardingSequence> = {
         id: 'legacy-autonomy',
         house: 'Legacy',
         xpGate: 'XP 130 + curso Começa Aqui',
+        trigger: { type: 'xp', value: 130, label: 'XP 130 + curso base' },
         title: 'Autonomia técnica: tutorial Metamask seguro',
         body: 'Antes de desbloquear funcionalidades Web3, a House garante que conheces o básico com um tutorial auditado.',
         highlights: [
@@ -44,6 +46,7 @@ const BASE_DEMO: Record<string, HouseOnboardingSequence> = {
         id: 'legacy-dao1',
         house: 'Legacy',
         xpGate: 'XP 260 + briefing DAO1',
+        trigger: { type: 'content', contentType: 'blog', contentId: 'dao1-briefing', contentTitle: 'Briefing DAO1', label: 'DAO1 briefing concluido' },
         title: 'DAO1: acesso oficial com responsabilidade',
         body: 'A DAO1 é porta de entrada do ecossistema Apertum. Aqui tens o formulário oficial da House com avisos de risco.',
         highlights: [
@@ -71,6 +74,7 @@ const BASE_DEMO: Record<string, HouseOnboardingSequence> = {
         id: 'basket-start',
         house: 'House of Basketball',
         xpGate: 'XP 0',
+        trigger: { type: 'xp', value: 0, label: 'XP 0 - checklist' },
         title: 'House of Basketball — começa em 3 passos',
         body: 'Define a posição onde queres evoluir, completa o Glossário específico e desbloqueia o curso Start Here.',
         highlights: [
@@ -85,6 +89,7 @@ const BASE_DEMO: Record<string, HouseOnboardingSequence> = {
         id: 'basket-autonomy',
         house: 'House of Basketball',
         xpGate: 'XP 120',
+        trigger: { type: 'xp', value: 120, label: 'XP 120 - gate tecnico' },
         title: 'Autonomia Web3 para atletas',
         body: 'Aprende a gerir o teu ID digital com o tutorial Metamask guiado. Sem isto, não avançamos para projetos DAO.',
         highlights: [

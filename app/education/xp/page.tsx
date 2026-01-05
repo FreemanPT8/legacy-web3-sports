@@ -2,7 +2,7 @@
 
 
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -126,6 +126,28 @@ type XpThreshold = {
 
 };
 
+
+
+type ProgressCourseSummaryLite = {
+
+  id: string;
+
+  slug: string | null;
+
+  title: string;
+
+  isCompleted: boolean;
+
+};
+
+
+type ProgressSummaryLite = {
+
+  startHere: { slug: string; isCompleted: boolean };
+
+  coursesByLevel: Record<string, ProgressCourseSummaryLite[]>;
+
+};
 
 
 type EducationXpData = {
@@ -1545,11 +1567,19 @@ export default function EducationXpPage() {
       const applyHouse = (text: string) => text.replace('{{HOUSE}}', houseName);
       const welcomeStep = onboardingCopy.steps[0];
       const autonomyStep = onboardingCopy.steps[2];
+      const extractXp = (value?: string) => {
+        if (!value) return 0;
+        const match = value.match(/(\d+)/);
+        return match ? Number(match[0]) : 0;
+      };
+      const welcomeXp = extractXp(welcomeStep?.trigger);
+      const autonomyXp = extractXp(autonomyStep?.trigger);
       return [
         {
           id: `popup-${language}-welcome`,
           house: houseName,
           xpGate: welcomeStep?.trigger ?? 'XP 0',
+          trigger: { type: 'xp', value: welcomeXp, label: welcomeStep?.trigger ?? 'XP 0' },
           title: applyHouse(demoCopy.welcome.title),
           body: applyHouse(demoCopy.welcome.body),
           highlights: demoCopy.welcome.highlights.map(applyHouse),
@@ -1561,6 +1591,7 @@ export default function EducationXpPage() {
           id: `popup-${language}-autonomy`,
           house: houseName,
           xpGate: autonomyStep?.trigger ?? 'XP 130',
+          trigger: { type: 'xp', value: autonomyXp || 130, label: autonomyStep?.trigger ?? 'XP 130' },
           title: applyHouse(demoCopy.autonomy.title),
           body: applyHouse(demoCopy.autonomy.body),
           highlights: demoCopy.autonomy.highlights.map(applyHouse),
@@ -1610,6 +1641,8 @@ export default function EducationXpPage() {
 
   const [comboError, setComboError] = useState<string | null>(null);
 
+  const [progressSummary, setProgressSummary] = useState<ProgressSummaryLite | null>(null);
+
   const {
     activePopup,
     resetQueue,
@@ -1647,7 +1680,6 @@ export default function EducationXpPage() {
           throw new Error(message);
         }
         setHouseSequence(data.sequence);
-        resetQueue(data.sequence.popups);
       } catch (err) {
         if (!active) return;
         console.error('[education/xp] onboarding fetch failed', err);
@@ -1659,7 +1691,6 @@ export default function EducationXpPage() {
             ? 'Error al cargar datos reales. Mostrando demo.'
             : 'Failed to load live data. Showing demo sequence.',
         );
-        resetQueue(buildDemoQueue(houseLabel));
       } finally {
         if (active) setHouseLoading(false);
       }
@@ -1694,6 +1725,72 @@ export default function EducationXpPage() {
       : cooldownReason === 'weekly'
       ? cooldownCopy.weekly
       : cooldownCopy.idle;
+  const userXP = user?.xp_total ?? 0;
+
+
+
+  const completedContentIds = useMemo(() => {
+
+    const set = new Set<string>();
+
+    if (!progressSummary) return set;
+
+    if (progressSummary.startHere?.isCompleted) {
+
+      const slugKey = progressSummary.startHere.slug?.toLowerCase();
+
+      if (slugKey) set.add(`course:${slugKey}`);
+
+    }
+
+    Object.values(progressSummary.coursesByLevel ?? {}).forEach((courses) => {
+
+      courses.forEach((course) => {
+
+        if (!course.isCompleted) return;
+
+        const slug = (course.slug || course.id || '').toString().toLowerCase();
+
+        if (slug) set.add(`course:${slug}`);
+
+      });
+
+    });
+
+    return set;
+
+  }, [progressSummary]);
+
+
+
+  const isTriggerSatisfied = useCallback(
+
+    (popup: OnboardingPopupData) => {
+
+      if (!popup.trigger) return true;
+
+      if (popup.trigger.type === 'xp') {
+
+        return userXP >= (popup.trigger.value ?? 0);
+
+      }
+
+      if (!progressSummary || completedContentIds.size === 0) return true;
+
+      const targetId = (popup.trigger.contentId || '').toLowerCase();
+
+      const key = `${popup.trigger.contentType}:${targetId}`;
+
+      return completedContentIds.has(key);
+
+    },
+
+    [completedContentIds, progressSummary, userXP],
+
+  );
+
+
+
   const queueSource = houseSequence?.popups?.length ? houseSequence.popups : demoQueue;
   const analytics = houseSequence?.analytics;
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
@@ -1749,6 +1846,30 @@ export default function EducationXpPage() {
     { label: analyticsLabels.blocked, value: fmtNumber(analytics?.blockedAttempts), desc: analyticsDescriptions[3] },
   ];
 
+  const readyPopups = useMemo(
+
+    () => queueSource.filter((popup) => isTriggerSatisfied(popup)),
+
+    [queueSource, isTriggerSatisfied],
+
+  );
+
+  const readySignature = readyPopups.map((popup) => popup.id).join('|');
+
+  const queueSyncRef = useRef<string>('');
+
+  useEffect(() => {
+
+    if (readySignature === queueSyncRef.current) return;
+
+    queueSyncRef.current = readySignature;
+
+    resetQueue(readyPopups);
+
+  }, [readyPopups, readySignature, resetQueue]);
+
+
+
   const queueSourceLabel = houseSequence
     ? `${houseSequence.house} · ${houseSequence.sport}`
     : language === 'pt'
@@ -1776,10 +1897,6 @@ export default function EducationXpPage() {
     },
     [recordAction, logRemoteAction],
   );
-
-
-
-  const userXP = user?.xp_total ?? 0;
 
 
 
@@ -1811,7 +1928,7 @@ export default function EducationXpPage() {
 
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
 
-        if (token) headers.Authorization = `Bearer ${token}`;
+        if (token) headers.Authorization = 'Bearer ' + token;
 
 
 
@@ -1915,7 +2032,7 @@ export default function EducationXpPage() {
 
         const headers: HeadersInit = {};
 
-        if (token) headers.Authorization = `Bearer ${token}`;
+        if (token) headers.Authorization = 'Bearer ' + token;
 
 
 
@@ -2012,6 +2129,118 @@ export default function EducationXpPage() {
     };
 
   }, [user, getToken, copy.errorsFallback]);
+
+
+
+
+
+
+
+  useEffect(() => {
+
+    if (!user) {
+
+      setProgressSummary(null);
+
+      return;
+
+    }
+
+
+
+    let active = true;
+
+
+
+    const fetchProgress = async () => {
+
+      try {
+
+        const token = getToken?.();
+
+        const headers: HeadersInit = {};
+
+        if (token) headers.Authorization = 'Bearer ' + token;
+
+
+
+        const response = await fetch('/api/education/progress', {
+
+          cache: 'no-store',
+
+          headers,
+
+        });
+
+
+
+        const data = (await response.json()) as
+
+          | {
+
+              success: true;
+
+              summary: {
+
+                startHere?: { slug?: string; isCompleted?: boolean };
+
+                coursesByLevel?: Record<string, ProgressCourseSummaryLite[]>;
+
+              };
+
+            }
+
+          | { success: false; error?: string };
+
+
+
+        if (!active) return;
+
+        if (!response.ok || !data.success) {
+
+          const message = !data.success ? data.error || 'Failed to load progress' : 'Failed to load progress';
+
+          throw new Error(message);
+
+        }
+
+        const startSlug = data.summary.startHere?.slug || 'start-here';
+
+
+
+        setProgressSummary({
+
+          startHere: { slug: startSlug, isCompleted: Boolean(data.summary.startHere?.isCompleted) },
+
+          coursesByLevel: data.summary.coursesByLevel ?? {},
+
+        });
+
+      } catch (err) {
+
+        if (!active) return;
+
+        console.error('[education/xp] progress fetch failed', err);
+
+        setProgressSummary(null);
+
+      }
+
+    };
+
+
+
+    void fetchProgress();
+
+
+
+    return () => {
+
+      active = false;
+
+    };
+
+  }, [user, getToken]);
 
 
 
@@ -3949,7 +4178,7 @@ export default function EducationXpPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => resetQueue(queueSource)}
+                        onClick={() => resetQueue(readyPopups)}
                         className="border-white/30 text-white hover:bg-white/10"
                       >
                         {queueResetLabel}

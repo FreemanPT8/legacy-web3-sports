@@ -1,3 +1,23 @@
+export type OnboardingTrigger =
+  | {
+      type: 'xp';
+      value: number;
+      label?: string;
+    }
+  | {
+    type: 'content';
+    contentType: 'lesson' | 'course' | 'blog';
+    contentId: string;
+    contentTitle?: string;
+    label?: string;
+  };
+
+type OnboardingCta = {
+  label: string;
+  href?: string;
+  onClick?: () => void;
+};
+
 export type OnboardingPopup = {
   id: string;
   house: string;
@@ -6,8 +26,9 @@ export type OnboardingPopup = {
   body: string;
   highlights?: string[];
   badgeLabel?: string;
-  primaryCta?: { label: string; href?: string };
-  secondaryCta?: { label: string; href?: string };
+  primaryCta?: OnboardingCta;
+  secondaryCta?: OnboardingCta;
+  trigger?: OnboardingTrigger;
 };
 
 export type HouseOnboardingAnalytics = {
