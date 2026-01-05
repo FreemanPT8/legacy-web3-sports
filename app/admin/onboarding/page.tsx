@@ -9,8 +9,18 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { OnboardingPopup, type OnboardingPopupData } from '@/components/education/OnboardingPopup';
-import type { HouseOnboardingSequence } from '@/types/onboarding';
+import type { HouseOnboardingSequence, OnboardingLogEntry } from '@/types/onboarding';
+import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
+import { useTermAgreement } from '@/hooks/useTermAgreement';
 import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', { label: string }> = {
+  delivered: { label: 'Entregues' },
+  primary: { label: 'CTA principal' },
+  secondary: { label: 'CTA secund?ria' },
+  dismiss: { label: 'Fechados' },
+};
 
 const DEFAULT_DRAFT: OnboardingPopupData = {
   id: 'draft-popup',
@@ -36,6 +46,16 @@ export default function AdminOnboardingPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
   const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>([DEFAULT_DRAFT]);
+  const { acceptedAt, loading: termLoading, accept, isAccepted } = useTermAgreement();
+  const editingDisabled = !isAccepted;
+  const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs();
+  const logTotals = useMemo(() => {
+    return liveLogs.reduce((acc, log) => {
+      acc[log.action] = (acc[log.action] || 0) + 1;
+      return acc;
+    }, {} as Record<OnboardingLogEntry['action'], number>);
+  }, [liveLogs]);
+  const latestLogs = useMemo(() => liveLogs.slice(0, 10), [liveLogs]);
 
   const resolvedDraft = useMemo<OnboardingPopupData>(() => {
     const highlights =
@@ -149,6 +169,26 @@ export default function AdminOnboardingPage() {
         </div>
 
         <Card className="border-white/10 bg-[#04131b]/80">
+          <CardContent className="space-y-3 p-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Termo de Responsabilidade</p>
+            <p className="text-lg font-semibold text-white">Heads confirmam que seguem o Termo antes de editar pop-ups.</p>
+            <p className="text-sm text-slate-300">Sem aceita??o ativa (_<=90 dias_), o painel permanece em modo de leitura.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              {acceptedAt ? (
+                <span className="text-xs text-emerald-300">Aceite em {new Date(acceptedAt).toLocaleString()}</span>
+              ) : (
+                <span className="text-xs text-amber-200">Ainda n?o aceitaste o Termo.</span>
+              )}
+              <Button size="sm" onClick={accept} disabled={termLoading || isAccepted} className="bg-emerald-500/20 text-emerald-100">
+                {isAccepted ? 'Termo ativo' : 'Aceitar Termo'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className={cn('flex flex-col gap-6', editingDisabled && 'pointer-events-none opacity-40')}>
+
+        <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-4 p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
               <div className="flex-1">
@@ -230,6 +270,50 @@ export default function AdminOnboardingPage() {
             </CardContent>
           </Card>
         ) : null}
+
+        <Card className="border-white/10 bg-[#04131b]/80">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Logs & Analytics</p>
+                <h2 className="text-xl font-semibold text-white">?ltimas a??es</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={refreshLogs} className="border-white/20 text-white hover:bg-white/10">
+                  <RefreshCcw className="mr-1 h-4 w-4" /> Atualizar
+                </Button>
+                <span className="text-xs text-slate-400">{logsLoading ? 'A carregar?' : `${liveLogs.length} eventos`}</span>
+              </div>
+            </div>
+
+            {logsError ? <p className="text-sm text-amber-300">{logsError}</p> : null}
+
+            <div className="grid gap-3 sm:grid-cols-4">
+              {(['delivered','primary','secondary','dismiss'] as Array<keyof typeof ACTION_LABELS>).map((key) => (
+                <div key={key} className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{ACTION_LABELS[key].label}</p>
+                  <p className="text-2xl font-semibold text-white">{logTotals[key] ?? 0}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              {latestLogs.length ? (
+                latestLogs.map((log) => (
+                  <div key={log.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-2">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{ACTION_LABELS[log.action].label}</p>
+                      <p className="text-xs text-slate-400">Popup: {log.popupId}</p>
+                    </div>
+                    <span className="text-xs text-slate-300">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400">Sem eventos registados.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-5 p-6">
@@ -333,6 +417,12 @@ export default function AdminOnboardingPage() {
             </div>
           </CardContent>
         </Card>
+
+        </div>
+        {!isAccepted ? (
+          <p className="text-sm text-amber-300">Aceita o Termo para editar e publicar pop-ups.</p>
+        ) : null}
+
       </main>
 
       <Footer />
