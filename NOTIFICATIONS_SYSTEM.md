@@ -20,7 +20,7 @@ Implementado um sistema completo de notificações em tempo real conectado à ba
 CREATE TABLE notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type text NOT NULL CHECK (type IN ('achievement', 'forum', 'course', 'xp', 'system', 'mission')),
+  type text NOT NULL CHECK (type IN ('achievement', 'forum', 'course', 'xp', 'system', 'mission', 'comment')),
   title text NOT NULL,
   message text NOT NULL,
   read boolean DEFAULT false,
