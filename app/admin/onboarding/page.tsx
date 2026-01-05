@@ -49,15 +49,24 @@ const DEFAULT_DRAFT: OnboardingPopupData = {
   trigger: { type: 'xp', value: 0, label: 'XP 0 - primeiro login' },
 };
 
+const DEFAULT_ANALYTICS: HouseOnboardingSequence['analytics'] = {
+  ctr: 0.65,
+  completionRate: 0.8,
+  manualApprovals: 0,
+  blockedAttempts: 0,
+};
+
 export default function AdminOnboardingPage() {
   const [houseKey, setHouseKey] = useState('LEGACY');
   const [draft, setDraft] = useState<OnboardingPopupData>(DEFAULT_DRAFT);
   const [highlightsInput, setHighlightsInput] = useState(DEFAULT_DRAFT.highlights?.join('\n') ?? '');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
   const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>([DEFAULT_DRAFT]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
   const { acceptedAt, loading: termLoading, accept, isAccepted } = useTermAgreement();
   const editingDisabled = !isAccepted;
   const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs();
@@ -132,6 +141,7 @@ export default function AdminOnboardingPage() {
       const popup = normalizedSequence.popups[0] ?? normalizeTrigger(DEFAULT_DRAFT);
       setHouseSequence(normalizedSequence);
       setSequenceDraft(normalizedSequence.popups);
+      setSelectedIndex(normalizedSequence.popups.length ? 0 : null);
       setDraft(popup);
       setHighlightsInput((popup.highlights ?? []).join('\n'));
       setStatus('Sequencia importada de ' + data.sequence.house + '.');
@@ -139,6 +149,9 @@ export default function AdminOnboardingPage() {
       console.error('[admin/onboarding] sync failed', error);
       setHouseSequence(null);
       setSequenceDraft([]);
+      setSelectedIndex(null);
+      setDraft(DEFAULT_DRAFT);
+      setHighlightsInput(DEFAULT_DRAFT.highlights?.join('\n') ?? '');
       setStatus('Falha ao sincronizar. Mantém o rascunho atual.');
     } finally {
       setLoading(false);
@@ -166,14 +179,54 @@ export default function AdminOnboardingPage() {
     setPreviewOpen(true);
   };
 
-  const handleSave = () => {
-    setStatus('Rascunho guardado localmente. Integração real ligará ao Painel Admin.');
+  const handleSave = async () => {
+    const normalizedDraft = normalizeTrigger(resolvedDraft);
+    const nextSequence = [...sequenceDraft];
+    let targetIndex = typeof selectedIndex === 'number' ? selectedIndex : -1;
+    if (targetIndex < 0 || targetIndex >= nextSequence.length) {
+      nextSequence.push(normalizedDraft);
+      targetIndex = nextSequence.length - 1;
+      setSelectedIndex(targetIndex);
+    } else {
+      nextSequence[targetIndex] = normalizedDraft;
+    }
+    const normalizedSequence = nextSequence.map((popup) => normalizeTrigger(popup));
+    const fallbackHouse = normalizedDraft.house || houseSequence?.house || houseKey || 'LEGACY';
+    const sequencePayload: HouseOnboardingSequence = {
+      house: fallbackHouse,
+      sport: houseSequence?.sport || 'Multisport',
+      head: houseSequence?.head || `Head of ${fallbackHouse}`,
+      analytics: houseSequence?.analytics || DEFAULT_ANALYTICS,
+      popups: normalizedSequence,
+    };
+    setSequenceDraft(normalizedSequence);
+    try {
+      setSaving(true);
+      setStatus('A guardar sequência...');
+      const response = await fetch('/api/onboarding/house', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sequence: sequencePayload }),
+      });
+      const data = (await response.json()) as { success: boolean; error?: string };
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to persist sequence');
+      }
+      setHouseSequence(sequencePayload);
+      setStatus('Sequência sincronizada com o mock do Painel Admin.');
+    } catch (error) {
+      console.error('[admin/onboarding] save failed', error);
+      setStatus('Falha ao guardar sequência. Tenta novamente.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSelectPopup = (popup: OnboardingPopupData) => {
+  const handleSelectPopup = (popup: OnboardingPopupData, index: number) => {
     const normalized = normalizeTrigger(popup);
     setDraft(normalized);
     setHighlightsInput((normalized.highlights ?? []).join('\n'));
+    setSelectedIndex(index);
     setStatus('Pop-up ' + normalized.title + ' selecionado para edicao.');
   };
 
@@ -188,7 +241,10 @@ export default function AdminOnboardingPage() {
         title: base.title + ' (copia)',
       });
       copy.splice(index + 1, 0, duplicated);
-      setStatus('Pop-up duplicado (nao persistido).');
+      setSelectedIndex(index + 1);
+      setDraft(duplicated);
+      setHighlightsInput((duplicated.highlights ?? []).join('\n'));
+      setStatus('Pop-up duplicado (não persistido).');
       return copy;
     });
   };
@@ -202,6 +258,11 @@ export default function AdminOnboardingPage() {
       copy[index] = copy[newIndex];
       copy[newIndex] = temp;
       setStatus('Ordem atualizada (não persistido).');
+      setSelectedIndex((current) => {
+        if (current === index) return newIndex;
+        if (current === newIndex) return index;
+        return current;
+      });
       return copy;
     });
   };
@@ -356,7 +417,10 @@ export default function AdminOnboardingPage() {
                 {sequenceDraft.map((popup, index) => (
                   <div
                     key={popup.id}
-                    className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
+                    className={cn(
+                      'rounded-2xl border border-white/10 bg-[#000c12]/40 p-4',
+                      selectedIndex === index && 'border-cyan-400/60 bg-[#001d2a]',
+                    )}
                   >
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                       <div>
@@ -378,7 +442,14 @@ export default function AdminOnboardingPage() {
                         <Button size="sm" variant="outline" onClick={() => handleDuplicatePopup(index)}>
                           <Copy className="mr-1 h-4 w-4" /> Duplicar
                         </Button>
-                        <Button size="sm" onClick={() => handleSelectPopup(popup)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={cn(
+                            selectedIndex === index && 'border-cyan-400/70 bg-cyan-500/10 text-cyan-100',
+                          )}
+                          onClick={() => handleSelectPopup(popup, index)}
+                        >
                           Editar
                         </Button>
                       </div>
@@ -611,8 +682,21 @@ export default function AdminOnboardingPage() {
               <Button className="bg-gradient-to-r from-[#fdd87c] to-[#fcb045] text-[#1e1500]" onClick={handlePreview}>
                 <MonitorPlay className="mr-2 h-4 w-4" /> Pré-visualizar pop-up
               </Button>
-              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={handleSave}>
-                <Save className="mr-2 h-4 w-4" /> Guardar rascunho
+              <Button
+                variant="outline"
+                className="border-white/30 text-white hover:bg-white/10"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A guardar...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" /> Guardar & sincronizar
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
