@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { href: '/admin/blog', label: 'Blog', icon: FileText },
   { href: '/admin/houses', label: 'Houses of Sports', icon: Trophy },
   { href: '/admin/onboarding', label: 'Onboarding', icon: Mail },
-  { href: '/admin/forum', label: 'Forum', icon: MessageCircle },
+  { href: '/admin/forum', label: 'Private Comments', icon: MessageCircle },
   { href: '/admin/xp', label: 'XP Management', icon: Award },
   { href: '/admin/missions', label: 'Missions', icon: Target },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
