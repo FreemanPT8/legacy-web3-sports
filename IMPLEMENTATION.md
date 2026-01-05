@@ -40,7 +40,7 @@ LEGACY is a fully functional gamified Web3 education platform for sports profess
 7. How XP Works - Complete gamification guide
 8. Blog - Article listing
 9. Blog Article - Full article with ContentTracker
-10. Forum - XP-gated community (369/444/555 XP)
+10. Private Comments - XP-gated (369 XP) threads inside lessons, blog posts, and Houses
 11. Houses of Sports - Community pages
 12. Personalized Onboarding - Multi-step form
 13. About - Platform info + contact form
@@ -113,9 +113,9 @@ Demo user:
 | Set sports role | +19 XP | Once |
 | Add DAO1 DID NFT | +33 XP | Once |
 | Add LinkHub | +33 XP | Once |
-| Comment | +5 XP | 25 XP/day |
-| Forum post | +3 XP | 30 XP/day |
-| Forum topic | +12 XP | 36 XP/day |
+| Private comment (context only) | 0 XP | 8/day (members), 33/day (admins & moderators) |
+| Emoji reactions | 0 XP | +1 (5/day), 🔥 (1/day), -1 (1/day) |
+| Comment of the Week badge | +88 XP | Weekly winner |
 | Daily mission | +12 XP | 3/day (36 XP) |
 | 7-day streak | +222 XP | Weekly |
 | Content like | +0.5 XP | None |
@@ -124,9 +124,7 @@ Demo user:
 
 - **0 XP:** Basic access (public content, courses, blog)
 - **99 XP:** Profile editing enabled
-- **369 XP:** Forum read access
-- **444 XP:** Forum interactions (likes, comments)
-- **555 XP:** Forum posting and topic creation
+- **369 XP:** Private comments & emoji reactions inside lessons, blog posts, and Houses
 - **3333 XP:** Hall of Fame entry
 
 ## 🗄️ Database Structure
@@ -144,7 +142,8 @@ Demo user:
 - `content_likes` - Like tracking
 
 ### Community Tables
-- `forum_rooms`, `forum_topics`, `forum_posts`
+- `content_comments` - Private comments + emoji reactions
+- `forum_rooms`, `forum_topics`, `forum_posts` (legacy - retained for reference/history)
 - `onboarding_submissions`
 - `contact_submissions`
 
@@ -273,7 +272,7 @@ The app is a standard Next.js application and can be deployed to:
   /profile                 # User profile
   /education               # Courses, leaderboard, XP
   /blog                    # Blog listing & articles
-  /forum                   # Community forum
+  /forum                   # Legacy route showing private comment unlock notice
   /sports                  # Houses & onboarding
   /admin                   # Admin dashboard
   /api                     # API routes

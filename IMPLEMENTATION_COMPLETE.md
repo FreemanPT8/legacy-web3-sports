@@ -77,7 +77,7 @@ The LEGACY platform is now **fully implemented** and ready for production deploy
 ### Pages
 - **Total Pages:** 36 (up from 29 initially)
 - **Admin Pages:** 6 (dashboard, users, courses, blog, XP, analytics)
-- **User Pages:** 15 (home, dashboard, profile, education, forum, etc.)
+- **User Pages:** 15 (home, dashboard, profile, education, private comments, etc.)
 - **Auth Pages:** 2 (login, signup)
 - **API Routes:** 22 endpoints
 
@@ -97,7 +97,7 @@ The LEGACY platform is now **fully implemented** and ready for production deploy
 4. Profile Management
 5. Course Enrollment
 6. Blog Reading
-7. Forum Access (XP-gated)
+7. Private Comments (369 XP unlock)
 8. Leaderboard Rankings
 9. Multi-language Support (6 languages)
 
@@ -264,9 +264,7 @@ All API endpoints are documented in `NEW_FEATURES.md` with:
 - Track progress on dashboard
 - Earn XP to unlock features:
   - 99 XP: Profile editing
-  - 369 XP: Forum read access
-  - 444 XP: Forum interactions
-  - 555 XP: Forum posting
+  - 369 XP: Private comments & emoji reactions
   - 3333 XP: Hall of Fame
 
 ### For Admins
@@ -328,7 +326,7 @@ All implemented features follow security best practices:
 
 ### Future Enhancements (Optional)
 
-- Real-time forum updates with WebSockets
+- Real-time private comment updates with WebSockets
 - Profile avatar upload with storage
 - Advanced analytics with charts (Chart.js/Recharts)
 - Mobile app (React Native)
