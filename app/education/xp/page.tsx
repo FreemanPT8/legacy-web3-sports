@@ -2025,11 +2025,6 @@ export default function EducationXpPage() {
     return payload.map((popup) => popup.id).join('|');
   }, []);
   const queueHash = useMemo(() => computeQueueHash(queueSnapshot), [computeQueueHash, queueSnapshot]);
-  const readyPopups = useMemo(
-    () => queueSource.filter((popup) => isTriggerSatisfied(popup)),
-    [queueSource, isTriggerSatisfied],
-  );
-
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -2121,16 +2116,6 @@ export default function EducationXpPage() {
     if (!activePopup) return;
     void logRemoteAction(activePopup.id, 'delivered');
   }, [activePopup, logRemoteAction]);
-
-  useEffect(() => {
-    if (!user) return;
-    if (!queueSeedSignature) return;
-    if (!queueSnapshot.length && readyPopups.length === 0) return;
-    if (lastPersistedQueueHashRef.current === queueHash) return;
-    lastPersistedQueueHashRef.current = queueHash;
-    void persistQueue(queueSnapshot, queueSeedSignature);
-  }, [queueHash, queueSeedSignature, queueSnapshot, persistQueue, readyPopups.length, user]);
-
 
   const logLabels = demoCopy.logLabels;
   const cooldownCopy = demoCopy.cooldown;
@@ -2315,6 +2300,18 @@ export default function EducationXpPage() {
     { label: analyticsLabels.approvals, value: fmtNumber(analytics?.manualApprovals), desc: analyticsDescriptions[2] },
     { label: analyticsLabels.blocked, value: fmtNumber(analytics?.blockedAttempts), desc: analyticsDescriptions[3] },
   ];
+  const readyPopups = useMemo(
+    () => queueSource.filter((popup) => isTriggerSatisfied(popup)),
+    [queueSource, isTriggerSatisfied],
+  );
+  useEffect(() => {
+    if (!user) return;
+    if (!queueSeedSignature) return;
+    if (!queueSnapshot.length && readyPopups.length === 0) return;
+    if (lastPersistedQueueHashRef.current === queueHash) return;
+    lastPersistedQueueHashRef.current = queueHash;
+    void persistQueue(queueSnapshot, queueSeedSignature);
+  }, [queueHash, queueSeedSignature, queueSnapshot, persistQueue, readyPopups.length, user]);
   const blockedPopups = useMemo(
 
     () => queueSource.filter((popup) => !isTriggerSatisfied(popup)),
