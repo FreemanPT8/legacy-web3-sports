@@ -26,7 +26,14 @@ export async function GET(request: Request) {
     if (popupId) query = query.eq('popup_id', popupId);
     const { data, error } = await query;
     if (error) throw error;
-    const logs: OnboardingLogEntry[] = (data ?? []).map((row) => ({
+    type LogRow = {
+      id: string;
+      popup_id: string;
+      house_key: string;
+      action: string;
+      created_at: string;
+    };
+    const logs: OnboardingLogEntry[] = (data ?? []).map((row: LogRow) => ({
       id: row.id,
       popupId: row.popup_id,
       house: row.house_key,
