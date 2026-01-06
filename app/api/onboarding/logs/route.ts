@@ -1,19 +1,43 @@
 import { NextResponse } from 'next/server';
 
 import type { OnboardingLogEntry, OnboardingLogAction } from '@/types/onboarding';
+import { supabaseAdmin, supabase } from '@/lib/supabase';
 
-const LOG_LIMIT = 200;
-const logs: OnboardingLogEntry[] = [];
+const db = supabaseAdmin ?? supabase;
+const TABLE_NAME = 'onboarding_popup_logs';
+const DEFAULT_LIMIT = 50;
 
-const pushLog = (entry: OnboardingLogEntry) => {
-  logs.push(entry);
-  if (logs.length > LOG_LIMIT) {
-    logs.splice(0, logs.length - LOG_LIMIT);
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const limit = Math.min(Number(searchParams.get('limit')) || DEFAULT_LIMIT, 200);
+  const houseKey = searchParams.get('house')?.toUpperCase() ?? null;
+  const popupId = searchParams.get('popupId') ?? null;
+  try {
+    if (!db) {
+      console.warn('[onboarding.logs] Supabase admin client not available. Returning empty logs.');
+      return NextResponse.json({ success: true, logs: [] });
+    }
+    let query = db
+      .from(TABLE_NAME)
+      .select('id, popup_id, house_key, action, user_id, metadata, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (houseKey) query = query.eq('house_key', houseKey);
+    if (popupId) query = query.eq('popup_id', popupId);
+    const { data, error } = await query;
+    if (error) throw error;
+    const logs: OnboardingLogEntry[] = (data ?? []).map((row) => ({
+      id: row.id,
+      popupId: row.popup_id,
+      house: row.house_key,
+      action: row.action as OnboardingLogAction,
+      timestamp: new Date(row.created_at).getTime(),
+    }));
+    return NextResponse.json({ success: true, logs });
+  } catch (error) {
+    console.error('[onboarding.logs] GET failed', error);
+    return NextResponse.json({ success: false, error: 'Failed to fetch logs' }, { status: 500 });
   }
-};
-
-export async function GET() {
-  return NextResponse.json({ success: true, logs: logs.slice(-50).reverse() });
 }
 
 export async function POST(request: Request) {
@@ -22,19 +46,38 @@ export async function POST(request: Request) {
       popupId?: string;
       action?: OnboardingLogAction;
       house?: string;
+      userId?: string;
+      metadata?: Record<string, unknown>;
     };
     if (!body.popupId || !body.action) {
       return NextResponse.json({ success: false, error: 'Missing popupId or action' }, { status: 400 });
     }
-    const entry: OnboardingLogEntry = {
-      id: crypto.randomUUID(),
-      popupId: body.popupId,
+    if (!db) {
+      console.warn('[onboarding.logs] Supabase admin client not available. Skipping persistence.');
+      return NextResponse.json({ success: true, entry: null });
+    }
+    const entry = {
+      popup_id: body.popupId,
+      house_key: (body.house || 'LEGACY').toUpperCase(),
       action: body.action,
-      timestamp: Date.now(),
-      house: body.house ?? 'LEGACY',
+      user_id: body.userId ?? null,
+      metadata: body.metadata ?? null,
     };
-    pushLog(entry);
-    return NextResponse.json({ success: true, entry });
+    const { data, error } = await db.from(TABLE_NAME).insert(entry).select('id, created_at, house_key, popup_id, action');
+    if (error) throw error;
+    const inserted = data?.[0];
+    return NextResponse.json({
+      success: true,
+      entry: inserted
+        ? {
+            id: inserted.id,
+            popupId: inserted.popup_id,
+            house: inserted.house_key,
+            action: inserted.action as OnboardingLogAction,
+            timestamp: new Date(inserted.created_at).getTime(),
+          }
+        : null,
+    });
   } catch (error) {
     console.error('[onboarding.logs] POST failed', error);
     return NextResponse.json({ success: false, error: 'Failed to record log' }, { status: 500 });
