@@ -1536,6 +1536,38 @@ const DIAGNOSTICS_COPY: Record<SupportedCopyLang, DiagnosticsCopy> = {
   },
 };
 
+type BlockedSummaryCopy = {
+  title: string;
+  subtitle: string;
+  xpLabel: string;
+  contentLabel: string;
+  empty: string;
+};
+
+const BLOCKED_SUMMARY_COPY: Record<SupportedCopyLang, BlockedSummaryCopy> = {
+  pt: {
+    title: 'Trigger por resolver',
+    subtitle: 'O motor só entrega pop-ups após desbloquear estes requisitos.',
+    xpLabel: 'Gate XP',
+    contentLabel: 'Conteúdo específico',
+    empty: 'Nenhum requisito pendente.',
+  },
+  es: {
+    title: 'Triggers pendientes',
+    subtitle: 'El motor entrega pop-ups cuando estos requisitos están listos.',
+    xpLabel: 'Gate de XP',
+    contentLabel: 'Contenido específico',
+    empty: 'Sin requisitos pendientes.',
+  },
+  en: {
+    title: 'Pending triggers',
+    subtitle: 'The engine only delivers once these requirements are cleared.',
+    xpLabel: 'XP gate',
+    contentLabel: 'Specific content',
+    empty: 'No requirements pending.',
+  },
+};
+
 
 
 const rewardMetadata: Record<
@@ -1777,6 +1809,7 @@ export default function EducationXpPage() {
   const progressCopy = PROGRESS_CARD_COPY[language] ?? PROGRESS_CARD_COPY.en;
   const sequenceCopy = SEQUENCE_CARD_COPY[language] ?? SEQUENCE_CARD_COPY.en;
   const diagnosticsCopy = DIAGNOSTICS_COPY[language] ?? DIAGNOSTICS_COPY.en;
+  const blockedSummaryCopy = BLOCKED_SUMMARY_COPY[language] ?? BLOCKED_SUMMARY_COPY.en;
 
   const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
   const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
@@ -2143,6 +2176,7 @@ export default function EducationXpPage() {
     [queueSource, isTriggerSatisfied],
 
   );
+  const visibleBlockedPopups = blockedPopups.slice(0, 5);
 
   const readySignature = readyPopups.map((popup) => popup.id).join('|');
 
@@ -2308,6 +2342,34 @@ export default function EducationXpPage() {
       progressUpdatedAt,
     ],
   );
+
+  const blockedSummary = useMemo(() => {
+    const initial = {
+      xp: 0,
+      content: {
+        lesson: 0,
+        course: 0,
+        blog: 0,
+      },
+    };
+    blockedPopups.forEach((popup) => {
+      if (!popup.trigger) return;
+      if (popup.trigger.type === 'xp') {
+        initial.xp += 1;
+      } else if (popup.trigger.type === 'content') {
+        const type = popup.trigger.contentType;
+        initial.content[type] = (initial.content[type] || 0) + 1;
+      }
+    });
+    return initial;
+  }, [blockedPopups]);
+
+  const contentTypeLabels =
+    language === 'pt'
+      ? { lesson: 'Lições/Módulos', course: 'Cursos', blog: 'Artigos do blog' }
+      : language === 'es'
+      ? { lesson: 'Lecciones/Módulos', course: 'Cursos', blog: 'Artículos del blog' }
+      : { lesson: 'Lessons/Modules', course: 'Courses', blog: 'Blog posts' };
 
   const handlePopupAction = useCallback(
     ({ id, action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
@@ -4714,47 +4776,87 @@ export default function EducationXpPage() {
                 </Card>
 
                 {blockedPopups.length ? (
-                  <Card className={cn(UI.cardSurface, 'border-white/15')}>
-                    <CardContent className="p-5 space-y-3">
-                      <div>
-                        <p className={UI.cardTitle}>{blockedTitle}</p>
-                        <p className={cn(UI.bodyMuted, 'text-sm')}>{blockedSubtitle}</p>
-                      </div>
-                      <div className="space-y-3">
-                        {blockedPopups.map((popup) => {
-                          const targetHref = resolveBlockedHref(popup);
-                          return (
-                            <div
-                              key={popup.id}
-                              className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 space-y-2"
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-white">{popup.title}</p>
-                                  {popup.xpGate ? <p className={cn(UI.micro, 'text-slate-400')}>{popup.xpGate}</p> : null}
+                  <>
+                    <Card className={cn(UI.cardSurface, 'border-white/15')}>
+                      <CardContent className="p-5 space-y-3">
+                        <div>
+                          <p className={UI.cardTitle}>{blockedTitle}</p>
+                          <p className={cn(UI.bodyMuted, 'text-sm')}>{blockedSubtitle}</p>
+                        </div>
+                        <div className="space-y-3">
+                          {visibleBlockedPopups.map((popup) => {
+                            const targetHref = resolveBlockedHref(popup);
+                            return (
+                              <div
+                                key={popup.id}
+                                className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 space-y-2"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-semibold text-white">{popup.title}</p>
+                                    {popup.xpGate ? <p className={cn(UI.micro, 'text-slate-400')}>{popup.xpGate}</p> : null}
+                                  </div>
+                                  <Badge className="border-amber-300/40 bg-amber-400/10 text-amber-100">
+                                    {language === 'pt' ? 'Pendente' : language === 'es' ? 'Pendiente' : 'Pending'}
+                                  </Badge>
                                 </div>
-                                <Badge className="border-amber-300/40 bg-amber-400/10 text-amber-100">
-                                  {language === 'pt' ? 'Pendente' : language === 'es' ? 'Pendiente' : 'Pending'}
-                                </Badge>
+                                <p className={cn(UI.bodyMuted, 'text-sm')}>{formatTriggerRequirement(popup)}</p>
+                                {targetHref ? (
+                                  <Link href={targetHref} className="inline-flex">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-white/20 text-white hover:bg-white/10"
+                                    >
+                                      {blockedCtaLabel}
+                                    </Button>
+                                  </Link>
+                                ) : null}
                               </div>
-                              <p className={cn(UI.bodyMuted, 'text-sm')}>{formatTriggerRequirement(popup)}</p>
-                              {targetHref ? (
-                                <Link href={targetHref} className="inline-flex">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-white/20 text-white hover:bg-white/10"
-                                  >
-                                    {blockedCtaLabel}
-                                  </Button>
-                                </Link>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
+                            );
+                          })}
+                          {blockedPopups.length > visibleBlockedPopups.length ? (
+                            <p className={cn(UI.bodyMuted, 'text-xs text-slate-400')}>
+                              {language === 'pt'
+                                ? `+${blockedPopups.length - visibleBlockedPopups.length} pop-ups adicionais pendentes.`
+                                : language === 'es'
+                                ? `+${blockedPopups.length - visibleBlockedPopups.length} pop-ups adicionales pendientes.`
+                                : `+${blockedPopups.length - visibleBlockedPopups.length} additional pop-ups pending.`}
+                            </p>
+                          ) : null}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className={cn(UI.cardSurface, 'border-white/15')}>
+                      <CardContent className="p-5 space-y-3">
+                        <div>
+                          <p className={UI.cardTitle}>{blockedSummaryCopy.title}</p>
+                          <p className={cn(UI.bodyMuted, 'text-sm')}>{blockedSummaryCopy.subtitle}</p>
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                            <p className={cn(UI.micro, 'text-slate-300')}>{blockedSummaryCopy.xpLabel}</p>
+                            <p className="text-3xl font-semibold text-white">{blockedSummary.xp}</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 space-y-2">
+                            <p className={cn(UI.micro, 'text-slate-300')}>{blockedSummaryCopy.contentLabel}</p>
+                            {Object.entries(blockedSummary.content).some(([, value]) => value > 0) ? (
+                              Object.entries(blockedSummary.content)
+                                .filter(([, value]) => value > 0)
+                                .map(([type, value]) => (
+                                <div key={type} className="flex items-center justify-between text-sm text-slate-100">
+                                  <span>{contentTypeLabels[type as keyof typeof contentTypeLabels]}</span>
+                                  <span className="font-semibold">{value}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className={cn(UI.bodyMuted, 'text-sm')}>{blockedSummaryCopy.empty}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
                 ) : null}
 
 {user ? (
