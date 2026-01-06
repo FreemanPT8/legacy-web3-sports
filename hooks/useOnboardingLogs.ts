@@ -6,7 +6,14 @@ import type { OnboardingLogEntry } from '@/types/onboarding';
 
 const DEFAULT_INTERVAL = 5000;
 
-export function useOnboardingLogs(pollInterval = DEFAULT_INTERVAL) {
+type UseOnboardingLogsOptions = {
+  pollInterval?: number;
+  house?: string | null;
+  popupId?: string | null;
+};
+
+export function useOnboardingLogs(options: UseOnboardingLogsOptions = {}) {
+  const { pollInterval = DEFAULT_INTERVAL, house, popupId } = options;
   const [logs, setLogs] = useState<OnboardingLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +22,11 @@ export function useOnboardingLogs(pollInterval = DEFAULT_INTERVAL) {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/onboarding/logs', { cache: 'no-store' });
+      const params = new URLSearchParams();
+      if (house) params.set('house', house);
+      if (popupId) params.set('popupId', popupId);
+      const query = params.toString();
+      const response = await fetch(`/api/onboarding/logs${query ? `?${query}` : ''}`, { cache: 'no-store' });
       const data = (await response.json()) as
         | { success: true; logs: OnboardingLogEntry[] }
         | { success: false; error?: string };
@@ -29,7 +40,7 @@ export function useOnboardingLogs(pollInterval = DEFAULT_INTERVAL) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [house, popupId]);
 
   useEffect(() => {
     void fetchLogs();

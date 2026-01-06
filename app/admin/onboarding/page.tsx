@@ -130,7 +130,9 @@ export default function AdminOnboardingPage() {
   const termExpired = termExpiration ? termExpiration < now : true;
   const termActive = isAccepted && !termExpired;
   const editingDisabled = !termActive;
-  const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs();
+  const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs({
+    house: houseKey || null,
+  });
   const logTotals = useMemo(() => {
     return liveLogs.reduce((acc, log) => {
       acc[log.action] = (acc[log.action] || 0) + 1;
@@ -703,7 +705,10 @@ export default function AdminOnboardingPage() {
             <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Logs & Analytics</p>
-                <h2 className="text-xl font-semibold text-white">?ltimas a??es</h2>
+                <h2 className="text-xl font-semibold text-white">Últimas ações</h2>
+                <p className="text-xs text-slate-500">
+                  Filtrado para House <span className="font-semibold text-slate-200">{houseKey || 'LEGACY'}</span>
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={refreshLogs} className="border-white/20 text-white hover:bg-white/10">
