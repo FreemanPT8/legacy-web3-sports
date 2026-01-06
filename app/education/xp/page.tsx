@@ -688,7 +688,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     eyebrow: 'XP SYSTEM',
 
-    title: 'XP is not a game. It's a filter.',
+    title: 'XP is not a game. It\'s a filter.',
 
     subtitle:
 
@@ -728,7 +728,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     todayDesc:
 
-      'Pick a route. Do it. Close it. Come back tomorrow. That's how you build advantage — without noise.',
+      'Pick a route. Do it. Close it. Come back tomorrow. That\'s how you build advantage — without noise.',
 
 
 
@@ -764,7 +764,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     monitoringBody:
 
-      'Lessons and reads count once per user. Creators don't earn XP by consuming their own content. Creator bonus happens when others complete it — not via farming.',
+      'Lessons and reads count once per user. Creators don\'t earn XP by consuming their own content. Creator bonus happens when others complete it — not via farming.',
 
 
 
@@ -4215,7 +4215,7 @@ export default function EducationXpPage() {
 
                             ? 'El leaderboard no es ego. Es consistencia visible. Muestra quién aparece, termina y vuelve.'
 
-                            : 'Leaderboard is not ego. It's visible consistency. It shows who shows up, finishes, and returns.'}
+                            : 'Leaderboard is not ego. It\'s visible consistency. It shows who shows up, finishes, and returns.'}
 
                         </p>
 
@@ -4393,7 +4393,7 @@ export default function EducationXpPage() {
 
                             ? 'Si fallas un día, no dramatices. Reinicia al día siguiente. El streak entrena disciplina, no castigo.'
 
-                            : 'If you miss a day, don't dramatise. Restart tomorrow. Streaks train discipline, not punishment.'}
+                            : 'If you miss a day, don\'t dramatise. Restart tomorrow. Streaks train discipline, not punishment.'}
 
                         </p>
 
@@ -5133,6 +5133,5 @@ export default function EducationXpPage() {
   );
 
 }
-
 
 
