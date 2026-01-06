@@ -1984,12 +1984,45 @@ export default function EducationXpPage() {
     weeklyLimit,
     cooldownReason,
     canDeliver,
+    queueSnapshot,
   } = useOnboardingQueue();
 
   const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
   const [houseLoading, setHouseLoading] = useState(false);
   const [houseError, setHouseError] = useState<string | null>(null);
   const [houseReloadKey, setHouseReloadKey] = useState(0);
+  const [remoteQueueLoaded, setRemoteQueueLoaded] = useState(() => !user);
+  const [remoteQueueSignature, setRemoteQueueSignature] = useState<string | null>(null);
+  const [remoteQueuePayload, setRemoteQueuePayload] = useState<OnboardingPopupData[] | null>(null);
+  const [queueSeedSignature, setQueueSeedSignature] = useState<string | null>(null);
+  const lastPersistedQueueHashRef = useRef<string | null>(null);
+  const persistQueue = useCallback(
+    async (payload: OnboardingPopupData[], signature: string | null) => {
+      if (!user) return;
+      const token = getToken?.();
+      if (!token) return;
+      try {
+        await fetch('/api/onboarding/queue', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            queue: payload,
+            signature,
+            house: houseKey,
+          }),
+        });
+      } catch (error) {
+        console.error('[education/xp] Failed to persist onboarding queue', error);
+      }
+    },
+    [getToken, houseKey, user],
+  );
+  const computeQueueHash = useCallback((payload: OnboardingPopupData[]) => {
+    return payload.map((popup) => popup.id).join('|');
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -2033,9 +2066,64 @@ export default function EducationXpPage() {
   }, [houseKey, buildDemoQueue, resetQueue, language, houseReloadKey]);
 
   useEffect(() => {
+    if (!user) {
+      setRemoteQueueLoaded(true);
+      setRemoteQueuePayload(null);
+      setRemoteQueueSignature(null);
+      setQueueSeedSignature(null);
+      lastPersistedQueueHashRef.current = null;
+      return;
+    }
+    let active = true;
+    const token = getToken?.();
+    if (!token) {
+      setRemoteQueueLoaded(true);
+      return;
+    }
+    const loadQueue = async () => {
+      try {
+        setRemoteQueueLoaded(false);
+        const response = await fetch(`/api/onboarding/queue?house=${encodeURIComponent(houseKey)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Failed to load queue');
+        }
+        setRemoteQueuePayload((data.queue as OnboardingPopupData[]) ?? []);
+        setRemoteQueueSignature((data.signature as string | null) ?? null);
+      } catch (error) {
+        if (!active) return;
+        console.error('[education/xp] Failed to load onboarding queue', error);
+        setRemoteQueuePayload(null);
+        setRemoteQueueSignature(null);
+      } finally {
+        if (active) {
+          setRemoteQueueLoaded(true);
+        }
+      }
+    };
+    void loadQueue();
+    return () => {
+      active = false;
+    };
+  }, [getToken, houseKey, user]);
+
+  useEffect(() => {
     if (!activePopup) return;
     void logRemoteAction(activePopup.id, 'delivered');
   }, [activePopup, logRemoteAction]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!queueSeedSignature) return;
+    if (!queueSnapshot.length && readyPopups.length === 0) return;
+    if (lastPersistedQueueHashRef.current === queueHash) return;
+    lastPersistedQueueHashRef.current = queueHash;
+    void persistQueue(queueSnapshot, queueSeedSignature);
+  }, [queueHash, queueSeedSignature, queueSnapshot, persistQueue, readyPopups.length, user]);
 
 
   const logLabels = demoCopy.logLabels;
@@ -2259,16 +2347,39 @@ export default function EducationXpPage() {
   const queueSyncRef = useRef<string>('');
 
   useEffect(() => {
-
-    if (readySignature === queueSyncRef.current) return;
-
+    if (!remoteQueueLoaded && user) return;
+    if (readySignature === queueSyncRef.current && queueSeedSignature === readySignature) return;
     queueSyncRef.current = readySignature;
+    const shouldUseRemote =
+      !!user &&
+      remoteQueueLoaded &&
+      remoteQueueSignature === readySignature &&
+      Array.isArray(remoteQueuePayload) &&
+      remoteQueuePayload.length > 0;
+    const payload = shouldUseRemote ? remoteQueuePayload! : readyPopups;
+    resetQueue(payload);
+    setQueueSeedSignature(readySignature);
+    const hash = computeQueueHash(payload);
+    lastPersistedQueueHashRef.current = hash;
+    if (user && !shouldUseRemote) {
+      void persistQueue(payload, readySignature);
+    }
+  }, [
+    computeQueueHash,
+    persistQueue,
+    readyPopups,
+    readySignature,
+    remoteQueueLoaded,
+    remoteQueuePayload,
+    remoteQueueSignature,
+    resetQueue,
+    user,
+    queueSeedSignature,
+  ]);
 
-    resetQueue(readyPopups);
-
-  }, [readyPopups, readySignature, resetQueue]);
 
 
+  const queueHash = useMemo(() => computeQueueHash(queueSnapshot), [computeQueueHash, queueSnapshot]);
 
   const queueSourceLabel = houseSequence
     ? `${houseSequence.house} · ${houseSequence.sport}`
@@ -5133,5 +5244,3 @@ export default function EducationXpPage() {
   );
 
 }
-
-

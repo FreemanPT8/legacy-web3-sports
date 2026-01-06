@@ -104,6 +104,10 @@ export function useOnboardingQueue(options: UseOnboardingQueueOptions = {}) {
   );
 
   const pending = useMemo(() => queue.length, [queue.length]);
+  const queueSnapshot = useMemo<OnboardingPopupData[]>(
+    () => queue.map(({ scheduledAt, ...popup }) => ({ ...popup })),
+    [queue],
+  );
 
   return {
     activePopup: active,
@@ -118,5 +122,6 @@ export function useOnboardingQueue(options: UseOnboardingQueueOptions = {}) {
     weeklyLimit,
     cooldownReason,
     canDeliver,
+    queueSnapshot,
   };
 }
