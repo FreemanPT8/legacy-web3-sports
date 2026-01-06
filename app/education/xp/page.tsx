@@ -1483,6 +1483,7 @@ type DiagnosticsCopy = {
     error: string;
   };
   updated: (time: string) => string;
+  refresh: string;
 };
 
 const DIAGNOSTICS_COPY: Record<SupportedCopyLang, DiagnosticsCopy> = {
@@ -1501,6 +1502,7 @@ const DIAGNOSTICS_COPY: Record<SupportedCopyLang, DiagnosticsCopy> = {
       error: 'Erro',
     },
     updated: (time) => `Atualizado ${time}`,
+    refresh: 'Recarregar sistemas',
   },
   es: {
     title: 'Diagnóstico rápido',
@@ -1517,6 +1519,7 @@ const DIAGNOSTICS_COPY: Record<SupportedCopyLang, DiagnosticsCopy> = {
       error: 'Error',
     },
     updated: (time) => `Actualizado ${time}`,
+    refresh: 'Recargar sistemas',
   },
   en: {
     title: 'Quick diagnostics',
@@ -1533,6 +1536,7 @@ const DIAGNOSTICS_COPY: Record<SupportedCopyLang, DiagnosticsCopy> = {
       error: 'Error',
     },
     updated: (time) => `Updated ${time}`,
+    refresh: 'Refresh systems',
   },
 };
 
@@ -1916,6 +1920,8 @@ export default function EducationXpPage() {
   const [progressUpdatedAt, setProgressUpdatedAt] = useState<number | null>(null);
   const [houseUpdatedAt, setHouseUpdatedAt] = useState<number | null>(null);
   const [blockedFilter, setBlockedFilter] = useState<'all' | 'xp' | 'content'>('all');
+  const [xpReloadKey, setXpReloadKey] = useState(0);
+  const [comboReloadKey, setComboReloadKey] = useState(0);
 
   const {
     activePopup,
@@ -2404,6 +2410,12 @@ export default function EducationXpPage() {
     setProgressError(null);
     setProgressReloadKey((key) => key + 1);
   }, []);
+  const refreshAllSystems = useCallback(() => {
+    setHouseReloadKey((key) => key + 1);
+    setXpReloadKey((key) => key + 1);
+    setComboReloadKey((key) => key + 1);
+    refreshProgress();
+  }, [refreshProgress]);
 
   const resolveBlockedHref = useCallback((popup: OnboardingPopupData) => {
     if (popup.trigger?.type !== 'content') return null;
@@ -2516,7 +2528,7 @@ export default function EducationXpPage() {
 
     };
 
-  }, [user, getToken, copy.errorsFallback]);
+  }, [user, getToken, copy.errorsFallback, xpReloadKey]);
 
 
 
@@ -2652,7 +2664,7 @@ export default function EducationXpPage() {
 
     };
 
-  }, [user, getToken, copy.errorsFallback]);
+  }, [user, getToken, copy.errorsFallback, comboReloadKey]);
 
 
 
@@ -4757,12 +4769,14 @@ export default function EducationXpPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setHouseReloadKey((key) => key + 1)}
-                        disabled={houseLoading}
+                        onClick={refreshAllSystems}
+                        disabled={houseLoading || loading || comboLoading || progressLoading}
                         className="border-white/20 text-white hover:bg-white/10"
                       >
-                        {houseLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {queueResetLabel}
+                        {houseLoading || loading || comboLoading || progressLoading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        {diagnosticsCopy.refresh}
                       </Button>
                     </div>
                     <div className="space-y-2">
