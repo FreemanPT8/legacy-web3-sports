@@ -1468,6 +1468,74 @@ const SEQUENCE_CARD_COPY: Record<SupportedCopyLang, SequenceCardCopy> = {
   },
 };
 
+type DiagnosticsCopy = {
+  title: string;
+  subtitle: string;
+  labels: {
+    house: string;
+    xp: string;
+    missions: string;
+    progress: string;
+  };
+  status: {
+    ok: string;
+    loading: string;
+    error: string;
+  };
+  updated: (time: string) => string;
+};
+
+const DIAGNOSTICS_COPY: Record<SupportedCopyLang, DiagnosticsCopy> = {
+  pt: {
+    title: 'Diagnóstico rápido',
+    subtitle: 'Heads confirmam se cada sistema sincronizou antes de contactar suporte.',
+    labels: {
+      house: 'Sequência da House',
+      xp: 'API XP & limites',
+      missions: 'Combos/Missões',
+      progress: 'Progresso do utilizador',
+    },
+    status: {
+      ok: 'OK',
+      loading: 'A carregar...',
+      error: 'Erro',
+    },
+    updated: (time) => `Atualizado ${time}`,
+  },
+  es: {
+    title: 'Diagnóstico rápido',
+    subtitle: 'Los Heads confirman cada sistema antes de pedir soporte.',
+    labels: {
+      house: 'Secuencia de la House',
+      xp: 'API XP y límites',
+      missions: 'Combos/Misiones',
+      progress: 'Progreso del usuario',
+    },
+    status: {
+      ok: 'OK',
+      loading: 'Cargando...',
+      error: 'Error',
+    },
+    updated: (time) => `Actualizado ${time}`,
+  },
+  en: {
+    title: 'Quick diagnostics',
+    subtitle: 'Heads verify each system before escalating to support.',
+    labels: {
+      house: 'House sequence',
+      xp: 'XP & limits API',
+      missions: 'Combos/Missions',
+      progress: 'User progress',
+    },
+    status: {
+      ok: 'OK',
+      loading: 'Loading...',
+      error: 'Error',
+    },
+    updated: (time) => `Updated ${time}`,
+  },
+};
+
 
 
 const rewardMetadata: Record<
@@ -1708,6 +1776,7 @@ export default function EducationXpPage() {
   const demoCopy = POPUP_DEMO_TEXT[language] ?? POPUP_DEMO_TEXT.en;
   const progressCopy = PROGRESS_CARD_COPY[language] ?? PROGRESS_CARD_COPY.en;
   const sequenceCopy = SEQUENCE_CARD_COPY[language] ?? SEQUENCE_CARD_COPY.en;
+  const diagnosticsCopy = DIAGNOSTICS_COPY[language] ?? DIAGNOSTICS_COPY.en;
 
   const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
   const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
@@ -1797,6 +1866,10 @@ export default function EducationXpPage() {
   const [progressError, setProgressError] = useState<string | null>(null);
   const [progressReloadKey, setProgressReloadKey] = useState(0);
   const [previewPopup, setPreviewPopup] = useState<OnboardingPopupData | null>(null);
+  const [xpUpdatedAt, setXpUpdatedAt] = useState<number | null>(null);
+  const [comboUpdatedAt, setComboUpdatedAt] = useState<number | null>(null);
+  const [progressUpdatedAt, setProgressUpdatedAt] = useState<number | null>(null);
+  const [houseUpdatedAt, setHouseUpdatedAt] = useState<number | null>(null);
 
   const {
     activePopup,
@@ -1815,6 +1888,7 @@ export default function EducationXpPage() {
   const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
   const [houseLoading, setHouseLoading] = useState(false);
   const [houseError, setHouseError] = useState<string | null>(null);
+  const [houseReloadKey, setHouseReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -1835,6 +1909,7 @@ export default function EducationXpPage() {
           throw new Error(message);
         }
         setHouseSequence(data.sequence);
+        setHouseUpdatedAt(Date.now());
       } catch (err) {
         if (!active) return;
         console.error('[education/xp] onboarding fetch failed', err);
@@ -1854,7 +1929,7 @@ export default function EducationXpPage() {
     return () => {
       active = false;
     };
-  }, [houseLabel, buildDemoQueue, resetQueue, language]);
+  }, [houseLabel, buildDemoQueue, resetQueue, language, houseReloadKey]);
 
   useEffect(() => {
     if (!activePopup) return;
@@ -1942,6 +2017,14 @@ export default function EducationXpPage() {
 
     [completedContentIds, progressSummary, userXP],
 
+  );
+  const formatDiagTime = useCallback(
+    (timestamp: number | null) => {
+      if (!timestamp) return diagnosticsCopy.updated('--');
+      const value = new Date(timestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+      return diagnosticsCopy.updated(value);
+    },
+    [diagnosticsCopy, locale],
   );
 
   const progressStats = useMemo(() => {
@@ -2174,6 +2257,58 @@ export default function EducationXpPage() {
 
   );
 
+  const diagnostics = useMemo(
+    () =>
+      [
+        {
+          key: 'house',
+          label: diagnosticsCopy.labels.house,
+          loading: houseLoading,
+          error: houseError,
+          updatedAt: houseUpdatedAt,
+        },
+        {
+          key: 'xp',
+          label: diagnosticsCopy.labels.xp,
+          loading,
+          error,
+          updatedAt: xpUpdatedAt,
+        },
+        {
+          key: 'missions',
+          label: diagnosticsCopy.labels.missions,
+          loading: comboLoading,
+          error: comboError,
+          updatedAt: comboUpdatedAt,
+        },
+        {
+          key: 'progress',
+          label: diagnosticsCopy.labels.progress,
+          loading: progressLoading,
+          error: progressError,
+          updatedAt: progressUpdatedAt,
+        },
+      ] as const,
+    [
+      diagnosticsCopy.labels.house,
+      diagnosticsCopy.labels.xp,
+      diagnosticsCopy.labels.missions,
+      diagnosticsCopy.labels.progress,
+      houseLoading,
+      houseError,
+      houseUpdatedAt,
+      loading,
+      error,
+      xpUpdatedAt,
+      comboLoading,
+      comboError,
+      comboUpdatedAt,
+      progressLoading,
+      progressError,
+      progressUpdatedAt,
+    ],
+  );
+
   const handlePopupAction = useCallback(
     ({ id, action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
       recordAction(action);
@@ -2263,6 +2398,8 @@ export default function EducationXpPage() {
           });
 
           setError(null);
+
+          setXpUpdatedAt(Date.now());
 
         } else {
 
@@ -2398,6 +2535,8 @@ export default function EducationXpPage() {
 
           setComboMissionState(missionMeta);
 
+          setComboUpdatedAt(Date.now());
+
         } else {
 
           setComboError(data.error || copy.errorsFallback);
@@ -2487,6 +2626,7 @@ export default function EducationXpPage() {
           coursesByLevel: data.summary.coursesByLevel ?? {},
         });
         setProgressError(null);
+        setProgressUpdatedAt(Date.now());
       } catch (err) {
         if (!active) return;
         console.error('[education/xp] progress fetch failed', err);
@@ -4520,6 +4660,55 @@ export default function EducationXpPage() {
                           </Button>
                         </div>
                       ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className={cn(UI.cardSurface, 'border-white/15')}>
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className={UI.cardTitle}>{diagnosticsCopy.title}</p>
+                        <p className={cn(UI.bodyMuted, 'text-sm')}>{diagnosticsCopy.subtitle}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setHouseReloadKey((key) => key + 1)}
+                        disabled={houseLoading}
+                        className="border-white/20 text-white hover:bg-white/10"
+                      >
+                        {houseLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {queueResetLabel}
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {diagnostics.map((item) => {
+                        const statusLabel = item.loading
+                          ? diagnosticsCopy.status.loading
+                          : item.error
+                          ? diagnosticsCopy.status.error
+                          : diagnosticsCopy.status.ok;
+                        const statusClass = item.loading
+                          ? 'border-cyan-400/40 bg-cyan-500/10 text-cyan-100'
+                          : item.error
+                          ? 'border-amber-300/40 bg-amber-400/10 text-amber-100'
+                          : 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100';
+                        return (
+                          <div
+                            key={item.key}
+                            className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3"
+                          >
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-white">{item.label}</p>
+                              <p className={cn(UI.micro, 'text-slate-400')}>
+                                {item.error ? item.error : formatDiagTime(item.updatedAt)}
+                              </p>
+                            </div>
+                            <Badge className={cn('px-3', statusClass)}>{statusLabel}</Badge>
+                          </div>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
