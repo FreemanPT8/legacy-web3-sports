@@ -102,7 +102,7 @@ export default function ProfilePage() {
     }
   }, [user, loading, router]);
 
-  const hasSport = Boolean(user.sport_id || (user as any)?.primary_sport_id);
+  const hasSport = Boolean(user?.sport_id || (user as any)?.primary_sport_id);
 
   useEffect(() => {
     if (!loading && !user) {
