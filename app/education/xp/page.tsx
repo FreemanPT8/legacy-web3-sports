@@ -2023,6 +2023,7 @@ export default function EducationXpPage() {
   const computeQueueHash = useCallback((payload: OnboardingPopupData[]) => {
     return payload.map((popup) => popup.id).join('|');
   }, []);
+  const queueHash = useMemo(() => computeQueueHash(queueSnapshot), [computeQueueHash, queueSnapshot]);
 
   useEffect(() => {
     let active = true;
@@ -2378,8 +2379,6 @@ export default function EducationXpPage() {
   ]);
 
 
-
-  const queueHash = useMemo(() => computeQueueHash(queueSnapshot), [computeQueueHash, queueSnapshot]);
 
   const queueSourceLabel = houseSequence
     ? `${houseSequence.house} · ${houseSequence.sport}`
