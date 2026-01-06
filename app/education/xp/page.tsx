@@ -1542,6 +1542,9 @@ type BlockedSummaryCopy = {
   xpLabel: string;
   contentLabel: string;
   empty: string;
+  filters: { all: string; xp: string; content: string };
+  emptyFiltered: string;
+  filterIndicator: (label: string) => string;
 };
 
 const BLOCKED_SUMMARY_COPY: Record<SupportedCopyLang, BlockedSummaryCopy> = {
@@ -1551,6 +1554,9 @@ const BLOCKED_SUMMARY_COPY: Record<SupportedCopyLang, BlockedSummaryCopy> = {
     xpLabel: 'Gate XP',
     contentLabel: 'Conteúdo específico',
     empty: 'Nenhum requisito pendente.',
+    filters: { all: 'Todos', xp: 'Só XP', content: 'Só conteúdo' },
+    emptyFiltered: 'Sem pop-ups com esse filtro.',
+    filterIndicator: (label) => `Filtro ativo: ${label}`,
   },
   es: {
     title: 'Triggers pendientes',
@@ -1558,6 +1564,9 @@ const BLOCKED_SUMMARY_COPY: Record<SupportedCopyLang, BlockedSummaryCopy> = {
     xpLabel: 'Gate de XP',
     contentLabel: 'Contenido específico',
     empty: 'Sin requisitos pendientes.',
+    filters: { all: 'Todos', xp: 'Solo XP', content: 'Solo contenido' },
+    emptyFiltered: 'No hay pop-ups con ese filtro.',
+    filterIndicator: (label) => `Filtro activo: ${label}`,
   },
   en: {
     title: 'Pending triggers',
@@ -1565,6 +1574,9 @@ const BLOCKED_SUMMARY_COPY: Record<SupportedCopyLang, BlockedSummaryCopy> = {
     xpLabel: 'XP gate',
     contentLabel: 'Specific content',
     empty: 'No requirements pending.',
+    filters: { all: 'All', xp: 'XP only', content: 'Content only' },
+    emptyFiltered: 'No pop-ups match this filter.',
+    filterIndicator: (label) => `Active filter: ${label}`,
   },
 };
 
@@ -1903,6 +1915,7 @@ export default function EducationXpPage() {
   const [comboUpdatedAt, setComboUpdatedAt] = useState<number | null>(null);
   const [progressUpdatedAt, setProgressUpdatedAt] = useState<number | null>(null);
   const [houseUpdatedAt, setHouseUpdatedAt] = useState<number | null>(null);
+  const [blockedFilter, setBlockedFilter] = useState<'all' | 'xp' | 'content'>('all');
 
   const {
     activePopup,
@@ -2176,7 +2189,15 @@ export default function EducationXpPage() {
     [queueSource, isTriggerSatisfied],
 
   );
-  const visibleBlockedPopups = blockedPopups.slice(0, 5);
+  const filteredBlockedPopups = useMemo(() => {
+    if (blockedFilter === 'all') return blockedPopups;
+    return blockedPopups.filter((popup) =>
+      blockedFilter === 'xp'
+        ? popup.trigger?.type === 'xp'
+        : popup.trigger?.type === 'content',
+    );
+  }, [blockedFilter, blockedPopups]);
+  const visibleBlockedPopups = filteredBlockedPopups.slice(0, 5);
 
   const readySignature = readyPopups.map((popup) => popup.id).join('|');
 
@@ -2352,7 +2373,7 @@ export default function EducationXpPage() {
         blog: 0,
       },
     };
-    blockedPopups.forEach((popup) => {
+    filteredBlockedPopups.forEach((popup) => {
       if (!popup.trigger) return;
       if (popup.trigger.type === 'xp') {
         initial.xp += 1;
@@ -2362,7 +2383,7 @@ export default function EducationXpPage() {
       }
     });
     return initial;
-  }, [blockedPopups]);
+  }, [filteredBlockedPopups]);
 
   const contentTypeLabels =
     language === 'pt'
@@ -4772,6 +4793,11 @@ export default function EducationXpPage() {
                         );
                       })}
                     </div>
+                    {blockedFilter !== 'all' ? (
+                      <p className={cn(UI.micro, 'text-slate-400')}>
+                        {blockedSummaryCopy.filterIndicator(blockedSummaryCopy.filters[blockedFilter])}
+                      </p>
+                    ) : null}
                   </CardContent>
                 </Card>
 
@@ -4779,49 +4805,74 @@ export default function EducationXpPage() {
                   <>
                     <Card className={cn(UI.cardSurface, 'border-white/15')}>
                       <CardContent className="p-5 space-y-3">
-                        <div>
+                        <div className="space-y-3">
                           <p className={UI.cardTitle}>{blockedTitle}</p>
                           <p className={cn(UI.bodyMuted, 'text-sm')}>{blockedSubtitle}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {(Object.keys(blockedSummaryCopy.filters) as Array<'all' | 'xp' | 'content'>).map((key) => (
+                              <Button
+                                key={key}
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setBlockedFilter(key)}
+                                className={cn(
+                                  'border-white/20 text-white hover:bg-white/10',
+                                  blockedFilter === key && 'border-cyan-400/60 bg-cyan-500/10 text-cyan-100',
+                                )}
+                              >
+                                {blockedSummaryCopy.filters[key]}
+                              </Button>
+                            ))}
+                          </div>
+                          {blockedFilter !== 'all' ? (
+                            <p className={cn(UI.micro, 'text-slate-400')}>
+                              {blockedSummaryCopy.filterIndicator(blockedSummaryCopy.filters[blockedFilter])}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="space-y-3">
-                          {visibleBlockedPopups.map((popup) => {
-                            const targetHref = resolveBlockedHref(popup);
-                            return (
-                              <div
-                                key={popup.id}
-                                className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 space-y-2"
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <div>
-                                    <p className="text-sm font-semibold text-white">{popup.title}</p>
-                                    {popup.xpGate ? <p className={cn(UI.micro, 'text-slate-400')}>{popup.xpGate}</p> : null}
+                          {visibleBlockedPopups.length ? (
+                            visibleBlockedPopups.map((popup) => {
+                              const targetHref = resolveBlockedHref(popup);
+                              return (
+                                <div
+                                  key={popup.id}
+                                  className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 space-y-2"
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-semibold text-white">{popup.title}</p>
+                                      {popup.xpGate ? <p className={cn(UI.micro, 'text-slate-400')}>{popup.xpGate}</p> : null}
+                                    </div>
+                                    <Badge className="border-amber-300/40 bg-amber-400/10 text-amber-100">
+                                      {language === 'pt' ? 'Pendente' : language === 'es' ? 'Pendiente' : 'Pending'}
+                                    </Badge>
                                   </div>
-                                  <Badge className="border-amber-300/40 bg-amber-400/10 text-amber-100">
-                                    {language === 'pt' ? 'Pendente' : language === 'es' ? 'Pendiente' : 'Pending'}
-                                  </Badge>
+                                  <p className={cn(UI.bodyMuted, 'text-sm')}>{formatTriggerRequirement(popup)}</p>
+                                  {targetHref ? (
+                                    <Link href={targetHref} className="inline-flex">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-white/20 text-white hover:bg-white/10"
+                                      >
+                                        {blockedCtaLabel}
+                                      </Button>
+                                    </Link>
+                                  ) : null}
                                 </div>
-                                <p className={cn(UI.bodyMuted, 'text-sm')}>{formatTriggerRequirement(popup)}</p>
-                                {targetHref ? (
-                                  <Link href={targetHref} className="inline-flex">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="border-white/20 text-white hover:bg-white/10"
-                                    >
-                                      {blockedCtaLabel}
-                                    </Button>
-                                  </Link>
-                                ) : null}
-                              </div>
-                            );
-                          })}
-                          {blockedPopups.length > visibleBlockedPopups.length ? (
+                              );
+                            })
+                          ) : (
+                            <p className={cn(UI.bodyMuted, 'text-sm')}>{blockedSummaryCopy.emptyFiltered}</p>
+                          )}
+                          {filteredBlockedPopups.length > visibleBlockedPopups.length ? (
                             <p className={cn(UI.bodyMuted, 'text-xs text-slate-400')}>
                               {language === 'pt'
-                                ? `+${blockedPopups.length - visibleBlockedPopups.length} pop-ups adicionais pendentes.`
+                                ? `+${filteredBlockedPopups.length - visibleBlockedPopups.length} pop-ups adicionais pendentes.`
                                 : language === 'es'
-                                ? `+${blockedPopups.length - visibleBlockedPopups.length} pop-ups adicionales pendientes.`
-                                : `+${blockedPopups.length - visibleBlockedPopups.length} additional pop-ups pending.`}
+                                ? `+${filteredBlockedPopups.length - visibleBlockedPopups.length} pop-ups adicionales pendientes.`
+                                : `+${filteredBlockedPopups.length - visibleBlockedPopups.length} additional pop-ups pending.`}
                             </p>
                           ) : null}
                         </div>
