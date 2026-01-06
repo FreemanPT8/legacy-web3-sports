@@ -2024,6 +2024,10 @@ export default function EducationXpPage() {
     return payload.map((popup) => popup.id).join('|');
   }, []);
   const queueHash = useMemo(() => computeQueueHash(queueSnapshot), [computeQueueHash, queueSnapshot]);
+  const readyPopups = useMemo(
+    () => queueSource.filter((popup) => isTriggerSatisfied(popup)),
+    [queueSource, isTriggerSatisfied],
+  );
 
   useEffect(() => {
     let active = true;
