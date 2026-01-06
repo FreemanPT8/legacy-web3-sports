@@ -67,7 +67,8 @@ export default function AdminOnboardingPage() {
   const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
   const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>([DEFAULT_DRAFT]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
-  const { acceptedAt, loading: termLoading, accept, isAccepted } = useTermAgreement();
+  const { acceptedAt, loading: termLoading, accept, isAccepted, error: termError, saving: termSaving } =
+    useTermAgreement(houseKey);
   const editingDisabled = !isAccepted;
   const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs();
   const logTotals = useMemo(() => {
@@ -360,12 +361,26 @@ export default function AdminOnboardingPage() {
               {acceptedAt ? (
                 <span className="text-xs text-emerald-300">Aceite em {new Date(acceptedAt).toLocaleString()}</span>
               ) : (
-                <span className="text-xs text-amber-200">Ainda n?o aceitaste o Termo.</span>
+                <span className="text-xs text-amber-200">Ainda não aceitaste o Termo.</span>
               )}
-              <Button size="sm" onClick={accept} disabled={termLoading || isAccepted} className="bg-emerald-500/20 text-emerald-100">
-                {isAccepted ? 'Termo ativo' : 'Aceitar Termo'}
+              <Button
+                size="sm"
+                onClick={() => void accept()}
+                disabled={termLoading || termSaving || isAccepted}
+                className="bg-emerald-500/20 text-emerald-100"
+              >
+                {termLoading || termSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A validar...
+                  </>
+                ) : isAccepted ? (
+                  'Termo ativo'
+                ) : (
+                  'Aceitar Termo'
+                )}
               </Button>
             </div>
+            {termError ? <p className="text-xs text-amber-300">{termError}</p> : null}
           </CardContent>
         </Card>
         <div className={cn('flex flex-col gap-6', editingDisabled && 'pointer-events-none opacity-40')}>
