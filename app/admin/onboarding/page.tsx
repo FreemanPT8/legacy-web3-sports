@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -12,6 +12,8 @@ import { OnboardingPopup, type OnboardingPopupData } from '@/components/educatio
 import type { HouseOnboardingSequence, OnboardingLogEntry, OnboardingTrigger } from '@/types/onboarding';
 import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
 import { useTermAgreement } from '@/hooks/useTermAgreement';
+import { useAuth } from '@/contexts/AuthContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -69,6 +71,10 @@ export default function AdminOnboardingPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
   const { acceptedAt, loading: termLoading, accept, isAccepted, error: termError, saving: termSaving } =
     useTermAgreement(houseKey);
+  const { user } = useAuth();
+  const [headHouseOptions, setHeadHouseOptions] = useState<{ key: string; label: string }[]>([]);
+  const [housesLoading, setHousesLoading] = useState(false);
+  const [housesError, setHousesError] = useState<string | null>(null);
   const editingDisabled = !isAccepted;
   const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs();
   const logTotals = useMemo(() => {
@@ -125,6 +131,53 @@ export default function AdminOnboardingPage() {
   const xpTriggerValue = draft.trigger?.type === 'xp' ? draft.trigger.value ?? 0 : 0;
   const triggerLabelValue = draft.trigger?.label ?? '';
   const contentTrigger = draft.trigger?.type === 'content' ? draft.trigger : null;
+
+  useEffect(() => {
+    if (!user) {
+      setHeadHouseOptions([]);
+      return;
+    }
+    let active = true;
+    const loadHeadHouses = async () => {
+      try {
+        setHousesLoading(true);
+        setHousesError(null);
+        const response = await fetch('/api/sports/houses?locale=en', { cache: 'no-store' });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Failed to load houses');
+        }
+        const options =
+          (data.houses ?? [])
+            .filter((house: any) => house?.head?.user_id === user.id)
+            .map((house: any) => {
+              const key = (house?.sport?.code || house?.name || house?.id || 'LEGACY').toString().toUpperCase();
+              const label = house?.name || `House · ${house?.sport?.code ?? 'Sport'}`;
+              return { key, label };
+            }) ?? [];
+        setHeadHouseOptions(options);
+      } catch (error) {
+        if (!active) return;
+        console.error('[admin/onboarding] failed to load houses', error);
+        setHeadHouseOptions([]);
+        setHousesError('Falha ao carregar Houses atribuídas.');
+      } finally {
+        if (active) setHousesLoading(false);
+      }
+    };
+    void loadHeadHouses();
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!headHouseOptions.length) return;
+    if (!headHouseOptions.some((option) => option.key === houseKey)) {
+      setHouseKey(headHouseOptions[0].key);
+    }
+  }, [headHouseOptions, houseKey]);
 
   const handleLoadHouse = async () => {
     setLoading(true);
@@ -435,13 +488,35 @@ export default function AdminOnboardingPage() {
         <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-4 p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
-              <div className="flex-1">
+              <div className="flex-1 space-y-2">
                 <label className="text-xs uppercase tracking-[0.3em] text-slate-400">House</label>
-                <Input
-                  value={houseKey}
-                  onChange={(event) => setHouseKey(event.target.value.toUpperCase())}
-                  className="mt-2 border-white/10 bg-[#010913]"
-                />
+                {headHouseOptions.length ? (
+                  <Select value={houseKey} onValueChange={(value) => setHouseKey(value)}>
+                    <SelectTrigger className="border-white/10 bg-[#010913]" disabled={housesLoading}>
+                      <SelectValue placeholder={housesLoading ? 'A carregar Houses...' : 'Escolhe a House'} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#010913] text-white">
+                      {headHouseOptions.map((option) => (
+                        <SelectItem key={option.key} value={option.key}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    value={houseKey}
+                    onChange={(event) => setHouseKey(event.target.value.toUpperCase())}
+                    className="border-white/10 bg-[#010913]"
+                  />
+                )}
+                {housesError ? (
+                  <p className="text-xs text-amber-300">{housesError}</p>
+                ) : headHouseOptions.length ? (
+                  <p className="text-xs text-slate-400">Chave interna usada para sequências: {houseKey}</p>
+                ) : (
+                  <p className="text-xs text-slate-400">Sem House atribuída? Introduz o código manualmente.</p>
+                )}
               </div>
               <Button onClick={handleLoadHouse} disabled={loading} className="bg-cyan-500/20 text-cyan-100">
                 {loading ? (
