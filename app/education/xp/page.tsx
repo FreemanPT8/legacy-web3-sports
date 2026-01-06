@@ -2044,6 +2044,12 @@ export default function EducationXpPage() {
       : language === 'es'
       ? 'Necesitas completar el requisito abajo antes de recibir el siguiente paso.'
       : 'Complete the requirement below before the House delivers the next step.';
+  const blockedCtaLabel =
+    language === 'pt'
+      ? 'Ir para o conteúdo'
+      : language === 'es'
+      ? 'Ir al contenido'
+      : 'Go to content';
 
   const courseProgressLabel =
     progressStats.totalCourses > 0
@@ -2063,6 +2069,19 @@ export default function EducationXpPage() {
   const refreshProgress = useCallback(() => {
     setProgressError(null);
     setProgressReloadKey((key) => key + 1);
+  }, []);
+
+  const resolveBlockedHref = useCallback((popup: OnboardingPopupData) => {
+    if (popup.trigger?.type !== 'content') return null;
+    const slug = (popup.trigger.contentId || '').replace(/^\/+/, '');
+    if (!slug) return null;
+    if (popup.trigger.contentType === 'blog') {
+      return `/blog/${slug}`;
+    }
+    if (popup.trigger.contentType === 'course') {
+      return `/education/courses/${slug}`;
+    }
+    return `/education/lessons/${slug}`;
   }, []);
 
 
@@ -4351,23 +4370,37 @@ export default function EducationXpPage() {
                         <p className={cn(UI.bodyMuted, 'text-sm')}>{blockedSubtitle}</p>
                       </div>
                       <div className="space-y-3">
-                        {blockedPopups.map((popup) => (
-                          <div
-                            key={popup.id}
-                            className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 space-y-2"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-semibold text-white">{popup.title}</p>
-                                {popup.xpGate ? <p className={cn(UI.micro, 'text-slate-400')}>{popup.xpGate}</p> : null}
+                        {blockedPopups.map((popup) => {
+                          const targetHref = resolveBlockedHref(popup);
+                          return (
+                            <div
+                              key={popup.id}
+                              className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 space-y-2"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-white">{popup.title}</p>
+                                  {popup.xpGate ? <p className={cn(UI.micro, 'text-slate-400')}>{popup.xpGate}</p> : null}
+                                </div>
+                                <Badge className="border-amber-300/40 bg-amber-400/10 text-amber-100">
+                                  {language === 'pt' ? 'Pendente' : language === 'es' ? 'Pendiente' : 'Pending'}
+                                </Badge>
                               </div>
-                              <Badge className="border-amber-300/40 bg-amber-400/10 text-amber-100">
-                                {language === 'pt' ? 'Pendente' : language === 'es' ? 'Pendiente' : 'Pending'}
-                              </Badge>
+                              <p className={cn(UI.bodyMuted, 'text-sm')}>{formatTriggerRequirement(popup)}</p>
+                              {targetHref ? (
+                                <Link href={targetHref} className="inline-flex">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-white/20 text-white hover:bg-white/10"
+                                  >
+                                    {blockedCtaLabel}
+                                  </Button>
+                                </Link>
+                              ) : null}
                             </div>
-                            <p className={cn(UI.bodyMuted, 'text-sm')}>{formatTriggerRequirement(popup)}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>
