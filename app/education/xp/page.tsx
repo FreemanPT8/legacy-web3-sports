@@ -1828,8 +1828,52 @@ export default function EducationXpPage() {
   const blockedSummaryCopy = BLOCKED_SUMMARY_COPY[language] ?? BLOCKED_SUMMARY_COPY.en;
 
   const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
-  const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
-  const houseLabel = (rawHouseName || 'Sport').toString().toUpperCase();
+  const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? '';
+  const fallbackHouseKey = rawHouseName ? rawHouseName.toString().toUpperCase() : 'LEGACY';
+  const userSportId = (user as any)?.sport_id ?? (user as any)?.primary_sport_id ?? null;
+  const [houseLabel, setHouseLabel] = useState(rawHouseName || fallbackHouseKey);
+  const [houseKey, setHouseKey] = useState(fallbackHouseKey);
+
+  useEffect(() => {
+    if (rawHouseName) {
+      setHouseLabel(rawHouseName);
+      setHouseKey(rawHouseName.toString().toUpperCase());
+      return;
+    }
+    if (!userSportId) {
+      setHouseLabel(fallbackHouseKey);
+      setHouseKey(fallbackHouseKey);
+    }
+  }, [rawHouseName, userSportId, fallbackHouseKey]);
+
+  useEffect(() => {
+    if (!userSportId) return;
+    let active = true;
+    const loadSport = async () => {
+      try {
+        const response = await fetch(
+          `/api/sports?id=${encodeURIComponent(userSportId)}&locale=${encodeURIComponent(language || 'en')}`,
+          { cache: 'no-store' },
+        );
+        const data = await response.json();
+        if (!active || !response.ok || !data?.success) return;
+        const sport = data.sports?.[0];
+        if (!sport) return;
+        const label = sport.name || sport.code || fallbackHouseKey;
+        const code = (sport.code || label || fallbackHouseKey).toString().toUpperCase();
+        setHouseLabel(label);
+        setHouseKey(code);
+      } catch (error) {
+        if (active) {
+          console.error('[education/xp] Failed to resolve sport label', error);
+        }
+      }
+    };
+    void loadSport();
+    return () => {
+      active = false;
+    };
+  }, [userSportId, language, fallbackHouseKey]);
 
   const buildDemoQueue = useCallback(
     (houseName: string): OnboardingPopupData[] => {
@@ -1880,13 +1924,18 @@ export default function EducationXpPage() {
         await fetch('/api/onboarding/logs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ popupId, action, house: houseLabel }),
+          body: JSON.stringify({
+            popupId,
+            action,
+            house: houseKey,
+            userId: user?.id,
+          }),
         });
       } catch (error) {
         console.error('[education/xp] Failed to log action', error);
       }
     },
-    [houseLabel],
+    [houseKey, user?.id],
   );
 
 
@@ -1948,7 +1997,7 @@ export default function EducationXpPage() {
       try {
         setHouseLoading(true);
         setHouseError(null);
-        const response = await fetch(`/api/onboarding/house?house=${encodeURIComponent(houseLabel)}`, {
+        const response = await fetch(`/api/onboarding/house?house=${encodeURIComponent(houseKey)}`, {
           cache: 'no-store',
         });
         type OnboardingResponse =
@@ -1981,7 +2030,7 @@ export default function EducationXpPage() {
     return () => {
       active = false;
     };
-  }, [houseLabel, buildDemoQueue, resetQueue, language, houseReloadKey]);
+  }, [houseKey, buildDemoQueue, resetQueue, language, houseReloadKey]);
 
   useEffect(() => {
     if (!activePopup) return;

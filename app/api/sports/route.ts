@@ -39,11 +39,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const rawLocale = searchParams.get('locale');
     const locale = normalizeLocale(rawLocale);
+    const sportId = searchParams.get('id');
 
-    const { data, error } = await supabaseAdmin
-      .from('sports')
-      .select('id, code, name_i18n, created_at')
-      .order('code', { ascending: true });
+    let query = supabaseAdmin.from('sports').select('id, code, name_i18n, created_at').order('code', { ascending: true });
+    if (sportId) {
+      query = query.eq('id', sportId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error loading sports:', error);
