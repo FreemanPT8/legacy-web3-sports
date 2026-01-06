@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', { label: string }> = {
   delivered: { label: 'Entregues' },
@@ -58,6 +59,55 @@ const DEFAULT_ANALYTICS: HouseOnboardingSequence['analytics'] = {
   blockedAttempts: 0,
 };
 
+const TERM_VALIDITY_DAYS = 90;
+const RESPONSIBILITY_TERM = {
+  intro:
+    'Ao aceitar o papel de Head of House of Sport no ecossistema Legacy + Apertum, passas a representar os princípios fundadores sem hype ou abuso de autoridade.',
+  commitments: [
+    {
+      title: '1. Interesse da House acima do interesse pessoal',
+      notes: [
+        'O papel do Head é orientar, esclarecer e proteger os membros.',
+        'É proibido usar o cargo para pressão comercial, manipulação emocional ou promoção enganosa.',
+      ],
+    },
+    {
+      title: '2. Respeito pela autonomia dos utilizadores',
+      notes: [
+        'Ninguém é obrigado a seguir links, aderir a projetos ou contactar o Head diretamente.',
+        'Toda a comunicação deixa claro que o contacto humano é opcional.',
+      ],
+    },
+    {
+      title: '3. Comunicação clara, verdadeira e responsável',
+      notes: [
+        'Sem promessas de rendimento ou garantias de resultado.',
+        'Sem omitir riscos ou usar linguagem enganadora.',
+      ],
+    },
+    {
+      title: '4. Cumprimento dos limites operacionais da plataforma',
+      notes: [
+        'Respeito pelos limites de frequência, templates aprovados e auditoria contínua.',
+        'Uso obrigatório dos mecanismos anti-spam e resposta a feedback oficial.',
+      ],
+    },
+    {
+      title: '5. Guardião da reputação Legacy + Apertum',
+      notes: [
+        'Qualquer abuso destrói a confiança dos utilizadores e a integridade do ecossistema.',
+      ],
+    },
+    {
+      title: '6. Avaliação contínua e consequências',
+      notes: [
+        'O desempenho pode ser avaliado a qualquer momento; reports de abuso podem remover o Head imediatamente.',
+      ],
+    },
+  ],
+  footer: 'Este compromisso é assumido de forma voluntária, consciente e alinhada com os valores do Legacy.',
+};
+
 export default function AdminOnboardingPage() {
   const [houseKey, setHouseKey] = useState('LEGACY');
   const [draft, setDraft] = useState<OnboardingPopupData>(DEFAULT_DRAFT);
@@ -75,7 +125,11 @@ export default function AdminOnboardingPage() {
   const [headHouseOptions, setHeadHouseOptions] = useState<{ key: string; label: string }[]>([]);
   const [housesLoading, setHousesLoading] = useState(false);
   const [housesError, setHousesError] = useState<string | null>(null);
-  const editingDisabled = !isAccepted;
+  const now = Date.now();
+  const termExpiration = acceptedAt ? acceptedAt + TERM_VALIDITY_DAYS * 24 * 60 * 60 * 1000 : null;
+  const termExpired = termExpiration ? termExpiration < now : true;
+  const termActive = isAccepted && !termExpired;
+  const editingDisabled = !termActive;
   const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs();
   const logTotals = useMemo(() => {
     return liveLogs.reduce((acc, log) => {
@@ -457,31 +511,53 @@ export default function AdminOnboardingPage() {
           <CardContent className="space-y-3 p-6">
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Termo de Responsabilidade</p>
             <p className="text-lg font-semibold text-white">Heads confirmam que seguem o Termo antes de editar pop-ups.</p>
-            <p className="text-sm text-slate-300">Sem aceitacao ativa (&lt;= 90 dias), o painel permanece em modo de leitura.</p>
+            <p className="text-sm text-slate-300">
+              Sem aceitação ativa (&le; {TERM_VALIDITY_DAYS} dias), o painel permanece em modo de leitura.
+            </p>
             <div className="flex flex-wrap items-center gap-3">
               {acceptedAt ? (
-                <span className="text-xs text-emerald-300">Aceite em {new Date(acceptedAt).toLocaleString()}</span>
+                <span className={cn('text-xs', termExpired ? 'text-amber-200' : 'text-emerald-300')}>
+                  {termExpired
+                    ? `Expirou em ${new Date(termExpiration!).toLocaleDateString()}`
+                    : `Aceite em ${new Date(acceptedAt).toLocaleString()}`}
+                </span>
               ) : (
                 <span className="text-xs text-amber-200">Ainda não aceitaste o Termo.</span>
               )}
               <Button
                 size="sm"
                 onClick={() => void accept()}
-                disabled={termLoading || termSaving || isAccepted}
+                disabled={termLoading || termSaving || termActive}
                 className="bg-emerald-500/20 text-emerald-100"
               >
                 {termLoading || termSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A validar...
                   </>
-                ) : isAccepted ? (
+                ) : termActive ? (
                   'Termo ativo'
                 ) : (
-                  'Aceitar Termo'
+                  'Aceitar / renovar Termo'
                 )}
               </Button>
             </div>
             {termError ? <p className="text-xs text-amber-300">{termError}</p> : null}
+            <ScrollArea className="max-h-72 rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="space-y-4 text-sm text-slate-200">
+                <p>{RESPONSIBILITY_TERM.intro}</p>
+                {RESPONSIBILITY_TERM.commitments.map((section) => (
+                  <div key={section.title} className="space-y-1">
+                    <p className="font-semibold text-white">{section.title}</p>
+                    <ul className="list-disc space-y-1 pl-4 text-slate-300">
+                      {section.notes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                <p className="text-xs text-slate-400">{RESPONSIBILITY_TERM.footer}</p>
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
         <div className={cn('flex flex-col gap-6', editingDisabled && 'pointer-events-none opacity-40')}>
