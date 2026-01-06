@@ -1648,7 +1648,7 @@ export default function EducationXpPage() {
     resetQueue,
     recordAction,
     logs: popupLogs,
-    pending: pendingPopups,
+    pending: queuePendingCount,
     deliveredToday,
     deliveredWeek,
     dailyLimit,
@@ -1854,6 +1854,17 @@ export default function EducationXpPage() {
 
   );
 
+
+
+
+  const blockedPopups = useMemo(
+
+    () => queueSource.filter((popup) => !isTriggerSatisfied(popup)),
+
+    [queueSource, isTriggerSatisfied],
+
+  );
+
   const readySignature = readyPopups.map((popup) => popup.id).join('|');
 
   const queueSyncRef = useRef<string>('');
@@ -1889,6 +1900,52 @@ export default function EducationXpPage() {
     : language === 'es'
     ? 'Reiniciar demo'
     : 'Reset demo sequence';
+
+  const formatTriggerRequirement = useCallback(
+    (popup: OnboardingPopupData) => {
+      if (!popup.trigger) {
+        return language === 'pt'
+          ? 'Sem trigger configurado.'
+          : language === 'es'
+          ? 'Sin trigger configurado.'
+          : 'No trigger configured.';
+      }
+      if (popup.trigger.type === 'xp') {
+        const value = popup.trigger.value ?? 0;
+        return language === 'pt'
+          ? `Necessário atingir ${value} XP`
+          : language === 'es'
+          ? `Necesitas alcanzar ${value} XP`
+          : `Need at least ${value} XP`;
+      }
+      const label =
+        popup.trigger.label ??
+        popup.trigger.contentTitle ??
+        popup.trigger.contentId ??
+        (language === 'pt'
+          ? 'Conteúdo requerido'
+          : language === 'es'
+          ? 'Contenido requerido'
+          : 'Required content');
+      if (language === 'pt') return `Concluir ${label}`;
+      if (language === 'es') return `Completar ${label}`;
+      return `Complete ${label}`;
+    },
+    [language],
+  );
+
+  const blockedTitle =
+    language === 'pt'
+      ? 'Pop-ups bloqueados'
+      : language === 'es'
+      ? 'Pop-ups bloqueados'
+      : 'Blocked pop-ups';
+  const blockedSubtitle =
+    language === 'pt'
+      ? 'Precisas de concluir o requisito abaixo antes da House mandar o próximo passo.'
+      : language === 'es'
+      ? 'Necesitas completar el requisito abajo antes de recibir el siguiente paso.'
+      : 'Complete the requirement below before the House delivers the next step.';
 
   const handlePopupAction = useCallback(
     ({ id, action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
@@ -4153,7 +4210,7 @@ export default function EducationXpPage() {
                       <div className="grid gap-3 sm:grid-cols-3">
                         <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-center">
                           <p className={UI.micro}>{language === 'pt' ? 'Pendentes' : language === 'es' ? 'Pendientes' : 'Pending'}</p>
-                          <p className="text-2xl font-semibold text-white">{pendingPopups}</p>
+                          <p className="text-2xl font-semibold text-white">{queuePendingCount}</p>
                         </div>
                         <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-center">
                           <p className={UI.micro}>
@@ -4219,6 +4276,36 @@ export default function EducationXpPage() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {blockedPopups.length ? (
+                  <Card className={cn(UI.cardSurface, 'border-white/15')}>
+                    <CardContent className="p-5 space-y-3">
+                      <div>
+                        <p className={UI.cardTitle}>{blockedTitle}</p>
+                        <p className={cn(UI.bodyMuted, 'text-sm')}>{blockedSubtitle}</p>
+                      </div>
+                      <div className="space-y-3">
+                        {blockedPopups.map((popup) => (
+                          <div
+                            key={popup.id}
+                            className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 space-y-2"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-white">{popup.title}</p>
+                                {popup.xpGate ? <p className={cn(UI.micro, 'text-slate-400')}>{popup.xpGate}</p> : null}
+                              </div>
+                              <Badge className="border-amber-300/40 bg-amber-400/10 text-amber-100">
+                                {language === 'pt' ? 'Pendente' : language === 'es' ? 'Pendiente' : 'Pending'}
+                              </Badge>
+                            </div>
+                            <p className={cn(UI.bodyMuted, 'text-sm')}>{formatTriggerRequirement(popup)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : null}
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   {analyticsCards.map((card) => (
