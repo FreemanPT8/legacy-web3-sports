@@ -57,9 +57,11 @@ const xpRewards: Record<string, number> = {
   instagram: 9,
 };
 
+type SportOption = { id: string; name: string };
+
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, getToken, refreshUser } = useAuth();
   const { t, language } = useLanguage();
   const { toast } = useToast();
 
@@ -88,12 +90,117 @@ export default function ProfilePage() {
       instagram: false,
     },
   });
+  const [sportOptions, setSportOptions] = useState<SportOption[]>([]);
+  const [sportLoading, setSportLoading] = useState(false);
+  const [sportSaving, setSportSaving] = useState(false);
+  const [sportError, setSportError] = useState<string | null>(null);
+  const [selectedSport, setSelectedSport] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  const hasSport = Boolean(user.sport_id || (user as any)?.primary_sport_id);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    if (hasSport || !user) return;
+    let active = true;
+    const loadSports = async () => {
+      try {
+        setSportLoading(true);
+        setSportError(null);
+        const response = await fetch(`/api/sports?locale=${encodeURIComponent(language || 'en')}`, {
+          cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to load sports');
+        }
+        const options: SportOption[] = (data.sports ?? []).map((sport: { id: string; name: string }) => ({
+          id: sport.id,
+          name: sport.name,
+        }));
+        setSportOptions(options);
+      } catch (error) {
+        if (!active) return;
+        console.error('[profile] Failed to load sports', error);
+        setSportError('Failed to load sports list. Tenta novamente mais tarde.');
+      } finally {
+        if (active) setSportLoading(false);
+      }
+    };
+    void loadSports();
+    return () => {
+      active = false;
+    };
+  }, [hasSport, language, loading, user]);
+
+  const handleAssignSport = async () => {
+    if (!selectedSport) {
+      toast({
+        title: 'Select sport',
+        description: 'Escolhe o desporto da tua House antes de continuar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const token = getToken?.();
+    if (!token) {
+      toast({
+        title: 'Session expired',
+        description: 'Inicia sessão novamente para guardar o teu desporto.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      setSportSaving(true);
+      const response = await fetch('/api/profile/sport', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ sportId: selectedSport }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to assign sport');
+      }
+      if (typeof window !== 'undefined') {
+        const stored = window.localStorage.getItem('user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          parsed.sport_id = selectedSport;
+          parsed.primary_sport_id = selectedSport;
+          window.localStorage.setItem('user', JSON.stringify(parsed));
+        }
+      }
+      refreshUser();
+      toast({
+        title: 'Sport assigned',
+        description: 'Atualizaste o teu desporto oficial.',
+      });
+    } catch (error) {
+      console.error('[profile] Failed to assign sport', error);
+      toast({
+        title: 'Error',
+        description: 'Não foi possível guardar o desporto. Tenta novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSportSaving(false);
+    }
+  };
 
   if (loading || !user) {
     return (
@@ -186,6 +293,53 @@ export default function ProfilePage() {
             </div>
           </HeroContent>
         </HeroSection>
+
+        {!hasSport ? (
+          <Card className="border border-white/10 bg-[#062331] shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-white">
+                <Trophy className="h-5 w-5 text-cyan-300" />
+                Escolhe o teu Desporto
+              </CardTitle>
+              <CardDescription className="text-slate-300">
+                Esta definição é obrigatória para o novo onboarding escalável.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-slate-200">Desporto oficial</Label>
+                <Select
+                  value={selectedSport}
+                  onValueChange={setSelectedSport}
+                  disabled={sportLoading}
+                >
+                  <SelectTrigger className="bg-[#000c12] border border-white/10">
+                    <SelectValue placeholder={sportLoading ? 'A carregar...' : 'Seleciona o teu desporto'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#05212b] text-white">
+                    {sportOptions.map((sport) => (
+                      <SelectItem key={sport.id} value={sport.id}>
+                        {sport.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {sportError ? <p className="text-xs text-amber-300">{sportError}</p> : null}
+              </div>
+              <Button
+                size="lg"
+                className="w-full bg-cyan-500/90 text-black hover:bg-cyan-400"
+                onClick={handleAssignSport}
+                disabled={sportSaving || sportLoading}
+              >
+                {sportSaving ? 'A guardar...' : 'Confirmar desporto'}
+              </Button>
+              <p className="text-xs text-slate-400">
+                Esta configuração é obrigatória e pode ser alterada apenas com suporte oficial.
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {!isUnlocked && (
           <Card className="border border-white/10 bg-[#05212b] shadow-xl">
