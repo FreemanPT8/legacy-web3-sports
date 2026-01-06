@@ -17,6 +17,8 @@ export interface User {
   created_at?: string;
   full_name?: string;
   country?: string;
+  sport_id?: string | null;
+  primary_sport_id?: string | null;
   is_banned?: boolean; // novo campo (tabela users)
 }
 
@@ -72,6 +74,7 @@ export async function signUp(data: {
   email: string;
   password: string;
   country: string;
+  sport_id: string;
 }): Promise<AuthResponse> {
   try {
     // verificar se username OU email já existem
@@ -98,6 +101,8 @@ export async function signUp(data: {
         email: data.email,
         password_hash,
         country: data.country,
+        sport_id: data.sport_id,
+        primary_sport_id: data.sport_id,
         role: 'Member',
         xp_total: 0,
         profile_unlocked: false,
@@ -106,7 +111,7 @@ export async function signUp(data: {
         profile_visibility: {},
         is_banned: false, // por segurança
       })
-      .select('id, username, email, role, xp_total, avatar_url, is_banned')
+      .select('id, username, email, role, xp_total, avatar_url, is_banned, sport_id, primary_sport_id')
       .single();
 
     if (error) {

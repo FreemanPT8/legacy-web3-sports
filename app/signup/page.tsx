@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,15 +27,20 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Trophy } from 'lucide-react';
 
+type SportOption = { id: string; name: string };
+
 export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefillEmail = searchParams.get('email') || '';
 
   const { signup } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [sports, setSports] = useState<SportOption[]>([]);
+  const [sportsLoading, setSportsLoading] = useState(true);
+  const [sportsError, setSportsError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     username: '',
     full_name: '',
@@ -43,7 +48,42 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
     country: '',
+    sportId: '',
   });
+
+  useEffect(() => {
+    let active = true;
+    const loadSports = async () => {
+      try {
+        setSportsLoading(true);
+        setSportsError(null);
+        const response = await fetch(`/api/sports?locale=${encodeURIComponent(language || 'en')}`, {
+          cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to load sports');
+        }
+        const options: SportOption[] = (data.sports ?? []).map((sport: { id: string; name: string }) => ({
+          id: sport.id,
+          name: sport.name,
+        }));
+        setSports(options);
+      } catch (error) {
+        if (!active) return;
+        console.error('[signup] failed to load sports', error);
+        setSportsError('Falha ao carregar desportos.');
+        setSports([]);
+      } finally {
+        if (active) setSportsLoading(false);
+      }
+    };
+    void loadSports();
+    return () => {
+      active = false;
+    };
+  }, [language]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +106,15 @@ export default function SignupPage() {
       return;
     }
 
+    if (!formData.sportId) {
+      toast({
+        title: 'Select your sport',
+        description: 'Please choose the sport you belong to before continuing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
 
     const result = await signup({
@@ -74,6 +123,7 @@ export default function SignupPage() {
       email: formData.email,
       password: formData.password,
       country: formData.country,
+      sport_id: formData.sportId,
     });
 
     if (result.success) {
@@ -176,6 +226,35 @@ export default function SignupPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sport">Sport *</Label>
+              <Select
+                value={formData.sportId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, sportId: value })
+                }
+                disabled={sportsLoading || !sports.length}
+              >
+                <SelectTrigger aria-invalid={!formData.sportId && !sportsLoading}>
+                  <SelectValue placeholder={sportsLoading ? 'Loading sports...' : 'Select your sport'} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {sports.map((sport) => (
+                    <SelectItem key={sport.id} value={sport.id}>
+                      {sport.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {sportsError ? (
+                <p className="text-xs text-red-400">{sportsError}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {sportsLoading ? 'Loading official sports...' : 'Choose the House sport that matches your entry.'}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

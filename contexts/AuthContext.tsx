@@ -17,6 +17,7 @@ interface AuthContextType {
     email: string;
     password: string;
     country: string;
+    sport_id: string;
   }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   getToken: () => string | null;
@@ -143,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void syncXp();
 
     return () => controller.abort();
-  }, [isHydrated, user?.id, lastSyncId]);
+  }, [isHydrated, user, lastSyncId]);
 
   const login = async (username: string, password: string) => {
     try {
@@ -180,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string;
     password: string;
     country: string;
+    sport_id: string;
   }) => {
     try {
       const response = await fetch('/api/auth/signup', {
