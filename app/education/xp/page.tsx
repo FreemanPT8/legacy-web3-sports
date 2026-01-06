@@ -1436,6 +1436,38 @@ const PROGRESS_CARD_COPY: Record<SupportedCopyLang, ProgressCardCopy> = {
   },
 };
 
+type SequenceCardCopy = {
+  title: string;
+  subtitle: string;
+  ready: string;
+  blocked: string;
+  preview: string;
+};
+
+const SEQUENCE_CARD_COPY: Record<SupportedCopyLang, SequenceCardCopy> = {
+  pt: {
+    title: 'Sequência oficial da House',
+    subtitle: 'Acompanha a ordem oficial e antecipa o copy antes do motor entregar.',
+    ready: 'Pronto',
+    blocked: 'Bloqueado',
+    preview: 'Ver copy',
+  },
+  es: {
+    title: 'Secuencia oficial de la House',
+    subtitle: 'Sigue el orden oficial y revisa el copy antes de que el motor lo entregue.',
+    ready: 'Listo',
+    blocked: 'Bloqueado',
+    preview: 'Ver copy',
+  },
+  en: {
+    title: 'Official House sequence',
+    subtitle: 'Track the official order and preview the copy before delivery.',
+    ready: 'Ready',
+    blocked: 'Blocked',
+    preview: 'Preview copy',
+  },
+};
+
 
 
 const rewardMetadata: Record<
@@ -1675,6 +1707,7 @@ export default function EducationXpPage() {
 
   const demoCopy = POPUP_DEMO_TEXT[language] ?? POPUP_DEMO_TEXT.en;
   const progressCopy = PROGRESS_CARD_COPY[language] ?? PROGRESS_CARD_COPY.en;
+  const sequenceCopy = SEQUENCE_CARD_COPY[language] ?? SEQUENCE_CARD_COPY.en;
 
   const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
   const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
@@ -1763,6 +1796,7 @@ export default function EducationXpPage() {
   const [progressLoading, setProgressLoading] = useState(false);
   const [progressError, setProgressError] = useState<string | null>(null);
   const [progressReloadKey, setProgressReloadKey] = useState(0);
+  const [previewPopup, setPreviewPopup] = useState<OnboardingPopupData | null>(null);
 
   const {
     activePopup,
@@ -2121,6 +2155,24 @@ export default function EducationXpPage() {
       : progressCopy.noCourses;
   const coursePercent =
     progressStats.totalCourses > 0 ? Math.round((progressStats.completedCourses / progressStats.totalCourses) * 100) : 0;
+
+  const readyIdSet = useMemo(() => new Set(readyPopups.map((popup) => popup.id)), [readyPopups]);
+
+  const sequencePreview = useMemo(
+
+    () =>
+
+      queueSource.map((popup) => ({
+
+        popup,
+
+        status: readyIdSet.has(popup.id) ? 'ready' : 'blocked',
+
+      })),
+
+    [queueSource, readyIdSet],
+
+  );
 
   const handlePopupAction = useCallback(
     ({ id, action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
@@ -4430,6 +4482,48 @@ export default function EducationXpPage() {
                   </Card>
                 </div>
 
+                <Card className={cn(UI.cardSurface, 'border-white/15')}>
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex flex-col gap-1">
+                      <p className={UI.cardTitle}>{sequenceCopy.title}</p>
+                      <p className={cn(UI.bodyMuted, 'text-sm')}>{sequenceCopy.subtitle}</p>
+                    </div>
+                    <div className="space-y-3">
+                      {sequencePreview.map(({ popup, status }) => (
+                        <div
+                          key={popup.id}
+                          className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-white">{popup.title}</p>
+                            <p className={cn(UI.micro, 'text-slate-400')}>
+                              {popup.trigger?.label || popup.xpGate || 'XP 0'}
+                            </p>
+                          </div>
+                          <Badge
+                            className={cn(
+                              'border-white/10 px-3',
+                              status === 'ready'
+                                ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
+                                : 'border-amber-300/40 bg-amber-400/10 text-amber-100',
+                            )}
+                          >
+                            {status === 'ready' ? sequenceCopy.ready : sequenceCopy.blocked}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-white/20 text-white hover:bg-white/10"
+                            onClick={() => setPreviewPopup(popup)}
+                          >
+                            {sequenceCopy.preview}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {blockedPopups.length ? (
                   <Card className={cn(UI.cardSurface, 'border-white/15')}>
                     <CardContent className="p-5 space-y-3">
@@ -4474,8 +4568,8 @@ export default function EducationXpPage() {
                   </Card>
                 ) : null}
 
-                {user ? (
-                  <Card className={cn(UI.cardSurface, 'border-white/15')}>
+{user ? (
+  <Card className={cn(UI.cardSurface, 'border-white/15')}>
                     <CardContent className="p-5 space-y-4">
                       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
@@ -4624,6 +4718,9 @@ export default function EducationXpPage() {
 
       {activePopup ? (
         <OnboardingPopup data={activePopup} open lockSeconds={3} onAction={handlePopupAction} />
+      ) : null}
+      {previewPopup ? (
+        <OnboardingPopup data={previewPopup} open lockSeconds={0} onClose={() => setPreviewPopup(null)} />
       ) : null}
 
     </div>
