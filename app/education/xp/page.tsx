@@ -428,7 +428,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     consistencyIntro:
 
-      'Streaks nǜo contam presenÇõa. Contam XP ganho. Precisas de iniciar sessǜo e ganhar XP pelo menos uma vez por dia. Um dia sem XP e a contagem reinicia.',
+      'Streaks não contam presença. Contam XP ganho. Precisas de iniciar sessão e ganhar XP pelo menos uma vez por dia. Um dia sem XP e a contagem reinicia.',
 
     consistencyPoints: [
 
@@ -588,7 +588,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     consistencyIntro:
 
-      'Los streaks no cuentan presencia. Cuentan XP ganado. Debes iniciar sesiÇün y ganar XP al menos una vez al dÇða. Un dÇða sin XP y la racha se reinicia.',
+      'Los streaks no cuentan presencia. Cuentan XP ganado. Debes iniciar sesión y ganar XP al menos una vez al día. Un día sin XP y la racha se reinicia.',
 
     consistencyPoints: [
 
