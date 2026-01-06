@@ -76,6 +76,8 @@ import {
 
   Eye,
 
+  Loader2,
+
 } from 'lucide-react';
 
 
@@ -1352,6 +1354,66 @@ const POPUP_DEMO_TEXT: Record<SupportedCopyLang, DemoPopupCopy> = {
   },
 };
 
+type ProgressCardCopy = {
+  title: string;
+  subtitle: string;
+  refresh: string;
+  loading: string;
+  empty: string;
+  error: string;
+  startLabel: string;
+  startDone: string;
+  startPending: string;
+  coursesLabel: string;
+  coursesHint: string;
+  noCourses: string;
+};
+
+const PROGRESS_CARD_COPY: Record<SupportedCopyLang, ProgressCardCopy> = {
+  pt: {
+    title: 'Checkpoints de conteúdo',
+    subtitle: 'A House só envia pop-ups de lições quando estes itens estão validados.',
+    refresh: 'Atualizar progresso',
+    loading: 'A validar o teu progresso...',
+    empty: 'Ainda não tens progresso registado.',
+    error: 'Não foi possível carregar o progresso.',
+    startLabel: 'Curso "Começa Aqui"',
+    startDone: 'Curso base concluído.',
+    startPending: 'Completa o curso base para desbloquear os próximos passos.',
+    coursesLabel: 'Cursos concluídos',
+    coursesHint: 'Cada curso validado desbloqueia pop-ups por conteúdo.',
+    noCourses: 'Ainda sem cursos concluídos.',
+  },
+  es: {
+    title: 'Checkpoints de contenido',
+    subtitle: 'La House solo envía pop-ups de lecciones cuando estos items están validados.',
+    refresh: 'Actualizar progreso',
+    loading: 'Verificando tu progreso...',
+    empty: 'Todavía no tienes progreso registrado.',
+    error: 'No se pudo cargar el progreso.',
+    startLabel: 'Curso "Empieza Aquí"',
+    startDone: 'Curso base completado.',
+    startPending: 'Completa el curso base para desbloquear los siguientes pasos.',
+    coursesLabel: 'Cursos completados',
+    coursesHint: 'Cada curso validado desbloquea pop-ups por contenido.',
+    noCourses: 'Sin cursos completados todavía.',
+  },
+  en: {
+    title: 'Content checkpoints',
+    subtitle: 'The House only sends lesson pop-ups when these items are validated.',
+    refresh: 'Refresh progress',
+    loading: 'Checking your progress...',
+    empty: 'No progress recorded yet.',
+    error: 'Could not load your progress.',
+    startLabel: '"Start Here" course',
+    startDone: 'Foundation course completed.',
+    startPending: 'Finish the base course to unlock the next steps.',
+    coursesLabel: 'Courses completed',
+    coursesHint: 'Every validated course can unlock content pop-ups.',
+    noCourses: 'No courses completed yet.',
+  },
+};
+
 
 
 const rewardMetadata: Record<
@@ -1528,6 +1590,19 @@ const formatRange = (min: number | null, max: number | null) => {
 
 const clamp0 = (n: number) => (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
 
+const formatCourseProgress = (lang: SupportedCopyLang, completed: number, total: number) => {
+  if (total <= 0) return '';
+  const plural =
+    lang === 'en'
+      ? total === 1
+        ? 'course'
+        : 'courses'
+      : total === 1
+      ? 'curso'
+      : 'cursos';
+  return `${completed}/${total} ${plural}`;
+};
+
 
 
 const getLang = (language: string): SupportedCopyLang => {
@@ -1557,6 +1632,7 @@ export default function EducationXpPage() {
   const onboardingCopy = ONBOARDING_COPY[language] ?? ONBOARDING_COPY.en;
 
   const demoCopy = POPUP_DEMO_TEXT[language] ?? POPUP_DEMO_TEXT.en;
+  const progressCopy = PROGRESS_CARD_COPY[language] ?? PROGRESS_CARD_COPY.en;
 
   const typedUser = user as { house?: { name?: string }; house_name?: string; sport?: string } | null;
   const rawHouseName = typedUser?.house?.name ?? typedUser?.house_name ?? typedUser?.sport ?? 'Sport';
@@ -1642,6 +1718,9 @@ export default function EducationXpPage() {
   const [comboError, setComboError] = useState<string | null>(null);
 
   const [progressSummary, setProgressSummary] = useState<ProgressSummaryLite | null>(null);
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [progressError, setProgressError] = useState<string | null>(null);
+  const [progressReloadKey, setProgressReloadKey] = useState(0);
 
   const {
     activePopup,
@@ -1788,6 +1867,25 @@ export default function EducationXpPage() {
     [completedContentIds, progressSummary, userXP],
 
   );
+
+  const progressStats = useMemo(() => {
+    if (!progressSummary) {
+      return { startCompleted: false, totalCourses: 0, completedCourses: 0 };
+    }
+    let totalCourses = 0;
+    let completedCourses = 0;
+    Object.values(progressSummary.coursesByLevel ?? {}).forEach((courses) => {
+      courses.forEach((course) => {
+        totalCourses += 1;
+        if (course.isCompleted) completedCourses += 1;
+      });
+    });
+    return {
+      startCompleted: Boolean(progressSummary.startHere?.isCompleted),
+      totalCourses,
+      completedCourses,
+    };
+  }, [progressSummary]);
 
 
 
@@ -1947,6 +2045,13 @@ export default function EducationXpPage() {
       ? 'Necesitas completar el requisito abajo antes de recibir el siguiente paso.'
       : 'Complete the requirement below before the House delivers the next step.';
 
+  const courseProgressLabel =
+    progressStats.totalCourses > 0
+      ? formatCourseProgress(language, progressStats.completedCourses, progressStats.totalCourses)
+      : progressCopy.noCourses;
+  const coursePercent =
+    progressStats.totalCourses > 0 ? Math.round((progressStats.completedCourses / progressStats.totalCourses) * 100) : 0;
+
   const handlePopupAction = useCallback(
     ({ id, action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {
       recordAction(action);
@@ -1954,6 +2059,11 @@ export default function EducationXpPage() {
     },
     [recordAction, logRemoteAction],
   );
+
+  const refreshProgress = useCallback(() => {
+    setProgressError(null);
+    setProgressReloadKey((key) => key + 1);
+  }, []);
 
 
 
@@ -2194,110 +2304,66 @@ export default function EducationXpPage() {
 
 
   useEffect(() => {
-
     if (!user) {
-
       setProgressSummary(null);
-
+      setProgressLoading(false);
+      setProgressError(null);
       return;
-
     }
-
-
 
     let active = true;
 
-
-
     const fetchProgress = async () => {
-
       try {
-
+        setProgressLoading(true);
+        setProgressError(null);
         const token = getToken?.();
-
         const headers: HeadersInit = {};
-
         if (token) headers.Authorization = 'Bearer ' + token;
 
-
-
         const response = await fetch('/api/education/progress', {
-
           cache: 'no-store',
-
           headers,
-
         });
-
-
 
         const data = (await response.json()) as
-
           | {
-
               success: true;
-
               summary: {
-
                 startHere?: { slug?: string; isCompleted?: boolean };
-
                 coursesByLevel?: Record<string, ProgressCourseSummaryLite[]>;
-
               };
-
             }
-
           | { success: false; error?: string };
 
-
-
         if (!active) return;
-
         if (!response.ok || !data.success) {
-
           const message = !data.success ? data.error || 'Failed to load progress' : 'Failed to load progress';
-
           throw new Error(message);
-
         }
-
         const startSlug = data.summary.startHere?.slug || 'start-here';
 
-
-
         setProgressSummary({
-
           startHere: { slug: startSlug, isCompleted: Boolean(data.summary.startHere?.isCompleted) },
-
           coursesByLevel: data.summary.coursesByLevel ?? {},
-
         });
-
+        setProgressError(null);
       } catch (err) {
-
         if (!active) return;
-
         console.error('[education/xp] progress fetch failed', err);
-
         setProgressSummary(null);
-
+        setProgressError(progressCopy.error);
+      } finally {
+        if (active) setProgressLoading(false);
       }
-
     };
-
-
 
     void fetchProgress();
 
-
-
     return () => {
-
       active = false;
-
     };
-
-  }, [user, getToken]);
+  }, [user, getToken, progressReloadKey, progressCopy.error]);
 
 
 
@@ -4303,6 +4369,80 @@ export default function EducationXpPage() {
                           </div>
                         ))}
                       </div>
+                    </CardContent>
+                  </Card>
+                ) : null}
+
+                {user ? (
+                  <Card className={cn(UI.cardSurface, 'border-white/15')}>
+                    <CardContent className="p-5 space-y-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className={UI.cardTitle}>{progressCopy.title}</p>
+                          <p className={cn(UI.bodyMuted, 'text-sm')}>{progressCopy.subtitle}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refreshProgress}
+                          disabled={progressLoading}
+                          className="border-white/20 text-white hover:bg-white/10"
+                        >
+                          {progressLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {progressCopy.refresh}
+                        </Button>
+                      </div>
+                      {progressError ? (
+                        <div className="rounded-2xl border border-amber-300/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                          {progressError}
+                        </div>
+                      ) : progressLoading && !progressSummary ? (
+                        <p className={cn(UI.bodyMuted, 'text-sm')}>{progressCopy.loading}</p>
+                      ) : progressSummary ? (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                            <div
+                              className={cn(
+                                'flex h-11 w-11 items-center justify-center rounded-full',
+                                progressStats.startCompleted ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-200',
+                              )}
+                            >
+                              {progressStats.startCompleted ? (
+                                <CheckCircle2 className="h-5 w-5" />
+                              ) : (
+                                <Lock className="h-5 w-5" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-white">{progressCopy.startLabel}</p>
+                              <p className={cn(UI.bodyMuted, 'text-xs')}>
+                                {progressStats.startCompleted ? progressCopy.startDone : progressCopy.startPending}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-200">
+                              <BookOpen className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-white">{progressCopy.coursesLabel}</p>
+                              <p className={cn(UI.bodyMuted, 'text-xs')}>{progressCopy.coursesHint}</p>
+                            </div>
+                            <div className="text-right">
+                              {progressStats.totalCourses > 0 ? (
+                                <>
+                                  <p className="text-lg font-semibold text-white">{courseProgressLabel}</p>
+                                  <p className={cn(UI.micro, 'text-slate-400')}>{coursePercent}%</p>
+                                </>
+                              ) : (
+                                <p className={cn(UI.bodyMuted, 'text-sm text-slate-400')}>{progressCopy.noCourses}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className={cn(UI.bodyMuted, 'text-sm')}>{progressCopy.empty}</p>
+                      )}
                     </CardContent>
                   </Card>
                 ) : null}
