@@ -147,6 +147,8 @@ type ProgressSummaryLite = {
 
   startHere: { slug: string; isCompleted: boolean };
 
+  startCourse?: { slug: string; title?: string | null } | null;
+
   coursesByLevel: Record<string, ProgressCourseSummaryLite[]>;
 
 };
@@ -1367,6 +1369,11 @@ type ProgressCardCopy = {
   coursesLabel: string;
   coursesHint: string;
   noCourses: string;
+  startCta: string;
+  coursesNextTitle: string;
+  coursesNextSubtitle: string;
+  coursesNextEmpty: string;
+  coursesCtaLabel: string;
 };
 
 const PROGRESS_CARD_COPY: Record<SupportedCopyLang, ProgressCardCopy> = {
@@ -1383,6 +1390,11 @@ const PROGRESS_CARD_COPY: Record<SupportedCopyLang, ProgressCardCopy> = {
     coursesLabel: 'Cursos concluídos',
     coursesHint: 'Cada curso validado desbloqueia pop-ups por conteúdo.',
     noCourses: 'Ainda sem cursos concluídos.',
+    startCta: 'Abrir curso',
+    coursesNextTitle: 'Próximos conteúdos',
+    coursesNextSubtitle: 'Prioridade oficial da House antes dos pop-ups avançados.',
+    coursesNextEmpty: 'Sem conteúdos pendentes neste momento.',
+    coursesCtaLabel: 'Abrir conteúdo',
   },
   es: {
     title: 'Checkpoints de contenido',
@@ -1397,6 +1409,11 @@ const PROGRESS_CARD_COPY: Record<SupportedCopyLang, ProgressCardCopy> = {
     coursesLabel: 'Cursos completados',
     coursesHint: 'Cada curso validado desbloquea pop-ups por contenido.',
     noCourses: 'Sin cursos completados todavía.',
+    startCta: 'Abrir curso',
+    coursesNextTitle: 'Próximos contenidos',
+    coursesNextSubtitle: 'Prioridad oficial de la House antes de los pop-ups avanzados.',
+    coursesNextEmpty: 'Sin contenidos pendientes por ahora.',
+    coursesCtaLabel: 'Abrir contenido',
   },
   en: {
     title: 'Content checkpoints',
@@ -1411,6 +1428,11 @@ const PROGRESS_CARD_COPY: Record<SupportedCopyLang, ProgressCardCopy> = {
     coursesLabel: 'Courses completed',
     coursesHint: 'Every validated course can unlock content pop-ups.',
     noCourses: 'No courses completed yet.',
+    startCta: 'Open course',
+    coursesNextTitle: 'Next content',
+    coursesNextSubtitle: 'Official House priority before advanced pop-ups.',
+    coursesNextEmpty: 'No pending content right now.',
+    coursesCtaLabel: 'Open content',
   },
 };
 
@@ -1599,8 +1621,28 @@ const formatCourseProgress = (lang: SupportedCopyLang, completed: number, total:
         : 'courses'
       : total === 1
       ? 'curso'
-      : 'cursos';
+  : 'cursos';
   return `${completed}/${total} ${plural}`;
+};
+
+const resolveI18nText = (value: unknown, lang: SupportedCopyLang) => {
+
+  if (!value) return '';
+
+  if (typeof value === 'string') return value;
+
+  if (typeof value === 'object' && value !== null) {
+
+    const bag = value as Record<string, unknown>;
+
+    const candidate = bag[lang] ?? bag.en ?? bag.pt ?? bag.es;
+
+    if (typeof candidate === 'string') return candidate;
+
+  }
+
+  return '';
+
 };
 
 
@@ -1885,6 +1927,28 @@ export default function EducationXpPage() {
       totalCourses,
       completedCourses,
     };
+  }, [progressSummary]);
+
+  const pendingCourses = useMemo(() => {
+
+    if (!progressSummary) return [];
+
+    const list: { id: string; slug?: string | null; title: string }[] = [];
+
+    Object.values(progressSummary.coursesByLevel ?? {}).forEach((courses) => {
+
+      courses.forEach((course) => {
+
+        if (course.isCompleted) return;
+
+        list.push({ id: course.id, slug: course.slug, title: course.title });
+
+      });
+
+    });
+
+    return list.slice(0, 3);
+
   }, [progressSummary]);
 
 
@@ -2350,6 +2414,7 @@ export default function EducationXpPage() {
               success: true;
               summary: {
                 startHere?: { slug?: string; isCompleted?: boolean };
+                startCourse?: { slug?: string | null; title?: unknown };
                 coursesByLevel?: Record<string, ProgressCourseSummaryLite[]>;
               };
             }
@@ -2360,10 +2425,13 @@ export default function EducationXpPage() {
           const message = !data.success ? data.error || 'Failed to load progress' : 'Failed to load progress';
           throw new Error(message);
         }
-        const startSlug = data.summary.startHere?.slug || 'start-here';
+        const startSlug = data.summary.startHere?.slug || data.summary.startCourse?.slug || 'start-here';
+        const startCourseSlug = data.summary.startCourse?.slug || startSlug;
+        const startCourseTitle = resolveI18nText(data.summary.startCourse?.title, language);
 
         setProgressSummary({
           startHere: { slug: startSlug, isCompleted: Boolean(data.summary.startHere?.isCompleted) },
+          startCourse: startCourseSlug ? { slug: startCourseSlug, title: startCourseTitle || undefined } : null,
           coursesByLevel: data.summary.coursesByLevel ?? {},
         });
         setProgressError(null);
@@ -2382,7 +2450,7 @@ export default function EducationXpPage() {
     return () => {
       active = false;
     };
-  }, [user, getToken, progressReloadKey, progressCopy.error]);
+  }, [user, getToken, language, progressReloadKey, progressCopy.error]);
 
 
 
@@ -4432,7 +4500,8 @@ export default function EducationXpPage() {
                       ) : progressLoading && !progressSummary ? (
                         <p className={cn(UI.bodyMuted, 'text-sm')}>{progressCopy.loading}</p>
                       ) : progressSummary ? (
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <>
+                          <div className="grid gap-3 md:grid-cols-2">
                           <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
                             <div
                               className={cn(
@@ -4452,6 +4521,16 @@ export default function EducationXpPage() {
                                 {progressStats.startCompleted ? progressCopy.startDone : progressCopy.startPending}
                               </p>
                             </div>
+                            {!progressStats.startCompleted && progressSummary?.startCourse?.slug ? (
+                              <Link
+                                href={`/education/courses/${progressSummary.startCourse.slug}`}
+                                className="ml-auto"
+                              >
+                                <Button size="sm" className="bg-[#fdd87c] text-[#1e1500] hover:bg-[#ffe7a6]/90">
+                                  {progressCopy.startCta}
+                                </Button>
+                              </Link>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
                             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-200">
@@ -4472,7 +4551,46 @@ export default function EducationXpPage() {
                               )}
                             </div>
                           </div>
-                        </div>
+                          </div>
+                          <div className="space-y-2 rounded-2xl border border-white/10 bg-[#000c12]/30 p-4">
+                          <div className="flex flex-col gap-1">
+                            <p className="text-sm font-semibold text-white">{progressCopy.coursesNextTitle}</p>
+                            <p className={cn(UI.bodyMuted, 'text-xs')}>{progressCopy.coursesNextSubtitle}</p>
+                          </div>
+                          {pendingCourses.length ? (
+                            <div className="space-y-2">
+                              {pendingCourses.map((course) => {
+                                const href = `/education/courses/${(course.slug || course.id).toLowerCase()}`;
+                                const title = course.title || course.slug || course.id;
+                                return (
+                                  <div
+                                    key={course.id}
+                                    className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3"
+                                  >
+                                    <div className="flex-1">
+                                      <p className="text-sm font-semibold text-white">{title}</p>
+                                      <p className={cn(UI.micro, 'text-slate-400')}>
+                                        {language === 'pt'
+                                          ? 'Conteúdo oficial da House'
+                                          : language === 'es'
+                                          ? 'Contenido oficial de la House'
+                                          : 'Official House content'}
+                                      </p>
+                                    </div>
+                                    <Link href={href}>
+                                      <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                                        {progressCopy.coursesCtaLabel}
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className={cn(UI.bodyMuted, 'text-sm text-slate-400')}>{progressCopy.coursesNextEmpty}</p>
+                          )}
+                          </div>
+                        </>
                       ) : (
                         <p className={cn(UI.bodyMuted, 'text-sm')}>{progressCopy.empty}</p>
                       )}
