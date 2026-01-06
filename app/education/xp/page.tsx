@@ -368,25 +368,25 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     eyebrow: 'SISTEMA XP',
 
-    title: 'XP nÃ£o Ã© um jogo. Ã um filtro.',
+    title: 'XP não é um jogo. É um filtro.',
 
     subtitle:
 
-      'Serve para separar curiosidade de compromisso. Para te obrigar a ganhar base. Para provar consistÃªncia antes de desbloquear camadas mais exigentes.',
+      'Serve para separar curiosidade de compromisso. Para te obrigar a ganhar base. Para provar consistência antes de desbloquear camadas mais exigentes.',
 
     manifestoTitle: 'Porque existe XP',
 
     manifestoPoints: [
 
-      'Filtra quem âanda a verâ de quem executa.',
+      'Filtra quem "anda a ver" de quem executa.',
 
-      'Reduz atalhos fracos: aprender fora de ordem cria confianÃ§a falsa.',
+      'Reduz atalhos fracos: aprender fora de ordem cria confiança falsa.',
 
-      'Sinaliza quem merece desbloqueios e acompanhamento mais prÃ³ximo.',
+      'Sinaliza quem merece desbloqueios e acompanhamento mais próximo.',
 
     ],
 
-    badge: 'Legacy XP â Sistema oficial',
+    badge: 'Legacy XP — Sistema oficial',
 
 
 
@@ -394,7 +394,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     ctaLeaderboard: 'Leaderboard',
 
-    ctaGlossary: 'GlossÃ¡rio',
+    ctaGlossary: 'Glossário',
 
     ctaBlog: 'Blog',
 
@@ -408,7 +408,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     todayDesc:
 
-      'Escolhe uma rota. Faz. Fecha. Volta amanhÃ£. Isto Ã© como se ganha vantagem â sem teatro e sem pressa.',
+      'Escolhe uma rota. Faz. Fecha. Volta amanhã. Isto é como se ganha vantagem — sem teatro e sem pressa.',
 
 
 
@@ -418,21 +418,21 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     rewardsDesc:
 
-      'Isto Ã© referÃªncia, nÃ£o Ã© ruÃ­do: intervalos oficiais, auditÃ¡veis, e desenhados para premiar esforÃ§o real.',
+      'Isto é referência, não é ruído: intervalos oficiais, auditáveis, e desenhados para premiar esforço real.',
 
 
 
-    consistencyKicker: 'CONSISTÃNCIA',
+    consistencyKicker: 'CONSISTÊNCIA',
 
     consistencyTitle: 'Streaks existem para premiar disciplina real',
 
     consistencyIntro:
 
-      'Streaks nÇo contam presenÇõa. Contam XP ganho. Precisas de iniciar sessÇo e ganhar XP pelo menos uma vez por dia. Um dia sem XP e a contagem reinicia.',
+      'Streaks nǜo contam presenÇõa. Contam XP ganho. Precisas de iniciar sessǜo e ganhar XP pelo menos uma vez por dia. Um dia sem XP e a contagem reinicia.',
 
     consistencyPoints: [
 
-      'Limite diÃ¡rio global: 369 XP.',
+      'Limite diário global: 369 XP.',
 
       'Streak de 7 dias: 222 XP (XP ganho em 7 dias seguidos).',
 
@@ -444,7 +444,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     monitoringBody:
 
-      'LiÃ§Ãµes e leituras contam uma vez por utilizador. Criadores nÃ£o ganham XP ao consumir o prÃ³prio conteÃºdo. O bÃ³nus de criador existe quando outros completam â nÃ£o quando o autor âfaz farmingâ.',
+      'Lições e leituras contam uma vez por utilizador. Criadores não ganham XP ao consumir o próprio conteúdo. O bónus de criador existe quando outros completam — não quando o autor "faz farming".',
 
 
 
@@ -454,19 +454,19 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     thresholdsDesc:
 
-      'O teu XP total determina o que podes desbloquear. NÃ£o Ã© status. Ã contexto e responsabilidade.',
+      'O teu XP total determina o que podes desbloquear. Não é status. É contexto e responsabilidade.',
 
-    levelNote: 'NÃ­vel = XP total / 100 (arredondado para baixo).',
+    levelNote: 'Nível = XP total / 100 (arredondado para baixo).',
 
     unlockNote:
 
-      'Ao atingir marcos, desbloqueias casas, fÃ³runs privados, missÃµes e desafios. O objectivo Ã© elevar o padrÃ£o, nÃ£o coleccionar âpontosâ.',
+      'Ao atingir marcos, desbloqueias casas, fóruns privados, missões e desafios. O objectivo é elevar o padrão, não coleccionar "pontos".',
 
 
 
     glossaryNote:
 
-      'GlossÃ¡rio Legacy: cada leitura validada (progress reading) dÃ¡ 2 XP por termo e sÃ³ conta uma vez por utilizador (inclui o autor). NÃ£o existe bÃ³nus extra para criadores neste caso.',
+      'Glossário Legacy: cada leitura validada (progress reading) dá 2 XP por termo e só conta uma vez por utilizador (inclui o autor). Não existe bónus extra para criadores neste caso.',
 
     errorsFallback: 'Falha ao carregar dados de XP.',
 
@@ -476,37 +476,37 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     noThresholds:
 
-      'Ainda nÃ£o hÃ¡ milestones publicados. (Admin: adiciona-os no painel /admin/xp.)',
+      'Ainda não há milestones publicados. (Admin: adiciona-os no painel /admin/xp.)',
 
 
 
-    gateTitle: 'Inicia sessÃ£o para ver o teu XP',
+    gateTitle: 'Inicia sessão para ver o teu XP',
 
     gateDesc:
 
-      'Esta pÃ¡gina Ã© privada porque XP existe para guardar progresso real, desbloqueios e consistÃªncia â nÃ£o para âespreitarâ.',
+      'Esta página é privada porque XP existe para guardar progresso real, desbloqueios e consistência — não para "espreitar".',
 
-    gateLogin: 'Iniciar sessÃ£o',
+    gateLogin: 'Iniciar sessão',
 
     gateSignup: 'Criar conta',
 
 
 
-    planQuick: 'Rota RÃ¡pida',
+    planQuick: 'Rota Rápida',
 
     planBase: 'Rota Base',
 
-    planSerious: 'Rota SÃ©ria',
+    planSerious: 'Rota Séria',
 
     planCTA: 'Executar',
 
 
 
-    planQuickDesc: '3 termos no glossÃ¡rio + 1 leitura de blog.',
+    planQuickDesc: '3 termos no glossário + 1 leitura de blog.',
 
-    planBaseDesc: '1 liÃ§Ã£o + 1 blog post + 5 termos no glossÃ¡rio.',
+    planBaseDesc: '1 lição + 1 blog post + 5 termos no glossário.',
 
-    planSeriousDesc: '2 liÃ§Ãµes + 2 blog posts + 10 termos no glossÃ¡rio.',
+    planSeriousDesc: '2 lições + 2 blog posts + 10 termos no glossário.',
 
     planQuickXP: '15 XP extra',
 
@@ -518,7 +518,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     rangeLabel: 'Intervalo',
 
-    creatorBonusLabel: 'BÃ³nus de criador',
+    creatorBonusLabel: 'Bónus de criador',
 
     officialRulesLabel: 'Regras oficiais',
 
@@ -532,21 +532,21 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     subtitle:
 
-      'Sirve para separar curiosidad de compromiso. Para obligarte a construir base. Para probar consistencia antes de desbloquear capas mÃ¡s exigentes.',
+      'Sirve para separar curiosidad de compromiso. Para obligarte a construir base. Para probar consistencia antes de desbloquear capas más exigentes.',
 
-    manifestoTitle: 'Por quÃ© existe XP',
+    manifestoTitle: 'Por qué existe XP',
 
     manifestoPoints: [
 
-      'Filtra a quien âmiraâ de quien ejecuta.',
+      'Filtra a quien "mira" de quien ejecuta.',
 
-      'Reduce atajos dÃ©biles: aprender fuera de orden crea falsa confianza.',
+      'Reduce atajos débiles: aprender fuera de orden crea falsa confianza.',
 
-      'SeÃ±ala quiÃ©n merece desbloqueos y acompaÃ±amiento mÃ¡s cercano.',
+      'Señala quién merece desbloqueos y acompañamiento más cercano.',
 
     ],
 
-    badge: 'Legacy XP â Sistema oficial',
+    badge: 'Legacy XP — Sistema oficial',
 
 
 
@@ -568,17 +568,17 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     todayDesc:
 
-      'Elige una ruta. Hazla. CiÃ©rrala. Vuelve maÃ±ana. AsÃ­ se gana ventaja â sin teatro y sin prisa.',
+      'Elige una ruta. Hazla. Ciérrala. Vuelve mañana. Así se gana ventaja — sin teatro y sin prisa.',
 
 
 
     rewardsKicker: 'REGLAS',
 
-    rewardsTitle: 'CÃ³mo se gana XP (reglas oficiales)',
+    rewardsTitle: 'Cómo se gana XP (reglas oficiales)',
 
     rewardsDesc:
 
-      'Esto es referencia, no ruido: intervalos oficiales, auditables, diseÃ±ados para premiar esfuerzo real.',
+      'Esto es referencia, no ruido: intervalos oficiales, auditables, diseñados para premiar esfuerzo real.',
 
 
 
@@ -592,11 +592,11 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     consistencyPoints: [
 
-      'LÃ­mite diario global: 369 XP.',
+      'Límite diario global: 369 XP.',
 
-      'Racha de 7 dÃ­as: 222 XP (XP ganado 7 dÃ­as seguidos).',
+      'Racha de 7 días: 222 XP (XP ganado 7 días seguidos).',
 
-      'Racha de 30 dÃ­as: 1.111 XP (XP ganado 30 dÃ­as seguidos).',
+      'Racha de 30 días: 1.111 XP (XP ganado 30 días seguidos).',
 
     ],
 
@@ -604,7 +604,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     monitoringBody:
 
-      'Lecciones y lecturas cuentan una vez por usuario. Los creadores no ganan XP al consumir su propio contenido. El bonus de creador existe cuando otros completan â no con âfarmingâ.',
+      'Lecciones y lecturas cuentan una vez por usuario. Los creadores no ganan XP al consumir su propio contenido. El bonus de creador existe cuando otros completan — no con "farming".',
 
 
 
@@ -620,13 +620,13 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     unlockNote:
 
-      'Al alcanzar hitos, desbloqueas casas, foros privados, misiones y desafÃ­os. El objetivo es elevar el estÃ¡ndar, no coleccionar âpuntosâ.',
+      'Al alcanzar hitos, desbloqueas casas, foros privados, misiones y desafíos. El objetivo es elevar el estándar, no coleccionar "puntos".',
 
 
 
     glossaryNote:
 
-      'Glosario Legacy: cada lectura validada da 2 XP por tÃ©rmino y cuenta una sola vez por usuario (incluye al autor). No hay bonus extra para creadores en este caso.',
+      'Glosario Legacy: cada lectura validada da 2 XP por término y cuenta una sola vez por usuario (incluye al autor). No hay bonus extra para creadores en este caso.',
 
     errorsFallback: 'Error al cargar datos de XP.',
 
@@ -636,23 +636,23 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     noThresholds:
 
-      'AÃºn no hay hitos publicados. (Admin: aÃ±Ã¡delos en /admin/xp.)',
+      'Aún no hay hitos publicados. (Admin: añádelos en /admin/xp.)',
 
 
 
-    gateTitle: 'Inicia sesiÃ³n para ver tu XP',
+    gateTitle: 'Inicia sesión para ver tu XP',
 
     gateDesc:
 
-      'Esta pÃ¡gina es privada porque XP existe para guardar progreso real, desbloqueos y consistencia â no para âcuriosearâ.',
+      'Esta página es privada porque XP existe para guardar progreso real, desbloqueos y consistencia — no para "curiosear".',
 
-    gateLogin: 'Iniciar sesiÃ³n',
+    gateLogin: 'Iniciar sesión',
 
     gateSignup: 'Crear cuenta',
 
 
 
-    planQuick: 'Ruta RÃ¡pida',
+    planQuick: 'Ruta Rápida',
 
     planBase: 'Ruta Base',
 
@@ -662,11 +662,11 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
 
 
-    planQuickDesc: '3 tÃ©rminos en el glosario + 1 lectura de blog.',
+    planQuickDesc: '3 términos en el glosario + 1 lectura de blog.',
 
-    planBaseDesc: '1 lecciÃ³n + 1 blog post + 5 tÃ©rminos en el glosario.',
+    planBaseDesc: '1 lección + 1 blog post + 5 términos en el glosario.',
 
-    planSeriousDesc: '2 lecciones + 2 blog posts + 10 tÃ©rminos en el glosario.',
+    planSeriousDesc: '2 lecciones + 2 blog posts + 10 términos en el glosario.',
 
     planQuickXP: '15 XP extra',
 
@@ -688,7 +688,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     eyebrow: 'XP SYSTEM',
 
-    title: 'XP is not a game. Itâs a filter.',
+    title: 'XP is not a game. It's a filter.',
 
     subtitle:
 
@@ -698,7 +698,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     manifestoPoints: [
 
-      'Filters âjust browsingâ from execution.',
+      'Filters "just browsing" from execution.',
 
       'Prevents weak shortcuts: learning out of order creates fake confidence.',
 
@@ -706,7 +706,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     ],
 
-    badge: 'Legacy XP â Official system',
+    badge: 'Legacy XP — Official system',
 
 
 
@@ -728,7 +728,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     todayDesc:
 
-      'Pick a route. Do it. Close it. Come back tomorrow. Thatâs how you build advantage â without noise.',
+      'Pick a route. Do it. Close it. Come back tomorrow. That's how you build advantage — without noise.',
 
 
 
@@ -764,7 +764,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     monitoringBody:
 
-      'Lessons and reads count once per user. Creators donât earn XP by consuming their own content. Creator bonus happens when others complete it â not via farming.',
+      'Lessons and reads count once per user. Creators don't earn XP by consuming their own content. Creator bonus happens when others complete it — not via farming.',
 
 
 
@@ -802,7 +802,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     gateDesc:
 
-      'This page is private because XP exists to track real progress, unlocks, and consistency â not browsing.',
+      'This page is private because XP exists to track real progress, unlocks, and consistency — not browsing.',
 
     gateLogin: 'Log in',
 
@@ -924,11 +924,11 @@ type RequirementKey = (typeof REQUIREMENT_ORDER)[number];
 
 const REQUIREMENT_LABELS: Record<RequirementKey, Record<SupportedCopyLang, string>> = {
 
-  glossary: { pt: 'Termos no glossÃ¡rio', es: 'TÃ©rminos en el glosario', en: 'Glossary terms' },
+  glossary: { pt: 'Termos no glossário', es: 'Términos en el glosario', en: 'Glossary terms' },
 
   blog: { pt: 'Leituras no blog', es: 'Lecturas en el blog', en: 'Blog reads' },
 
-  lesson: { pt: 'LiÃ§Ãµes', es: 'Lecciones', en: 'Lessons' },
+  lesson: { pt: 'Lições', es: 'Lecciones', en: 'Lessons' },
 
 };
 
@@ -936,7 +936,7 @@ const REQUIREMENT_LABELS: Record<RequirementKey, Record<SupportedCopyLang, strin
 
 const COMPLETED_LABELS: Record<SupportedCopyLang, string> = {
 
-  pt: 'ConcluÃ­da',
+  pt: 'Concluída',
 
   es: 'Completada',
 
@@ -960,7 +960,7 @@ const createDefaultComboMeta = (): Record<ComboKey, ComboMissionMeta> => {
 
 
 
-/** ---------- UI tokens (coerÃªncia com o teu sistema visual dark premium) ---------- */
+/** ---------- UI tokens (coerência com o teu sistema visual dark premium) ---------- */
 
 const UI = {
 
@@ -1602,13 +1602,13 @@ const rewardMetadata: Record<
 
   lesson_complete: {
 
-    title: { pt: 'LiÃ§Ã£o concluÃ­da', es: 'LecciÃ³n completada', en: 'Lesson completed' },
+    title: { pt: 'Lição concluída', es: 'Lección completada', en: 'Lesson completed' },
 
     creatorBonus: {
 
-      pt: '+19% quando outros completam a tua liÃ§Ã£o (criador).',
+      pt: '+19% quando outros completam a tua lição (criador).',
 
-      es: '+19% cuando otros completan tu lecciÃ³n (creador).',
+      es: '+19% cuando otros completan tu lección (creador).',
 
       en: '+19% when others complete your lesson (creator).',
 
@@ -1618,13 +1618,13 @@ const rewardMetadata: Record<
 
   blog_read: {
 
-    title: { pt: 'Artigo lido', es: 'ArtÃ­culo leÃ­do', en: 'Article read' },
+    title: { pt: 'Artigo lido', es: 'Artículo leído', en: 'Article read' },
 
     creatorBonus: {
 
       pt: '+19% quando outros leem o teu artigo (criador).',
 
-      es: '+19% cuando otros leen tu artÃ­culo (creador).',
+      es: '+19% cuando otros leen tu artículo (creador).',
 
       en: '+19% when others read your article (creator).',
 
@@ -1640,11 +1640,11 @@ const rewardMetadata: Record<
 
   glossary_term_read: {
 
-    title: { pt: 'GlossÃ¡rio â termo lido', es: 'Glosario â tÃ©rmino leÃ­do', en: 'Glossary â term read' },
+    title: { pt: 'Glossário – termo lido', es: 'Glosario – término leído', en: 'Glossary – term read' },
 
   },
 
-  mission_daily: { title: { pt: 'MissÃ£o diÃ¡ria', es: 'MisiÃ³n diaria', en: 'Daily mission' } },
+  mission_daily: { title: { pt: 'Missão diária', es: 'Misión diaria', en: 'Daily mission' } },
 
 };
 
@@ -1752,7 +1752,7 @@ const formatRange = (min: number | null, max: number | null) => {
 
   if (a === b) return `${a} XP`;
 
-  return `${a}â${b} XP`;
+  return `${a}–${b} XP`;
 
 };
 
@@ -2808,7 +2808,7 @@ export default function EducationXpPage() {
 
     // tenta ler de limits/metadata; fallback para o valor oficial do copy
 
-    // (mantemos o nÃºmero do copy como fonte de verdade visual)
+    // (mantemos o número do copy como fonte de verdade visual)
 
     return 369;
 
@@ -2818,7 +2818,7 @@ export default function EducationXpPage() {
 
   const visibleRewards = useMemo(() => {
 
-    // MantÃ©m referÃªncia Ãºtil sem ruÃ­do: esconde o que jÃ¡ explicamos em âConsistÃªnciaâ
+    // Mantém referência útil sem ruído: esconde o que já explicamos em "Consistência"
 
     const hiddenActions = new Set(['streak_7', 'streak_30']);
 
@@ -2971,7 +2971,7 @@ export default function EducationXpPage() {
 
     language === 'pt'
 
-      ? 'A atualizar o progresso diÃ¡rio...'
+      ? 'A atualizar o progresso diário...'
 
       : language === 'es'
 
@@ -2985,7 +2985,7 @@ export default function EducationXpPage() {
 
     language === 'pt'
 
-      ? 'Consumos acumulam durante o dia e reiniciam Ã s 00h CET.'
+      ? 'Consumos acumulam durante o dia e reiniciam às 00h CET.'
 
       : language === 'es'
 
@@ -2999,7 +2999,7 @@ export default function EducationXpPage() {
 
     language === 'pt'
 
-      ? 'XP extra jÃ¡ creditado hoje.'
+      ? 'XP extra já creditado hoje.'
 
       : language === 'es'
 
@@ -3013,7 +3013,7 @@ export default function EducationXpPage() {
 
 
 
-  /** ---------- Gate (pÃ¡gina fechada) ---------- */
+  /** ---------- Gate (página fechada) ---------- */
 
   if (!user) {
 
@@ -3075,13 +3075,13 @@ export default function EducationXpPage() {
 
                   {language === 'pt'
 
-                    ? 'XP existe para progresso real â nÃ£o para âver como funcionaâ.'
+                    ? 'XP existe para progresso real — não para "ver como funciona".'
 
                     : language === 'es'
 
-                    ? 'XP existe para progreso real â no para âcuriosearâ.'
+                    ? 'XP existe para progreso real — no para "curiosear".'
 
-                    : 'XP exists for real progress â not browsing.'}
+                    : 'XP exists for real progress — not browsing.'}
 
                 </p>
 
@@ -3117,7 +3117,7 @@ export default function EducationXpPage() {
 
           <div className="mx-auto max-w-6xl space-y-8">
 
-            {/* HERO (curto, sÃ©rio, sem stock) */}
+            {/* HERO (curto, sério, sem stock) */}
 
             <HeroSection className="px-0 py-0" overlayVariant="inverse">
 
@@ -3223,7 +3223,7 @@ export default function EducationXpPage() {
 
                         {language === 'pt'
 
-                          ? 'O conteÃºdo Ã© livre. O progresso Ã© merecido.'
+                          ? 'O conteúdo é livre. O progresso é merecido.'
 
                           : language === 'es'
 
@@ -3255,11 +3255,11 @@ export default function EducationXpPage() {
 
                             {language === 'pt'
 
-                              ? 'Limite diÃ¡rio global e streaks existem para travar spam e premiar disciplina.'
+                              ? 'Limite diário global e streaks existem para travar spam e premiar disciplina.'
 
                               : language === 'es'
 
-                              ? 'El lÃ­mite diario y los streaks frenan spam y premian disciplina.'
+                              ? 'El límite diario y los streaks frenan spam y premian disciplina.'
 
                               : 'Daily cap and streaks stop spam and reward discipline.'}
 
@@ -3291,7 +3291,7 @@ export default function EducationXpPage() {
 
                             <ShieldCheck className="h-4 w-4 text-cyan-300" />
 
-                            {language === 'pt' ? 'Limite diÃ¡rio' : language === 'es' ? 'LÃ­mite diario' : 'Daily cap'}
+                            {language === 'pt' ? 'Limite diário' : language === 'es' ? 'Límite diario' : 'Daily cap'}
 
                           </div>
 
@@ -3301,13 +3301,13 @@ export default function EducationXpPage() {
 
                             {language === 'pt'
 
-                              ? 'Depois disso, aprendes na mesma â mas nÃ£o acumulas XP.'
+                              ? 'Depois disso, aprendes na mesma — mas não acumulas XP.'
 
                               : language === 'es'
 
-                              ? 'DespuÃ©s, sigues aprendiendo â pero no acumulas XP.'
+                              ? 'Después, sigues aprendiendo — pero no acumulas XP.'
 
-                              : 'After that, you can still learn â XP stops accumulating.'}
+                              : 'After that, you can still learn — XP stops accumulating.'}
 
                           </p>
 
@@ -3321,7 +3321,7 @@ export default function EducationXpPage() {
 
                             <Flame className="h-4 w-4 text-cyan-300" />
 
-                            7 {language === 'pt' ? 'dias' : language === 'es' ? 'dÃ­as' : 'days'}
+                            7 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
 
                           </div>
 
@@ -3335,7 +3335,7 @@ export default function EducationXpPage() {
 
                               : language === 'es'
 
-                              ? 'XP ganado cada dÃ­a. Sin excusas.'
+                              ? 'XP ganado cada día. Sin excusas.'
 
                               : 'XP earned daily. No excuses.'}
 
@@ -3351,7 +3351,7 @@ export default function EducationXpPage() {
 
                             <CalendarCheck className="h-4 w-4 text-cyan-300" />
 
-                            30 {language === 'pt' ? 'dias' : language === 'es' ? 'dÃ­as' : 'days'}
+                            30 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
 
                           </div>
 
@@ -3447,7 +3447,7 @@ export default function EducationXpPage() {
 
 
 
-            {/* STICKY BAR (premium, utilitÃ¡ria) */}
+            {/* STICKY BAR (premium, utilitária) */}
 
             <div className="sticky top-16 z-40">
 
@@ -3861,7 +3861,7 @@ export default function EducationXpPage() {
 
                           {language === 'pt'
 
-                            ? 'A base: liÃ§Ãµes, leituras e glossÃ¡rio.'
+                            ? 'A base: lições, leituras e glossário.'
 
                             : language === 'es'
 
@@ -3927,7 +3927,7 @@ export default function EducationXpPage() {
 
                             <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
 
-                              <p className={UI.bodyMuted}>{loading ? copy.loadingRewards : 'â'}</p>
+                              <p className={UI.bodyMuted}>{loading ? copy.loadingRewards : '—'}</p>
 
                             </div>
 
@@ -3961,11 +3961,11 @@ export default function EducationXpPage() {
 
                           {language === 'pt'
 
-                            ? 'Credibilidade mÃ­nima para acompanhar o teu progresso.'
+                            ? 'Credibilidade mínima para acompanhar o teu progresso.'
 
                             : language === 'es'
 
-                            ? 'Credibilidad mÃ­nima para seguir tu progreso.'
+                            ? 'Credibilidad mínima para seguir tu progreso.'
 
                             : 'Minimum credibility to track your progress.'}
 
@@ -4017,7 +4017,7 @@ export default function EducationXpPage() {
 
                             <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
 
-                              <p className={UI.bodyMuted}>{loading ? copy.loadingRewards : 'â'}</p>
+                              <p className={UI.bodyMuted}>{loading ? copy.loadingRewards : '—'}</p>
 
                             </div>
 
@@ -4201,7 +4201,7 @@ export default function EducationXpPage() {
 
                         <p className={UI.goldStatLabel}>
 
-                          {language === 'pt' ? 'Liga Ã  evidÃªncia' : language === 'es' ? 'Evidencia' : 'Evidence'}
+                          {language === 'pt' ? 'Liga à evidência' : language === 'es' ? 'Evidencia' : 'Evidence'}
 
                         </p>
 
@@ -4209,13 +4209,13 @@ export default function EducationXpPage() {
 
                           {language === 'pt'
 
-                            ? 'Leaderboard nÃ£o Ã© ego. Ã consistÃªncia visÃ­vel. Mostra quem aparece, termina e volta.'
+                            ? 'Leaderboard não é ego. É consistência visível. Mostra quem aparece, termina e volta.'
 
                             : language === 'es'
 
-                            ? 'El leaderboard no es ego. Es consistencia visible. Muestra quiÃ©n aparece, termina y vuelve.'
+                            ? 'El leaderboard no es ego. Es consistencia visible. Muestra quién aparece, termina y vuelve.'
 
-                            : 'Leaderboard is not ego. Itâs visible consistency. It shows who shows up, finishes, and returns.'}
+                            : 'Leaderboard is not ego. It's visible consistency. It shows who shows up, finishes, and returns.'}
 
                         </p>
 
@@ -4239,11 +4239,11 @@ export default function EducationXpPage() {
 
                           {language === 'pt'
 
-                            ? 'Compete contra o âtu de ontemâ.'
+                            ? 'Compete contra o "tu de ontem".'
 
                             : language === 'es'
 
-                            ? 'Compite contra tu âyo de ayerâ.'
+                            ? 'Compite contra tu "yo de ayer".'
 
                             : 'Compete against yesterday you.'}
 
@@ -4263,7 +4263,7 @@ export default function EducationXpPage() {
 
 
 
-            {/* CONSISTÃNCIA */}
+            {/* CONSISTÊNCIA */}
 
             <section className={cn(UI.panel, 'px-6 py-8')}>
 
@@ -4297,7 +4297,7 @@ export default function EducationXpPage() {
 
                         <ShieldCheck className="h-4 w-4 text-cyan-300" />
 
-                        {language === 'pt' ? 'Limite diÃ¡rio' : language === 'es' ? 'LÃ­mite diario' : 'Daily cap'}
+                        {language === 'pt' ? 'Limite diário' : language === 'es' ? 'Límite diario' : 'Daily cap'}
 
                       </div>
 
@@ -4315,7 +4315,7 @@ export default function EducationXpPage() {
 
                         <Flame className="h-4 w-4 text-cyan-300" />
 
-                        7 {language === 'pt' ? 'dias' : language === 'es' ? 'dÃ­as' : 'days'}
+                        7 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
 
                       </div>
 
@@ -4333,7 +4333,7 @@ export default function EducationXpPage() {
 
                         <CalendarCheck className="h-4 w-4 text-cyan-300" />
 
-                        30 {language === 'pt' ? 'dias' : language === 'es' ? 'dÃ­as' : 'days'}
+                        30 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
 
                       </div>
 
@@ -4365,7 +4365,7 @@ export default function EducationXpPage() {
 
                         {language === 'pt'
 
-                          ? 'Um curso de cada vez. Termina. SÃ³ depois avanÃ§as. Isto cria capacidade real.'
+                          ? 'Um curso de cada vez. Termina. Só depois avanças. Isto cria capacidade real.'
 
                           : language === 'es'
 
@@ -4379,7 +4379,7 @@ export default function EducationXpPage() {
 
                         <p className={UI.goldStatLabel}>
 
-                          {language === 'pt' ? 'Dica de execuÃ§Ã£o' : language === 'es' ? 'Consejo' : 'Execution tip'}
+                          {language === 'pt' ? 'Dica de execução' : language === 'es' ? 'Consejo' : 'Execution tip'}
 
                         </p>
 
@@ -4387,13 +4387,13 @@ export default function EducationXpPage() {
 
                           {language === 'pt'
 
-                            ? 'Se falhas um dia, nÃ£o dramatizes. RecomeÃ§a no dia seguinte. O streak existe para treinar disciplina, nÃ£o para te castigar.'
+                            ? 'Se falhas um dia, não dramatizes. Recomeça no dia seguinte. O streak existe para treinar disciplina, não para te castigar.'
 
                             : language === 'es'
 
-                            ? 'Si fallas un dÃ­a, no dramatices. Reinicia al dÃ­a siguiente. El streak entrena disciplina, no castigo.'
+                            ? 'Si fallas un día, no dramatices. Reinicia al día siguiente. El streak entrena disciplina, no castigo.'
 
-                            : 'If you miss a day, donât dramatise. Restart tomorrow. Streaks train discipline, not punishment.'}
+                            : 'If you miss a day, don't dramatise. Restart tomorrow. Streaks train discipline, not punishment.'}
 
                         </p>
 

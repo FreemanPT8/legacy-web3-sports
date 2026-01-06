@@ -12,7 +12,7 @@ import { OnboardingPopup, type OnboardingPopupData } from '@/components/educatio
 import type { HouseOnboardingSequence, OnboardingLogEntry, OnboardingTrigger } from '@/types/onboarding';
 import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
 import { useTermAgreement } from '@/hooks/useTermAgreement';
-import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', { label: string }> = {
@@ -250,6 +250,54 @@ export default function AdminOnboardingPage() {
     });
   };
 
+  const handleAddPopup = () => {
+    const baseHouse = houseSequence?.house || draft.house || houseKey || 'LEGACY';
+    const freshPopup: OnboardingPopupData = normalizeTrigger({
+      ...DEFAULT_DRAFT,
+      id: `popup-${baseHouse}-${Date.now()}`,
+      house: baseHouse,
+      xpGate: 'XP 0',
+      trigger: { type: 'xp', value: 0, label: 'XP 0 - primeiro login' },
+      title: 'Novo pop-up personalizado',
+      badgeLabel: 'Rascunho',
+    });
+    setSequenceDraft((prev) => [...prev, freshPopup]);
+    setDraft(freshPopup);
+    setHighlightsInput((freshPopup.highlights ?? []).join('\n'));
+    setSelectedIndex(null);
+    setStatus('Novo pop-up adicionado. Guarda para sincronizar com a House.');
+  };
+
+  const handleRemovePopup = (index: number) => {
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm('Remover este pop-up da sequência? Ainda não será apagado na House até guardares.');
+      if (!confirmed) return;
+    }
+    setSequenceDraft((prev) => {
+      if (!prev[index]) return prev;
+      const copy = [...prev];
+      const [removed] = copy.splice(index, 1);
+      const nextSelection = copy.length ? Math.min(index, copy.length - 1) : null;
+      if (nextSelection === null) {
+        const fallback = normalizeTrigger({
+          ...DEFAULT_DRAFT,
+          id: `popup-${(houseSequence?.house || houseKey || 'LEGACY')}-${Date.now()}`,
+          house: houseSequence?.house || houseKey || 'LEGACY',
+        });
+        setDraft(fallback);
+        setHighlightsInput((fallback.highlights ?? []).join('\n'));
+        setSelectedIndex(null);
+      } else {
+        const nextPopup = normalizeTrigger(copy[nextSelection]);
+        setDraft(nextPopup);
+        setHighlightsInput((nextPopup.highlights ?? []).join('\n'));
+        setSelectedIndex(nextSelection);
+      }
+      setStatus(`Pop-up ${removed?.title ?? removed?.id ?? ''} removido da sequência local.`);
+      return copy;
+    });
+  };
+
   const handleMovePopup = (index: number, direction: 'up' | 'down') => {
     setSequenceDraft((prev) => {
       const copy = [...prev];
@@ -411,23 +459,33 @@ export default function AdminOnboardingPage() {
           </CardContent>
         </Card>
 
-        {sequenceDraft.length ? (
-          <Card className="border-white/10 bg-[#04131b]/80">
-            <CardContent className="space-y-4 p-6">
-              <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-                    {houseSequence ? `${houseSequence.house} · ${houseSequence.sport}` : 'Sequência carregada'}
-                  </p>
-                  <h2 className="text-xl font-semibold text-white">
-                    {houseSequence ? 'Pop-ups da House' : 'Pop-ups (demo)'}
-                  </h2>
-                </div>
+        <Card className="border-white/10 bg-[#04131b]/80">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                  {houseSequence ? `${houseSequence.house} · ${houseSequence.sport}` : 'Sequência carregada'}
+                </p>
+                <h2 className="text-xl font-semibold text-white">
+                  {houseSequence ? 'Pop-ups da House' : 'Pop-ups (demo)'}
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xs text-slate-400">
                   {sequenceDraft.length} {sequenceDraft.length === 1 ? 'mensagem' : 'mensagens'}
                 </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddPopup}
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  <Plus className="mr-1 h-4 w-4" /> Novo pop-up
+                </Button>
               </div>
+            </div>
 
+            {sequenceDraft.length ? (
               <div className="space-y-3">
                 {sequenceDraft.map((popup, index) => (
                   <div
@@ -467,15 +525,27 @@ export default function AdminOnboardingPage() {
                         >
                           Editar
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-red-400/50 text-red-200 hover:bg-red-500/10"
+                          onClick={() => handleRemovePopup(index)}
+                        >
+                          <Trash2 className="mr-1 h-4 w-4" /> Remover
+                        </Button>
                       </div>
                     </div>
                     <p className="mt-2 text-sm text-slate-300 line-clamp-2">{popup.body}</p>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        ) : null}
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-[#000c12]/30 p-6 text-sm text-slate-300">
+                Ainda não tens pop-ups para esta House. Usa “Novo pop-up” para começar a planear a sequência oficial.
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-4 p-6">
