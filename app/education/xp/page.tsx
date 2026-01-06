@@ -2020,6 +2020,7 @@ export default function EducationXpPage() {
     },
     [getToken, houseKey, user],
   );
+  const queueSource = houseSequence?.popups?.length ? houseSequence.popups : demoQueue;
   const computeQueueHash = useCallback((payload: OnboardingPopupData[]) => {
     return payload.map((popup) => popup.id).join('|');
   }, []);
@@ -2261,10 +2262,6 @@ export default function EducationXpPage() {
     return list.slice(0, 3);
 
   }, [progressSummary]);
-
-
-
-  const queueSource = houseSequence?.popups?.length ? houseSequence.popups : demoQueue;
   const analytics = houseSequence?.analytics;
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
   const fmtNumber = (value?: number) => (typeof value === 'number' ? value.toLocaleString() : '--');
@@ -2318,18 +2315,6 @@ export default function EducationXpPage() {
     { label: analyticsLabels.approvals, value: fmtNumber(analytics?.manualApprovals), desc: analyticsDescriptions[2] },
     { label: analyticsLabels.blocked, value: fmtNumber(analytics?.blockedAttempts), desc: analyticsDescriptions[3] },
   ];
-
-  const readyPopups = useMemo(
-
-    () => queueSource.filter((popup) => isTriggerSatisfied(popup)),
-
-    [queueSource, isTriggerSatisfied],
-
-  );
-
-
-
-
   const blockedPopups = useMemo(
 
     () => queueSource.filter((popup) => !isTriggerSatisfied(popup)),
