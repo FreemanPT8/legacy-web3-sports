@@ -67,24 +67,6 @@ const CONTENT_TRIGGER_TYPES = [
   { value: 'blog', label: 'Artigo do blog' },
 ] as const;
 
-const DEFAULT_DRAFT: OnboardingPopupData = {
-  id: 'draft-popup',
-  house: 'House of Legacy',
-  xpGate: 'XP 0',
-  title: 'Novo pop-up personalizado',
-  body: 'Utiliza este pop-up para reforçar o próximo passo da House. Mantém a linguagem clara, auditável e sem hype.',
-  highlights: [
-    '1 pop-up = 1 decisão útil.',
-    'CTA principal deve apontar para um recurso oficial.',
-  ],
-  badgeLabel: 'Rascunho',
-  primaryCta: { label: 'CTA principal', href: '/education/xp' },
-  secondaryCta: { label: 'CTA secundária', href: '/education/houses' },
-  trigger: { type: 'xp', value: 0, label: 'XP 0 - primeiro login' },
-  status: 'draft',
-  localized: cloneLocalizedCopy(BASE_LOCALIZED_COPY),
-};
-
 const DEFAULT_ANALYTICS: HouseOnboardingSequence['analytics'] = {
   ctr: 0.65,
   completionRate: 0.8,
@@ -214,6 +196,24 @@ function resolvePopupForLanguage(popup: OnboardingPopupData, lang: PopupLanguage
       : popup.secondaryCta,
   };
 }
+
+const DEFAULT_DRAFT: OnboardingPopupData = {
+  id: 'draft-popup',
+  house: 'House of Legacy',
+  xpGate: 'XP 0',
+  title: 'Novo pop-up personalizado',
+  body: 'Utiliza este pop-up para reforçar o próximo passo da House. Mantém a linguagem clara, auditável e sem hype.',
+  highlights: [
+    '1 pop-up = 1 decisão útil.',
+    'CTA principal deve apontar para um recurso oficial.',
+  ],
+  badgeLabel: 'Rascunho',
+  primaryCta: { label: 'CTA principal', href: '/education/xp' },
+  secondaryCta: { label: 'CTA secundária', href: '/education/houses' },
+  trigger: { type: 'xp', value: 0, label: 'XP 0 - primeiro login' },
+  status: 'draft',
+  localized: cloneLocalizedCopy(BASE_LOCALIZED_COPY),
+};
 const RESPONSIBILITY_TERM = {
   intro:
     'Ao aceitar o papel de Head of House of Sport no ecossistema Legacy + Apertum, passas a representar os princípios fundadores sem hype ou abuso de autoridade.',
