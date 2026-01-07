@@ -315,7 +315,7 @@ async function fetchStructuredSequence(houseKey: string) {
     const { data: popupRows, error: popupError } = await db
       .from('onboarding_popups')
       .select(
-        'id, house_key, language, title, body, highlights, badge_label, primary_cta, secondary_cta, status, updated_at',
+        'id, house_key, language, title, body, highlights, badge_label, primary_cta, secondary_cta, status, updated_at, copy_i18n, priority',
       )
       .eq('house_key', houseKey)
       .eq('status', 'published')
