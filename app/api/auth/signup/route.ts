@@ -101,7 +101,7 @@ async function fetchHeadUserIdsForSport(sportId: string): Promise<string[]> {
     if (assignmentError) throw assignmentError;
     return (assignments ?? [])
       .map((row: { user_id: string | null }) => row.user_id)
-      .filter((value): value is string => Boolean(value));
+      .filter((value: string | null): value is string => Boolean(value));
   } catch (error) {
     console.error('[signup] Failed to resolve Head users for sport notifications:', error);
     return [];
