@@ -30,7 +30,7 @@ import {
   type QueueLog,
   type QueueLogAction,
 } from '@/hooks/useOnboardingQueue';
-import type { HouseOnboardingSequence } from '@/types/onboarding';
+import type { HouseOnboardingSequence, OnboardingLogEntry } from '@/types/onboarding';
 
 import {
 
@@ -1924,6 +1924,7 @@ export default function EducationXpPage() {
     [demoCopy, language, onboardingCopy],
   );
   const demoQueue = useMemo(() => buildDemoQueue(houseLabel), [buildDemoQueue, houseLabel]);
+  const refreshRemoteLogs = useCallback(() => setRemoteLogsReloadKey((key) => key + 1), []);
 
   const logRemoteAction = useCallback(
     async (popupId: string, action: QueueLogAction) => {
@@ -1931,7 +1932,7 @@ export default function EducationXpPage() {
       const token = getToken?.();
       if (!token) return;
       try {
-        await fetch('/api/onboarding/logs', {
+        const response = await fetch('/api/onboarding/logs', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1943,6 +1944,16 @@ export default function EducationXpPage() {
             house: houseKey,
           }),
         });
+        const data = (await response.json().catch(() => null)) as
+          | { success: true; entry?: OnboardingLogEntry | null }
+          | { success: false }
+          | null;
+        if (data?.success && data.entry) {
+          setRemoteLogs((prev) => {
+            const next = [data.entry!, ...prev];
+            return next.slice(0, 25);
+          });
+        }
       } catch (error) {
         console.error('[education/xp] Failed to log action', error);
       }
@@ -2010,6 +2021,10 @@ export default function EducationXpPage() {
   const [remoteCooldownReason, setRemoteCooldownReason] = useState<'daily' | 'weekly' | null>(null);
   const [remoteQueueUpdatedAt, setRemoteQueueUpdatedAt] = useState<number | null>(null);
   const [queueReloadKey, setQueueReloadKey] = useState(0);
+  const [remoteLogs, setRemoteLogs] = useState<OnboardingLogEntry[]>([]);
+  const [remoteLogsLoading, setRemoteLogsLoading] = useState(false);
+  const [remoteLogsError, setRemoteLogsError] = useState<string | null>(null);
+  const [remoteLogsReloadKey, setRemoteLogsReloadKey] = useState(0);
   const [liveAnalytics, setLiveAnalytics] = useState<HouseOnboardingSequence['analytics'] | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
@@ -2093,6 +2108,9 @@ export default function EducationXpPage() {
       setQueueSeedSignature(null);
       setRemoteCooldownReason(null);
       setRemoteQueueUpdatedAt(null);
+      setRemoteLogs([]);
+      setRemoteLogsError(null);
+      setRemoteLogsLoading(false);
       lastPersistedQueueHashRef.current = null;
       return;
     }
@@ -2102,6 +2120,9 @@ export default function EducationXpPage() {
       setRemoteQueueLoaded(true);
       setRemoteCooldownReason(null);
       setRemoteQueueUpdatedAt(null);
+      setRemoteLogs([]);
+      setRemoteLogsError(null);
+      setRemoteLogsLoading(false);
       return;
     }
     const runEngine = async () => {
@@ -2151,11 +2172,43 @@ export default function EducationXpPage() {
         }
       }
     };
+    const loadUserLogs = async () => {
+      try {
+        setRemoteLogsLoading(true);
+        setRemoteLogsError(null);
+        const response = await fetch(`/api/onboarding/logs/me?house=${encodeURIComponent(houseKey)}&limit=25`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Failed to load logs');
+        }
+        setRemoteLogs((data.logs as OnboardingLogEntry[]) ?? []);
+      } catch (error) {
+        if (!active) return;
+        console.error('[education/xp] Failed to load onboarding logs', error);
+        setRemoteLogsError(
+          language === 'pt'
+            ? 'Não foi possível carregar os últimos registos.'
+            : language === 'es'
+            ? 'No se pudieron cargar los registros.'
+            : 'Failed to load recent records.',
+        );
+        setRemoteLogs([]);
+      } finally {
+        if (active) {
+          setRemoteLogsLoading(false);
+        }
+      }
+    };
     void loadQueue();
+    void loadUserLogs();
     return () => {
       active = false;
     };
-  }, [getToken, houseKey, user, houseReloadKey, queueReloadKey]);
+  }, [getToken, houseKey, user, houseReloadKey, queueReloadKey, remoteLogsReloadKey, language]);
 
   useEffect(() => {
     let active = true;
@@ -2200,7 +2253,26 @@ export default function EducationXpPage() {
 
   const logLabels = demoCopy.logLabels;
   const cooldownCopy = demoCopy.cooldown;
-  const lastLogs = useMemo(() => popupLogs.slice(-5).reverse(), [popupLogs]);
+  const historyLogs = useMemo(() => {
+    const remoteNormalized = remoteLogs.map((log) => ({
+      popupId: log.popupId,
+      action: log.action as QueueLogAction,
+      timestamp: log.timestamp,
+    }));
+    const localNormalized = popupLogs.map((log) => ({ ...log }));
+    const merged = [...remoteNormalized, ...localNormalized];
+    merged.sort((a, b) => b.timestamp - a.timestamp);
+    const seen = new Set<string>();
+    const deduped: QueueLog[] = [];
+    for (const entry of merged) {
+      const key = `${entry.popupId}-${entry.action}-${entry.timestamp}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(entry);
+      if (deduped.length >= 5) break;
+    }
+    return deduped;
+  }, [popupLogs, remoteLogs]);
   const locale = language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US';
   const formatLogTime = useCallback(
     (timestamp: number) =>
@@ -5012,18 +5084,44 @@ export default function EducationXpPage() {
 
                   <Card className={cn(UI.cardSurface, 'h-full')}>
                     <CardContent className="p-5 space-y-3">
-                      <p className={UI.cardTitle}>
-                        {language === 'pt'
-                          ? 'Logs recentes'
-                          : language === 'es'
-                          ? 'Logs recientes'
-                          : 'Recent logs'}
-                      </p>
-                      {lastLogs.length ? (
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className={UI.cardTitle}>
+                            {language === 'pt'
+                              ? 'Logs recentes'
+                              : language === 'es'
+                              ? 'Logs recientes'
+                              : 'Recent logs'}
+                          </p>
+                          <p className={cn(UI.micro, 'text-slate-400')}>
+                            {language === 'pt'
+                              ? 'Sincronizado com os registos oficiais da House.'
+                              : language === 'es'
+                              ? 'Sincronizado con los registros oficiales de la House.'
+                              : 'Synced with official House records.'}
+                          </p>
+                        </div>
+                        {user ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={refreshRemoteLogs}
+                            disabled={remoteLogsLoading}
+                            className="border-white/20 text-white hover:bg-white/10"
+                          >
+                            {remoteLogsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {language === 'pt' ? 'Atualizar logs' : language === 'es' ? 'Actualizar logs' : 'Refresh logs'}
+                          </Button>
+                        ) : null}
+                      </div>
+                      {remoteLogsError ? (
+                        <p className="text-xs text-amber-300">{remoteLogsError}</p>
+                      ) : null}
+                      {historyLogs.length ? (
                         <ul className="space-y-2">
-                          {lastLogs.map((log) => (
+                          {historyLogs.map((log) => (
                             <li
-                              key={`${log.popupId}-${log.timestamp}`}
+                              key={`${log.popupId}-${log.timestamp}-${log.action}`}
                               className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#000c12]/40 px-3 py-2"
                             >
                               <span className="font-mono text-xs text-slate-400">{formatLogTime(log.timestamp)}</span>
@@ -5031,6 +5129,14 @@ export default function EducationXpPage() {
                             </li>
                           ))}
                         </ul>
+                      ) : remoteLogsLoading ? (
+                        <p className={cn(UI.bodyMuted, 'text-sm')}>
+                          {language === 'pt'
+                            ? 'A carregar logs...'
+                            : language === 'es'
+                            ? 'Cargando logs...'
+                            : 'Loading logs...'}
+                        </p>
                       ) : (
                         <p className={cn(UI.bodyMuted, 'text-sm')}>
                           {language === 'pt'
