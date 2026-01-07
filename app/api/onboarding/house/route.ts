@@ -122,15 +122,106 @@ async function fetchPersistedSequence(houseKey: string) {
 
 async function persistSequence(houseKey: string, sequence: HouseOnboardingSequence) {
   if (!db) return;
+  const timestamp = new Date().toISOString();
   const payload = {
     house_key: houseKey,
     sequence,
-    updated_at: new Date().toISOString(),
+    updated_at: timestamp,
   };
   const { error } = await db.from(TABLE_NAME).upsert(payload, { onConflict: 'house_key' });
   if (error) {
     console.error('[onboarding.house] Failed to persist sequence to Supabase', error);
     throw new Error(error.message || 'Failed to persist sequence');
+  }
+  await persistLivePopups(houseKey, sequence, timestamp);
+}
+
+async function persistLivePopups(houseKey: string, sequence: HouseOnboardingSequence, timestamp: string) {
+  if (!db) return;
+  const popupTable = 'onboarding_popups';
+  const triggerTable = 'onboarding_triggers';
+
+  try {
+    const { data: existingPopups, error: existingError } = await db
+      .from(popupTable)
+      .select('id')
+      .eq('house_key', houseKey);
+    if (existingError) {
+      throw existingError;
+    }
+    const existingIds = (existingPopups ?? []).map((row: { id: string }) => row.id).filter(Boolean);
+    if (existingIds.length) {
+      const { error: triggerCleanupError } = await db.from(triggerTable).delete().in('popup_id', existingIds);
+      if (triggerCleanupError) {
+        throw triggerCleanupError;
+      }
+    }
+    const { error: popupCleanupError } = await db.from(popupTable).delete().eq('house_key', houseKey);
+    if (popupCleanupError) {
+      throw popupCleanupError;
+    }
+    if (!sequence.popups.length) {
+      return;
+    }
+
+    const popupRows = sequence.popups.map((popup, index) => ({
+      id: popup.id,
+      house_key: houseKey,
+      language: popup.language ?? null,
+      title: popup.title,
+      body: popup.body,
+      highlights: popup.highlights ?? [],
+      badge_label: popup.badgeLabel ?? null,
+      primary_cta: popup.primaryCta ?? null,
+      secondary_cta: popup.secondaryCta ?? null,
+      status: popup.status ?? 'draft',
+      priority: index,
+      updated_at: timestamp,
+    }));
+
+    const { error: insertPopupError } = await db.from(popupTable).insert(popupRows);
+    if (insertPopupError) {
+      throw insertPopupError;
+    }
+
+    const triggerRows = sequence.popups
+      .map((popup) => {
+        if (!popup.trigger) return null;
+        if (popup.trigger.type === 'xp') {
+          return {
+            popup_id: popup.id,
+            trigger_type: 'xp',
+            xp_min: popup.trigger.value ?? 0,
+            metadata: {
+              label: popup.trigger.label ?? popup.xpGate ?? `XP ${popup.trigger.value ?? 0}`,
+            },
+          };
+        }
+        if (!popup.trigger.contentId) {
+          return null;
+        }
+        return {
+          popup_id: popup.id,
+          trigger_type: 'content',
+          content_type: popup.trigger.contentType,
+          content_id: popup.trigger.contentId,
+          metadata: {
+            label: popup.trigger.label ?? popup.trigger.contentTitle ?? popup.trigger.contentId,
+            title: popup.trigger.contentTitle ?? null,
+          },
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => Boolean(row));
+
+    if (triggerRows.length) {
+      const { error: insertTriggerError } = await db.from(triggerTable).insert(triggerRows);
+      if (insertTriggerError) {
+        throw insertTriggerError;
+      }
+    }
+  } catch (error) {
+    console.error('[onboarding.house] Failed to persist live popups/triggers', error);
+    throw new Error('Failed to persist live popups');
   }
 }
 
