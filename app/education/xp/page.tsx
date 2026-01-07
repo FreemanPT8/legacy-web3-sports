@@ -30,7 +30,7 @@ import {
   type QueueLog,
   type QueueLogAction,
 } from '@/hooks/useOnboardingQueue';
-import type { HouseOnboardingSequence, OnboardingLogEntry } from '@/types/onboarding';
+import type { HouseOnboardingSequence, OnboardingLogEntry, OnboardingPopupLocalizedFields } from '@/types/onboarding';
 
 import {
 
@@ -913,6 +913,43 @@ const COMBO_KEY_BY_MISSION: Record<string, ComboKey> = COMBO_KEYS.reduce((acc, k
 }, {} as Record<string, ComboKey>);
 
 
+
+
+const POPUP_LANGUAGE_FALLBACK: Record<SupportedCopyLang, SupportedCopyLang[]> = {
+  pt: ['pt', 'en', 'es'],
+  es: ['es', 'pt', 'en'],
+  en: ['en', 'pt', 'es'],
+};
+
+const resolvePopupCopyForLanguage = (popup: OnboardingPopupData, language: SupportedCopyLang): OnboardingPopupData => {
+  if (!popup.localized) return popup;
+  let localizedEntry: OnboardingPopupLocalizedFields | undefined;
+  for (const lang of POPUP_LANGUAGE_FALLBACK[language]) {
+    const candidate = popup.localized?.[lang];
+    if (candidate) {
+      localizedEntry = candidate;
+      break;
+    }
+  }
+  if (!localizedEntry) {
+    const fallback = Object.values(popup.localized)[0];
+    localizedEntry = fallback;
+  }
+  if (!localizedEntry) return popup;
+  return {
+    ...popup,
+    title: localizedEntry.title ?? popup.title,
+    body: localizedEntry.body ?? popup.body,
+    highlights: localizedEntry.highlights ?? popup.highlights ?? [],
+    badgeLabel: localizedEntry.badgeLabel ?? popup.badgeLabel,
+    primaryCta: popup.primaryCta
+      ? { ...popup.primaryCta, label: localizedEntry.primaryCtaLabel ?? popup.primaryCta.label }
+      : popup.primaryCta,
+    secondaryCta: popup.secondaryCta
+      ? { ...popup.secondaryCta, label: localizedEntry.secondaryCtaLabel ?? popup.secondaryCta.label }
+      : popup.secondaryCta,
+  };
+};
 
 const REQUIREMENT_ORDER = ['glossary', 'blog', 'lesson'] as const;
 
@@ -2055,6 +2092,10 @@ export default function EducationXpPage() {
     [getToken, houseKey, user],
   );
   const queueSource = houseSequence?.popups?.length ? houseSequence.popups : demoQueue;
+const localizedQueueSource = useMemo(
+  () => queueSource.map((popup) => resolvePopupCopyForLanguage(popup, language)),
+  [queueSource, language],
+);
   const computeQueueHash = useCallback((payload: OnboardingPopupData[]) => {
     return payload.map((popup) => popup.id).join('|');
   }, []);
@@ -2480,8 +2521,8 @@ export default function EducationXpPage() {
       ? 'Secuencia demo'
       : 'Demo sequence';
   const readyPopups = useMemo(
-    () => queueSource.filter((popup) => isTriggerSatisfied(popup)),
-    [queueSource, isTriggerSatisfied],
+    () => localizedQueueSource.filter((popup) => isTriggerSatisfied(popup)),
+    [localizedQueueSource, isTriggerSatisfied],
   );
   useEffect(() => {
     if (!user) return;
@@ -2493,9 +2534,9 @@ export default function EducationXpPage() {
   }, [queueHash, queueSeedSignature, queueSnapshot, persistQueue, readyPopups.length, user]);
   const blockedPopups = useMemo(
 
-    () => queueSource.filter((popup) => !isTriggerSatisfied(popup)),
+    () => localizedQueueSource.filter((popup) => !isTriggerSatisfied(popup)),
 
-    [queueSource, isTriggerSatisfied],
+    [localizedQueueSource, isTriggerSatisfied],
 
   );
   const filteredBlockedPopups = useMemo(() => {
@@ -2524,7 +2565,10 @@ export default function EducationXpPage() {
     const nextSignature = shouldUseRemote ? remoteSignature : readySignature;
     if (queueSyncRef.current === nextSignature && queueSeedSignature === nextSignature) return;
     queueSyncRef.current = nextSignature;
-    resetQueue(payload);
+    const localizedPayload = shouldUseRemote
+      ? (payload as OnboardingPopupData[]).map((popup) => resolvePopupCopyForLanguage(popup, language))
+      : (payload as OnboardingPopupData[]);
+    resetQueue(localizedPayload);
     setQueueSeedSignature(nextSignature);
   }, [
     computeQueueHash,
@@ -2537,6 +2581,7 @@ export default function EducationXpPage() {
     resetQueue,
     user,
     queueSeedSignature,
+    language,
   ]);
 
 
@@ -2700,7 +2745,7 @@ export default function EducationXpPage() {
 
     () =>
 
-      queueSource.map((popup) => ({
+      localizedQueueSource.map((popup) => ({
 
         popup,
 
@@ -2708,7 +2753,7 @@ export default function EducationXpPage() {
 
       })),
 
-    [queueSource, readyIdSet],
+    [localizedQueueSource, readyIdSet],
 
   );
 

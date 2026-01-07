@@ -11,7 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { OnboardingPopup, type OnboardingPopupData } from '@/components/education/OnboardingPopup';
-import type { HouseOnboardingSequence, OnboardingLogEntry, OnboardingTrigger } from '@/types/onboarding';
+import type {
+  HouseOnboardingSequence,
+  OnboardingLogEntry,
+  OnboardingTrigger,
+  OnboardingPopupLanguage,
+  OnboardingPopupLocalizedFields,
+} from '@/types/onboarding';
 import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
 import { useTermAgreement } from '@/hooks/useTermAgreement';
 import { useAuth } from '@/contexts/AuthContext';
@@ -76,6 +82,7 @@ const DEFAULT_DRAFT: OnboardingPopupData = {
   secondaryCta: { label: 'CTA secundária', href: '/education/houses' },
   trigger: { type: 'xp', value: 0, label: 'XP 0 - primeiro login' },
   status: 'draft',
+  localized: cloneLocalizedCopy(BASE_LOCALIZED_COPY),
 };
 
 const DEFAULT_ANALYTICS: HouseOnboardingSequence['analytics'] = {
@@ -85,7 +92,128 @@ const DEFAULT_ANALYTICS: HouseOnboardingSequence['analytics'] = {
   blockedAttempts: 0,
 };
 
+const POPUP_LANGUAGES = ['pt', 'es', 'en'] as const;
+type PopupLanguage = (typeof POPUP_LANGUAGES)[number];
+const DEFAULT_POPUP_LANGUAGE: PopupLanguage = 'pt';
+const LANGUAGE_LABELS: Record<PopupLanguage, string> = {
+  pt: 'PT',
+  es: 'ES',
+  en: 'EN',
+};
+
 const TERM_VALIDITY_DAYS = 90;
+
+const BASE_LOCALIZED_COPY: Record<PopupLanguage, OnboardingPopupLocalizedFields> = {
+  pt: {
+    title: 'Novo pop-up personalizado',
+    body: 'Utiliza este pop-up para reforçar o próximo passo da House. Mantém a linguagem clara, auditável e sem hype.',
+    highlights: ['1 pop-up = 1 decisão útil.', 'CTA principal deve apontar para um recurso oficial.'],
+    badgeLabel: 'Rascunho',
+    primaryCtaLabel: 'CTA principal',
+    secondaryCtaLabel: 'CTA secundária',
+  },
+  es: {
+    title: 'Nuevo pop-up personalizado',
+    body: 'Usa este mensaje para reforzar el siguiente paso oficial de la House. Lenguaje claro, auditado y sin hype.',
+    highlights: ['1 pop-up = 1 decisión útil.', 'El CTA principal debe apuntar a un recurso oficial.'],
+    badgeLabel: 'Borrador',
+    primaryCtaLabel: 'CTA principal',
+    secondaryCtaLabel: 'CTA secundaria',
+  },
+  en: {
+    title: 'New personalized pop-up',
+    body: 'Use this pop-up to reinforce the next official step for the House. Keep the copy clear, auditable, and hype-free.',
+    highlights: ['1 pop-up = 1 useful decision.', 'Primary CTA must point to an official resource.'],
+    badgeLabel: 'Draft',
+    primaryCtaLabel: 'Primary CTA',
+    secondaryCtaLabel: 'Secondary CTA',
+  },
+};
+
+function cloneLocalizedCopy(copy?: Record<PopupLanguage, OnboardingPopupLocalizedFields | undefined> | null) {
+  if (!copy) return null;
+  const next: Partial<Record<PopupLanguage, OnboardingPopupLocalizedFields>> = {};
+  for (const lang of POPUP_LANGUAGES) {
+    const entry = copy[lang];
+    if (!entry) continue;
+    next[lang] = {
+      title: entry.title ?? '',
+      body: entry.body ?? '',
+      highlights: entry.highlights ? [...entry.highlights] : [],
+      badgeLabel: entry.badgeLabel,
+      primaryCtaLabel: entry.primaryCtaLabel,
+      secondaryCtaLabel: entry.secondaryCtaLabel,
+    };
+  }
+  return Object.keys(next).length ? (next as Record<PopupLanguage, OnboardingPopupLocalizedFields>) : null;
+}
+
+function clonePopup(popup: OnboardingPopupData): OnboardingPopupData {
+  return {
+    ...popup,
+    highlights: popup.highlights ? [...popup.highlights] : [],
+    primaryCta: popup.primaryCta ? { ...popup.primaryCta } : undefined,
+    secondaryCta: popup.secondaryCta ? { ...popup.secondaryCta } : undefined,
+    localized: cloneLocalizedCopy(popup.localized ?? BASE_LOCALIZED_COPY) ?? cloneLocalizedCopy(BASE_LOCALIZED_COPY),
+  };
+}
+
+function buildHighlightInputs(popup: OnboardingPopupData) {
+  const result: Record<PopupLanguage, string> = { pt: '', es: '', en: '' };
+  for (const lang of POPUP_LANGUAGES) {
+    const entry = popup.localized?.[lang];
+    const base = entry?.highlights ?? (lang === DEFAULT_POPUP_LANGUAGE ? popup.highlights ?? [] : []);
+    result[lang] = (base ?? []).join('\n');
+  }
+  return result;
+}
+
+function getLocalizedFields(popup: OnboardingPopupData, lang: PopupLanguage): OnboardingPopupLocalizedFields {
+  const entry = popup.localized?.[lang] ?? popup.localized?.[DEFAULT_POPUP_LANGUAGE];
+  return {
+    title: entry?.title ?? popup.title ?? '',
+    body: entry?.body ?? popup.body ?? '',
+    highlights: entry?.highlights ?? popup.highlights ?? [],
+    badgeLabel: entry?.badgeLabel ?? popup.badgeLabel ?? '',
+    primaryCtaLabel: entry?.primaryCtaLabel ?? popup.primaryCta?.label ?? '',
+    secondaryCtaLabel: entry?.secondaryCtaLabel ?? popup.secondaryCta?.label ?? '',
+  };
+}
+
+function updatePopupLocalized(
+  popup: OnboardingPopupData,
+  lang: PopupLanguage,
+  fields: Partial<OnboardingPopupLocalizedFields>,
+) {
+  const localized = cloneLocalizedCopy(popup.localized) ?? {};
+  const current = getLocalizedFields(popup, lang);
+  localized[lang] = {
+    ...current,
+    ...fields,
+    highlights: fields.highlights ?? current.highlights,
+  };
+  return {
+    ...popup,
+    localized,
+  };
+}
+
+function resolvePopupForLanguage(popup: OnboardingPopupData, lang: PopupLanguage): OnboardingPopupData {
+  const localizedFields = getLocalizedFields(popup, lang);
+  return {
+    ...popup,
+    title: localizedFields.title,
+    body: localizedFields.body,
+    highlights: localizedFields.highlights ?? [],
+    badgeLabel: localizedFields.badgeLabel || undefined,
+    primaryCta: popup.primaryCta
+      ? { ...popup.primaryCta, label: localizedFields.primaryCtaLabel || popup.primaryCta.label }
+      : popup.primaryCta,
+    secondaryCta: popup.secondaryCta
+      ? { ...popup.secondaryCta, label: localizedFields.secondaryCtaLabel || popup.secondaryCta.label }
+      : popup.secondaryCta,
+  };
+}
 const RESPONSIBILITY_TERM = {
   intro:
     'Ao aceitar o papel de Head of House of Sport no ecossistema Legacy + Apertum, passas a representar os princípios fundadores sem hype ou abuso de autoridade.',
@@ -217,15 +345,18 @@ type SubmissionNote = {
 
 export default function AdminOnboardingPage() {
   const [houseKey, setHouseKey] = useState('LEGACY');
-  const [draft, setDraft] = useState<OnboardingPopupData>(DEFAULT_DRAFT);
-  const [highlightsInput, setHighlightsInput] = useState(DEFAULT_DRAFT.highlights?.join('\n') ?? '');
+  const [draft, setDraft] = useState<OnboardingPopupData>(() => clonePopup(DEFAULT_DRAFT));
+  const [highlightInputs, setHighlightInputs] = useState<Record<PopupLanguage, string>>(() =>
+    buildHighlightInputs(DEFAULT_DRAFT),
+  );
   const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
-  const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>([DEFAULT_DRAFT]);
+  const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>(() => [clonePopup(DEFAULT_DRAFT)]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
+  const [activeLanguage, setActiveLanguage] = useState<PopupLanguage>(DEFAULT_POPUP_LANGUAGE);
   const {
     acceptedAt,
     loading: termLoading,
@@ -508,49 +639,45 @@ export default function AdminOnboardingPage() {
   }, []);
 
   const normalizeTrigger = useCallback((popup: OnboardingPopupData): OnboardingPopupData => {
-    if (popup.trigger) {
-      if (popup.trigger.type === 'xp') {
-        const safeValue = Number.isFinite(popup.trigger.value) ? popup.trigger.value : 0;
+    const base = clonePopup(popup);
+    if (base.trigger) {
+      if (base.trigger.type === 'xp') {
+        const safeValue = Number.isFinite(base.trigger.value) ? base.trigger.value : 0;
         return {
-          ...popup,
-          trigger: { ...popup.trigger, value: safeValue, label: popup.trigger.label ?? popup.xpGate ?? `XP ${safeValue}` },
-          status: popup.status ?? 'draft',
+          ...base,
+          trigger: { ...base.trigger, value: safeValue, label: base.trigger.label ?? base.xpGate ?? `XP ${safeValue}` },
+          status: base.status ?? 'draft',
         };
       }
       return {
-        ...popup,
+        ...base,
         trigger: {
-          ...popup.trigger,
-          contentType: popup.trigger.contentType ?? 'lesson',
-          contentId: popup.trigger.contentId ?? '',
-          contentTitle: popup.trigger.contentTitle ?? '',
+          ...base.trigger,
+          contentType: base.trigger.contentType ?? 'lesson',
+          contentId: base.trigger.contentId ?? '',
+          contentTitle: base.trigger.contentTitle ?? '',
         },
-        status: popup.status ?? 'draft',
+        status: base.status ?? 'draft',
       };
     }
     const fallbackValue =
-      typeof popup.xpGate === 'string'
-        ? Number.parseInt(popup.xpGate.replace(/[^0-9]/g, ''), 10) || 0
+      typeof base.xpGate === 'string'
+        ? Number.parseInt(base.xpGate.replace(/[^0-9]/g, ''), 10) || 0
         : 0;
     return {
-      ...popup,
-      trigger: { type: 'xp', value: fallbackValue, label: popup.xpGate },
-      status: popup.status ?? 'draft',
+      ...base,
+      trigger: { type: 'xp', value: fallbackValue, label: base.xpGate },
+      status: base.status ?? 'draft',
     };
   }, []);
 
-  const resolvedDraft = useMemo<OnboardingPopupData>(() => {
-    const highlights =
-      highlightsInput
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean) ?? [];
-    return {
+  const resolvedDraft = useMemo<OnboardingPopupData>(
+    () => ({
       ...draft,
       house: draft.house || houseKey,
-      highlights,
-    };
-  }, [draft, highlightsInput, houseKey]);
+    }),
+    [draft, houseKey],
+  );
 
   const triggerType = draft.trigger?.type ?? 'xp';
   const xpTriggerValue = draft.trigger?.type === 'xp' ? draft.trigger.value ?? 0 : 0;
@@ -558,6 +685,7 @@ export default function AdminOnboardingPage() {
   const contentTrigger = draft.trigger?.type === 'content' ? draft.trigger : null;
   const analyticsSource = analyticsOverride ? 'live' : houseSequence?.analytics ? 'sequence' : 'fallback';
   const analyticsData = analyticsOverride ?? houseSequence?.analytics ?? DEFAULT_ANALYTICS;
+  const localizedFields = useMemo(() => getLocalizedFields(resolvedDraft, activeLanguage), [resolvedDraft, activeLanguage]);
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
   const fmtNumber = (value?: number) => (typeof value === 'number' ? value.toLocaleString() : '--');
   const analyticsCards = [
@@ -685,15 +813,18 @@ export default function AdminOnboardingPage() {
       setSequenceDraft(normalizedSequence.popups);
       setSelectedIndex(normalizedSequence.popups.length ? 0 : null);
       setDraft(popup);
-      setHighlightsInput((popup.highlights ?? []).join('\n'));
+      setHighlightInputs(buildHighlightInputs(popup));
+      setActiveLanguage(DEFAULT_POPUP_LANGUAGE);
       setStatus('Sequencia importada de ' + data.sequence.house + '.');
     } catch (error) {
       console.error('[admin/onboarding] sync failed', error);
       setHouseSequence(null);
       setSequenceDraft([]);
       setSelectedIndex(null);
-      setDraft(DEFAULT_DRAFT);
-      setHighlightsInput(DEFAULT_DRAFT.highlights?.join('\n') ?? '');
+      const fallback = clonePopup(DEFAULT_DRAFT);
+      setDraft(fallback);
+      setHighlightInputs(buildHighlightInputs(fallback));
+      setActiveLanguage(DEFAULT_POPUP_LANGUAGE);
       setStatus('Falha ao sincronizar. Mantém o rascunho atual.');
     } finally {
       setLoading(false);
@@ -789,13 +920,20 @@ export default function AdminOnboardingPage() {
   };
 
   const handleCtaChange = (key: 'primaryCta' | 'secondaryCta', field: 'label' | 'href', value: string) => {
-    setDraft((prev) => ({
-      ...prev,
-      [key]: {
-        ...(prev[key] ?? { label: '', href: '' }),
-        [field]: value,
-      },
-    }));
+    setDraft((prev) => {
+      let next: OnboardingPopupData = {
+        ...prev,
+        [key]: {
+          ...(prev[key] ?? { label: '', href: '' }),
+          [field]: value,
+        },
+      };
+      if (field === 'label') {
+        const localizedField = key === 'primaryCta' ? 'primaryCtaLabel' : 'secondaryCtaLabel';
+        next = updatePopupLocalized(next, DEFAULT_POPUP_LANGUAGE, { [localizedField]: value });
+      }
+      return next;
+    });
   };
 
   const handlePreview = () => {
@@ -861,8 +999,9 @@ export default function AdminOnboardingPage() {
   const handleSelectPopup = (popup: OnboardingPopupData, index: number) => {
     const normalized = normalizeTrigger(popup);
     setDraft(normalized);
-    setHighlightsInput((normalized.highlights ?? []).join('\n'));
+    setHighlightInputs(buildHighlightInputs(normalized));
     setSelectedIndex(index);
+    setActiveLanguage(DEFAULT_POPUP_LANGUAGE);
     setStatus('Pop-up ' + normalized.title + ' selecionado para edicao.');
   };
 
@@ -879,7 +1018,8 @@ export default function AdminOnboardingPage() {
       copy.splice(index + 1, 0, duplicated);
       setSelectedIndex(index + 1);
       setDraft(duplicated);
-      setHighlightsInput((duplicated.highlights ?? []).join('\n'));
+      setHighlightInputs(buildHighlightInputs(duplicated));
+      setActiveLanguage(DEFAULT_POPUP_LANGUAGE);
       setStatus('Pop-up duplicado (não persistido).');
       return copy;
     });
@@ -888,7 +1028,7 @@ export default function AdminOnboardingPage() {
   const handleAddPopup = () => {
     const baseHouse = houseSequence?.house || draft.house || houseKey || 'LEGACY';
     const freshPopup: OnboardingPopupData = normalizeTrigger({
-      ...DEFAULT_DRAFT,
+      ...clonePopup(DEFAULT_DRAFT),
       id: `popup-${baseHouse}-${Date.now()}`,
       house: baseHouse,
       xpGate: 'XP 0',
@@ -898,7 +1038,8 @@ export default function AdminOnboardingPage() {
     });
     setSequenceDraft((prev) => [...prev, freshPopup]);
     setDraft(freshPopup);
-    setHighlightsInput((freshPopup.highlights ?? []).join('\n'));
+    setHighlightInputs(buildHighlightInputs(freshPopup));
+    setActiveLanguage(DEFAULT_POPUP_LANGUAGE);
     setSelectedIndex(null);
     setStatus('Novo pop-up adicionado. Guarda para sincronizar com a House.');
   };
@@ -915,17 +1056,19 @@ export default function AdminOnboardingPage() {
       const nextSelection = copy.length ? Math.min(index, copy.length - 1) : null;
       if (nextSelection === null) {
         const fallback = normalizeTrigger({
-          ...DEFAULT_DRAFT,
+          ...clonePopup(DEFAULT_DRAFT),
           id: `popup-${(houseSequence?.house || houseKey || 'LEGACY')}-${Date.now()}`,
           house: houseSequence?.house || houseKey || 'LEGACY',
         });
         setDraft(fallback);
-        setHighlightsInput((fallback.highlights ?? []).join('\n'));
+        setHighlightInputs(buildHighlightInputs(fallback));
+        setActiveLanguage(DEFAULT_POPUP_LANGUAGE);
         setSelectedIndex(null);
       } else {
         const nextPopup = normalizeTrigger(copy[nextSelection]);
         setDraft(nextPopup);
-        setHighlightsInput((nextPopup.highlights ?? []).join('\n'));
+        setHighlightInputs(buildHighlightInputs(nextPopup));
+        setActiveLanguage(DEFAULT_POPUP_LANGUAGE);
         setSelectedIndex(nextSelection);
       }
       setStatus(`Pop-up ${removed?.title ?? removed?.id ?? ''} removido da sequência local.`);
@@ -1031,6 +1174,45 @@ export default function AdminOnboardingPage() {
         ...prev,
         trigger: { ...base, contentTitle: value },
       };
+    });
+  };
+
+  const handleLocalizedFieldChange = (
+    lang: PopupLanguage,
+    field: keyof Omit<OnboardingPopupLocalizedFields, 'highlights'>,
+    value: string,
+  ) => {
+    setDraft((prev) => {
+      let next = updatePopupLocalized(prev, lang, { [field]: value });
+      if (lang === DEFAULT_POPUP_LANGUAGE) {
+        if (field === 'title') {
+          next = { ...next, title: value };
+        } else if (field === 'body') {
+          next = { ...next, body: value };
+        } else if (field === 'badgeLabel') {
+          next = { ...next, badgeLabel: value || undefined };
+        } else if (field === 'primaryCtaLabel' && next.primaryCta) {
+          next = { ...next, primaryCta: { ...next.primaryCta, label: value } };
+        } else if (field === 'secondaryCtaLabel' && next.secondaryCta) {
+          next = { ...next, secondaryCta: { ...next.secondaryCta, label: value } };
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleLocalizedHighlightsChange = (lang: PopupLanguage, value: string) => {
+    setHighlightInputs((prev) => ({ ...prev, [lang]: value }));
+    const lines = value
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    setDraft((prev) => {
+      let next = updatePopupLocalized(prev, lang, { highlights: lines });
+      if (lang === DEFAULT_POPUP_LANGUAGE) {
+        next = { ...next, highlights: lines };
+      }
+      return next;
     });
   };
 
@@ -1829,50 +2011,82 @@ export default function AdminOnboardingPage() {
 
 
             <div>
-              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Título</label>
+              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Idioma da copy</label>
+              <p className="text-xs text-slate-500">Define PT/ES/EN — a pré-visualização usa o idioma selecionado.</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {POPUP_LANGUAGES.map((lang) => (
+                  <Button
+                    key={lang}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setActiveLanguage(lang)}
+                    className={cn(
+                      'border-white/20 text-white hover:bg-white/10',
+                      activeLanguage === lang && 'border-[#fdd87c] bg-[#fdd87c]/20 text-[#fdd87c]',
+                    )}
+                  >
+                    {LANGUAGE_LABELS[lang]}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Título · {LANGUAGE_LABELS[activeLanguage]}
+              </label>
               <Input
-                value={draft.title}
-                onChange={(event) => handleDraftChange('title', event.target.value)}
+                value={localizedFields.title}
+                onChange={(event) => handleLocalizedFieldChange(activeLanguage, 'title', event.target.value)}
                 className="mt-2 border-white/10 bg-[#010913]"
               />
             </div>
 
             <div>
-              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Mensagem</label>
+              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Mensagem · {LANGUAGE_LABELS[activeLanguage]}
+              </label>
               <Textarea
-                value={draft.body}
-                onChange={(event) => handleDraftChange('body', event.target.value)}
+                value={localizedFields.body}
+                onChange={(event) => handleLocalizedFieldChange(activeLanguage, 'body', event.target.value)}
                 rows={4}
                 className="mt-2 border-white/10 bg-[#010913]"
               />
             </div>
 
             <div>
-              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Highlights (1 por linha)</label>
+              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Highlights ({LANGUAGE_LABELS[activeLanguage]}) — 1 por linha
+              </label>
               <Textarea
-                value={highlightsInput}
-                onChange={(event) => setHighlightsInput(event.target.value)}
+                value={highlightInputs[activeLanguage] ?? ''}
+                onChange={(event) => handleLocalizedHighlightsChange(activeLanguage, event.target.value)}
                 rows={4}
                 className="mt-2 border-white/10 bg-[#010913]"
               />
             </div>
 
             <div>
-              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Badge opcional</label>
+              <label className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Badge opcional · {LANGUAGE_LABELS[activeLanguage]}
+              </label>
               <Input
-                value={draft.badgeLabel ?? ''}
-                onChange={(event) => handleDraftChange('badgeLabel', event.target.value)}
+                value={localizedFields.badgeLabel ?? ''}
+                onChange={(event) => handleLocalizedFieldChange(activeLanguage, 'badgeLabel', event.target.value)}
                 className="mt-2 border-white/10 bg-[#010913]"
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">CTA principal</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                  CTA principal · {LANGUAGE_LABELS[activeLanguage]}
+                </p>
                 <Input
-                  value={draft.primaryCta?.label ?? ''}
+                  value={localizedFields.primaryCtaLabel ?? ''}
                   placeholder="Label"
-                  onChange={(event) => handleCtaChange('primaryCta', 'label', event.target.value)}
+                  onChange={(event) => handleLocalizedFieldChange(activeLanguage, 'primaryCtaLabel', event.target.value)}
                   className="border-white/10 bg-[#010913]"
                 />
                 <Input
@@ -1883,11 +2097,15 @@ export default function AdminOnboardingPage() {
                 />
               </div>
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">CTA secundária</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                  CTA secundária · {LANGUAGE_LABELS[activeLanguage]}
+                </p>
                 <Input
-                  value={draft.secondaryCta?.label ?? ''}
+                  value={localizedFields.secondaryCtaLabel ?? ''}
                   placeholder="Label"
-                  onChange={(event) => handleCtaChange('secondaryCta', 'label', event.target.value)}
+                  onChange={(event) =>
+                    handleLocalizedFieldChange(activeLanguage, 'secondaryCtaLabel', event.target.value)
+                  }
                   className="border-white/10 bg-[#010913]"
                 />
                 <Input
@@ -1935,7 +2153,7 @@ export default function AdminOnboardingPage() {
 
       {previewOpen ? (
         <OnboardingPopup
-          data={resolvedDraft}
+          data={resolvePopupForLanguage(resolvedDraft, activeLanguage)}
           open
           lockSeconds={3}
           onClose={() => setPreviewOpen(false)}

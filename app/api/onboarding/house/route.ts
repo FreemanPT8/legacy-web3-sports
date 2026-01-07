@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { fetchHouseOnboardingData } from '@/data/onboarding-demo';
-import type { HouseOnboardingSequence, OnboardingPopup } from '@/types/onboarding';
+import type {
+  HouseOnboardingSequence,
+  OnboardingPopup,
+  OnboardingPopupLanguage,
+  OnboardingPopupLocalizedCopy,
+  OnboardingPopupLocalizedFields,
+} from '@/types/onboarding';
 import { supabaseAdmin, supabase } from '@/lib/supabase';
 import { requireAuth } from '@/lib/middleware';
 import { isAdminRole } from '@/lib/roles';
@@ -9,6 +15,8 @@ import { isAdminRole } from '@/lib/roles';
 const houseOverrides = new Map<string, HouseOnboardingSequence>();
 const db = supabaseAdmin ?? supabase;
 const TABLE_NAME = 'house_onboarding_sequences';
+const POPUP_LANGUAGES: OnboardingPopupLanguage[] = ['pt', 'es', 'en'];
+const DEFAULT_POPUP_LANGUAGE: OnboardingPopupLanguage = 'pt';
 
 type PopupRow = {
   id: string;
@@ -22,6 +30,8 @@ type PopupRow = {
   secondary_cta?: Record<string, unknown> | null;
   status: string;
   updated_at?: string | null;
+  copy_i18n?: Record<string, unknown> | null;
+  priority?: number | null;
 };
 
 type TriggerRow = {
@@ -164,20 +174,24 @@ async function persistLivePopups(houseKey: string, sequence: HouseOnboardingSequ
       return;
     }
 
-    const popupRows = sequence.popups.map((popup, index) => ({
-      id: popup.id,
-      house_key: houseKey,
-      language: popup.language ?? null,
-      title: popup.title,
-      body: popup.body,
-      highlights: popup.highlights ?? [],
-      badge_label: popup.badgeLabel ?? null,
-      primary_cta: popup.primaryCta ?? null,
-      secondary_cta: popup.secondaryCta ?? null,
-      status: popup.status ?? 'draft',
-      priority: index,
-      updated_at: timestamp,
-    }));
+    const popupRows = sequence.popups.map((popup, index) => {
+      const defaultCopy = resolveDefaultCopy(popup);
+      return {
+        id: popup.id,
+        house_key: houseKey,
+        language: popup.language ?? null,
+        title: defaultCopy.title,
+        body: defaultCopy.body,
+        highlights: defaultCopy.highlights ?? [],
+        badge_label: defaultCopy.badgeLabel ?? null,
+        primary_cta: normalizeCta(popup.primaryCta, defaultCopy.primaryCtaLabel),
+        secondary_cta: normalizeCta(popup.secondaryCta, defaultCopy.secondaryCtaLabel),
+        status: popup.status ?? 'draft',
+        priority: index,
+        updated_at: timestamp,
+        copy_i18n: buildLocalizedPayload(popup),
+      };
+    });
 
     const { error: insertPopupError } = await db.from(popupTable).insert(popupRows);
     if (insertPopupError) {
@@ -335,6 +349,8 @@ async function fetchStructuredSequence(houseKey: string) {
     const popups: OnboardingPopup[] = popupRows.map((row: PopupRow) => {
       const trigger = triggerMap.get(row.id);
       const xpGateLabel = typeof trigger?.label === 'string' ? trigger.label : undefined;
+      const localized = normalizeLocalizedCopy(row);
+      const defaultLocalized = getLocalizedEntryFromRow(row, localized, DEFAULT_POPUP_LANGUAGE);
       const popupStatus: OnboardingPopup['status'] =
         row.status === 'published' || row.status === 'ready' || row.status === 'draft'
           ? row.status
@@ -342,16 +358,17 @@ async function fetchStructuredSequence(houseKey: string) {
       return {
         id: row.id,
         house: row.house_key,
-        title: row.title,
-        body: row.body,
-        highlights: row.highlights ?? [],
-        badgeLabel: row.badge_label ?? undefined,
-        primaryCta: (row.primary_cta as OnboardingPopup['primaryCta']) ?? undefined,
-        secondaryCta: (row.secondary_cta as OnboardingPopup['secondaryCta']) ?? undefined,
+        title: defaultLocalized.title,
+        body: defaultLocalized.body,
+        highlights: defaultLocalized.highlights ?? [],
+        badgeLabel: defaultLocalized.badgeLabel ?? undefined,
+        primaryCta: mergeCta((row.primary_cta as OnboardingPopup['primaryCta']) ?? undefined, defaultLocalized.primaryCtaLabel),
+        secondaryCta: mergeCta((row.secondary_cta as OnboardingPopup['secondaryCta']) ?? undefined, defaultLocalized.secondaryCtaLabel),
         status: popupStatus,
         language: row.language,
         xpGate: xpGateLabel,
         trigger: trigger?.trigger,
+        localized,
       };
     });
 
@@ -402,4 +419,125 @@ function mapTrigger(row: TriggerRow) {
     };
   }
   return undefined;
+}
+
+function normalizeCta(
+  cta: OnboardingPopup['primaryCta'] | undefined,
+  labelOverride?: string,
+): OnboardingPopup['primaryCta'] | undefined {
+  if (!cta && !labelOverride) return undefined;
+  return {
+    label: labelOverride ?? cta?.label ?? '',
+    href: cta?.href,
+    onClick: undefined,
+  };
+}
+
+function mergeCta(
+  cta: OnboardingPopup['primaryCta'] | undefined,
+  localizedLabel?: string,
+): OnboardingPopup['primaryCta'] | undefined {
+  if (!cta && !localizedLabel) return undefined;
+  return {
+    label: localizedLabel ?? cta?.label ?? '',
+    href: cta?.href,
+    onClick: cta?.onClick,
+  };
+}
+
+function resolveDefaultCopy(popup: OnboardingPopup): OnboardingPopupLocalizedFields {
+  const base =
+    popup.localized?.[DEFAULT_POPUP_LANGUAGE] ??
+    {
+      title: popup.title,
+      body: popup.body,
+      highlights: popup.highlights ?? [],
+      badgeLabel: popup.badgeLabel,
+      primaryCtaLabel: popup.primaryCta?.label,
+      secondaryCtaLabel: popup.secondaryCta?.label,
+    };
+  return {
+    title: base.title ?? '',
+    body: base.body ?? '',
+    highlights: Array.isArray(base.highlights) ? base.highlights : [],
+    badgeLabel: base.badgeLabel,
+    primaryCtaLabel: base.primaryCtaLabel,
+    secondaryCtaLabel: base.secondaryCtaLabel,
+  };
+}
+
+function buildLocalizedPayload(popup: OnboardingPopup) {
+  if (!popup.localized) return null;
+  const payload: Record<string, unknown> = {};
+  for (const lang of POPUP_LANGUAGES) {
+    const entry = popup.localized[lang];
+    if (!entry) continue;
+    payload[lang] = {
+      title: entry.title ?? '',
+      body: entry.body ?? '',
+      highlights: entry.highlights ?? [],
+      badgeLabel: entry.badgeLabel ?? null,
+      primaryCtaLabel: entry.primaryCtaLabel ?? null,
+      secondaryCtaLabel: entry.secondaryCtaLabel ?? null,
+    };
+  }
+  return payload;
+}
+
+function normalizeLocalizedCopy(row: PopupRow): OnboardingPopupLocalizedCopy | null {
+  const raw = (row.copy_i18n as Record<string, any> | null) ?? null;
+  const localized: OnboardingPopupLocalizedCopy = {};
+  if (raw) {
+    for (const [langKey, value] of Object.entries(raw)) {
+      const normalizedLang = langKey.toLowerCase() as OnboardingPopupLanguage;
+      if (!POPUP_LANGUAGES.includes(normalizedLang)) continue;
+      localized[normalizedLang] = {
+        title: typeof value?.title === 'string' ? value.title : '',
+        body: typeof value?.body === 'string' ? value.body : '',
+        highlights: Array.isArray(value?.highlights)
+          ? value.highlights.filter((item: unknown) => typeof item === 'string')
+          : [],
+        badgeLabel: typeof value?.badgeLabel === 'string' ? value.badgeLabel : undefined,
+        primaryCtaLabel: typeof value?.primaryCtaLabel === 'string' ? value.primaryCtaLabel : undefined,
+        secondaryCtaLabel: typeof value?.secondaryCtaLabel === 'string' ? value.secondaryCtaLabel : undefined,
+      };
+    }
+  }
+  if (!localized[DEFAULT_POPUP_LANGUAGE]) {
+    localized[DEFAULT_POPUP_LANGUAGE] = {
+      title: row.title,
+      body: row.body,
+      highlights: row.highlights ?? [],
+      badgeLabel: row.badge_label ?? undefined,
+      primaryCtaLabel: (row.primary_cta as OnboardingPopup['primaryCta'])?.label,
+      secondaryCtaLabel: (row.secondary_cta as OnboardingPopup['secondaryCta'])?.label,
+    };
+  }
+  return Object.keys(localized).length ? localized : null;
+}
+
+function getLocalizedEntryFromRow(
+  row: PopupRow,
+  localized: OnboardingPopupLocalizedCopy | null,
+  lang: OnboardingPopupLanguage,
+): OnboardingPopupLocalizedFields {
+  const entry = localized?.[lang] ?? localized?.[DEFAULT_POPUP_LANGUAGE];
+  if (entry) {
+    return {
+      title: entry.title ?? '',
+      body: entry.body ?? '',
+      highlights: entry.highlights ?? [],
+      badgeLabel: entry.badgeLabel ?? undefined,
+      primaryCtaLabel: entry.primaryCtaLabel ?? undefined,
+      secondaryCtaLabel: entry.secondaryCtaLabel ?? undefined,
+    };
+  }
+  return {
+    title: row.title,
+    body: row.body,
+    highlights: row.highlights ?? [],
+    badgeLabel: row.badge_label ?? undefined,
+    primaryCtaLabel: (row.primary_cta as OnboardingPopup['primaryCta'])?.label,
+    secondaryCtaLabel: (row.secondary_cta as OnboardingPopup['secondaryCta'])?.label,
+  };
 }

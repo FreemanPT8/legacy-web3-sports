@@ -1,3 +1,5 @@
+export type OnboardingPopupLanguage = 'pt' | 'es' | 'en';
+
 export type OnboardingTrigger =
   | {
       type: 'xp';
@@ -18,6 +20,17 @@ type OnboardingCta = {
   onClick?: () => void;
 };
 
+export type OnboardingPopupLocalizedFields = {
+  title: string;
+  body: string;
+  highlights?: string[];
+  badgeLabel?: string;
+  primaryCtaLabel?: string;
+  secondaryCtaLabel?: string;
+};
+
+export type OnboardingPopupLocalizedCopy = Partial<Record<OnboardingPopupLanguage, OnboardingPopupLocalizedFields>>;
+
 export type OnboardingPopup = {
   id: string;
   house: string;
@@ -31,6 +44,7 @@ export type OnboardingPopup = {
   trigger?: OnboardingTrigger;
   status?: 'draft' | 'ready' | 'published';
   language?: string | null;
+  localized?: OnboardingPopupLocalizedCopy | null;
 };
 
 export type HouseOnboardingAnalytics = {
