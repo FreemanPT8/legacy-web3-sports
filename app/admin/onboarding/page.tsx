@@ -523,6 +523,31 @@ export default function AdminOnboardingPage() {
   const xpTriggerValue = draft.trigger?.type === 'xp' ? draft.trigger.value ?? 0 : 0;
   const triggerLabelValue = draft.trigger?.label ?? '';
   const contentTrigger = draft.trigger?.type === 'content' ? draft.trigger : null;
+  const analyticsData = houseSequence?.analytics || DEFAULT_ANALYTICS;
+  const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
+  const fmtNumber = (value?: number) => (typeof value === 'number' ? value.toLocaleString() : '--');
+  const analyticsCards = [
+    {
+      label: 'CTR global',
+      value: fmtPercent(analyticsData.ctr),
+      hint: 'Cliques médios por pop-up entregue.',
+    },
+    {
+      label: 'Conclusão checklist',
+      value: fmtPercent(analyticsData.completionRate),
+      hint: 'Percentagem de membros que concluem os 3 passos.',
+    },
+    {
+      label: 'Pedidos DAO1/Manual',
+      value: fmtNumber(analyticsData.manualApprovals),
+      hint: 'Entradas que pediram contacto humano ou aprovações.',
+    },
+    {
+      label: 'Tentativas bloqueadas',
+      value: fmtNumber(analyticsData.blockedAttempts),
+      hint: 'Pop-ups travados pelo motor.',
+    },
+  ];
 
   useEffect(() => {
     if (!user) {
@@ -1218,6 +1243,32 @@ export default function AdminOnboardingPage() {
               ) : (
                 <p className="text-sm text-slate-400">Sem eventos registados.</p>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/10 bg-[#04131b]/80">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Métricas da House</p>
+                <h2 className="text-xl font-semibold text-white">Performance dos pop-ups</h2>
+                <p className="text-xs text-slate-500">
+                  Baseado no histórico real desta House. Útil para ajustar triggers e copy.
+                </p>
+              </div>
+              <Badge variant="outline" className="border-white/20 bg-[#000c12]/40 text-white">
+                {houseSequence ? houseSequence.house : 'Demo'}
+              </Badge>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {analyticsCards.map((card) => (
+                <div key={card.label} className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                  <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{card.label}</p>
+                  <p className="text-2xl font-semibold text-white">{card.value}</p>
+                  <p className="text-xs text-slate-400">{card.hint}</p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
