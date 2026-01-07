@@ -5,6 +5,7 @@ import type { HouseOnboardingSequence, OnboardingPopup } from '@/types/onboardin
 import { requireAuth } from '@/lib/middleware';
 import { supabaseAdmin, supabase } from '@/lib/supabase';
 import { hasCompletedContent } from '@/lib/xp';
+import { isAdminRole } from '@/lib/roles';
 
 const db = supabaseAdmin ?? supabase;
 const SEQUENCE_TABLE = 'house_onboarding_sequences';
@@ -23,6 +24,8 @@ export async function POST(request: NextRequest) {
   const user = auth.user!;
   const { searchParams } = new URL(request.url);
   const houseKey = getHouseKey(searchParams.get('house'));
+  const requestedUserId = searchParams.get('user') ?? searchParams.get('userId');
+  const targetUserId = requestedUserId && isAdminRole(user.role) ? requestedUserId : user.userId;
 
   try {
     const sequence = await loadHouseSequence(houseKey);
@@ -35,13 +38,13 @@ export async function POST(request: NextRequest) {
 
     if (!db) {
       return NextResponse.json(
-        { success: true, queue: publishedPopups, signature: buildSignature(publishedPopups) },
+        { success: true, queue: publishedPopups, signature: buildSignature(publishedPopups), user: targetUserId },
         { status: 200 },
       );
     }
 
-    const xpTotal = await fetchUserXpTotal(user.userId);
-    const logStats = await fetchUserLogStats(user.userId);
+    const xpTotal = await fetchUserXpTotal(targetUserId);
+    const logStats = await fetchUserLogStats(targetUserId);
     const completionCache = new Map<string, boolean>();
 
     const deliveredSet = new Set(logStats.logs.filter((log) => log.action === 'delivered').map((log) => log.popup_id));
@@ -49,7 +52,7 @@ export async function POST(request: NextRequest) {
     const eligiblePopups: OnboardingPopup[] = [];
     for (const popup of publishedPopups) {
       if (!popup || deliveredSet.has(popup.id)) continue;
-      const satisfies = await evaluateTrigger(popup, xpTotal, user.userId, completionCache);
+      const satisfies = await evaluateTrigger(popup, xpTotal, targetUserId, completionCache);
       if (satisfies) {
         eligiblePopups.push(popup);
       }
@@ -63,13 +66,14 @@ export async function POST(request: NextRequest) {
     }
 
     const signature = eligiblePopups.length ? buildSignature(eligiblePopups) : null;
-    await persistQueue(user.userId, houseKey, cooldownReason ? [] : eligiblePopups, cooldownReason ? null : signature);
+    await persistQueue(targetUserId, houseKey, cooldownReason ? [] : eligiblePopups, cooldownReason ? null : signature);
 
     return NextResponse.json({
       success: true,
       queue: cooldownReason ? [] : eligiblePopups,
       signature: cooldownReason ? null : signature,
       cooldownReason,
+      user: targetUserId,
     });
   } catch (error) {
     console.error('[onboarding.engine] failed to build queue', error);

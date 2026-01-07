@@ -291,6 +291,7 @@ export default function AdminOnboardingPage() {
     signature: string | null;
     updatedAt: number | null;
   } | null>(null);
+  const [inspectorRebuildLoading, setInspectorRebuildLoading] = useState(false);
   const unassignedSubmissions = useMemo(
     () => submissions.filter((submission) => !submission.assigned_to_full_name && !submission.assigned_to_username).length,
     [submissions],
@@ -745,6 +746,40 @@ export default function AdminOnboardingPage() {
       setInspectorLoading(false);
     }
   }, [getToken, houseKey, inspectorUserId]);
+
+  const handleRebuildQueue = useCallback(async () => {
+    if (!inspectorResult?.user) {
+      setInspectorError('Seleciona primeiro um user_id válido.');
+      return;
+    }
+    const token = getToken?.();
+    if (!token) {
+      setInspectorError('Precisas de sessão ativa para reconstruir filas.');
+      return;
+    }
+    try {
+      setInspectorRebuildLoading(true);
+      const response = await fetch(
+        `/api/onboarding/engine?house=${encodeURIComponent(houseKey)}&user=${encodeURIComponent(inspectorResult.user)}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        },
+      );
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to rebuild queue');
+      }
+      setStatus('Fila reconstruída com sucesso.');
+      await handleInspectQueue();
+    } catch (error) {
+      console.error('[admin/onboarding] rebuild queue failed', error);
+      setInspectorError('Falha ao reconstruir a fila deste utilizador.');
+    } finally {
+      setInspectorRebuildLoading(false);
+    }
+  }, [getToken, handleInspectQueue, houseKey, inspectorResult?.user, setStatus]);
 
   const handleDraftChange = (field: keyof OnboardingPopupData, value: string) => {
     setDraft((prev) => ({
@@ -1254,6 +1289,28 @@ export default function AdminOnboardingPage() {
                       {inspectorResult.updatedAt ? new Date(inspectorResult.updatedAt).toLocaleString('pt-PT') : '--'}
                     </p>
                   </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void handleInspectQueue()}
+                    disabled={inspectorLoading}
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    {inspectorLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Recarregar fila
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void handleRebuildQueue()}
+                    disabled={inspectorRebuildLoading}
+                    className="border-cyan-400/60 text-cyan-100 hover:bg-cyan-500/10"
+                  >
+                    {inspectorRebuildLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Reconstruir fila
+                  </Button>
                 </div>
                 <div className="rounded-2xl border border-dashed border-white/15 bg-[#000c12]/30 p-3 text-xs text-slate-400">
                   Assinatura: {inspectorResult.signature ? inspectorResult.signature : '—'}
