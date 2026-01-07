@@ -244,6 +244,10 @@ async function fetchStructuredSequence(houseKey: string) {
     const popups: OnboardingPopup[] = popupRows.map((row: PopupRow) => {
       const trigger = triggerMap.get(row.id);
       const xpGateLabel = typeof trigger?.label === 'string' ? trigger.label : undefined;
+      const popupStatus: OnboardingPopup['status'] =
+        row.status === 'published' || row.status === 'ready' || row.status === 'draft'
+          ? row.status
+          : 'draft';
       return {
         id: row.id,
         house: row.house_key,
@@ -253,7 +257,7 @@ async function fetchStructuredSequence(houseKey: string) {
         badgeLabel: row.badge_label ?? undefined,
         primaryCta: (row.primary_cta as OnboardingPopup['primaryCta']) ?? undefined,
         secondaryCta: (row.secondary_cta as OnboardingPopup['secondaryCta']) ?? undefined,
-        status: row.status,
+        status: popupStatus,
         language: row.language,
         xpGate: xpGateLabel,
         trigger: trigger?.trigger,
