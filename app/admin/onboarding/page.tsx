@@ -112,13 +112,12 @@ const BASE_LOCALIZED_COPY: Record<PopupLanguage, OnboardingPopupLocalizedFields>
   },
 };
 
-function cloneLocalizedCopy(copy?: Record<PopupLanguage, OnboardingPopupLocalizedFields | undefined> | null) {
+function cloneLocalizedCopy(copy?: Record<PopupLanguage, OnboardingPopupLocalizedFields | undefined> | null): Record<
+  PopupLanguage,
+  OnboardingPopupLocalizedFields
+> {
   const source = copy ?? BASE_LOCALIZED_COPY;
-  const next: Record<PopupLanguage, OnboardingPopupLocalizedFields> = {
-    pt: { title: '', body: '', highlights: [], badgeLabel: undefined, primaryCtaLabel: undefined, secondaryCtaLabel: undefined },
-    es: { title: '', body: '', highlights: [], badgeLabel: undefined, primaryCtaLabel: undefined, secondaryCtaLabel: undefined },
-    en: { title: '', body: '', highlights: [], badgeLabel: undefined, primaryCtaLabel: undefined, secondaryCtaLabel: undefined },
-  };
+  const next = {} as Record<PopupLanguage, OnboardingPopupLocalizedFields>;
   for (const lang of POPUP_LANGUAGES) {
     const entry = source[lang] ?? BASE_LOCALIZED_COPY[lang];
     next[lang] = {
