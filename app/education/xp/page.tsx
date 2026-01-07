@@ -2378,6 +2378,30 @@ export default function EducationXpPage() {
     { label: analyticsLabels.approvals, value: fmtNumber(analytics?.manualApprovals), desc: analyticsDescriptions[2] },
     { label: analyticsLabels.blocked, value: fmtNumber(analytics?.blockedAttempts), desc: analyticsDescriptions[3] },
   ];
+  const analyticsBadgeClass =
+    analyticsSource === 'live'
+      ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
+      : analyticsSource === 'sequence'
+      ? 'border-cyan-400/40 bg-cyan-500/10 text-cyan-100'
+      : 'border-amber-400/40 bg-amber-500/10 text-amber-100';
+  const analyticsBadgeLabel =
+    analyticsSource === 'live'
+      ? language === 'pt'
+        ? 'Dados ao vivo'
+        : language === 'es'
+        ? 'Datos en vivo'
+        : 'Live data'
+      : analyticsSource === 'sequence'
+      ? language === 'pt'
+        ? 'Guardado no Painel'
+        : language === 'es'
+        ? 'Guardado en el Panel'
+        : 'Admin Panel data'
+      : language === 'pt'
+      ? 'Sequência demo'
+      : language === 'es'
+      ? 'Secuencia demo'
+      : 'Demo sequence';
   const readyPopups = useMemo(
     () => queueSource.filter((popup) => isTriggerSatisfied(popup)),
     [queueSource, isTriggerSatisfied],
@@ -5342,13 +5366,23 @@ export default function EducationXpPage() {
                       ) : (
                         <p className={cn(UI.bodyMuted, 'text-sm')}>{progressCopy.empty}</p>
                       )}
-                    </CardContent>
-                  </Card>
-                ) : null}
+                  </CardContent>
+                </Card>
+              ) : null}
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  {analyticsCards.map((card) => (
-                    <Card key={card.label} className={cn(UI.cardSurface, 'h-full')}>
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <p className={cn(UI.micro, 'text-slate-400')}>
+                  {language === 'pt'
+                    ? 'Fonte das métricas de onboarding'
+                    : language === 'es'
+                    ? 'Fuente de las métricas de onboarding'
+                    : 'Onboarding metrics source'}
+                </p>
+                <Badge className={cn('border px-3', analyticsBadgeClass)}>{analyticsBadgeLabel}</Badge>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {analyticsCards.map((card) => (
+                  <Card key={card.label} className={cn(UI.cardSurface, 'h-full')}>
                       <CardContent className="p-4 space-y-2">
                         <p className={UI.micro}>{card.label}</p>
                         <p className="text-3xl font-semibold text-white">{card.value}</p>
