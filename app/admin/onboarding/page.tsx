@@ -14,10 +14,11 @@ import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
 import { useTermAgreement } from '@/hooks/useTermAgreement';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown, Plus, Trash2 } from 'lucide-react';
+import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown, Plus, Trash2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', { label: string }> = {
   delivered: { label: 'Entregues' },
@@ -154,6 +155,17 @@ type SubmissionSummary = {
   sequence_number: number | null;
 };
 
+type SubmissionNote = {
+  id: string;
+  submission_id: string;
+  author_user_id: string | null;
+  author_full_name: string | null;
+  author_username: string | null;
+  author_email: string | null;
+  note: string;
+  created_at: string;
+};
+
 export default function AdminOnboardingPage() {
   const [houseKey, setHouseKey] = useState('LEGACY');
   const [draft, setDraft] = useState<OnboardingPopupData>(DEFAULT_DRAFT);
@@ -200,6 +212,11 @@ export default function AdminOnboardingPage() {
   const [submissionsError, setSubmissionsError] = useState<string | null>(null);
   const [assigningSubmissionId, setAssigningSubmissionId] = useState<string | null>(null);
   const [updatingSubmissionId, setUpdatingSubmissionId] = useState<string | null>(null);
+  const [notesModalSubmission, setNotesModalSubmission] = useState<SubmissionSummary | null>(null);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+  const [notes, setNotes] = useState<SubmissionNote[]>([]);
+  const [newNote, setNewNote] = useState('');
   const fetchSubmissions = useCallback(async () => {
     const token = getToken?.();
     if (!token) {
@@ -316,6 +333,85 @@ export default function AdminOnboardingPage() {
     },
     [fetchSubmissions, getToken],
   );
+
+  const fetchSubmissionNotes = useCallback(
+    async (submissionId: string) => {
+      const token = getToken?.();
+      if (!token) {
+        setNotesError('Sessão necessária para carregar notas.');
+        return;
+      }
+      try {
+        setNotesLoading(true);
+        setNotesError(null);
+        const response = await fetch(`/api/admin/onboarding/notes?submissionId=${submissionId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        const data = (await response.json()) as
+          | { success: true; notes?: SubmissionNote[] }
+          | { success: false; error?: string };
+        if (!response.ok || !data.success) {
+          throw new Error(data.success ? 'Failed to load notes' : data.error || 'Failed to load notes');
+        }
+        setNotes(data.notes ?? []);
+      } catch (error) {
+        console.error('[admin/onboarding] Failed to load notes', error);
+        setNotesError('Falha ao carregar notas.');
+      } finally {
+        setNotesLoading(false);
+      }
+    },
+    [getToken],
+  );
+
+  const handleOpenNotesModal = useCallback(
+    async (submission: SubmissionSummary) => {
+      setNotesModalSubmission(submission);
+      setNewNote('');
+      await fetchSubmissionNotes(submission.id);
+    },
+    [fetchSubmissionNotes],
+  );
+
+  const handleSaveNote = useCallback(async () => {
+    if (!notesModalSubmission || !newNote.trim()) return;
+    const token = getToken?.();
+    if (!token) {
+      setNotesError('Sessão necessária para adicionar notas.');
+      return;
+    }
+    try {
+      setNotesLoading(true);
+      setNotesError(null);
+      const response = await fetch('/api/admin/onboarding/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ submissionId: notesModalSubmission.id, note: newNote.trim() }),
+      });
+      const data = (await response.json()) as { success: boolean; note?: SubmissionNote; error?: string };
+      if (!response.ok || !data.success || !data.note) {
+        throw new Error(data.error || 'Failed to save note');
+      }
+      setNotes((prev) => [...prev, data.note!]);
+      setNewNote('');
+    } catch (error) {
+      console.error('[admin/onboarding] Failed to save note', error);
+      setNotesError('Não foi possível guardar a nota.');
+    } finally {
+      setNotesLoading(false);
+    }
+  }, [getToken, newNote, notesModalSubmission]);
+
+  const handleCloseNotesModal = useCallback(() => {
+    setNotesModalSubmission(null);
+    setNotes([]);
+    setNotesError(null);
+    setNewNote('');
+  }, []);
 
   const normalizeTrigger = useCallback((popup: OnboardingPopupData): OnboardingPopupData => {
     if (popup.trigger) {
@@ -1055,6 +1151,14 @@ export default function AdminOnboardingPage() {
                               'Assumir lead'
                             )}
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void handleOpenNotesModal(submission)}
+                            className="border-white/20 text-white hover:bg-white/10"
+                          >
+                            <MessageSquare className="mr-1 h-4 w-4" /> Notas
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1285,6 +1389,64 @@ export default function AdminOnboardingPage() {
           }}
         />
       ) : null}
+      <Dialog open={Boolean(notesModalSubmission)} onOpenChange={(open) => (!open ? handleCloseNotesModal() : null)}>
+        <DialogContent className="max-w-xl border-white/10 bg-[#010913] text-white">
+          <DialogHeader>
+            <DialogTitle>Notas da submissão</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              {notesModalSubmission
+                ? `${notesModalSubmission.full_name ?? 'Sem nome'} · ${notesModalSubmission.email ?? 'Sem email'}`
+                : 'Seleciona uma submissão para ver notas.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {notesError ? <p className="text-xs text-amber-300">{notesError}</p> : null}
+            <div className="max-h-64 space-y-3 overflow-y-auto pr-2">
+              {notesLoading ? (
+                <p className="text-sm text-slate-400">A carregar notas...</p>
+              ) : notes.length ? (
+                notes.map((note) => (
+                  <div key={note.id} className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm">
+                    <p className="whitespace-pre-line text-slate-100">{note.note}</p>
+                    <div className="mt-2 flex flex-col gap-1 text-[11px] text-slate-400">
+                      <span>
+                        Autor:{' '}
+                        {note.author_full_name ||
+                          note.author_username ||
+                          note.author_email ||
+                          'Utilizador removido'}
+                      </span>
+                      <span>{new Date(note.created_at).toLocaleString('pt-PT')}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400">Sem notas guardadas.</p>
+              )}
+            </div>
+            {notesModalSubmission ? (
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Adicionar nova nota..."
+                  value={newNote}
+                  onChange={(event) => setNewNote(event.target.value)}
+                  rows={3}
+                  className="border-white/10 bg-[#030a12]"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={handleCloseNotesModal} className="text-slate-300">
+                    Fechar
+                  </Button>
+                  <Button onClick={() => void handleSaveNote()} disabled={notesLoading || !newNote.trim()}>
+                    {notesLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Guardar nota
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
