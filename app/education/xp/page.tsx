@@ -1996,6 +1996,7 @@ export default function EducationXpPage() {
   const [remoteQueuePayload, setRemoteQueuePayload] = useState<OnboardingPopupData[] | null>(null);
   const [queueSeedSignature, setQueueSeedSignature] = useState<string | null>(null);
   const [remoteCooldownReason, setRemoteCooldownReason] = useState<'daily' | 'weekly' | null>(null);
+  const [remoteQueueUpdatedAt, setRemoteQueueUpdatedAt] = useState<number | null>(null);
   const lastPersistedQueueHashRef = useRef<string | null>(null);
   const persistQueue = useCallback(
     async (payload: OnboardingPopupData[], signature: string | null) => {
@@ -2074,6 +2075,7 @@ export default function EducationXpPage() {
       setRemoteQueueSignature(null);
       setQueueSeedSignature(null);
       setRemoteCooldownReason(null);
+      setRemoteQueueUpdatedAt(null);
       lastPersistedQueueHashRef.current = null;
       return;
     }
@@ -2082,6 +2084,7 @@ export default function EducationXpPage() {
     if (!token) {
       setRemoteQueueLoaded(true);
       setRemoteCooldownReason(null);
+      setRemoteQueueUpdatedAt(null);
       return;
     }
     const runEngine = async () => {
@@ -2118,11 +2121,13 @@ export default function EducationXpPage() {
         }
         setRemoteQueuePayload((data.queue as OnboardingPopupData[]) ?? []);
         setRemoteQueueSignature((data.signature as string | null) ?? null);
+        setRemoteQueueUpdatedAt(Date.now());
       } catch (error) {
         if (!active) return;
         console.error('[education/xp] Failed to load onboarding queue', error);
         setRemoteQueuePayload(null);
         setRemoteQueueSignature(null);
+        setRemoteQueueUpdatedAt(null);
       } finally {
         if (active) {
           setRemoteQueueLoaded(true);
@@ -2393,6 +2398,70 @@ export default function EducationXpPage() {
     : language === 'es'
     ? 'Demo oficial Legacy'
     : 'Legacy demo sequence';
+
+  const queueMode = effectiveCooldown ? 'cooldown' : houseSequence ? 'live' : 'demo';
+  const queueModeCopy = useMemo(() => {
+    if (language === 'pt') {
+      return {
+        live: {
+          badge: 'Live',
+          description: 'Motor oficial ligado à tua House.',
+        },
+        demo: {
+          badge: 'Demo',
+          description: 'Sequência fundacional (sem dados reais).',
+        },
+        cooldown: {
+          badge: 'Cooldown',
+          description: 'Limite atingido. O sistema reativa após o reset automático.',
+        },
+      };
+    }
+    if (language === 'es') {
+      return {
+        live: {
+          badge: 'Live',
+          description: 'Motor oficial conectado a tu House.',
+        },
+        demo: {
+          badge: 'Demo',
+          description: 'Secuencia fundacional (sin datos reales).',
+        },
+        cooldown: {
+          badge: 'Cooldown',
+          description: 'Límite alcanzado. El sistema vuelve tras el reinicio automático.',
+        },
+      };
+    }
+    return {
+      live: {
+        badge: 'Live',
+        description: 'Official engine synced with your House.',
+      },
+      demo: {
+        badge: 'Demo',
+        description: 'Foundational sequence (no live data).',
+      },
+      cooldown: {
+        badge: 'Cooldown',
+        description: 'Limit reached. Engine resumes after the automatic reset.',
+      },
+    };
+  }, [language]);
+  const queueStatusCopy = queueModeCopy[queueMode];
+  const queueBadgeClass =
+    queueMode === 'cooldown'
+      ? 'border-amber-300/40 bg-amber-400/10 text-amber-100'
+      : queueMode === 'live'
+      ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
+      : 'border-cyan-400/40 bg-cyan-500/10 text-cyan-100';
+  const queueLastUpdateLabel = useMemo(() => {
+    if (!remoteQueueUpdatedAt) return null;
+    const when = new Date(remoteQueueUpdatedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    if (language === 'pt') return `Atualizado às ${when}`;
+    if (language === 'es') return `Actualizado a las ${when}`;
+    return `Updated at ${when}`;
+  }, [language, locale, remoteQueueUpdatedAt]);
 
   const queueResetLabel = houseSequence
     ? language === 'pt'
@@ -4789,26 +4858,14 @@ export default function EducationXpPage() {
                               ? 'Pop-up queue (House)'
                               : 'Pop-up queue (demo)'}
                           </p>
-                          <p className={cn(UI.micro, 'text-slate-400')}>{queueSourceLabel}</p>
+                          <p className={cn(UI.micro, 'text-slate-300')}>{queueStatusCopy.description}</p>
+                          <p className={cn(UI.micro, 'text-slate-500')}>{queueSourceLabel}</p>
+                          {queueLastUpdateLabel ? (
+                            <p className={cn(UI.micro, 'text-slate-500')}>{queueLastUpdateLabel}</p>
+                          ) : null}
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'border-white/20 bg-[#000c12]/40 text-xs',
-                            canDeliver ? 'text-emerald-200' : 'text-amber-200',
-                          )}
-                        >
-                          {canDeliver
-                            ? language === 'pt'
-                              ? 'A enviar'
-                              : language === 'es'
-                              ? 'Enviando'
-                              : 'Delivering'
-                            : language === 'pt'
-                            ? 'Cooldown'
-                            : language === 'es'
-                            ? 'Cooldown'
-                            : 'Cooldown'}
+                        <Badge variant="outline" className={cn('bg-[#000c12]/40 text-xs', queueBadgeClass)}>
+                          {queueStatusCopy.badge}
                         </Badge>
                       </div>
 
