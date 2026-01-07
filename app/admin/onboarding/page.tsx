@@ -736,6 +736,19 @@ export default function AdminOnboardingPage() {
   const analyticsData = analyticsOverride ?? houseSequence?.analytics ?? DEFAULT_ANALYTICS;
   const localizedFields = useMemo(() => getLocalizedFields(resolvedDraft, activeLanguage), [resolvedDraft, activeLanguage]);
   const translationSummary = useMemo(() => computeTranslationSummary(sequenceDraft), [sequenceDraft]);
+  const [translationFilter, setTranslationFilter] = useState<'all' | 'missing' | PopupLanguage>('all');
+
+  const filteredSequenceDraft = useMemo(() => {
+    const items = sequenceDraft.map((popup, index) => ({ popup, index }));
+    if (translationFilter === 'all') return items;
+    if (translationFilter === 'missing') {
+      return items.filter(({ popup }) => {
+        const status = getTranslationStatus(popup);
+        return POPUP_LANGUAGES.some((lang) => !status[lang].ok);
+      });
+    }
+    return items.filter(({ popup }) => !getTranslationStatus(popup)[translationFilter].ok);
+  }, [sequenceDraft, translationFilter]);
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
   const fmtNumber = (value?: number) => (typeof value === 'number' ? value.toLocaleString() : '--');
   const analyticsCards = [
@@ -1579,7 +1592,9 @@ export default function AdminOnboardingPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xs text-slate-400">
-                  {sequenceDraft.length} {sequenceDraft.length === 1 ? 'mensagem' : 'mensagens'}
+                  {translationFilter === 'all'
+                    ? `${sequenceDraft.length} ${sequenceDraft.length === 1 ? 'mensagem' : 'mensagens'}`
+                    : `${filteredSequenceDraft.length} de ${sequenceDraft.length} mensagens`}
                 </p>
                 <Button
                   size="sm"
@@ -1606,12 +1621,27 @@ export default function AdminOnboardingPage() {
                     );
                   })}
                 </div>
+                <Select value={translationFilter} onValueChange={(value) => setTranslationFilter(value as typeof translationFilter)}>
+                  <SelectTrigger className="w-full border-white/10 bg-[#010913] text-white sm:w-48">
+                    <SelectValue placeholder="Filtrar traduções" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#010913] text-white">
+                    <SelectItem value="all">Todas as mensagens</SelectItem>
+                    <SelectItem value="missing">Com traduções em falta</SelectItem>
+                    {POPUP_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {`Pendentes em ${LANGUAGE_LABELS[lang]}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             {sequenceDraft.length ? (
+              filteredSequenceDraft.length ? (
               <div className="space-y-3">
-                {sequenceDraft.map((popup, index) => {
+                {filteredSequenceDraft.map(({ popup, index }) => {
                   const translationStatus = getTranslationStatus(popup);
                   return (
                   <div
@@ -1711,6 +1741,11 @@ export default function AdminOnboardingPage() {
                   );
                 })}
               </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-[#000c12]/30 p-6 text-sm text-slate-300">
+                  Nenhum pop-up corresponde ao filtro de tradução selecionado.
+                </div>
+              )
             ) : (
               <div className="rounded-2xl border border-dashed border-white/10 bg-[#000c12]/30 p-6 text-sm text-slate-300">
                 Ainda não tens pop-ups para esta House. Usa “Novo pop-up” para começar a planear a sequência oficial.
