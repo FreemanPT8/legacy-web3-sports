@@ -243,6 +243,7 @@ async function fetchStructuredSequence(houseKey: string) {
 
     const popups: OnboardingPopup[] = popupRows.map((row: PopupRow) => {
       const trigger = triggerMap.get(row.id);
+      const xpGateLabel = typeof trigger?.label === 'string' ? trigger.label : undefined;
       return {
         id: row.id,
         house: row.house_key,
@@ -254,7 +255,7 @@ async function fetchStructuredSequence(houseKey: string) {
         secondaryCta: (row.secondary_cta as OnboardingPopup['secondaryCta']) ?? undefined,
         status: row.status,
         language: row.language,
-        xpGate: trigger?.label,
+        xpGate: xpGateLabel,
         trigger: trigger?.trigger,
       };
     });
@@ -291,14 +292,17 @@ function mapTrigger(row: TriggerRow) {
       return undefined;
     }
     const contentType = (row.content_type || 'lesson') as 'lesson' | 'course' | 'blog';
+    const label =
+      typeof row.metadata?.label === 'string' ? row.metadata?.label : `${contentType}:${contentId}`;
+    const title = typeof row.metadata?.title === 'string' ? row.metadata?.title : undefined;
     return {
-      label: row.metadata?.label ?? `${contentType}:${contentId}`,
+      label,
       trigger: {
         type: 'content' as const,
         contentType,
         contentId,
-        contentTitle: row.metadata?.title ?? row.metadata?.label ?? undefined,
-        label: row.metadata?.label ?? `${contentType}:${contentId}`,
+        contentTitle: title ?? label,
+        label,
       },
     };
   }
