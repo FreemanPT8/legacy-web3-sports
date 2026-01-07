@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAuth } from '@/lib/middleware';
 import { supabaseAdmin, supabase } from '@/lib/supabase';
+import { isAdminRole } from '@/lib/roles';
 import type { OnboardingPopup } from '@/types/onboarding';
 
 const db = supabaseAdmin ?? supabase;
@@ -22,6 +23,8 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const requestedHouse = normalizeHouseKey(searchParams.get('house'));
+  const requestedUserId = searchParams.get('userId') ?? searchParams.get('user');
+  const targetUserId = requestedUserId && isAdminRole(user.role) ? requestedUserId : user.userId;
 
   if (!db) {
     return NextResponse.json({ success: true, queue: [], signature: null, house: requestedHouse });
@@ -29,17 +32,17 @@ export async function GET(request: NextRequest) {
 
   try {
     const targetHouse = requestedHouse ?? 'LEGACY';
-    let result = await fetchQueueRow(user.userId, targetHouse);
+    let result = await fetchQueueRow(targetUserId, targetHouse);
     if (!result.data && targetHouse !== null) {
       // backwards compatibility: rows guardadas sem house_key
-      result = await fetchQueueRow(user.userId, null);
+      result = await fetchQueueRow(targetUserId, null);
     }
 
     if (result.error) throw result.error;
     const row = result.data;
 
     if (!row) {
-      return NextResponse.json({ success: true, queue: [], signature: null, house: targetHouse });
+      return NextResponse.json({ success: true, queue: [], signature: null, house: targetHouse, user: targetUserId });
     }
 
     return NextResponse.json({
@@ -47,6 +50,7 @@ export async function GET(request: NextRequest) {
       queue: row.queue_payload ?? [],
       signature: row.queue_signature ?? null,
       house: row.house_key ?? targetHouse,
+      user: targetUserId,
       updatedAt: row.updated_at ?? null,
     });
   } catch (error) {

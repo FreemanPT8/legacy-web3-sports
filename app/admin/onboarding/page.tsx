@@ -281,6 +281,16 @@ export default function AdminOnboardingPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [analyticsReloadKey, setAnalyticsReloadKey] = useState(0);
+  const [inspectorUserId, setInspectorUserId] = useState('');
+  const [inspectorLoading, setInspectorLoading] = useState(false);
+  const [inspectorError, setInspectorError] = useState<string | null>(null);
+  const [inspectorResult, setInspectorResult] = useState<{
+    user: string;
+    house: string | null;
+    queue: OnboardingPopupData[];
+    signature: string | null;
+    updatedAt: number | null;
+  } | null>(null);
   const unassignedSubmissions = useMemo(
     () => submissions.filter((submission) => !submission.assigned_to_full_name && !submission.assigned_to_username).length,
     [submissions],
@@ -692,6 +702,49 @@ export default function AdminOnboardingPage() {
   const refreshAnalytics = useCallback(() => {
     setAnalyticsReloadKey((key) => key + 1);
   }, []);
+
+  const handleInspectQueue = useCallback(async () => {
+    const target = inspectorUserId.trim();
+    if (!target) {
+      setInspectorError('Introduz um user_id válido.');
+      setInspectorResult(null);
+      return;
+    }
+    const token = getToken?.();
+    if (!token) {
+      setInspectorError('Precisas de sessão ativa para consultar filas.');
+      setInspectorResult(null);
+      return;
+    }
+    try {
+      setInspectorLoading(true);
+      setInspectorError(null);
+      const response = await fetch(
+        `/api/onboarding/queue?house=${encodeURIComponent(houseKey)}&user=${encodeURIComponent(target)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        },
+      );
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to inspect queue');
+      }
+      setInspectorResult({
+        user: data.user || target,
+        house: data.house || houseKey,
+        queue: (data.queue as OnboardingPopupData[]) ?? [],
+        signature: (data.signature as string | null) ?? null,
+        updatedAt: typeof data.updatedAt === 'string' ? Date.parse(data.updatedAt) : data.updatedAt ?? null,
+      });
+    } catch (error) {
+      console.error('[admin/onboarding] queue inspector failed', error);
+      setInspectorResult(null);
+      setInspectorError('Falha ao carregar a fila do membro.');
+    } finally {
+      setInspectorLoading(false);
+    }
+  }, [getToken, houseKey, inspectorUserId]);
 
   const handleDraftChange = (field: keyof OnboardingPopupData, value: string) => {
     setDraft((prev) => ({
@@ -1143,6 +1196,84 @@ export default function AdminOnboardingPage() {
               </Button>
             </div>
             {status ? <p className="text-sm text-emerald-200">{status}</p> : null}
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/10 bg-[#04131b]/80">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Inspector</p>
+              <h2 className="text-xl font-semibold text-white">Fila de um membro</h2>
+              <p className="text-xs text-slate-500">
+                Consulta a fila guardada para qualquer utilizador desta House introduzindo o respetivo <code className="text-slate-200">user_id</code>.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 md:flex-row md:items-end">
+              <div className="flex-1">
+                <label className="text-[10px] uppercase tracking-[0.3em] text-slate-500">user_id alvo</label>
+                <Input
+                  value={inspectorUserId}
+                  onChange={(event) => setInspectorUserId(event.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                  className="mt-2 border-white/10 bg-[#010913] text-white placeholder:text-slate-600"
+                />
+              </div>
+              <Button
+                onClick={() => void handleInspectQueue()}
+                disabled={inspectorLoading || !inspectorUserId.trim()}
+                className="bg-cyan-500/20 text-cyan-100"
+              >
+                {inspectorLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A consultar...
+                  </>
+                ) : (
+                  'Consultar fila'
+                )}
+              </Button>
+            </div>
+            {inspectorError ? <p className="text-sm text-amber-300">{inspectorError}</p> : null}
+            {inspectorResult ? (
+              <div className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Utilizador</p>
+                    <p className="break-all text-sm font-mono text-slate-100">{inspectorResult.user}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">House</p>
+                    <p className="text-sm font-semibold text-white">{inspectorResult.house || houseKey}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Itens na fila</p>
+                    <p className="text-2xl font-semibold text-white">{inspectorResult.queue.length}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Última atualização</p>
+                    <p className="text-sm text-slate-100">
+                      {inspectorResult.updatedAt ? new Date(inspectorResult.updatedAt).toLocaleString('pt-PT') : '--'}
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-dashed border-white/15 bg-[#000c12]/30 p-3 text-xs text-slate-400">
+                  Assinatura: {inspectorResult.signature ? inspectorResult.signature : '—'}
+                </div>
+                {inspectorResult.queue.length ? (
+                  <div className="space-y-2">
+                    {inspectorResult.queue.map((popup) => (
+                      <div key={popup.id} className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                        <p className="text-sm font-semibold text-white">{popup.title}</p>
+                        <p className="text-xs text-slate-400">{popup.trigger?.label || popup.xpGate || 'XP 0'}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400">Sem pop-ups pendentes para este utilizador.</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">Sem dados carregados. Introduz um user_id e consulta a fila.</p>
+            )}
           </CardContent>
         </Card>
 
