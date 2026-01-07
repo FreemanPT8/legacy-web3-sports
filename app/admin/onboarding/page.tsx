@@ -42,6 +42,14 @@ const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', {
   dismiss: { label: 'Fechados' },
 };
 
+const LOG_ACTION_FILTERS: Array<{ value: 'ALL' | 'delivered' | 'primary' | 'secondary' | 'dismiss'; label: string }> = [
+  { value: 'ALL', label: 'Todos' },
+  { value: 'delivered', label: 'Entregues' },
+  { value: 'primary', label: 'CTA principal' },
+  { value: 'secondary', label: 'CTA secundária' },
+  { value: 'dismiss', label: 'Fechados' },
+];
+
 const TRIGGER_TYPE_OPTIONS = [
   { value: 'xp', label: 'XP milestone' },
   { value: 'content', label: 'Conteudo concluido' },
@@ -237,6 +245,7 @@ export default function AdminOnboardingPage() {
   const termExpired = termExpiration ? termExpiration < now : true;
   const termActive = isAccepted && !termExpired;
   const editingDisabled = !termActive;
+  const [logActionFilter, setLogActionFilter] = useState<'ALL' | 'delivered' | 'primary' | 'secondary' | 'dismiss'>('ALL');
   const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs({
     house: houseKey || null,
   });
@@ -247,6 +256,10 @@ export default function AdminOnboardingPage() {
     }, {} as Record<OnboardingLogEntry['action'], number>);
   }, [liveLogs]);
   const latestLogs = useMemo(() => liveLogs.slice(0, 10), [liveLogs]);
+  const filteredLogs = useMemo(
+    () => (logActionFilter === 'ALL' ? latestLogs : latestLogs.filter((log) => log.action === logActionFilter)),
+    [latestLogs, logActionFilter],
+  );
   const [submissionStatusFilter, setSubmissionStatusFilter] = useState<'ALL' | AdminOnboardingStatus>('PENDING_RESPONSE');
   const [submissionSearch, setSubmissionSearch] = useState('');
   const [submissions, setSubmissions] = useState<SubmissionSummary[]>([]);
@@ -1256,11 +1269,25 @@ export default function AdminOnboardingPage() {
                   Filtrado para House <span className="font-semibold text-slate-200">{houseKey || 'LEGACY'}</span>
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={refreshLogs} className="border-white/20 text-white hover:bg-white/10">
-                  <RefreshCcw className="mr-1 h-4 w-4" /> Atualizar
-                </Button>
-                <span className="text-xs text-slate-400">{logsLoading ? 'A carregar?' : `${liveLogs.length} eventos`}</span>
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+                <Select value={logActionFilter} onValueChange={(value) => setLogActionFilter(value as typeof logActionFilter)}>
+                  <SelectTrigger className="w-48 border-white/10 bg-[#010913] text-white">
+                    <SelectValue placeholder="Filtrar ações" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#010913] text-white">
+                    {LOG_ACTION_FILTERS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={refreshLogs} className="border-white/20 text-white hover:bg-white/10">
+                    <RefreshCcw className="mr-1 h-4 w-4" /> Atualizar
+                  </Button>
+                  <span className="text-xs text-slate-400">{logsLoading ? 'A carregar...' : `${filteredLogs.length}/${liveLogs.length}`}</span>
+                </div>
               </div>
             </div>
 
@@ -1276,8 +1303,8 @@ export default function AdminOnboardingPage() {
             </div>
 
             <div className="space-y-2">
-              {latestLogs.length ? (
-                latestLogs.map((log) => (
+              {filteredLogs.length ? (
+                filteredLogs.map((log) => (
                   <div key={log.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-2">
                     <div>
                       <p className="text-sm font-semibold text-white">{ACTION_LABELS[log.action].label}</p>
@@ -1287,7 +1314,9 @@ export default function AdminOnboardingPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-slate-400">Sem eventos registados.</p>
+                <p className="text-sm text-slate-400">
+                  {logActionFilter === 'ALL' ? 'Sem eventos registados.' : 'Sem eventos para este filtro.'}
+                </p>
               )}
             </div>
           </CardContent>
