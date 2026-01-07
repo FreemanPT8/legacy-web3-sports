@@ -2081,9 +2081,21 @@ export default function EducationXpPage() {
       setRemoteQueueLoaded(true);
       return;
     }
+    const runEngine = async () => {
+      try {
+        await fetch(`/api/onboarding/engine?house=${encodeURIComponent(houseKey)}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+      } catch (error) {
+        console.error('[education/xp] Failed to run onboarding engine', error);
+      }
+    };
     const loadQueue = async () => {
       try {
         setRemoteQueueLoaded(false);
+        await runEngine();
         const response = await fetch(`/api/onboarding/queue?house=${encodeURIComponent(houseKey)}`, {
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
