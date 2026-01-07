@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 
 const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', { label: string }> = {
   delivered: { label: 'Entregues' },
@@ -108,6 +109,48 @@ const RESPONSIBILITY_TERM = {
   footer: 'Este compromisso é assumido de forma voluntária, consciente e alinhada com os valores do Legacy.',
 };
 
+type AdminOnboardingStatus =
+  | 'PENDING_RESPONSE'
+  | 'RESPONDED_WAITING'
+  | 'FIRST_CONTACT_SCHEDULED'
+  | 'FIRST_CONTACT_DONE'
+  | 'ONBOARDING_LEGACY'
+  | 'ONBOARDING_DAO1'
+  | 'ONBOARDING_TELEGRAM';
+
+const SUBMISSION_STATUS_LABELS: Record<AdminOnboardingStatus, string> = {
+  PENDING_RESPONSE: 'Pendente',
+  RESPONDED_WAITING: 'A aguardar resposta',
+  FIRST_CONTACT_SCHEDULED: 'Primeiro contacto agendado',
+  FIRST_CONTACT_DONE: 'Primeiro contacto feito',
+  ONBOARDING_LEGACY: 'Onboarding Legacy',
+  ONBOARDING_DAO1: 'Onboarding DAO1',
+  ONBOARDING_TELEGRAM: 'Onboarding Telegram',
+};
+
+const SUBMISSION_STATUS_OPTIONS: { value: 'ALL' | AdminOnboardingStatus; label: string }[] = [
+  { value: 'PENDING_RESPONSE', label: 'Pendentes' },
+  { value: 'RESPONDED_WAITING', label: 'A aguardar' },
+  { value: 'FIRST_CONTACT_SCHEDULED', label: '1.º contacto agendado' },
+  { value: 'FIRST_CONTACT_DONE', label: '1.º contacto feito' },
+  { value: 'ONBOARDING_LEGACY', label: 'Legacy' },
+  { value: 'ONBOARDING_DAO1', label: 'DAO1' },
+  { value: 'ONBOARDING_TELEGRAM', label: 'Telegram' },
+  { value: 'ALL', label: 'Todos' },
+];
+
+type SubmissionSummary = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  status: AdminOnboardingStatus | null;
+  created_at: string | null;
+  assigned_to_full_name: string | null;
+  assigned_to_username: string | null;
+  sports_category: string | null;
+  sequence_number: number | null;
+};
+
 export default function AdminOnboardingPage() {
   const [houseKey, setHouseKey] = useState('LEGACY');
   const [draft, setDraft] = useState<OnboardingPopupData>(DEFAULT_DRAFT);
@@ -121,7 +164,7 @@ export default function AdminOnboardingPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
   const { acceptedAt, loading: termLoading, accept, isAccepted, error: termError, saving: termSaving } =
     useTermAgreement(houseKey);
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const [headHouseOptions, setHeadHouseOptions] = useState<{ key: string; label: string }[]>([]);
   const [housesLoading, setHousesLoading] = useState(false);
   const [housesError, setHousesError] = useState<string | null>(null);
@@ -140,6 +183,96 @@ export default function AdminOnboardingPage() {
     }, {} as Record<OnboardingLogEntry['action'], number>);
   }, [liveLogs]);
   const latestLogs = useMemo(() => liveLogs.slice(0, 10), [liveLogs]);
+  const [submissionStatusFilter, setSubmissionStatusFilter] = useState<'ALL' | AdminOnboardingStatus>('PENDING_RESPONSE');
+  const [submissions, setSubmissions] = useState<SubmissionSummary[]>([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState<string | null>(null);
+  const [assigningSubmissionId, setAssigningSubmissionId] = useState<string | null>(null);
+  const fetchSubmissions = useCallback(async () => {
+    const token = getToken?.();
+    if (!token) {
+      setSubmissionsError('Precisas de sessão ativa para consultar submissões.');
+      setSubmissions([]);
+      return;
+    }
+    try {
+      setSubmissionsLoading(true);
+      setSubmissionsError(null);
+      const params = new URLSearchParams();
+      params.set('pageSize', '6');
+      if (houseKey) params.set('sport', houseKey);
+      if (submissionStatusFilter !== 'ALL') params.set('status', submissionStatusFilter);
+      const query = params.toString();
+      const response = await fetch(`/api/admin/onboarding?${query}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      const data = (await response.json()) as
+        | { success: true; submissions?: any[] }
+        | { success: false; error?: string };
+      if (!response.ok || !data.success) {
+        throw new Error(data.success ? 'Failed to load submissions' : data.error || 'Failed to load submissions');
+      }
+      const payload = (data.submissions ?? []) as any[];
+      setSubmissions(
+        payload.map(
+          (item): SubmissionSummary => ({
+            id: item.id,
+            full_name: item.full_name ?? null,
+            email: item.email ?? null,
+            status: (item.status ?? null) as AdminOnboardingStatus | null,
+            created_at: item.created_at ?? null,
+            assigned_to_full_name: item.assigned_to_full_name ?? null,
+            assigned_to_username: item.assigned_to_username ?? null,
+            sports_category: item.sports_category ?? null,
+            sequence_number: item.sequence_number ?? null,
+          }),
+        ),
+      );
+    } catch (error) {
+      console.error('[admin/onboarding] Failed to load submissions', error);
+      setSubmissionsError('Falha ao carregar submissões.');
+    } finally {
+      setSubmissionsLoading(false);
+    }
+  }, [getToken, houseKey, submissionStatusFilter]);
+
+  useEffect(() => {
+    void fetchSubmissions();
+  }, [fetchSubmissions]);
+
+  const handleAssignSubmission = useCallback(
+    async (submissionId: string) => {
+      const token = getToken?.();
+      if (!token) {
+        setSubmissionsError('Precisas de sessão ativa para assumir uma submissão.');
+        return;
+      }
+      try {
+        setAssigningSubmissionId(submissionId);
+        setSubmissionsError(null);
+        const response = await fetch('/api/admin/onboarding', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ submissionId, assignToMe: true }),
+        });
+        const data = (await response.json()) as { success: boolean; error?: string };
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to assign submission');
+        }
+        await fetchSubmissions();
+      } catch (error) {
+        console.error('[admin/onboarding] Failed to assign submission', error);
+        setSubmissionsError('Falha ao assumir submissão.');
+      } finally {
+        setAssigningSubmissionId(null);
+      }
+    },
+    [fetchSubmissions, getToken],
+  );
 
   const normalizeTrigger = useCallback((popup: OnboardingPopupData): OnboardingPopupData => {
     if (popup.trigger) {
@@ -496,6 +629,16 @@ export default function AdminOnboardingPage() {
     });
   };
 
+  const formatSubmissionDate = useCallback((timestamp: string | null) => {
+    if (!timestamp) return '--';
+    return new Date(timestamp).toLocaleString('pt-PT', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#010913] text-white">
       <Header />
@@ -742,6 +885,113 @@ export default function AdminOnboardingPage() {
                 ))
               ) : (
                 <p className="text-sm text-slate-400">Sem eventos registados.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/10 bg-[#04131b]/80">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Submissões</p>
+                <h2 className="text-xl font-semibold text-white">Funil desta House</h2>
+                <p className="text-xs text-slate-500">
+                  Mostra os pedidos mais recentes associados a <span className="font-semibold text-white">{houseKey}</span>.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 md:w-72">
+                <label className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Estado</label>
+                <Select
+                  value={submissionStatusFilter}
+                  onValueChange={(value) => setSubmissionStatusFilter(value as 'ALL' | AdminOnboardingStatus)}
+                >
+                  <SelectTrigger className="border-white/10 bg-[#010913] text-white">
+                    <SelectValue placeholder="Filtrar estado" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#010913] text-white">
+                    {SUBMISSION_STATUS_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void fetchSubmissions()}
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  <RefreshCcw className="mr-2 h-4 w-4" /> Atualizar
+                </Button>
+              </div>
+            </div>
+            {submissionsError ? <p className="text-sm text-amber-300">{submissionsError}</p> : null}
+            <div className="space-y-3">
+              {submissionsLoading ? (
+                <p className="text-sm text-slate-400">A carregar submissões...</p>
+              ) : submissions.length ? (
+                submissions.map((submission) => {
+                  const statusLabel = submission.status ? SUBMISSION_STATUS_LABELS[submission.status] : 'Sem estado';
+                  const assignedLabel =
+                    submission.assigned_to_full_name ??
+                    submission.assigned_to_username ??
+                    'Sem responsável atribuído';
+                  const isAssignedToMe =
+                    submission.assigned_to_username &&
+                    user?.username &&
+                    submission.assigned_to_username === user.username;
+                  return (
+                    <div
+                      key={submission.id}
+                      className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-sm text-slate-200"
+                    >
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-base font-semibold text-white">
+                            {submission.full_name ?? 'Sem nome'}{' '}
+                            {submission.sequence_number ? (
+                              <span className="text-xs text-slate-500">#{submission.sequence_number}</span>
+                            ) : null}
+                          </p>
+                          <p className="text-xs text-slate-400">{submission.email ?? 'Sem email registado'}</p>
+                          <p className="text-xs text-slate-400">{submission.sports_category ?? 'Sem desporto'}</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className="border-cyan-400/40 bg-cyan-500/10 text-cyan-100">
+                            {statusLabel}
+                          </Badge>
+                          <span className="text-xs text-slate-400">{formatSubmissionDate(submission.created_at)}</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <p className="text-xs text-slate-400">Responsável: {assignedLabel}</p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void handleAssignSubmission(submission.id)}
+                            disabled={assigningSubmissionId === submission.id || isAssignedToMe}
+                            className="border-white/20 text-white hover:bg-white/10"
+                          >
+                            {assigningSubmissionId === submission.id ? (
+                              <>
+                                <Loader2 className="mr-1 h-4 w-4 animate-spin" /> A assumir...
+                              </>
+                            ) : isAssignedToMe ? (
+                              'És o responsável'
+                            ) : (
+                              'Assumir lead'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-slate-400">Sem submissões para este filtro.</p>
               )}
             </div>
           </CardContent>
