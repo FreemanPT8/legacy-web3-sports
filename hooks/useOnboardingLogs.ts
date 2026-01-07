@@ -10,10 +10,11 @@ type UseOnboardingLogsOptions = {
   pollInterval?: number;
   house?: string | null;
   popupId?: string | null;
+  userId?: string | null;
 };
 
 export function useOnboardingLogs(options: UseOnboardingLogsOptions = {}) {
-  const { pollInterval = DEFAULT_INTERVAL, house, popupId } = options;
+  const { pollInterval = DEFAULT_INTERVAL, house, popupId, userId } = options;
   const [logs, setLogs] = useState<OnboardingLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +26,7 @@ export function useOnboardingLogs(options: UseOnboardingLogsOptions = {}) {
       const params = new URLSearchParams();
       if (house) params.set('house', house);
       if (popupId) params.set('popupId', popupId);
+      if (userId) params.set('userId', userId);
       const query = params.toString();
       const response = await fetch(`/api/onboarding/logs${query ? `?${query}` : ''}`, { cache: 'no-store' });
       const data = (await response.json()) as
@@ -40,7 +42,7 @@ export function useOnboardingLogs(options: UseOnboardingLogsOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [house, popupId]);
+  }, [house, popupId, userId]);
 
   useEffect(() => {
     void fetchLogs();

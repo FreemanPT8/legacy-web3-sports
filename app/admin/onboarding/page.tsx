@@ -246,8 +246,10 @@ export default function AdminOnboardingPage() {
   const termActive = isAccepted && !termExpired;
   const editingDisabled = !termActive;
   const [logActionFilter, setLogActionFilter] = useState<'ALL' | 'delivered' | 'primary' | 'secondary' | 'dismiss'>('ALL');
+  const [logUserQuery, setLogUserQuery] = useState('');
   const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs({
     house: houseKey || null,
+    userId: logUserQuery.trim() || null,
   });
   const logTotals = useMemo(() => {
     return liveLogs.reduce((acc, log) => {
@@ -1269,24 +1271,34 @@ export default function AdminOnboardingPage() {
                   Filtrado para House <span className="font-semibold text-slate-200">{houseKey || 'LEGACY'}</span>
                 </p>
               </div>
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-                <Select value={logActionFilter} onValueChange={(value) => setLogActionFilter(value as typeof logActionFilter)}>
-                  <SelectTrigger className="w-48 border-white/10 bg-[#010913] text-white">
-                    <SelectValue placeholder="Filtrar ações" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#010913] text-white">
-                    {LOG_ACTION_FILTERS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+                <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+                  <Select value={logActionFilter} onValueChange={(value) => setLogActionFilter(value as typeof logActionFilter)}>
+                    <SelectTrigger className="w-full border-white/10 bg-[#010913] text-white sm:w-48">
+                      <SelectValue placeholder="Filtrar ações" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#010913] text-white">
+                      {LOG_ACTION_FILTERS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={logUserQuery}
+                    onChange={(event) => setLogUserQuery(event.target.value)}
+                    placeholder="Filtrar por user_id"
+                    className="border-white/10 bg-[#010913] text-white placeholder:text-slate-500"
+                  />
+                </div>
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="outline" onClick={refreshLogs} className="border-white/20 text-white hover:bg-white/10">
                     <RefreshCcw className="mr-1 h-4 w-4" /> Atualizar
                   </Button>
-                  <span className="text-xs text-slate-400">{logsLoading ? 'A carregar...' : `${filteredLogs.length}/${liveLogs.length}`}</span>
+                  <span className="text-xs text-slate-400">
+                    {logsLoading ? 'A carregar...' : `${filteredLogs.length}/${liveLogs.length}`}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1305,10 +1317,11 @@ export default function AdminOnboardingPage() {
             <div className="space-y-2">
               {filteredLogs.length ? (
                 filteredLogs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-2">
-                    <div>
+                  <div key={log.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-2">
+                    <div className="space-y-0.5">
                       <p className="text-sm font-semibold text-white">{ACTION_LABELS[log.action].label}</p>
                       <p className="text-xs text-slate-400">Popup: {log.popupId}</p>
+                      {log.userId ? <p className="text-[11px] text-slate-500">User: {log.userId}</p> : null}
                     </div>
                     <span className="text-xs text-slate-300">{new Date(log.timestamp).toLocaleTimeString()}</span>
                   </div>

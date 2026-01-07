@@ -56,4 +56,6 @@ export type OnboardingLogEntry = {
   action: OnboardingLogAction;
   timestamp: number;
   house: string;
+  userId?: string | null;
+  metadata?: Record<string, unknown> | null;
 };

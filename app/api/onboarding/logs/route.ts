@@ -12,6 +12,7 @@ export async function GET(request: Request) {
   const limit = Math.min(Number(searchParams.get('limit')) || DEFAULT_LIMIT, 200);
   const houseKey = searchParams.get('house')?.toUpperCase() ?? null;
   const popupId = searchParams.get('popupId') ?? null;
+  const userId = searchParams.get('userId') ?? searchParams.get('user') ?? null;
   try {
     if (!db) {
       console.warn('[onboarding.logs] Supabase admin client not available. Returning empty logs.');
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
       .limit(limit);
     if (houseKey) query = query.eq('house_key', houseKey);
     if (popupId) query = query.eq('popup_id', popupId);
+    if (userId) query = query.eq('user_id', userId);
     const { data, error } = await query;
     if (error) throw error;
     type LogRow = {
@@ -31,6 +33,8 @@ export async function GET(request: Request) {
       popup_id: string;
       house_key: string;
       action: string;
+      user_id?: string | null;
+      metadata?: Record<string, unknown> | null;
       created_at: string;
     };
     const logs: OnboardingLogEntry[] = (data ?? []).map((row: LogRow) => ({
@@ -39,6 +43,8 @@ export async function GET(request: Request) {
       house: row.house_key,
       action: row.action as OnboardingLogAction,
       timestamp: new Date(row.created_at).getTime(),
+      userId: row.user_id ?? null,
+      metadata: row.metadata ?? null,
     }));
     return NextResponse.json({ success: true, logs });
   } catch (error) {
