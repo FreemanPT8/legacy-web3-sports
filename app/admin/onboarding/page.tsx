@@ -130,12 +130,13 @@ function cloneLocalizedCopy(copy?: Record<PopupLanguage, OnboardingPopupLocalize
 }
 
 function clonePopup(popup: OnboardingPopupData): OnboardingPopupData {
+  const localizedCopy = cloneLocalizedCopy(popup.localized ?? BASE_LOCALIZED_COPY);
   return {
     ...popup,
     highlights: popup.highlights ? [...popup.highlights] : [],
     primaryCta: popup.primaryCta ? { ...popup.primaryCta } : undefined,
     secondaryCta: popup.secondaryCta ? { ...popup.secondaryCta } : undefined,
-    localized: cloneLocalizedCopy(popup.localized ?? BASE_LOCALIZED_COPY) ?? cloneLocalizedCopy(BASE_LOCALIZED_COPY),
+    localized: localizedCopy,
   };
 }
 
