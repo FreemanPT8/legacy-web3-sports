@@ -1123,40 +1123,37 @@ export default function AdminOnboardingPage() {
                         </Select>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        <Button size="sm" variant="outline" onClick={() => handleMovePopup(index, 'up')} disabled={index === 0}>
-                          <ArrowUp className="mr-1 h-4 w-4" /> Up
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMovePopup(index, 'down')}
-                          disabled={index === sequenceDraft.length - 1}
-                        >
-                          <ArrowDown className="mr-1 h-4 w-4" /> Down
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDuplicatePopup(index)}>
-                          <Copy className="mr-1 h-4 w-4" /> Duplicar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={cn(
-                            selectedIndex === index && 'border-cyan-400/70 bg-cyan-500/10 text-cyan-100',
-                          )}
-                          onClick={() => handleSelectPopup(popup, index)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-red-400/50 text-red-200 hover:bg-red-500/10"
-                          onClick={() => handleRemovePopup(index)}
-                        >
-                          <Trash2 className="mr-1 h-4 w-4" /> Remover
-                        </Button>
-                      </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleMovePopup(index, 'up')} disabled={index === 0}>
+                        <ArrowUp className="mr-1 h-4 w-4" /> Up
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleMovePopup(index, 'down')}
+                        disabled={index === sequenceDraft.length - 1}
+                      >
+                        <ArrowDown className="mr-1 h-4 w-4" /> Down
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDuplicatePopup(index)}>
+                        <Copy className="mr-1 h-4 w-4" /> Duplicar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={cn(selectedIndex === index && 'border-cyan-400/70 bg-cyan-500/10 text-cyan-100')}
+                        onClick={() => handleSelectPopup(popup, index)}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-400/50 text-red-200 hover:bg-red-500/10"
+                        onClick={() => handleRemovePopup(index)}
+                      >
+                        <Trash2 className="mr-1 h-4 w-4" /> Remover
+                      </Button>
                     </div>
                     <p className="mt-2 text-sm text-slate-300 line-clamp-2">{popup.body}</p>
                   </div>
@@ -1559,6 +1556,7 @@ export default function AdminOnboardingPage() {
         </Card>
 
         </div>
+
         {!isAccepted ? (
           <p className="text-sm text-amber-300">Aceita o Termo para editar e publicar pop-ups.</p>
         ) : null}
