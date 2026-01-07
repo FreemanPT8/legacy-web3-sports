@@ -800,7 +800,15 @@ export default function AdminOnboardingPage() {
           (data.houses ?? [])
             .filter((house: any) => house?.head?.user_id === user.id)
             .map((house: any) => {
-              const key = (house?.sport?.code || house?.name || house?.id || 'LEGACY').toString().toUpperCase();
+              const key = (
+                house?.house_key ||
+                house?.sport?.code ||
+                house?.name ||
+                house?.id ||
+                'LEGACY'
+              )
+                .toString()
+                .toUpperCase();
               const label = house?.name || `House · ${house?.sport?.code ?? 'Sport'}`;
               return { key, label };
             }) ?? [];

@@ -26,6 +26,7 @@ type HouseRow = {
   name_i18n: Record<string, string> | null;
   status: string | null;
   created_at: string | null;
+  house_key?: string | null;
 };
 
 type SportRow = {
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
     // 1) Buscar todas as houses
     const { data: housesData, error: housesError } = await supabaseAdmin
       .from('houses_of_sports')
-      .select('id, sport_id, country_code, name_i18n, status, created_at');
+      .select('id, sport_id, country_code, name_i18n, status, created_at, house_key');
 
     if (housesError) {
       console.error('Error loading houses_of_sports:', housesError);
@@ -315,6 +316,7 @@ export async function GET(request: NextRequest) {
         country_code: house.country_code,
         status: publicStatus,
         created_at: house.created_at,
+        house_key: (house.house_key || (sport?.code ?? '') || house.id).toUpperCase(),
 
         sport: sport
           ? {
