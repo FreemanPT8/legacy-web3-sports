@@ -1997,6 +1997,7 @@ export default function EducationXpPage() {
   const [queueSeedSignature, setQueueSeedSignature] = useState<string | null>(null);
   const [remoteCooldownReason, setRemoteCooldownReason] = useState<'daily' | 'weekly' | null>(null);
   const [remoteQueueUpdatedAt, setRemoteQueueUpdatedAt] = useState<number | null>(null);
+  const [queueReloadKey, setQueueReloadKey] = useState(0);
   const lastPersistedQueueHashRef = useRef<string | null>(null);
   const persistQueue = useCallback(
     async (payload: OnboardingPopupData[], signature: string | null) => {
@@ -2138,7 +2139,7 @@ export default function EducationXpPage() {
     return () => {
       active = false;
     };
-  }, [getToken, houseKey, user, houseReloadKey]);
+  }, [getToken, houseKey, user, houseReloadKey, queueReloadKey]);
 
   useEffect(() => {
     if (!activePopup) return;
@@ -2462,6 +2463,13 @@ export default function EducationXpPage() {
     if (language === 'es') return `Actualizado a las ${when}`;
     return `Updated at ${when}`;
   }, [language, locale, remoteQueueUpdatedAt]);
+  const queueRefreshLabel =
+    language === 'pt' ? 'Sincronizar fila' : language === 'es' ? 'Sincronizar fila' : 'Sync queue';
+  const refreshQueue = useCallback(() => {
+    if (!user) return;
+    setQueueReloadKey((key) => key + 1);
+  }, [user]);
+  const queueRefreshing = Boolean(user) && !remoteQueueLoaded;
 
   const queueResetLabel = houseSequence
     ? language === 'pt'
@@ -2649,7 +2657,8 @@ export default function EducationXpPage() {
     setXpReloadKey((key) => key + 1);
     setComboReloadKey((key) => key + 1);
     refreshProgress();
-  }, [refreshProgress]);
+    refreshQueue();
+  }, [refreshProgress, refreshQueue]);
 
   const resolveBlockedHref = useCallback((popup: OnboardingPopupData) => {
     if (popup.trigger?.type !== 'content') return null;
@@ -4843,7 +4852,7 @@ export default function EducationXpPage() {
                 <div className="grid gap-4 lg:grid-cols-2">
                   <Card className={cn(UI.cardSurface, 'h-full')}>
                     <CardContent className="p-5 space-y-4">
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className={UI.cardTitle}>
                             {language === 'pt'
@@ -4864,9 +4873,23 @@ export default function EducationXpPage() {
                             <p className={cn(UI.micro, 'text-slate-500')}>{queueLastUpdateLabel}</p>
                           ) : null}
                         </div>
-                        <Badge variant="outline" className={cn('bg-[#000c12]/40 text-xs', queueBadgeClass)}>
-                          {queueStatusCopy.badge}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge variant="outline" className={cn('bg-[#000c12]/40 text-xs', queueBadgeClass)}>
+                            {queueStatusCopy.badge}
+                          </Badge>
+                          {user ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={refreshQueue}
+                              disabled={queueRefreshing}
+                              className="border-white/20 text-white hover:bg-white/10"
+                            >
+                              {queueRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                              {queueRefreshLabel}
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-3">
