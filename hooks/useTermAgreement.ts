@@ -10,6 +10,7 @@ export function useTermAgreement(houseKeyInput = 'LEGACY') {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [requiresRenewal, setRequiresRenewal] = useState(false);
   const houseKey = (houseKeyInput || 'LEGACY').toUpperCase();
 
   useEffect(() => {
@@ -40,7 +41,14 @@ export function useTermAgreement(houseKeyInput = 'LEGACY') {
         if (!response.ok || !data.success) {
           throw new Error(data.error || 'Failed to load term status');
         }
-        setAcceptedAt(data.acceptedAt ? new Date(data.acceptedAt).getTime() : null);
+        const acceptedTimestamp = data.acceptedAt ? new Date(data.acceptedAt).getTime() : null;
+        setAcceptedAt(acceptedTimestamp);
+        if (acceptedTimestamp) {
+          const expiry = acceptedTimestamp + 90 * 24 * 60 * 60 * 1000;
+          setRequiresRenewal(Date.now() > expiry);
+        } else {
+          setRequiresRenewal(false);
+        }
       } catch (err) {
         if (!active) return;
         console.error('[useTermAgreement] load failed', err);
@@ -81,7 +89,9 @@ export function useTermAgreement(houseKeyInput = 'LEGACY') {
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to accept term');
       }
-      setAcceptedAt(Date.now());
+      const now = Date.now();
+      setAcceptedAt(now);
+      setRequiresRenewal(false);
     } catch (err) {
       console.error('[useTermAgreement] accept failed', err);
       setError('Falha ao registar o Termo.');
@@ -90,5 +100,13 @@ export function useTermAgreement(houseKeyInput = 'LEGACY') {
     }
   }, [getToken, houseKey, user]);
 
-  return { acceptedAt, loading, accept, isAccepted: !!acceptedAt, error, saving };
+  return {
+    acceptedAt,
+    loading,
+    accept,
+    isAccepted: !!acceptedAt && !requiresRenewal,
+    error,
+    saving,
+    requiresRenewal,
+  };
 }

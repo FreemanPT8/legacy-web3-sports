@@ -165,7 +165,15 @@ export default function AdminOnboardingPage() {
   const [houseSequence, setHouseSequence] = useState<HouseOnboardingSequence | null>(null);
   const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>([DEFAULT_DRAFT]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
-  const { acceptedAt, loading: termLoading, accept, isAccepted, error: termError, saving: termSaving } =
+  const {
+    acceptedAt,
+    loading: termLoading,
+    accept,
+    isAccepted,
+    error: termError,
+    saving: termSaving,
+    requiresRenewal,
+  } =
     useTermAgreement(houseKey);
   const { user, getToken } = useAuth();
   const [headHouseOptions, setHeadHouseOptions] = useState<{ key: string; label: string }[]>([]);
@@ -722,6 +730,9 @@ export default function AdminOnboardingPage() {
               </Button>
             </div>
             {termError ? <p className="text-xs text-amber-300">{termError}</p> : null}
+            {requiresRenewal && !termError ? (
+              <p className="text-xs text-amber-300">O termo expirou. Renova antes de editar.</p>
+            ) : null}
             <ScrollArea className="max-h-72 rounded-2xl border border-white/10 bg-black/20 p-4">
               <div className="space-y-4 text-sm text-slate-200">
                 <p>{RESPONSIBILITY_TERM.intro}</p>
