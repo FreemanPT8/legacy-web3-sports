@@ -45,6 +45,7 @@ interface HouseModeratorRow {
 
 interface AdminHouseDTO {
   id: string;
+  sport_id: string | null;
   sport_name: string | null;
   sport_code: string | null;
   country_code: string;
@@ -283,6 +284,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: h.id,
+        sport_id: h.sport_id ?? null,
         sport_name: sportName,
         sport_code: sport?.code ?? null,
         country_code: (h.country_code || '').toUpperCase(),

@@ -16,6 +16,7 @@ import {
   Award,
   BarChart3,
   Target,
+  Layers,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { href: '/admin/courses', label: 'Courses', icon: BookOpen },
   { href: '/admin/blog', label: 'Blog', icon: FileText },
   { href: '/admin/houses', label: 'Houses of Sports', icon: Trophy },
+  { href: '/admin/houses/pools', label: 'Sport Pools', icon: Layers },
   { href: '/admin/onboarding', label: 'Onboarding', icon: Mail },
   { href: '/admin/forum', label: 'Private Comments', icon: MessageCircle },
   { href: '/admin/xp', label: 'XP Management', icon: Award },
