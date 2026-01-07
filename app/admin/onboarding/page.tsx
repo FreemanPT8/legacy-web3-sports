@@ -938,10 +938,11 @@ export default function AdminOnboardingPage() {
                     submission.assigned_to_full_name ??
                     submission.assigned_to_username ??
                     'Sem responsável atribuído';
-                  const isAssignedToMe =
+                  const isAssignedToMe = Boolean(
                     submission.assigned_to_username &&
-                    user?.username &&
-                    submission.assigned_to_username === user.username;
+                      user?.username &&
+                      submission.assigned_to_username === user.username,
+                  );
                   return (
                     <div
                       key={submission.id}
