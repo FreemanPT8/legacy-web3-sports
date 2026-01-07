@@ -35,6 +35,7 @@
 4. **Revisao**: estados rascunho -> pronto -> publicado; regras automatizadas impedem publicar se faltar lingua, se exceder limites ou se CTA nao for opcional.
 5. **Operacao**: dashboard mostra pop-ups ativos, CTR, tempo medio de visualizacao, taxa de fecho antes dos 3 s, e permite pausar, duplicar ou arquivar mensagens.
 6. **Logs**: cada alteracao gera diff e linha auditavel; qualquer tentativa de contornar limites bloqueia a acao e cria alerta para Operacoes.
+7. **Sport Pools**: novo painel (`/admin/houses/pools`) centraliza contas que aguardam desporto/House (sem desporto, desporto ainda sem House, ou sugestao de novo desporto). Inclui filtros por estado, desporto e pais, pesquisa por email e refresco manual. Ao atribuir/remover um utilizador, o sistema atualiza automaticamente `user_houses` e envia notificacoes internas para Heads e Super Admins.
 
 ## Experiencia do Utilizador
 - Modal com temporizador 3 s bloqueando fechar/navegar; indicador discreto explica o motivo.

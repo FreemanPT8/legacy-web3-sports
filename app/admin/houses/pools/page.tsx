@@ -10,6 +10,8 @@ import {
   Slash,
   CheckCircle2,
   AlertTriangle,
+  RefreshCcw,
+  Filter,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 type PoolType = 'no_sport' | 'sport_pending' | 'suggestion';
 type PoolStatus = 'pending' | 'assigned' | 'dismissed';
@@ -143,6 +146,10 @@ export default function SportPoolsAdminPage() {
   const [dismissEntry, setDismissEntry] = useState<PoolEntry | null>(null);
   const [dismissNote, setDismissNote] = useState('');
   const [dismissLoading, setDismissLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sportFilter, setSportFilter] = useState<string>('ALL');
+  const [countryFilter, setCountryFilter] = useState<string>('ALL');
+  const [refreshing, setRefreshing] = useState(false);
 
   const isAuthorized =
     !!user && (user.role === 'Admin' || user.role === 'Super Admin');
@@ -270,6 +277,55 @@ export default function SportPoolsAdminPage() {
     if (!assignSportId) return [];
     return houses.filter((house) => house.sport_id === assignSportId);
   }, [houses, assignSportId]);
+
+  const availableCountries = useMemo(() => {
+    const codes = new Set<string>();
+    houses.forEach((house) => {
+      if (house.country_code) codes.add(house.country_code.toUpperCase());
+    });
+    entries.forEach((entry) => {
+      if (entry.countryCode) codes.add(entry.countryCode.toUpperCase());
+      if (entry.suggestedCountryCode) codes.add(entry.suggestedCountryCode.toUpperCase());
+    });
+    return Array.from(codes).sort();
+  }, [houses, entries]);
+
+  const filteredEntries = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    return entries.filter((entry) => {
+      if (sportFilter !== 'ALL') {
+        const entrySportId = entry.sport?.id ?? entry.sportId ?? null;
+        if (entrySportId !== sportFilter) return false;
+      }
+      if (countryFilter !== 'ALL') {
+        const entryCountry =
+          entry.countryCode ??
+          entry.suggestedCountryCode ??
+          entry.user?.primaryCountryCode ??
+          entry.user?.country ??
+          null;
+        if (!entryCountry || entryCountry.toUpperCase() !== countryFilter) return false;
+      }
+      if (!normalizedSearch) return true;
+      const haystack = [
+        entry.user?.fullName,
+        entry.user?.username,
+        entry.user?.email,
+        entry.sport?.name,
+        entry.suggestedSportName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(normalizedSearch);
+    });
+  }, [entries, sportFilter, countryFilter, searchQuery]);
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await fetchEntries();
+    setRefreshing(false);
+  };
 
   const assignDialogTitle = useMemo(() => {
     if (!assignModalEntry) return 'Atribuir House';
@@ -462,10 +518,13 @@ export default function SportPoolsAdminPage() {
       </section>
 
       <Card className="border-white/10 bg-[#04131b]/80">
-        <CardHeader className="space-y-4 border-b border-white/5 pb-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <CardTitle className="text-xl text-white">Entradas na pool</CardTitle>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <CardHeader className="space-y-5 border-b border-white/5 pb-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <CardTitle className="text-xl text-white">Entradas na pool</CardTitle>
+              <p className="text-sm text-slate-400 mt-1">{POOL_LABELS[poolType]}</p>
+            </div>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               <Select value={poolType} onValueChange={(value) => setPoolType(value as PoolType)}>
                 <SelectTrigger className="w-full border-white/10 bg-[#020d15] text-left text-white md:w-60">
                   <SelectValue placeholder="Seleciona a pool" />
@@ -488,7 +547,52 @@ export default function SportPoolsAdminPage() {
               </Select>
             </div>
           </div>
-          <p className="text-sm text-slate-400">{POOL_LABELS[poolType]}</p>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#020d15] px-3 py-2">
+              <Input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Procurar por nome ou email"
+                className="border-none bg-transparent text-sm text-white placeholder:text-slate-500 focus-visible:ring-0"
+              />
+            </div>
+            <Select value={sportFilter} onValueChange={(value) => setSportFilter(value)}>
+              <SelectTrigger className="border-white/10 bg-[#020d15] text-left text-white">
+                <SelectValue placeholder="Filtrar desporto" />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#03131d] text-white">
+                <SelectItem value="ALL">Todos os desportos</SelectItem>
+                {sports.map((sport) => (
+                  <SelectItem key={sport.id} value={sport.id}>
+                    {sport.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={countryFilter} onValueChange={(value) => setCountryFilter(value)}>
+              <SelectTrigger className="border-white/10 bg-[#020d15] text-left text-white">
+                <SelectValue placeholder="Filtrar país" />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#03131d] text-white">
+                <SelectItem value="ALL">Todos os países</SelectItem>
+                {availableCountries.map((code) => (
+                  <SelectItem key={code} value={code}>
+                    {code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleManualRefresh()}
+              disabled={loading || refreshing}
+              className="border-white/20 text-white hover:border-cyan-300/60 hover:text-cyan-200"
+            >
+              <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Recarregar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4 p-6">
           {error ? <p className="text-sm text-amber-300">{error}</p> : null}
@@ -497,13 +601,13 @@ export default function SportPoolsAdminPage() {
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>A carregar entradas...</span>
             </div>
-          ) : entries.length === 0 ? (
+          ) : filteredEntries.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-white/15 bg-[#020d15] p-6 text-center text-sm text-slate-400">
               Nenhuma entrada para este filtro.
             </div>
           ) : (
             <div className="space-y-4">
-              {entries.map((entry) => {
+              {filteredEntries.map((entry) => {
                 const userName =
                   entry.user?.fullName ||
                   entry.user?.username ||
