@@ -24,6 +24,24 @@ ALTER TABLE public.houses_of_sports
 CREATE UNIQUE INDEX IF NOT EXISTS houses_of_sports_house_key_key
   ON public.houses_of_sports (house_key);
 
+INSERT INTO public.houses_of_sports (sport_id, country_code, name_i18n, status, created_at, updated_at, house_key, is_public)
+SELECT
+  s.id,
+  'GLOBAL',
+  COALESCE(
+    s.name_i18n,
+    jsonb_build_object('en', CONCAT('House of ', COALESCE(s.code, 'Sport')))
+  ),
+  'in_development',
+  now(),
+  now(),
+  UPPER(COALESCE(s.code, gen_random_uuid()::text)),
+  true
+FROM public.sports s
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.houses_of_sports hos WHERE hos.sport_id = s.id
+);
+
 -- ------------------------------------------------------------------
 -- Popups curated by Heads of House
 CREATE TABLE IF NOT EXISTS public.onboarding_popups (
