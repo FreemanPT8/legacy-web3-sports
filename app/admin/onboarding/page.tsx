@@ -67,6 +67,7 @@ const DEFAULT_DRAFT: OnboardingPopupData = {
   primaryCta: { label: 'CTA principal', href: '/education/xp' },
   secondaryCta: { label: 'CTA secundária', href: '/education/houses' },
   trigger: { type: 'xp', value: 0, label: 'XP 0 - primeiro login' },
+  status: 'draft',
 };
 
 const DEFAULT_ANALYTICS: HouseOnboardingSequence['analytics'] = {
@@ -157,6 +158,31 @@ const SUBMISSION_STATUS_OPTIONS: { value: 'ALL' | AdminOnboardingStatus; label: 
 const SUBMISSION_STATUS_CHOICES = SUBMISSION_STATUS_OPTIONS.filter(
   (option) => option.value !== 'ALL',
 ) as Array<{ value: AdminOnboardingStatus; label: string }>;
+const POPUP_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Rascunho' },
+  { value: 'ready', label: 'Pronto' },
+  { value: 'published', label: 'Publicado' },
+] as const;
+const CTA_REGEX = /^(https?:\/\/|\/)/i;
+
+function validatePopup(popup: OnboardingPopupData): string | null {
+  if (!popup.title?.trim()) return 'Título é obrigatório.';
+  if (!popup.body?.trim()) return 'Mensagem é obrigatória.';
+  if (popup.primaryCta) {
+    if (!popup.primaryCta.label?.trim()) return 'CTA principal precisa de label.';
+    if (!popup.primaryCta.href || !CTA_REGEX.test(popup.primaryCta.href)) {
+      return 'CTA principal precisa de link começando por / ou http.';
+    }
+  }
+  if (popup.secondaryCta) {
+    if (!popup.secondaryCta.label?.trim()) return 'CTA secundária precisa de label.';
+    if (!popup.secondaryCta.href || !CTA_REGEX.test(popup.secondaryCta.href)) {
+      return 'CTA secundária precisa de link começando por / ou http.';
+    }
+  }
+  if (!popup.status) return 'Define o estado do pop-up antes de guardar.';
+  return null;
+}
 
 type SubmissionSummary = {
   id: string;
@@ -454,7 +480,8 @@ export default function AdminOnboardingPage() {
         const safeValue = Number.isFinite(popup.trigger.value) ? popup.trigger.value : 0;
         return {
           ...popup,
-          trigger: { ...popup.trigger, value: safeValue },
+          trigger: { ...popup.trigger, value: safeValue, label: popup.trigger.label ?? popup.xpGate ?? `XP ${safeValue}` },
+          status: popup.status ?? 'draft',
         };
       }
       return {
@@ -465,6 +492,7 @@ export default function AdminOnboardingPage() {
           contentId: popup.trigger.contentId ?? '',
           contentTitle: popup.trigger.contentTitle ?? '',
         },
+        status: popup.status ?? 'draft',
       };
     }
     const fallbackValue =
@@ -474,6 +502,7 @@ export default function AdminOnboardingPage() {
     return {
       ...popup,
       trigger: { type: 'xp', value: fallbackValue, label: popup.xpGate },
+      status: popup.status ?? 'draft',
     };
   }, []);
 
@@ -598,6 +627,11 @@ export default function AdminOnboardingPage() {
 
   const handleSave = async () => {
     const normalizedDraft = normalizeTrigger(resolvedDraft);
+    const validationMessage = validatePopup(normalizedDraft);
+    if (validationMessage) {
+      setStatus(validationMessage);
+      return;
+    }
     const nextSequence = [...sequenceDraft];
     let targetIndex = typeof selectedIndex === 'number' ? selectedIndex : -1;
     if (targetIndex < 0 || targetIndex >= nextSequence.length) {
@@ -710,6 +744,18 @@ export default function AdminOnboardingPage() {
         setSelectedIndex(nextSelection);
       }
       setStatus(`Pop-up ${removed?.title ?? removed?.id ?? ''} removido da sequência local.`);
+      return copy;
+    });
+  };
+
+  const handlePopupStatusChange = (index: number, status: OnboardingPopupData['status']) => {
+    setSequenceDraft((prev) => {
+      const copy = [...prev];
+      if (!copy[index]) return prev;
+      copy[index] = { ...copy[index], status };
+      if (selectedIndex === index) {
+        setDraft(copy[index]);
+      }
       return copy;
     });
   };
@@ -1044,7 +1090,40 @@ export default function AdminOnboardingPage() {
                         <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">{popup.xpGate ?? 'XP —'}</p>
                         <p className="text-lg font-semibold text-white">{popup.title}</p>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'border-white/20',
+                            popup.status === 'published'
+                              ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-100'
+                              : popup.status === 'ready'
+                              ? 'border-cyan-400/60 bg-cyan-500/10 text-cyan-100'
+                              : 'border-amber-400/60 bg-amber-500/10 text-amber-100',
+                          )}
+                        >
+                          {popup.status
+                            ? POPUP_STATUS_OPTIONS.find((option) => option.value === popup.status)?.label
+                            : 'Rascunho'}
+                        </Badge>
+                        <Select
+                          value={(popup.status ?? 'draft') as 'draft' | 'ready' | 'published'}
+                          onValueChange={(value) => handlePopupStatusChange(index, value as OnboardingPopupData['status'])}
+                        >
+                          <SelectTrigger className="w-36 border-white/10 bg-[#010913] text-white">
+                            <SelectValue placeholder="Estado" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#010913] text-white">
+                            {POPUP_STATUS_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
                         <Button size="sm" variant="outline" onClick={() => handleMovePopup(index, 'up')} disabled={index === 0}>
                           <ArrowUp className="mr-1 h-4 w-4" /> Up
                         </Button>

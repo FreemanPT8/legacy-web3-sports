@@ -29,6 +29,8 @@ export type OnboardingPopup = {
   primaryCta?: OnboardingCta;
   secondaryCta?: OnboardingCta;
   trigger?: OnboardingTrigger;
+  status?: 'draft' | 'ready' | 'published';
+  language?: string | null;
 };
 
 export type HouseOnboardingAnalytics = {

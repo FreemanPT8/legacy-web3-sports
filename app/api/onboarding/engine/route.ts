@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const sequence = await loadHouseSequence(houseKey);
-    const publishedPopups = (sequence.popups ?? []).filter((popup) => (popup.status ?? 'draft') === 'published');
+    const publishedPopups = (sequence.popups ?? []).filter(
+      (popup) => ((popup as OnboardingPopup & { status?: 'draft' | 'ready' | 'published' }).status ?? 'draft') === 'published',
+    );
     if (!publishedPopups.length) {
       return NextResponse.json({ success: false, error: 'No onboarding sequence available.' }, { status: 404 });
     }
