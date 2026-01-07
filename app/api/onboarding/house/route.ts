@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { fetchHouseOnboardingData } from '@/data/onboarding-demo';
 import type { HouseOnboardingSequence } from '@/types/onboarding';
 import { supabaseAdmin, supabase } from '@/lib/supabase';
+import { requireAuth } from '@/lib/middleware';
+import { isAdminRole } from '@/lib/roles';
 
 const houseOverrides = new Map<string, HouseOnboardingSequence>();
 const db = supabaseAdmin ?? supabase;
@@ -34,13 +36,22 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth(request);
+    if (!auth.success) {
+      return auth.response!;
+    }
+    const user = auth.user!;
     const body = (await request.json()) as { sequence?: HouseOnboardingSequence };
     if (!body.sequence) {
       return NextResponse.json({ success: false, error: 'Missing sequence payload' }, { status: 400 });
     }
     const houseKey = getHouseKey(body.sequence.house);
+    const authorized = await canEditHouseSequence(user.userId, user.role, houseKey);
+    if (!authorized) {
+      return NextResponse.json({ success: false, error: 'Sem autorização para editar esta House.' }, { status: 403 });
+    }
     const normalized: HouseOnboardingSequence = {
       ...body.sequence,
       house: houseKey,
@@ -85,5 +96,48 @@ async function persistSequence(houseKey: string, sequence: HouseOnboardingSequen
   if (error) {
     console.error('[onboarding.house] Failed to persist sequence to Supabase', error);
     throw new Error(error.message || 'Failed to persist sequence');
+  }
+}
+
+async function canEditHouseSequence(userId: string, role: string | null, houseKey: string) {
+  if (!db) return true;
+  if (isAdminRole(role)) return true;
+  try {
+    const { data: sport, error: sportError } = await db
+      .from('sports')
+      .select('id, code')
+      .ilike('code', houseKey)
+      .maybeSingle();
+    if (sportError || !sport?.id) {
+      return false;
+    }
+    const { data: house, error: houseError } = await db
+      .from('houses_of_sports')
+      .select('id')
+      .eq('sport_id', sport.id)
+      .maybeSingle();
+    if (houseError || !house?.id) {
+      return false;
+    }
+    const { data: headRow, error: headError } = await db
+      .from('house_heads')
+      .select('admin_id')
+      .eq('house_id', house.id)
+      .maybeSingle();
+    if (headError || !headRow?.admin_id) {
+      return false;
+    }
+    const { data: assignment, error: assignmentError } = await db
+      .from('admin_assignments')
+      .select('user_id')
+      .eq('id', headRow.admin_id)
+      .maybeSingle();
+    if (assignmentError || !assignment?.user_id) {
+      return false;
+    }
+    return assignment.user_id === userId;
+  } catch (error) {
+    console.error('[onboarding.house] Failed to verify head permissions', error);
+    return false;
   }
 }

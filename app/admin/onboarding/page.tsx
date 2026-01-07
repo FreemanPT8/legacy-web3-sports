@@ -632,6 +632,11 @@ export default function AdminOnboardingPage() {
       setStatus(validationMessage);
       return;
     }
+    const token = getToken?.();
+    if (!token) {
+      setStatus('Precisas de sessão ativa para guardar a sequência.');
+      return;
+    }
     const nextSequence = [...sequenceDraft];
     let targetIndex = typeof selectedIndex === 'number' ? selectedIndex : -1;
     if (targetIndex < 0 || targetIndex >= nextSequence.length) {
@@ -656,7 +661,10 @@ export default function AdminOnboardingPage() {
       setStatus('A guardar sequência...');
       const response = await fetch('/api/onboarding/house', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ sequence: sequencePayload }),
       });
       const data = (await response.json()) as { success: boolean; error?: string };
