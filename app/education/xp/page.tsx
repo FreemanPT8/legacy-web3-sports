@@ -1584,6 +1584,13 @@ const BLOCKED_SUMMARY_COPY: Record<SupportedCopyLang, BlockedSummaryCopy> = {
   },
 };
 
+const DEFAULT_ONBOARDING_ANALYTICS: HouseOnboardingSequence['analytics'] = {
+  ctr: 0.65,
+  completionRate: 0.8,
+  manualApprovals: 0,
+  blockedAttempts: 0,
+};
+
 
 
 const rewardMetadata: Record<
@@ -1998,6 +2005,10 @@ export default function EducationXpPage() {
   const [remoteCooldownReason, setRemoteCooldownReason] = useState<'daily' | 'weekly' | null>(null);
   const [remoteQueueUpdatedAt, setRemoteQueueUpdatedAt] = useState<number | null>(null);
   const [queueReloadKey, setQueueReloadKey] = useState(0);
+  const [liveAnalytics, setLiveAnalytics] = useState<HouseOnboardingSequence['analytics'] | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [analyticsReloadKey, setAnalyticsReloadKey] = useState(0);
   const lastPersistedQueueHashRef = useRef<string | null>(null);
   const persistQueue = useCallback(
     async (payload: OnboardingPopupData[], signature: string | null) => {
@@ -2142,6 +2153,42 @@ export default function EducationXpPage() {
   }, [getToken, houseKey, user, houseReloadKey, queueReloadKey]);
 
   useEffect(() => {
+    let active = true;
+    const loadAnalytics = async () => {
+      try {
+        setAnalyticsLoading(true);
+        setAnalyticsError(null);
+        const response = await fetch(`/api/onboarding/analytics?house=${encodeURIComponent(houseKey)}`, {
+          cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Failed to load analytics');
+        }
+        setLiveAnalytics((data.analytics as HouseOnboardingSequence['analytics']) ?? null);
+      } catch (error) {
+        if (!active) return;
+        console.error('[education/xp] Failed to load analytics', error);
+        setLiveAnalytics(null);
+        setAnalyticsError(
+          language === 'pt'
+            ? 'Não foi possível atualizar as métricas.'
+            : language === 'es'
+            ? 'No se pudieron actualizar las métricas.'
+            : 'Failed to refresh analytics.',
+        );
+      } finally {
+        if (active) setAnalyticsLoading(false);
+      }
+    };
+    void loadAnalytics();
+    return () => {
+      active = false;
+    };
+  }, [houseKey, analyticsReloadKey, language]);
+
+  useEffect(() => {
     if (!activePopup) return;
     void logRemoteAction(activePopup.id, 'delivered');
   }, [activePopup, logRemoteAction]);
@@ -2277,7 +2324,8 @@ export default function EducationXpPage() {
     return list.slice(0, 3);
 
   }, [progressSummary]);
-  const analytics = houseSequence?.analytics;
+  const analyticsSource = liveAnalytics ? 'live' : houseSequence?.analytics ? 'sequence' : 'fallback';
+  const analytics = liveAnalytics ?? houseSequence?.analytics ?? DEFAULT_ONBOARDING_ANALYTICS;
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
   const fmtNumber = (value?: number) => (typeof value === 'number' ? value.toLocaleString() : '--');
   const analyticsLabels =
@@ -2470,6 +2518,9 @@ export default function EducationXpPage() {
     setQueueReloadKey((key) => key + 1);
   }, [user]);
   const queueRefreshing = Boolean(user) && !remoteQueueLoaded;
+  const refreshAnalytics = useCallback(() => {
+    setAnalyticsReloadKey((key) => key + 1);
+  }, []);
 
   const queueResetLabel = houseSequence
     ? language === 'pt'
@@ -2658,7 +2709,8 @@ export default function EducationXpPage() {
     setComboReloadKey((key) => key + 1);
     refreshProgress();
     refreshQueue();
-  }, [refreshProgress, refreshQueue]);
+    refreshAnalytics();
+  }, [refreshProgress, refreshQueue, refreshAnalytics]);
 
   const resolveBlockedHref = useCallback((popup: OnboardingPopupData) => {
     if (popup.trigger?.type !== 'content') return null;
@@ -5305,6 +5357,33 @@ export default function EducationXpPage() {
                     </Card>
                   ))}
                 </div>
+                {analyticsLoading ? (
+                  <p className={cn(UI.bodyMuted, 'text-xs text-slate-400')}>
+                    {language === 'pt'
+                      ? 'A atualizar métricas reais...'
+                      : language === 'es'
+                      ? 'Actualizando métricas reales...'
+                      : 'Refreshing live metrics...'}
+                  </p>
+                ) : analyticsError ? (
+                  <p className="text-xs text-amber-300">{analyticsError}</p>
+                ) : analyticsSource === 'fallback' ? (
+                  <p className={cn(UI.bodyMuted, 'text-xs text-slate-400')}>
+                    {language === 'pt'
+                      ? 'Sem dados reais ainda — a mostrar valores demo.'
+                      : language === 'es'
+                      ? 'Sin datos reales todavía — mostrando demo.'
+                      : 'No live data yet — showing demo values.'}
+                  </p>
+                ) : analyticsSource === 'sequence' ? (
+                  <p className={cn(UI.bodyMuted, 'text-xs text-slate-400')}>
+                    {language === 'pt'
+                      ? 'A mostrar métricas guardadas no Painel Admin.'
+                      : language === 'es'
+                      ? 'Mostrando métricas guardadas en el Panel Admin.'
+                      : 'Showing metrics stored in the Admin Panel.'}
+                  </p>
+                ) : null}
               </div>
             </section>
 

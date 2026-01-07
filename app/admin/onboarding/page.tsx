@@ -259,6 +259,10 @@ export default function AdminOnboardingPage() {
   const [notesError, setNotesError] = useState<string | null>(null);
   const [notes, setNotes] = useState<SubmissionNote[]>([]);
   const [newNote, setNewNote] = useState('');
+  const [analyticsOverride, setAnalyticsOverride] = useState<HouseOnboardingSequence['analytics'] | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [analyticsReloadKey, setAnalyticsReloadKey] = useState(0);
   const unassignedSubmissions = useMemo(
     () => submissions.filter((submission) => !submission.assigned_to_full_name && !submission.assigned_to_username).length,
     [submissions],
@@ -523,7 +527,8 @@ export default function AdminOnboardingPage() {
   const xpTriggerValue = draft.trigger?.type === 'xp' ? draft.trigger.value ?? 0 : 0;
   const triggerLabelValue = draft.trigger?.label ?? '';
   const contentTrigger = draft.trigger?.type === 'content' ? draft.trigger : null;
-  const analyticsData = houseSequence?.analytics || DEFAULT_ANALYTICS;
+  const analyticsSource = analyticsOverride ? 'live' : houseSequence?.analytics ? 'sequence' : 'fallback';
+  const analyticsData = analyticsOverride ?? houseSequence?.analytics ?? DEFAULT_ANALYTICS;
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
   const fmtNumber = (value?: number) => (typeof value === 'number' ? value.toLocaleString() : '--');
   const analyticsCards = [
@@ -548,6 +553,12 @@ export default function AdminOnboardingPage() {
       hint: 'Pop-ups travados pelo motor.',
     },
   ];
+  const analyticsBadgeClass =
+    analyticsSource === 'live'
+      ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
+      : analyticsSource === 'sequence'
+      ? 'border-cyan-400/40 bg-cyan-500/10 text-cyan-100'
+      : 'border-amber-400/40 bg-amber-500/10 text-amber-100';
 
   useEffect(() => {
     if (!user) {
@@ -596,6 +607,37 @@ export default function AdminOnboardingPage() {
     }
   }, [headHouseOptions, houseKey]);
 
+  useEffect(() => {
+    if (!houseKey) return;
+    let active = true;
+    const loadAnalytics = async () => {
+      try {
+        setAnalyticsLoading(true);
+        setAnalyticsError(null);
+        const response = await fetch(`/api/onboarding/analytics?house=${encodeURIComponent(houseKey)}`, {
+          cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Failed to load analytics');
+        }
+        setAnalyticsOverride((data.analytics as HouseOnboardingSequence['analytics']) ?? null);
+      } catch (error) {
+        if (!active) return;
+        console.error('[admin/onboarding] analytics fetch failed', error);
+        setAnalyticsOverride(null);
+        setAnalyticsError('Falha ao carregar métricas.');
+      } finally {
+        if (active) setAnalyticsLoading(false);
+      }
+    };
+    void loadAnalytics();
+    return () => {
+      active = false;
+    };
+  }, [houseKey, analyticsReloadKey]);
+
   const handleLoadHouse = async () => {
     setLoading(true);
     setStatus(null);
@@ -628,6 +670,10 @@ export default function AdminOnboardingPage() {
       setLoading(false);
     }
   };
+
+  const refreshAnalytics = useCallback(() => {
+    setAnalyticsReloadKey((key) => key + 1);
+  }, []);
 
   const handleDraftChange = (field: keyof OnboardingPopupData, value: string) => {
     setDraft((prev) => ({
@@ -1257,9 +1303,28 @@ export default function AdminOnboardingPage() {
                   Baseado no histórico real desta House. Útil para ajustar triggers e copy.
                 </p>
               </div>
-              <Badge variant="outline" className="border-white/20 bg-[#000c12]/40 text-white">
-                {houseSequence ? houseSequence.house : 'Demo'}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className={cn('border-white/20 bg-[#000c12]/40 text-white')}>
+                  {houseSequence ? houseSequence.house : 'Demo'}
+                </Badge>
+                <Badge variant="outline" className={cn('bg-[#000c12]/40 text-white', analyticsBadgeClass)}>
+                  {analyticsSource === 'live'
+                    ? 'Live'
+                    : analyticsSource === 'sequence'
+                    ? 'Painel'
+                    : 'Demo'}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={refreshAnalytics}
+                  disabled={analyticsLoading}
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  {analyticsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Recarregar métricas
+                </Button>
+              </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {analyticsCards.map((card) => (
@@ -1270,6 +1335,17 @@ export default function AdminOnboardingPage() {
                 </div>
               ))}
             </div>
+            {analyticsError ? (
+              <p className="text-xs text-amber-300">{analyticsError}</p>
+            ) : analyticsSource === 'fallback' ? (
+              <p className="text-xs text-slate-400">
+                Sem dados reais ainda — a usar métricas demo do template fundacional.
+              </p>
+            ) : analyticsSource === 'sequence' ? (
+              <p className="text-xs text-slate-400">
+                A mostrar métricas guardadas com a sequência (sem recomputar logs recentes).
+              </p>
+            ) : null}
           </CardContent>
         </Card>
 
