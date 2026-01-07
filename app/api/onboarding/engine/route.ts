@@ -26,13 +26,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const sequence = await loadHouseSequence(houseKey);
-    if (!sequence?.popups?.length) {
+    const publishedPopups = (sequence.popups ?? []).filter((popup) => (popup.status ?? 'draft') === 'published');
+    if (!publishedPopups.length) {
       return NextResponse.json({ success: false, error: 'No onboarding sequence available.' }, { status: 404 });
     }
 
     if (!db) {
       return NextResponse.json(
-        { success: true, queue: sequence.popups, signature: buildSignature(sequence.popups) },
+        { success: true, queue: publishedPopups, signature: buildSignature(publishedPopups) },
         { status: 200 },
       );
     }
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     const deliveredSet = new Set(logStats.logs.filter((log) => log.action === 'delivered').map((log) => log.popup_id));
 
     const eligiblePopups: OnboardingPopup[] = [];
-    for (const popup of sequence.popups) {
+    for (const popup of publishedPopups) {
       if (!popup || deliveredSet.has(popup.id)) continue;
       const satisfies = await evaluateTrigger(popup, xpTotal, user.userId, completionCache);
       if (satisfies) {
