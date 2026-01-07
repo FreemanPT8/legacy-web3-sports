@@ -10,6 +10,29 @@ const houseOverrides = new Map<string, HouseOnboardingSequence>();
 const db = supabaseAdmin ?? supabase;
 const TABLE_NAME = 'house_onboarding_sequences';
 
+type PopupRow = {
+  id: string;
+  house_key: string;
+  language: string | null;
+  title: string;
+  body: string;
+  highlights?: string[] | null;
+  badge_label?: string | null;
+  primary_cta?: Record<string, unknown> | null;
+  secondary_cta?: Record<string, unknown> | null;
+  status: string;
+  updated_at?: string | null;
+};
+
+type TriggerRow = {
+  popup_id: string;
+  trigger_type: string;
+  xp_min?: number | null;
+  content_type?: string | null;
+  content_id?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
 const getHouseKey = (value: string | null) => (value || 'LEGACY').toUpperCase();
 const DEFAULT_ANALYTICS: HouseOnboardingSequence['analytics'] = {
   ctr: 0,
@@ -192,7 +215,7 @@ async function fetchStructuredSequence(houseKey: string) {
       .eq('house_key', houseKey)
       .eq('status', 'published')
       .order('priority', { ascending: true })
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false }) as { data: PopupRow[] | null; error: unknown };
 
     if (popupError) {
       console.error('[onboarding.house] Failed to load live popups', popupError);
@@ -208,17 +231,17 @@ async function fetchStructuredSequence(houseKey: string) {
       const { data: triggerRows, error: triggerError } = await db
         .from('onboarding_triggers')
         .select('*')
-        .in('popup_id', popupIds);
+        .in('popup_id', popupIds) as { data: TriggerRow[] | null; error: unknown };
       if (triggerError) {
         console.error('[onboarding.house] Failed to load trigger rows', triggerError);
       } else {
-        triggerRows?.forEach((row) => {
+        triggerRows?.forEach((row: TriggerRow) => {
           triggerMap.set(row.popup_id, mapTrigger(row));
         });
       }
     }
 
-    const popups: OnboardingPopup[] = popupRows.map((row) => {
+    const popups: OnboardingPopup[] = popupRows.map((row: PopupRow) => {
       const trigger = triggerMap.get(row.id);
       return {
         id: row.id,
@@ -227,8 +250,8 @@ async function fetchStructuredSequence(houseKey: string) {
         body: row.body,
         highlights: row.highlights ?? [],
         badgeLabel: row.badge_label ?? undefined,
-        primaryCta: row.primary_cta ?? undefined,
-        secondaryCta: row.secondary_cta ?? undefined,
+        primaryCta: (row.primary_cta as OnboardingPopup['primaryCta']) ?? undefined,
+        secondaryCta: (row.secondary_cta as OnboardingPopup['secondaryCta']) ?? undefined,
         status: row.status,
         language: row.language,
         xpGate: trigger?.label,
@@ -253,7 +276,7 @@ async function fetchStructuredSequence(houseKey: string) {
   }
 }
 
-function mapTrigger(row: any) {
+function mapTrigger(row: TriggerRow) {
   if (!row) return undefined;
   if (row.trigger_type === 'xp') {
     const value = typeof row.xp_min === 'number' ? row.xp_min : 0;
