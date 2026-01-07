@@ -138,6 +138,9 @@ const SUBMISSION_STATUS_OPTIONS: { value: 'ALL' | AdminOnboardingStatus; label: 
   { value: 'ONBOARDING_TELEGRAM', label: 'Telegram' },
   { value: 'ALL', label: 'Todos' },
 ];
+const SUBMISSION_STATUS_CHOICES = SUBMISSION_STATUS_OPTIONS.filter(
+  (option) => option.value !== 'ALL',
+) as Array<{ value: AdminOnboardingStatus; label: string }>;
 
 type SubmissionSummary = {
   id: string;
@@ -188,6 +191,7 @@ export default function AdminOnboardingPage() {
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [submissionsError, setSubmissionsError] = useState<string | null>(null);
   const [assigningSubmissionId, setAssigningSubmissionId] = useState<string | null>(null);
+  const [updatingSubmissionId, setUpdatingSubmissionId] = useState<string | null>(null);
   const fetchSubmissions = useCallback(async () => {
     const token = getToken?.();
     if (!token) {
@@ -269,6 +273,37 @@ export default function AdminOnboardingPage() {
         setSubmissionsError('Falha ao assumir submissão.');
       } finally {
         setAssigningSubmissionId(null);
+      }
+    },
+    [fetchSubmissions, getToken],
+  );
+  const handleUpdateSubmissionStatus = useCallback(
+    async (submissionId: string, status: AdminOnboardingStatus) => {
+      const token = getToken?.();
+      if (!token) {
+        setSubmissionsError('Precisas de sessão ativa para atualizar o estado.');
+        return;
+      }
+      try {
+        setUpdatingSubmissionId(submissionId);
+        const response = await fetch('/api/admin/onboarding', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ submissionId, status }),
+        });
+        const data = (await response.json()) as { success: boolean; error?: string };
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to update submission status');
+        }
+        await fetchSubmissions();
+      } catch (error) {
+        console.error('[admin/onboarding] Failed to update status', error);
+        setSubmissionsError('Falha ao atualizar o estado.');
+      } finally {
+        setUpdatingSubmissionId(null);
       }
     },
     [fetchSubmissions, getToken],
@@ -966,8 +1001,31 @@ export default function AdminOnboardingPage() {
                           <span className="text-xs text-slate-400">{formatSubmissionDate(submission.created_at)}</span>
                         </div>
                       </div>
-                      <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <p className="text-xs text-slate-400">Responsável: {assignedLabel}</p>
+                      <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+                          <p className="text-xs text-slate-400">Responsável: {assignedLabel}</p>
+                          <div className="flex flex-col gap-1 md:w-60">
+                            <label className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Atualizar estado</label>
+                            <Select
+                              value={(submission.status ?? 'PENDING_RESPONSE') as AdminOnboardingStatus}
+                              onValueChange={(value) =>
+                                handleUpdateSubmissionStatus(submission.id, value as AdminOnboardingStatus)
+                              }
+                              disabled={updatingSubmissionId === submission.id}
+                            >
+                              <SelectTrigger className="border-white/10 bg-[#010913] text-white">
+                                <SelectValue placeholder="Estado" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#010913] text-white">
+                                {SUBMISSION_STATUS_CHOICES.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
