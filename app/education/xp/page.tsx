@@ -1995,6 +1995,7 @@ export default function EducationXpPage() {
   const [remoteQueueSignature, setRemoteQueueSignature] = useState<string | null>(null);
   const [remoteQueuePayload, setRemoteQueuePayload] = useState<OnboardingPopupData[] | null>(null);
   const [queueSeedSignature, setQueueSeedSignature] = useState<string | null>(null);
+  const [remoteCooldownReason, setRemoteCooldownReason] = useState<'daily' | 'weekly' | null>(null);
   const lastPersistedQueueHashRef = useRef<string | null>(null);
   const persistQueue = useCallback(
     async (payload: OnboardingPopupData[], signature: string | null) => {
@@ -2072,6 +2073,7 @@ export default function EducationXpPage() {
       setRemoteQueuePayload(null);
       setRemoteQueueSignature(null);
       setQueueSeedSignature(null);
+      setRemoteCooldownReason(null);
       lastPersistedQueueHashRef.current = null;
       return;
     }
@@ -2079,17 +2081,26 @@ export default function EducationXpPage() {
     const token = getToken?.();
     if (!token) {
       setRemoteQueueLoaded(true);
+      setRemoteCooldownReason(null);
       return;
     }
     const runEngine = async () => {
       try {
-        await fetch(`/api/onboarding/engine?house=${encodeURIComponent(houseKey)}`, {
+        const response = await fetch(`/api/onboarding/engine?house=${encodeURIComponent(houseKey)}`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
         });
+        const data = (await response.json().catch(() => null)) as
+          | { success: boolean; cooldownReason?: 'daily' | 'weekly'; error?: string }
+          | null;
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Failed to run onboarding engine');
+        }
+        setRemoteCooldownReason((data.cooldownReason as 'daily' | 'weekly' | null) ?? null);
       } catch (error) {
         console.error('[education/xp] Failed to run onboarding engine', error);
+        setRemoteCooldownReason(null);
       }
     };
     const loadQueue = async () => {
@@ -2122,7 +2133,7 @@ export default function EducationXpPage() {
     return () => {
       active = false;
     };
-  }, [getToken, houseKey, user]);
+  }, [getToken, houseKey, user, houseReloadKey]);
 
   useEffect(() => {
     if (!activePopup) return;
@@ -2141,10 +2152,11 @@ export default function EducationXpPage() {
       }),
     [locale],
   );
+  const effectiveCooldown = remoteCooldownReason ?? cooldownReason;
   const cooldownMessage =
-    cooldownReason === 'daily'
+    effectiveCooldown === 'daily'
       ? cooldownCopy.daily
-      : cooldownReason === 'weekly'
+      : effectiveCooldown === 'weekly'
       ? cooldownCopy.weekly
       : cooldownCopy.idle;
   const userXP = user?.xp_total ?? 0;
@@ -2347,27 +2359,23 @@ export default function EducationXpPage() {
 
   useEffect(() => {
     if (!remoteQueueLoaded && user) return;
-    if (readySignature === queueSyncRef.current && queueSeedSignature === readySignature) return;
-    queueSyncRef.current = readySignature;
+    const remotePayload = Array.isArray(remoteQueuePayload) ? remoteQueuePayload : [];
+    const remoteSignature = remoteQueueSignature ?? computeQueueHash(remotePayload);
     const shouldUseRemote =
       !!user &&
       remoteQueueLoaded &&
-      remoteQueueSignature === readySignature &&
-      Array.isArray(remoteQueuePayload) &&
-      remoteQueuePayload.length > 0;
-    const payload = shouldUseRemote ? remoteQueuePayload! : readyPopups;
+      (remoteCooldownReason !== null || remotePayload.length > 0 || Boolean(remoteQueueSignature));
+    const payload = shouldUseRemote ? remotePayload : readyPopups;
+    const nextSignature = shouldUseRemote ? remoteSignature : readySignature;
+    if (queueSyncRef.current === nextSignature && queueSeedSignature === nextSignature) return;
+    queueSyncRef.current = nextSignature;
     resetQueue(payload);
-    setQueueSeedSignature(readySignature);
-    const hash = computeQueueHash(payload);
-    lastPersistedQueueHashRef.current = hash;
-    if (user && !shouldUseRemote) {
-      void persistQueue(payload, readySignature);
-    }
+    setQueueSeedSignature(nextSignature);
   }, [
     computeQueueHash,
-    persistQueue,
     readyPopups,
     readySignature,
+    remoteCooldownReason,
     remoteQueueLoaded,
     remoteQueuePayload,
     remoteQueueSignature,
@@ -4834,6 +4842,7 @@ export default function EducationXpPage() {
                         variant="outline"
                         onClick={() => resetQueue(readyPopups)}
                         className="border-white/30 text-white hover:bg-white/10"
+                        disabled={Boolean(remoteCooldownReason)}
                       >
                         {queueResetLabel}
                       </Button>
