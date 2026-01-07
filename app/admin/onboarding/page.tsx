@@ -222,6 +222,7 @@ export default function AdminOnboardingPage() {
   }, [liveLogs]);
   const latestLogs = useMemo(() => liveLogs.slice(0, 10), [liveLogs]);
   const [submissionStatusFilter, setSubmissionStatusFilter] = useState<'ALL' | AdminOnboardingStatus>('PENDING_RESPONSE');
+  const [submissionSearch, setSubmissionSearch] = useState('');
   const [submissions, setSubmissions] = useState<SubmissionSummary[]>([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [submissionsError, setSubmissionsError] = useState<string | null>(null);
@@ -236,6 +237,21 @@ export default function AdminOnboardingPage() {
     () => submissions.filter((submission) => !submission.assigned_to_full_name && !submission.assigned_to_username).length,
     [submissions],
   );
+  const filteredSubmissions = useMemo(() => {
+    const query = submissionSearch.trim().toLowerCase();
+    if (!query) return submissions;
+    return submissions.filter((submission) => {
+      const haystack = [
+        submission.full_name || '',
+        submission.email || '',
+        submission.sports_category || '',
+        submission.sequence_number ? `#${submission.sequence_number}` : '',
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [submissionSearch, submissions]);
   const fetchSubmissions = useCallback(async () => {
     const token = getToken?.();
     if (!token) {
@@ -1149,6 +1165,12 @@ export default function AdminOnboardingPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Input
+                  value={submissionSearch}
+                  onChange={(event) => setSubmissionSearch(event.target.value)}
+                  placeholder="Pesquisar por nome, email ou desporto"
+                  className="border-white/10 bg-[#010913] text-white placeholder:text-slate-500"
+                />
                 <Button
                   size="sm"
                   variant="outline"
@@ -1163,8 +1185,8 @@ export default function AdminOnboardingPage() {
             <div className="space-y-3">
               {submissionsLoading ? (
                 <p className="text-sm text-slate-400">A carregar submissões...</p>
-              ) : submissions.length ? (
-                submissions.map((submission) => {
+              ) : filteredSubmissions.length ? (
+                filteredSubmissions.map((submission) => {
                   const statusLabel = submission.status ? SUBMISSION_STATUS_LABELS[submission.status] : 'Sem estado';
                   const assignedLabel =
                     submission.assigned_to_full_name ??
