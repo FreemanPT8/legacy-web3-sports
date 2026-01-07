@@ -796,9 +796,10 @@ export default function AdminOnboardingPage() {
         if (!response.ok || !data?.success) {
           throw new Error(data?.error || 'Failed to load houses');
         }
+        const canManageAllHouses = user.role === 'Super Admin' || user.role === 'Admin';
         const options =
           (data.houses ?? [])
-            .filter((house: any) => house?.head?.user_id === user.id)
+            .filter((house: any) => (canManageAllHouses ? true : house?.head?.user_id === user.id))
             .map((house: any) => {
               const key = (
                 house?.house_key ||
