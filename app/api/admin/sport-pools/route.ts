@@ -86,6 +86,19 @@ function resolveLocalizedName(
   return fallback ?? null;
 }
 
+async function markPoolNotificationsHandled(entryId?: string | null) {
+  if (!supabaseAdmin || !entryId) return;
+  try {
+    await supabaseAdmin
+      .from('notifications')
+      .update({ read: true })
+      .eq('read', false)
+      .contains('data', { entryId });
+  } catch (error) {
+    console.error('[sport-pools] Failed to mark notifications as handled', error);
+  }
+}
+
 async function countEntries(pool: PoolType, status: PoolStatus) {
   if (!supabaseAdmin) return 0;
   const { count, error } = await supabaseAdmin
@@ -413,6 +426,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    await markPoolNotificationsHandled(entry.id);
     return NextResponse.json({ success: true });
   }
 
@@ -456,6 +470,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    await markPoolNotificationsHandled(entry.id);
     return NextResponse.json({ success: true });
   }
 
