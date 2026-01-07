@@ -205,18 +205,19 @@ async function persistQueue(
   signature: string | null,
 ): Promise<void> {
   if (!db) return;
-  await db
-    .from(QUEUE_TABLE)
-    .upsert(
-      {
-        user_id: userId,
-        house_key: houseKey,
-        queue_payload: payload,
-        queue_signature: signature,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' },
-    );
+  const normalizedHouse = houseKey || 'LEGACY';
+  const timestamp = new Date().toISOString();
+  await db.from(QUEUE_TABLE).delete().eq('user_id', userId).eq('house_key', normalizedHouse);
+  if (normalizedHouse === 'LEGACY') {
+    await db.from(QUEUE_TABLE).delete().eq('user_id', userId).is('house_key', null);
+  }
+  await db.from(QUEUE_TABLE).insert({
+    user_id: userId,
+    house_key: normalizedHouse,
+    queue_payload: payload,
+    queue_signature: signature,
+    updated_at: timestamp,
+  });
 }
 
 function buildSignature(popups: OnboardingPopup[]) {

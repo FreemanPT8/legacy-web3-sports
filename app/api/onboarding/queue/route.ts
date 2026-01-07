@@ -20,37 +20,33 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return auth.response!;
   const user = auth.user!;
 
+  const { searchParams } = new URL(request.url);
+  const requestedHouse = normalizeHouseKey(searchParams.get('house'));
+
   if (!db) {
-    return NextResponse.json({ success: true, queue: [], signature: null });
+    return NextResponse.json({ success: true, queue: [], signature: null, house: requestedHouse });
   }
 
   try {
-    const { searchParams } = new URL(request.url);
-    const houseKey = searchParams.get('house')?.toUpperCase() ?? null;
-    const { data, error } = await db
-      .from(TABLE)
-      .select('queue_payload, queue_signature, house_key, updated_at')
-      .eq('user_id', user.userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('[onboarding.queue] GET failed:', error);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load onboarding queue.' },
-        { status: 500 },
-      );
+    const targetHouse = requestedHouse ?? 'LEGACY';
+    let result = await fetchQueueRow(user.userId, targetHouse);
+    if (!result.data && targetHouse !== null) {
+      // backwards compatibility: rows guardadas sem house_key
+      result = await fetchQueueRow(user.userId, null);
     }
 
-    const row = (data as QueueRow | null) ?? null;
+    if (result.error) throw result.error;
+    const row = result.data;
+
     if (!row) {
-      return NextResponse.json({ success: true, queue: [], signature: null, house: houseKey });
+      return NextResponse.json({ success: true, queue: [], signature: null, house: targetHouse });
     }
 
     return NextResponse.json({
       success: true,
       queue: row.queue_payload ?? [],
       signature: row.queue_signature ?? null,
-      house: row.house_key ?? houseKey,
+      house: row.house_key ?? targetHouse,
       updatedAt: row.updated_at ?? null,
     });
   } catch (error) {
@@ -66,6 +62,9 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (!auth.success) return auth.response!;
   const user = auth.user!;
+
+  const { searchParams } = new URL(request.url);
+  const requestedHouse = normalizeHouseKey(searchParams.get('house'));
 
   if (!db) {
     return NextResponse.json({ success: true });
@@ -87,21 +86,25 @@ export async function POST(request: NextRequest) {
 
     const payload = body.queue;
     const signature = (body.signature ?? null) || null;
-    const houseKey = (body.house ?? '').toUpperCase() || null;
+    const houseKey = normalizeHouseKey(body.house ?? requestedHouse) ?? 'LEGACY';
 
-    const { error } = await db
+    // remove fila anterior da mesma House para evitar conflitos em schemas antigos
+    await db
       .from(TABLE)
-      .upsert(
-        {
-          user_id: user.userId,
-          house_key: houseKey,
-          queue_payload: payload,
-          queue_signature: signature,
-        },
-        {
-          onConflict: 'user_id',
-        },
-      );
+      .delete()
+      .eq('user_id', user.userId)
+      .eq('house_key', houseKey);
+    if (houseKey === 'LEGACY') {
+      await db.from(TABLE).delete().eq('user_id', user.userId).is('house_key', null);
+    }
+
+    const { error } = await db.from(TABLE).insert({
+      user_id: user.userId,
+      house_key: houseKey,
+      queue_payload: payload,
+      queue_signature: signature,
+      updated_at: new Date().toISOString(),
+    });
 
     if (error) {
       console.error('[onboarding.queue] POST failed:', error);
@@ -118,5 +121,35 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Failed to persist onboarding queue.' },
       { status: 500 },
     );
+  }
+}
+
+function normalizeHouseKey(value?: string | null) {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return null;
+  return trimmed.toUpperCase();
+}
+
+async function fetchQueueRow(userId: string, houseKey: string | null) {
+  if (!db) return { data: null, error: null };
+  try {
+    let query = db
+      .from(TABLE)
+      .select('queue_payload, queue_signature, house_key, updated_at')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
+    if (houseKey) {
+      query = query.eq('house_key', houseKey);
+    } else {
+      query = query.is('house_key', null);
+    }
+    const { data, error } = await query.maybeSingle();
+    if (error) {
+      console.error('[onboarding.queue] GET failed:', error);
+      return { data: null, error };
+    }
+    return { data: (data as QueueRow | null) ?? null, error: null };
+  } catch (error) {
+    return { data: null, error: error as Error };
   }
 }
