@@ -9,6 +9,7 @@ import { COUNTRIES } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -26,6 +27,13 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trophy } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 type SportOption = { id: string; name: string };
 
@@ -50,6 +58,11 @@ export default function SignupPage() {
     country: '',
     sportId: '',
   });
+  const [noSportPreference, setNoSportPreference] = useState(false);
+  const [suggestNewSport, setSuggestNewSport] = useState(false);
+  const [suggestedSportName, setSuggestedSportName] = useState('');
+  const [suggestedCountry, setSuggestedCountry] = useState(formData.country);
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -85,9 +98,11 @@ export default function SignupPage() {
     };
   }, [language]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    setSuggestedCountry((prev) => prev || formData.country);
+  }, [formData.country]);
 
+  const attemptSignup = async (consentGranted = false) => {
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: 'Passwords do not match',
@@ -106,7 +121,21 @@ export default function SignupPage() {
       return;
     }
 
-    if (!formData.sportId) {
+    if (!formData.country) {
+      toast({
+        title: 'Select your country',
+        description: 'Please choose your country before continuing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (noSportPreference) {
+      if (!consentGranted) {
+        setShowConsentModal(true);
+        return;
+      }
+    } else if (!suggestNewSport && !formData.sportId) {
       toast({
         title: 'Select your sport',
         description: 'Please choose the sport you belong to before continuing.',
@@ -115,7 +144,22 @@ export default function SignupPage() {
       return;
     }
 
+    if (suggestNewSport && !suggestedSportName.trim()) {
+      toast({
+        title: 'Suggest a sport',
+        description: 'Enter the name of the sport you want to suggest.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
+
+    const selectionMethod = noSportPreference
+      ? 'random_pool'
+      : suggestNewSport
+      ? 'suggested_pool'
+      : 'chosen';
 
     const result = await signup({
       username: formData.username,
@@ -123,13 +167,24 @@ export default function SignupPage() {
       email: formData.email,
       password: formData.password,
       country: formData.country,
-      sport_id: formData.sportId,
+      sport_id:
+        !noSportPreference && !suggestNewSport ? formData.sportId : undefined,
+      sportSelectionMethod: selectionMethod,
+      allowRandomAssignment: noSportPreference ? consentGranted : undefined,
+      suggestedSportName: suggestNewSport
+        ? suggestedSportName.trim()
+        : undefined,
+      suggestedCountryCode: suggestNewSport
+        ? suggestedCountry || formData.country
+        : undefined,
     });
 
     if (result.success) {
       toast({
         title: 'Account created!',
-        description: 'Welcome to LEGACY. Start earning XP now!',
+        description: noSportPreference
+          ? 'Registámos a tua conta e vamos atribuir-te um desporto oficial.'
+          : 'Welcome to LEGACY. Start earning XP now!',
       });
       router.push('/dashboard');
     } else {
@@ -141,6 +196,27 @@ export default function SignupPage() {
     }
 
     setLoading(false);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void attemptSignup(false);
+  };
+
+  const handleAcceptRandomAssignment = () => {
+    setShowConsentModal(false);
+    void attemptSignup(true);
+  };
+
+  const handleSportSelect = (value: string) => {
+    if (value === '__suggest') {
+      setSuggestNewSport(true);
+      setFormData((prev) => ({ ...prev, sportId: '' }));
+      return;
+    }
+    setSuggestNewSport(false);
+    setSuggestedSportName('');
+    setFormData((prev) => ({ ...prev, sportId: value }));
   };
 
   return (
@@ -240,22 +316,31 @@ export default function SignupPage() {
                 Desporto da tua House *
               </Label>
               <Select
-                value={formData.sportId}
-                onValueChange={(value) => setFormData({ ...formData, sportId: value })}
-                disabled={sportsLoading || !sports.length}
+                value={suggestNewSport ? '__suggest' : formData.sportId}
+                onValueChange={handleSportSelect}
+                disabled={noSportPreference || sportsLoading}
               >
                 <SelectTrigger
-                  aria-invalid={!formData.sportId && !sportsLoading}
+                  aria-invalid={!formData.sportId && !sportsLoading && !suggestNewSport && !noSportPreference}
                   className="border-white/10 bg-[#000c12] text-left text-white"
                 >
-                  <SelectValue placeholder={sportsLoading ? 'A carregar desportos...' : 'Escolhe o teu desporto'} />
+                  <SelectValue
+                    placeholder={
+                      noSportPreference
+                        ? 'Checkbox ativa — sem desporto definido'
+                        : sportsLoading
+                        ? 'A carregar desportos...'
+                        : 'Escolhe o teu desporto'
+                    }
+                  />
                 </SelectTrigger>
-                <SelectContent className="max-h-[200px] border-white/10 bg-[#04131b] text-white">
+                <SelectContent className="max-h-[220px] border-white/10 bg-[#04131b] text-white">
                   {sports.map((sport) => (
                     <SelectItem key={sport.id} value={sport.id}>
                       {sport.name}
                     </SelectItem>
                   ))}
+                  <SelectItem value="__suggest">+ Sugerir novo desporto</SelectItem>
                 </SelectContent>
               </Select>
               {sportsError ? (
@@ -264,9 +349,73 @@ export default function SignupPage() {
                 <p className="text-xs text-slate-300">
                   {sportsLoading
                     ? 'A carregar desportos oficiais...'
-                    : 'Escolhe o desporto que representa a tua House.'}
+                    : 'Escolhe um desporto oficial ou sugere um novo.'}
                 </p>
               )}
+            </div>
+
+            {suggestNewSport ? (
+              <div className="rounded-2xl border border-dashed border-white/15 bg-[#04131b]/60 p-4 text-left space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-slate-100">Nome do novo desporto *</Label>
+                  <Input
+                    value={suggestedSportName}
+                    onChange={(e) => setSuggestedSportName(e.target.value)}
+                    placeholder="Ex.: Escalada Indoor, Trail, Padel Adaptado"
+                    className="border-white/10 bg-[#000c12] text-white placeholder:text-slate-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-100">País para a primeira House</Label>
+                  <Select
+                    value={suggestedCountry || undefined}
+                    onValueChange={(value) => setSuggestedCountry(value)}
+                  >
+                    <SelectTrigger className="border-white/10 bg-[#000c12] text-left text-white">
+                      <SelectValue placeholder="Seleciona o país da House inicial" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px] border-white/10 bg-[#04131b] text-white">
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Vamos criar este desporto/House com base na tua sugestão. A tua conta fica na pool até os Super Admins
+                  confirmarem.
+                </p>
+              </div>
+            ) : null}
+
+            <div className="space-y-3 rounded-2xl border border-white/10 bg-[#04131b]/70 p-4 text-left">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="no-sport"
+                  checked={noSportPreference}
+                  onCheckedChange={(value) => {
+                    const checked = Boolean(value);
+                    setNoSportPreference(checked);
+                    if (checked) {
+                      setFormData((prev) => ({ ...prev, sportId: '' }));
+                      setSuggestNewSport(false);
+                      setSuggestedSportName('');
+                    }
+                  }}
+                  className="mt-1 border-white/30 text-white"
+                />
+                <div>
+                  <Label htmlFor="no-sport" className="cursor-pointer text-slate-100">
+                    Ainda não tenho um desporto definido
+                  </Label>
+                  <p className="text-xs text-slate-300">
+                    Se marcares esta opção, o Legacy pode atribuir-te provisoriamente um desporto quando houver vaga numa
+                    House. Precisamos da tua autorização antes do registo.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2 text-left">
@@ -317,6 +466,35 @@ export default function SignupPage() {
           </CardFooter>
         </form>
       </Card>
+
+      <Dialog open={showConsentModal} onOpenChange={setShowConsentModal}>
+        <DialogContent className="border-white/10 bg-[#04131b] text-white">
+          <DialogHeader>
+            <DialogTitle>Confirmar atribuição automática de desporto</DialogTitle>
+            <DialogDescription className="text-slate-300">
+              Se aceitares, o Legacy pode atribuir-te um desporto temporário para garantirmos acompanhamento humano enquanto
+              a tua House oficial não abre.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-slate-200">
+            <p>
+              Vais entrar numa pool dedicada onde os Super Admins definem o desporto ideal para o teu perfil e atribuem-te a
+              primeira House disponível.
+            </p>
+            <p className="text-xs text-slate-400">
+              Podes sempre atualizar o teu desporto no perfil assim que escolheres um caminho definitivo.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setShowConsentModal(false)} className="border-white/20 text-white">
+              Voltar atrás
+            </Button>
+            <Button onClick={handleAcceptRandomAssignment} className="bg-cyan-500 text-[#04131b] hover:bg-cyan-400">
+              Aceito
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

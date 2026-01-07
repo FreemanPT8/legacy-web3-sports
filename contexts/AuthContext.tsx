@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { User } from '@/lib/auth';
+import type { User, SportSelectionMethod } from '@/lib/auth';
 import { withCanonicalUserRole } from '@/lib/roles';
 
 interface AuthContextType {
@@ -17,7 +17,11 @@ interface AuthContextType {
     email: string;
     password: string;
     country: string;
-    sport_id: string;
+    sport_id?: string | null;
+    sportSelectionMethod?: SportSelectionMethod;
+    allowRandomAssignment?: boolean;
+    suggestedSportName?: string;
+    suggestedCountryCode?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   getToken: () => string | null;
@@ -181,13 +185,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string;
     password: string;
     country: string;
-    sport_id: string;
+    sport_id?: string | null;
+    sportSelectionMethod?: SportSelectionMethod;
+    allowRandomAssignment?: boolean;
+    suggestedSportName?: string;
+    suggestedCountryCode?: string;
   }) => {
     try {
+      const {
+        sportSelectionMethod,
+        allowRandomAssignment,
+        suggestedSportName,
+        suggestedCountryCode,
+        ...baseData
+      } = signupData;
+
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signupData),
+        body: JSON.stringify({
+          ...baseData,
+          sport_selection_method: sportSelectionMethod,
+          allow_random_assignment: allowRandomAssignment,
+          suggested_sport_name: suggestedSportName,
+          suggested_country_code: suggestedCountryCode,
+        }),
       });
 
       const data = await response.json();

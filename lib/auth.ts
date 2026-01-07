@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { signToken } from './jwt';
 import type { UserRole } from './permissions';
 import { ensureUserRole } from './roles';
+import { getCountryCodeFromName } from './countries';
 
 export type { UserRole };
 
@@ -21,6 +22,8 @@ export interface User {
   primary_sport_id?: string | null;
   is_banned?: boolean; // novo campo (tabela users)
 }
+
+export type SportSelectionMethod = 'chosen' | 'random_pool' | 'suggested_pool';
 
 export interface AuthResponse {
   success: boolean;
@@ -74,7 +77,10 @@ export async function signUp(data: {
   email: string;
   password: string;
   country: string;
-  sport_id: string;
+  sport_id?: string | null;
+  sport_selection_method?: SportSelectionMethod;
+  requires_sport_assignment?: boolean;
+  sport_assignment_notes?: string | null;
 }): Promise<AuthResponse> {
   try {
     // verificar se username OU email já existem
@@ -93,6 +99,12 @@ export async function signUp(data: {
 
     const password_hash = await hashPassword(data.password);
 
+    const requiresAssignment = Boolean(data.requires_sport_assignment);
+    const sportId = data.sport_id ?? null;
+    const primarySportId = sportId;
+    const primaryCountryCode =
+      getCountryCodeFromName(data.country) ??
+      (data.country ? data.country.trim().slice(0, 2).toUpperCase() : null);
     const { data: newUser, error } = await supabase
       .from('users')
       .insert({
@@ -101,8 +113,9 @@ export async function signUp(data: {
         email: data.email,
         password_hash,
         country: data.country,
-        sport_id: data.sport_id,
-        primary_sport_id: data.sport_id,
+        sport_id: sportId,
+        primary_sport_id: primarySportId,
+        primary_country_code: primaryCountryCode,
         role: 'Member',
         xp_total: 0,
         profile_unlocked: false,
@@ -110,6 +123,9 @@ export async function signUp(data: {
         streak_count: 0,
         profile_visibility: {},
         is_banned: false, // por segurança
+        sport_selection_method: data.sport_selection_method ?? 'chosen',
+        requires_sport_assignment: requiresAssignment,
+        sport_assignment_notes: data.sport_assignment_notes ?? null,
       })
       .select('id, username, email, role, xp_total, avatar_url, is_banned, sport_id, primary_sport_id')
       .single();

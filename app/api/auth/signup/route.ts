@@ -1,20 +1,128 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { signUp } from '@/lib/auth';
+import { signUp, type SportSelectionMethod } from '@/lib/auth';
 import { sendEmail, getWelcomeEmailTemplate } from '@/lib/email';
 import { supabaseAdmin } from '@/lib/supabase';
+import { syncUserHouseMembership } from '@/lib/user-houses';
+import { getCountryCodeFromName } from '@/lib/countries';
+
+type PoolType = 'no_sport' | 'sport_pending' | 'suggestion';
+
+function normalizeCountryCode(value?: string | null): string | null {
+  if (!value) return null;
+  return (
+    getCountryCodeFromName(value) ??
+    value.trim().slice(0, 2).toUpperCase()
+  );
+}
+
+async function markUserRequiresAssignment(userId: string, note?: string | null) {
+  if (!supabaseAdmin) return;
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({
+      requires_sport_assignment: true,
+      sport_assignment_notes: note ?? null,
+    })
+    .eq('id', userId);
+  if (error) {
+    console.error('[signup] Failed to update requires_sport_assignment:', error);
+  }
+}
+
+async function upsertSportPoolEntry(payload: {
+  user_id: string;
+  pool_type: PoolType;
+  sport_id?: string | null;
+  country_code?: string | null;
+  suggested_sport_name?: string | null;
+  suggested_country_code?: string | null;
+  metadata?: Record<string, unknown>;
+  notes?: string | null;
+}) {
+  if (!supabaseAdmin) return;
+  const entry = {
+    user_id: payload.user_id,
+    pool_type: payload.pool_type,
+    sport_id: payload.sport_id ?? null,
+    country_code: payload.country_code ?? null,
+    suggested_sport_name: payload.suggested_sport_name ?? null,
+    suggested_country_code: payload.suggested_country_code ?? null,
+    metadata: payload.metadata ?? {},
+    notes: payload.notes ?? null,
+  };
+  const { error } = await supabaseAdmin.from('sport_pool_entries').insert(entry);
+  if (error) {
+    console.error('[signup] Failed to insert sport_pool_entry:', error);
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, full_name, email, password, country, sport_id } = body;
+    const {
+      username,
+      full_name,
+      email,
+      password,
+      country,
+      sport_id,
+      sport_selection_method,
+      allow_random_assignment,
+      suggested_sport_name,
+      suggested_country_code,
+    } = body;
 
-    if (!username || !full_name || !email || !password || !country || !sport_id) {
+    if (!username || !full_name || !email || !password || !country) {
       return NextResponse.json(
         { success: false, error: 'All fields are required' },
         { status: 400 },
       );
     }
+
+    const normalizedMethod =
+      (sport_selection_method as SportSelectionMethod) ?? 'chosen';
+    const allowedMethods: SportSelectionMethod[] = [
+      'chosen',
+      'random_pool',
+      'suggested_pool',
+    ];
+    const selectionMethod = allowedMethods.includes(normalizedMethod)
+      ? normalizedMethod
+      : 'chosen';
+    const normalizedCountryCode = normalizeCountryCode(country);
+    const normalizedSuggestedCountry =
+      normalizeCountryCode(suggested_country_code ?? country) ?? null;
+    const trimmedSuggestion =
+      typeof suggested_sport_name === 'string'
+        ? suggested_sport_name.trim()
+        : '';
+
+    if (
+      selectionMethod === 'chosen' &&
+      (!sport_id || typeof sport_id !== 'string')
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'sport_id is required for chosen sport.' },
+        { status: 400 },
+      );
+    }
+
+    if (selectionMethod === 'random_pool' && !allow_random_assignment) {
+      return NextResponse.json(
+        { success: false, error: 'Random assignment consent is required.' },
+        { status: 400 },
+      );
+    }
+
+    if (selectionMethod === 'suggested_pool' && !trimmedSuggestion) {
+      return NextResponse.json(
+        { success: false, error: 'Suggested sport name is required.' },
+        { status: 400 },
+      );
+    }
+
+    const requiresAssignment = selectionMethod !== 'chosen';
 
     const result = await signUp({
       username,
@@ -22,7 +130,16 @@ export async function POST(request: NextRequest) {
       email,
       password,
       country,
-      sport_id,
+      sport_id: selectionMethod === 'chosen' ? sport_id : null,
+      sport_selection_method: selectionMethod,
+      requires_sport_assignment: requiresAssignment,
+      sport_assignment_notes: requiresAssignment
+        ? selectionMethod === 'random_pool'
+          ? 'Aguardando atribuição aleatória de desporto.'
+          : selectionMethod === 'suggested_pool'
+          ? 'Aguardando criação do desporto sugerido.'
+          : null
+        : null,
     });
 
     if (!result.success) {
@@ -32,6 +149,48 @@ export async function POST(request: NextRequest) {
     if (result.user) {
       const userId = result.user.id;
       const userEmail = result.user.email;
+
+      if (selectionMethod === 'chosen' && sport_id) {
+        const syncResult = await syncUserHouseMembership(userId, {
+          assignedVia: 'ONBOARDING',
+          logPrefix: 'signup',
+        });
+        if (!syncResult.success || !syncResult.houseId) {
+          const note =
+            syncResult.reason ??
+            'Sem House ativa para este desporto e país. Na fila para abertura.';
+          await markUserRequiresAssignment(userId, note);
+          await upsertSportPoolEntry({
+            user_id: userId,
+            pool_type: 'sport_pending',
+            sport_id,
+            country_code: normalizedCountryCode,
+            notes: note,
+          });
+        }
+      } else if (selectionMethod === 'random_pool') {
+        const note =
+          'Conta registada sem desporto preferido. Aguardando atribuição manual.';
+        await markUserRequiresAssignment(userId, note);
+        await upsertSportPoolEntry({
+          user_id: userId,
+          pool_type: 'no_sport',
+          country_code: normalizedCountryCode,
+          notes: note,
+          metadata: { allowRandomAssignment: Boolean(allow_random_assignment) },
+        });
+      } else if (selectionMethod === 'suggested_pool') {
+        const note = `Sugestão de novo desporto: ${trimmedSuggestion}`;
+        await markUserRequiresAssignment(userId, note);
+        await upsertSportPoolEntry({
+          user_id: userId,
+          pool_type: 'suggestion',
+          country_code: normalizedCountryCode,
+          suggested_sport_name: trimmedSuggestion,
+          suggested_country_code: normalizedSuggestedCountry,
+          notes: note,
+        });
+      }
 
       if (userEmail) {
         try {
