@@ -247,9 +247,12 @@ export default function AdminOnboardingPage() {
   const editingDisabled = !termActive;
   const [logActionFilter, setLogActionFilter] = useState<'ALL' | 'delivered' | 'primary' | 'secondary' | 'dismiss'>('ALL');
   const [logUserQuery, setLogUserQuery] = useState('');
+  const normalizedLogUserId = useMemo(() => (logUserQuery.trim() ? logUserQuery.trim() : null), [logUserQuery]);
+  const getLogsToken = useCallback(() => getToken?.() ?? null, [getToken]);
   const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs({
     house: houseKey || null,
-    userId: logUserQuery.trim() || null,
+    userId: normalizedLogUserId,
+    getAuthToken: getLogsToken,
   });
   const logTotals = useMemo(() => {
     return liveLogs.reduce((acc, log) => {

@@ -1,13 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import type { OnboardingLogEntry, OnboardingLogAction } from '@/types/onboarding';
 import { supabaseAdmin, supabase } from '@/lib/supabase';
+import { requireAuth } from '@/lib/middleware';
+import { isAdminRole } from '@/lib/roles';
 
 const db = supabaseAdmin ?? supabase;
 const TABLE_NAME = 'onboarding_popup_logs';
 const DEFAULT_LIMIT = 50;
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (!auth.success) return auth.response!;
+  const user = auth.user!;
+  if (!isAdminRole(user.role)) {
+    return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const limit = Math.min(Number(searchParams.get('limit')) || DEFAULT_LIMIT, 200);
   const houseKey = searchParams.get('house')?.toUpperCase() ?? null;
@@ -53,7 +62,11 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (!auth.success) return auth.response!;
+  const user = auth.user!;
+
   try {
     const body = (await request.json()) as {
       popupId?: string;
@@ -69,14 +82,18 @@ export async function POST(request: Request) {
       console.warn('[onboarding.logs] Supabase admin client not available. Skipping persistence.');
       return NextResponse.json({ success: true, entry: null });
     }
+    const resolvedUserId = isAdminRole(user.role) && body.userId ? body.userId : user.userId;
     const entry = {
       popup_id: body.popupId,
       house_key: (body.house || 'LEGACY').toUpperCase(),
       action: body.action,
-      user_id: body.userId ?? null,
+      user_id: resolvedUserId,
       metadata: body.metadata ?? null,
     };
-    const { data, error } = await db.from(TABLE_NAME).insert(entry).select('id, created_at, house_key, popup_id, action');
+    const { data, error } = await db
+      .from(TABLE_NAME)
+      .insert(entry)
+      .select('id, created_at, house_key, popup_id, action, user_id');
     if (error) throw error;
     const inserted = data?.[0];
     return NextResponse.json({
@@ -88,6 +105,7 @@ export async function POST(request: Request) {
             house: inserted.house_key,
             action: inserted.action as OnboardingLogAction,
             timestamp: new Date(inserted.created_at).getTime(),
+            userId: inserted.user_id ?? null,
           }
         : null,
     });

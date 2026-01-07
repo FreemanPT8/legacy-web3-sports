@@ -11,10 +11,11 @@ type UseOnboardingLogsOptions = {
   house?: string | null;
   popupId?: string | null;
   userId?: string | null;
+  getAuthToken?: (() => string | null | undefined) | null;
 };
 
 export function useOnboardingLogs(options: UseOnboardingLogsOptions = {}) {
-  const { pollInterval = DEFAULT_INTERVAL, house, popupId, userId } = options;
+  const { pollInterval = DEFAULT_INTERVAL, house, popupId, userId, getAuthToken } = options;
   const [logs, setLogs] = useState<OnboardingLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +29,12 @@ export function useOnboardingLogs(options: UseOnboardingLogsOptions = {}) {
       if (popupId) params.set('popupId', popupId);
       if (userId) params.set('userId', userId);
       const query = params.toString();
-      const response = await fetch(`/api/onboarding/logs${query ? `?${query}` : ''}`, { cache: 'no-store' });
+      const token = getAuthToken?.() ?? null;
+      const fetchOptions: RequestInit = { cache: 'no-store' };
+      if (token) {
+        fetchOptions.headers = { Authorization: `Bearer ${token}` };
+      }
+      const response = await fetch(`/api/onboarding/logs${query ? `?${query}` : ''}`, fetchOptions);
       const data = (await response.json()) as
         | { success: true; logs: OnboardingLogEntry[] }
         | { success: false; error?: string };
@@ -42,7 +48,7 @@ export function useOnboardingLogs(options: UseOnboardingLogsOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [house, popupId, userId]);
+  }, [house, popupId, userId, getAuthToken]);
 
   useEffect(() => {
     void fetchLogs();

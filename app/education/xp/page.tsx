@@ -1927,22 +1927,27 @@ export default function EducationXpPage() {
 
   const logRemoteAction = useCallback(
     async (popupId: string, action: QueueLogAction) => {
+      if (!user) return;
+      const token = getToken?.();
+      if (!token) return;
       try {
         await fetch('/api/onboarding/logs', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             popupId,
             action,
             house: houseKey,
-            userId: user?.id,
           }),
         });
       } catch (error) {
         console.error('[education/xp] Failed to log action', error);
       }
     },
-    [houseKey, user?.id],
+    [getToken, houseKey, user],
   );
 
 
