@@ -200,6 +200,21 @@ function resolvePopupForLanguage(popup: OnboardingPopupData, lang: PopupLanguage
   };
 }
 
+function getTranslationStatus(popup: OnboardingPopupData) {
+  const status: Record<PopupLanguage, { ok: boolean }> = { pt: { ok: false }, es: { ok: false }, en: { ok: false } };
+  for (const lang of POPUP_LANGUAGES) {
+    const entry = popup.localized?.[lang];
+    status[lang] = {
+      ok:
+        Boolean(entry?.title?.trim()) &&
+        Boolean(entry?.body?.trim()) &&
+        Boolean(entry?.primaryCtaLabel?.trim()) &&
+        Boolean(entry?.secondaryCtaLabel?.trim()),
+    };
+  }
+  return status;
+}
+
 const DEFAULT_DRAFT: OnboardingPopupData = {
   id: 'draft-popup',
   house: 'House of Legacy',
@@ -320,6 +335,13 @@ function validatePopup(popup: OnboardingPopupData): string | null {
     }
   }
   if (!popup.status) return 'Define o estado do pop-up antes de guardar.';
+  for (const lang of POPUP_LANGUAGES) {
+    const entry = popup.localized?.[lang];
+    if (!entry?.title?.trim()) return `(${LANGUAGE_LABELS[lang]}) Título obrigatório.`;
+    if (!entry?.body?.trim()) return `(${LANGUAGE_LABELS[lang]}) Mensagem obrigatória.`;
+    if (!(entry.primaryCtaLabel ?? '').trim()) return `(${LANGUAGE_LABELS[lang]}) CTA principal precisa de label.`;
+    if (!(entry.secondaryCtaLabel ?? '').trim()) return `(${LANGUAGE_LABELS[lang]}) CTA secundária precisa de label.`;
+  }
   return null;
 }
 
@@ -1547,7 +1569,9 @@ export default function AdminOnboardingPage() {
 
             {sequenceDraft.length ? (
               <div className="space-y-3">
-                {sequenceDraft.map((popup, index) => (
+                {sequenceDraft.map((popup, index) => {
+                  const translationStatus = getTranslationStatus(popup);
+                  return (
                   <div
                     key={popup.id}
                     className={cn(
@@ -1591,6 +1615,21 @@ export default function AdminOnboardingPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                        <div className="flex items-center gap-1">
+                          {POPUP_LANGUAGES.map((lang) => (
+                            <span
+                              key={lang}
+                              className={cn(
+                                'rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                                translationStatus[lang].ok
+                                  ? 'bg-emerald-500/15 text-emerald-200'
+                                  : 'bg-amber-500/15 text-amber-200',
+                              )}
+                            >
+                              {LANGUAGE_LABELS[lang]}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -1627,7 +1666,8 @@ export default function AdminOnboardingPage() {
                     </div>
                     <p className="mt-2 text-sm text-slate-300 line-clamp-2">{popup.body}</p>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-white/10 bg-[#000c12]/30 p-6 text-sm text-slate-300">
