@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useState, useEffect } from 'react';
 
+import Link from 'next/link';
+
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +16,20 @@ import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
 import { useTermAgreement } from '@/hooks/useTermAgreement';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, RefreshCcw, MonitorPlay, Save, Copy, ArrowUp, ArrowDown, Plus, Trash2, MessageSquare } from 'lucide-react';
+import {
+  Loader2,
+  RefreshCcw,
+  MonitorPlay,
+  Save,
+  Copy,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  Trash2,
+  MessageSquare,
+  ShieldCheck,
+  AlertTriangle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -217,6 +232,10 @@ export default function AdminOnboardingPage() {
   const [notesError, setNotesError] = useState<string | null>(null);
   const [notes, setNotes] = useState<SubmissionNote[]>([]);
   const [newNote, setNewNote] = useState('');
+  const unassignedSubmissions = useMemo(
+    () => submissions.filter((submission) => !submission.assigned_to_full_name && !submission.assigned_to_username).length,
+    [submissions],
+  );
   const fetchSubmissions = useCallback(async () => {
     const token = getToken?.();
     if (!token) {
@@ -768,6 +787,30 @@ export default function AdminOnboardingPage() {
     });
   };
 
+  const complianceChecklist = useMemo(
+    () => [
+      {
+        label: 'Termo aceito nos últimos 90 dias',
+        ok: termActive,
+        hint: termActive ? 'Validação em vigor.' : 'Renova para voltar a editar.',
+      },
+      {
+        label: 'Sem leads por atribuir',
+        ok: unassignedSubmissions === 0,
+        hint:
+          unassignedSubmissions === 0
+            ? 'Todas as submissões têm responsável.'
+            : `${unassignedSubmissions} lead(s) sem responsável.`,
+      },
+      {
+        label: 'Limites oficiais comunicados',
+        ok: true,
+        hint: '1 pop-up/dia · 3/semana (revisto semanalmente).',
+      },
+    ],
+    [termActive, unassignedSubmissions],
+  );
+
   const formatSubmissionDate = useCallback((timestamp: string | null) => {
     if (!timestamp) return '--';
     return new Date(timestamp).toLocaleString('pt-PT', {
@@ -845,6 +888,53 @@ export default function AdminOnboardingPage() {
                 <p className="text-xs text-slate-400">{RESPONSIBILITY_TERM.footer}</p>
               </div>
             </ScrollArea>
+          </CardContent>
+        </Card>
+        <Card className="border-white/10 bg-[#04131b]/80">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Centro de Conformidade</p>
+              <h2 className="text-xl font-semibold text-white">Checklist operacional</h2>
+              <p className="text-xs text-slate-500">
+                Baseado no plano oficial de onboarding escalável. Atualiza semanalmente para manter o estatuto de Head.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {complianceChecklist.map((item) => (
+                <div
+                  key={item.label}
+                  className={cn(
+                    'flex items-start gap-3 rounded-2xl border p-3 text-sm',
+                    item.ok
+                      ? 'border-emerald-500/30 bg-emerald-500/5'
+                      : 'border-amber-400/30 bg-amber-400/5',
+                  )}
+                >
+                  <div className="mt-0.5">
+                    {item.ok ? (
+                      <ShieldCheck className="h-4 w-4 text-emerald-300" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 text-amber-300" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">{item.label}</p>
+                    <p className="text-xs text-slate-300">{item.hint}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" asChild className="border-white/20 text-white hover:bg-white/10">
+                <Link href="/docs/onboarding-personalizado" target="_blank" rel="noreferrer">
+                  Ver guia oficial
+                </Link>
+              </Button>
+              <span className="text-xs text-slate-400">
+                Última verificação: {new Date().toLocaleDateString('pt-PT')} · Leads sem dono:{' '}
+                {unassignedSubmissions}
+              </span>
+            </div>
           </CardContent>
         </Card>
         <div className={cn('flex flex-col gap-6', editingDisabled && 'pointer-events-none opacity-40')}>
