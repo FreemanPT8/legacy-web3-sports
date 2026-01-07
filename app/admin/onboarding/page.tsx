@@ -112,7 +112,7 @@ const BASE_LOCALIZED_COPY: Record<PopupLanguage, OnboardingPopupLocalizedFields>
   },
 };
 
-function cloneLocalizedCopy(copy?: Record<PopupLanguage, OnboardingPopupLocalizedFields | undefined> | null): Record<
+function cloneLocalizedCopy(copy?: Partial<Record<PopupLanguage, OnboardingPopupLocalizedFields>> | null): Record<
   PopupLanguage,
   OnboardingPopupLocalizedFields
 > {
