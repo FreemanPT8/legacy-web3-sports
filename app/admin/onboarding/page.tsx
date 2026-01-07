@@ -215,6 +215,30 @@ function getTranslationStatus(popup: OnboardingPopupData) {
   return status;
 }
 
+function computeTranslationSummary(popups: OnboardingPopupData[]) {
+  const summary: Record<
+    PopupLanguage,
+    {
+      ready: number;
+      total: number;
+    }
+  > = {
+    pt: { ready: 0, total: 0 },
+    es: { ready: 0, total: 0 },
+    en: { ready: 0, total: 0 },
+  };
+  for (const popup of popups) {
+    const status = getTranslationStatus(popup);
+    for (const lang of POPUP_LANGUAGES) {
+      summary[lang].total += 1;
+      if (status[lang].ok) {
+        summary[lang].ready += 1;
+      }
+    }
+  }
+  return summary;
+}
+
 const DEFAULT_DRAFT: OnboardingPopupData = {
   id: 'draft-popup',
   house: 'House of Legacy',
@@ -711,6 +735,7 @@ export default function AdminOnboardingPage() {
   const analyticsSource = analyticsOverride ? 'live' : houseSequence?.analytics ? 'sequence' : 'fallback';
   const analyticsData = analyticsOverride ?? houseSequence?.analytics ?? DEFAULT_ANALYTICS;
   const localizedFields = useMemo(() => getLocalizedFields(resolvedDraft, activeLanguage), [resolvedDraft, activeLanguage]);
+  const translationSummary = useMemo(() => computeTranslationSummary(sequenceDraft), [sequenceDraft]);
   const fmtPercent = (value?: number) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '--');
   const fmtNumber = (value?: number) => (typeof value === 'number' ? value.toLocaleString() : '--');
   const analyticsCards = [
@@ -1564,6 +1589,23 @@ export default function AdminOnboardingPage() {
                 >
                   <Plus className="mr-1 h-4 w-4" /> Novo pop-up
                 </Button>
+                <div className="flex items-center gap-1">
+                  {POPUP_LANGUAGES.map((lang) => {
+                    const entry = translationSummary[lang];
+                    const allReady = entry.total > 0 && entry.ready === entry.total;
+                    return (
+                      <span
+                        key={lang}
+                        className={cn(
+                          'rounded-full px-2 py-1 text-[11px] font-semibold',
+                          allReady ? 'bg-emerald-500/15 text-emerald-200' : 'bg-amber-500/15 text-amber-200',
+                        )}
+                      >
+                        {LANGUAGE_LABELS[lang]} · {entry.ready}/{entry.total || 0}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
