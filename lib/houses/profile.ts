@@ -153,7 +153,9 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     profile?.mission_i18n as Record<string, { title: string; body: string | string[] }>,
     normalizedLocale,
   );
-  const limits = getLocalizedValue<Record<string, string[]>>(profile?.limits_i18n, normalizedLocale) ?? [];
+  const limits =
+    getLocalizedValue<Record<string, string[]>>(profile?.limits_i18n, normalizedLocale)?.list ??
+    (Array.isArray(profile?.limits_i18n) ? (profile?.limits_i18n as string[]) : []);
   const manifesto =
     getLocalizedValue<Record<string, string[]>>(profile?.head_manifesto_i18n, normalizedLocale) ?? [];
   const supportModel =
