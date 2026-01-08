@@ -43,10 +43,8 @@ type HeadUser = {
   role: string | null;
 };
 
-type ApiResponse<T> =
-  | { success: true; head?: HeadUser | null; moderators?: ModeratorUser[]; data?: T }
-  | { success: false; error?: string };
-type SuccessResponse<T> = Extract<ApiResponse<T>, { success: true }>;
+type SuccessPayload<T> = { success: true } & T;
+type ApiResponse<T> = SuccessPayload<T> | { success: false; error?: string };
 
 const panelBackground =
   'border border-white/10 bg-gradient-to-br from-[#04141c] via-[#03121a] to-[#020b11]';
@@ -82,7 +80,7 @@ async function jsonRequest<T>(
   url: string,
   token: string,
   options?: RequestInit,
-): Promise<SuccessResponse<T>> {
+): Promise<SuccessPayload<T>> {
   const res = await fetch(url, {
     ...options,
     headers: {
