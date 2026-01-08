@@ -149,7 +149,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     (house.name_i18n?.[normalizedLocale] ?? house.name_i18n?.en ?? 'House');
   const identitySubtitle =
     getLocalizedValue<Record<string, string>>(house.hero_subtitle_i18n, normalizedLocale)?.toString() || '';
-  const mission = getLocalizedValue<Record<string, any>>(profile?.mission_i18n, normalizedLocale);
+  const mission = getLocalizedValue<{ title: string; body: string | string[] }>(
+    profile?.mission_i18n as Record<string, { title: string; body: string | string[] }>,
+    normalizedLocale,
+  );
   const limits = getLocalizedValue<Record<string, string[]>>(profile?.limits_i18n, normalizedLocale) ?? [];
   const manifesto =
     getLocalizedValue<Record<string, string[]>>(profile?.head_manifesto_i18n, normalizedLocale) ?? [];
