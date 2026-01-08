@@ -161,6 +161,13 @@ export default function SportPoolsAdminPage() {
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') ?? '');
   const [sportFilter, setSportFilter] = useState<string>('ALL');
   const [countryFilter, setCountryFilter] = useState<string>('ALL');
+  const normalizeSortParam = (value: string | null): 'newest' | 'oldest' | 'status' => {
+    if (value === 'oldest' || value === 'status') return value;
+    return 'newest';
+  };
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'status'>(() =>
+    normalizeSortParam(searchParams.get('sort')),
+  );
   const [refreshing, setRefreshing] = useState(false);
   const [highlightEntryId, setHighlightEntryId] = useState<string | null>(() => searchParams.get('entry'));
   const entryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -306,7 +313,7 @@ export default function SportPoolsAdminPage() {
 
   const filteredEntries = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
-    return entries.filter((entry) => {
+    const filtered = entries.filter((entry) => {
       if (sportFilter !== 'ALL') {
         const entrySportId = entry.sport?.id ?? entry.sportId ?? null;
         if (entrySportId !== sportFilter) return false;
@@ -333,7 +340,20 @@ export default function SportPoolsAdminPage() {
         .toLowerCase();
       return haystack.includes(normalizedSearch);
     });
-  }, [entries, sportFilter, countryFilter, searchQuery]);
+    const getTimestamp = (value?: string | null) => (value ? new Date(value).getTime() : 0);
+    return filtered.sort((a, b) => {
+      if (sortOrder === 'oldest') {
+        return getTimestamp(a.createdAt) - getTimestamp(b.createdAt);
+      }
+      if (sortOrder === 'status') {
+        const rank: Record<PoolStatus, number> = { pending: 0, assigned: 1, dismissed: 2 };
+        const diff = rank[a.status] - rank[b.status];
+        if (diff !== 0) return diff;
+        return getTimestamp(b.createdAt) - getTimestamp(a.createdAt);
+      }
+      return getTimestamp(b.createdAt) - getTimestamp(a.createdAt);
+    });
+  }, [entries, sportFilter, countryFilter, searchQuery, sortOrder]);
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
@@ -428,6 +448,7 @@ export default function SportPoolsAdminPage() {
     const params = new URLSearchParams();
     params.set('pool', poolType);
     params.set('status', statusFilter);
+    params.set('sort', sortOrder);
     const trimmedQuery = searchQuery.trim();
     if (trimmedQuery) {
       params.set('q', trimmedQuery);
@@ -437,7 +458,7 @@ export default function SportPoolsAdminPage() {
     }
     const queryString = params.toString();
     router.replace(`${pathname}${queryString ? `?${queryString}` : ''}`, { scroll: false });
-  }, [poolType, statusFilter, searchQuery, highlightEntryId, pathname, router]);
+  }, [poolType, statusFilter, searchQuery, highlightEntryId, sortOrder, pathname, router]);
 
   const assignDialogTitle = useMemo(() => {
     if (!assignModalEntry) return 'Atribuir House';
@@ -720,6 +741,16 @@ export default function SportPoolsAdminPage() {
                     {code}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as 'newest' | 'oldest' | 'status')}>
+              <SelectTrigger className="border-white/10 bg-[#020d15] text-left text-white">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#03131d] text-white">
+                <SelectItem value="newest">Mais recentes</SelectItem>
+                <SelectItem value="oldest">Mais antigos</SelectItem>
+                <SelectItem value="status">Por estado</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex gap-2">
