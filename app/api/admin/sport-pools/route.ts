@@ -190,7 +190,9 @@ async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | nu
     console.error('[sport-pools] Failed to load admin assignments for head access', adminError);
     return null;
   }
-  const adminIds = (adminAssignments ?? []).map((row) => row.id).filter(Boolean) as string[];
+  const adminIds = (adminAssignments ?? [])
+    .map((row: { id?: string | null }) => row.id)
+    .filter((value): value is string => Boolean(value));
   if (!adminIds.length) return null;
 
   const { data: headRows, error: headError } = await supabaseAdmin
@@ -201,7 +203,9 @@ async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | nu
     console.error('[sport-pools] Failed to load head houses', headError);
     return null;
   }
-  const houseIds = (headRows ?? []).map((row) => row.house_id).filter(Boolean) as string[];
+  const houseIds = (headRows ?? [])
+    .map((row: { house_id?: string | null }) => row.house_id)
+    .filter((value): value is string => Boolean(value));
   if (!houseIds.length) return null;
 
   const { data: houseRows, error: houseError } = await supabaseAdmin
@@ -214,8 +218,8 @@ async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | nu
   }
   const sportsSet = new Set(
     (houseRows ?? [])
-      .map((row) => row.sport_id)
-      .filter((value): value is string => !!value),
+      .map((row: { sport_id?: string | null }) => row.sport_id)
+      .filter((value): value is string => Boolean(value)),
   );
   if (!sportsSet.size) return null;
 
