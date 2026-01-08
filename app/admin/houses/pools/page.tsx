@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2,
   Shield,
@@ -119,11 +119,21 @@ const STATUS_BADGES: Record<PoolStatus, string> = {
 
 export default function SportPoolsAdminPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { user, loading: authLoading, getToken } = useAuth();
 
-  const [poolType, setPoolType] = useState<PoolType>('no_sport');
-  const [statusFilter, setStatusFilter] = useState<PoolStatus>('pending');
+  const normalizePoolParam = (value: string | null): PoolType => {
+    if (value === 'sport_pending' || value === 'suggestion') return value;
+    return 'no_sport';
+  };
+  const normalizeStatusParam = (value: string | null): PoolStatus => {
+    if (value === 'assigned' || value === 'dismissed') return value;
+    return 'pending';
+  };
+
+  const [poolType, setPoolType] = useState<PoolType>(() => normalizePoolParam(searchParams.get('pool')));
+  const [statusFilter, setStatusFilter] = useState<PoolStatus>(() => normalizeStatusParam(searchParams.get('status')));
   const [entries, setEntries] = useState<PoolEntry[]>([]);
   const [totals, setTotals] = useState<Record<PoolStatus, number>>({
     pending: 0,
@@ -147,10 +157,12 @@ export default function SportPoolsAdminPage() {
   const [dismissEntry, setDismissEntry] = useState<PoolEntry | null>(null);
   const [dismissNote, setDismissNote] = useState('');
   const [dismissLoading, setDismissLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') ?? '');
   const [sportFilter, setSportFilter] = useState<string>('ALL');
   const [countryFilter, setCountryFilter] = useState<string>('ALL');
   const [refreshing, setRefreshing] = useState(false);
+  const [highlightEntryId, setHighlightEntryId] = useState<string | null>(() => searchParams.get('entry'));
+  const entryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const isAuthorized =
     !!user && (user.role === 'Admin' || user.role === 'Super Admin');
@@ -396,6 +408,20 @@ export default function SportPoolsAdminPage() {
       description: `Incluímos ${filteredEntries.length} entradas.`,
     });
   }, [filteredEntries, poolType, toast]);
+
+  useEffect(() => {
+    if (!highlightEntryId) return;
+    const node = entryRefs.current.get(highlightEntryId);
+    if (node) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      node.classList.add('ring-2', 'ring-cyan-400/60');
+      const timer = setTimeout(() => {
+        node.classList.remove('ring-2', 'ring-cyan-400/60');
+        setHighlightEntryId(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightEntryId, filteredEntries]);
 
   const assignDialogTitle = useMemo(() => {
     if (!assignModalEntry) return 'Atribuir House';
@@ -731,6 +757,13 @@ export default function SportPoolsAdminPage() {
                 return (
                   <div
                     key={entry.id}
+                    ref={(node) => {
+                      if (node) {
+                        entryRefs.current.set(entry.id, node);
+                      } else {
+                        entryRefs.current.delete(entry.id);
+                      }
+                    }}
                     className="rounded-2xl border border-white/10 bg-[#020d15] p-5 text-sm text-slate-100"
                   >
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
