@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { SafeImage } from '@/app/components/SafeImage';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Shield, User, Users } from 'lucide-react';
@@ -45,6 +46,14 @@ type HeadUser = {
 
 type SuccessPayload<T> = { success: true } & T;
 type ApiResponse<T> = SuccessPayload<T> | { success: false; error?: string };
+
+type HeadTermContext = {
+  latestVersion: string;
+  acceptedVersion: string | null;
+  acceptedAt: string | null;
+  needsAcceptance: boolean;
+  term: { content: string } | null;
+};
 
 const panelBackground =
   'border border-white/10 bg-gradient-to-br from-[#04141c] via-[#03121a] to-[#020b11]';
@@ -126,6 +135,11 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   });
 
   const [savingPermissions, setSavingPermissions] = useState<Record<string, boolean>>({});
+  const [termContext, setTermContext] = useState<HeadTermContext | null>(null);
+  const [termLoading, setTermLoading] = useState(false);
+  const [termError, setTermError] = useState<string | null>(null);
+  const [termConfirmed, setTermConfirmed] = useState(false);
+  const [acceptingTerm, setAcceptingTerm] = useState(false);
 
   const canManage = user && (user.role === 'Super Admin' || user.role === 'Admin');
   const isSuperAdmin = user?.role === 'Super Admin';
@@ -179,6 +193,16 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   }, [authLoading, user, canManage, router, fetchData]);
 
   useEffect(() => {
+    setTermConfirmed(false);
+    if (!houseId || !head || !user || head.id !== user.userId) {
+      setTermContext(null);
+      setTermError(null);
+      return;
+    }
+    void loadHeadTermContext();
+  }, [houseId, head, user, loadHeadTermContext]);
+
+  useEffect(() => {
     if (!permissionFocus) return;
     const timer = setTimeout(() => {
       document
@@ -192,6 +216,81 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
     () => moderators.filter((m) => m.permissions)?.length ?? 0,
     [moderators],
   );
+
+  const loadHeadTermContext = useCallback(async () => {
+    if (!houseId || !head || !user || head.id !== user.userId) return;
+    const token = getToken();
+    if (!token) return;
+    try {
+      setTermLoading(true);
+      setTermError(null);
+      const response = await fetch(`/api/admin/head-terms/context?houseId=${houseId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = (await response.json()) as
+        | (HeadTermContext & { success: true })
+        | { success: false; error?: string };
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.success ? 'Falha inesperada.' : payload.error || 'Falha inesperada.');
+      }
+      setTermContext({
+        latestVersion: payload.latestVersion,
+        acceptedVersion: payload.acceptedVersion,
+        acceptedAt: payload.acceptedAt,
+        needsAcceptance: payload.needsAcceptance,
+        term: payload.term,
+      });
+    } catch (err) {
+      console.error('[Head term] load error', err);
+      setTermError(err instanceof Error ? err.message : 'Não foi possível carregar o termo.');
+    } finally {
+      setTermLoading(false);
+    }
+  }, [getToken, head, houseId, user]);
+
+  const handleAcceptTerm = async () => {
+    if (!houseId || !termContext) return;
+    const token = getToken();
+    if (!token) return;
+    setAcceptingTerm(true);
+    try {
+      const response = await fetch('/api/admin/head-terms/accept', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ houseId, version: termContext.latestVersion }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Não foi possível registar a aceitação.');
+      }
+      toast({
+        title: 'Termo aceite',
+        description: 'Obrigado por confirmares o compromisso.',
+      });
+      setTermContext({
+        latestVersion: termContext.latestVersion,
+        acceptedVersion: termContext.latestVersion,
+        acceptedAt: new Date().toISOString(),
+        needsAcceptance: false,
+        term: null,
+      });
+    } catch (err) {
+      console.error('[Head term] accept error', err);
+      toast({
+        title: 'Erro ao aceitar termo',
+        description: err instanceof Error ? err.message : 'Tenta novamente mais tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setAcceptingTerm(false);
+    }
+  };
+
+  const needsTermAcceptance =
+    Boolean(termContext?.needsAcceptance) && Boolean(head && user && head.id === user.userId);
 
   const handleAssignHead = async () => {
     if (!headInput.trim() || !houseId) return;
@@ -364,8 +463,74 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#000c12] text-white px-4 py-10 md:px-10">
-      <div className="mx-auto w-full max-w-5xl space-y-8">
+    <>
+      {needsTermAcceptance && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-10">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-[#041021] via-[#031525] to-[#020b11] p-6 shadow-[0_45px_120px_rgba(1,10,26,0.65)]">
+            <div className="mb-4 space-y-1 text-white">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">Termo oficial</p>
+              <h2 className="text-2xl font-semibold text-[#fdd87c]">Responsabilidade do Head</h2>
+              <p className="text-xs text-white/60">Versão {termContext?.latestVersion ?? '—'}</p>
+            </div>
+            <div className="mb-4 text-xs text-white/70">
+              Antes de alterar permissões ou pop-ups, confirma o termo de confiança do Legacy & Apertum.
+            </div>
+            <div className="mb-4 h-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/80">
+              {termLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A carregar termo...
+                </div>
+              ) : termError ? (
+                <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 p-4 text-rose-100">{termError}</div>
+              ) : (
+                <p className="whitespace-pre-line leading-relaxed">
+                  {termContext?.term?.content ?? 'Termo indisponível. Contacta o suporte do Legacy.'}
+                </p>
+              )}
+            </div>
+            <div className="mb-4 flex items-start gap-3 rounded-2xl border border-white/15 bg-black/20 p-4 text-sm text-white/80">
+              <Checkbox
+                id="head-term-check"
+                checked={termConfirmed}
+                disabled={termLoading || Boolean(termError)}
+                onCheckedChange={(value) => setTermConfirmed(Boolean(value))}
+                className="border-white/40 data-[state=checked]:bg-cyan-400 data-[state=checked]:text-[#04131b]"
+              />
+              <label htmlFor="head-term-check" className="cursor-pointer leading-relaxed">
+                Confirmo que li e aceito o termo de responsabilidade e os limites operacionais definidos.
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                className="flex-1 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] font-semibold text-[#1e1500]"
+                disabled={
+                  !termConfirmed ||
+                  acceptingTerm ||
+                  termLoading ||
+                  Boolean(termError) ||
+                  !termContext?.term
+                }
+                onClick={handleAcceptTerm}
+              >
+                {acceptingTerm ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Aceitar termo e continuar
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-white/70 hover:text-white"
+                onClick={() => void loadHeadTermContext()}
+                disabled={acceptingTerm}
+              >
+                Recarregar termo
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className={`min-h-screen bg-[#000c12] text-white px-4 py-10 md:px-10 ${needsTermAcceptance ? 'blur-sm select-none pointer-events-none' : ''}`}>
+        <div className="mx-auto w-full max-w-5xl space-y-8">
         <section
           className={`${panelBackground} rounded-3xl p-6 md:p-10 shadow-2xl shadow-black/40 space-y-4`}
         >
@@ -679,5 +844,6 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
         </section>
       </div>
     </div>
+    </>
   );
 }

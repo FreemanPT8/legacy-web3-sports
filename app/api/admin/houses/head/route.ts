@@ -111,21 +111,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Casa escolhida (para resolver a chave de termo)
-    const { data: houseRow, error: houseError } = await supabaseAdmin
-      .from('houses_of_sports')
-      .select('id, sport_id')
-      .eq('id', houseId)
-      .maybeSingle();
-
-    if (houseError) {
-      console.error('Error loading house before assigning head:', houseError);
-      return NextResponse.json<PostResponse>(
-        { success: false, error: 'Failed to load House of Sports.' },
-        { status: 500 },
-      );
-    }
-
     // 4) Inserir novo Head
     const { error: insertError } = await supabaseAdmin
       .from('house_heads')
@@ -142,37 +127,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let sportCode: string | null = null;
-    const houseRecord = houseRow as { sport_id: string | null } | null;
-    if (houseRecord?.sport_id) {
-      try {
-        const { data: sportRow, error: sportError } = await supabaseAdmin
-          .from('sports')
-          .select('code')
-          .eq('id', houseRecord.sport_id)
-          .maybeSingle();
-        if (sportError) {
-          console.error('Failed to load sport while resolving term key:', sportError);
-        } else {
-          sportCode = (sportRow?.code as string | null) ?? null;
-        }
-      } catch (sportErr) {
-        console.error('Unexpected error loading sport for term key:', sportErr);
-      }
-    }
-
-    const resolvedHouseKey = (() => {
-      if (sportCode) return sportCode.toUpperCase();
-      if (houseRecord?.sport_id) return houseRecord.sport_id.toUpperCase();
-      return houseId.toUpperCase();
-    })();
-
     try {
       await supabaseAdmin
-        .from('house_term_acceptances')
+        .from('house_head_terms')
         .delete()
         .eq('user_id', headUserId)
-        .eq('house_key', resolvedHouseKey);
+        .eq('house_id', houseId);
     } catch (termError) {
       console.error('Failed to reset term acceptance for new head:', termError);
     }
