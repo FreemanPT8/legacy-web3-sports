@@ -223,7 +223,7 @@ async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | nu
   );
   if (!sportsSet.size) return null;
 
-  const sportIds = Array.from(sportsSet);
+  const sportIds = Array.from(sportsSet) as string[];
   const { data: sportHouseRows, error: sportHouseError } = await supabaseAdmin
     .from('houses_of_sports')
     .select('sport_id, country_code')
