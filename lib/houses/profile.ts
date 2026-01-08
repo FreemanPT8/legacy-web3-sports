@@ -169,7 +169,8 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     any
   >;
   const culture =
-    getLocalizedValue<Record<string, string[]>>(profile?.culture_i18n, normalizedLocale) ?? ([] as string[]);
+    getLocalizedValue<Record<string, string[]>>(profile?.culture_i18n, normalizedLocale)?.list ??
+    (Array.isArray(profile?.culture_i18n) ? (profile?.culture_i18n as string[]) : []);
 
   const payload: HouseProfilePayload = {
     locale: normalizedLocale,
