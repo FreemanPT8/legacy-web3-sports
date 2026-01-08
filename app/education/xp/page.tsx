@@ -1950,6 +1950,9 @@ export default function EducationXpPage() {
     }
   }, [rawHouseName, userSportId, fallbackHouseKey]);
 
+  const [legacyPopupRaw, setLegacyPopupRaw] = useState<OnboardingPopupData | null>(null);
+  const [legacyReloadKey, setLegacyReloadKey] = useState(0);
+
   useEffect(() => {
     if (!userSportId) return;
     let active = true;
@@ -2157,8 +2160,6 @@ export default function EducationXpPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [analyticsReloadKey, setAnalyticsReloadKey] = useState(0);
-  const [legacyPopupRaw, setLegacyPopupRaw] = useState<OnboardingPopupData | null>(null);
-  const [legacyReloadKey, setLegacyReloadKey] = useState(0);
   const buildLegacyFallbackPopup = useCallback((): OnboardingPopupData => {
     const localized = cloneLegacyLocalizedCopy();
     const active = localized[language] ?? localized.en;
