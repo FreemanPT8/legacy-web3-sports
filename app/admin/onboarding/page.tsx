@@ -798,7 +798,7 @@ export default function AdminOnboardingPage() {
           throw new Error(data?.error || 'Failed to load houses');
         }
         const canManageAllHouses = user.role === 'Super Admin' || user.role === 'Admin';
-        const options =
+        const options: { key: string; label: string }[] =
           (data.houses ?? [])
             .filter((house: any) => (canManageAllHouses ? true : house?.head?.user_id === user.id))
             .map((house: any) => {
@@ -814,7 +814,10 @@ export default function AdminOnboardingPage() {
               const label = house?.name || `House · ${house?.sport?.code ?? 'Sport'}`;
               return { key, label };
             }) ?? [];
-        if (canEditLegacyWelcome && !options.some((option) => option.key === 'LEGACY')) {
+        if (
+          canEditLegacyWelcome &&
+          !options.some((option: { key: string; label: string }) => option.key === 'LEGACY')
+        ) {
           options.unshift({ key: 'LEGACY', label: 'Legacy · Pop-up global' });
         }
         setHeadHouseOptions(options);
