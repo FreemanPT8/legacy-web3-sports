@@ -67,14 +67,14 @@ export async function GET(request: NextRequest) {
     }
     const globalMemberCount = Array.from(memberCountsByHouse.values()).reduce((acc, cur) => acc + cur, 0);
     type TopHouse = { houseId: string; houseKey: string; name: string; members: number };
-    const topHouses: TopHouse[] = houses
+    const topHouses = houses
       .map((house: any) => ({
         houseId: house.id,
         houseKey: house.house_key,
         name: house.name_i18n?.pt ?? house.name_i18n?.en ?? 'House',
         members: memberCountsByHouse.get(house.id) ?? 0,
       }))
-      .sort((a, b) => (b.members || 0) - (a.members || 0))
+      .sort((a: TopHouse, b: TopHouse) => (b.members || 0) - (a.members || 0))
       .slice(0, 5);
 
     const pendingRequests = new Map<string, number>();
