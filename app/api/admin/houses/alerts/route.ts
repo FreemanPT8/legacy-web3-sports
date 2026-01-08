@@ -6,6 +6,21 @@ import { supabaseAdmin } from '@/lib/supabase';
 const SEVERITIES = ['low', 'medium', 'high'] as const;
 const STATUSES = ['open', 'in_progress', 'resolved'] as const;
 
+type HouseAlertRow = {
+  id: string;
+  house_id: string;
+  type: string;
+  severity: (typeof SEVERITIES)[number];
+  status: (typeof STATUSES)[number];
+  details: Record<string, unknown> | null;
+  created_at: string;
+  resolved_at: string | null;
+  houses?: {
+    house_key?: string | null;
+    name_i18n?: Record<string, string> | null;
+  } | null;
+};
+
 function normalizeStatus(raw: string | null): (typeof STATUSES)[number] {
   const value = (raw || 'open').toLowerCase();
   return (STATUSES.includes(value as any) ? value : 'open') as (typeof STATUSES)[number];
@@ -58,11 +73,11 @@ export async function GET(request: NextRequest) {
     }
 
     const alerts =
-      data?.map((row) => ({
+      data?.map((row: HouseAlertRow) => ({
         id: row.id as string,
         houseId: row.house_id as string,
-        houseKey: (row as any).houses?.house_key ?? 'UNKNOWN',
-        houseName: (row as any).houses?.name_i18n?.pt ?? (row as any).houses?.name_i18n?.en ?? 'House',
+        houseKey: row.houses?.house_key ?? 'UNKNOWN',
+        houseName: row.houses?.name_i18n?.pt ?? row.houses?.name_i18n?.en ?? 'House',
         type: row.type,
         severity: row.severity,
         status: row.status,
