@@ -780,6 +780,7 @@ export default function AdminOnboardingPage() {
       ? 'border-cyan-400/40 bg-cyan-500/10 text-cyan-100'
       : 'border-amber-400/40 bg-amber-500/10 text-amber-100';
 
+  const canEditLegacyWelcome = user?.username?.toLowerCase() === 'freemanpt';
   useEffect(() => {
     if (!user) {
       setHeadHouseOptions([]);
@@ -813,11 +814,14 @@ export default function AdminOnboardingPage() {
               const label = house?.name || `House · ${house?.sport?.code ?? 'Sport'}`;
               return { key, label };
             }) ?? [];
+        if (canEditLegacyWelcome && !options.some((option) => option.key === 'LEGACY')) {
+          options.unshift({ key: 'LEGACY', label: 'Legacy · Pop-up global' });
+        }
         setHeadHouseOptions(options);
       } catch (error) {
         if (!active) return;
         console.error('[admin/onboarding] failed to load houses', error);
-        setHeadHouseOptions([]);
+        setHeadHouseOptions(canEditLegacyWelcome ? [{ key: 'LEGACY', label: 'Legacy · Pop-up global' }] : []);
         setHousesError('Falha ao carregar Houses atribuídas.');
       } finally {
         if (active) setHousesLoading(false);
@@ -827,7 +831,7 @@ export default function AdminOnboardingPage() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [user, canEditLegacyWelcome]);
 
   useEffect(() => {
     if (!headHouseOptions.length) return;

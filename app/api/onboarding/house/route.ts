@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing sequence payload' }, { status: 400 });
     }
     const houseKey = getHouseKey(body.sequence.house);
-    const authorized = await canEditHouseSequence(user.userId, user.role, houseKey);
+    const authorized = await canEditHouseSequence(user.userId, user.role, houseKey, user.username);
     if (!authorized) {
       return NextResponse.json({ success: false, error: 'Sem autorização para editar esta House.' }, { status: 403 });
     }

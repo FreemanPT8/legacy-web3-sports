@@ -164,6 +164,10 @@ type EducationXpData = {
 
 };
 
+type OnboardingResponse =
+  | { success: true; sequence: HouseOnboardingSequence }
+  | { success: false; error?: string };
+
 
 
 type ApiResponse =
@@ -919,6 +923,62 @@ const POPUP_LANGUAGE_FALLBACK: Record<SupportedCopyLang, SupportedCopyLang[]> = 
   pt: ['pt', 'en', 'es'],
   es: ['es', 'pt', 'en'],
   en: ['en', 'pt', 'es'],
+};
+
+const LEGACY_HOUSE_KEY = 'LEGACY';
+
+const LEGACY_WELCOME_LOCALIZED_SOURCE: Record<SupportedCopyLang, OnboardingPopupLocalizedFields> = {
+  pt: {
+    title: 'Bem-vindo ao Legacy',
+    body: 'Esta é a porta oficial. Lês isto primeiro para garantir onboarding justo antes de falares com o Head do teu desporto (ou antes de definirmos um por ti).',
+    highlights: [
+      'Legacy faz o brief inicial; o próximo pop-up vem do Head da tua House.',
+      'Se delegaste ou sugeriste um desporto novo, avisamos-te assim que a House estiver pronta.',
+    ],
+    badgeLabel: 'Legacy',
+    primaryCtaLabel: 'Começar pelos 3 passos',
+    secondaryCtaLabel: 'Conhecer as Houses',
+  },
+  es: {
+    title: 'Bienvenido a Legacy',
+    body: 'Esta es la puerta oficial. Todos empiezan aquí para que el onboarding sea justo antes de hablar con el Head de tu deporte (o antes de que el Legacy elija uno por ti).',
+    highlights: [
+      'Legacy da el briefing inicial; el próximo pop-up llegará del Head de tu House.',
+      'Si sugeriste un deporte nuevo o delegaste, te avisamos cuando la House esté lista.',
+    ],
+    badgeLabel: 'Legacy',
+    primaryCtaLabel: 'Empezar por los 3 pasos',
+    secondaryCtaLabel: 'Conocer las Houses',
+  },
+  en: {
+    title: 'Welcome to Legacy',
+    body: 'This is the official doorway. Legacy talks to you first so onboarding stays fair before your sport Head shows up (or before we assign one for you).',
+    highlights: [
+      'Legacy delivers the first briefing; the next pop-up comes from your House Head.',
+      'If you delegated or suggested a sport, we notify you as soon as that House is ready.',
+    ],
+    badgeLabel: 'Legacy',
+    primaryCtaLabel: 'Start with the 3 essentials',
+    secondaryCtaLabel: 'Explore the Houses',
+  },
+};
+
+const cloneLegacyLocalizedCopy = () => {
+  const payload: Record<SupportedCopyLang, OnboardingPopupLocalizedFields> = {
+    pt: {
+      ...LEGACY_WELCOME_LOCALIZED_SOURCE.pt,
+      highlights: [...(LEGACY_WELCOME_LOCALIZED_SOURCE.pt.highlights ?? [])],
+    },
+    es: {
+      ...LEGACY_WELCOME_LOCALIZED_SOURCE.es,
+      highlights: [...(LEGACY_WELCOME_LOCALIZED_SOURCE.es.highlights ?? [])],
+    },
+    en: {
+      ...LEGACY_WELCOME_LOCALIZED_SOURCE.en,
+      highlights: [...(LEGACY_WELCOME_LOCALIZED_SOURCE.en.highlights ?? [])],
+    },
+  };
+  return payload;
 };
 
 const resolvePopupCopyForLanguage = (popup: OnboardingPopupData, language: SupportedCopyLang): OnboardingPopupData => {
@@ -1919,6 +1979,37 @@ export default function EducationXpPage() {
     };
   }, [userSportId, language, fallbackHouseKey]);
 
+  useEffect(() => {
+    let active = true;
+    const loadLegacyWelcome = async () => {
+      try {
+        const response = await fetch(`/api/onboarding/house?house=${LEGACY_HOUSE_KEY}`, {
+          cache: 'no-store',
+        });
+        const data = (await response.json()) as OnboardingResponse;
+        if (!active) return;
+        if (!response.ok || !data.success) {
+          setLegacyPopupRaw(null);
+          return;
+        }
+        const published =
+          (data.sequence.popups ?? []).find((popup) => popup.status === 'published') ??
+          data.sequence.popups?.[0] ??
+          null;
+        setLegacyPopupRaw(published ?? null);
+      } catch (error) {
+        if (active) {
+          console.error('[education/xp] Failed to load Legacy welcome popup', error);
+          setLegacyPopupRaw(null);
+        }
+      }
+    };
+    void loadLegacyWelcome();
+    return () => {
+      active = false;
+    };
+  }, [legacyReloadKey]);
+
   const buildDemoQueue = useCallback(
     (houseName: string): OnboardingPopupData[] => {
       const applyHouse = (text: string) => text.replace('{{HOUSE}}', houseName);
@@ -2066,6 +2157,42 @@ export default function EducationXpPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [analyticsReloadKey, setAnalyticsReloadKey] = useState(0);
+  const [legacyPopupRaw, setLegacyPopupRaw] = useState<OnboardingPopupData | null>(null);
+  const [legacyReloadKey, setLegacyReloadKey] = useState(0);
+  const buildLegacyFallbackPopup = useCallback((): OnboardingPopupData => {
+    const localized = cloneLegacyLocalizedCopy();
+    const active = localized[language] ?? localized.en;
+    const xpLabel =
+      language === 'pt'
+        ? 'XP 0 - primeiro login'
+        : language === 'es'
+        ? 'XP 0 - primer inicio'
+        : 'XP 0 - first login';
+    return {
+      id: 'legacy-welcome-popup',
+      house: LEGACY_HOUSE_KEY,
+      xpGate: xpLabel,
+      trigger: { type: 'xp', value: 0, label: xpLabel },
+      title: active.title,
+      body: active.body,
+      highlights: active.highlights ?? [],
+      badgeLabel: active.badgeLabel ?? 'Legacy',
+      primaryCta: {
+        label:
+          active.primaryCtaLabel ??
+          (language === 'pt' ? 'Começar pelos 3 passos' : language === 'es' ? 'Empezar por los 3 pasos' : 'Start with the 3 steps'),
+        href: '/education/xp',
+      },
+      secondaryCta: {
+        label:
+          active.secondaryCtaLabel ??
+          (language === 'pt' ? 'Conhecer as Houses' : language === 'es' ? 'Conocer las Houses' : 'Explore the Houses'),
+        href: '/education/houses',
+      },
+      localized,
+      status: 'published',
+    };
+  }, [language]);
   const lastPersistedQueueHashRef = useRef<string | null>(null);
   const persistQueue = useCallback(
     async (payload: OnboardingPopupData[], signature: string | null) => {
@@ -2096,6 +2223,19 @@ const localizedQueueSource = useMemo(
   () => queueSource.map((popup) => resolvePopupCopyForLanguage(popup, language)),
   [queueSource, language],
 );
+  const localizedLegacyPopup = useMemo(
+    () => (legacyPopupRaw ? resolvePopupCopyForLanguage(legacyPopupRaw, language) : null),
+    [legacyPopupRaw, language],
+  );
+  const fallbackLegacyPopup = useMemo(() => buildLegacyFallbackPopup(), [buildLegacyFallbackPopup]);
+  const globalLegacyEntry = localizedLegacyPopup ?? fallbackLegacyPopup;
+  const queueWithLegacy = useMemo(() => {
+    if (!globalLegacyEntry) return localizedQueueSource;
+    const legacyId = globalLegacyEntry.id || 'legacy-welcome-popup';
+    const sanitized = { ...globalLegacyEntry, id: legacyId };
+    const rest = localizedQueueSource.filter((popup) => popup.id !== legacyId);
+    return [sanitized, ...rest];
+  }, [globalLegacyEntry, localizedQueueSource]);
   const computeQueueHash = useCallback((payload: OnboardingPopupData[]) => {
     return payload.map((popup) => popup.id).join('|');
   }, []);
@@ -2109,9 +2249,6 @@ const localizedQueueSource = useMemo(
         const response = await fetch(`/api/onboarding/house?house=${encodeURIComponent(houseKey)}`, {
           cache: 'no-store',
         });
-        type OnboardingResponse =
-          | { success: true; sequence: HouseOnboardingSequence }
-          | { success: false; error?: string };
         const data = (await response.json()) as OnboardingResponse;
         if (!active) return;
         if (!response.ok || !data.success) {
@@ -2521,8 +2658,8 @@ const localizedQueueSource = useMemo(
       ? 'Secuencia demo'
       : 'Demo sequence';
   const readyPopups = useMemo(
-    () => localizedQueueSource.filter((popup) => isTriggerSatisfied(popup)),
-    [localizedQueueSource, isTriggerSatisfied],
+    () => queueWithLegacy.filter((popup) => isTriggerSatisfied(popup)),
+    [queueWithLegacy, isTriggerSatisfied],
   );
   useEffect(() => {
     if (!user) return;
@@ -2533,11 +2670,8 @@ const localizedQueueSource = useMemo(
     void persistQueue(queueSnapshot, queueSeedSignature);
   }, [queueHash, queueSeedSignature, queueSnapshot, persistQueue, readyPopups.length, user]);
   const blockedPopups = useMemo(
-
-    () => localizedQueueSource.filter((popup) => !isTriggerSatisfied(popup)),
-
-    [localizedQueueSource, isTriggerSatisfied],
-
+    () => queueWithLegacy.filter((popup) => !isTriggerSatisfied(popup)),
+    [queueWithLegacy, isTriggerSatisfied],
   );
   const filteredBlockedPopups = useMemo(() => {
     if (blockedFilter === 'all') return blockedPopups;
@@ -2742,19 +2876,12 @@ const localizedQueueSource = useMemo(
   const readyIdSet = useMemo(() => new Set(readyPopups.map((popup) => popup.id)), [readyPopups]);
 
   const sequencePreview = useMemo(
-
     () =>
-
-      localizedQueueSource.map((popup) => ({
-
+      queueWithLegacy.map((popup) => ({
         popup,
-
         status: readyIdSet.has(popup.id) ? 'ready' : 'blocked',
-
       })),
-
-    [localizedQueueSource, readyIdSet],
-
+    [queueWithLegacy, readyIdSet],
   );
 
   const diagnostics = useMemo(
@@ -2853,6 +2980,7 @@ const localizedQueueSource = useMemo(
     setHouseReloadKey((key) => key + 1);
     setXpReloadKey((key) => key + 1);
     setComboReloadKey((key) => key + 1);
+    setLegacyReloadKey((key) => key + 1);
     refreshProgress();
     refreshQueue();
     refreshAnalytics();
