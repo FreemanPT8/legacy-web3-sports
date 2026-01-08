@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 type GovernanceResponse = {
   success: true;
@@ -45,14 +45,42 @@ export default function AdminHouseGovernancePage() {
   const [supportMode, setSupportMode] = useState<string>('async');
   const [governanceStatus, setGovernanceStatus] = useState<string>('active');
   const [saving, setSaving] = useState(false);
+  const [alerts, setAlerts] = useState<
+    { id: string; type: string; severity: 'low' | 'medium' | 'high'; createdAt: string }[]
+  >([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (data?.house) {
       setMonthlyCapacity(data.house.monthlyCapacity?.toString() ?? '');
       setSupportMode(data.house.supportMode ?? 'async');
       setGovernanceStatus(data.house.governanceStatus ?? 'active');
+      void loadAlerts(data.house.houseKey);
     }
   }, [data]);
+
+  const loadAlerts = async (houseKey: string) => {
+    setAlertsLoading(true);
+    setAlertsError(null);
+    try {
+      const response = await fetch(
+        `/api/admin/houses/alerts?house=${encodeURIComponent(houseKey)}&status=open`,
+        { cache: 'no-store' },
+      );
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Falha ao carregar alertas.');
+      }
+      setAlerts(payload.alerts ?? []);
+    } catch (error) {
+      console.error('[admin/houses/gov] alerts fetch failed', error);
+      setAlertsError('Falha ao carregar alertas.');
+      setAlerts([]);
+    } finally {
+      setAlertsLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!params?.houseId) return;
@@ -126,6 +154,68 @@ export default function AdminHouseGovernancePage() {
               Ajusta limites e modo de operação desta House sem sair do painel. Visual aligned com Education XP.
             </p>
           </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-2">
+          <Card className="border-white/10 bg-[#041524]/90">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <AlertTriangle className="h-5 w-5 text-amber-300" /> Alertas abertos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-white/80">
+              {alertsLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" /> A carregar alertas...
+                </div>
+              ) : alertsError ? (
+                <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-rose-100">
+                  {alertsError}
+                </div>
+              ) : alerts.length ? (
+                <div className="space-y-3">
+                  {alerts.slice(0, 3).map((alert) => (
+                    <div
+                      key={alert.id}
+                      className="rounded-2xl border border-white/10 bg-black/30 p-4 text-xs uppercase tracking-[0.3em] text-white/70"
+                    >
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span>{alert.type}</span>
+                        <span
+                          className={`rounded-full px-3 py-0.5 text-[10px] font-semibold ${
+                            alert.severity === 'high'
+                              ? 'bg-rose-500/20 text-rose-100'
+                              : alert.severity === 'medium'
+                              ? 'bg-amber-500/20 text-amber-100'
+                              : 'bg-emerald-500/20 text-emerald-100'
+                          }`}
+                        >
+                          {alert.severity}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-[11px] text-white/50">
+                        {new Date(alert.createdAt).toLocaleString('pt-PT')}
+                      </p>
+                    </div>
+                  ))}
+                  {alerts.length > 3 && (
+                    <p className="text-xs text-white/60">+{alerts.length - 3} alertas adicionais monitorizados.</p>
+                  )}
+                  <Button
+                    variant="outline"
+                    className="border-cyan-400/40 text-cyan-200 hover:border-cyan-300"
+                    onClick={() => window.open(`/admin/houses/alerts?house=${data.house.houseKey}`, '_blank')}
+                  >
+                    Abrir painel de alertas
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-white/70">
+                  Nenhum alerta aberto para esta House. Último fetch automático a cada 60s.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </section>
 
         <section className="grid gap-6 md:grid-cols-2">
