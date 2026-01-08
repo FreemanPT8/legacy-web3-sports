@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,17 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Plus, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SafeImage } from '@/app/components/SafeImage';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -47,6 +58,14 @@ interface ApiResponse {
   success: boolean;
   error?: string;
   houses?: AdminHouse[];
+}
+
+interface SportPermissionAdmin {
+  id: string;
+  displayName: string;
+  username: string | null;
+  role: 'Admin' | 'Super Admin';
+  hasPermission: boolean;
 }
 
 const STATUS_LABELS: Record<HouseStatus, string> = {
@@ -85,12 +104,91 @@ function StatusBadge({ status }: { status: HouseStatus }) {
 export default function AdminHousesPage() {
   const router = useRouter();
   const { user, getToken, loading: authLoading } = useAuth();
+  const { toast } = useToast();
 
   const [houses, setHouses] = useState<AdminHouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | HouseStatus>('all');
+  const [canCreateSports, setCanCreateSports] = useState(false);
+  const [checkingSportPermission, setCheckingSportPermission] =
+    useState(true);
+  const [sportModalOpen, setSportModalOpen] = useState(false);
+  const [newSportName, setNewSportName] = useState('');
+  const [newSportCode, setNewSportCode] = useState('');
+  const [newSportNamePt, setNewSportNamePt] = useState('');
+  const [newSportNameEs, setNewSportNameEs] = useState('');
+  const [creatingSport, setCreatingSport] = useState(false);
+  const [sportPermissionAdmins, setSportPermissionAdmins] = useState<
+    SportPermissionAdmin[]
+  >([]);
+  const [loadingSportAdmins, setLoadingSportAdmins] = useState(false);
+  const [updatingSportAdminId, setUpdatingSportAdminId] = useState<
+    string | null
+  >(null);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
+
+  const loadSportPermissionAdmins = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    setLoadingSportAdmins(true);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch('/api/admin/permissions', { headers });
+      const data = await response.json();
+
+      if (!response.ok || !data?.success || !Array.isArray(data.admins)) {
+        throw new Error(
+          data?.error || 'Failed to load admin permissions list.',
+        );
+      }
+
+      const rows: SportPermissionAdmin[] = (data.admins as any[])
+        .filter(
+          (admin) =>
+            admin.role === 'Super Admin' || admin.role === 'Admin',
+        )
+        .map((admin) => {
+          const effective = new Set<string>([
+            ...(admin.basePermissions || []),
+            ...(admin.extraPermissions || []),
+          ]);
+          const displayName =
+            admin.full_name || admin.username || admin.email || 'Admin';
+          return {
+            id: admin.id,
+            displayName,
+            username: admin.username,
+            role: admin.role,
+            hasPermission: effective.has('canCreateSports'),
+          } as SportPermissionAdmin;
+        })
+        .sort((a, b) => {
+          if (a.role === b.role) {
+            return a.displayName.localeCompare(b.displayName);
+          }
+          return a.role === 'Super Admin' ? -1 : 1;
+        });
+
+      setSportPermissionAdmins(rows);
+    } catch (err) {
+      console.error('Error loading sport permission admins:', err);
+      toast({
+        title: 'Erro ao carregar permissões',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível carregar a lista de admins.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingSportAdmins(false);
+    }
+  }, [getToken, isSuperAdmin, toast]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -137,6 +235,183 @@ export default function AdminHousesPage() {
 
     fetchHouses();
   }, [authLoading, user, getToken, router]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (isSuperAdmin) {
+      setCanCreateSports(true);
+      setCheckingSportPermission(false);
+      return;
+    }
+
+    let active = true;
+    const fetchPermission = async () => {
+      setCheckingSportPermission(true);
+      try {
+        const token = getToken();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const response = await fetch('/api/admin/permissions/self', {
+          headers,
+        });
+        const data = await response.json();
+        if (!active) return;
+        if (response.ok && data?.success && data.permissions) {
+          setCanCreateSports(!!data.permissions.canCreateSports);
+        } else {
+          setCanCreateSports(false);
+        }
+      } catch (err) {
+        if (active) setCanCreateSports(false);
+      } finally {
+        if (active) setCheckingSportPermission(false);
+      }
+    };
+
+    fetchPermission();
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user, getToken, isSuperAdmin]);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      loadSportPermissionAdmins();
+    }
+  }, [isSuperAdmin, loadSportPermissionAdmins]);
+
+  const resetSportForm = () => {
+    setNewSportName('');
+    setNewSportCode('');
+    setNewSportNamePt('');
+    setNewSportNameEs('');
+  };
+
+  const handleSportDialogChange = (open: boolean) => {
+    setSportModalOpen(open);
+    if (!open && !creatingSport) {
+      resetSportForm();
+    }
+  };
+
+  const handleCreateSport = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!newSportName.trim()) {
+      toast({
+        title: 'Nome obrigatório',
+        description: 'Define o nome do desporto antes de guardar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setCreatingSport(true);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const translations: Record<string, string> = {
+        en: newSportName.trim(),
+      };
+      if (newSportNamePt.trim()) {
+        translations.pt = newSportNamePt.trim();
+      }
+      if (newSportNameEs.trim()) {
+        translations.es = newSportNameEs.trim();
+      }
+
+      const trimmedCode = newSportCode.trim();
+
+      const response = await fetch('/api/admin/sports', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: newSportName.trim(),
+          code: trimmedCode || undefined,
+          translations,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Não foi possível criar o desporto.');
+      }
+
+      toast({
+        title: 'Desporto criado',
+        description:
+          'Já podes criar Houses com este desporto. Atualiza a página de criação se já estiver aberta.',
+      });
+      resetSportForm();
+      setSportModalOpen(false);
+    } catch (err) {
+      console.error('Error creating sport:', err);
+      toast({
+        title: 'Erro ao criar desporto',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível criar o desporto.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCreatingSport(false);
+    }
+  };
+
+  const handleToggleAdminSportPermission = async (
+    adminId: string,
+    enabled: boolean,
+  ) => {
+    setUpdatingSportAdminId(adminId);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(
+        `/api/admin/users/${adminId}/permissions`,
+        {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({
+            permissions: { canCreateSports: enabled },
+          }),
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(
+          data?.error || 'Não foi possível atualizar a permissão.',
+        );
+      }
+
+      toast({
+        title: 'Permissões atualizadas',
+        description: enabled
+          ? 'Este Admin pode agora criar novos desportos.'
+          : 'Permissão removida com sucesso.',
+      });
+      await loadSportPermissionAdmins();
+    } catch (err) {
+      console.error('Erro ao atualizar permissão de desporto:', err);
+      toast({
+        title: 'Erro ao atualizar permissão',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível atualizar esta permissão.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingSportAdminId(null);
+    }
+  };
+
+  const canShowSportActions = canCreateSports || isSuperAdmin;
 
   const filtered = useMemo(() => {
     return houses.filter((house) => {
@@ -247,6 +522,107 @@ export default function AdminHousesPage() {
             </div>
           </div>
         </section>
+
+        {canShowSportActions && (
+          <section className="grid gap-4 md:grid-cols-2">
+            {canCreateSports && (
+              <Card className="border border-white/10 bg-[#04131b] shadow-xl shadow-black/30">
+                <CardHeader>
+                  <CardTitle className="text-white">
+                    Adicionar novo desporto
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-300">
+                    Regista desportos que ainda não existem para desbloquear
+                    novas Houses oficiais.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="text-sm text-slate-300">
+                    <p>
+                      Super Admin e Admin com permissão podem criar desportos em
+                      segundos. As Houses passam a estar disponíveis para esse
+                      desporto assim que for criado.
+                    </p>
+                  </div>
+                  <Button
+                    className="bg-cyan-500 text-[#00111a] hover:bg-cyan-400"
+                    disabled={checkingSportPermission || creatingSport}
+                    onClick={() => setSportModalOpen(true)}
+                  >
+                    Criar desporto
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {isSuperAdmin && (
+              <Card className="border border-white/10 bg-[#031824] shadow-xl shadow-black/30">
+                <CardHeader>
+                  <CardTitle className="text-white">
+                    Permissão para criar desportos
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-300">
+                    Decide quais Admin podem criar novos desportos. Super Admin
+                    tem sempre acesso.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {loadingSportAdmins ? (
+                    <div className="flex items-center gap-2 text-slate-200">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      A carregar admins...
+                    </div>
+                  ) : sportPermissionAdmins.length === 0 ? (
+                    <p className="text-sm text-slate-300">
+                      Ainda não existem admins configurados.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {sportPermissionAdmins.map((admin) => (
+                        <div
+                          key={admin.id}
+                          className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-[#010d16] p-3"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-white">
+                              {admin.displayName}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {admin.role === 'Super Admin'
+                                ? 'Super Admin'
+                                : admin.username
+                                  ? `@${admin.username}`
+                                  : 'Admin'}
+                            </p>
+                          </div>
+                          {admin.role === 'Super Admin' ? (
+                            <span className="text-xs text-cyan-300">
+                              Sempre ativo
+                            </span>
+                          ) : (
+                            <Switch
+                              checked={admin.hasPermission}
+                              disabled={
+                                updatingSportAdminId === admin.id ||
+                                creatingSport
+                              }
+                              onCheckedChange={(value) =>
+                                handleToggleAdminSportPermission(
+                                  admin.id,
+                                  value,
+                                )
+                              }
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </section>
+        )}
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
@@ -544,5 +920,93 @@ export default function AdminHousesPage() {
         </section>
       </div>
     </div>
+      <Dialog open={sportModalOpen} onOpenChange={handleSportDialogChange}>
+        <DialogContent className="border border-white/10 bg-[#02121c] text-white sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Criar novo desporto</DialogTitle>
+            <DialogDescription className="text-slate-300">
+              Introduz o nome e, opcionalmente, códigos ou traduções. O
+              desporto fica logo disponível para novas Houses.
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleCreateSport}>
+            <div className="space-y-2">
+              <Label htmlFor="sport-name" className="text-xs uppercase">
+                Nome (EN) *
+              </Label>
+              <Input
+                id="sport-name"
+                value={newSportName}
+                onChange={(e) => setNewSportName(e.target.value)}
+                placeholder="Ex: Climbing"
+                className="border-white/20 bg-[#010b15] text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sport-code" className="text-xs uppercase">
+                Código curto (opcional)
+              </Label>
+              <Input
+                id="sport-code"
+                value={newSportCode}
+                onChange={(e) => setNewSportCode(e.target.value)}
+                placeholder="Ex: CLIMBING"
+                className="border-white/20 bg-[#010b15] text-white uppercase"
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="sport-name-pt" className="text-xs uppercase">
+                  Nome PT (opcional)
+                </Label>
+                <Input
+                  id="sport-name-pt"
+                  value={newSportNamePt}
+                  onChange={(e) => setNewSportNamePt(e.target.value)}
+                  placeholder="Escalada"
+                  className="border-white/20 bg-[#010b15] text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sport-name-es" className="text-xs uppercase">
+                  Nome ES (opcional)
+                </Label>
+                <Input
+                  id="sport-name-es"
+                  value={newSportNameEs}
+                  onChange={(e) => setNewSportNameEs(e.target.value)}
+                  placeholder="Escalada"
+                  className="border-white/20 bg-[#010b15] text-white"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60"
+                onClick={() => handleSportDialogChange(false)}
+                disabled={creatingSport}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={creatingSport}
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+              >
+                {creatingSport ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    A criar...
+                  </>
+                ) : (
+                  'Criar desporto'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
   );
 }

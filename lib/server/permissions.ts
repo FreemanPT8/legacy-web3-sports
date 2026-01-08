@@ -32,7 +32,7 @@ type LegacyAdminPermissionsRow = {
   user_id: string;
 } & Partial<Record<LegacyPermissionColumn, boolean | null>>;
 
-const LEGACY_COLUMN_MAP: Record<PermissionKey, LegacyPermissionColumn> = {
+const LEGACY_COLUMN_MAP: Partial<Record<PermissionKey, LegacyPermissionColumn>> = {
   canManageUsers: 'can_manage_users',
   canManageHouses: 'can_manage_houses',
   canManageHeads: 'can_manage_heads',
@@ -98,6 +98,7 @@ function mapRowToPermissions(
       'canManageSettings',
       base.canManageSettings,
     ),
+    canCreateSports: withOverrides('canCreateSports', base.canCreateSports),
   };
 }
 
@@ -112,6 +113,7 @@ function mapLegacyRowToPermissions(
 
   for (const key of PERMISSION_KEYS) {
     const column = LEGACY_COLUMN_MAP[key];
+    if (!column) continue;
     const value = row[column];
     if (typeof value === 'boolean') {
       (result as Record<PermissionKey, boolean>)[key] = value;

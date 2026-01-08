@@ -12,7 +12,8 @@ export type PermissionKey =
   | 'canManageForum'
   | 'canManageXP'
   | 'canManageAnalytics'
-  | 'canManageSettings';
+  | 'canManageSettings'
+  | 'canCreateSports';
 
 export type Permission = PermissionKey;
 
@@ -27,6 +28,7 @@ export const PERMISSION_KEYS: PermissionKey[] = [
   'canManageXP',
   'canManageAnalytics',
   'canManageSettings',
+  'canCreateSports',
 ];
 
 export interface AdminPermissions {
@@ -40,6 +42,7 @@ export interface AdminPermissions {
   canManageXP: boolean;
   canManageAnalytics: boolean;
   canManageSettings: boolean;
+  canCreateSports: boolean;
 }
 
 export const PERMISSION_LABELS: Record<PermissionKey, string> = {
@@ -53,6 +56,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   canManageXP: 'Manage XP (manual adjustments)',
   canManageAnalytics: 'View Analytics & Reports',
   canManageSettings: 'Manage Platform Settings',
+  canCreateSports: 'Create new sports',
 };
 
 export const ADMIN_TOGGLABLE_PERMISSIONS: PermissionKey[] = [...PERMISSION_KEYS];
@@ -68,6 +72,7 @@ export const SUPER_ADMIN_PERMISSIONS: AdminPermissions = {
   canManageXP: true,
   canManageAnalytics: true,
   canManageSettings: true,
+  canCreateSports: true,
 };
 
 const ADMIN_DEFAULT_PERMISSIONS: AdminPermissions = {
@@ -81,6 +86,7 @@ const ADMIN_DEFAULT_PERMISSIONS: AdminPermissions = {
   canManageXP: false,
   canManageAnalytics: false,
   canManageSettings: false,
+  canCreateSports: false,
 };
 
 const MEMBER_PERMISSIONS: AdminPermissions = {
@@ -94,6 +100,7 @@ const MEMBER_PERMISSIONS: AdminPermissions = {
   canManageXP: false,
   canManageAnalytics: false,
   canManageSettings: false,
+  canCreateSports: false,
 };
 
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, AdminPermissions> = {
