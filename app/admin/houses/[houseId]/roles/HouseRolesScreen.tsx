@@ -117,6 +117,7 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   const houseId = params?.houseId;
   const router = useRouter();
   const { user, getToken, loading: authLoading } = useAuth();
+  const { toast } = useToast();
 
   const [head, setHead] = useState<HeadUser | null>(null);
   const [moderators, setModerators] = useState<ModeratorUser[]>([]);
