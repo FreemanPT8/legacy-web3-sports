@@ -345,7 +345,6 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, error } = await query;
-*** End Patch
 
     if (error) {
       console.error('[sport-pools] Failed to load entries', error);
