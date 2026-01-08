@@ -55,10 +55,10 @@ export async function GET(request: NextRequest) {
     const totalHouses = houses.length;
     const totals = {
       houses: totalHouses,
-      active: houses.filter((house) => (house.status || '').toLowerCase() === 'active').length,
-      underConstruction: houses.filter((house) => (house.status || '').toLowerCase() === 'under_construction').length,
-      inDevelopment: houses.filter((house) => (house.status || '').toLowerCase().includes('development')).length,
-      paused: houses.filter((house) => (house.governance_status || '').toLowerCase() !== 'active').length,
+      active: houses.filter((house: any) => (house.status || '').toLowerCase() === 'active').length,
+      underConstruction: houses.filter((house: any) => (house.status || '').toLowerCase() === 'under_construction').length,
+      inDevelopment: houses.filter((house: any) => (house.status || '').toLowerCase().includes('development')).length,
+      paused: houses.filter((house: any) => (house.governance_status || '').toLowerCase() !== 'active').length,
     };
 
     const memberCountsByHouse = new Map<string, number>();
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
     const globalMemberCount = Array.from(memberCountsByHouse.values()).reduce((acc, cur) => acc + cur, 0);
     const topHouses = houses
-      .map((house) => ({
+      .map((house: any) => ({
         houseId: house.id,
         houseKey: house.house_key,
         name: house.name_i18n?.pt ?? house.name_i18n?.en ?? 'House',
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     for (const row of joinRequestsRes.data ?? []) {
       pendingRequests.set(row.house_id as string, Number(row.count) || 0);
     }
-    const capacityEntries: CapacityEntry[] = houses.map((house) => {
+    const capacityEntries: CapacityEntry[] = houses.map((house: any) => {
       const pending = pendingRequests.get(house.id) ?? 0;
       const monthlyCapacity = house.monthly_capacity ?? null;
       const status: CapacityEntry['status'] =
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     }
     const topAlerts = alerts
       .slice(0, 5)
-      .map((alert) => ({
+      .map((alert: any) => ({
         id: alert.id as string,
         houseId: alert.house_id as string,
         type: alert.type,
@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
       }));
 
     const onboardingIssues = (onboardingRes.data ?? [])
-      .filter((row) => Number(row.published_popups || 0) === 0)
-      .map((row) => ({
+      .filter((row: any) => Number(row.published_popups || 0) === 0)
+      .map((row: any) => ({
         houseKey: row.house_key,
         name: row.name_i18n?.pt ?? row.name_i18n?.en ?? row.house_key,
         publishedPopups: Number(row.published_popups || 0),
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
 
     const poolPressureMap = new Map<string, number>();
     for (const row of poolRes.data ?? []) {
-      const code = row.sport?.code || 'unknown';
+      const code = (row as any).sport?.code || 'unknown';
       poolPressureMap.set(code, (poolPressureMap.get(code) || 0) + 1);
     }
     const poolPressure = Array.from(poolPressureMap.entries())
