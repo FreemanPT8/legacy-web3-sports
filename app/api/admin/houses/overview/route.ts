@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
       memberCountsByHouse.set(row.house_id as string, Number(row.count) || 0);
     }
     const globalMemberCount = Array.from(memberCountsByHouse.values()).reduce((acc, cur) => acc + cur, 0);
-    const topHouses = houses
+    type TopHouse = { houseId: string; houseKey: string; name: string; members: number };
+    const topHouses: TopHouse[] = houses
       .map((house: any) => ({
         houseId: house.id,
         houseKey: house.house_key,
