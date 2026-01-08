@@ -216,7 +216,7 @@ async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | nu
     console.error('[sport-pools] Failed to load houses for head access', houseError);
     return null;
   }
-  const sportsSet = new Set(
+  const sportsSet = new Set<string>(
     (houseRows ?? [])
       .map((row: { sport_id?: string | null }) => row.sport_id)
       .filter((value: string | null | undefined): value is string => Boolean(value)),
