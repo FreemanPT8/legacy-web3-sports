@@ -6,10 +6,9 @@ import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
 import { loadHouseProfile, normalizeLocale } from '@/lib/houses/profile';
-import type { SupportedLocale } from '@/lib/houses/profile';
 import { HouseCTAForm } from './CTAForm';
+import { PrivateArea } from './PrivateArea';
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30',
@@ -221,6 +220,10 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
         </section>
       </main>
       <Footer />
+
+      <div className="py-12">
+        <PrivateArea houseKey={house.houseKey} recommendedContent={house.recommendedContent} culture={house.culture} />
+      </div>
     </div>
   );
 }

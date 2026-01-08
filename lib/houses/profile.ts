@@ -55,6 +55,12 @@ export type HouseProfilePayload = {
       };
     };
     culture: string[];
+    recommendedContent: {
+      id: string;
+      title: string;
+      triggerLabel: string;
+      body: string;
+    }[];
   };
 };
 
@@ -144,6 +150,23 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .eq('house_key', houseKey)
     .maybeSingle();
 
+  const { data: sequenceRow } = await supabaseAdmin
+    .from('house_onboarding_sequences')
+    .select('sequence')
+    .eq('house_key', houseKey)
+    .maybeSingle();
+
+  const recommendedContent =
+    (sequenceRow?.sequence?.popups as any[] | undefined)?.slice(0, 4).map((popup) => ({
+      id: popup.id || popup.title || Math.random().toString(),
+      title: popup.localized?.[normalizedLocale]?.title || popup.title || 'Conteúdo recomendado',
+      triggerLabel: popup.trigger?.label || popup.xpGate || 'Sequência oficial',
+      body:
+        popup.localized?.[normalizedLocale]?.body ||
+        popup.body ||
+        'Conteúdo recomendado pela House para acelerar o onboarding.',
+    })) ?? [];
+
   const identityTitle =
     getLocalizedValue<Record<string, string>>(house.hero_title_i18n, normalizedLocale)?.toString() ??
     (house.name_i18n?.[normalizedLocale] ?? house.name_i18n?.en ?? 'House');
@@ -225,6 +248,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
         },
       },
       culture,
+      recommendedContent,
     },
   };
 
