@@ -193,16 +193,6 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   }, [authLoading, user, canManage, router, fetchData]);
 
   useEffect(() => {
-    setTermConfirmed(false);
-    if (!houseId || !head || !user || head.id !== user.id) {
-      setTermContext(null);
-      setTermError(null);
-      return;
-    }
-    void loadHeadTermContext();
-  }, [houseId, head, user, loadHeadTermContext]);
-
-  useEffect(() => {
     if (!permissionFocus) return;
     const timer = setTimeout(() => {
       document
@@ -247,6 +237,16 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
       setTermLoading(false);
     }
   }, [getToken, head, houseId, user]);
+
+  useEffect(() => {
+    setTermConfirmed(false);
+    if (!houseId || !head || !user || head.id !== user.id) {
+      setTermContext(null);
+      setTermError(null);
+      return;
+    }
+    void loadHeadTermContext();
+  }, [houseId, head, user, loadHeadTermContext]);
 
   const handleAcceptTerm = async () => {
     if (!houseId || !termContext) return;
