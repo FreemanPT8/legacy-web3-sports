@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Loader2,
@@ -11,7 +12,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCcw,
-  Filter,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -333,6 +333,34 @@ export default function SportPoolsAdminPage() {
     return `Atribuir House · ${base}`;
   }, [assignModalEntry]);
 
+  const handleCopyEmail = useCallback(
+    async (value?: string | null) => {
+      if (!value) {
+        toast({
+          title: 'Sem email disponível',
+          description: 'Esta entrada não tem email registado.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      try {
+        await navigator.clipboard?.writeText(value);
+        toast({
+          title: 'Email copiado',
+          description: value,
+        });
+      } catch (error) {
+        console.error('clipboard error', error);
+        toast({
+          title: 'Não foi possível copiar',
+          description: 'Copia manualmente: ' + value,
+          variant: 'destructive',
+        });
+      }
+    },
+    [toast],
+  );
+
   const formatDate = (value?: string | null) => {
     if (!value) return '—';
     try {
@@ -641,33 +669,67 @@ export default function SportPoolsAdminPage() {
                           {entry.countryCode ? <span>País alvo: {entry.countryCode}</span> : null}
                         </div>
                       </div>
-                      {entry.status === 'pending' ? (
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            className="bg-gradient-to-r from-[#fdd87c] to-[#fcb045] text-[#1b1400]"
-                            onClick={() => handleOpenAssign(entry)}
-                            disabled={housesLoading || sportsLoading}
-                          >
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Atribuir House
-                          </Button>
+                      <div className="flex flex-wrap gap-2">
+                        {entry.status === 'pending' ? (
+                          <>
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-[#fdd87c] to-[#fcb045] text-[#1b1400]"
+                              onClick={() => handleOpenAssign(entry)}
+                              disabled={housesLoading || sportsLoading}
+                            >
+                              <UserPlus className="mr-2 h-4 w-4" />
+                              Atribuir House
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-white/30 text-white hover:border-amber-300/60 hover:text-amber-200"
+                              onClick={() => {
+                                setDismissEntry(entry);
+                                setDismissNote('');
+                              }}
+                            >
+                              <Slash className="mr-2 h-4 w-4" />
+                              Arquivar
+                            </Button>
+                          </>
+                        ) : null}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-white/20 text-white hover:border-cyan-300/60 hover:text-cyan-200"
+                          onClick={() => void handleCopyEmail(entry.user?.email ?? null)}
+                          disabled={!entry.user?.email}
+                        >
+                          Copiar email
+                        </Button>
+                        {entry.user ? (
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-white/30 text-white hover:border-amber-300/60 hover:text-amber-200"
-                            onClick={() => {
-                              setDismissEntry(entry);
-                              setDismissNote('');
-                            }}
+                            className="border-white/20 text-white hover:border-cyan-300/60 hover:text-cyan-200"
+                            asChild
                           >
-                            <Slash className="mr-2 h-4 w-4" />
-                            Arquivar
+                            <Link
+                              href={
+                                entry.user
+                                  ? `/admin/users?prefill=${encodeURIComponent(
+                                      entry.user.username ||
+                                        entry.user.email ||
+                                        entry.user.fullName ||
+                                        '',
+                                    )}`
+                                  : '/admin/users'
+                              }
+                            >
+                              Ver utilizador
+                            </Link>
                           </Button>
-                        </div>
-                      ) : null}
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                    <div className="mt-3 grid gap-3 md:grid-cols-4">
                       <div className="rounded-xl border border-white/5 bg-white/5 p-3">
                         <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Pool</p>
                         <p className="text-sm text-white">{POOL_LABELS[entry.poolType]}</p>
@@ -679,6 +741,18 @@ export default function SportPoolsAdminPage() {
                       <div className="rounded-xl border border-white/5 bg-white/5 p-3">
                         <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Metadata</p>
                         <p className="text-xs text-slate-300 truncate">{JSON.stringify(entry.metadata)}</p>
+                      </div>
+                      <div className="rounded-xl border border-white/5 bg-white/5 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Contexto</p>
+                        <p className="text-sm text-slate-200">
+                          {entry.poolType === 'suggestion'
+                            ? `Sugestão: ${entry.suggestedSportName ?? 'Novo desporto'}${
+                                entry.suggestedCountryCode ? ` · ${entry.suggestedCountryCode}` : ''
+                              }`
+                            : entry.poolType === 'sport_pending'
+                            ? `Sem House ativa · ${entry.countryCode ?? entry.user?.primaryCountryCode ?? 'Sem país'}`
+                            : `Sem desporto definido · ${entry.countryCode ?? entry.user?.country ?? 'Sem país'}`}
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -89,11 +89,12 @@ type StatsUsers = {
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading, getToken } = useAuth();
   const { toast } = useToast();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('prefill') ?? '');
   const [roleFilters, setRoleFilters] = useState<UserRole[]>([
     'Super Admin',
     'Admin',
