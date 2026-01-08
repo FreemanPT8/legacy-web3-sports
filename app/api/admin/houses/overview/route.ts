@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         name: house.name_i18n?.pt ?? house.name_i18n?.en ?? 'House',
         members: memberCountsByHouse.get(house.id) ?? 0,
       }))
-      .sort((a, b) => b.members - a.members)
+      .sort((a, b) => (b.members || 0) - (a.members || 0))
       .slice(0, 5);
 
     const pendingRequests = new Map<string, number>();
