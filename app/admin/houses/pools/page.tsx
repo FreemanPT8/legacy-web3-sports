@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCcw,
+  FileDown,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -327,6 +328,75 @@ export default function SportPoolsAdminPage() {
     setRefreshing(false);
   };
 
+  const handleExportCsv = useCallback(() => {
+    if (!filteredEntries.length) {
+      toast({
+        title: 'Sem dados para exportar',
+        description: 'Filtra pelo menos uma entrada antes de exportar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const headers = [
+      'entry_id',
+      'pool_type',
+      'status',
+      'created_at',
+      'assigned_at',
+      'user_full_name',
+      'user_email',
+      'country',
+      'sport_name',
+      'suggested_sport',
+      'notes',
+    ];
+
+    const escapeCell = (value: string | null | undefined) => {
+      if (!value) return '""';
+      const normalized = value.replace(/"/g, '""');
+      return `"${normalized}"`;
+    };
+
+    const rows = filteredEntries.map((entry) => {
+      const country =
+        entry.countryCode ??
+        entry.suggestedCountryCode ??
+        entry.user?.primaryCountryCode ??
+        entry.user?.country ??
+        '';
+      const sportName = entry.sport?.name ?? entry.suggestedSportName ?? '';
+      return [
+        entry.id,
+        entry.poolType,
+        entry.status,
+        entry.createdAt ?? '',
+        entry.assignedAt ?? '',
+        entry.user?.fullName ?? entry.user?.username ?? '',
+        entry.user?.email ?? '',
+        country,
+        sportName,
+        entry.suggestedSportName ?? '',
+        entry.notes ?? '',
+      ]
+        .map(escapeCell)
+        .join(',');
+    });
+
+    const csvContent = [headers.map((header) => `"${header}"`).join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sport-pools-${poolType}-${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({
+      title: 'Exportação gerada',
+      description: `Incluímos ${filteredEntries.length} entradas.`,
+    });
+  }, [filteredEntries, poolType, toast]);
+
   const assignDialogTitle = useMemo(() => {
     if (!assignModalEntry) return 'Atribuir House';
     const base = assignModalEntry.user?.fullName || assignModalEntry.user?.username || 'Utilizador';
@@ -610,16 +680,28 @@ export default function SportPoolsAdminPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void handleManualRefresh()}
-              disabled={loading || refreshing}
-              className="border-white/20 text-white hover:border-cyan-300/60 hover:text-cyan-200"
-            >
-              <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Recarregar
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleManualRefresh()}
+                disabled={loading || refreshing}
+                className="border-white/20 text-white hover:border-cyan-300/60 hover:text-cyan-200"
+              >
+                <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Recarregar
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleExportCsv()}
+                disabled={!filteredEntries.length}
+                className="border-white/20 text-white hover:border-cyan-300/60 hover:text-cyan-200"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar CSV
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4 p-6">
