@@ -36,7 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     return NextResponse.json({ success: false, error: 'Failed to verify membership.' }, { status: 500 });
   }
 
-  const roles = membership?.map((row) => row.role) ?? [];
+  const roles = membership?.map((row: { role: string }) => row.role) ?? [];
   const isMember = roles.length > 0;
 
   return NextResponse.json({
