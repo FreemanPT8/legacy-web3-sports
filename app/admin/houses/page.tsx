@@ -467,8 +467,9 @@ export default function AdminHousesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] text-white px-4 py-10 md:px-10">
-      <div className="mx-auto w-full max-w-6xl space-y-10">
+    <>
+      <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] text-white px-4 py-10 md:px-10">
+        <div className="mx-auto w-full max-w-6xl space-y-10">
         <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] p-6 md:p-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-4 max-w-3xl">
@@ -918,8 +919,8 @@ export default function AdminHousesPage() {
             </CardContent>
           </Card>
         </section>
+        </div>
       </div>
-    </div>
       <Dialog open={sportModalOpen} onOpenChange={handleSportDialogChange}>
         <DialogContent className="border border-white/10 bg-[#02121c] text-white sm:max-w-xl">
           <DialogHeader>
@@ -1008,5 +1009,6 @@ export default function AdminHousesPage() {
           </form>
         </DialogContent>
       </Dialog>
+    </>
   );
 }
