@@ -99,18 +99,150 @@ async function markPoolNotificationsHandled(entryId?: string | null) {
   }
 }
 
-async function countEntries(pool: PoolType, status: PoolStatus) {
+async function countEntries(pool: PoolType, status: PoolStatus, headAccess?: HeadAccessContext | null) {
   if (!supabaseAdmin) return 0;
-  const { count, error } = await supabaseAdmin
-    .from('sport_pool_entries')
-    .select('*', { head: true, count: 'exact' })
-    .eq('pool_type', pool)
-    .eq('status', status);
-  if (error) {
-    console.error('[sport-pools] Failed to count entries', { pool, status, error });
+  if (!headAccess) {
+    const { count, error } = await supabaseAdmin
+      .from('sport_pool_entries')
+      .select('*', { head: true, count: 'exact' })
+      .eq('pool_type', pool)
+      .eq('status', status);
+    if (error) {
+      console.error('[sport-pools] Failed to count entries', { pool, status, error });
+      return 0;
+    }
+    return count ?? 0;
+  }
+
+  if (!headAccess.sportIds.length) {
     return 0;
   }
-  return count ?? 0;
+
+  const { data, error } = await supabaseAdmin
+    .from('sport_pool_entries')
+    .select(
+      `
+        sport_id,
+        country_code,
+        suggested_country_code,
+        user:users(
+          country,
+          primary_country_code
+        )
+      `,
+    )
+    .eq('pool_type', pool)
+    .eq('status', status)
+    .in('sport_id', headAccess.sportIds);
+
+  if (error) {
+    console.error('[sport-pools] Failed to count entries for head access', { pool, status, error });
+    return 0;
+  }
+
+  const rows = (data ?? []) as Pick<
+    SportPoolEntryRow,
+    'sport_id' | 'country_code' | 'suggested_country_code' | 'user'
+  >[];
+  return rows.filter((row) => shouldExposeEntry(row, headAccess)).length;
+}
+
+type HeadAccessContext = {
+  sportIds: string[];
+  sportIdSet: Set<string>;
+  countriesBySport: Map<string, Set<string>>;
+};
+
+function normalizeCountryCode(value?: string | null) {
+  if (!value) return null;
+  return value.trim().toUpperCase() || null;
+}
+
+function shouldExposeEntry(
+  row: {
+    sport_id: string | null;
+    country_code: string | null;
+    suggested_country_code?: string | null;
+    user?: { country?: string | null; primary_country_code?: string | null } | null;
+  },
+  access: HeadAccessContext,
+) {
+  const sportId = row.sport_id;
+  if (!sportId || !access.sportIdSet.has(sportId)) return false;
+  const candidateCountry =
+    normalizeCountryCode(row.country_code) ||
+    normalizeCountryCode(row.user?.primary_country_code) ||
+    normalizeCountryCode(row.user?.country) ||
+    normalizeCountryCode(row.suggested_country_code);
+  if (!candidateCountry) return true;
+  const existingCountries = access.countriesBySport.get(sportId);
+  if (!existingCountries) return true;
+  return !existingCountries.has(candidateCountry);
+}
+
+async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | null> {
+  if (!supabaseAdmin) return null;
+  const { data: adminAssignments, error: adminError } = await supabaseAdmin
+    .from('admin_assignments')
+    .select('id')
+    .eq('user_id', userId);
+  if (adminError) {
+    console.error('[sport-pools] Failed to load admin assignments for head access', adminError);
+    return null;
+  }
+  const adminIds = (adminAssignments ?? []).map((row) => row.id).filter(Boolean) as string[];
+  if (!adminIds.length) return null;
+
+  const { data: headRows, error: headError } = await supabaseAdmin
+    .from('house_heads')
+    .select('house_id')
+    .in('admin_id', adminIds);
+  if (headError) {
+    console.error('[sport-pools] Failed to load head houses', headError);
+    return null;
+  }
+  const houseIds = (headRows ?? []).map((row) => row.house_id).filter(Boolean) as string[];
+  if (!houseIds.length) return null;
+
+  const { data: houseRows, error: houseError } = await supabaseAdmin
+    .from('houses_of_sports')
+    .select('id, sport_id')
+    .in('id', houseIds);
+  if (houseError) {
+    console.error('[sport-pools] Failed to load houses for head access', houseError);
+    return null;
+  }
+  const sportsSet = new Set(
+    (houseRows ?? [])
+      .map((row) => row.sport_id)
+      .filter((value): value is string => !!value),
+  );
+  if (!sportsSet.size) return null;
+
+  const sportIds = Array.from(sportsSet);
+  const { data: sportHouseRows, error: sportHouseError } = await supabaseAdmin
+    .from('houses_of_sports')
+    .select('sport_id, country_code')
+    .in('sport_id', sportIds);
+  if (sportHouseError) {
+    console.error('[sport-pools] Failed to map sport houses for head access', sportHouseError);
+  }
+  const countriesBySport = new Map<string, Set<string>>();
+  for (const row of sportHouseRows ?? []) {
+    const sportId = row.sport_id;
+    if (!sportId) continue;
+    const countryCode = normalizeCountryCode(row.country_code);
+    if (!countryCode) continue;
+    if (!countriesBySport.has(sportId)) {
+      countriesBySport.set(sportId, new Set());
+    }
+    countriesBySport.get(sportId)!.add(countryCode);
+  }
+  return {
+    sportIds,
+    sportIdSet: sportsSet,
+    countriesBySport,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -124,13 +256,41 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const { user } = authResult;
+  const isSuperAdmin = user?.role === 'Super Admin';
   const { searchParams } = new URL(request.url);
   const poolType = normalizePool(searchParams.get('pool'));
   const status = normalizeStatus(searchParams.get('status'));
   const limit = clampLimit(searchParams.get('limit'));
+  let headAccess: HeadAccessContext | null = null;
+
+  if (!isSuperAdmin) {
+    if (poolType !== 'sport_pending') {
+      return NextResponse.json(
+        { success: false, error: 'Heads only have access to the sport pending pool.' },
+        { status: 403 },
+      );
+    }
+    headAccess = await resolveHeadAccess(user!.userId);
+    if (!headAccess) {
+      return NextResponse.json({
+        success: true,
+        pool: poolType,
+        status,
+        total: 0,
+        totals: {
+          pending: 0,
+          assigned: 0,
+          dismissed: 0,
+        },
+        entries: [],
+      });
+    }
+  }
 
   try {
-    const { data, error } = await supabaseAdmin
+    const fetchLimit = isSuperAdmin ? limit : Math.min(limit * 5, 500);
+    let query = supabaseAdmin
       .from('sport_pool_entries')
       .select(
         `
@@ -178,7 +338,14 @@ export async function GET(request: NextRequest) {
       .eq('pool_type', poolType)
       .eq('status', status)
       .order('created_at', { ascending: true })
-      .limit(limit);
+      .limit(fetchLimit);
+
+    if (headAccess) {
+      query = query.in('sport_id', headAccess.sportIds);
+    }
+
+    const { data, error } = await query;
+*** End Patch
 
     if (error) {
       console.error('[sport-pools] Failed to load entries', error);
@@ -188,7 +355,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const entries = ((data ?? []) as SportPoolEntryRow[]).map((row) => ({
+    let filteredRows = ((data ?? []) as SportPoolEntryRow[]);
+    if (headAccess) {
+      filteredRows = filteredRows.filter((row) => shouldExposeEntry(row, headAccess!));
+    }
+    const entries = filteredRows.slice(0, limit).map((row) => ({
       id: row.id,
       poolType: row.pool_type as PoolType,
       status: row.status as PoolStatus,
@@ -236,7 +407,7 @@ export async function GET(request: NextRequest) {
     }));
 
     const [pendingCount, assignedCount, dismissedCount] = await Promise.all(
-      STATUS_TYPES.map((state) => countEntries(poolType, state as PoolStatus)),
+      STATUS_TYPES.map((state) => countEntries(poolType, state as PoolStatus, headAccess)),
     );
 
     return NextResponse.json({

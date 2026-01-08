@@ -172,8 +172,8 @@ export default function SportPoolsAdminPage() {
   const [highlightEntryId, setHighlightEntryId] = useState<string | null>(() => searchParams.get('entry'));
   const entryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  const isAuthorized =
-    !!user && (user.role === 'Admin' || user.role === 'Super Admin');
+  const isSuperAdmin = user?.role === 'Super Admin';
+  const isAuthorized = !!user && (user.role === 'Admin' || isSuperAdmin);
 
   const fetchEntries = useCallback(async () => {
     if (!isAuthorized) return;
@@ -460,6 +460,12 @@ export default function SportPoolsAdminPage() {
     router.replace(`${pathname}${queryString ? `?${queryString}` : ''}`, { scroll: false });
   }, [poolType, statusFilter, searchQuery, highlightEntryId, sortOrder, pathname, router]);
 
+  useEffect(() => {
+    if (!isSuperAdmin && poolType !== 'sport_pending') {
+      setPoolType('sport_pending');
+    }
+  }, [isSuperAdmin, poolType]);
+
   const assignDialogTitle = useMemo(() => {
     if (!assignModalEntry) return 'Atribuir House';
     const base = assignModalEntry.user?.fullName || assignModalEntry.user?.username || 'Utilizador';
@@ -643,7 +649,7 @@ export default function SportPoolsAdminPage() {
           </div>
           <div className="flex items-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
             <Shield className="h-5 w-5 text-cyan-300" />
-            <span>Visível apenas para Admins / Super Admins.</span>
+            <span>Super Admins vêem tudo; Heads apenas os desportos que lideram e países sem House ativa.</span>
           </div>
         </div>
       </section>
@@ -686,14 +692,22 @@ export default function SportPoolsAdminPage() {
               <p className="text-sm text-slate-400 mt-1">{POOL_LABELS[poolType]}</p>
             </div>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <Select value={poolType} onValueChange={(value) => setPoolType(value as PoolType)}>
+              <Select
+                value={poolType}
+                onValueChange={(value) => setPoolType(value as PoolType)}
+                disabled={!isSuperAdmin}
+              >
                 <SelectTrigger className="w-full border-white/10 bg-[#020d15] text-left text-white md:w-60">
                   <SelectValue placeholder="Seleciona a pool" />
                 </SelectTrigger>
                 <SelectContent className="border-white/10 bg-[#03131d] text-white">
-                  <SelectItem value="no_sport">Pool sem desporto</SelectItem>
+                  <SelectItem value="no_sport" disabled={!isSuperAdmin}>
+                    Pool sem desporto
+                  </SelectItem>
                   <SelectItem value="sport_pending">A aguardar House</SelectItem>
-                  <SelectItem value="suggestion">Sugestões</SelectItem>
+                  <SelectItem value="suggestion" disabled={!isSuperAdmin}>
+                    Sugestões
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as PoolStatus)}>
