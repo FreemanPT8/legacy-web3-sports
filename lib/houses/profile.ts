@@ -65,9 +65,9 @@ function getLocalizedValue<T>(value: Record<string, T> | null | undefined, local
 
 function getAudience(value: unknown, locale: SupportedLocale) {
   const localized =
-    (getLocalizedValue<Record<string, unknown>>(value as Record<string, unknown>, locale) ??
-      (value as Record<string, unknown>) ??
-      {}) as Record<string, unknown>;
+    (getLocalizedValue<Record<string, any>>(value as Record<string, any>, locale) ??
+      (value as Record<string, any>) ??
+      {}) as Record<string, any>;
   const listFor = Array.isArray(localized.for) ? (localized.for as string[]) : [];
   const listNotFor = Array.isArray(localized.not_for) ? (localized.not_for as string[]) : [];
   return {
