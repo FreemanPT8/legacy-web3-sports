@@ -101,8 +101,7 @@ export async function POST(request: NextRequest) {
   try {
     const { data: sportsByName, error: nameError } = await supabaseAdmin
       .from('sports')
-      .select('id, name_i18n')
-      .returns<SportRow[]>();
+      .select('id, name_i18n');
 
     if (nameError) {
       console.error(
@@ -111,7 +110,8 @@ export async function POST(request: NextRequest) {
       );
     } else {
       const normalizedLower = normalizedName.toLowerCase();
-      const duplicate = (sportsByName ?? []).some((row: SportRow) => {
+      const typedSports = (sportsByName as SportRow[] | null) ?? [];
+      const duplicate = typedSports.some((row) => {
         const names = row?.name_i18n ?? null;
         if (!names) return false;
         return Object.values(names).some(
