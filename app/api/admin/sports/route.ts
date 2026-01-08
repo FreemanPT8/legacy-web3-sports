@@ -11,6 +11,11 @@ interface CreateSportBody {
   translations?: Record<string, string | undefined>;
 }
 
+type SportRow = {
+  id: string;
+  name_i18n: Record<string, string> | null;
+};
+
 function normalizeLocaleKey(raw?: string | null): SupportedLocale {
   if (!raw) return 'en';
   const lower = raw.toLowerCase();
@@ -96,7 +101,8 @@ export async function POST(request: NextRequest) {
   try {
     const { data: sportsByName, error: nameError } = await supabaseAdmin
       .from('sports')
-      .select('id, name_i18n');
+      .select('id, name_i18n')
+      .returns<SportRow[]>();
 
     if (nameError) {
       console.error(
@@ -105,8 +111,8 @@ export async function POST(request: NextRequest) {
       );
     } else {
       const normalizedLower = normalizedName.toLowerCase();
-      const duplicate = (sportsByName ?? []).some((row) => {
-        const names = (row?.name_i18n as Record<string, string> | null) ?? null;
+      const duplicate = (sportsByName ?? []).some((row: SportRow) => {
+        const names = row?.name_i18n ?? null;
         if (!names) return false;
         return Object.values(names).some(
           (value) =>
