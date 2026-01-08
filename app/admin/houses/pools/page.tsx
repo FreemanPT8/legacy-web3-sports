@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2,
   Shield,
@@ -120,6 +120,7 @@ const STATUS_BADGES: Record<PoolStatus, string> = {
 export default function SportPoolsAdminPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { toast } = useToast();
   const { user, loading: authLoading, getToken } = useAuth();
 
@@ -422,6 +423,21 @@ export default function SportPoolsAdminPage() {
       return () => clearTimeout(timer);
     }
   }, [highlightEntryId, filteredEntries]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set('pool', poolType);
+    params.set('status', statusFilter);
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      params.set('q', trimmedQuery);
+    }
+    if (highlightEntryId) {
+      params.set('entry', highlightEntryId);
+    }
+    const queryString = params.toString();
+    router.replace(`${pathname}${queryString ? `?${queryString}` : ''}`, { scroll: false });
+  }, [poolType, statusFilter, searchQuery, highlightEntryId, pathname, router]);
 
   const assignDialogTitle = useMemo(() => {
     if (!assignModalEntry) return 'Atribuir House';
