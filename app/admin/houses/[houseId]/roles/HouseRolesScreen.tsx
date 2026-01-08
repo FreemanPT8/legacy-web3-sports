@@ -18,7 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SafeImage } from '@/app/components/SafeImage';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Shield, User, Users } from 'lucide-react';
+import { Loader2, Shield, User, Users, RefreshCcw } from 'lucide-react';
 
 type ModeratorPermissions = {
   canManageMissions?: boolean;
@@ -54,6 +54,20 @@ type HeadTermContext = {
   acceptedAt: string | null;
   needsAcceptance: boolean;
   term: { content: string } | null;
+};
+
+type HeadTermHistoryEntry = {
+  id: string;
+  version: string;
+  acceptedAt: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  user: {
+    id: string;
+    name: string | null;
+    username: string | null;
+    email: string | null;
+  } | null;
 };
 
 const panelBackground =
@@ -142,6 +156,7 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   const [termError, setTermError] = useState<string | null>(null);
   const [termConfirmed, setTermConfirmed] = useState(false);
   const [acceptingTerm, setAcceptingTerm] = useState(false);
+  const [showTermModal, setShowTermModal] = useState(false);
 
   const canManage = user && (user.role === 'Super Admin' || user.role === 'Admin');
   const isSuperAdmin = user?.role === 'Super Admin';
@@ -208,6 +223,10 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
     () => moderators.filter((m) => m.permissions)?.length ?? 0,
     [moderators],
   );
+
+  const [termHistory, setTermHistory] = useState<HeadTermHistoryEntry[]>([]);
+  const [termHistoryLoading, setTermHistoryLoading] = useState(false);
+  const [termHistoryError, setTermHistoryError] = useState<string | null>(null);
 
   const loadHeadTermContext = useCallback(async () => {
     if (!houseId || !head || !user || head.id !== user.id) return;
@@ -279,6 +298,10 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
         needsAcceptance: false,
         term: null,
       });
+      setShowTermModal(false);
+      if (isSuperAdmin) {
+        void loadTermHistory();
+      }
     } catch (err) {
       console.error('[Head term] accept error', err);
       toast({
@@ -291,8 +314,13 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
     }
   };
 
-  const needsTermAcceptance =
-    Boolean(termContext?.needsAcceptance) && Boolean(head && user && head.id === user.id);
+const needsTermAcceptance =
+  Boolean(termContext?.needsAcceptance) && Boolean(head && user && head.id === user.id);
+const allowManualTermView = Boolean(head && user && head.id === user.id);
+const termModalVisible = (needsTermAcceptance && allowManualTermView) || (showTermModal && allowManualTermView);
+const acceptedAtFormatted = termContext?.acceptedAt
+  ? new Date(termContext.acceptedAt).toLocaleString('pt-PT')
+  : null;
 
   const handleAssignHead = async () => {
     if (!headInput.trim() || !houseId) return;
@@ -464,9 +492,47 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
     );
   }
 
+  useEffect(() => {
+    if (!allowManualTermView) {
+      setShowTermModal(false);
+    }
+  }, [allowManualTermView]);
+
+  const loadTermHistory = useCallback(async () => {
+    if (!houseId || !isSuperAdmin) return;
+    const token = getToken();
+    if (!token) return;
+    try {
+      setTermHistoryLoading(true);
+      setTermHistoryError(null);
+      const response = await fetch(`/api/admin/head-terms/history?houseId=${houseId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Falha ao carregar histórico.');
+      }
+      setTermHistory(payload.entries ?? []);
+    } catch (err) {
+      console.error('[Head term] history error', err);
+      setTermHistoryError(err instanceof Error ? err.message : 'Não foi possível carregar histórico.');
+    } finally {
+      setTermHistoryLoading(false);
+    }
+  }, [getToken, houseId, isSuperAdmin]);
+
+  useEffect(() => {
+    if (!isSuperAdmin) {
+      setTermHistory([]);
+      setTermHistoryError(null);
+      return;
+    }
+    void loadTermHistory();
+  }, [isSuperAdmin, loadTermHistory]);
+
   return (
     <>
-      {needsTermAcceptance && (
+      {termModalVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-10">
           <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-[#041021] via-[#031525] to-[#020b11] p-6 shadow-[0_45px_120px_rgba(1,10,26,0.65)]">
             <div className="mb-4 space-y-1 text-white">
@@ -527,6 +593,17 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
               >
                 Recarregar termo
               </Button>
+              {!needsTermAcceptance && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-white/70 hover:text-white"
+                  onClick={() => setShowTermModal(false)}
+                  disabled={acceptingTerm}
+                >
+                  Fechar
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -555,6 +632,118 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
             </p>
           )}
         </section>
+
+        <Card className="border border-white/10 bg-[#04121a]/80 rounded-2xl">
+          <CardHeader className="flex flex-col gap-2 text-white">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-cyan-300" />
+              <CardTitle className="text-white">Termo de responsabilidade</CardTitle>
+            </div>
+            <CardDescription className="text-xs tracking-[0.3em] uppercase text-white/40">
+              Governação Legacy
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-white/70">
+            {termContext ? (
+              <>
+                <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.35em] text-cyan-200">
+                  <span>Versão {termContext.latestVersion}</span>
+                  <span>
+                    Estado:{' '}
+                    {needsTermAcceptance ? (
+                      <span className="text-amber-300">pendente</span>
+                    ) : (
+                      <span className="text-emerald-300">aceite</span>
+                    )}
+                  </span>
+                </div>
+                <p className="text-white/80">
+                  {needsTermAcceptance
+                    ? 'Aceita o termo antes de gerir moderadores ou pop-ups.'
+                    : acceptedAtFormatted
+                    ? `Aceite em ${acceptedAtFormatted}.`
+                    : 'Aceite numa versão anterior.'}
+                </p>
+                {!allowManualTermView && (
+                  <p className="text-xs text-white/50">
+                    Apenas o Head designado consegue visualizar e aceitar o termo.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-white/60">
+                Ainda sem dados sobre o termo desta House. Define primeiro um Head ou recarrega esta página.
+              </p>
+            )}
+            <Button
+              size="sm"
+              onClick={() => allowManualTermView && setShowTermModal(true)}
+              disabled={!allowManualTermView || termLoading}
+              className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] font-semibold text-[#1e1500]"
+            >
+              {needsTermAcceptance ? 'Ler e aceitar agora' : 'Rever termo oficial'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {isSuperAdmin && (
+          <Card className="border border-white/10 bg-[#020c14]/80 rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between text-white">
+              <div>
+                <p className="text-xs uppercase tracking-[0.5em] text-white/40">Histórico</p>
+                <CardTitle className="text-white">Aceitações recentes</CardTitle>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-white/20 text-white hover:border-cyan-400/60 hover:text-cyan-200"
+                onClick={() => loadTermHistory()}
+                disabled={termHistoryLoading}
+              >
+                <RefreshCcw className={`mr-2 h-4 w-4 ${termHistoryLoading ? 'animate-spin' : ''}`} />
+                Recarregar
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-white/70">
+              {termHistoryLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-cyan-300" />
+                  A carregar histórico...
+                </div>
+              ) : termHistoryError ? (
+                <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-rose-100">
+                  {termHistoryError}
+                </div>
+              ) : termHistory.length ? (
+                <div className="space-y-2">
+                  {termHistory.map((entry) => (
+                    <div key={entry.id} className="rounded-2xl border border-white/10 bg-[#03121a] p-4 text-xs text-white/70">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-white">
+                        <span className="font-semibold">
+                          {entry.user?.name || entry.user?.username || 'Head'}
+                        </span>
+                        <Badge variant="outline" className="border-white/20 text-white">
+                          v{entry.version}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-white/60">
+                        Aceite em {new Date(entry.acceptedAt).toLocaleString('pt-PT')}
+                      </p>
+                      {entry.ipAddress && (
+                        <p className="text-white/40">IP {entry.ipAddress}</p>
+                      )}
+                      {entry.userAgent && (
+                        <p className="text-[11px] text-white/30 mt-1 line-clamp-2">{entry.userAgent}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-white/60">Sem histórico registado para esta House.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <section className="grid gap-6 md:grid-cols-2">
           <Card className={`${panelBackground} rounded-2xl`}>
