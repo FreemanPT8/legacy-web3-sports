@@ -192,7 +192,7 @@ async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | nu
   }
   const adminIds = (adminAssignments ?? [])
     .map((row: { id?: string | null }) => row.id)
-    .filter((value): value is string => Boolean(value));
+    .filter((value: string | null | undefined): value is string => Boolean(value));
   if (!adminIds.length) return null;
 
   const { data: headRows, error: headError } = await supabaseAdmin
@@ -205,7 +205,7 @@ async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | nu
   }
   const houseIds = (headRows ?? [])
     .map((row: { house_id?: string | null }) => row.house_id)
-    .filter((value): value is string => Boolean(value));
+    .filter((value: string | null | undefined): value is string => Boolean(value));
   if (!houseIds.length) return null;
 
   const { data: houseRows, error: houseError } = await supabaseAdmin
@@ -219,7 +219,7 @@ async function resolveHeadAccess(userId: string): Promise<HeadAccessContext | nu
   const sportsSet = new Set(
     (houseRows ?? [])
       .map((row: { sport_id?: string | null }) => row.sport_id)
-      .filter((value): value is string => Boolean(value)),
+      .filter((value: string | null | undefined): value is string => Boolean(value)),
   );
   if (!sportsSet.size) return null;
 
