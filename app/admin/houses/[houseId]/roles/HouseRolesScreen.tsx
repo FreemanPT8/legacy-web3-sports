@@ -194,7 +194,7 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
 
   useEffect(() => {
     setTermConfirmed(false);
-    if (!houseId || !head || !user || head.id !== user.userId) {
+    if (!houseId || !head || !user || head.id !== user.id) {
       setTermContext(null);
       setTermError(null);
       return;
@@ -218,7 +218,7 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   );
 
   const loadHeadTermContext = useCallback(async () => {
-    if (!houseId || !head || !user || head.id !== user.userId) return;
+    if (!houseId || !head || !user || head.id !== user.id) return;
     const token = getToken();
     if (!token) return;
     try {
@@ -290,7 +290,7 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   };
 
   const needsTermAcceptance =
-    Boolean(termContext?.needsAcceptance) && Boolean(head && user && head.id === user.userId);
+    Boolean(termContext?.needsAcceptance) && Boolean(head && user && head.id === user.id);
 
   const handleAssignHead = async () => {
     if (!headInput.trim() || !houseId) return;
