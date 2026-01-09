@@ -54,6 +54,24 @@ type NotesResponse = {
   notes: HouseNote[];
 };
 
+type HistoryEntry = {
+  id: string;
+  action: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  author: {
+    id: string;
+    name: string;
+    username: string | null;
+    avatarUrl: string | null;
+  } | null;
+};
+
+type HistoryResponse = {
+  success: true;
+  entries: HistoryEntry[];
+};
+
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (res.status === 401) throw new Error('Unauthorized');
   return res.json();
@@ -81,6 +99,11 @@ export default function AdminHouseGovernancePage() {
     isLoading: notesLoading,
     mutate: mutateNotes,
   } = useSWR<NotesResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/notes` : null, fetcher);
+  const {
+    data: historyData,
+    error: historyError,
+    isLoading: historyLoading,
+  } = useSWR<HistoryResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/history` : null, fetcher);
   const [monthlyCapacity, setMonthlyCapacity] = useState<string>('');
   const [supportMode, setSupportMode] = useState<string>('async');
   const [governanceStatus, setGovernanceStatus] = useState<string>('active');
@@ -224,6 +247,7 @@ export default function AdminHouseGovernancePage() {
   };
   const notes = notesData?.notes ?? [];
   const noteCharacterLimit = 1000;
+  const historyEntries = historyData?.entries ?? [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -617,6 +641,67 @@ export default function AdminHouseGovernancePage() {
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="grid gap-6">
+          <Card className="border-white/10 bg-[#041524]/90">
+            <CardHeader>
+              <CardTitle className="text-white">Histórico operacional</CardTitle>
+              <CardDescription className="text-xs text-white/60">
+                Registo automático de alterações de capacidade, governance, alerts ou promoção de Head.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-white/80">
+              {historyLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A carregar histórico...
+                </div>
+              ) : historyError ? (
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-rose-100">
+                  Não foi possível carregar o histórico. Tenta mais tarde.
+                </div>
+              ) : historyEntries.length ? (
+                <div className="space-y-3">
+                  {historyEntries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="rounded-2xl border border-white/10 bg-black/20 p-4 shadow-[0_10px_30px_rgba(1,9,19,0.45)]"
+                    >
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-white/60">
+                        <span>{entry.action}</span>
+                        <span>
+                          {new Date(entry.createdAt).toLocaleString('pt-PT', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-xs text-white/60">
+                        {entry.author ? (
+                          <>
+                            Ação por <span className="text-white/80">{entry.author.name}</span>
+                            {entry.author.username ? ` (@${entry.author.username})` : null}
+                          </>
+                        ) : (
+                          'Ação automática'
+                        )}
+                      </div>
+                      {entry.payload && Object.keys(entry.payload).length > 0 && (
+                        <pre className="mt-3 whitespace-pre-wrap rounded-2xl border border-white/10 bg-[#010913]/80 p-3 text-xs text-white/70">
+                          {JSON.stringify(entry.payload, null, 2)}
+                        </pre>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-white/70">Sem eventos recentes registados para esta House.</p>
+              )}
             </CardContent>
           </Card>
         </section>
