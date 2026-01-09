@@ -50,6 +50,7 @@ Add structured JSON columns so we can render each section without untyped blobs:
 | `monthly_capacity` | `integer` | Max number of guided users per month. |
 | `support_mode` | `text` | Enum: `async`, `sync`, `hybrid`. |
 | `governance_status` | `text` | Enum: `active`, `limited`, `paused`, `under_review`. |
+| `is_exemplar` | `boolean` | Define se a House exibe o selo “House exemplar”. |
 
 ### 2.3 New tables
 

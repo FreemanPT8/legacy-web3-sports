@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
 
   const { data: house, error: houseError } = await supabaseAdmin
     .from('houses_of_sports')
-    .select('id, house_key, name_i18n, monthly_capacity, support_mode, governance_status')
+    .select('id, house_key, name_i18n, monthly_capacity, support_mode, governance_status, is_exemplar')
     .eq('id', houseId)
     .maybeSingle();
   if (houseError || !house) {
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       monthlyCapacity: house.monthly_capacity,
       supportMode: house.support_mode,
       governanceStatus: house.governance_status,
+      isExemplar: house.is_exemplar ?? false,
       pendingRequests: pendingRequests ?? 0,
       memberCount: memberCount ?? 0,
     },
@@ -60,6 +61,7 @@ type GovernancePayload = {
   monthlyCapacity?: number | null;
   supportMode?: string | null;
   governanceStatus?: string | null;
+  isExemplar?: boolean;
 };
 
 export async function PATCH(request: NextRequest, { params }: { params: { houseId: string } }) {
@@ -79,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
 
   const { data: currentHouse, error: currentError } = await supabaseAdmin
     .from('houses_of_sports')
-    .select('id, house_key, monthly_capacity, support_mode, governance_status')
+    .select('id, house_key, monthly_capacity, support_mode, governance_status, is_exemplar')
     .eq('id', houseId)
     .maybeSingle();
   if (currentError) {
@@ -119,6 +121,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
   if (body.governanceStatus !== undefined) {
     updatePayload.governance_status = body.governanceStatus || 'active';
   }
+  if (body.isExemplar !== undefined) {
+    updatePayload.is_exemplar = Boolean(body.isExemplar);
+  }
 
   if (Object.keys(updatePayload).length === 0) {
     return NextResponse.json({ success: false, error: 'No governance fields provided.' }, { status: 400 });
@@ -128,7 +133,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
     .from('houses_of_sports')
     .update(updatePayload)
     .eq('id', houseId)
-    .select('id, monthly_capacity, support_mode, governance_status')
+    .select('id, monthly_capacity, support_mode, governance_status, is_exemplar')
     .maybeSingle();
   if (updateError) {
     console.error('[admin/houses/governance] update failed', updateError);
@@ -149,6 +154,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
         monthlyCapacity: updatedRow?.monthly_capacity ?? currentHouse.monthly_capacity,
         supportMode: updatedRow?.support_mode ?? currentHouse.support_mode,
         governanceStatus: updatedRow?.governance_status ?? currentHouse.governance_status,
+        isExemplar: updatedRow?.is_exemplar ?? currentHouse.is_exemplar,
       },
     },
   });

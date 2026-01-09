@@ -27,6 +27,7 @@ type GovernanceResponse = {
     monthlyCapacity: number | null;
     supportMode: string | null;
     governanceStatus: string;
+    isExemplar: boolean;
     pendingRequests: number;
     memberCount: number;
   };
@@ -133,6 +134,7 @@ export default function AdminHouseGovernancePage() {
   const [monthlyCapacity, setMonthlyCapacity] = useState<string>('');
   const [supportMode, setSupportMode] = useState<string>('async');
   const [governanceStatus, setGovernanceStatus] = useState<string>('active');
+  const [isExemplar, setIsExemplar] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
   const [alerts, setAlerts] = useState<
     { id: string; type: string; severity: 'low' | 'medium' | 'high'; createdAt: string }[]
@@ -141,12 +143,14 @@ export default function AdminHouseGovernancePage() {
   const [alertsError, setAlertsError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
+  const [exemplarSaving, setExemplarSaving] = useState(false);
 
   useEffect(() => {
     if (data?.house) {
       setMonthlyCapacity(data.house.monthlyCapacity?.toString() ?? '');
       setSupportMode(data.house.supportMode ?? 'async');
       setGovernanceStatus(data.house.governanceStatus ?? 'active');
+      setIsExemplar(Boolean(data.house.isExemplar));
       void loadAlerts(data.house.houseKey);
     }
   }, [data]);
@@ -181,6 +185,7 @@ export default function AdminHouseGovernancePage() {
         monthlyCapacity: monthlyCapacity === '' ? null : Number(monthlyCapacity),
         supportMode,
         governanceStatus,
+        isExemplar,
       };
       const response = await fetch(`/api/admin/houses/${params.houseId}/governance`, {
         method: 'PATCH',
@@ -197,6 +202,38 @@ export default function AdminHouseGovernancePage() {
       toast({ title: 'Erro', description: err?.message || 'Não foi possível atualizar.', variant: 'destructive' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleExemplar = async (nextValue: boolean) => {
+    if (!params?.houseId) return;
+    setExemplarSaving(true);
+    try {
+      const response = await fetch(`/api/admin/houses/${params.houseId}/governance`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isExemplar: nextValue }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Falha ao atualizar selo exemplar.');
+      }
+      setIsExemplar(nextValue);
+      toast({
+        title: nextValue ? 'House marcada como exemplar' : 'Selo exemplar removido',
+        description: nextValue
+          ? 'A House aparece agora com destaque nos materiais públicos.'
+          : 'O selo exemplar foi removido.',
+      });
+      await mutate();
+    } catch (err: any) {
+      toast({
+        title: 'Erro',
+        description: err?.message || 'Não foi possível atualizar o selo exemplar.',
+        variant: 'destructive',
+      });
+    } finally {
+      setExemplarSaving(false);
     }
   };
 
@@ -519,15 +556,52 @@ export default function AdminHouseGovernancePage() {
                       <p className="mt-2 text-xs text-white/70">Ainda não existem registos na tabela de feedback.</p>
                     )}
                   </div>
-                  <p className="text-xs text-white/60">
-                    Atualizado{' '}
-                    {new Date(qualityMetrics.updatedAt).toLocaleString('pt-PT', {
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
+                  <div className="flex flex-col gap-3 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
+                    <p>
+                      Atualizado{' '}
+                      {new Date(qualityMetrics.updatedAt).toLocaleString('pt-PT', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="bg-[#fdd87c] text-[#1e1500] hover:bg-[#ffe7a6]"
+                        onClick={() => void handleToggleExemplar(true)}
+                        disabled={!qualifiesExemplar || isExemplar || exemplarSaving}
+                      >
+                        {exemplarSaving && !isExemplar ? (
+                          <>
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            A marcar...
+                          </>
+                        ) : (
+                          'Marcar exemplar'
+                        )}
+                      </Button>
+                      {isExemplar ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-white/40 text-white hover:border-rose-300 hover:text-rose-200"
+                          onClick={() => void handleToggleExemplar(false)}
+                          disabled={exemplarSaving}
+                        >
+                          {exemplarSaving ? (
+                            <>
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                              A remover...
+                            </>
+                          ) : (
+                            'Remover selo'
+                          )}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
                 </>
               ) : (
                 <p className="text-sm text-white/70">Sem dados suficientes para calcular as métricas.</p>

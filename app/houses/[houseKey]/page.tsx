@@ -58,6 +58,11 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
                 <Badge variant="outline" className="border-cyan-500/30 text-cyan-200">
                   {house.badge === 'validated' ? 'House validada no Legacy' : 'Pré-visualização'}
                 </Badge>
+                {house.isExemplar ? (
+                  <Badge variant="outline" className="border-[#fdd87c]/60 bg-[#fdd87c]/10 text-[#fdd87c]">
+                    House exemplar
+                  </Badge>
+                ) : null}
               </div>
               <p className="text-slate-200">{house.positioning.subtitle}</p>
               <div className="flex flex-wrap gap-3 text-sm text-slate-300">

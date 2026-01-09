@@ -24,6 +24,7 @@ export type HouseProfilePayload = {
     status: string;
     governanceStatus: string;
     badge: 'validated' | 'preview';
+    isExemplar: boolean;
     positioning: { title: string; subtitle: string };
     mission: { title: string; body: string | string[] };
     limits: string[];
@@ -240,6 +241,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       status: (house.status || 'in_development').toLowerCase(),
       governanceStatus: house.governance_status ?? 'active',
       badge: house.is_public ? 'validated' : 'preview',
+      isExemplar: Boolean(house.is_exemplar),
       positioning: {
         title: identityTitle,
         subtitle: identitySubtitle,
