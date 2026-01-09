@@ -82,6 +82,16 @@ interface HousesPostBody {
   description?: string | null;
 }
 
+function slugify(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-')
+    .toUpperCase();
+}
+
 interface HousesPostResponse {
   success: boolean;
   houseId?: string;
@@ -424,7 +434,27 @@ export async function POST(request: NextRequest) {
       it: baseName,
     };
 
-    // 🔹 3) Criar House com name_i18n preenchido
+    const baseKey = `${slugify(sportRow.code || sportName)}_${rawCountryCode}`;
+    let houseKey = baseKey;
+    let attempt = 1;
+    while (true) {
+      const { data: existing, error: keyError } = await supabaseAdmin
+        .from('houses_of_sports')
+        .select('id')
+        .eq('house_key', houseKey)
+        .maybeSingle();
+      if (keyError && keyError.code !== 'PGRST116') {
+        console.error('Supabase error checking house_key uniqueness:', keyError);
+        return NextResponse.json<HousesPostResponse>(
+          { success: false, error: 'Failed to validate house_key uniqueness.' },
+          { status: 500 },
+        );
+      }
+      if (!existing) break;
+      houseKey = `${baseKey}_${attempt++}`;
+    }
+
+    // ð¹ 3) Criar House com name_i18n preenchido
     const { data, error } = await supabaseAdmin
       .from('houses_of_sports')
       .insert({
@@ -433,6 +463,7 @@ export async function POST(request: NextRequest) {
         status,
         avatar_url,
         description,
+        house_key: houseKey,
         name_i18n,
       })
       .select('id')
