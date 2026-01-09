@@ -29,14 +29,14 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
       return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
     }
 
-    const payload = (await request.json().catch(() => ({}))) as { note?: string | null };
-    const note = typeof payload.note === 'string' ? payload.note.slice(0, 2000) : null;
+    const body = (await request.json().catch(() => ({}))) as { note?: string | null };
+    const note = typeof body.note === 'string' ? body.note.slice(0, 2000) : null;
 
     const clientHeaders = headers();
     const ip = clientHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
     const userAgent = clientHeaders.get('user-agent') ?? null;
 
-    const payload = {
+    const payloadData = {
       note,
       ip: ip ?? null,
       userAgent: userAgent ?? null,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
     const { error: insertError } = await supabaseAdmin.from('house_join_requests').insert({
       house_id: houseRow.id,
       user_id: user.userId,
-      payload,
+      payload: payloadData,
       status: 'pending',
     });
     if (insertError) throw insertError;
