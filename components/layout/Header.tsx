@@ -35,10 +35,11 @@ import { useState, memo, useEffect } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export const Header = memo(function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, getToken } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingHeadInvites, setPendingHeadInvites] = useState(0);
   const selectableLanguages = SUPPORTED_LANGUAGES.map((code) => ({
     code,
     label: LANGUAGES[code] ?? code.toUpperCase(),
@@ -66,7 +67,40 @@ export const Header = memo(function Header() {
     return () => clearInterval(interval);
   }, [user]);
 
+  useEffect(() => {
+    if (!user) {
+      setPendingHeadInvites(0);
+      return;
+    }
+
+    const fetchHeadInvites = async () => {
+      const token = getToken();
+      if (!token) {
+        setPendingHeadInvites(0);
+        return;
+      }
+      try {
+        const response = await fetch('/api/head-invites', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data?.success) {
+          setPendingHeadInvites((data.invites || []).length);
+        }
+      } catch (error) {
+        console.error('Failed to fetch head invites:', error);
+      }
+    };
+
+    fetchHeadInvites();
+    const interval = setInterval(fetchHeadInvites, 60000);
+    return () => clearInterval(interval);
+  }, [user, getToken]);
+
   const canAccessAdmin = user ? isAdminRole(user.role) : false;
+  const totalBellCount = unreadCount + pendingHeadInvites;
+  const notificationLink =
+    pendingHeadInvites > 0 ? '/admin/houses?tab=invites' : '/notifications';
 
   return (
     <header
@@ -260,7 +294,7 @@ export const Header = memo(function Header() {
 
           {/* NOTIFICAÇÕES */}
           {user && (
-            <Link href="/notifications" className="relative">
+            <Link href={notificationLink} className="relative">
               <Button
                 variant="ghost"
                 size="sm"
@@ -268,9 +302,9 @@ export const Header = memo(function Header() {
                 aria-label="Notifications"
               >
                 <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
+                {totalBellCount > 0 && (
                   <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {totalBellCount > 9 ? '9+' : totalBellCount}
                   </span>
                 )}
               </Button>
@@ -323,6 +357,19 @@ export const Header = memo(function Header() {
                     )}
                   </DropdownMenuItem>
                 </Link>
+                {pendingHeadInvites > 0 && (
+                  <Link href="/admin/houses?tab=invites">
+                    <DropdownMenuItem className="cursor-pointer flex items-center justify-between text-sky-200 hover:bg-sky-900/50">
+                      <div className="flex items-center">
+                        <Shield className="mr-2 h-4 w-4" />
+                        Convites de House
+                      </div>
+                      <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
+                        {pendingHeadInvites > 9 ? '9+' : pendingHeadInvites}
+                      </span>
+                    </DropdownMenuItem>
+                  </Link>
+                )}
                 {canAccessAdmin && (
                   <>
                     <DropdownMenuSeparator className="bg-gray-800" />
@@ -499,21 +546,36 @@ export const Header = memo(function Header() {
                       <LayoutDashboard className="inline mr-2 h-4 w-4" />
                       {t('nav.dashboard')}
                     </Link>
-                    <Link
-                      href="/notifications"
-                      onClick={() => setMobileOpen(false)}
-                      className="text-lg block mb-2 flex items-center justify-between"
-                    >
-                      <div>
-                        <Bell className="inline mr-2 h-4 w-4" />
-                        Notifications
-                      </div>
-                      {unreadCount > 0 && (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
-                      )}
-                    </Link>
+                <Link
+                  href="/notifications"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-lg block mb-2 flex items-center justify-between"
+                >
+                  <div>
+                    <Bell className="inline mr-2 h-4 w-4" />
+                    Notifications
+                  </div>
+                  {unreadCount > 0 && (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+                {pendingHeadInvites > 0 && (
+                  <Link
+                    href="/admin/houses?tab=invites"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-lg block mb-2 flex items-center justify-between text-sky-200"
+                  >
+                    <div>
+                      <Shield className="inline mr-2 h-4 w-4" />
+                      Convites de House
+                    </div>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
+                      {pendingHeadInvites > 9 ? '9+' : pendingHeadInvites}
+                    </span>
+                  </Link>
+                )}
                     {canAccessAdmin && (
                       <Link
                         href="/admin"

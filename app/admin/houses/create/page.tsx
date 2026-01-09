@@ -325,11 +325,6 @@ export default function CreateHousePage() {
         throw new Error(data?.error || 'Falha ao criar convite.');
       }
 
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const inviteUrl = origin
-        ? `${origin}/head/invite?token=${data.token}`
-        : `/head/invite?token=${data.token}`;
-
       await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -338,8 +333,8 @@ export default function CreateHousePage() {
           type: 'head_invite',
           title: 'Foste convidado para liderar uma House',
           message: `O Legacy convidou-te para seres Head da ${createdHouse.name}.`,
-          link: inviteUrl,
-          data: { houseId: createdHouse.id },
+          link: '/admin/houses?tab=invites',
+          data: { houseId: createdHouse.id, inviteToken: data.token },
         }),
       }).catch((error) => console.error('[houses/create] notification failed', error));
 

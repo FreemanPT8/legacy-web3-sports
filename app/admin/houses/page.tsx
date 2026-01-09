@@ -1,8 +1,8 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Card,
@@ -69,6 +69,19 @@ interface ApiResponse {
   houses?: AdminHouse[];
 }
 
+interface HeadInvite {
+  id: string;
+  houseId: string;
+  houseKey: string;
+  houseName: string;
+  countryCode: string | null;
+  email: string;
+  status: string | null;
+  token?: string | null;
+  expiresAt: string | null;
+  createdAt: string | null;
+}
+
 const STATUS_LABELS: Record<HouseStatus, string> = {
   active: 'Active',
   under_construction: 'Under construction',
@@ -104,8 +117,10 @@ function StatusBadge({ status }: { status: HouseStatus }) {
 
 export default function AdminHousesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, getToken, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const invitesSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [houses, setHouses] = useState<AdminHouse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,8 +138,14 @@ export default function AdminHousesPage() {
   const [creatingSport, setCreatingSport] = useState(false);
   const [houseToDelete, setHouseToDelete] = useState<AdminHouse | null>(null);
   const [deletingHouse, setDeletingHouse] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<HeadInvite[]>([]);
+  const [invitesLoading, setInvitesLoading] = useState(false);
+  const [invitesError, setInvitesError] = useState<string | null>(null);
+  const [acceptingInviteId, setAcceptingInviteId] = useState<string | null>(null);
+  const [decliningInviteId, setDecliningInviteId] = useState<string | null>(null);
 
   const isSuperAdmin = user?.role === 'Super Admin';
+  const highlightInvites = searchParams?.get('tab') === 'invites';
 
   const fetchHouses = useCallback(async () => {
     setLoading(true);
@@ -194,6 +215,138 @@ export default function AdminHousesPage() {
     }
   }, [fetchHouses, getToken, houseToDelete, toast]);
 
+  const handleAcceptInvite = useCallback(
+    async (invite: HeadInvite) => {
+      const token = getToken();
+      if (!token) {
+        toast({
+          title: 'SessÇõÇœo invÇ·lida',
+          description: 'Reinicia sessÇõÇœo antes de aceitar o convite.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      try {
+        setAcceptingInviteId(invite.id);
+        const response = await fetch('/api/head-invites/accept', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ inviteId: invite.id, acceptTerms: true }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || 'NÇœo foi possÇðvel aceitar o convite.');
+        }
+        toast({
+          title: 'Convite aceite',
+          description: `Assumiste a ${invite.houseName}.`,
+        });
+        await loadPendingInvites();
+        await fetchHouses();
+      } catch (err) {
+        toast({
+          title: 'Erro ao aceitar convite',
+          description: err instanceof Error ? err.message : 'Tenta novamente mais tarde.',
+          variant: 'destructive',
+        });
+      } finally {
+        setAcceptingInviteId(null);
+      }
+    },
+    [fetchHouses, getToken, loadPendingInvites, toast],
+  );
+
+  const handleDeclineInvite = useCallback(
+    async (invite: HeadInvite) => {
+      const token = getToken();
+      if (!token) {
+        toast({
+          title: 'SessÇõÇœo invÇ­lida',
+          description: 'Reinicia sessÇõÇœo antes de rejeitar o convite.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      try {
+        setDecliningInviteId(invite.id);
+        const response = await fetch('/api/head-invites/decline', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ inviteId: invite.id }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || 'NÇœo foi possÇðvel rejeitar o convite.');
+        }
+        toast({
+          title: 'Convite rejeitado',
+          description: `A equipa foi notificada da tua decisÇõÇœo.`,
+        });
+        await loadPendingInvites();
+      } catch (err) {
+        toast({
+          title: 'Erro ao rejeitar convite',
+          description: err instanceof Error ? err.message : 'Tenta novamente mais tarde.',
+          variant: 'destructive',
+        });
+      } finally {
+        setDecliningInviteId(null);
+      }
+    },
+    [getToken, loadPendingInvites, toast],
+  );
+
+  const loadPendingInvites = useCallback(async () => {
+    if (!user) {
+      setPendingInvites([]);
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      setPendingInvites([]);
+      return;
+    }
+
+    setInvitesLoading(true);
+    setInvitesError(null);
+    try {
+      const response = await fetch('/api/head-invites', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Falha ao carregar convites.');
+      }
+      setPendingInvites(payload.invites || []);
+    } catch (err) {
+      console.error('[admin/houses] load head invites failed', err);
+      setPendingInvites([]);
+      setInvitesError(
+        err instanceof Error ? err.message : 'NÇœo foi possÇðvel carregar convites.',
+      );
+    } finally {
+      setInvitesLoading(false);
+    }
+  }, [getToken, user]);
+
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    void loadPendingInvites();
+  }, [authLoading, user, loadPendingInvites]);
+
+  useEffect(() => {
+    if (highlightInvites && pendingInvites.length && invitesSectionRef.current) {
+      invitesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [highlightInvites, pendingInvites.length]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -438,6 +591,117 @@ export default function AdminHousesPage() {
               </Button>
             </div>
           </section>
+
+          {user && (
+            <section
+              ref={invitesSectionRef}
+              className={`rounded-3xl border border-white/10 bg-[#02121d]/70 p-6 shadow-[0_25px_70px_rgba(3,10,25,0.45)] transition ${
+                highlightInvites ? 'ring-2 ring-[#fdd87c]/70' : ''
+              }`}
+            >
+              <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.45em] text-cyan-300">Convites pendentes</p>
+                  <h2 className="text-xl font-semibold text-white">Head of House</h2>
+                  <p className="text-sm text-slate-300">
+                    Aceita ou rejeita convites oficiais sem sair deste painel. Ao aceitar confirmas o termo de
+                    responsabilidade em vigor.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className={secondaryButtonClasses}
+                  onClick={() => void loadPendingInvites()}
+                  disabled={invitesLoading}
+                >
+                  Atualizar convites
+                </Button>
+              </div>
+              {invitesLoading ? (
+                <div className="flex items-center gap-2 text-sm text-slate-300">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A verificar convites...
+                </div>
+              ) : invitesError ? (
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                  {invitesError}
+                </div>
+              ) : pendingInvites.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-200">
+                  Sem convites pendentes de momento.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingInvites.map((invite) => (
+                    <div
+                      key={invite.id}
+                      className="space-y-3 rounded-2xl border border-white/10 bg-black/20 p-4 md:p-5"
+                    >
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-base font-semibold text-white">{invite.houseName}</p>
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                            {invite.houseKey} ¶ú {invite.countryCode || '--'}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            Convite enviado para {invite.email || 'conta Admin'}
+                          </p>
+                        </div>
+                        <div className="text-xs text-slate-300">
+                          {invite.expiresAt
+                            ? `Expira em ${new Date(invite.expiresAt).toLocaleDateString('pt-PT')}`
+                            : 'Sem data de expiraÇõÇœo'}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:opacity-90"
+                          onClick={() => void handleAcceptInvite(invite)}
+                          disabled={acceptingInviteId === invite.id}
+                        >
+                          {acceptingInviteId === invite.id ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              A confirmar...
+                            </>
+                          ) : (
+                            'Assumir House'
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-white/30 text-white hover:border-rose-400/60 hover:text-rose-200"
+                          onClick={() => void handleDeclineInvite(invite)}
+                          disabled={decliningInviteId === invite.id}
+                        >
+                          {decliningInviteId === invite.id ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              A rejeitar...
+                            </>
+                          ) : (
+                            'Recusar'
+                          )}
+                        </Button>
+                        {invite.token && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="text-sm text-cyan-200 hover:text-cyan-100"
+                            asChild
+                          >
+                            <Link href={`/head/invite?token=${invite.token}`} target="_blank">
+                              Rever termo completo
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           {canShowSportActions && (
             <section className="grid gap-4 md:grid-cols-2">

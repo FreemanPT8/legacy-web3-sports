@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
         house_id,
         email,
         status,
+        token,
         expires_at,
         created_at,
         houses:houses_of_sports(
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
         house_id: string;
         email: string | null;
         status: string | null;
+        token: string | null;
         expires_at: string | null;
         created_at: string | null;
         houses: { house_key?: string | null; name_i18n?: Record<string, string> | null; country_code?: string | null } | null;
@@ -61,6 +63,7 @@ export async function GET(request: NextRequest) {
         countryCode: invite.houses?.country_code ?? null,
         email: invite.email ?? '',
         status: invite.status,
+        token: invite.token,
         expiresAt: invite.expires_at,
         createdAt: invite.created_at,
       })) ?? [];
