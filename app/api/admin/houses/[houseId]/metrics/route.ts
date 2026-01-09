@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import { formatMissingResourceError, isMissingTable } from '@/lib/postgres';
 
 function safeUnique<T>(rows: T[], key: (row: T) => string | null | undefined) {
   const set = new Set<string>();
@@ -10,6 +11,50 @@ function safeUnique<T>(rows: T[], key: (row: T) => string | null | undefined) {
     if (value) set.add(value);
   });
   return set;
+}
+
+type MetricsPayload = {
+  members: number;
+  completionRate: number;
+  completionUsers: number;
+  totalCompletions: number;
+  retention: { d30: number; d60: number; d90: number };
+  feedback: { total: number; negative: number; neutral: number; positive: number; unresolved: number };
+  updatedAt: string;
+};
+
+const ZERO_METRICS: MetricsPayload = {
+  members: 0,
+  completionRate: 0,
+  completionUsers: 0,
+  totalCompletions: 0,
+  retention: { d30: 0, d60: 0, d90: 0 },
+  feedback: { total: 0, negative: 0, neutral: 0, positive: 0, unresolved: 0 },
+  updatedAt: new Date(0).toISOString(),
+};
+
+function buildMetrics(partial?: Partial<MetricsPayload>): MetricsPayload {
+  return {
+    ...ZERO_METRICS,
+    ...partial,
+    retention: {
+      ...ZERO_METRICS.retention,
+      ...(partial?.retention ?? {}),
+    },
+    feedback: {
+      ...ZERO_METRICS.feedback,
+      ...(partial?.feedback ?? {}),
+    },
+    updatedAt: partial?.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+function respondWithMetrics(overrides?: Partial<MetricsPayload>, warning?: string) {
+  const metrics = buildMetrics(overrides);
+  if (warning) {
+    return NextResponse.json({ success: true, metrics, warning });
+  }
+  return NextResponse.json({ success: true, metrics });
 }
 
 export async function GET(request: NextRequest, { params }: { params: { houseId: string } }) {
@@ -30,7 +75,13 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       .select('user_id')
       .eq('house_id', houseId)
       .is('removed_at', null);
-    if (membersError) throw membersError;
+    if (membersError) {
+      if (isMissingTable(membersError)) {
+        console.warn('[admin/houses/metrics] user_houses missing; returning empty metrics.');
+        return respondWithMetrics(undefined, formatMissingResourceError('user_houses'));
+      }
+      throw membersError;
+    }
 
     const memberIds =
       membersData
@@ -50,10 +101,17 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
         .from('course_completions')
         .select('user_id')
         .in('user_id', memberIds);
-      if (completionError) throw completionError;
-      totalCompletions = completionRows?.length ?? 0;
-      completionUsers = safeUnique(completionRows ?? [], (row: any) => row.user_id).size;
-      completionRate = completionUsers / memberCount;
+      if (completionError) {
+        if (isMissingTable(completionError)) {
+          console.warn('[admin/houses/metrics] course_completions missing; completion stats default to zero.');
+        } else {
+          throw completionError;
+        }
+      } else {
+        totalCompletions = completionRows?.length ?? 0;
+        completionUsers = safeUnique(completionRows ?? [], (row: any) => row.user_id).size;
+        completionRate = completionUsers / memberCount;
+      }
 
       const cutoff90 = new Date();
       cutoff90.setDate(cutoff90.getDate() - 90);
@@ -62,7 +120,13 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
         .select('user_id, created_at')
         .in('user_id', memberIds)
         .gte('created_at', cutoff90.toISOString());
-      if (xpError) throw xpError;
+      if (xpError) {
+        if (isMissingTable(xpError)) {
+          console.warn('[admin/houses/metrics] xp_transactions missing; retention stats default to zero.');
+        } else {
+          throw xpError;
+        }
+      }
 
       const lastActivity = new Map<string, number>();
       xpRows?.forEach((row: { user_id: string | null; created_at: string | null }) => {
@@ -90,7 +154,13 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       .from('house_feedback')
       .select('sentiment, status')
       .eq('house_id', houseId);
-    if (feedbackError) throw feedbackError;
+    if (feedbackError) {
+      if (isMissingTable(feedbackError)) {
+        console.warn('[admin/houses/metrics] house_feedback missing; feedback stats default to zero.');
+      } else {
+        throw feedbackError;
+      }
+    }
     const feedbackTotals = {
       total: feedbackRows?.length ?? 0,
       negative: 0,
@@ -106,21 +176,17 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       if ((row.status || 'open').toLowerCase() !== 'closed') feedbackTotals.unresolved += 1;
     });
 
-    return NextResponse.json({
-      success: true,
-      metrics: {
-        members: memberCount,
-        completionRate,
-        completionUsers,
-        totalCompletions,
-        retention: {
-          d30: memberCount ? retention30 / memberCount : 0,
-          d60: memberCount ? retention60 / memberCount : 0,
-          d90: memberCount ? retention90 / memberCount : 0,
-        },
-        feedback: feedbackTotals,
-        updatedAt: new Date().toISOString(),
+    return respondWithMetrics({
+      members: memberCount,
+      completionRate,
+      completionUsers,
+      totalCompletions,
+      retention: {
+        d30: memberCount ? retention30 / memberCount : 0,
+        d60: memberCount ? retention60 / memberCount : 0,
+        d90: memberCount ? retention90 / memberCount : 0,
       },
+      feedback: feedbackTotals,
     });
   } catch (err) {
     console.error('[admin/houses/metrics] Failed to load metrics', err);

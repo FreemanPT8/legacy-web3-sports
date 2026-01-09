@@ -343,6 +343,14 @@ type SubmissionNote = {
   created_at: string;
 };
 
+type HeadTermContextState = {
+  house: { id: string; houseKey: string; name: string };
+  latestVersion: number;
+  acceptedVersion: number | null;
+  acceptedAt: string | null;
+  needsAcceptance: boolean;
+};
+
 export default function AdminOnboardingPage() {
   const [houseKey, setHouseKey] = useState('LEGACY');
   const [draft, setDraft] = useState<OnboardingPopupData>(() => clonePopup(DEFAULT_DRAFT));
@@ -361,11 +369,22 @@ export default function AdminOnboardingPage() {
   const [headHouseOptions, setHeadHouseOptions] = useState<{ key: string; label: string }[]>([]);
   const [housesLoading, setHousesLoading] = useState(false);
   const [housesError, setHousesError] = useState<string | null>(null);
+  const [termContext, setTermContext] = useState<HeadTermContextState | null>(null);
+  const [termLoading, setTermLoading] = useState(false);
+  const [termError, setTermError] = useState<string | null>(null);
   const now = Date.now();
-  const editingDisabled = false;
+  const requiresTermAudit = Boolean(houseSequence?.houseId && houseSequence?.house !== 'LEGACY');
+  const editingDisabled = Boolean(requiresTermAudit && (termContext?.needsAcceptance || termLoading));
   const [logActionFilter, setLogActionFilter] = useState<'ALL' | 'delivered' | 'primary' | 'secondary' | 'dismiss'>('ALL');
   const [logUserQuery, setLogUserQuery] = useState('');
   const normalizedLogUserId = useMemo(() => (logUserQuery.trim() ? logUserQuery.trim() : null), [logUserQuery]);
+  const termAcceptanceInfo = useMemo(() => {
+    if (!termContext?.acceptedAt) return null;
+    const acceptedAt = new Date(termContext.acceptedAt);
+    if (Number.isNaN(acceptedAt.getTime())) return null;
+    const expires = new Date(acceptedAt.getTime() + TERM_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
+    return { acceptedAt, expires };
+  }, [termContext?.acceptedAt]);
   const getLogsToken = useCallback(() => getToken?.() ?? null, [getToken]);
   const { logs: liveLogs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOnboardingLogs({
     house: houseKey || null,
@@ -805,6 +824,66 @@ export default function AdminOnboardingPage() {
       active = false;
     };
   }, [houseKey, analyticsReloadKey]);
+
+  useEffect(() => {
+    const gateHouseId = requiresTermAudit ? houseSequence?.houseId : null;
+    if (!gateHouseId) {
+      setTermContext(null);
+      setTermError(null);
+      setTermLoading(false);
+      return;
+    }
+    let active = true;
+    const loadTermContext = async () => {
+      try {
+        setTermLoading(true);
+        setTermError(null);
+        const token = getToken?.();
+        if (!token) {
+          setTermError('Precisas de sessão activa para validar o termo.');
+          setTermContext(null);
+          return;
+        }
+        const response = await fetch(`/api/admin/head-terms/context?houseId=${gateHouseId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data?.success) {
+          if (response.status === 404) {
+            setTermContext(null);
+            setTermError(null);
+            return;
+          }
+          if (response.status === 403) {
+            setTermContext(null);
+            setTermError('Sem permissões para aceitar o termo desta House.');
+            return;
+          }
+          throw new Error(data?.error || 'Failed to load term context');
+        }
+        setTermContext({
+          house: data.house,
+          latestVersion: data.latestVersion,
+          acceptedVersion: data.acceptedVersion ?? null,
+          acceptedAt: data.acceptedAt ?? null,
+          needsAcceptance: Boolean(data.needsAcceptance),
+        });
+      } catch (error) {
+        if (!active) return;
+        console.error('[admin/onboarding] Failed to load head term context', error);
+        setTermContext(null);
+        setTermError('Falha ao verificar o termo de responsabilidade.');
+      } finally {
+        if (active) setTermLoading(false);
+      }
+    };
+    void loadTermContext();
+    return () => {
+      active = false;
+    };
+  }, [getToken, houseSequence?.house, houseSequence?.houseId, requiresTermAudit]);
 
   const handleLoadHouse = async () => {
     setLoading(true);
@@ -1916,6 +1995,46 @@ export default function AdminOnboardingPage() {
           </CardContent>
         </Card>
 
+        {requiresTermAudit ? (
+          termContext?.needsAcceptance ? (
+            <div className="rounded-3xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+              <p>
+                Precisas de aceitar o termo de responsabilidade (versão {termContext.latestVersion}) antes de editar os
+                pop-ups da House.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Link
+                  href="/admin/houses?tab=invites"
+                  className="inline-flex items-center rounded-full border border-amber-300/40 px-4 py-2 text-xs uppercase tracking-[0.3em] text-amber-50 hover:bg-amber-400/10"
+                >
+                  Ver convites
+                </Link>
+                <Link
+                  href="/admin/houses"
+                  className="inline-flex items-center rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white hover:bg-white/10"
+                >
+                  Abrir Houses
+                </Link>
+              </div>
+            </div>
+          ) : termLoading ? (
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-cyan-300" />
+                A verificar o estado do termo desta House...
+              </span>
+            </div>
+          ) : termAcceptanceInfo ? (
+            <div className="rounded-3xl border border-emerald-400/40 bg-emerald-500/10 p-4 text-xs text-emerald-100">
+              Termo aceite em{' '}
+              {termAcceptanceInfo.acceptedAt.toLocaleDateString('pt-PT', { year: 'numeric', month: 'short', day: '2-digit' })}{' '}
+              · válido até{' '}
+              {termAcceptanceInfo.expires.toLocaleDateString('pt-PT', { year: 'numeric', month: 'short', day: '2-digit' })}
+            </div>
+          ) : null
+        ) : null}
+        {termError ? <p className="text-xs text-amber-300">{termError}</p> : null}
+
         <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-5 p-6">
             <div className="grid gap-4 md:grid-cols-2">
@@ -2132,7 +2251,7 @@ export default function AdminOnboardingPage() {
                 variant="outline"
                 className="border-white/30 text-white hover:bg-white/10"
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || editingDisabled}
               >
                 {saving ? (
                   <>

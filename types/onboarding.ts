@@ -60,6 +60,7 @@ export type HouseOnboardingSequence = {
   head: string;
   popups: OnboardingPopup[];
   analytics: HouseOnboardingAnalytics;
+  houseId?: string;
 };
 
 export type OnboardingLogAction = 'delivered' | 'primary' | 'secondary' | 'dismiss';

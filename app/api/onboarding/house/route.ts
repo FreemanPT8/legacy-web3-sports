@@ -51,6 +51,25 @@ const DEFAULT_ANALYTICS: HouseOnboardingSequence['analytics'] = {
   blockedAttempts: 0,
 };
 
+async function fetchHouseIdByKey(houseKey: string): Promise<string | null> {
+  if (!db) return null;
+  try {
+    const { data, error } = await db
+      .from('houses_of_sports')
+      .select('id')
+      .eq('house_key', houseKey)
+      .maybeSingle();
+    if (error) {
+      console.error('[onboarding.house] Failed to resolve house id', error);
+      return null;
+    }
+    return (data?.id as string) ?? null;
+  } catch (error) {
+    console.error('[onboarding.house] Unexpected error resolving house id', error);
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const houseKey = getHouseKey(searchParams.get('house'));
@@ -74,6 +93,10 @@ export async function GET(request: Request) {
     }
 
     const sequence = await fetchHouseOnboardingData(houseKey);
+    const resolvedHouseId = await fetchHouseIdByKey(houseKey);
+    if (resolvedHouseId) {
+      (sequence as HouseOnboardingSequence).houseId = resolvedHouseId;
+    }
     return NextResponse.json({ success: true, sequence });
   } catch (error) {
     console.error('[onboarding.house] Failed to fetch mock data', error);
@@ -123,7 +146,11 @@ async function fetchPersistedSequence(houseKey: string) {
       console.error('[onboarding.house] Failed to load persisted sequence', error);
       return null;
     }
-    return (data?.sequence as HouseOnboardingSequence) ?? null;
+    const sequence = (data?.sequence as HouseOnboardingSequence) ?? null;
+    if (sequence && !sequence.houseId) {
+      sequence.houseId = (await fetchHouseIdByKey(houseKey)) ?? undefined;
+    }
+    return sequence;
   } catch (error) {
     console.error('[onboarding.house] Unexpected error loading persisted sequence', error);
     return null;
@@ -393,6 +420,7 @@ async function fetchStructuredSequence(houseKey: string) {
       head: headName,
       popups,
       analytics,
+      houseId: houseRow.id as string,
     };
   } catch (error) {
     console.error('[onboarding.house] Failed to build structured sequence', error);

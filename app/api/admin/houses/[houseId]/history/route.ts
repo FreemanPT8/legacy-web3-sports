@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import { formatMissingResourceError, isMissingColumn, isMissingTable } from '@/lib/postgres';
 
 export async function GET(request: NextRequest, { params }: { params: { houseId: string } }) {
   const auth = await requireAdmin(request);
@@ -24,7 +25,17 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       .eq('house_id', houseId)
       .order('created_at', { ascending: false })
       .limit(50);
-    if (error) throw error;
+    if (error) {
+      if (isMissingTable(error)) {
+        console.warn('[admin/houses/history] house_history table missing. Returning empty log.');
+        return NextResponse.json({ success: true, entries: [], warning: formatMissingResourceError('house_history') });
+      }
+      if (isMissingColumn(error)) {
+        console.warn('[admin/houses/history] column missing in house_history. Returning empty log.');
+        return NextResponse.json({ success: true, entries: [] });
+      }
+      throw error;
+    }
 
     const entries =
       data?.map((row: any) => ({

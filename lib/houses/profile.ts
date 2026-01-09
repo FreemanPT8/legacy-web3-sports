@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingColumn, isMissingTable } from '@/lib/postgres';
 
 export const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -104,68 +105,153 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .select('*')
     .eq('house_key', houseKey)
     .maybeSingle();
-  if (houseError || !house) return null;
+  if (houseError) {
+    if (isMissingTable(houseError) || isMissingColumn(houseError)) {
+      console.warn('[houses/profile] houses_of_sports schema missing. Unable to render profile.');
+      return null;
+    }
+    return null;
+  }
+  if (!house) return null;
 
-  const [{ data: sport }] = await Promise.all([
-    supabaseAdmin.from('sports').select('code, name_i18n').eq('id', house.sport_id).maybeSingle(),
-  ]);
+  let sport: any = null;
+  const { data: sportRow, error: sportError } = await supabaseAdmin
+    .from('sports')
+    .select('code, name_i18n')
+    .eq('id', house.sport_id)
+    .maybeSingle();
+  if (sportError) {
+    if (isMissingTable(sportError)) {
+      console.warn('[houses/profile] sports table missing. Continuing without sport metadata.');
+    } else {
+      throw sportError;
+    }
+  } else {
+    sport = sportRow;
+  }
 
-  const { data: profile } = await supabaseAdmin
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from('house_profiles')
     .select('*')
     .eq('house_id', house.id)
     .maybeSingle();
+  if (profileError) {
+    if (isMissingTable(profileError)) {
+      console.warn('[houses/profile] house_profiles table missing. Using defaults.');
+    } else {
+      throw profileError;
+    }
+  }
 
-  const { data: headRow } = await supabaseAdmin
+  const { data: headRow, error: headError } = await supabaseAdmin
     .from('house_heads')
     .select('admin_id')
     .eq('house_id', house.id)
     .maybeSingle();
+  if (headError) {
+    if (isMissingTable(headError)) {
+      console.warn('[houses/profile] house_heads table missing. House will show without Head.');
+    } else {
+      throw headError;
+    }
+  }
 
   let headUser: any = null;
   if (headRow?.admin_id) {
-    const { data: assignment } = await supabaseAdmin
+    const { data: assignment, error: assignmentError } = await supabaseAdmin
       .from('admin_assignments')
       .select('user_id')
       .eq('id', headRow.admin_id)
       .maybeSingle();
+    if (assignmentError) {
+      if (isMissingTable(assignmentError)) {
+        console.warn('[houses/profile] admin_assignments table missing. Cannot resolve Head user.');
+      } else {
+        throw assignmentError;
+      }
+    }
     if (assignment?.user_id) {
-      const { data: user } = await supabaseAdmin
+      const { data: user, error: userError } = await supabaseAdmin
         .from('users')
         .select('id, username, full_name, avatar_url, country, bio')
         .eq('id', assignment.user_id)
         .maybeSingle();
-      headUser = user;
+      if (userError) {
+        console.warn('[houses/profile] Failed to load Head user profile', userError);
+      } else {
+        headUser = user;
+      }
     }
   }
 
-  const { count: termCount } = await supabaseAdmin
+  let termCount = 0;
+  const { count: termCountResult, error: termError } = await supabaseAdmin
     .from('house_term_acceptances')
     .select('*', { head: true, count: 'exact' })
     .eq('house_key', houseKey);
+  if (termError) {
+    if (isMissingTable(termError)) {
+      console.warn('[houses/profile] house_term_acceptances table missing. Term metrics default to zero.');
+    } else {
+      throw termError;
+    }
+  } else {
+    termCount = termCountResult ?? 0;
+  }
 
-  const { data: xpRow } = await supabaseAdmin
+  const { data: xpRow, error: xpError } = await supabaseAdmin
     .from('house_xp_totals')
     .select('total_xp, member_count')
     .eq('house_id', house.id)
     .maybeSingle();
+  if (xpError) {
+    if (isMissingTable(xpError)) {
+      console.warn('[houses/profile] house_xp_totals missing. Falling back to user_houses counts.');
+    } else {
+      throw xpError;
+    }
+  }
 
-  const { count: memberCountFallback } = await supabaseAdmin
+  let memberCountFallback = 0;
+  const { count: fallbackCount, error: memberFallbackError } = await supabaseAdmin
     .from('user_houses')
     .select('*', { head: true, count: 'exact' })
     .eq('house_id', house.id);
+  if (memberFallbackError) {
+    if (isMissingTable(memberFallbackError)) {
+      console.warn('[houses/profile] user_houses missing. Member metrics default to zero.');
+    } else {
+      throw memberFallbackError;
+    }
+  } else {
+    memberCountFallback = fallbackCount ?? 0;
+  }
 
-  const { data: onboardingStatus } = await supabaseAdmin
+  const { data: onboardingStatus, error: onboardingStatusError } = await supabaseAdmin
     .from('house_onboarding_status')
     .select('*')
     .eq('house_key', houseKey)
     .maybeSingle();
+  if (onboardingStatusError) {
+    if (isMissingTable(onboardingStatusError)) {
+      console.warn('[houses/profile] house_onboarding_status missing. Onboarding stats default to zero.');
+    } else {
+      throw onboardingStatusError;
+    }
+  }
 
-  const { data: sequenceRow } = await supabaseAdmin
+  const { data: sequenceRow, error: sequenceError } = await supabaseAdmin
     .from('house_onboarding_sequences')
     .select('sequence')
     .eq('house_key', houseKey)
     .maybeSingle();
+  if (sequenceError) {
+    if (isMissingTable(sequenceError)) {
+      console.warn('[houses/profile] house_onboarding_sequences missing. Recommended content empty.');
+    } else {
+      throw sequenceError;
+    }
+  }
 
   const recommendedContent =
     (sequenceRow?.sequence?.popups as any[] | undefined)?.slice(0, 4).map((popup) => ({
@@ -178,12 +264,19 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
         'Conteúdo recomendado pela House para acelerar o onboarding.',
     })) ?? [];
 
-  const { data: eventRows } = await supabaseAdmin
+  const { data: eventRows, error: eventError } = await supabaseAdmin
     .from('house_events')
     .select('id, title_i18n, description_i18n, start_at, end_at, location, visibility, link_url')
     .eq('house_id', house.id)
     .order('start_at', { ascending: true })
     .limit(8);
+  if (eventError) {
+    if (isMissingTable(eventError)) {
+      console.warn('[houses/profile] house_events table missing. Events list empty.');
+    } else {
+      throw eventError;
+    }
+  }
 
   const events =
     eventRows?.map((event: any) => ({

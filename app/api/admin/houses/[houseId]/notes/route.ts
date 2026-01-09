@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import { formatMissingResourceError, isMissingColumn, isMissingTable } from '@/lib/postgres';
 
 export async function GET(request: NextRequest, { params }: { params: { houseId: string } }) {
   const auth = await requireAdmin(request);
@@ -24,7 +25,21 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       .eq('house_id', houseId)
       .order('created_at', { ascending: false })
       .limit(50);
-    if (error) throw error;
+    if (error) {
+      if (isMissingTable(error)) {
+        console.warn('[admin/houses/notes] house_notes table missing. Returning empty notes.');
+        return NextResponse.json({
+          success: true,
+          notes: [],
+          warning: formatMissingResourceError('house_notes'),
+        });
+      }
+      if (isMissingColumn(error)) {
+        console.warn('[admin/houses/notes] column missing in house_notes. Returning empty notes.');
+        return NextResponse.json({ success: true, notes: [] });
+      }
+      throw error;
+    }
 
     const notes =
       data?.map((row: any) => ({
@@ -94,7 +109,23 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
       )
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (isMissingTable(error)) {
+        console.warn('[admin/houses/notes] house_notes table missing on insert.');
+        return NextResponse.json(
+          { success: false, error: formatMissingResourceError('house_notes') },
+          { status: 500 },
+        );
+      }
+      if (isMissingColumn(error)) {
+        console.warn('[admin/houses/notes] column missing on insert. Falling back to read-only mode.');
+        return NextResponse.json(
+          { success: false, error: 'Estrutura desactualizada para guardar notas. Corre as migrações.' },
+          { status: 500 },
+        );
+      }
+      throw error;
+    }
 
     return NextResponse.json({
       success: true,

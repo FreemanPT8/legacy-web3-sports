@@ -7,6 +7,51 @@ import { logHouseHistory } from '@/lib/houses/history';
 const SUPPORT_MODES = ['async', 'sync', 'hybrid'] as const;
 const GOVERNANCE_STATUSES = ['active', 'limited', 'paused', 'under_review'] as const;
 
+const POSTGRES_MISSING_COLUMN = '42703';
+const POSTGRES_MISSING_TABLE = '42P01';
+const BASE_SELECT =
+  'id, house_key, name_i18n, monthly_capacity, support_mode, governance_status, is_exemplar';
+const LEGACY_SELECT = 'id, house_key, name_i18n, monthly_capacity, governance_status';
+
+function isMissingColumn(error?: { code?: string }) {
+  return error?.code === POSTGRES_MISSING_COLUMN;
+}
+
+function isMissingTable(error?: { code?: string }) {
+  return error?.code === POSTGRES_MISSING_TABLE;
+}
+
+function missingTableResponse(table: string) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: `Tabela ${table} inexistente. Corre as migrações pendentes no Supabase.`,
+    },
+    { status: 500 },
+  );
+}
+
+async function loadHouse(houseId: string) {
+  let result = await supabaseAdmin!
+    .from('houses_of_sports')
+    .select(BASE_SELECT)
+    .eq('id', houseId)
+    .maybeSingle();
+  if (result.error && isMissingColumn(result.error)) {
+    console.warn('[admin/houses/governance] houses_of_sports columns missing, using legacy select');
+    result = await supabaseAdmin!
+      .from('houses_of_sports')
+      .select(LEGACY_SELECT)
+      .eq('id', houseId)
+      .maybeSingle();
+  }
+  if (result.error && isMissingTable(result.error)) {
+    return { error: missingTableResponse('houses_of_sports'), data: null };
+  }
+  if (result.error) throw result.error;
+  return { data: result.data, error: null };
+}
+
 export async function GET(request: NextRequest, { params }: { params: { houseId: string } }) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
@@ -19,42 +64,59 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
     return NextResponse.json({ success: false, error: 'Missing house id.' }, { status: 400 });
   }
 
-  const { data: house, error: houseError } = await supabaseAdmin
-    .from('houses_of_sports')
-    .select('id, house_key, name_i18n, monthly_capacity, support_mode, governance_status, is_exemplar')
-    .eq('id', houseId)
-    .maybeSingle();
-  if (houseError || !house) {
-    return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+  try {
+    const { data: house, error: loadError } = await loadHouse(houseId);
+    if (loadError) return loadError;
+    if (!house) {
+      return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+    }
+
+    let pendingRequests = 0;
+    let memberCount = 0;
+    try {
+      const [{ count: pending }, { count: members }] = await Promise.all([
+        supabaseAdmin
+          .from('house_join_requests')
+          .select('*', { head: true, count: 'exact' })
+          .eq('house_id', houseId)
+          .eq('status', 'pending'),
+        supabaseAdmin
+          .from('user_houses')
+          .select('*', { head: true, count: 'exact' })
+          .eq('house_id', houseId)
+          .is('removed_at', null),
+      ]);
+      pendingRequests = pending ?? 0;
+      memberCount = members ?? 0;
+    } catch (error: any) {
+      if (isMissingTable(error)) {
+        console.warn('[admin/houses/governance] house_join_requests missing; pending count defaults to 0');
+      } else {
+        throw error;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      house: {
+        id: house.id,
+        houseKey: house.house_key,
+        name: house.name_i18n?.pt ?? house.name_i18n?.en ?? 'House',
+        monthlyCapacity: house.monthly_capacity ?? null,
+        supportMode: house.support_mode ?? null,
+        governanceStatus: house.governance_status ?? 'active',
+        isExemplar: Boolean(house.is_exemplar),
+        pendingRequests,
+        memberCount,
+      },
+    });
+  } catch (error) {
+    console.error('[admin/houses/governance] load failed', error);
+    return NextResponse.json(
+      { success: false, error: 'Falha ao carregar dados de governação.' },
+      { status: 500 },
+    );
   }
-
-  const [{ count: pendingRequests }, { count: memberCount }] = await Promise.all([
-    supabaseAdmin
-      .from('house_join_requests')
-      .select('*', { head: true, count: 'exact' })
-      .eq('house_id', houseId)
-      .eq('status', 'pending'),
-    supabaseAdmin
-      .from('user_houses')
-      .select('*', { head: true, count: 'exact' })
-      .eq('house_id', houseId)
-      .is('removed_at', null),
-  ]);
-
-  return NextResponse.json({
-    success: true,
-    house: {
-      id: house.id,
-      houseKey: house.house_key,
-      name: house.name_i18n?.pt ?? house.name_i18n?.en ?? 'House',
-      monthlyCapacity: house.monthly_capacity,
-      supportMode: house.support_mode,
-      governanceStatus: house.governance_status,
-      isExemplar: house.is_exemplar ?? false,
-      pendingRequests: pendingRequests ?? 0,
-      memberCount: memberCount ?? 0,
-    },
-  });
 }
 
 type GovernancePayload = {
@@ -79,23 +141,20 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
   const body = (await request.json().catch(() => ({}))) as GovernancePayload;
   const actorId = authResult.user?.userId ?? null;
 
-  const { data: currentHouse, error: currentError } = await supabaseAdmin
-    .from('houses_of_sports')
-    .select('id, house_key, monthly_capacity, support_mode, governance_status, is_exemplar')
-    .eq('id', houseId)
-    .maybeSingle();
-  if (currentError) {
-    console.error('[admin/houses/governance] load current failed', currentError);
+  let currentHouse;
+  try {
+    const { data, error } = await loadHouse(houseId);
+    if (error) return error;
+    currentHouse = data;
+    if (!currentHouse) {
+      return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+    }
+  } catch (err) {
+    console.error('[admin/houses/governance] load current failed', err);
     return NextResponse.json({ success: false, error: 'Failed to load current status.' }, { status: 500 });
   }
-  if (!currentHouse) {
-    return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
-  }
 
-  if (
-    body.supportMode &&
-    !SUPPORT_MODES.includes(body.supportMode as (typeof SUPPORT_MODES)[number])
-  ) {
+  if (body.supportMode && !SUPPORT_MODES.includes(body.supportMode as (typeof SUPPORT_MODES)[number])) {
     return NextResponse.json({ success: false, error: 'Invalid support mode.' }, { status: 400 });
   }
   if (
@@ -129,14 +188,33 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
     return NextResponse.json({ success: false, error: 'No governance fields provided.' }, { status: 400 });
   }
 
-  const { data: updatedRow, error: updateError } = await supabaseAdmin
-    .from('houses_of_sports')
-    .update(updatePayload)
-    .eq('id', houseId)
-    .select('id, monthly_capacity, support_mode, governance_status, is_exemplar')
-    .maybeSingle();
-  if (updateError) {
-    console.error('[admin/houses/governance] update failed', updateError);
+  let updatedRow;
+  try {
+    let updateResult = await supabaseAdmin
+      .from('houses_of_sports')
+      .update(updatePayload)
+      .eq('id', houseId)
+      .select(BASE_SELECT)
+      .maybeSingle();
+    if (updateResult.error && isMissingColumn(updateResult.error)) {
+      console.warn('[admin/houses/governance] update missing column, retrying without optional fields');
+      const fallbackPayload = { ...updatePayload };
+      delete fallbackPayload.support_mode;
+      delete fallbackPayload.is_exemplar;
+      updateResult = await supabaseAdmin
+        .from('houses_of_sports')
+        .update(fallbackPayload)
+        .eq('id', houseId)
+        .select(LEGACY_SELECT)
+        .maybeSingle();
+    }
+    if (updateResult.error && isMissingTable(updateResult.error)) {
+      return missingTableResponse('houses_of_sports');
+    }
+    if (updateResult.error) throw updateResult.error;
+    updatedRow = updateResult.data;
+  } catch (error) {
+    console.error('[admin/houses/governance] update failed', error);
     return NextResponse.json({ success: false, error: 'Unable to update governance fields.' }, { status: 500 });
   }
 
@@ -146,15 +224,16 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
     actorId,
     payload: {
       before: {
-        monthlyCapacity: currentHouse.monthly_capacity,
-        supportMode: currentHouse.support_mode,
-        governanceStatus: currentHouse.governance_status,
+        monthlyCapacity: currentHouse.monthly_capacity ?? null,
+        supportMode: currentHouse.support_mode ?? null,
+        governanceStatus: currentHouse.governance_status ?? 'active',
+        isExemplar: Boolean(currentHouse.is_exemplar),
       },
       after: {
-        monthlyCapacity: updatedRow?.monthly_capacity ?? currentHouse.monthly_capacity,
-        supportMode: updatedRow?.support_mode ?? currentHouse.support_mode,
-        governanceStatus: updatedRow?.governance_status ?? currentHouse.governance_status,
-        isExemplar: updatedRow?.is_exemplar ?? currentHouse.is_exemplar,
+        monthlyCapacity: updatedRow?.monthly_capacity ?? currentHouse.monthly_capacity ?? null,
+        supportMode: updatedRow?.support_mode ?? currentHouse.support_mode ?? null,
+        governanceStatus: updatedRow?.governance_status ?? currentHouse.governance_status ?? 'active',
+        isExemplar: Boolean(updatedRow?.is_exemplar ?? currentHouse.is_exemplar),
       },
     },
   });
