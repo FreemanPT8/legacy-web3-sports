@@ -216,7 +216,7 @@ export default function AdminHousesPage() {
     }
   }, [fetchHouses, getToken, houseToDelete, toast]);
 
-  const loadPendingInvites = useCallback(async () => {
+  const refreshHeadInvites = useCallback(async () => {
     if (!user) {
       setPendingInvites([]);
       return;
@@ -280,7 +280,7 @@ export default function AdminHousesPage() {
           title: 'Convite aceite',
           description: `Assumiste a ${invite.houseName}.`,
         });
-        await loadPendingInvites();
+        await refreshHeadInvites();
         await fetchHouses();
       } catch (err) {
         toast({
@@ -292,7 +292,7 @@ export default function AdminHousesPage() {
         setAcceptingInviteId(null);
       }
     },
-    [fetchHouses, getToken, loadPendingInvites, toast],
+    [fetchHouses, getToken, refreshHeadInvites, toast],
   );
 
   const handleDeclineInvite = useCallback(
@@ -324,7 +324,7 @@ export default function AdminHousesPage() {
           title: 'Convite rejeitado',
           description: `A equipa foi notificada da tua decisÇõÇœo.`,
         });
-        await loadPendingInvites();
+        await refreshHeadInvites();
       } catch (err) {
         toast({
           title: 'Erro ao rejeitar convite',
@@ -335,13 +335,13 @@ export default function AdminHousesPage() {
         setDecliningInviteId(null);
       }
     },
-    [getToken, loadPendingInvites, toast],
+    [getToken, refreshHeadInvites, toast],
   );
 
   useEffect(() => {
     if (authLoading || !user) return;
-    void loadPendingInvites();
-  }, [authLoading, user, loadPendingInvites]);
+    void refreshHeadInvites();
+  }, [authLoading, user, refreshHeadInvites]);
 
   useEffect(() => {
     if (highlightInvites && pendingInvites.length && invitesSectionRef.current) {
@@ -612,7 +612,7 @@ export default function AdminHousesPage() {
                 <Button
                   variant="outline"
                   className={secondaryButtonClasses}
-                  onClick={() => void loadPendingInvites()}
+                  onClick={() => void refreshHeadInvites()}
                   disabled={invitesLoading}
                 >
                   Atualizar convites
