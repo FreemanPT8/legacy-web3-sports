@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
     const memberIds =
       membersData
         ?.map((row: { user_id: string | null }) => row.user_id)
-        .filter((id): id is string => Boolean(id)) ?? [];
+        .filter((id: string | null): id is string => Boolean(id)) ?? [];
     const memberCount = memberIds.length;
 
     let completionRate = 0;
