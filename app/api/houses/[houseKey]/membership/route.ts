@@ -36,7 +36,9 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
       .is('removed_at', null);
     if (membershipError) throw membershipError;
 
-    const roles = (membershipRows ?? []).map((row) => row.role).filter(Boolean) as string[];
+    const roles = (membershipRows ?? [])
+      .map((row: { role: string | null }) => row.role)
+      .filter((role: string | null): role is string => Boolean(role));
     const isMember = roles.length > 0;
 
     return NextResponse.json({ success: true, isMember, roles });
@@ -45,4 +47,3 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     return NextResponse.json({ success: false, error: 'Failed to load membership.' }, { status: 500 });
   }
 }
-
