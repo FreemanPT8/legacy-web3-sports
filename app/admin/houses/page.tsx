@@ -314,6 +314,30 @@ export default function AdminHousesPage() {
 
   const canShowSportActions = isSuperAdmin || canCreateSports;
 
+  const normalizedSearch = search.trim().toLowerCase();
+  const filtered = houses.filter((house) => {
+    if (
+      statusFilter !== 'all' &&
+      (house.status?.toLowerCase() || 'unknown') !== statusFilter
+    ) {
+      return false;
+    }
+
+    if (!normalizedSearch) return true;
+
+    const terms = [
+      house.sport_name,
+      house.sport_code,
+      house.country_code,
+      house.head?.full_name,
+      house.head?.username,
+    ];
+
+    return terms.some((value) =>
+      value?.toLowerCase().includes(normalizedSearch),
+    );
+  });
+
   return (
     <>
       <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] text-white px-4 py-10 md:px-10">
