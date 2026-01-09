@@ -176,9 +176,7 @@ export default function AdminHousesPage() {
         const token = getToken();
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
-        const response = await fetch('/api/admin/permissions/self', {
-          headers,
-        });
+        const response = await fetch('/api/admin/permissions/self', { headers });
         const data = await response.json();
         if (!active) return;
         if (response.ok && data?.success && data.permissions) {
@@ -198,6 +196,8 @@ export default function AdminHousesPage() {
     return () => {
       active = false;
     };
+  }, [authLoading, user, getToken, isSuperAdmin]);
+
   const resetSportForm = () => {
     setNewSportName('');
     setNewSportCode('');
