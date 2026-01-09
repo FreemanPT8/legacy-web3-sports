@@ -1,13 +1,11 @@
 // lib/countries.ts
 
 export type Country = {
-  code: string;   // ISO 3166-1 alpha-2
-  name: string;   // Nome em inglês (podes trocar para PT se quiseres)
+  code: string;
+  name: string;
 };
 
-// Lista base de países (ISO 3166-1 alpha-2).
-// Podes ir acrescentando aqui até cobrir todos os países do mundo.
-export const COUNTRIES: Country[] = [
+const FALLBACK_COUNTRIES: Country[] = [
   { code: 'PT', name: 'Portugal' },
   { code: 'ES', name: 'Spain' },
   { code: 'FR', name: 'France' },
@@ -28,20 +26,17 @@ export const COUNTRIES: Country[] = [
   { code: 'PY', name: 'Paraguay' },
   { code: 'BO', name: 'Bolivia' },
   { code: 'EC', name: 'Ecuador' },
-
   { code: 'AO', name: 'Angola' },
   { code: 'MZ', name: 'Mozambique' },
   { code: 'CV', name: 'Cape Verde' },
   { code: 'ST', name: 'São Tomé and Príncipe' },
   { code: 'GW', name: 'Guinea-Bissau' },
-
   { code: 'ZA', name: 'South Africa' },
   { code: 'NG', name: 'Nigeria' },
   { code: 'EG', name: 'Egypt' },
   { code: 'MA', name: 'Morocco' },
   { code: 'KE', name: 'Kenya' },
   { code: 'TZ', name: 'Tanzania' },
-
   { code: 'JP', name: 'Japan' },
   { code: 'CN', name: 'China' },
   { code: 'KR', name: 'South Korea' },
@@ -52,7 +47,6 @@ export const COUNTRIES: Country[] = [
   { code: 'SG', name: 'Singapore' },
   { code: 'AU', name: 'Australia' },
   { code: 'NZ', name: 'New Zealand' },
-
   { code: 'RU', name: 'Russia' },
   { code: 'UA', name: 'Ukraine' },
   { code: 'PL', name: 'Poland' },
@@ -66,27 +60,62 @@ export const COUNTRIES: Country[] = [
   { code: 'FI', name: 'Finland' },
 ];
 
-// helper para manter tudo consistente
+const supportedValuesOf = (Intl as any)?.supportedValuesOf;
+
+function buildDynamicCountryList(): Country[] {
+  if (typeof supportedValuesOf !== 'function') {
+    return FALLBACK_COUNTRIES;
+  }
+
+  try {
+    const regions: string[] = supportedValuesOf.call(Intl, 'region');
+    const display = new Intl.DisplayNames(['en'], { type: 'region' });
+    const entries = regions
+      .filter((code) => /^[A-Z]{2}$/.test(code))
+      .map((code) => ({
+        code,
+        name: display.of(code) || code,
+      }));
+
+    if (entries.length > 0) {
+      return entries;
+    }
+  } catch (error) {
+    console.warn('[countries] Unable to derive global list, using fallback.', error);
+  }
+
+  return FALLBACK_COUNTRIES;
+}
+
+const baseCountries = buildDynamicCountryList();
+
+export const COUNTRIES: Country[] = Array.from(
+  new Map(
+    [...baseCountries, ...FALLBACK_COUNTRIES].map((country) => [
+      country.code.toUpperCase(),
+      { code: country.code.toUpperCase(), name: country.name },
+    ]),
+  ).values(),
+);
+
 export function getCountryName(code: string): string {
-  const found = COUNTRIES.find(
-    (c) => c.code.toUpperCase() === code.toUpperCase()
-  );
-  return found ? found.name : code.toUpperCase();
+  const normalized = code.toUpperCase();
+  const found = COUNTRIES.find((c) => c.code === normalized);
+  return found ? found.name : normalized;
 }
 
 export function getCountryCodeFromName(name?: string | null): string | null {
   if (!name) return null;
   const normalized = name.trim().toLowerCase();
-  const found = COUNTRIES.find((c) => c.name.toLowerCase() === normalized);
-  if (found) return found.code;
-  // try partial match (e.g., "United States" vs "United States of America")
+  const direct = COUNTRIES.find((c) => c.name.toLowerCase() === normalized);
+  if (direct) return direct.code;
+
   const loose = COUNTRIES.find((c) =>
     normalized.includes(c.name.toLowerCase()),
   );
   return loose ? loose.code : null;
 }
 
-// helper para ter lista ordenada por nome (para dropdowns)
 export function getSortedCountries(): Country[] {
   return [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
 }
