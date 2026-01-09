@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +16,7 @@ import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { SafeImage } from '@/app/components/SafeImage';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 type GovernanceResponse = {
   success: true;
@@ -34,6 +35,23 @@ type GovernanceResponse = {
 type ProfileResponse = {
   success: true;
   profile: HouseProfilePayload;
+};
+
+type HouseNote = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: {
+    id: string;
+    name: string;
+    username: string | null;
+    avatarUrl: string | null;
+  } | null;
+};
+
+type NotesResponse = {
+  success: true;
+  notes: HouseNote[];
 };
 
 const fetcher = (url: string) => fetch(url).then((res) => {
@@ -57,6 +75,12 @@ export default function AdminHouseGovernancePage() {
     params?.houseId ? `/api/admin/houses/${params.houseId}/profile` : null,
     fetcher,
   );
+  const {
+    data: notesData,
+    error: notesError,
+    isLoading: notesLoading,
+    mutate: mutateNotes,
+  } = useSWR<NotesResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/notes` : null, fetcher);
   const [monthlyCapacity, setMonthlyCapacity] = useState<string>('');
   const [supportMode, setSupportMode] = useState<string>('async');
   const [governanceStatus, setGovernanceStatus] = useState<string>('active');
@@ -66,6 +90,8 @@ export default function AdminHouseGovernancePage() {
   >([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [alertsError, setAlertsError] = useState<string | null>(null);
+  const [newNote, setNewNote] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
     if (data?.house) {
@@ -125,6 +151,39 @@ export default function AdminHouseGovernancePage() {
     }
   };
 
+  const handleAddNote = async () => {
+    if (!params?.houseId) return;
+    const trimmed = newNote.trim();
+    if (!trimmed) {
+      toast({ title: 'Nota vazia', description: 'Escreve algo antes de guardar.', variant: 'destructive' });
+      return;
+    }
+    setAddingNote(true);
+    try {
+      const response = await fetch(`/api/admin/houses/${params.houseId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: trimmed }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Não foi possível guardar a nota.');
+      }
+      setNewNote('');
+      toast({ title: 'Nota adicionada', description: 'Registo interno atualizado.' });
+      await mutateNotes();
+    } catch (err) {
+      console.error('[admin/houses] add note failed', err);
+      toast({
+        title: 'Erro ao guardar nota',
+        description: err instanceof Error ? err.message : 'Tenta novamente mais tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setAddingNote(false);
+    }
+  };
+
   if (!params?.houseId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -163,6 +222,8 @@ export default function AdminHouseGovernancePage() {
     sync: 'Síncrono (calls)',
     hybrid: 'Híbrido (mensagens + calls)',
   };
+  const notes = notesData?.notes ?? [];
+  const noteCharacterLimit = 1000;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -466,6 +527,95 @@ export default function AdminHouseGovernancePage() {
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/80">
                 Membros atuais: {house.memberCount.toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="grid gap-6">
+          <Card className="border-white/10 bg-gradient-to-br from-[#040f1a]/90 via-[#031521]/85 to-[#021822]/85">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <ShieldCheck className="h-5 w-5 text-cyan-300" />
+                Notas internas
+              </CardTitle>
+              <CardDescription className="text-xs text-white/60">
+                Visíveis apenas para Admin/Super Admin. Usa para registar decisões ou contexto sensível.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 text-sm text-white/80">
+              {notesLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A carregar notas...
+                </div>
+              ) : notesError ? (
+                <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-rose-100">
+                  Não foi possível carregar as notas internas. Recarrega a página ou tenta mais tarde.
+                </div>
+              ) : notes.length ? (
+                <div className="space-y-4">
+                  {notes.map((note) => (
+                    <div key={note.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <div className="flex items-center gap-3">
+                        <SafeImage
+                          src={note.author?.avatarUrl || ''}
+                          alt={note.author?.name || 'Admin'}
+                          className="h-10 w-10 rounded-full border border-white/15 object-cover"
+                        />
+                        <div>
+                          <p className="font-medium text-white">{note.author?.name ?? 'Admin'}</p>
+                          <p className="text-xs text-white/60">
+                            {new Date(note.createdAt).toLocaleString('pt-PT', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="mt-3 whitespace-pre-line text-sm text-white/80">{note.body}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-white/70">Ainda não existem notas internas para esta House.</p>
+              )}
+
+              <div className="space-y-3">
+                <Label htmlFor="house-note" className="text-sm text-white/80">
+                  Adicionar nota
+                </Label>
+                <Textarea
+                  id="house-note"
+                  rows={4}
+                  value={newNote}
+                  onChange={(event) => setNewNote(event.target.value.slice(0, noteCharacterLimit))}
+                  placeholder="Regista decisões, follow-ups ou contexto que outras equipas precisam de saber."
+                  className="border-white/20 bg-[#010913] text-white placeholder:text-white/40"
+                />
+                <div className="flex items-center justify-between text-xs text-white/60">
+                  <span>
+                    {newNote.length}/{noteCharacterLimit} caracteres
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={handleAddNote}
+                    disabled={addingNote || !newNote.trim()}
+                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                  >
+                    {addingNote ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        A guardar...
+                      </>
+                    ) : (
+                      'Guardar nota'
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
