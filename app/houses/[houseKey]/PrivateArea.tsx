@@ -85,8 +85,12 @@ export function PrivateArea({ houseKey, recommendedContent, culture }: Props) {
           | { success: true; messages: HouseMessage[] }
           | { success: false; error?: string }
           | null;
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.error || 'Falha ao carregar mensagens.');
+        if (!response.ok || !payload || !payload.success) {
+          const errorMessage =
+            !payload || payload.success
+              ? 'Falha ao carregar mensagens.'
+              : payload.error || 'Falha ao carregar mensagens.';
+          throw new Error(errorMessage);
         }
         setMessages(payload.messages ?? []);
       })
