@@ -33,7 +33,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -58,14 +57,6 @@ interface ApiResponse {
   success: boolean;
   error?: string;
   houses?: AdminHouse[];
-}
-
-interface SportPermissionAdmin {
-  id: string;
-  displayName: string;
-  username: string | null;
-  role: 'Admin' | 'Super Admin';
-  hasPermission: boolean;
 }
 
 const STATUS_LABELS: Record<HouseStatus, string> = {
@@ -120,75 +111,9 @@ export default function AdminHousesPage() {
   const [newSportNamePt, setNewSportNamePt] = useState('');
   const [newSportNameEs, setNewSportNameEs] = useState('');
   const [creatingSport, setCreatingSport] = useState(false);
-  const [sportPermissionAdmins, setSportPermissionAdmins] = useState<
-    SportPermissionAdmin[]
-  >([]);
-  const [loadingSportAdmins, setLoadingSportAdmins] = useState(false);
-  const [updatingSportAdminId, setUpdatingSportAdminId] = useState<
-    string | null
-  >(null);
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
-  const loadSportPermissionAdmins = useCallback(async () => {
-    if (!isSuperAdmin) return;
-    setLoadingSportAdmins(true);
-    try {
-      const token = getToken();
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (token) headers.Authorization = `Bearer ${token}`;
-
-      const response = await fetch('/api/admin/permissions', { headers });
-      const data = await response.json();
-
-      if (!response.ok || !data?.success || !Array.isArray(data.admins)) {
-        throw new Error(
-          data?.error || 'Failed to load admin permissions list.',
-        );
-      }
-
-      const rows: SportPermissionAdmin[] = (data.admins as any[])
-        .filter(
-          (admin) =>
-            admin.role === 'Super Admin' || admin.role === 'Admin',
-        )
-        .map((admin) => {
-          const effective = new Set<string>([
-            ...(admin.basePermissions || []),
-            ...(admin.extraPermissions || []),
-          ]);
-          const displayName =
-            admin.full_name || admin.username || admin.email || 'Admin';
-          return {
-            id: admin.id,
-            displayName,
-            username: admin.username,
-            role: admin.role,
-            hasPermission: effective.has('canCreateSports'),
-          } as SportPermissionAdmin;
-        })
-        .sort((a, b) => {
-          if (a.role === b.role) {
-            return a.displayName.localeCompare(b.displayName);
-          }
-          return a.role === 'Super Admin' ? -1 : 1;
-        });
-
-      setSportPermissionAdmins(rows);
-    } catch (err) {
-      console.error('Error loading sport permission admins:', err);
-      toast({
-        title: 'Erro ao carregar permissões',
-        description:
-          err instanceof Error
-            ? err.message
-            : 'Não foi possível carregar a lista de admins.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingSportAdmins(false);
-    }
-  }, [getToken, isSuperAdmin, toast]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -273,14 +198,6 @@ export default function AdminHousesPage() {
     return () => {
       active = false;
     };
-  }, [authLoading, user, getToken, isSuperAdmin]);
-
-  useEffect(() => {
-    if (isSuperAdmin) {
-      loadSportPermissionAdmins();
-    }
-  }, [isSuperAdmin, loadSportPermissionAdmins]);
-
   const resetSportForm = () => {
     setNewSportName('');
     setNewSportCode('');
@@ -361,79 +278,6 @@ export default function AdminHousesPage() {
     }
   };
 
-  const handleToggleAdminSportPermission = async (
-    adminId: string,
-    enabled: boolean,
-  ) => {
-    setUpdatingSportAdminId(adminId);
-    try {
-      const token = getToken();
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (token) headers.Authorization = `Bearer ${token}`;
-
-      const response = await fetch(
-        `/api/admin/users/${adminId}/permissions`,
-        {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify({
-            permissions: { canCreateSports: enabled },
-          }),
-        },
-      );
-
-      const data = await response.json();
-      if (!response.ok || !data?.success) {
-        throw new Error(
-          data?.error || 'Não foi possível atualizar a permissão.',
-        );
-      }
-
-      toast({
-        title: 'Permissões atualizadas',
-        description: enabled
-          ? 'Este Admin pode agora criar novos desportos.'
-          : 'Permissão removida com sucesso.',
-      });
-      await loadSportPermissionAdmins();
-    } catch (err) {
-      console.error('Erro ao atualizar permissão de desporto:', err);
-      toast({
-        title: 'Erro ao atualizar permissão',
-        description:
-          err instanceof Error
-            ? err.message
-            : 'Não foi possível atualizar esta permissão.',
-        variant: 'destructive',
-      });
-    } finally {
-      setUpdatingSportAdminId(null);
-    }
-  };
-
-  const canShowSportActions = canCreateSports || isSuperAdmin;
-
-  const filtered = useMemo(() => {
-    return houses.filter((house) => {
-      if (statusFilter !== 'all' && house.status !== statusFilter) return false;
-
-      if (!search.trim()) return true;
-      const term = search.toLowerCase();
-
-      const headName =
-        (house.head?.full_name || '') + ' ' + (house.head?.username || '');
-
-      return (
-        (house.sport_name || '').toLowerCase().includes(term) ||
-        (house.sport_code || '').toLowerCase().includes(term) ||
-        (house.country_code || '').toLowerCase().includes(term) ||
-        headName.toLowerCase().includes(term)
-      );
-    });
-  }, [houses, search, statusFilter]);
-
-  if (
-    authLoading ||
     !user ||
     (user.role !== 'Super Admin' && user.role !== 'Admin')
   ) {
@@ -555,68 +399,6 @@ export default function AdminHousesPage() {
                 </CardContent>
               </Card>
             )}
-
-            {isSuperAdmin && (
-              <Card className="border border-white/10 bg-[#031824] shadow-xl shadow-black/30">
-                <CardHeader>
-                  <CardTitle className="text-white">
-                    Permissão para criar desportos
-                  </CardTitle>
-                  <CardDescription className="text-sm text-slate-300">
-                    Decide quais Admin podem criar novos desportos. Super Admin
-                    tem sempre acesso.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {loadingSportAdmins ? (
-                    <div className="flex items-center gap-2 text-slate-200">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      A carregar admins...
-                    </div>
-                  ) : sportPermissionAdmins.length === 0 ? (
-                    <p className="text-sm text-slate-300">
-                      Ainda não existem admins configurados.
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {sportPermissionAdmins.map((admin) => (
-                        <div
-                          key={admin.id}
-                          className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-[#010d16] p-3"
-                        >
-                          <div>
-                            <p className="text-sm font-semibold text-white">
-                              {admin.displayName}
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              {admin.role === 'Super Admin'
-                                ? 'Super Admin'
-                                : admin.username
-                                  ? `@${admin.username}`
-                                  : 'Admin'}
-                            </p>
-                          </div>
-                          {admin.role === 'Super Admin' ? (
-                            <span className="text-xs text-cyan-300">
-                              Sempre ativo
-                            </span>
-                          ) : (
-                            <Switch
-                              checked={admin.hasPermission}
-                              disabled={
-                                updatingSportAdminId === admin.id ||
-                                creatingSport
-                              }
-                              onCheckedChange={(value) =>
-                                handleToggleAdminSportPermission(
-                                  admin.id,
-                                  value,
-                                )
-                              }
-                            />
-                          )}
-                        </div>
-                      ))}
                     </div>
                   )}
                 </CardContent>

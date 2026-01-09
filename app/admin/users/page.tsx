@@ -1,7 +1,7 @@
 // app/admin/users/page.tsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -87,6 +88,14 @@ type StatsUsers = {
   new30d: number;
 };
 
+type SportPermissionAdmin = {
+  id: string;
+  displayName: string;
+  username: string | null;
+  role: 'Admin' | 'Super Admin';
+  hasPermission: boolean;
+};
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -130,8 +139,62 @@ export default function AdminUsersPage() {
   const [loadingUserPermissions, setLoadingUserPermissions] = useState(false);
   const [savingUserPermissions, setSavingUserPermissions] = useState(false);
   const [userStats, setUserStats] = useState<StatsUsers | null>(null);
+  const [sportPermissionAdmins, setSportPermissionAdmins] = useState<SportPermissionAdmin[]>([]);
+  const [loadingSportAdmins, setLoadingSportAdmins] = useState(false);
+  const [updatingSportAdminId, setUpdatingSportAdminId] = useState<string | null>(null);
 
   const isSuperAdmin = user?.role === 'Super Admin';
+
+  const loadSportPermissionAdmins = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    setLoadingSportAdmins(true);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch('/api/admin/permissions', { headers });
+      const data = await response.json();
+      if (!response.ok || !data?.success || !Array.isArray(data.admins)) {
+        throw new Error(data?.error || 'Failed to load admin permissions list.');
+      }
+
+      const rows: SportPermissionAdmin[] = (data.admins as any[])
+        .filter((admin) => admin.role === 'Super Admin' || admin.role === 'Admin')
+        .map((admin) => {
+          const effective = new Set<string>([
+            ...(admin.basePermissions || []),
+            ...(admin.extraPermissions || []),
+          ]);
+          const displayName = admin.full_name || admin.username || admin.email || 'Admin';
+          return {
+            id: admin.id,
+            displayName,
+            username: admin.username,
+            role: admin.role,
+            hasPermission: effective.has('canCreateSports'),
+          } as SportPermissionAdmin;
+        })
+        .sort((a, b) => {
+          if (a.role === b.role) {
+            return a.displayName.localeCompare(b.displayName);
+          }
+          return a.role === 'Super Admin' ? -1 : 1;
+        });
+
+      setSportPermissionAdmins(rows);
+    } catch (err) {
+      console.error('Error loading sport permission admins:', err);
+      toast({
+        title: 'Erro ao carregar permissões',
+        description:
+          err instanceof Error ? err.message : 'Não foi possível carregar a lista de admins.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingSportAdmins(false);
+    }
+  }, [getToken, isSuperAdmin, toast]);
 
   // Protecao basica
   useEffect(() => {
@@ -258,6 +321,12 @@ export default function AdminUsersPage() {
     }
   }, [user, getToken]);
 
+  useEffect(() => {
+    if (isSuperAdmin) {
+      loadSportPermissionAdmins();
+    }
+  }, [isSuperAdmin, loadSportPermissionAdmins]);
+
   // Opcoes de filtros (pais e desporto)
   const countryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -274,6 +343,42 @@ export default function AdminUsersPage() {
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [users]);
+
+  const handleToggleAdminSportPermission = async (adminId: string, enabled: boolean) => {
+    setUpdatingSportAdminId(adminId);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(`/api/admin/users/${adminId}/permissions`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ permissions: { canCreateSports: enabled } }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Não foi possível atualizar a permissão.');
+      }
+
+      toast({
+        title: 'Permissões atualizadas',
+        description: enabled
+          ? 'Este Admin pode agora criar novos desportos.'
+          : 'Permissão removida com sucesso.',
+      });
+      await loadSportPermissionAdmins();
+    } catch (err) {
+      console.error('Erro ao atualizar permissão de desporto:', err);
+      toast({
+        title: 'Erro ao atualizar permissão',
+        description: err instanceof Error ? err.message : 'Não foi possível atualizar esta permissão.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingSportAdminId(null);
+    }
+  };
 
   // Filtrar e ordenar
   const filteredAndSortedUsers = useMemo(() => {
@@ -861,6 +966,55 @@ export default function AdminUsersPage() {
               </Card>
             ))}
           </div>
+
+          {isSuperAdmin && (
+            <Card className="border border-white/10 bg-[#031824] shadow-xl shadow-black/30">
+              <CardHeader>
+                <CardTitle className="text-white">Permissão para criar desportos</CardTitle>
+                <p className="text-sm text-slate-300">
+                  Decide quais Admin podem criar novos desportos. Super Admin tem sempre acesso.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {loadingSportAdmins ? (
+                  <p className="text-sm text-slate-200">A carregar admins...</p>
+                ) : sportPermissionAdmins.length === 0 ? (
+                  <p className="text-sm text-slate-300">Ainda não existem admins configurados.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {sportPermissionAdmins.map((admin) => (
+                      <div
+                        key={admin.id}
+                        className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-[#010d16] p-3"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-white">{admin.displayName}</p>
+                          <p className="text-xs text-slate-400">
+                            {admin.role === 'Super Admin'
+                              ? 'Super Admin'
+                              : admin.username
+                              ? `@${admin.username}`
+                              : 'Admin'}
+                          </p>
+                        </div>
+                        {admin.role === 'Super Admin' ? (
+                          <span className="text-xs text-cyan-300">Sempre ativo</span>
+                        ) : (
+                          <Switch
+                            checked={admin.hasPermission}
+                            disabled={updatingSportAdminId === admin.id}
+                            onCheckedChange={(value) =>
+                              handleToggleAdminSportPermission(admin.id, Boolean(value))
+                            }
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* USER MANAGEMENT */}
           <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
