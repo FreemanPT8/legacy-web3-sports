@@ -33,7 +33,9 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
     if (membersError) throw membersError;
 
     const memberIds =
-      membersData?.map((row) => row.user_id as string).filter((id): id is string => Boolean(id)) ?? [];
+      membersData
+        ?.map((row: { user_id: string | null }) => row.user_id)
+        .filter((id): id is string => Boolean(id)) ?? [];
     const memberCount = memberIds.length;
 
     let completionRate = 0;
@@ -63,8 +65,8 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       if (xpError) throw xpError;
 
       const lastActivity = new Map<string, number>();
-      xpRows?.forEach((row: any) => {
-        const id = row.user_id as string | null;
+      xpRows?.forEach((row: { user_id: string | null; created_at: string | null }) => {
+        const id = row.user_id;
         const createdAt = row.created_at ? new Date(row.created_at).getTime() : null;
         if (!id || !createdAt) return;
         const previous = lastActivity.get(id) ?? 0;
