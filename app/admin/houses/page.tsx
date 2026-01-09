@@ -366,59 +366,58 @@ export default function AdminHousesPage() {
                 Reset filtros
               </Button>
             </div>
-          </div>
-        </section>
-
-        {canShowSportActions && (
-          <section className="grid gap-4 md:grid-cols-2">
-            {canCreateSports && (
-              <Card className="border border-white/10 bg-[#04131b] shadow-xl shadow-black/30">
-                <CardHeader>
-                  <CardTitle className="text-white">
-                    Adicionar novo desporto
-                  </CardTitle>
-                  <CardDescription className="text-sm text-slate-300">
-                    Regista desportos que ainda não existem para desbloquear
-                    novas Houses oficiais.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="text-sm text-slate-300">
-                    <p>
-                      Super Admin e Admin com permissão podem criar desportos em
-                      segundos. As Houses passam a estar disponíveis para esse
-                      desporto assim que for criado.
-                    </p>
-                  </div>
-                  <Button
-                    className="bg-cyan-500 text-[#00111a] hover:bg-cyan-400"
-                    disabled={checkingSportPermission || creatingSport}
-                    onClick={() => setSportModalOpen(true)}
-                  >
-                    Criar desporto
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
           </section>
-        )}
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
-            <CardHeader className="space-y-2 pb-2">
-              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
-                TOTAL
-              </p>
-              <CardTitle className="text-3xl font-semibold text-white">
-                {totalHouses}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-300">
-                Houses registadas no ecossistema.
-              </p>
-            </CardContent>
-          </Card>
+          {canShowSportActions && (
+            <section className="grid gap-4 md:grid-cols-2">
+              {canCreateSports && (
+                <Card className="border border-white/10 bg-[#04131b] shadow-xl shadow-black/30">
+                  <CardHeader>
+                    <CardTitle className="text-white">
+                      Adicionar novo desporto
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-300">
+                      Regista desportos que ainda não existem para desbloquear
+                      novas Houses oficiais.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="text-sm text-slate-300">
+                      <p>
+                        Super Admin e Admin com permissão podem criar desportos
+                        em segundos. As Houses passam a estar disponíveis para
+                        esse desporto assim que for criado.
+                      </p>
+                    </div>
+                    <Button
+                      className="bg-cyan-500 text-[#00111a] hover:bg-cyan-400"
+                      disabled={checkingSportPermission || creatingSport}
+                      onClick={() => setSportModalOpen(true)}
+                    >
+                      Criar desporto
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </section>
+          )}
+
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
+              <CardHeader className="space-y-2 pb-2">
+                <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                  TOTAL
+                </p>
+                <CardTitle className="text-3xl font-semibold text-white">
+                  {totalHouses}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-300">
+                  Houses registadas no ecossistema.
+                </p>
+              </CardContent>
+            </Card>
 
           <Card className="border border-white/10 bg-[#04131b] shadow-lg shadow-black/30">
             <CardHeader className="space-y-2 pb-2">
