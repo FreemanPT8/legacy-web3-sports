@@ -83,6 +83,23 @@ interface HeadInvite {
   targetUserId?: string | null;
 }
 
+interface JoinRequest {
+  id: string;
+  houseId: string;
+  houseKey: string;
+  houseName: string;
+  countryCode: string | null;
+  status: string | null;
+  note: string | null;
+  createdAt: string;
+  user: {
+    id: string | null;
+    name: string;
+    username: string | null;
+    email: string | null;
+  };
+}
+
 const STATUS_LABELS: Record<HouseStatus, string> = {
   active: 'Active',
   under_construction: 'Under construction',
@@ -144,6 +161,10 @@ export default function AdminHousesPage() {
   const [invitesError, setInvitesError] = useState<string | null>(null);
   const [acceptingInviteId, setAcceptingInviteId] = useState<string | null>(null);
   const [decliningInviteId, setDecliningInviteId] = useState<string | null>(null);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
+  const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
+  const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(null);
 
   const isSuperAdmin = user?.role === 'Super Admin';
   const highlightInvites = searchParams?.get('tab') === 'invites';
@@ -250,6 +271,81 @@ export default function AdminHousesPage() {
     }
   }, [getToken, user]);
 
+  const refreshJoinRequests = useCallback(async () => {
+    if (!user) {
+      setJoinRequests([]);
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      setJoinRequests([]);
+      setJoinRequestsError('Sessão inválida.');
+      return;
+    }
+
+    setJoinRequestsLoading(true);
+    setJoinRequestsError(null);
+    try {
+      const response = await fetch('/api/admin/houses/join-requests', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Falha ao carregar pedidos.');
+      }
+      setJoinRequests(payload.requests || []);
+    } catch (err) {
+      console.error('[admin/houses] load join requests failed', err);
+      setJoinRequests([]);
+      setJoinRequestsError(
+        err instanceof Error ? err.message : 'Não foi possível carregar os pedidos pendentes.',
+      );
+    } finally {
+      setJoinRequestsLoading(false);
+    }
+  }, [getToken, user]);
+
+  const handleCancelJoinRequest = useCallback(
+    async (request: JoinRequest) => {
+      const token = getToken();
+      if (!token) {
+        toast({
+          title: 'Sessão inválida',
+          description: 'Reinicia sessão antes de cancelar o pedido.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      try {
+        setCancelingRequestId(request.id);
+        const response = await fetch(`/api/admin/houses/join-requests/${request.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || 'Falha ao cancelar pedido.');
+        }
+        toast({
+          title: 'Pedido cancelado',
+          description: `Removeste o pedido de ${request.user.name} para a ${request.houseName}.`,
+        });
+        await refreshJoinRequests();
+      } catch (err) {
+        toast({
+          title: 'Erro ao cancelar pedido',
+          description: err instanceof Error ? err.message : 'Tenta novamente mais tarde.',
+          variant: 'destructive',
+        });
+      } finally {
+        setCancelingRequestId(null);
+      }
+    },
+    [getToken, refreshJoinRequests, toast],
+  );
+
 
   const handleAcceptInvite = useCallback(
     async (invite: HeadInvite) => {
@@ -342,6 +438,11 @@ export default function AdminHousesPage() {
     if (authLoading || !user) return;
     void refreshHeadInvites();
   }, [authLoading, user, refreshHeadInvites]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    void refreshJoinRequests();
+  }, [authLoading, user, refreshJoinRequests]);
 
   useEffect(() => {
     if (highlightInvites && pendingInvites.length && invitesSectionRef.current) {
@@ -506,6 +607,15 @@ export default function AdminHousesPage() {
     if (!value) return 'Unknown date';
     try {
       return format(new Date(value), 'dd/MM/yyyy');
+    } catch (error) {
+      return value || 'Unknown date';
+    }
+  };
+
+  const formatDateTime = (value: string | null | undefined) => {
+    if (!value) return 'Unknown date';
+    try {
+      return format(new Date(value), 'dd/MM/yyyy HH:mm');
     } catch (error) {
       return value || 'Unknown date';
     }
@@ -818,6 +928,90 @@ export default function AdminHousesPage() {
               </p>
             </CardContent>
           </Card>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-[#02121d]/70 p-6 shadow-[0_25px_70px_rgba(3,10,25,0.45)]">
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                PEDIDOS PENDENTES
+              </p>
+              <h2 className="text-xl font-semibold text-white">Pedidos CTA das Houses</h2>
+              <p className="text-sm text-slate-300">
+                Super Admin vê todos os pedidos. Admins vêem os pedidos das Houses que lideram.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className={secondaryButtonClasses}
+              onClick={() => void refreshJoinRequests()}
+              disabled={joinRequestsLoading}
+            >
+              Atualizar pedidos
+            </Button>
+          </div>
+          {joinRequestsError ? (
+            <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-100">
+              {joinRequestsError}
+            </p>
+          ) : null}
+          {joinRequestsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-slate-300">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              A carregar pedidos...
+            </div>
+          ) : joinRequests.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              Não existem pedidos pendentes nas Houses que geres.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {joinRequests.map((request) => (
+                <article
+                  key={request.id}
+                  className="rounded-2xl border border-white/10 bg-[#010b16]/70 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.45)]"
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{request.user.name}</p>
+                      {request.user.username ? (
+                        <p className="text-xs text-slate-400">@{request.user.username}</p>
+                      ) : null}
+                      {request.user.email ? (
+                        <p className="text-xs text-slate-500">{request.user.email}</p>
+                      ) : null}
+                    </div>
+                    <div className="text-right text-xs text-slate-400">
+                      <p className="font-semibold text-white">{request.houseName}</p>
+                      <p>{request.houseKey}</p>
+                      <p>{formatDateTime(request.createdAt)}</p>
+                    </div>
+                  </div>
+                  {request.note ? (
+                    <p className="mt-3 rounded-2xl border border-white/5 bg-white/5 p-3 text-sm text-slate-200">
+                      {request.note}
+                    </p>
+                  ) : null}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      className={secondaryButtonClasses}
+                      disabled={cancelingRequestId === request.id}
+                      onClick={() => void handleCancelJoinRequest(request)}
+                    >
+                      {cancelingRequestId === request.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A cancelar...
+                        </>
+                      ) : (
+                        'Cancelar pedido'
+                      )}
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="space-y-3">

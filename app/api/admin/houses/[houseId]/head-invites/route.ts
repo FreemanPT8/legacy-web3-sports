@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getHouseHeadHouseIds } from '@/lib/server/house-heads';
 
 type InviteRow = {
   id: string;
@@ -24,31 +25,6 @@ function isMissingColumn(error?: { code?: string }) {
 
 function isMissingTable(error?: { code?: string }) {
   return error?.code === '42P01';
-}
-
-async function actorIsHouseHead(userId: string | undefined, houseId: string): Promise<boolean> {
-  if (!userId || !supabaseAdmin) return false;
-
-  const { data: assignments, error: assignmentsError } = await supabaseAdmin
-    .from('admin_assignments')
-    .select('id')
-    .eq('user_id', userId);
-
-  if (assignmentsError) throw assignmentsError;
-
-  const adminIds = (assignments ?? []).map((row: { id: string }) => row.id);
-  if (!adminIds.length) return false;
-
-  const { data: headRow, error: headError } = await supabaseAdmin
-    .from('house_heads')
-    .select('id')
-    .eq('house_id', houseId)
-    .in('admin_id', adminIds)
-    .maybeSingle();
-
-  if (headError && headError.code !== 'PGRST116') throw headError;
-
-  return Boolean(headRow);
 }
 
 function missingTableResponse(tableName: string) {
@@ -135,7 +111,8 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
     const isSuperAdmin = actor?.role === 'Super Admin';
     let actorCanInvite = isSuperAdmin;
     if (!actorCanInvite && actor?.role === 'Admin') {
-      actorCanInvite = await actorIsHouseHead(actor.userId, houseId);
+      const headHouseIds = await getHouseHeadHouseIds(actor.userId);
+      actorCanInvite = headHouseIds.includes(houseId);
     }
     if (!actorCanInvite) {
       return NextResponse.json(
