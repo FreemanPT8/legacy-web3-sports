@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
+import { SafeImage } from '@/app/components/SafeImage';
+import { Separator } from '@/components/ui/separator';
 
 type GovernanceResponse = {
   success: true;
@@ -156,6 +158,11 @@ export default function AdminHouseGovernancePage() {
 
   const { house } = data;
   const profileHouse = profileData?.profile.house;
+  const supportModeLabel: Record<string, string> = {
+    async: 'Assíncrono (mensagens)',
+    sync: 'Síncrono (calls)',
+    hybrid: 'Híbrido (mensagens + calls)',
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -169,6 +176,175 @@ export default function AdminHouseGovernancePage() {
               Ajusta limites e modo de operação desta House sem sair do painel. Visual aligned com Education XP.
             </p>
           </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-3">
+          {profileLoading ? (
+            <Card className="border-white/10 bg-[#041524]/90 lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <ShieldCheck className="h-5 w-5 text-cyan-300" />
+                  Identidade pública
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A carregar perfil público e métricas...
+                </div>
+              </CardContent>
+            </Card>
+          ) : profileError || !profileHouse ? (
+            <Card className="border-white/10 bg-[#041524]/90 lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <ShieldCheck className="h-5 w-5 text-rose-300" />
+                  Falha ao carregar perfil
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-white/70">
+                Não foi possível recuperar o perfil público desta House. Verifica o endpoint ou tenta novamente.
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card className="border-white/10 bg-[#03182a]/90">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-white">
+                    <span>Identidade pública</span>
+                    <span
+                      className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.25em] text-white/80"
+                    >
+                      {profileHouse.badge}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-white/80">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">posicionamento</p>
+                    <p className="pt-2 text-lg font-semibold text-white">{profileHouse.positioning.title}</p>
+                    <p className="text-white/60">{profileHouse.positioning.subtitle || '—'}</p>
+                  </div>
+                  <Separator className="border-white/10" />
+                  <div className="grid gap-2 text-xs uppercase tracking-[0.3em] text-white/60">
+                    <span>Status: {profileHouse.status}</span>
+                    <span>Governança: {profileHouse.governanceStatus}</span>
+                    <span>Suporte: {supportModeLabel[profileHouse.supportModel.contactMode] ?? '—'}</span>
+                  </div>
+                  <Separator className="border-white/10" />
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">missão</p>
+                    <p className="pt-2 text-sm text-white/80">{profileHouse.mission.title}</p>
+                    <ul className="mt-2 space-y-1 text-white/70">
+                      {(Array.isArray(profileHouse.mission.body)
+                        ? profileHouse.mission.body
+                        : [profileHouse.mission.body]
+                      ).map((line, index) => (
+                        <li key={index} className="text-xs text-white/70">
+                          • {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-white/10 bg-[#03131f]/90">
+                <CardHeader>
+                  <CardTitle className="text-white">Head & Segmentação</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-white/80">
+                  {profileHouse.head ? (
+                    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <SafeImage
+                        src={profileHouse.head.photoUrl || ''}
+                        alt={profileHouse.head.name}
+                        className="h-14 w-14 rounded-full border border-cyan-500/30 object-cover"
+                      />
+                      <div>
+                        <p className="font-semibold text-white">{profileHouse.head.name}</p>
+                        <p className="text-xs text-white/60">@{profileHouse.head.username ?? 'sem-username'}</p>
+                        {profileHouse.head.country && (
+                          <p className="text-xs text-white/50">{profileHouse.head.country}</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="rounded-2xl border border-white/10 bg-black/20 p-3 text-xs text-white/60">
+                      Nenhum Head associado.
+                    </p>
+                  )}
+                  <div className="grid gap-3 text-xs">
+                    <div>
+                      <p className="mb-1 text-[11px] uppercase tracking-[0.35em] text-cyan-300">Para quem é</p>
+                      <ul className="space-y-1 text-white/75">
+                        {profileHouse.audience.for.length ? (
+                          profileHouse.audience.for.map((item) => <li key={item}>• {item}</li>)
+                        ) : (
+                          <li className="text-white/50">Sem definição.</li>
+                        )}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[11px] uppercase tracking-[0.35em] text-rose-300">Não é para</p>
+                      <ul className="space-y-1 text-white/75">
+                        {profileHouse.audience.notFor.length ? (
+                          profileHouse.audience.notFor.map((item) => <li key={item}>• {item}</li>)
+                        ) : (
+                          <li className="text-white/50">Sem definição.</li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-white/10 bg-[#03121d]/90">
+                <CardHeader>
+                  <CardTitle className="text-white">Operação pública</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-white/80">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">Expectativas</p>
+                    <ul className="mt-2 space-y-1 text-white/70">
+                      {profileHouse.supportModel.expectationNotes.length ? (
+                        profileHouse.supportModel.expectationNotes.map((note) => <li key={note}>• {note}</li>)
+                      ) : (
+                        <li className="text-white/50">Sem notas registadas.</li>
+                      )}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">Cultura</p>
+                    <ul className="mt-2 space-y-1 text-white/70">
+                      {profileHouse.culture.length ? (
+                        profileHouse.culture.map((value) => <li key={value}>• {value}</li>)
+                      ) : (
+                        <li className="text-white/50">Adiciona princípios culturais para a House.</li>
+                      )}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">CTA público</p>
+                    <p className="pt-2 text-sm text-white">
+                      {profileHouse.cta.label}{' '}
+                      <span className="text-white/60">({profileHouse.cta.helper || 'sem aviso'})</span>
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-xs text-white/70">
+                    <p>Membros: {profileHouse.metrics.memberCount.toLocaleString()}</p>
+                    <p>XP total: {profileHouse.metrics.xpTotal.toLocaleString()}</p>
+                    <p>
+                      Termos aceites:{' '}
+                      <span className="font-semibold text-white">{profileHouse.metrics.termAcceptances}</span>
+                    </p>
+                    <p>
+                      Pop-ups publicados:{' '}
+                      <span className="font-semibold text-white">{profileHouse.metrics.onboarding.published}</span>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
