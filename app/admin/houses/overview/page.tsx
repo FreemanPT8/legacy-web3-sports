@@ -203,7 +203,7 @@ export default function AdminHousesOverviewPage() {
                     key={sport.sportCode}
                     className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/80"
                   >
-                    <span className="text-white uppercase tracking-[0.35em]">{sport.sportCode || 'â€”'}</span>
+                    <span className="text-white uppercase tracking-[0.35em]">{sport.sportCode || '—'}</span>
                     <span className="font-semibold text-[#fdd87c]">{sport.pending.toLocaleString()} pedidos</span>
                   </div>
                 ))
@@ -355,3 +355,4 @@ function MetricCard({
     </Card>
   );
 }
+
