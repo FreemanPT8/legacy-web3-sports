@@ -101,3 +101,15 @@ To keep the endpoint fast:
 
 This contract will be implemented in the next step along with the UI.
 
+---
+
+## Alert Automation (Cron)
+
+- A background scan endpoint exists at `POST /api/admin/houses/alerts/scan` (admin protected) and
+  a cron-friendly public endpoint `GET /api/cron/house-alerts`.
+- Configure an environment variable `HOUSE_ALERT_CRON_SECRET` with a random value and include the same value
+  in the request header `x-cron-secret` when invoking the cron endpoint.
+- Schedule a task (e.g., Vercel Cron, GitHub Actions, external scheduler) to hit
+  `/api/cron/house-alerts` every hour. The route reuses the same logic as the manual button and records
+  any new alerts/resolutions automatically.
+
