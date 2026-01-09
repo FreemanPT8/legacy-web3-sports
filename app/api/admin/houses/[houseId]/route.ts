@@ -366,3 +366,107 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { houseId: string } }
+) {
+  const authResult = await requireAdmin(request);
+  if (!authResult.success) return authResult.response!;
+  if (!supabaseAdmin) {
+    return NextResponse.json(
+      { success: false, error: 'Supabase admin client unavailable.' },
+      { status: 500 }
+    );
+  }
+
+  const houseId = params.houseId;
+  if (!houseId) {
+    return NextResponse.json(
+      { success: false, error: 'Missing house id.' },
+      { status: 400 }
+    );
+  }
+
+  const role = authResult.user?.role ?? 'Member';
+  if (role !== 'Super Admin') {
+    return NextResponse.json(
+      { success: false, error: 'Only Super Admin can delete Houses.' },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const { data: houseRow, error: houseError } = await supabaseAdmin
+      .from('houses_of_sports')
+      .select('id, house_key, name_i18n')
+      .eq('id', houseId)
+      .maybeSingle();
+
+    if (houseError) {
+      console.error('[admin/houses] delete load failed', houseError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to load House.' },
+        { status: 500 }
+      );
+    }
+    if (!houseRow) {
+      return NextResponse.json(
+        { success: false, error: 'House not found.' },
+        { status: 404 }
+      );
+    }
+
+    const houseKey: string | null = houseRow.house_key ?? null;
+
+    const deletionTargets: { table: string; column: string; value: string | null }[] = [
+      { table: 'house_notes', column: 'house_id', value: houseId },
+      { table: 'house_moderators', column: 'house_id', value: houseId },
+      { table: 'house_heads', column: 'house_id', value: houseId },
+      { table: 'house_head_invites', column: 'house_id', value: houseId },
+      { table: 'house_head_terms', column: 'house_id', value: houseId },
+      { table: 'house_history', column: 'house_id', value: houseId },
+      { table: 'house_alerts', column: 'house_id', value: houseId },
+      { table: 'house_profiles', column: 'house_id', value: houseId },
+      { table: 'house_join_requests', column: 'house_id', value: houseId },
+      { table: 'house_term_acceptances', column: 'house_key', value: houseKey },
+      { table: 'house_onboarding_sequences', column: 'house_key', value: houseKey },
+      { table: 'user_houses', column: 'house_id', value: houseId },
+    ];
+
+    for (const target of deletionTargets) {
+      if (!target.value) continue;
+      const { error } = await supabaseAdmin
+        .from(target.table)
+        .delete()
+        .eq(target.column, target.value);
+      if (error) {
+        console.error(
+          `[admin/houses] delete step failed for ${target.table}`,
+          error
+        );
+      }
+    }
+
+    const { error: deleteHouseError } = await supabaseAdmin
+      .from('houses_of_sports')
+      .delete()
+      .eq('id', houseId);
+
+    if (deleteHouseError) {
+      console.error('[admin/houses] failed to delete house row', deleteHouseError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to delete House.' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[admin/houses] unexpected delete error', err);
+    return NextResponse.json(
+      { success: false, error: 'Unexpected error while deleting House.' },
+      { status: 500 }
+    );
+  }
+}

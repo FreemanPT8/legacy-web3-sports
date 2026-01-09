@@ -20,7 +20,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, Plus, Building2 } from 'lucide-react';
+import { Loader2, Plus, Building2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SafeImage } from '@/app/components/SafeImage';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +32,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
@@ -111,8 +121,78 @@ export default function AdminHousesPage() {
   const [newSportNamePt, setNewSportNamePt] = useState('');
   const [newSportNameEs, setNewSportNameEs] = useState('');
   const [creatingSport, setCreatingSport] = useState(false);
+  const [houseToDelete, setHouseToDelete] = useState<AdminHouse | null>(null);
+  const [deletingHouse, setDeletingHouse] = useState(false);
 
   const isSuperAdmin = user?.role === 'Super Admin';
+
+  const fetchHouses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = getToken();
+      if (!token) {
+        setError('No authentication token provided');
+        setHouses([]);
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/admin/houses', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data: ApiResponse = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Failed to load Houses of Sports');
+        setHouses([]);
+      } else {
+        setHouses(data.houses || []);
+      }
+    } catch (err) {
+      console.error('Error loading houses in /admin/houses:', err);
+      setError('Unexpected error while loading Houses of Sports');
+      setHouses([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
+  const handleDeleteHouse = useCallback(async () => {
+    if (!houseToDelete) return;
+    try {
+      setDeletingHouse(true);
+      const token = getToken();
+      if (!token) {
+        throw new Error('Sem token de autenticação.');
+      }
+      const response = await fetch(`/api/admin/houses/${houseToDelete.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Não foi possível remover a House.');
+      }
+      toast({
+        title: 'House removida',
+        description: `${houseToDelete.sport_name ?? 'House'} foi removida permanentemente.`,
+      });
+      setHouseToDelete(null);
+      await fetchHouses();
+    } catch (err) {
+      toast({
+        title: 'Erro ao remover House',
+        description: err instanceof Error ? err.message : 'Tenta novamente mais tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingHouse(false);
+    }
+  }, [fetchHouses, getToken, houseToDelete, toast]);
 
 
   useEffect(() => {
@@ -123,43 +203,8 @@ export default function AdminHousesPage() {
       return;
     }
 
-    const fetchHouses = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const token = getToken();
-        if (!token) {
-          setError('No authentication token provided');
-          setLoading(false);
-          return;
-        }
-
-        const res = await fetch('/api/admin/houses', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const data: ApiResponse = await res.json();
-
-        if (!res.ok || !data.success) {
-          setError(data.error || 'Failed to load Houses of Sports');
-          setHouses([]);
-          setLoading(false);
-          return;
-        }
-
-        setHouses(data.houses || []);
-      } catch (err) {
-        console.error('Error loading houses in /admin/houses:', err);
-        setError('Unexpected error while loading Houses of Sports');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchHouses();
-  }, [authLoading, user, getToken, router]);
+  }, [authLoading, user, router, fetchHouses]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -711,6 +756,16 @@ export default function AdminHousesPage() {
                               >
                                 Gerir roles
                               </Button>
+                              {isSuperAdmin ? (
+                                <Button
+                                  variant="destructive"
+                                  className="border border-rose-500/40 bg-gradient-to-r from-rose-600/80 to-red-700/80 text-white shadow-[0_10px_35px_rgba(244,63,94,0.35)] hover:opacity-90"
+                                  onClick={() => setHouseToDelete(house)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Apagar
+                                </Button>
+                              ) : null}
                             </div>
                           </div>
                         </div>
@@ -812,6 +867,43 @@ export default function AdminHousesPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <AlertDialog
+        open={Boolean(houseToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deletingHouse) {
+            setHouseToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="border border-white/10 bg-[#02121c] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar House</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-300">
+              Tem a certeza que queres remover a{' '}
+              <span className="font-semibold text-white">
+                {houseToDelete?.sport_name ?? 'House'}
+              </span>
+              ? Esta ação é irreversível e apaga todos os registos associados a esta House.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingHouse}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingHouse}
+              className="bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500"
+              onClick={() => void handleDeleteHouse()}
+            >
+              {deletingHouse ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A apagar...
+                </>
+              ) : (
+                'Apagar definitivamente'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
