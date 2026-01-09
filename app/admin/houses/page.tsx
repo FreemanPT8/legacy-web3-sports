@@ -307,8 +307,8 @@ export default function AdminHousesPage() {
     if (!value) return 'Unknown date';
     try {
       return format(new Date(value), 'dd/MM/yyyy');
-    } catch {
-
+    } catch (error) {
+      return value || 'Unknown date';
     }
   };
 
