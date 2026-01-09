@@ -77,6 +77,15 @@ export default function AdminHousesOverviewPage() {
     medium: 'text-amber-300 bg-amber-500/10 border border-amber-500/30',
     high: 'text-rose-300 bg-rose-500/10 border border-rose-500/30',
   };
+  const sortedPoolPressure = useMemo(() => {
+    return [...(data.poolPressure ?? [])]
+      .sort((a, b) => (b.pending || 0) - (a.pending || 0))
+      .slice(0, 6);
+  }, [data.poolPressure]);
+  const totalPoolPending = useMemo(
+    () => data.poolPressure?.reduce((acc, entry) => acc + (entry.pending || 0), 0) ?? 0,
+    [data.poolPressure],
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -156,20 +165,35 @@ export default function AdminHousesOverviewPage() {
           </Card>
 
           <Card className="border-white/10 bg-[#03121d]/80">
-            <CardHeader>
+            <CardHeader className="space-y-1">
               <CardTitle className="text-lg text-white">Pressão por desporto</CardTitle>
+              <p className="text-xs text-white/60">
+                Pedidos pendentes sem House ativa. Total atual: {totalPoolPending.toLocaleString()}
+              </p>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {data.poolPressure.length ? (
-                data.poolPressure.map((sport) => (
-                  <div key={sport.sportCode} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
-                    <span className="text-white uppercase">{sport.sportCode}</span>
-                    <span className="text-white/70">{sport.pending} pendentes</span>
+            <CardContent className="space-y-4">
+              {sortedPoolPressure.length ? (
+                sortedPoolPressure.map((sport) => (
+                  <div
+                    key={sport.sportCode}
+                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/80"
+                  >
+                    <span className="text-white uppercase tracking-[0.35em]">{sport.sportCode || '—'}</span>
+                    <span className="font-semibold text-[#fdd87c]">{sport.pending.toLocaleString()} pedidos</span>
                   </div>
                 ))
               ) : (
                 <p className="text-sm text-white/70">Sem pressão registada nas pools.</p>
               )}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  className="border-white/20 text-white hover:border-cyan-300/50 hover:text-cyan-200"
+                  asChild
+                >
+                  <Link href="/admin/houses/pools">Abrir painel de pools</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </section>
