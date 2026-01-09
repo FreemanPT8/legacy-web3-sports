@@ -393,6 +393,21 @@ export default function CreateHousePage() {
     }
   };
 
+  const formatInviteExpiration = (isoDate: string | null) => {
+    if (!isoDate) return null;
+    try {
+      return new Date(isoDate).toLocaleString('pt-PT', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return null;
+    }
+  };
+
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#010913] text-slate-100">
@@ -560,112 +575,169 @@ export default function CreateHousePage() {
                     As imagens vêm diretamente da Media Library do Legacy.
                   </p>
                 </div>
-
               </CardContent>
-          </Card>
+            </Card>
 
-          <Card className="rounded-3xl border border-white/10 bg-[#000c12]/40 shadow-[0_35px_90px_rgba(3,10,25,0.45)]">
-            <CardHeader>
-              <CardTitle className="text-white">Convidar Head of House</CardTitle>
-              <CardDescription className="text-slate-300">
-                Apenas contas Admin e Super Admin podem ser convidadas. O convite envia uma
-                notificação e inclui o termo de responsabilidade obrigatório.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {!createdHouse ? (
-                <div className="rounded-2xl border border-dashed border-white/15 bg-[#04121d]/50 p-4 text-sm text-slate-300">
-                  Cria primeiro a House para poderes enviar convites de Head.
-                </div>
-              ) : (
-                <>
-                  <div className="rounded-2xl border border-white/10 bg-[#04121d]/60 p-4 text-sm text-slate-200">
-                    <p className="font-semibold text-white">{createdHouse.name}</p>
-                    <p className="text-xs text-slate-400">
-                      ID: <span className="font-mono text-slate-300">{createdHouse.id}</span>
-                    </p>
+            <Card className="rounded-3xl border border-white/10 bg-[#000c12]/40 shadow-[0_35px_90px_rgba(3,10,25,0.45)]">
+              <CardHeader>
+                <CardTitle className="text-white">Convidar Head of House</CardTitle>
+                <CardDescription className="text-slate-300">
+                  Apenas contas Admin e Super Admin podem ser convidadas. O convite envia uma
+                  notificação e inclui o termo de responsabilidade obrigatório.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {!createdHouse ? (
+                  <div className="rounded-2xl border border-dashed border-white/15 bg-[#04121d]/50 p-4 text-sm text-slate-300">
+                    Cria primeiro a House para poderes enviar convites de Head.
                   </div>
-
-                  <div className="grid gap-3 md:grid-cols-[2fr,1fr] md:items-end">
-                    <div className="space-y-2">
-                      <p className={labelClass}>Selecionar Admin</p>
-                      <Select value={selectedAdminId || undefined} onValueChange={setSelectedAdminId}>
-                        <SelectTrigger className="border-white/10 bg-[#02121d]/80 text-white">
-                          <SelectValue placeholder={adminsLoading ? 'A carregar...' : 'Escolhe a conta Admin'} />
-                        </SelectTrigger>
-                        <SelectContent className="border-white/10 bg-[#010f1a] text-white">
-                          {adminsLoading ? (
-                            <SelectItem value="loading" disabled>
-                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                              A carregar...
-                            </SelectItem>
-                          ) : adminUsers.length === 0 ? (
-                            <SelectItem value="empty" disabled>
-                              Sem contas Admin disponíveis
-                            </SelectItem>
-                          ) : (
-                            adminUsers.map((admin) => (
-                              <SelectItem key={admin.id} value={admin.id}>
-                                {(admin.full_name || admin.username || admin.email || 'Conta')}{' '}
-                                <span className="text-xs uppercase text-slate-400">· {admin.role}</span>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                ) : (
+                  <>
+                    <div className="rounded-2xl border border-white/10 bg-[#04121d]/60 p-4 text-sm text-slate-200">
+                      <p className="font-semibold text-white">{createdHouse.name}</p>
                       <p className="text-xs text-slate-400">
-                        Apenas Admins e Super Admins são elegíveis. Certifica-te que a conta tem email válido.
+                        ID: <span className="font-mono text-slate-300">{createdHouse.id}</span>
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={handleSendInvite}
-                      className="bg-[#fdd87c] text-[#1e1500] hover:bg-[#ffe7a6]/90"
-                      disabled={inviteLoading || adminsLoading || !selectedAdminId}
-                    >
-                      {inviteLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                      Enviar convite
-                    </Button>
-                  </div>
 
-                  <div className="space-y-3 rounded-2xl border border-white/10 bg-[#04121d]/40 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-white">Convites enviados</p>
+                    <div className="grid gap-3 md:grid-cols-[2fr,1fr] md:items-end">
+                      <div className="space-y-2">
+                        <p className={labelClass}>Selecionar Admin</p>
+                        <Select value={selectedAdminId || undefined} onValueChange={setSelectedAdminId}>
+                          <SelectTrigger className="border-white/10 bg-[#02121d]/80 text-white">
+                            <SelectValue placeholder={adminsLoading ? 'A carregar...' : 'Escolhe a conta Admin'} />
+                          </SelectTrigger>
+                          <SelectContent className="border-white/10 bg-[#010f1a] text-white">
+                            {adminsLoading ? (
+                              <SelectItem value="loading" disabled>
+                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                A carregar...
+                              </SelectItem>
+                            ) : adminUsers.length === 0 ? (
+                              <SelectItem value="empty" disabled>
+                                Sem contas Admin disponíveis
+                              </SelectItem>
+                            ) : (
+                              adminUsers.map((admin) => (
+                                <SelectItem key={admin.id} value={admin.id}>
+                                  {(admin.full_name || admin.username || admin.email || 'Conta')}{' '}
+                                  <span className="text-xs uppercase text-slate-400">· {admin.role}</span>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
                         <p className="text-xs text-slate-400">
-                          Inclui todos os convites pendentes, aceites ou cancelados.
+                          Apenas Admins e Super Admins são elegíveis. Certifica-te que a conta tem email válido.
                         </p>
                       </div>
                       <Button
                         type="button"
-                        variant="outline"
-                        className="border-white/20 text-white hover:bg-white/10"
-                        onClick={handleReloadInvites}
-                        disabled={invitesLoading || !createdHouse}
+                        onClick={handleSendInvite}
+                        className="bg-[#fdd87c] text-[#1e1500] hover:bg-[#ffe7a6]/90"
+                        disabled={inviteLoading || adminsLoading || !selectedAdminId}
                       >
-                        Atualizar
+                        {inviteLoading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="mr-2 h-4 w-4" />
+                        )}
+                        Enviar convite
                       </Button>
                     </div>
-                    {invitesLoading ? (
-                      <div className="flex items-center gap-2 text-sm text-slate-300">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        A carregar convites...
+
+                    <div className="space-y-3 rounded-2xl border border-white/10 bg-[#04121d]/40 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-white">Convites enviados</p>
+                          <p className="text-xs text-slate-400">
+                            Inclui todos os convites pendentes, aceites ou cancelados.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="border-white/20 text-white hover:bg-white/10"
+                          onClick={handleReloadInvites}
+                          disabled={invitesLoading || !createdHouse}
+                        >
+                          Atualizar
+                        </Button>
                       </div>
-                    ) : invites.length === 0 ? (
-                      <p className="text-sm text-slate-400">
-                        Ainda não existem convites para esta House.
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {invites.map((invite) => (
-                          <div
-                            key={invite.id}
-                            className="flex flex-col gap-2 rounded-xl border border-white/10 bg-[#010b16]/70 p-3 md:flex-row md:items-center md:justify-between"
-                          >
-                            <div className="space-y-1">
-                              <p className="text-sm font-semibold text-white">
-                                {invite.email || 'Sem email'}
-                              </p>
-                              <p className="text-xs text-slate-400">
-                                Estado: <span className="capitalize">{invite.status}</span>{' '}
-                                {invite.expires_at && expira }
+
+                      {invitesError ? (
+                        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-100">
+                          {invitesError}
+                        </p>
+                      ) : null}
+
+                      {invitesLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-slate-300">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          A carregar convites...
+                        </div>
+                      ) : invites.length === 0 ? (
+                        <p className="text-sm text-slate-400">
+                          Ainda não existem convites para esta House.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {invites.map((invite) => (
+                            <div
+                              key={invite.id}
+                              className="flex flex-col gap-3 rounded-xl border border-white/10 bg-[#010b16]/70 p-3 md:flex-row md:items-center md:justify-between"
+                            >
+                              <div className="space-y-1">
+                                <p className="text-sm font-semibold text-white">
+                                  {invite.email || 'Sem email'}
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                  Estado: <span className="capitalize">{invite.status}</span>
+                                  {invite.expires_at
+                                    ? ` · Expira em ${formatInviteExpiration(invite.expires_at)}`
+                                    : ''}
+                                </p>
+                                <p className="text-[11px] text-slate-500 break-words">
+                                  {invite.inviteUrl}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-white/20 text-white hover:bg-white/10"
+                                  onClick={() => handleCopyInvite(invite.inviteUrl)}
+                                >
+                                  Copiar link
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </form>
+        </div>
+      </div>
+
+      <MediaLibraryDialog
+        open={mediaLibrary.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            mediaLibrary.closeLibrary();
+          }
+        }}
+        library={mediaLibrary}
+        onSelect={handleSelectAsset}
+        title="Selecionar imagem oficial"
+        description="Escolhe uma imagem da Media Library para representar esta House."
+        allowUrl={false}
+      />
+    </>
+  );
+}
