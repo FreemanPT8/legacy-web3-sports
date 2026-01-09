@@ -76,7 +76,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       });
 
       const now = Date.now();
-      memberIds.forEach((id) => {
+      memberIds.forEach((id: string) => {
         const last = lastActivity.get(id);
         if (!last) return;
         const diffDays = (now - last) / (1000 * 60 * 60 * 24);
