@@ -400,11 +400,6 @@ export default function AdminHousesPage() {
                 </CardContent>
               </Card>
             )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </section>
         )}
 
