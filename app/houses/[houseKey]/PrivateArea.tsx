@@ -27,10 +27,21 @@ type MembershipResponse = {
   roles: string[];
 };
 
+type HouseMessage = {
+  id: string;
+  title: string;
+  body: string;
+  badgeLabel: string | null;
+  updatedAt: string | null;
+};
+
 export function PrivateArea({ houseKey, recommendedContent, culture }: Props) {
   const { user, loading } = useAuth();
   const [membership, setMembership] = useState<MembershipResponse | null>(null);
   const [loadingMembership, setLoadingMembership] = useState(false);
+  const [messages, setMessages] = useState<HouseMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -60,6 +71,34 @@ export function PrivateArea({ houseKey, recommendedContent, culture }: Props) {
         setLoadingMembership(false);
       });
   }, [loading, user, houseKey, toast]);
+
+  useEffect(() => {
+    if (!membership?.isMember) {
+      setMessages([]);
+      return;
+    }
+    setMessagesLoading(true);
+    setMessagesError(null);
+    fetch(`/api/houses/${houseKey}/messages?limit=5`, { cache: 'no-store' })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { success: true; messages: HouseMessage[] }
+          | { success: false; error?: string }
+          | null;
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || 'Falha ao carregar mensagens.');
+        }
+        setMessages(payload.messages ?? []);
+      })
+      .catch((error) => {
+        console.error('[house messages] failed', error);
+        setMessagesError('NÇœo foi possÇðvel carregar as mensagens.');
+        setMessages([]);
+      })
+      .finally(() => {
+        setMessagesLoading(false);
+      });
+  }, [houseKey, membership?.isMember]);
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 px-4 md:px-8">
@@ -99,7 +138,7 @@ export function PrivateArea({ houseKey, recommendedContent, culture }: Props) {
           Esta secção é reservada aos membros confirmados da House. Aguarda aprovação ou contacta o Head após completar o onboarding recomendado.
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-3">
           <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
               <CardTitle className="text-lg text-white">Conteúdos recomendados</CardTitle>
@@ -137,6 +176,39 @@ export function PrivateArea({ houseKey, recommendedContent, culture }: Props) {
               <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
                 Novas mensagens oficiais são enviadas via pop-ups e notificações internas. Confirma se tens o onboarding em dia.
               </div>
+            </CardContent>
+          </Card>
+          <Card className="border-white/10 bg-[#03131d]/90">
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Mensagens oficiais recentes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-white/80">
+              {messagesLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>A carregar mensagens...</span>
+                </div>
+              ) : messagesError ? (
+                <p className="text-rose-200">{messagesError}</p>
+              ) : messages.length ? (
+                messages.map((message) => (
+                  <div key={message.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                      {message.badgeLabel || 'Pop-up oficial'}
+                    </p>
+                    <p className="mt-2 text-base font-semibold text-white">{message.title}</p>
+                    <p className="mt-2 text-sm text-white/70 line-clamp-3">{message.body}</p>
+                    {message.updatedAt ? (
+                      <p className="mt-2 text-xs text-white/60">
+                        Atualizado{' '}
+                        {new Date(message.updatedAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                      </p>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="text-white/70">Sem mensagens recentes. Quando o Head publicar novas instruções elas surgem aqui.</p>
+              )}
             </CardContent>
           </Card>
         </div>
