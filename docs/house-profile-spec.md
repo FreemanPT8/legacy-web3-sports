@@ -60,6 +60,7 @@ Add structured JSON columns so we can render each section without untyped blobs:
 | `house_notes` | Internal notes (admin only). |
 | `house_alerts` | Alert system (`type`, `severity`, `status`, `details`). |
 | `house_join_requests` *(optional)* | Records CTA submissions awaiting manual approval. |
+| `house_events` | Structured list of events (`title_i18n`, `description_i18n`, `start_at`, `end_at`, `location`, `visibility`, `link_url`). |
 
 ---
 
@@ -141,7 +142,7 @@ Additional fields for the private area can extend `house` with:
 
 - `recommendedContent`: derived from `house_onboarding_sequences`.
 - `broadcasts`: last N items from `onboarding_popup_logs`.
-- `events`: optional list from a future `house_events` table.
+- `events`: list proveniente de `house_events` ordenada cronologicamente.
 
 ---
 
@@ -159,4 +160,3 @@ profile) must reuse the styles from `/education/xp`. That means:
 
 This spec ensures that backend and frontend engineers share the same contract
 while we implement the remaining steps in the plan.
-

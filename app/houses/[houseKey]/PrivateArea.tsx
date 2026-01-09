@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Calendar } from 'lucide-react';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
 
 type RecommendedContent = {
@@ -14,13 +14,6 @@ type RecommendedContent = {
   title: string;
   triggerLabel: string;
   body: string;
-};
-
-type Props = {
-  houseKey: string;
-  recommendedContent: RecommendedContent[];
-  culture: string[];
-  metrics: HouseProfilePayload['house']['metrics'];
 };
 
 type MembershipResponse = {
@@ -37,7 +30,26 @@ type HouseMessage = {
   updatedAt: string | null;
 };
 
-export function PrivateArea({ houseKey, recommendedContent, culture, metrics }: Props) {
+type HouseEvent = {
+  id: string;
+  title: string;
+  description: string;
+  startAt: string;
+  endAt: string | null;
+  location: string | null;
+  visibility: 'public' | 'members';
+  linkUrl: string | null;
+};
+
+type Props = {
+  houseKey: string;
+  recommendedContent: RecommendedContent[];
+  culture: string[];
+  metrics: HouseProfilePayload['house']['metrics'];
+  events: HouseEvent[];
+};
+
+export function PrivateArea({ houseKey, recommendedContent, culture, metrics, events }: Props) {
   const { user, loading } = useAuth();
   const [membership, setMembership] = useState<MembershipResponse | null>(null);
   const [loadingMembership, setLoadingMembership] = useState(false);
@@ -213,6 +225,43 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics }: 
               </div>
             </CardContent>
           </Card>
+          <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Eventos da House</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-white/80">
+              {events.length ? (
+                events.map((event) => (
+                  <div key={event.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-cyan-300">
+                      <Calendar className="h-4 w-4" />
+                      {event.visibility === 'members' ? 'Reservado' : 'Aberto'}
+                    </div>
+                    <p className="mt-2 text-base font-semibold text-white">{event.title}</p>
+                    <p className="text-sm text-white/60">{formatEventDate(event.startAt, event.endAt)}</p>
+                    {event.location ? <p className="text-xs text-white/60">Local: {event.location}</p> : null}
+                    {event.description ? (
+                      <p className="mt-2 text-sm text-white/70 line-clamp-3">{event.description}</p>
+                    ) : null}
+                    {event.linkUrl ? (
+                      <a
+                        href={event.linkUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+                      >
+                        Ver detalhes
+                      </a>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-white/70">
+                  Sem eventos programados para já. Quando o Head agendar sessões exclusivas, ficam disponíveis aqui.
+                </p>
+              )}
+            </CardContent>
+          </Card>
           <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
               <CardTitle className="text-lg text-white">Mensagens oficiais recentes</CardTitle>
@@ -250,6 +299,28 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics }: 
       )}
     </section>
   );
+}
+
+function formatEventDate(startAt: string, endAt?: string | null) {
+  const locale = 'pt-PT';
+  const start = new Date(startAt);
+  const base = start.toLocaleDateString(locale, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  if (!endAt) return base;
+  const end = new Date(endAt);
+  const sameDay = start.toDateString() === end.toDateString();
+  const endPart = end.toLocaleDateString(locale, {
+    day: sameDay ? undefined : '2-digit',
+    month: sameDay ? undefined : 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const endTime = end.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  return sameDay ? `${base} - ${endTime}` : `${base} -> ${endPart}`;
 }
 
 function ProgressStat({ label, value }: { label: string; value: string }) {

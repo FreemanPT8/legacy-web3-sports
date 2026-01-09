@@ -61,6 +61,16 @@ export type HouseProfilePayload = {
       triggerLabel: string;
       body: string;
     }[];
+    events: {
+      id: string;
+      title: string;
+      description: string;
+      startAt: string;
+      endAt: string | null;
+      location: string | null;
+      visibility: 'public' | 'members';
+      linkUrl: string | null;
+    }[];
   };
 };
 
@@ -167,6 +177,31 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
         'Conteúdo recomendado pela House para acelerar o onboarding.',
     })) ?? [];
 
+  const { data: eventRows } = await supabaseAdmin
+    .from('house_events')
+    .select('id, title_i18n, description_i18n, start_at, end_at, location, visibility, link_url')
+    .eq('house_id', house.id)
+    .order('start_at', { ascending: true })
+    .limit(8);
+
+  const events =
+    eventRows?.map((event: any) => ({
+      id: event.id,
+      title:
+        getLocalizedValue<Record<string, string>>(event.title_i18n, normalizedLocale)?.toString() ??
+        event.title_i18n?.en ??
+        'Evento',
+      description:
+        getLocalizedValue<Record<string, string>>(event.description_i18n, normalizedLocale)?.toString() ??
+        event.description_i18n?.en ??
+        '',
+      startAt: event.start_at,
+      endAt: event.end_at ?? null,
+      location: event.location ?? null,
+      visibility: (event.visibility ?? 'members') as 'public' | 'members',
+      linkUrl: event.link_url ?? null,
+    })) ?? [];
+
   const identityTitle =
     getLocalizedValue<Record<string, string>>(house.hero_title_i18n, normalizedLocale)?.toString() ??
     (house.name_i18n?.[normalizedLocale] ?? house.name_i18n?.en ?? 'House');
@@ -249,6 +284,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       },
       culture,
       recommendedContent,
+      events,
     },
   };
 
