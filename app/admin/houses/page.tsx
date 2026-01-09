@@ -278,6 +278,21 @@ export default function AdminHousesPage() {
     }
   };
 
+  if (
+    authLoading ||
+    !user ||
+    (user.role !== 'Super Admin' && user.role !== 'Admin')
+  ) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
+        <div className="flex items-center gap-2 text-slate-300">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading Houses of Sports...</span>
+        </div>
+      </div>
+    );
+  }
+
     !user ||
     (user.role !== 'Super Admin' && user.role !== 'Admin')
   ) {
