@@ -215,6 +215,41 @@ export default function AdminHousesPage() {
     }
   }, [fetchHouses, getToken, houseToDelete, toast]);
 
+  const loadPendingInvites = useCallback(async () => {
+    if (!user) {
+      setPendingInvites([]);
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      setPendingInvites([]);
+      return;
+    }
+
+    setInvitesLoading(true);
+    setInvitesError(null);
+    try {
+      const response = await fetch('/api/head-invites', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Falha ao carregar convites.');
+      }
+      setPendingInvites(payload.invites || []);
+    } catch (err) {
+      console.error('[admin/houses] load head invites failed', err);
+      setPendingInvites([]);
+      setInvitesError(
+        err instanceof Error ? err.message : 'NÇœo foi possÇðvel carregar convites.',
+      );
+    } finally {
+      setInvitesLoading(false);
+    }
+  }, [getToken, user]);
+
+
   const handleAcceptInvite = useCallback(
     async (invite: HeadInvite) => {
       const token = getToken();
@@ -301,41 +336,6 @@ export default function AdminHousesPage() {
     },
     [getToken, loadPendingInvites, toast],
   );
-
-  const loadPendingInvites = useCallback(async () => {
-    if (!user) {
-      setPendingInvites([]);
-      return;
-    }
-
-    const token = getToken();
-    if (!token) {
-      setPendingInvites([]);
-      return;
-    }
-
-    setInvitesLoading(true);
-    setInvitesError(null);
-    try {
-      const response = await fetch('/api/head-invites', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error || 'Falha ao carregar convites.');
-      }
-      setPendingInvites(payload.invites || []);
-    } catch (err) {
-      console.error('[admin/houses] load head invites failed', err);
-      setPendingInvites([]);
-      setInvitesError(
-        err instanceof Error ? err.message : 'NÇœo foi possÇðvel carregar convites.',
-      );
-    } finally {
-      setInvitesLoading(false);
-    }
-  }, [getToken, user]);
-
 
   useEffect(() => {
     if (authLoading || !user) return;
