@@ -72,6 +72,20 @@ type HistoryResponse = {
   entries: HistoryEntry[];
 };
 
+type QualityMetrics = {
+  members: number;
+  completionRate: number;
+  completionUsers: number;
+  totalCompletions: number;
+  retention: { d30: number; d60: number; d90: number };
+  updatedAt: string;
+};
+
+type MetricsResponse = {
+  success: true;
+  metrics: QualityMetrics;
+};
+
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (res.status === 401) throw new Error('Unauthorized');
   return res.json();
@@ -104,6 +118,11 @@ export default function AdminHouseGovernancePage() {
     error: historyError,
     isLoading: historyLoading,
   } = useSWR<HistoryResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/history` : null, fetcher);
+  const {
+    data: qualityData,
+    error: qualityError,
+    isLoading: qualityLoading,
+  } = useSWR<MetricsResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/metrics` : null, fetcher);
   const [monthlyCapacity, setMonthlyCapacity] = useState<string>('');
   const [supportMode, setSupportMode] = useState<string>('async');
   const [governanceStatus, setGovernanceStatus] = useState<string>('active');
@@ -248,6 +267,7 @@ export default function AdminHouseGovernancePage() {
   const notes = notesData?.notes ?? [];
   const noteCharacterLimit = 1000;
   const historyEntries = historyData?.entries ?? [];
+  const qualityMetrics = qualityData?.metrics;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -430,6 +450,59 @@ export default function AdminHouseGovernancePage() {
               </Card>
             </>
           )}
+        </section>
+
+        <section className="grid gap-6">
+          <Card className="border-white/10 bg-[#03131d]/90">
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Métricas de qualidade</CardTitle>
+              <CardDescription className="text-xs text-white/60">
+                Baseadas em conclusões de cursos e atividade de XP dos membros desta House.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-white/80">
+              {qualityLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A calcular métricas...
+                </div>
+              ) : qualityError ? (
+                <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-rose-100">
+                  Não foi possível obter as métricas. Tenta novamente ou confirma as permissões.
+                </div>
+              ) : qualityMetrics ? (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <QualityStat label="Membros ativos" value={qualityMetrics.members.toLocaleString()} />
+                    <QualityStat
+                      label="Utilizadores com cursos concluídos"
+                      value={`${qualityMetrics.completionUsers.toLocaleString()} (${Math.round(
+                        (qualityMetrics.completionRate ?? 0) * 100,
+                      )}%)`}
+                    />
+                    <QualityStat label="Cursos concluídos (total)" value={qualityMetrics.totalCompletions.toLocaleString()} />
+                  </div>
+                  <div className="space-y-3">
+                    <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">Retenção por atividade (XP)</p>
+                    <ProgressRow label="Últimos 30 dias" value={qualityMetrics.retention.d30} />
+                    <ProgressRow label="Últimos 60 dias" value={qualityMetrics.retention.d60} />
+                    <ProgressRow label="Últimos 90 dias" value={qualityMetrics.retention.d90} />
+                  </div>
+                  <p className="text-xs text-white/60">
+                    Atualizado{' '}
+                    {new Date(qualityMetrics.updatedAt).toLocaleString('pt-PT', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-white/70">Sem dados suficientes para calcular as métricas.</p>
+              )}
+            </CardContent>
+          </Card>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
@@ -731,6 +804,34 @@ export default function AdminHouseGovernancePage() {
         </div>
       </main>
       <Footer />
+    </div>
+  );
+}
+
+function QualityStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/60">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function ProgressRow({ label, value }: { label: string; value: number }) {
+  const percent = Math.max(0, Math.min(1, value || 0));
+  const formatted = `${Math.round(percent * 100)}%`;
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs text-white/70">
+        <span>{label}</span>
+        <span className="text-white">{formatted}</span>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full border border-white/15 bg-black/30">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-[#00d2ff] via-[#42e8c9] to-[#fdd87c]"
+          style={{ width: `${percent * 100}%` }}
+        />
+      </div>
     </div>
   );
 }
