@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
+import { logHouseHistory } from '@/lib/houses/history';
 
 interface AdminAssignmentRow {
   id: string;
@@ -43,6 +44,18 @@ export async function POST(request: NextRequest) {
     }
 
     const { houseId, headUserId } = body;
+    const { data: previousHead, error: previousHeadError } = await supabaseAdmin
+      .from('house_heads')
+      .select('admin_id')
+      .eq('house_id', houseId)
+      .maybeSingle();
+    if (previousHeadError) {
+      console.error('Error loading current head:', previousHeadError);
+      return NextResponse.json<PostResponse>(
+        { success: false, error: 'Failed to load current Head of House' },
+        { status: 500 }
+      );
+    }
 
     // 1) Se headUserId === null -> remover Head atual
     if (!headUserId) {
@@ -58,6 +71,13 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+
+      await logHouseHistory({
+        houseId,
+        action: 'head.removed',
+        actorId: currentUser.userId,
+        payload: { previousAdminId: previousHead?.admin_id ?? null },
+      });
 
       return NextResponse.json<PostResponse>({ success: true });
     }
@@ -136,6 +156,17 @@ export async function POST(request: NextRequest) {
     } catch (termError) {
       console.error('Failed to reset term acceptance for new head:', termError);
     }
+
+    await logHouseHistory({
+      houseId,
+      action: 'head.assigned',
+      actorId: currentUser.userId,
+      payload: {
+        newUserId: headUserId,
+        adminAssignmentId: adminId,
+        previousAdminId: previousHead?.admin_id ?? null,
+      },
+    });
 
     return NextResponse.json<PostResponse>({ success: true });
   } catch (err: any) {

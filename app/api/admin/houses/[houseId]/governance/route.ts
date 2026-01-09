@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import { logHouseHistory } from '@/lib/houses/history';
 
 const SUPPORT_MODES = ['async', 'sync', 'hybrid'] as const;
 const GOVERNANCE_STATUSES = ['active', 'limited', 'paused', 'under_review'] as const;
@@ -74,6 +75,20 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
   }
 
   const body = (await request.json().catch(() => ({}))) as GovernancePayload;
+  const actorId = authResult.user?.userId ?? null;
+
+  const { data: currentHouse, error: currentError } = await supabaseAdmin
+    .from('houses_of_sports')
+    .select('id, house_key, monthly_capacity, support_mode, governance_status')
+    .eq('id', houseId)
+    .maybeSingle();
+  if (currentError) {
+    console.error('[admin/houses/governance] load current failed', currentError);
+    return NextResponse.json({ success: false, error: 'Failed to load current status.' }, { status: 500 });
+  }
+  if (!currentHouse) {
+    return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+  }
 
   if (
     body.supportMode &&
@@ -105,14 +120,38 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
     updatePayload.governance_status = body.governanceStatus || 'active';
   }
 
-  const { error: updateError } = await supabaseAdmin
+  if (Object.keys(updatePayload).length === 0) {
+    return NextResponse.json({ success: false, error: 'No governance fields provided.' }, { status: 400 });
+  }
+
+  const { data: updatedRow, error: updateError } = await supabaseAdmin
     .from('houses_of_sports')
     .update(updatePayload)
-    .eq('id', houseId);
+    .eq('id', houseId)
+    .select('id, monthly_capacity, support_mode, governance_status')
+    .maybeSingle();
   if (updateError) {
     console.error('[admin/houses/governance] update failed', updateError);
     return NextResponse.json({ success: false, error: 'Unable to update governance fields.' }, { status: 500 });
   }
+
+  await logHouseHistory({
+    houseId,
+    action: 'governance.updated',
+    actorId,
+    payload: {
+      before: {
+        monthlyCapacity: currentHouse.monthly_capacity,
+        supportMode: currentHouse.support_mode,
+        governanceStatus: currentHouse.governance_status,
+      },
+      after: {
+        monthlyCapacity: updatedRow?.monthly_capacity ?? currentHouse.monthly_capacity,
+        supportMode: updatedRow?.support_mode ?? currentHouse.support_mode,
+        governanceStatus: updatedRow?.governance_status ?? currentHouse.governance_status,
+      },
+    },
+  });
 
   return NextResponse.json({ success: true });
 }
