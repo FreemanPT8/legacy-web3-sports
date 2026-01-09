@@ -58,6 +58,18 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
     });
     if (insertError) throw insertError;
 
+    const { error: acceptanceError } = await supabaseAdmin
+      .from('house_term_acceptances')
+      .upsert(
+        {
+          user_id: user.userId,
+          house_key: houseKey,
+          accepted_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,house_key' },
+      );
+    if (acceptanceError) throw acceptanceError;
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('[houses/join-request] failed to submit request', error);
