@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import type { HouseProfilePayload } from '@/lib/houses/profile';
 
 type GovernanceResponse = {
   success: true;
@@ -28,6 +29,11 @@ type GovernanceResponse = {
   };
 };
 
+type ProfileResponse = {
+  success: true;
+  profile: HouseProfilePayload;
+};
+
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (res.status === 401) throw new Error('Unauthorized');
   return res.json();
@@ -39,6 +45,14 @@ export default function AdminHouseGovernancePage() {
   const { toast } = useToast();
   const { data, error, mutate } = useSWR<GovernanceResponse>(
     params?.houseId ? `/api/admin/houses/${params.houseId}/governance` : null,
+    fetcher,
+  );
+  const {
+    data: profileData,
+    error: profileError,
+    isLoading: profileLoading,
+  } = useSWR<ProfileResponse>(
+    params?.houseId ? `/api/admin/houses/${params.houseId}/profile` : null,
     fetcher,
   );
   const [monthlyCapacity, setMonthlyCapacity] = useState<string>('');
@@ -141,6 +155,7 @@ export default function AdminHouseGovernancePage() {
   }
 
   const { house } = data;
+  const profileHouse = profileData?.profile.house;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
