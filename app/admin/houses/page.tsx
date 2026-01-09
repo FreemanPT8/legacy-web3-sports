@@ -308,7 +308,7 @@ export default function AdminHousesPage() {
     try {
       return format(new Date(value), 'dd/MM/yyyy');
     } catch {
-      return value;
+
     }
   };
 
@@ -316,8 +316,7 @@ export default function AdminHousesPage() {
     <>
       <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] text-white px-4 py-10 md:px-10">
         <div className="mx-auto w-full max-w-6xl space-y-10">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] p-6 md:p-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#020b16] via-[#00141f] to-[#021c27] p-6 md:p-10 shadow-[0_35px_90px_rgba(3,10,25,0.65)]">
             <div className="space-y-4 max-w-3xl">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
                 HOUSES ADMIN
