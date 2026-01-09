@@ -268,6 +268,12 @@ export default function AdminHouseGovernancePage() {
   const noteCharacterLimit = 1000;
   const historyEntries = historyData?.entries ?? [];
   const qualityMetrics = qualityData?.metrics;
+  const qualifiesExemplar = Boolean(
+    qualityMetrics &&
+      qualityMetrics.members >= 25 &&
+      qualityMetrics.completionRate >= 0.6 &&
+      qualityMetrics.retention.d60 >= 0.5,
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -500,6 +506,46 @@ export default function AdminHouseGovernancePage() {
                 </>
               ) : (
                 <p className="text-sm text-white/70">Sem dados suficientes para calcular as métricas.</p>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="border-white/10 bg-gradient-to-r from-[#041021]/90 via-[#031d2c]/85 to-[#02263b]/85">
+            <CardHeader className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
+                <ShieldCheck className="h-5 w-5 text-[#fdd87c]" />
+                House exemplar
+              </CardTitle>
+              <CardDescription className="text-xs text-white/70">
+                Critérios automáticos: 25+ membros ativos, ≥60% com cursos concluídos e retenção de 60 dias ≥50%.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-white/85">
+              {qualityLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A analisar métricas...
+                </div>
+              ) : qualifiesExemplar ? (
+                <div className="rounded-2xl border border-[#fdd87c]/40 bg-[#fdd87c]/10 px-4 py-3">
+                  <p className="font-semibold text-[#fdd87c]">Elegível</p>
+                  <p className="text-white/80">
+                    Esta House tem desempenho consistente — podes marcá-la como exemplar nos materiais públicos para inspirar
+                    outras equipas.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-white/15 bg-black/25 px-4 py-3 text-white/80">
+                  <p className="font-semibold text-white">Ainda não elegível</p>
+                  <p className="text-sm text-white/70">
+                    Mantém o foco em conclusões de cursos e retenção. Quando todos os critérios forem cumpridos, este painel
+                    destacará automaticamente.
+                  </p>
+                </div>
+              )}
+              {qualityMetrics && (
+                <p className="text-xs text-white/60">
+                  Status calculado em {new Date(qualityMetrics.updatedAt).toLocaleString('pt-PT')}.
+                </p>
               )}
             </CardContent>
           </Card>
