@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -52,6 +51,23 @@ const statusOptions: { label: string; value: HouseStatus }[] = [
 const labelClass =
   'text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400';
 
+type AdminUser = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  email: string | null;
+  role: 'Super Admin' | 'Admin' | 'Member';
+};
+
+type InviteRow = {
+  id: string;
+  email: string | null;
+  status: string;
+  inviteUrl: string;
+  expires_at: string | null;
+  created_at: string;
+};
+
 export default function CreateHousePage() {
   const router = useRouter();
   const { user, getToken, loading } = useAuth();
@@ -65,8 +81,15 @@ export default function CreateHousePage() {
   const [selectedSport, setSelectedSport] = useState('');
   const [countryCode, setCountryCode] = useState('');
   const [status, setStatus] = useState<HouseStatus>('development');
-  const [description, setDescription] = useState('');
   const [featuredImage, setFeaturedImage] = useState<MediaAsset | null>(null);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminsLoading, setAdminsLoading] = useState(false);
+  const [selectedAdminId, setSelectedAdminId] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [createdHouse, setCreatedHouse] = useState<{ id: string; name: string } | null>(null);
+  const [invites, setInvites] = useState<InviteRow[]>([]);
+  const [invitesLoading, setInvitesLoading] = useState(false);
+  const [invitesError, setInvitesError] = useState<string | null>(null);
 
   const countries = useMemo(() => getSortedCountries(), []);
 
@@ -94,6 +117,70 @@ export default function CreateHousePage() {
 
     fetchSports();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    const loadAdmins = async () => {
+      setAdminsLoading(true);
+      try {
+        const token = getToken();
+        const headers: HeadersInit = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const response = await fetch('/api/admin/users', { headers });
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Falha ao carregar lista de Admins.');
+        }
+        const eligible: AdminUser[] = (data.users || []).filter(
+          (u: AdminUser) => u.role === 'Admin' || u.role === 'Super Admin',
+        );
+        setAdminUsers(eligible);
+      } catch (error) {
+        if (!active) return;
+        console.error('[houses/create] Failed to load admin users', error);
+        setAdminUsers([]);
+      } finally {
+        if (active) setAdminsLoading(false);
+      }
+    };
+    loadAdmins();
+    return () => {
+      active = false;
+    };
+  }, [user, getToken]);
+
+  const loadInvites = useCallback(
+    async (houseId: string) => {
+      if (!houseId) return;
+      setInvitesLoading(true);
+      setInvitesError(null);
+      try {
+        const token = getToken();
+        const headers: HeadersInit = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const response = await fetch(`/api/admin/houses/${houseId}/head-invites`, { headers });
+        const data = await response.json();
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || 'Falha ao carregar convites.');
+        }
+        setInvites(data.invites || []);
+      } catch (error) {
+        console.error('[houses/create] loadInvites failed', error);
+        setInvites([]);
+        setInvitesError('Não foi possível carregar os convites.');
+      } finally {
+        setInvitesLoading(false);
+      }
+    },
+    [getToken],
+  );
+
+  useEffect(() => {
+    if (!createdHouse?.id) return;
+    void loadInvites(createdHouse.id);
+  }, [createdHouse?.id, loadInvites]);
 
   const sanitizedCountry = countryCode.toUpperCase().trim();
   const hasValidCountry = countries.some(
@@ -131,7 +218,6 @@ export default function CreateHousePage() {
           country_code: sanitizedCountry,
           status,
           avatar_url: featuredImage?.url ?? null,
-          description: description || null,
         }),
       });
 
@@ -140,11 +226,31 @@ export default function CreateHousePage() {
         throw new Error(payload.error || 'Não foi possível criar a House.');
       }
 
+      const sportName =
+        sports.find((sport) => sport.id === selectedSport)?.name ?? 'Sport';
+      const countryName =
+        countries.find((country) => country.code === sanitizedCountry)?.name ??
+        sanitizedCountry;
+      const friendlyName = `House of ${sportName} ${countryName}`;
+      const newHouseId: string | undefined = payload.houseId || payload.house?.id;
+      if (newHouseId) {
+        setCreatedHouse({ id: newHouseId, name: friendlyName });
+        setInvites([]);
+        setSelectedAdminId('');
+        void loadInvites(newHouseId);
+      }
+
       toast({
         title: 'House criada',
-        description: 'A nova House de Sports foi criada com sucesso.',
+        description: newHouseId
+          ? 'Agora podes convidar o Head desta House diretamente abaixo.'
+          : 'A nova House de Sports foi criada com sucesso.',
       });
-      router.push('/admin/houses');
+
+      setSelectedSport('');
+      setCountryCode('');
+      setStatus('development');
+      setFeaturedImage(null);
     } catch (error) {
       console.error('House creation failed:', error);
       toast({
@@ -154,8 +260,8 @@ export default function CreateHousePage() {
         variant: 'destructive',
       });
     } finally {
-      setFormSubmitting(false);
-    }
+    setFormSubmitting(false);
+  }
   };
 
   const handleOpenMediaPicker = () => {
@@ -165,6 +271,127 @@ export default function CreateHousePage() {
   const handleSelectAsset = (asset: MediaAsset) => {
     setFeaturedImage(asset);
     mediaLibrary.closeLibrary();
+  };
+
+  const handleSendInvite = async () => {
+    if (!createdHouse?.id) {
+      toast({
+        title: 'Cria primeiro a House',
+        description: 'Depois de criar a House podes enviar convites.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!selectedAdminId) {
+      toast({
+        title: 'Escolhe uma conta Admin',
+        description: 'Seleciona o administrador a convidar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const target = adminUsers.find((admin) => admin.id === selectedAdminId);
+    if (!target) {
+      toast({
+        title: 'Conta inválida',
+        description: 'Não foi possível encontrar essa conta Admin.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!target.email) {
+      toast({
+        title: 'Conta sem email',
+        description: 'Esta conta não tem email registado. Atualiza o perfil antes de enviar o convite.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setInviteLoading(true);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const response = await fetch(`/api/admin/houses/${createdHouse.id}/head-invites`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ email: target.email }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Falha ao criar convite.');
+      }
+
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const inviteUrl = origin
+        ? `${origin}/head/invite?token=${data.token}`
+        : `/head/invite?token=${data.token}`;
+
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: target.id,
+          type: 'head_invite',
+          title: 'Foste convidado para liderar uma House',
+          message: `O Legacy convidou-te para seres Head da ${createdHouse.name}.`,
+          link: inviteUrl,
+          data: { houseId: createdHouse.id },
+        }),
+      }).catch((error) => console.error('[houses/create] notification failed', error));
+
+      toast({
+        title: 'Convite enviado',
+        description: `Convite enviado para ${target.full_name || target.username || target.email}.`,
+      });
+      setSelectedAdminId('');
+      void loadInvites(createdHouse.id);
+    } catch (error) {
+      console.error('[houses/create] send invite failed', error);
+      toast({
+        title: 'Erro ao enviar convite',
+        description:
+          error instanceof Error ? error.message : 'Não foi possível enviar o convite.',
+        variant: 'destructive',
+      });
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleCopyInvite = async (url: string) => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-1000px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      toast({ title: 'Ligação copiada', description: 'O link do convite está no clipboard.' });
+    } catch (error) {
+      console.error('[houses/create] copy invite failed', error);
+      toast({
+        title: 'Não foi possível copiar',
+        description: 'Copia manualmente o link apresentado.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleReloadInvites = () => {
+    if (createdHouse?.id) {
+      void loadInvites(createdHouse.id);
+    }
   };
 
   if (loading || !user) {
@@ -202,8 +429,8 @@ export default function CreateHousePage() {
                 <CardTitle className="text-white">Dados principais</CardTitle>
                 <CardDescription className="text-slate-300">
                   Seleciona o desporto, o país e o estado operativo desta nova
-                  House. Todos os campos são obrigatórios exceto a imagem e a
-                  descrição.
+                  House. Todos os campos são obrigatórios exceto a imagem
+                  oficial.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -335,18 +562,138 @@ export default function CreateHousePage() {
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <p className={labelClass}>Descrição (opcional)</p>
-                  <Textarea
-                    placeholder="Breve descrição ou contexto para a House"
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
-                    rows={3}
-                    className="border-white/10 bg-[#02121d]/80 text-white placeholder:text-slate-500"
-                  />
-                </div>
               </CardContent>
-            </Card>
+          </Card>
+
+          <Card className="rounded-3xl border border-white/10 bg-[#000c12]/40 shadow-[0_35px_90px_rgba(3,10,25,0.45)]">
+            <CardHeader>
+              <CardTitle className="text-white">Convidar Head of House</CardTitle>
+              <CardDescription className="text-slate-300">
+                Apenas contas Admin e Super Admin podem ser convidadas. O convite envia uma
+                notificação e inclui o termo de responsabilidade obrigatório.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {!createdHouse ? (
+                <div className="rounded-2xl border border-dashed border-white/15 bg-[#04121d]/50 p-4 text-sm text-slate-300">
+                  Cria primeiro a House para poderes enviar convites de Head.
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-2xl border border-white/10 bg-[#04121d]/60 p-4 text-sm text-slate-200">
+                    <p className="font-semibold text-white">{createdHouse.name}</p>
+                    <p className="text-xs text-slate-400">
+                      ID: <span className="font-mono text-slate-300">{createdHouse.id}</span>
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-[2fr,1fr] md:items-end">
+                    <div className="space-y-2">
+                      <p className={labelClass}>Selecionar Admin</p>
+                      <Select value={selectedAdminId || undefined} onValueChange={setSelectedAdminId}>
+                        <SelectTrigger className="border-white/10 bg-[#02121d]/80 text-white">
+                          <SelectValue placeholder={adminsLoading ? 'A carregar...' : 'Escolhe a conta Admin'} />
+                        </SelectTrigger>
+                        <SelectContent className="border-white/10 bg-[#010f1a] text-white">
+                          {adminsLoading ? (
+                            <SelectItem value="loading" disabled>
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                              A carregar...
+                            </SelectItem>
+                          ) : adminUsers.length === 0 ? (
+                            <SelectItem value="empty" disabled>
+                              Sem contas Admin disponíveis
+                            </SelectItem>
+                          ) : (
+                            adminUsers.map((admin) => (
+                              <SelectItem key={admin.id} value={admin.id}>
+                                {(admin.full_name || admin.username || admin.email || 'Conta')}{' '}
+                                <span className="text-xs uppercase text-slate-400">· {admin.role}</span>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-400">
+                        Apenas Admins e Super Admins são elegíveis. Certifica-te que a conta tem email válido.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleSendInvite}
+                      className="bg-[#fdd87c] text-[#1e1500] hover:bg-[#ffe7a6]/90"
+                      disabled={inviteLoading || adminsLoading || !selectedAdminId}
+                    >
+                      {inviteLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                      Enviar convite
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3 rounded-2xl border border-white/10 bg-[#04121d]/40 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-white">Convites enviados</p>
+                        <p className="text-xs text-slate-400">
+                          Inclui todos os convites pendentes, aceites ou cancelados.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-white/20 text-white hover:bg-white/10"
+                        onClick={handleReloadInvites}
+                        disabled={invitesLoading || !createdHouse}
+                      >
+                        Atualizar
+                      </Button>
+                    </div>
+                    {invitesLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-300">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        A carregar convites...
+                      </div>
+                    ) : invites.length === 0 ? (
+                      <p className="text-sm text-slate-400">
+                        Ainda não existem convites para esta House.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {invites.map((invite) => (
+                          <div
+                            key={invite.id}
+                            className="flex flex-col gap-2 rounded-xl border border-white/10 bg-[#010b16]/70 p-3 md:flex-row md:items-center md:justify-between"
+                          >
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold text-white">
+                                {invite.email || 'Sem email'}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                Estado: <span className="capitalize">{invite.status}</span>{' '}
+                                {invite.expires_at && `· expira ${new Date(invite.expires_at).toLocaleDateString()}`}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="border-white/20 text-white hover:bg-white/10"
+                                onClick={() => handleCopyInvite(invite.inviteUrl)}
+                              >
+                                Copiar link
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {invitesError && (
+                          <p className="text-xs text-amber-300">{invitesError}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
             <div className="flex flex-col gap-3 md:flex-row">
               <Button

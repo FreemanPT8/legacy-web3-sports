@@ -130,6 +130,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    try {
+      await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: auth.user!.userId,
+          type: 'head_promo',
+          title: 'FreemanPT — bem-vindo à liderança',
+          message:
+            'Obrigado por assumires uma House of Sports. Leva o Legacy ao próximo nível com responsabilidade.',
+          link: '/admin/houses',
+          data: { houseId: invite.house_id },
+        })
+        .select();
+    } catch (notificationError) {
+      console.error('[head-invite/accept] notification insert failed', notificationError);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('[head-invite/accept] failed', error);
