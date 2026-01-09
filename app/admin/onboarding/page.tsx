@@ -19,7 +19,6 @@ import type {
   OnboardingPopupLocalizedFields,
 } from '@/types/onboarding';
 import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
-import { useTermAgreement } from '@/hooks/useTermAgreement';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -256,54 +255,6 @@ const DEFAULT_DRAFT: OnboardingPopupData = {
   status: 'draft',
   localized: cloneLocalizedCopy(BASE_LOCALIZED_COPY),
 };
-const RESPONSIBILITY_TERM = {
-  intro:
-    'Ao aceitar o papel de Head of House of Sport no ecossistema Legacy + Apertum, passas a representar os princípios fundadores sem hype ou abuso de autoridade.',
-  commitments: [
-    {
-      title: '1. Interesse da House acima do interesse pessoal',
-      notes: [
-        'O papel do Head é orientar, esclarecer e proteger os membros.',
-        'É proibido usar o cargo para pressão comercial, manipulação emocional ou promoção enganosa.',
-      ],
-    },
-    {
-      title: '2. Respeito pela autonomia dos utilizadores',
-      notes: [
-        'Ninguém é obrigado a seguir links, aderir a projetos ou contactar o Head diretamente.',
-        'Toda a comunicação deixa claro que o contacto humano é opcional.',
-      ],
-    },
-    {
-      title: '3. Comunicação clara, verdadeira e responsável',
-      notes: [
-        'Sem promessas de rendimento ou garantias de resultado.',
-        'Sem omitir riscos ou usar linguagem enganadora.',
-      ],
-    },
-    {
-      title: '4. Cumprimento dos limites operacionais da plataforma',
-      notes: [
-        'Respeito pelos limites de frequência, templates aprovados e auditoria contínua.',
-        'Uso obrigatório dos mecanismos anti-spam e resposta a feedback oficial.',
-      ],
-    },
-    {
-      title: '5. Guardião da reputação Legacy + Apertum',
-      notes: [
-        'Qualquer abuso destrói a confiança dos utilizadores e a integridade do ecossistema.',
-      ],
-    },
-    {
-      title: '6. Avaliação contínua e consequências',
-      notes: [
-        'O desempenho pode ser avaliado a qualquer momento; reports de abuso podem remover o Head imediatamente.',
-      ],
-    },
-  ],
-  footer: 'Este compromisso é assumido de forma voluntária, consciente e alinhada com os valores do Legacy.',
-};
-
 type AdminOnboardingStatus =
   | 'PENDING_RESPONSE'
   | 'RESPONDED_WAITING'
@@ -406,25 +357,11 @@ export default function AdminOnboardingPage() {
   const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>(() => [clonePopup(DEFAULT_DRAFT)]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
   const [activeLanguage, setActiveLanguage] = useState<PopupLanguage>(DEFAULT_POPUP_LANGUAGE);
-  const {
-    acceptedAt,
-    loading: termLoading,
-    accept,
-    isAccepted,
-    error: termError,
-    saving: termSaving,
-    requiresRenewal,
-  } =
-    useTermAgreement(houseKey);
   const { user, getToken } = useAuth();
   const [headHouseOptions, setHeadHouseOptions] = useState<{ key: string; label: string }[]>([]);
   const [housesLoading, setHousesLoading] = useState(false);
   const [housesError, setHousesError] = useState<string | null>(null);
   const now = Date.now();
-  const termExpiration = acceptedAt ? acceptedAt + TERM_VALIDITY_DAYS * 24 * 60 * 60 * 1000 : null;
-  const termExpired = termExpiration ? termExpiration < now : true;
-  const termActive = isAccepted && !termExpired;
-  const editingDisabled = !termActive;
   const [logActionFilter, setLogActionFilter] = useState<'ALL' | 'delivered' | 'primary' | 'secondary' | 'dismiss'>('ALL');
   const [logUserQuery, setLogUserQuery] = useState('');
   const normalizedLogUserId = useMemo(() => (logUserQuery.trim() ? logUserQuery.trim() : null), [logUserQuery]);
@@ -1292,11 +1229,6 @@ export default function AdminOnboardingPage() {
   const complianceChecklist = useMemo(
     () => [
       {
-        label: 'Termo aceito nos últimos 90 dias',
-        ok: termActive,
-        hint: termActive ? 'Validação em vigor.' : 'Renova para voltar a editar.',
-      },
-      {
         label: 'Sem leads por atribuir',
         ok: unassignedSubmissions === 0,
         hint:
@@ -1310,7 +1242,7 @@ export default function AdminOnboardingPage() {
         hint: '1 pop-up/dia · 3/semana (revisto semanalmente).',
       },
     ],
-    [termActive, unassignedSubmissions],
+    [unassignedSubmissions],
   );
 
   const formatSubmissionDate = useCallback((timestamp: string | null) => {
