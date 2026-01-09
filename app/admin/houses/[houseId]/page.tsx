@@ -78,6 +78,13 @@ type QualityMetrics = {
   completionUsers: number;
   totalCompletions: number;
   retention: { d30: number; d60: number; d90: number };
+  feedback: {
+    total: number;
+    positive: number;
+    neutral: number;
+    negative: number;
+    unresolved: number;
+  };
   updatedAt: string;
 };
 
@@ -494,6 +501,24 @@ export default function AdminHouseGovernancePage() {
                     <ProgressRow label="Últimos 60 dias" value={qualityMetrics.retention.d60} />
                     <ProgressRow label="Últimos 90 dias" value={qualityMetrics.retention.d90} />
                   </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">Feedback qualitativo</p>
+                    {qualityMetrics.feedback.total > 0 ? (
+                      <div className="mt-2 grid gap-2 text-xs md:grid-cols-2">
+                        <FeedbackBadge label="Total registado" value={qualityMetrics.feedback.total} />
+                        <FeedbackBadge
+                          label="Pendentes"
+                          value={qualityMetrics.feedback.unresolved}
+                          accent="text-amber-300"
+                        />
+                        <FeedbackBadge label="Negativos" value={qualityMetrics.feedback.negative} accent="text-rose-300" />
+                        <FeedbackBadge label="Neutros" value={qualityMetrics.feedback.neutral} accent="text-slate-200" />
+                        <FeedbackBadge label="Positivos" value={qualityMetrics.feedback.positive} accent="text-emerald-300" />
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs text-white/70">Ainda não existem registos na tabela de feedback.</p>
+                    )}
+                  </div>
                   <p className="text-xs text-white/60">
                     Atualizado{' '}
                     {new Date(qualityMetrics.updatedAt).toLocaleString('pt-PT', {
@@ -878,6 +903,23 @@ function ProgressRow({ label, value }: { label: string; value: number }) {
           style={{ width: `${percent * 100}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+function FeedbackBadge({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#010913]/60 px-3 py-2">
+      <p className={`text-[10px] uppercase tracking-[0.35em] ${accent || 'text-white/60'}`}>{label}</p>
+      <p className="mt-1 text-lg font-semibold text-white">{value.toLocaleString()}</p>
     </div>
   );
 }

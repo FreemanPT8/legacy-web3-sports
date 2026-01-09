@@ -86,6 +86,26 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       });
     }
 
+    const { data: feedbackRows, error: feedbackError } = await supabaseAdmin
+      .from('house_feedback')
+      .select('sentiment, status')
+      .eq('house_id', houseId);
+    if (feedbackError) throw feedbackError;
+    const feedbackTotals = {
+      total: feedbackRows?.length ?? 0,
+      negative: 0,
+      neutral: 0,
+      positive: 0,
+      unresolved: 0,
+    };
+    feedbackRows?.forEach((row: { sentiment: string | null; status: string | null }) => {
+      const sentiment = (row.sentiment || 'neutral').toLowerCase();
+      if (sentiment === 'negative') feedbackTotals.negative += 1;
+      else if (sentiment === 'positive') feedbackTotals.positive += 1;
+      else feedbackTotals.neutral += 1;
+      if ((row.status || 'open').toLowerCase() !== 'closed') feedbackTotals.unresolved += 1;
+    });
+
     return NextResponse.json({
       success: true,
       metrics: {
@@ -98,6 +118,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
           d60: memberCount ? retention60 / memberCount : 0,
           d90: memberCount ? retention90 / memberCount : 0,
         },
+        feedback: feedbackTotals,
         updatedAt: new Date().toISOString(),
       },
     });
