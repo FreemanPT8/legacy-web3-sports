@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -17,6 +17,7 @@ import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { SafeImage } from '@/app/components/SafeImage';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/AuthContext';
 
 type GovernanceResponse = {
   success: true;
@@ -108,15 +109,28 @@ type MetricsResponse = {
   metrics: QualityMetrics;
 };
 
-const fetcher = (url: string) => fetch(url).then((res) => {
-  if (res.status === 401) throw new Error('Unauthorized');
-  return res.json();
-});
-
 export default function AdminHouseGovernancePage() {
   const params = useParams<{ houseId: string }>();
   const router = useRouter();
   const { toast } = useToast();
+  const { getToken } = useAuth();
+
+  const fetcher = useCallback(
+    async (url: string) => {
+      const token = getToken();
+      if (!token) {
+        throw new Error('Missing authentication token');
+      }
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.status === 401) throw new Error('Unauthorized');
+      return res.json();
+    },
+    [getToken],
+  );
   const { data, error, mutate } = useSWR<GovernanceResponse>(
     params?.houseId ? `/api/admin/houses/${params.houseId}/governance` : null,
     fetcher,
