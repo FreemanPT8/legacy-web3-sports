@@ -312,6 +312,8 @@ export default function AdminHousesPage() {
     }
   };
 
+  const canShowSportActions = isSuperAdmin || canCreateSports;
+
   return (
     <>
       <div className="min-h-screen bg-gradient-to-b from-[#020b16] via-[#00141f] to-[#000c12] text-white px-4 py-10 md:px-10">
