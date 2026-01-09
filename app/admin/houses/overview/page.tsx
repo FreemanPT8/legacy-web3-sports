@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
@@ -50,6 +50,8 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function AdminHousesOverviewPage() {
   const { data, error } = useSWR<OverviewResponse>('/api/admin/houses/overview', fetcher, { refreshInterval: 60_000 });
   const loading = !data && !error;
+  const [scanningAlerts, setScanningAlerts] = useState(false);
+  const [scanResult, setScanResult] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -86,6 +88,29 @@ export default function AdminHousesOverviewPage() {
     () => data.poolPressure?.reduce((acc, entry) => acc + (entry.pending || 0), 0) ?? 0,
     [data.poolPressure],
   );
+
+  const handleScanAlerts = async () => {
+    setScanningAlerts(true);
+    setScanResult(null);
+    try {
+      const response = await fetch('/api/admin/houses/alerts/scan', { method: 'POST' });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Falha ao executar varredura.');
+      }
+      const summary = payload.summary || {};
+      setScanResult(
+        `Cr: ${summary.created || 0}, Esc: ${summary.escalated || 0}, Res: ${summary.resolved || 0}, Ok: ${
+          summary.ignored || 0
+        }`,
+      );
+    } catch (err) {
+      console.error('[admin/alerts/scan] failed', err);
+      setScanResult('Erro ao executar varredura.');
+    } finally {
+      setScanningAlerts(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -194,15 +219,27 @@ export default function AdminHousesOverviewPage() {
                   <Link href="/admin/houses/pools">Abrir painel de pools</Link>
                 </Button>
               </div>
+              {scanResult && <p className="text-xs text-white/60">Última varredura: {scanResult}</p>}
             </CardContent>
           </Card>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
           <Card className="border-white/10 bg-[#03101b]/80">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg text-white">Capacidade vs pedidos</CardTitle>
-              <Badge className="border-white/20 bg-white/10 text-white">Mês atual</Badge>
+            <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-2">
+                <CardTitle className="text-lg text-white">Capacidade vs pedidos</CardTitle>
+                <Badge className="w-fit border-white/20 bg-white/10 text-white">Mês atual</Badge>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60"
+                onClick={handleScanAlerts}
+                disabled={scanningAlerts}
+              >
+                {scanningAlerts ? 'A verificar...' : 'Varredura automática de alertas'}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-3">
               {data.capacity.length ? (
