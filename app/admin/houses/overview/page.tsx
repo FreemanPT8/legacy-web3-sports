@@ -58,7 +58,7 @@ export default function AdminHousesOverviewPage() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
         <div className="flex items-center gap-2 text-slate-200">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>A carregar visão global das Houses...</span>
+          <span>A carregar visAo global das Houses...</span>
         </div>
       </div>
     );
@@ -68,7 +68,7 @@ export default function AdminHousesOverviewPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
         <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-5 py-4 text-sm text-rose-100">
-          Falha ao carregar dados. Recarrega a página ou confirma permissões de admin.
+          Falha ao carregar dados. Recarrega a pAgina ou confirma permissAes de admin.
         </div>
       </div>
     );
@@ -119,10 +119,10 @@ export default function AdminHousesOverviewPage() {
         <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#041021]/90 via-[#031525]/80 to-[#021d2c]/80 p-6 shadow-[0_35px_90px_rgba(3,10,25,0.6)] md:p-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">GOVERNANÇA LEGACY</p>
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">GOVERNANAA LEGACY</p>
               <h1 className="text-3xl font-semibold text-[#fdd87c] sm:text-4xl">Panorama das Houses</h1>
               <p className="text-sm text-slate-200">
-                KPIs em tempo real para proteger qualidade, capacidade e reputação. Estilo visual alinhado com Education XP.
+                KPIs em tempo real para proteger qualidade, capacidade e reputaAAo. Estilo visual alinhado com Education XP.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -149,7 +149,7 @@ export default function AdminHousesOverviewPage() {
           />
           <MetricCard
             icon={<Activity className="h-6 w-6 text-amber-300" />}
-            label="Em construção"
+            label="Em construAAo"
             value={data.totals.underConstruction}
             subLabel="Com Head ou status em obra"
           />
@@ -163,7 +163,7 @@ export default function AdminHousesOverviewPage() {
             icon={<ShieldCheck className="h-6 w-6 text-rose-300" />}
             label="Alertas abertos"
             value={data.alerts.openBySeverity.low + data.alerts.openBySeverity.medium + data.alerts.openBySeverity.high}
-            subLabel="Riscos em monitorização"
+            subLabel="Riscos em monitorizaAAo"
           />
         </section>
 
@@ -191,7 +191,7 @@ export default function AdminHousesOverviewPage() {
 
           <Card className="border-white/10 bg-[#03121d]/80">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-lg text-white">Pressão por desporto</CardTitle>
+              <CardTitle className="text-lg text-white">PressAo por desporto</CardTitle>
               <p className="text-xs text-white/60">
                 Pedidos pendentes sem House ativa. Total atual: {totalPoolPending.toLocaleString()}
               </p>
@@ -203,12 +203,12 @@ export default function AdminHousesOverviewPage() {
                     key={sport.sportCode}
                     className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/80"
                   >
-                    <span className="text-white uppercase tracking-[0.35em]">{sport.sportCode || '�'}</span>
+                    <span className="text-white uppercase tracking-[0.35em]">{sport.sportCode || ''}</span>
                     <span className="font-semibold text-[#fdd87c]">{sport.pending.toLocaleString()} pedidos</span>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-white/70">Sem pressão registada nas pools.</p>
+                <p className="text-sm text-white/70">Sem pressAo registada nas pools.</p>
               )}
               <div className="flex justify-end">
                 <Button
@@ -219,7 +219,7 @@ export default function AdminHousesOverviewPage() {
                   <Link href="/admin/houses/pools">Abrir painel de pools</Link>
                 </Button>
               </div>
-              {scanResult && <p className="text-xs text-white/60">Última varredura: {scanResult}</p>}
+              {scanResult && <p className="text-xs text-white/60">Asltima varredura: {scanResult}</p>}
             </CardContent>
           </Card>
         </section>
@@ -229,7 +229,7 @@ export default function AdminHousesOverviewPage() {
             <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-2">
                 <CardTitle className="text-lg text-white">Capacidade vs pedidos</CardTitle>
-                <Badge className="w-fit border-white/20 bg-white/10 text-white">Mês atual</Badge>
+                <Badge className="w-fit border-white/20 bg-white/10 text-white">MAas atual</Badge>
               </div>
               <Button
                 size="sm"
@@ -238,7 +238,7 @@ export default function AdminHousesOverviewPage() {
                 onClick={handleScanAlerts}
                 disabled={scanningAlerts}
               >
-                {scanningAlerts ? 'A verificar...' : 'Varredura automática de alertas'}
+                {scanningAlerts ? 'A verificar...' : 'Varredura automAtica de alertas'}
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -260,13 +260,13 @@ export default function AdminHousesOverviewPage() {
                       </span>
                     </div>
                     <p className="text-xs text-white/50">
-                      Capacidade: {entry.monthly_capacity ? entry.monthly_capacity : '—'} · Pedidos pendentes:{' '}
+                      Capacidade: {entry.monthly_capacity ? entry.monthly_capacity : 'a'} A Pedidos pendentes:{' '}
                       {entry.pending_requests}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-white/70">Ainda não existem dados de pedidos vs. capacidade.</p>
+                <p className="text-sm text-white/70">Ainda nAo existem dados de pedidos vs. capacidade.</p>
               )}
             </CardContent>
           </Card>
@@ -309,19 +309,19 @@ export default function AdminHousesOverviewPage() {
                   </div>
                 ))
               ) : (
-                <p>Todos as Houses têm pop-ups publicados.</p>
+                <p>Todos as Houses tAam pop-ups publicados.</p>
               )}
             </CardContent>
           </Card>
 
           <Card className="border-white/10 bg-[#030d18]/85">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Governança</CardTitle>
+              <CardTitle className="text-lg text-white">GovernanAa</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-white/80">
-              <p>• Monitoriza a capacidade para evitar desgaste dos Heads.</p>
-              <p>• Alertas são auditáveis e resolvidos pelo HQ.</p>
-              <p>• Este painel reflete a mesma linguagem visual do Education XP.</p>
+              <p>a Monitoriza a capacidade para evitar desgaste dos Heads.</p>
+              <p>a Alertas sAo auditAveis e resolvidos pelo HQ.</p>
+              <p>a Este painel reflete a mesma linguagem visual do Education XP.</p>
             </CardContent>
           </Card>
         </section>
