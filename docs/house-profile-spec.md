@@ -145,6 +145,7 @@ Additional fields for the private area can extend `house` with:
 - `broadcasts`: last N items from `onboarding_popup_logs`.
 - `events`: list proveniente de `house_events` ordenada cronologicamente.
 - `feedback`: agregados rápidos (totais, negativos abertos) vindos de `house_feedback`.
+- `alerts`: contadores de alertas por severidade (derivados de `house_alerts`) – útil para o painel.
 
 ---
 
