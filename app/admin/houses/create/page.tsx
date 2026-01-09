@@ -64,6 +64,7 @@ type InviteRow = {
   email: string | null;
   status: string;
   inviteUrl: string;
+  targetUserId?: string | null;
   expires_at: string | null;
   created_at: string;
 };
@@ -318,7 +319,10 @@ export default function CreateHousePage() {
       const response = await fetch(`/api/admin/houses/${createdHouse.id}/head-invites`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ email: target.email }),
+        body: JSON.stringify({
+          email: target.email,
+          targetUserId: target.id,
+        }),
       });
       const data = await response.json();
       if (!response.ok || !data?.success) {
@@ -664,71 +668,4 @@ export default function CreateHousePage() {
                               </p>
                               <p className="text-xs text-slate-400">
                                 Estado: <span className="capitalize">{invite.status}</span>{' '}
-                                {invite.expires_at && `· expira ${new Date(invite.expires_at).toLocaleDateString()}`}
-                              </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="border-white/20 text-white hover:bg-white/10"
-                                onClick={() => handleCopyInvite(invite.inviteUrl)}
-                              >
-                                Copiar link
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                        {invitesError && (
-                          <p className="text-xs text-amber-300">{invitesError}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-            <div className="flex flex-col gap-3 md:flex-row">
-              <Button
-                type="submit"
-                className="flex-1 bg-[#fdd87c] text-[#1e1500] hover:bg-[#ffe7a6]/90"
-                disabled={!isFormValid || formSubmitting}
-              >
-                {formSubmitting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-2 h-4 w-4" />
-                )}
-                Criar House
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 border-white/20 text-white hover:bg-white/10"
-                onClick={() => router.push('/admin/houses')}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <MediaLibraryDialog
-        open={mediaLibrary.isOpen}
-        onOpenChange={(open) =>
-          open
-            ? mediaLibrary.openLibrary(mediaLibrary.activeTab)
-            : mediaLibrary.closeLibrary()
-        }
-        library={mediaLibrary}
-        onSelect={handleSelectAsset}
-        title="Escolher imagem para a House"
-        description="Escolhe um ficheiro existente, faz upload ou adiciona uma URL alojada."
-        allowUrl
-      />
-    </>
-  );
-}
+                                {invite.expires_at && expira }

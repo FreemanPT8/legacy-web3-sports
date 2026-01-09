@@ -58,11 +58,18 @@ export async function POST(request: NextRequest) {
     }
 
     const targetEmail = normalizeEmail(invite.email);
-    if (targetEmail) {
+    if (invite.target_user_id) {
+      if (invite.target_user_id !== auth.user!.userId) {
+        return NextResponse.json({ success: false, error: 'Convite destinado a outro utilizador.' }, { status: 403 });
+      }
+    } else if (targetEmail) {
       const userEmail = normalizeEmail(auth.user!.email);
       if (!userEmail || userEmail !== targetEmail) {
         return NextResponse.json({ success: false, error: 'Convite destinado a outro utilizador.' }, { status: 403 });
       }
+      await supabaseAdmin.from('house_head_invites').update({ target_user_id: auth.user!.userId }).eq('id', invite.id);
+    } else {
+      await supabaseAdmin.from('house_head_invites').update({ target_user_id: auth.user!.userId }).eq('id', invite.id);
     }
 
     if (!body.acceptTerms) {

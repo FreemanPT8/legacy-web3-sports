@@ -80,6 +80,7 @@ interface HeadInvite {
   token?: string | null;
   expiresAt: string | null;
   createdAt: string | null;
+  targetUserId?: string | null;
 }
 
 const STATUS_LABELS: Record<HouseStatus, string> = {

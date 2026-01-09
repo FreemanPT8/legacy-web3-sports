@@ -14,19 +14,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
   }
 
+  const userId = auth.user!.userId;
   const email = normalizeEmail(auth.user!.email);
-  if (!email) {
-    return NextResponse.json({ success: true, invites: [] });
-  }
 
   try {
-    const escapedEmail = email.replace(/[%_]/g, (match) => `\\${match}`);
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('house_head_invites')
       .select(
         `
         id,
         house_id,
+        target_user_id,
         email,
         status,
         token,
@@ -40,8 +38,18 @@ export async function GET(request: NextRequest) {
       `,
       )
       .eq('status', 'pending')
-      .ilike('email', escapedEmail)
       .order('created_at', { ascending: true });
+
+    if (email) {
+      const escapedEmail = email.replace(/[%_]/g, (match) => `\\${match}`);
+      query = query.or(
+        `target_user_id.eq.${userId},and(target_user_id.is.null,email.ilike.${escapedEmail})`,
+      );
+    } else {
+      query = query.eq('target_user_id', userId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -49,12 +57,17 @@ export async function GET(request: NextRequest) {
       data?.map((invite: {
         id: string;
         house_id: string;
+        target_user_id: string | null;
         email: string | null;
         status: string | null;
         token: string | null;
         expires_at: string | null;
         created_at: string | null;
-        houses: { house_key?: string | null; name_i18n?: Record<string, string> | null; country_code?: string | null } | null;
+        houses: {
+          house_key?: string | null;
+          name_i18n?: Record<string, string> | null;
+          country_code?: string | null;
+        } | null;
       }) => ({
         id: invite.id,
         houseId: invite.house_id,
@@ -66,6 +79,7 @@ export async function GET(request: NextRequest) {
         token: invite.token,
         expiresAt: invite.expires_at,
         createdAt: invite.created_at,
+        targetUserId: invite.target_user_id,
       })) ?? [];
 
     return NextResponse.json({ success: true, invites });

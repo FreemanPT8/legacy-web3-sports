@@ -27,15 +27,14 @@ async function fetchInviteByToken(token: string) {
   return data;
 }
 
-async function fetchInviteForUser(inviteId: string, userEmail: string | null) {
-  if (!userEmail) return null;
-  const escapedEmail = userEmail.trim().toLowerCase().replace(/[%_]/g, (match) => `\\${match}`);
+async function fetchInviteForUser(inviteId: string, userId: string, userEmail: string | null) {
   const { data, error } = await supabaseAdmin!
     .from('house_head_invites')
     .select(
       `
       id,
       house_id,
+      target_user_id,
       email,
       status,
       expires_at,
@@ -48,9 +47,22 @@ async function fetchInviteForUser(inviteId: string, userEmail: string | null) {
     )
     .eq('id', inviteId)
     .eq('status', 'pending')
-    .ilike('email', escapedEmail)
     .maybeSingle();
   if (error) throw error;
+  if (!data) return null;
+
+  if (data.target_user_id && data.target_user_id !== userId) {
+    return null;
+  }
+
+  if (!data.target_user_id) {
+    const normalizedUserEmail = userEmail?.trim().toLowerCase();
+    const normalizedInviteEmail = data.email?.trim().toLowerCase();
+    if (!normalizedInviteEmail || !normalizedUserEmail || normalizedInviteEmail !== normalizedUserEmail) {
+      return null;
+    }
+  }
+
   return data;
 }
 
@@ -94,7 +106,7 @@ export async function GET(request: NextRequest) {
     const auth = await requireAuth(request);
     if (!auth.success) return auth.response!;
 
-    const invite = await fetchInviteForUser(inviteId!, auth.user!.email ?? null);
+    const invite = await fetchInviteForUser(inviteId!, auth.user!.userId, auth.user!.email ?? null);
     if (!invite) {
       return NextResponse.json({ success: false, error: 'Convite não encontrado.' }, { status: 404 });
     }
