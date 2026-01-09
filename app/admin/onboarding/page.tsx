@@ -800,24 +800,18 @@ export default function AdminOnboardingPage() {
         const canManageAllHouses = user.role === 'Super Admin' || user.role === 'Admin';
         const options: { key: string; label: string }[] =
           (data.houses ?? [])
-            .filter((house: any) => (canManageAllHouses ? true : house?.head?.user_id === user.id))
+            .filter((house: any) => {
+              if (!canManageAllHouses && house?.head?.user_id !== user.id) {
+                return false;
+              }
+              return Boolean(house?.house_key);
+            })
             .map((house: any) => {
-              const key = (
-                house?.house_key ||
-                house?.sport?.code ||
-                house?.name ||
-                house?.id ||
-                'LEGACY'
-              )
-                .toString()
-                .toUpperCase();
+              const key = house.house_key.toString();
               const label = house?.name || `House · ${house?.sport?.code ?? 'Sport'}`;
               return { key, label };
             }) ?? [];
-        if (
-          canEditLegacyWelcome &&
-          !options.some((option: { key: string; label: string }) => option.key === 'LEGACY')
-        ) {
+        if (canEditLegacyWelcome) {
           options.unshift({ key: 'LEGACY', label: 'Legacy · Pop-up global' });
         }
         setHeadHouseOptions(options);
@@ -1467,7 +1461,7 @@ export default function AdminOnboardingPage() {
                 ) : (
                   <Input
                     value={houseKey}
-                    onChange={(event) => setHouseKey(event.target.value.toUpperCase())}
+                    onChange={(event) => setHouseKey(event.target.value)}
                     className="border-white/10 bg-[#010913]"
                   />
                 )}

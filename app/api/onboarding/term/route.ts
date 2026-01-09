@@ -9,7 +9,7 @@ const TABLE_NAME = 'house_term_acceptances';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const houseKey = (searchParams.get('house') || 'LEGACY').toUpperCase();
+    const houseKey = (searchParams.get('house') || 'LEGACY').trim();
 
     if (!db) {
       return NextResponse.json({ success: true, accepted: false });
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
     const body = (await request.json()) as { house?: string };
-    const houseKey = (body?.house || 'LEGACY').toUpperCase();
+    const houseKey = (body?.house || 'LEGACY').trim();
     const { error } = await db.from(TABLE_NAME).upsert(
       {
         user_id: user.id,

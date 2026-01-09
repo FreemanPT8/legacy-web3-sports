@@ -11,7 +11,7 @@ export function useTermAgreement(houseKeyInput = 'LEGACY') {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [requiresRenewal, setRequiresRenewal] = useState(false);
-  const houseKey = (houseKeyInput || 'LEGACY').toUpperCase();
+  const houseKey = (houseKeyInput || 'LEGACY').trim();
 
   useEffect(() => {
     let active = true;
