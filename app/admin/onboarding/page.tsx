@@ -362,6 +362,7 @@ export default function AdminOnboardingPage() {
   const [housesLoading, setHousesLoading] = useState(false);
   const [housesError, setHousesError] = useState<string | null>(null);
   const now = Date.now();
+  const editingDisabled = false;
   const [logActionFilter, setLogActionFilter] = useState<'ALL' | 'delivered' | 'primary' | 'secondary' | 'dismiss'>('ALL');
   const [logUserQuery, setLogUserQuery] = useState('');
   const normalizedLogUserId = useMemo(() => (logUserQuery.trim() ? logUserQuery.trim() : null), [logUserQuery]);
