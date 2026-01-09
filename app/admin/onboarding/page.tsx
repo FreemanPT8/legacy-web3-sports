@@ -1269,62 +1269,6 @@ export default function AdminOnboardingPage() {
         </div>
 
         <Card className="border-white/10 bg-[#04131b]/80">
-          <CardContent className="space-y-3 p-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Termo de Responsabilidade</p>
-            <p className="text-lg font-semibold text-white">Heads confirmam que seguem o Termo antes de editar pop-ups.</p>
-            <p className="text-sm text-slate-300">
-              Sem aceitação ativa (&le; {TERM_VALIDITY_DAYS} dias), o painel permanece em modo de leitura.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              {acceptedAt ? (
-                <span className={cn('text-xs', termExpired ? 'text-amber-200' : 'text-emerald-300')}>
-                  {termExpired
-                    ? `Expirou em ${new Date(termExpiration!).toLocaleDateString()}`
-                    : `Aceite em ${new Date(acceptedAt).toLocaleString()}`}
-                </span>
-              ) : (
-                <span className="text-xs text-amber-200">Ainda não aceitaste o Termo.</span>
-              )}
-              <Button
-                size="sm"
-                onClick={() => void accept()}
-                disabled={termLoading || termSaving || termActive}
-                className="bg-emerald-500/20 text-emerald-100"
-              >
-                {termLoading || termSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A validar...
-                  </>
-                ) : termActive ? (
-                  'Termo ativo'
-                ) : (
-                  'Aceitar / renovar Termo'
-                )}
-              </Button>
-            </div>
-            {termError ? <p className="text-xs text-amber-300">{termError}</p> : null}
-            {requiresRenewal && !termError ? (
-              <p className="text-xs text-amber-300">O termo expirou. Renova antes de editar.</p>
-            ) : null}
-            <ScrollArea className="max-h-72 rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="space-y-4 text-sm text-slate-200">
-                <p>{RESPONSIBILITY_TERM.intro}</p>
-                {RESPONSIBILITY_TERM.commitments.map((section) => (
-                  <div key={section.title} className="space-y-1">
-                    <p className="font-semibold text-white">{section.title}</p>
-                    <ul className="list-disc space-y-1 pl-4 text-slate-300">
-                      {section.notes.map((note) => (
-                        <li key={note}>{note}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-                <p className="text-xs text-slate-400">{RESPONSIBILITY_TERM.footer}</p>
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-        <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-4 p-6">
             <div className="flex flex-col gap-1">
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Centro de Conformidade</p>
