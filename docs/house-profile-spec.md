@@ -63,6 +63,7 @@ Add structured JSON columns so we can render each section without untyped blobs:
 | `house_join_requests` *(optional)* | Records CTA submissions awaiting manual approval. |
 | `house_events` | Structured list of events (`title_i18n`, `description_i18n`, `start_at`, `end_at`, `location`, `visibility`, `link_url`). |
 | `house_feedback` | Qualitative feedback/incidentes (`source`, `category`, `sentiment`, `severity`, `status`, `summary`). |
+| `house_head_invites` | Convites de Head com token e data de expiração. |
 
 ---
 

@@ -55,6 +55,20 @@ type NotesResponse = {
   notes: HouseNote[];
 };
 
+type HeadInvite = {
+  id: string;
+  email: string | null;
+  status: string;
+  inviteUrl: string;
+  expires_at: string | null;
+  created_at: string;
+};
+
+type HeadInviteResponse = {
+  success: true;
+  invites: HeadInvite[];
+};
+
 type HistoryEntry = {
   id: string;
   action: string;
@@ -131,6 +145,12 @@ export default function AdminHouseGovernancePage() {
     error: qualityError,
     isLoading: qualityLoading,
   } = useSWR<MetricsResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/metrics` : null, fetcher);
+  const {
+    data: invitesData,
+    error: invitesError,
+    isLoading: invitesLoading,
+    mutate: mutateInvites,
+  } = useSWR<HeadInviteResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/head-invites` : null, fetcher);
   const [monthlyCapacity, setMonthlyCapacity] = useState<string>('');
   const [supportMode, setSupportMode] = useState<string>('async');
   const [governanceStatus, setGovernanceStatus] = useState<string>('active');
@@ -144,6 +164,9 @@ export default function AdminHouseGovernancePage() {
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
   const [exemplarSaving, setExemplarSaving] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteExpiry, setInviteExpiry] = useState('7');
+  const [creatingInvite, setCreatingInvite] = useState(false);
 
   useEffect(() => {
     if (data?.house) {
@@ -234,6 +257,39 @@ export default function AdminHouseGovernancePage() {
       });
     } finally {
       setExemplarSaving(false);
+    }
+  };
+
+  const handleCreateInvite = async () => {
+    if (!params?.houseId) return;
+    setCreatingInvite(true);
+    try {
+      const response = await fetch(`/api/admin/houses/${params.houseId}/head-invites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail.trim() || null,
+          expiresInDays: Number(inviteExpiry) || 7,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Falha ao gerar convite.');
+      }
+      toast({
+        title: 'Convite criado',
+        description: 'Copia o link abaixo e envia para o Head convidado.',
+      });
+      setInviteEmail('');
+      await mutateInvites();
+    } catch (err: any) {
+      toast({
+        title: 'Erro',
+        description: err?.message || 'Não foi possível criar o convite.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCreatingInvite(false);
     }
   };
 
