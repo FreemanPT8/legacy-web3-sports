@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import type { HouseProfilePayload } from '@/lib/houses/profile';
 
 type RecommendedContent = {
   id: string;
@@ -19,6 +20,7 @@ type Props = {
   houseKey: string;
   recommendedContent: RecommendedContent[];
   culture: string[];
+  metrics: HouseProfilePayload['house']['metrics'];
 };
 
 type MembershipResponse = {
@@ -35,7 +37,7 @@ type HouseMessage = {
   updatedAt: string | null;
 };
 
-export function PrivateArea({ houseKey, recommendedContent, culture }: Props) {
+export function PrivateArea({ houseKey, recommendedContent, culture, metrics }: Props) {
   const { user, loading } = useAuth();
   const [membership, setMembership] = useState<MembershipResponse | null>(null);
   const [loadingMembership, setLoadingMembership] = useState(false);
@@ -142,7 +144,36 @@ export function PrivateArea({ houseKey, recommendedContent, culture }: Props) {
           Esta secção é reservada aos membros confirmados da House. Aguarda aprovação ou contacta o Head após completar o onboarding recomendado.
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-4">
+          <Card className="border-white/10 bg-[#03131d]/90">
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Progresso da House</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-white/80">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ProgressStat label="Membros confirmados" value={metrics.memberCount.toLocaleString()} />
+                <ProgressStat label="XP total" value={metrics.xpTotal.toLocaleString()} />
+                <ProgressStat label="Termos aceites" value={metrics.termAcceptances.toLocaleString()} />
+                <ProgressStat label="Pop-ups publicados" value={metrics.onboarding.published.toLocaleString()} />
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
+                <p className="font-semibold text-white/90">Próximos passos</p>
+                <p>
+                  {metrics.onboarding.ready.toLocaleString()} mensagens prontas · {metrics.onboarding.draft.toLocaleString()} em
+                  rascunho.
+                </p>
+                {metrics.onboarding.lastUpdate ? (
+                  <p className="mt-2 text-white/60">
+                    Última atualização{' '}
+                    {new Date(metrics.onboarding.lastUpdate).toLocaleDateString('pt-PT', {
+                      day: '2-digit',
+                      month: 'short',
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
           <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
               <CardTitle className="text-lg text-white">Conteúdos recomendados</CardTitle>
@@ -218,5 +249,14 @@ export function PrivateArea({ houseKey, recommendedContent, culture }: Props) {
         </div>
       )}
     </section>
+  );
+}
+
+function ProgressStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/60">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-white">{value}</p>
+    </div>
   );
 }

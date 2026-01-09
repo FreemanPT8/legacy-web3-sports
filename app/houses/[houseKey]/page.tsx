@@ -222,7 +222,12 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
       <Footer />
 
       <div className="py-12">
-        <PrivateArea houseKey={house.houseKey} recommendedContent={house.recommendedContent} culture={house.culture} />
+        <PrivateArea
+          houseKey={house.houseKey}
+          recommendedContent={house.recommendedContent}
+          culture={house.culture}
+          metrics={house.metrics}
+        />
       </div>
     </div>
   );
