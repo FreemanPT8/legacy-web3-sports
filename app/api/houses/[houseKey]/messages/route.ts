@@ -50,13 +50,21 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     if (popupError) throw popupError;
 
     const messages =
-      popupRows?.map((row) => ({
-        id: row.id,
-        title: row.title,
-        body: row.body,
-        badgeLabel: row.badge_label ?? null,
-        updatedAt: row.updated_at ?? null,
-      })) ?? [];
+      (popupRows ?? []).map(
+        (row: {
+          id: string;
+          title: string;
+          body: string;
+          badge_label?: string | null;
+          updated_at?: string | null;
+        }) => ({
+          id: row.id,
+          title: row.title,
+          body: row.body,
+          badgeLabel: row.badge_label ?? null,
+          updatedAt: row.updated_at ?? null,
+        }),
+      ) ?? [];
 
     return NextResponse.json({ success: true, messages });
   } catch (error) {
@@ -64,4 +72,3 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     return NextResponse.json({ success: false, error: 'Failed to load messages.' }, { status: 500 });
   }
 }
-
