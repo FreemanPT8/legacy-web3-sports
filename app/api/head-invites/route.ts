@@ -45,7 +45,15 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
 
     const invites =
-      data?.map((invite) => ({
+      data?.map((invite: {
+        id: string;
+        house_id: string;
+        email: string | null;
+        status: string | null;
+        expires_at: string | null;
+        created_at: string | null;
+        houses: { house_key?: string | null; name_i18n?: Record<string, string> | null; country_code?: string | null } | null;
+      }) => ({
         id: invite.id,
         houseId: invite.house_id,
         houseKey: invite.houses?.house_key ?? 'LEGACY',
