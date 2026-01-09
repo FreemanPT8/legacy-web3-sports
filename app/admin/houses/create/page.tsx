@@ -326,7 +326,8 @@ export default function CreateHousePage() {
       });
       const data = await response.json();
       if (!response.ok || !data?.success) {
-        throw new Error(data?.error || 'Falha ao criar convite.');
+        const extra = data?.details ? ` (${data.details})` : '';
+        throw new Error((data?.error || 'Falha ao criar convite.') + extra);
       }
 
       await fetch('/api/notifications', {
