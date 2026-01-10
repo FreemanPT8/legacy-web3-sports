@@ -26,8 +26,12 @@ screen. It builds on the existing schema + migrations recently added.
    - Provide top unresolved alerts with metadata (`house_id`, `type`, `created_at`).
 6. **Onboarding Readiness**
    - Use `house_onboarding_status`: highlight Houses with zero published popups.
-7. **Sport Pools Pressure**
+7. **Qualitative Feedback**
+   - Aggregate `house_feedback` (positive / neutral / negative) to surface cultural or support signals.
+8. **Sport Pools Pressure**
    - Count `sport_pool_entries` pending per sport and show the top sports lacking capacity.
+9. **Join Requests**
+   - Provide a small “join report” card (via `/api/admin/houses/join-report`) showing totals per status and the Houses com mais pedidos pendentes.
 
 ---
 
@@ -77,6 +81,16 @@ type HouseOverviewResponse = {
     sportCode: string;
     pending: number;
   }>;
+  joinReport: {
+    totals: Record<string, number>;
+    houses: Array<{
+      houseId: string;
+      houseKey: string;
+      name: string;
+      pending: number;
+      lastRequest: string | null;
+    }>;
+  };
 };
 ```
 
@@ -93,7 +107,9 @@ Only Admin / Super Admin should be able to call the endpoint (reuse `requireAdmi
 | Capacity vs pending | `houses_of_sports.monthly_capacity` + `house_join_requests` |
 | Alerts | `house_alerts` |
 | Onboarding readiness | `house_onboarding_status` |
+| Qualitative feedback | `house_feedback` (filtered por `house_id`) |
 | Sport pool pressure | `sport_pool_entries` filtered by `status='pending'` |
+| Join report | `house_join_requests` grouped by `house_id` & `status` |
 
 To keep the endpoint fast:
 - Use Supabase RPC to fetch aggregated counts in a single round-trip when possible.
@@ -103,13 +119,21 @@ This contract will be implemented in the next step along with the UI.
 
 ---
 
+## Eventos privados na área da House
+
+- A API `GET /api/houses/[houseKey]/events` devolve apenas eventos com visibilidade `members` ou `public` classificados por data.
+- No painel público (`/houses/[houseKey]`) o cartão “Eventos” deve aparecer logo após “Mensagens oficiais”, utilizando o mesmo gradiente do módulo `/education/xp`.
+- A copy base:
+  - PT: “Sem eventos programados para já…”
+  - EN: “No events queued yet…”
+  - ES: “Sin eventos programados…”
+- Quando o Head cria eventos no painel admin (`/admin/houses/[houseId]`), as ações devem ser registadas com `logHouseHistory` (`events.created`, `events.updated`, `events.deleted`) para manter auditoria.
+
 ## Alert Automation (Cron)
 
-- A background scan endpoint exists at `POST /api/admin/houses/alerts/scan` (admin protected) and
-  a cron-friendly public endpoint `GET /api/cron/house-alerts`.
-- Configure an environment variable `HOUSE_ALERT_CRON_SECRET` with a random value and include the same value
-  in the request header `x-cron-secret` when invoking the cron endpoint.
-- Schedule a task (e.g., Vercel Cron, GitHub Actions, external scheduler) to hit
-  `/api/cron/house-alerts` every hour. The route reuses the same logic as the manual button and records
-  any new alerts/resolutions automatically.
-
+- O endpoint de varredura é `POST /api/admin/houses/alerts/run` (proteção `requireAdmin`). Para uso em cron existe o wrapper
+  `GET /api/cron/house-alerts` que aceita o header `x-cron-secret`.
+- Configura o env `HOUSES_ALERTS_CRON_SECRET` com um valor aleatório (mesmo valor usado no cron job).
+- Agenda uma chamada horária (Vercel Cron → `https://.../api/cron/house-alerts`) adicionando o header `x-cron-secret: <SECRET>`.
+- O route reutiliza a mesma lógica do botão “Executar scan” e cria linhas em `house_alerts` sempre que o SLA da pool,
+  feedback negativo ou outros critérios são detectados automaticamente.

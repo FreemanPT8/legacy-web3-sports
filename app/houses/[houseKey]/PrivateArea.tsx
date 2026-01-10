@@ -41,6 +41,19 @@ type HouseEvent = {
   linkUrl: string | null;
 };
 
+const EVENT_EMPTY_COPY = {
+  pt: 'Sem eventos programados para já. Quando o Head agendar sessões exclusivas, ficam disponíveis aqui.',
+  es: 'Sin eventos programados por ahora. Cuando el Head programe sesiones exclusivas aparecerán aquí.',
+  en: 'No events scheduled yet. Once the Head posts exclusive sessions they will show up here.',
+} as const;
+
+function resolveEventEmptyCopy(locale: string) {
+  const normalized = locale.toLowerCase();
+  if (normalized.startsWith('es')) return EVENT_EMPTY_COPY.es;
+  if (normalized.startsWith('en')) return EVENT_EMPTY_COPY.en;
+  return EVENT_EMPTY_COPY.pt;
+}
+
 type Props = {
   houseKey: string;
   recommendedContent: RecommendedContent[];
@@ -60,6 +73,8 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
   const [houseEvents, setHouseEvents] = useState<HouseEvent[]>(events);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState<string | null>(null);
+  const localeGuess = typeof navigator !== 'undefined' ? navigator.language || 'pt-PT' : 'pt-PT';
+  const eventsEmptyCopy = resolveEventEmptyCopy(localeGuess);
 
   useEffect(() => {
     if (loading || !user) {
@@ -270,6 +285,39 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
               </div>
             </CardContent>
           </Card>
+          <Card className="border-white/10 bg-[#03131d]/90">
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Mensagens oficiais recentes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-white/80">
+              {messagesLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>A carregar mensagens...</span>
+                </div>
+              ) : messagesError ? (
+                <p className="text-rose-200">{messagesError}</p>
+              ) : messages.length ? (
+                messages.map((message) => (
+                  <div key={message.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+                      {message.badgeLabel || 'Pop-up oficial'}
+                    </p>
+                    <p className="mt-2 text-base font-semibold text-white">{message.title}</p>
+                    <p className="mt-2 text-sm text-white/70 line-clamp-3">{message.body}</p>
+                    {message.updatedAt ? (
+                      <p className="mt-2 text-xs text-white/60">
+                        Atualizado{' '}
+                        {new Date(message.updatedAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                      </p>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="text-white/70">Sem mensagens recentes. Quando o Head publicar novas instruções elas surgem aqui.</p>
+              )}
+            </CardContent>
+          </Card>
           <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-lg text-white">Eventos da House</CardTitle>
@@ -308,42 +356,7 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-white/70">
-                  Sem eventos programados para já. Quando o Head agendar sessões exclusivas, ficam disponíveis aqui.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-          <Card className="border-white/10 bg-[#03131d]/90">
-            <CardHeader>
-              <CardTitle className="text-lg text-white">Mensagens oficiais recentes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-white/80">
-              {messagesLoading ? (
-                <div className="flex items-center gap-2 text-white/70">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>A carregar mensagens...</span>
-                </div>
-              ) : messagesError ? (
-                <p className="text-rose-200">{messagesError}</p>
-              ) : messages.length ? (
-                messages.map((message) => (
-                  <div key={message.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
-                      {message.badgeLabel || 'Pop-up oficial'}
-                    </p>
-                    <p className="mt-2 text-base font-semibold text-white">{message.title}</p>
-                    <p className="mt-2 text-sm text-white/70 line-clamp-3">{message.body}</p>
-                    {message.updatedAt ? (
-                      <p className="mt-2 text-xs text-white/60">
-                        Atualizado{' '}
-                        {new Date(message.updatedAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
-                      </p>
-                    ) : null}
-                  </div>
-                ))
-              ) : (
-                <p className="text-white/70">Sem mensagens recentes. Quando o Head publicar novas instruções elas surgem aqui.</p>
+                <p className="text-sm text-white/70">{eventsEmptyCopy}</p>
               )}
             </CardContent>
           </Card>
