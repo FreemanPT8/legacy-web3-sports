@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { formatMissingResourceError, isMissingColumn, isMissingTable } from '@/lib/postgres';
+import { logHouseHistory } from '@/lib/houses/history';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -274,6 +275,9 @@ export async function PATCH(
 ): Promise<NextResponse> {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
+  if (!supabaseAdmin) {
+    return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
+  }
 
   const houseId = params.houseId;
   const currentUser = authResult.user!;
@@ -329,12 +333,35 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'No valid fields to update.' }, { status: 400 });
     }
 
-    const { error: updateError } = await supabaseAdmin!.from('houses_of_sports').update(updates).eq('id', houseId);
+    const loadResult = await loadHouse(houseId);
+    if ('response' in loadResult) return loadResult.response;
+    const beforeHouse = loadResult.house;
+    if (!beforeHouse) {
+      return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+    }
+
+    const { error: updateError } = await supabaseAdmin.from('houses_of_sports').update(updates).eq('id', houseId);
     if (updateError) {
       if (isMissingTable(updateError)) return missingTableResponse('houses_of_sports');
       console.error('Supabase error in PATCH /api/admin/houses/[houseId]:', updateError);
       return NextResponse.json({ success: false, error: 'Error updating House of Sports.' }, { status: 500 });
     }
+
+    await logHouseHistory({
+      houseId,
+      action: 'house.updated',
+      actorId: currentUser.userId,
+      payload: {
+        updates,
+        before: {
+          sport_id: beforeHouse.sport_id ?? null,
+          country_code: beforeHouse.country_code ?? null,
+          status: beforeHouse.status ?? null,
+          avatar_url: beforeHouse.avatar_url ?? null,
+          description: beforeHouse.description ?? null,
+        },
+      },
+    });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
@@ -415,6 +442,16 @@ export async function DELETE(
       console.error('[admin/houses] failed to delete house row', deleteHouseError);
       return NextResponse.json({ success: false, error: 'Failed to delete House.' }, { status: 500 });
     }
+
+    await logHouseHistory({
+      houseId,
+      action: 'house.deleted',
+      actorId: authResult.user?.userId ?? null,
+      payload: {
+        houseKey,
+        name_i18n: (houseRow as any).name_i18n ?? null,
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
