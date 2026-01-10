@@ -70,6 +70,31 @@ type HeadInviteResponse = {
   invites: HeadInvite[];
 };
 
+type FeedbackEntry = {
+  id: string;
+  source: string;
+  category: string | null;
+  sentiment: 'positive' | 'neutral' | 'negative';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'open' | 'reviewing' | 'closed';
+  summary: string;
+  details: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  reporter: {
+    id: string;
+    name: string;
+    username: string | null;
+    avatarUrl: string | null;
+  } | null;
+};
+
+type FeedbackResponse = {
+  success: true;
+  feedback: FeedbackEntry[];
+  warning?: string;
+};
+
 type HistoryEntry = {
   id: string;
   action: string;
@@ -197,6 +222,12 @@ export default function AdminHouseGovernancePage() {
     isLoading: eventsLoading,
     mutate: mutateEvents,
   } = useSWR<EventsResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/events` : null, fetcher);
+  const {
+    data: feedbackData,
+    error: feedbackError,
+    isLoading: feedbackLoading,
+    mutate: mutateFeedback,
+  } = useSWR<FeedbackResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/feedback?limit=25` : null, fetcher);
   const [monthlyCapacity, setMonthlyCapacity] = useState<string>('');
   const [supportMode, setSupportMode] = useState<string>('async');
   const [governanceStatus, setGovernanceStatus] = useState<string>('active');
@@ -764,6 +795,82 @@ export default function AdminHouseGovernancePage() {
           </Card>
         </section>
 
+        <section className="grid gap-6">
+          <Card className="border-white/10 bg-[#041524]/90">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-white">Feedback qualitativo</CardTitle>
+              <CardDescription className="text-xs text-white/60">
+                Relatos registados em <code>house_feedback</code>. Ajudam a identificar incidentes, elogios ou alertas culturais.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-white/80">
+              {feedbackLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A carregar feedback...
+                </div>
+              ) : feedbackError ? (
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-rose-100">
+                  Não foi possível carregar os registos. Verifica se a tabela house_feedback existe.
+                </div>
+              ) : (feedbackData?.feedback?.length ?? 0) > 0 ? (
+                <div className="space-y-3">
+                  {feedbackData!.feedback.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="rounded-2xl border border-white/10 bg-black/20 p-4 shadow-[0_10px_30px_rgba(1,9,19,0.35)]"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.4em] text-white/60">
+                        <SentimentBadge sentiment={entry.sentiment} />
+                        <StatusBadge status={entry.status} />
+                        <SeverityBadge severity={entry.severity} />
+                        <span className="text-white/40">{entry.source}</span>
+                        {entry.category ? <span className="text-white/40">{entry.category}</span> : null}
+                      </div>
+                      <p className="mt-2 text-base font-semibold text-white">{entry.summary}</p>
+                      {entry.details ? (
+                        <p className="mt-1 whitespace-pre-line text-sm text-white/70">{entry.details}</p>
+                      ) : null}
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-white/60">
+                        <span>
+                          {new Date(entry.createdAt).toLocaleString('pt-PT', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        {entry.reporter ? (
+                          <span>
+                            Reportado por <strong>{entry.reporter.name}</strong>
+                            {entry.reporter.username ? ` (@${entry.reporter.username})` : ''}
+                          </span>
+                        ) : (
+                          <span>Reporter anónimo</span>
+                        )}
+                        {entry.resolvedAt ? (
+                          <span className="text-emerald-200">
+                            Resolvido em {new Date(entry.resolvedAt).toLocaleDateString('pt-PT')}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-white/70">
+                  Ainda não existem relatórios qualitativos. Incentiva moderadores e heads a registarem incidentes e elogios.
+                </p>
+              )}
+              {feedbackData?.warning ? (
+                <p className="text-xs text-amber-200">
+                  {feedbackData.warning}. Confirma se as migrações mais recentes foram aplicadas no Supabase.
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </section>
+
         <section className="grid gap-6 lg:grid-cols-2">
           <Card className="border-white/10 bg-[#041524]/90">
             <CardHeader>
@@ -1109,5 +1216,48 @@ function FeedbackBadge({
       <p className={`text-[10px] uppercase tracking-[0.35em] ${accent || 'text-white/60'}`}>{label}</p>
       <p className="mt-1 text-lg font-semibold text-white">{value.toLocaleString()}</p>
     </div>
+  );
+}
+
+function SentimentBadge({ sentiment }: { sentiment: string }) {
+  const map: Record<string, string> = {
+    positive: 'text-emerald-300',
+    neutral: 'text-white/60',
+    negative: 'text-rose-300',
+  };
+  const labelMap: Record<string, string> = {
+    positive: 'positivo',
+    neutral: 'neutro',
+    negative: 'negativo',
+  };
+  return (
+    <span className={`rounded-full border border-white/10 px-2 py-0.5 text-[10px] ${map[sentiment] ?? 'text-white/60'}`}>
+      {labelMap[sentiment] ?? sentiment}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    open: 'bg-rose-500/20 text-rose-100',
+    reviewing: 'bg-amber-500/20 text-amber-100',
+    closed: 'bg-emerald-500/20 text-emerald-100',
+  };
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.3em] ${map[status] ?? 'text-white/70'}`}>
+      {status}
+    </span>
+  );
+}
+
+function SeverityBadge({ severity }: { severity: string }) {
+  const map: Record<string, string> = {
+    low: 'text-white/60',
+    medium: 'text-amber-200',
+    high: 'text-rose-200',
+    critical: 'text-red-300',
+  };
+  return (
+    <span className={`text-[10px] uppercase tracking-[0.3em] ${map[severity] ?? 'text-white/60'}`}>{severity}</span>
   );
 }
