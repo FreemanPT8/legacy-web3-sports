@@ -169,6 +169,19 @@ export default function AdminHousesPage() {
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
   const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
   const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(null);
+  const [joinSummary, setJoinSummary] = useState<{
+    totals: Record<string, number>;
+    houses: Array<{
+      houseId: string;
+      houseKey: string;
+      name: string;
+      countryCode: string | null;
+      counts: Record<string, number>;
+      lastRequest: string | null;
+    }>;
+  } | null>(null);
+  const [joinSummaryLoading, setJoinSummaryLoading] = useState(false);
+  const [joinSummaryError, setJoinSummaryError] = useState<string | null>(null);
 
   const isSuperAdmin = user?.role === 'Super Admin';
   const highlightInvites = searchParams?.get('tab') === 'invites';
@@ -438,6 +451,37 @@ export default function AdminHousesPage() {
     [getToken, refreshHeadInvites, toast],
   );
 
+  const loadJoinSummary = useCallback(async () => {
+    if (!user) {
+      setJoinSummary(null);
+      return;
+    }
+    const token = getToken();
+    if (!token) {
+      setJoinSummary(null);
+      setJoinSummaryError('Sessão inválida.');
+      return;
+    }
+    setJoinSummaryLoading(true);
+    setJoinSummaryError(null);
+    try {
+      const response = await fetch('/api/admin/houses/join-report', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Falha ao carregar o resumo.');
+      }
+      setJoinSummary(payload.summary);
+    } catch (err) {
+      console.error('[admin/houses] join summary failed', err);
+      setJoinSummary(null);
+      setJoinSummaryError(err instanceof Error ? err.message : 'Falha ao carregar o resumo.');
+    } finally {
+      setJoinSummaryLoading(false);
+    }
+  }, [getToken, user]);
+
   const handleConfirmInvite = useCallback(async () => {
     if (!termInvite) return;
     if (!termChecked) {
@@ -460,7 +504,8 @@ export default function AdminHousesPage() {
   useEffect(() => {
     if (authLoading || !user) return;
     void refreshJoinRequests();
-  }, [authLoading, user, refreshJoinRequests]);
+    void loadJoinSummary();
+  }, [authLoading, user, refreshJoinRequests, loadJoinSummary]);
 
   useEffect(() => {
     if (highlightInvites && pendingInvites.length && invitesSectionRef.current) {
@@ -1252,6 +1297,85 @@ export default function AdminHousesPage() {
                       </article>
                     );
                   })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+            RESUMO DOS PEDIDOS
+          </p>
+          <Card className="border border-white/10 bg-[#04131b]/70 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
+            <CardContent className="pt-6">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="text-[#fdd87c]">Pedidos em análise</CardTitle>
+                  <CardDescription className="text-sm text-slate-200">
+                    Super Admin vê todas as Houses; Admin apenas as Houses que lidera.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  className={secondaryButtonClasses}
+                  onClick={() => {
+                    void refreshJoinRequests();
+                    void loadJoinSummary();
+                  }}
+                  disabled={joinSummaryLoading || joinRequestsLoading}
+                >
+                  Atualizar resumo
+                </Button>
+              </div>
+              {joinSummaryLoading ? (
+                <div className="mt-4 flex items-center gap-2 text-sm text-slate-200">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A analisar pedidos...
+                </div>
+              ) : joinSummaryError ? (
+                <p className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-100">
+                  {joinSummaryError}
+                </p>
+              ) : !joinSummary ? (
+                <p className="mt-4 text-sm text-slate-300">Sem dados disponíveis.</p>
+              ) : (
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {Object.entries(joinSummary.totals).map(([status, count]) => (
+                      <div key={status} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
+                        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{status}</p>
+                        <p className="text-2xl font-semibold text-white">{count}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-3">
+                    {joinSummary.houses.length === 0 ? (
+                      <p className="text-sm text-slate-400">Sem pedidos nas Houses que geres.</p>
+                    ) : (
+                      joinSummary.houses.slice(0, 5).map((house) => (
+                        <div
+                          key={house.houseId}
+                          className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/80"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-white">{house.name}</p>
+                            <span className="text-xs text-slate-400">{house.houseKey}</span>
+                            <span className="text-[11px] uppercase text-slate-500">
+                              {house.countryCode || '--'}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-400">
+                            Pendentes: <span className="text-white">{house.counts.pending ?? 0}</span>{' '}
+                            · Último pedido:{' '}
+                            {house.lastRequest
+                              ? formatDateTime(house.lastRequest)
+                              : 'sem registo'}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
