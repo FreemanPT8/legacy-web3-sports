@@ -30,13 +30,13 @@ async function resolveHouseId(
 
   if (error) {
     if (isMissingTable(error)) {
-    return {
-      response: NextResponse.json(
-        { success: false, error: formatMissingResourceError('houses_of_sports') },
-        { status: 500 },
-      ),
-    };
-  }
+      return {
+        response: NextResponse.json(
+          { success: false, error: formatMissingResourceError('houses_of_sports') },
+          { status: 500 },
+        ),
+      };
+    }
     throw error;
   }
 
@@ -73,7 +73,7 @@ async function hasHouseAccess(houseId: string, userId: string, role: string | nu
 export async function GET(
   request: NextRequest,
   { params }: { params: { houseKey: string } },
-): Promise<NextResponse> {
+) {
   const auth = await requireAuth(request);
   if (!auth.success) {
     if (auth.response) return auth.response;
@@ -102,7 +102,9 @@ export async function GET(
     }
 
     const localeParam = request.nextUrl.searchParams.get('locale');
-    const locale = normalizeLocale(localeParam || undefined);
+    const acceptLanguage = request.headers.get('accept-language');
+    const fallbackLocale = acceptLanguage?.split(',')[0]?.trim() || undefined;
+    const locale = normalizeLocale(localeParam || fallbackLocale);
 
     const { data: eventRows, error: eventError } = await supabaseAdmin
       .from('house_events')
