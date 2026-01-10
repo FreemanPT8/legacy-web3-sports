@@ -103,7 +103,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
   const auth = await requireAdmin(request);
   if (!auth.success) {
     return (
-      auth.response ?? NextResponse.json({ success: False, error: 'Autenticacao obrigatoria.' }, { status: 401 })
+      auth.response ?? NextResponse.json({ success: false, error: 'Autenticacao obrigatoria.' }, { status: 401 })
     );
   }
   if (!supabaseAdmin) {
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
   if (!scopeResult.allowed) return scopeResult.response ?? NextResponse.json({ success: false, error: 'Not authorized to manage this House.' }, { status: 403 });
 
   const existence = await ensureHouseExists(houseId);
-  if ('response' in existence) return existence.response;
+  if ('response' in existence) return existence.response ?? NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
 
   try {
     const { data, error } = await supabaseAdmin
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
   const auth = await requireAdmin(request);
   if (!auth.success) {
     return (
-      auth.response ?? NextResponse.json({ success: False, error: 'Autenticacao obrigatoria.' }, { status: 401 })
+      auth.response ?? NextResponse.json({ success: false, error: 'Autenticacao obrigatoria.' }, { status: 401 })
     );
   }
   if (!supabaseAdmin) {
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
   if (!scopeResult.allowed) return scopeResult.response ?? NextResponse.json({ success: false, error: 'Not authorized to manage this House.' }, { status: 403 });
 
   const houseExistence = await ensureHouseExists(houseId);
-  if ('response' in houseExistence) return houseExistence.response;
+  if ('response' in houseExistence) return houseExistence.response ?? NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
 
   const body = (await request.json().catch(() => ({}))) as EventPayload;
   const title = (body.title || '').trim();
@@ -247,6 +247,8 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
     );
   }
 }
+
+
 
 
 
