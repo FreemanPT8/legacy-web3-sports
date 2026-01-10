@@ -57,6 +57,9 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [houseEvents, setHouseEvents] = useState<HouseEvent[]>(events);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading || !user) {
@@ -117,6 +120,48 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
         setMessagesLoading(false);
       });
   }, [houseKey, membership?.isMember]);
+
+  useEffect(() => {
+    if (!membership?.isMember) {
+      setHouseEvents(events);
+      setEventsError(null);
+      setEventsLoading(false);
+      return;
+    }
+
+    let active = true;
+    setEventsLoading(true);
+    setEventsError(null);
+    fetch(`/api/houses/${houseKey}/events`, { cache: 'no-store' })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { success: true; events: HouseEvent[] }
+          | { success: false; error?: string }
+          | null;
+        if (!active) return;
+        if (!response.ok || !payload || !payload.success) {
+          const errorMessage =
+            !payload || payload.success
+              ? 'Falha ao carregar eventos.'
+              : payload.error || 'Falha ao carregar eventos.';
+          throw new Error(errorMessage);
+        }
+        setHouseEvents(payload.events ?? []);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error('[house events] failed', error);
+        setEventsError(error instanceof Error ? error.message : 'Não foi possível carregar os eventos.');
+        setHouseEvents([]);
+      })
+      .finally(() => {
+        if (active) setEventsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [events, houseKey, membership?.isMember]);
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 px-4 md:px-8">
@@ -230,8 +275,15 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
               <CardTitle className="text-lg text-white">Eventos da House</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-white/80">
-              {events.length ? (
-                events.map((event) => (
+              {eventsLoading ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>A carregar eventos...</span>
+                </div>
+              ) : eventsError ? (
+                <p className="text-rose-200">{eventsError}</p>
+              ) : houseEvents.length ? (
+                houseEvents.map((event) => (
                   <div key={event.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-cyan-300">
                       <Calendar className="h-4 w-4" />

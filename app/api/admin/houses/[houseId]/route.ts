@@ -113,7 +113,10 @@ export async function GET(
   { params }: { params: { houseId: string } },
 ): Promise<NextResponse> {
   const authResult = await requireAdmin(request);
-  if (!authResult.success) return authResult.response!;
+  if (!authResult.success) {
+    if (authResult.response) return authResult.response;
+    return NextResponse.json({ success: false, error: 'Autenticação obrigatória.' }, { status: 401 });
+  }
   if (!supabaseAdmin) return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
 
   const houseId = params.houseId;

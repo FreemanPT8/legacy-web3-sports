@@ -71,12 +71,14 @@ async function loadEvent(eventId: string, houseId: string) {
   return { event: data };
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { houseId: string; eventId: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { houseId: string; eventId: string } },
+): Promise<NextResponse> {
   const auth = await requireAdmin(request);
   if (!auth.success) {
-    return (
-      auth.response ?? NextResponse.json({ success: false, error: 'Autenticacao obrigatoria.' }, { status: 401 })
-    );
+    if (auth.response) return auth.response;
+    return NextResponse.json({ success: false, error: 'Autenticacao obrigatoria.' }, { status: 401 });
   }
   if (!supabaseAdmin) {
     return NextResponse.json({ success: false, error: 'Supabase admin client indisponÃ­vel.' }, { status: 500 });
@@ -159,12 +161,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { houseId: string; eventId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { houseId: string; eventId: string } },
+): Promise<NextResponse> {
   const auth = await requireAdmin(request);
   if (!auth.success) {
-    return (
-      auth.response ?? NextResponse.json({ success: false, error: 'Autenticacao obrigatoria.' }, { status: 401 })
-    );
+    if (auth.response) return auth.response;
+    return NextResponse.json({ success: false, error: 'Autenticacao obrigatoria.' }, { status: 401 });
   }
   if (!supabaseAdmin) {
     return NextResponse.json({ success: false, error: 'Supabase admin client indisponÃ­vel.' }, { status: 500 });
