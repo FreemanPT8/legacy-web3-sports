@@ -63,13 +63,14 @@ async function hasHouseAccess(houseId: string, userId: string, role: string | nu
   return Boolean(permissionRow);
 }
 
-export async function GET(request: NextRequest, { params }: { params: { houseKey: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { houseKey: string } },
+): Promise<NextResponse> {
   const auth = await requireAuth(request);
   if (!auth.success) {
-    return (
-      auth.response ??
-      NextResponse.json({ success: false, error: 'Autenticação obrigatória.' }, { status: 401 })
-    );
+    if (auth.response) return auth.response;
+    return NextResponse.json({ success: false, error: 'Autenticação obrigatória.' }, { status: 401 });
   }
   if (!supabaseAdmin) {
     return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
@@ -82,7 +83,9 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
 
   try {
     const houseResult = await resolveHouseId(houseKey);
-    if ('response' in houseResult) return houseResult.response;
+    if ('response' in houseResult) {
+      return houseResult.response;
+    }
     const { houseId } = houseResult;
 
     const canAccess = await hasHouseAccess(houseId, auth.user!.userId, auth.user!.role ?? null);
