@@ -65,7 +65,12 @@ async function hasHouseAccess(houseId: string, userId: string, role: string | nu
 
 export async function GET(request: NextRequest, { params }: { params: { houseKey: string } }) {
   const auth = await requireAuth(request);
-  if (!auth.success) return auth.response!;
+  if (!auth.success) {
+    return (
+      auth.response ??
+      NextResponse.json({ success: false, error: 'Autenticação obrigatória.' }, { status: 401 })
+    );
+  }
   if (!supabaseAdmin) {
     return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
   }
