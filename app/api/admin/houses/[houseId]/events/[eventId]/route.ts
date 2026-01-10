@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
   const auth = await requireAdmin(request);
   if (!auth.success) {
     return (
-      auth.response ?? NextResponse.json({ success: False, error: 'Autenticacao obrigatoria.' }, { status: 401 })
+      auth.response ?? NextResponse.json({ success: false, error: 'Autenticacao obrigatoria.' }, { status: 401 })
     );
   }
   if (!supabaseAdmin) {
@@ -163,7 +163,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { house
   const auth = await requireAdmin(request);
   if (!auth.success) {
     return (
-      auth.response ?? NextResponse.json({ success: False, error: 'Autenticacao obrigatoria.' }, { status: 401 })
+      auth.response ?? NextResponse.json({ success: false, error: 'Autenticacao obrigatoria.' }, { status: 401 })
     );
   }
   if (!supabaseAdmin) {
@@ -200,6 +200,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { house
     );
   }
 }
+
 
 
 
