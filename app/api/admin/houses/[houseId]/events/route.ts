@@ -116,7 +116,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
   }
 
   const scopeResult = await ensureHouseScope(houseId, auth.user);
-  if (!scopeResult.allowed) return scopeResult.response!;
+  if (!scopeResult.allowed) return scopeResult.response ?? NextResponse.json({ success: false, error: 'Not authorized to manage this House.' }, { status: 403 });
 
   const existence = await ensureHouseExists(houseId);
   if ('response' in existence) return existence.response;
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
   }
 
   const scopeResult = await ensureHouseScope(houseId, auth.user);
-  if (!scopeResult.allowed) return scopeResult.response!;
+  if (!scopeResult.allowed) return scopeResult.response ?? NextResponse.json({ success: false, error: 'Not authorized to manage this House.' }, { status: 403 });
 
   const houseExistence = await ensureHouseExists(houseId);
   if ('response' in houseExistence) return houseExistence.response;
@@ -247,5 +247,6 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
     );
   }
 }
+
 
 

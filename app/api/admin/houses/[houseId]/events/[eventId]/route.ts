@@ -88,10 +88,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
   }
 
   const scopeResult = await ensureHouseScope(houseId, auth.user);
-  if (!scopeResult.allowed) return scopeResult.response!;
+  if (!scopeResult.allowed) return scopeResult.response ?? NextResponse.json({ success: false, error: 'Not authorized to manage this House.' }, { status: 403 });
 
   const existingResult = await loadEvent(eventId, houseId);
-  if ('response' in existingResult) return existingResult.response;
+  if ('response' in existingResult) return existingResult.response ?? NextResponse.json({ success: false, error: 'Resource not found.' }, { status: 404 });
 
   const body = (await request.json().catch(() => ({}))) as EventPayload;
 
@@ -176,10 +176,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { house
   }
 
   const scopeResult = await ensureHouseScope(houseId, auth.user);
-  if (!scopeResult.allowed) return scopeResult.response!;
+  if (!scopeResult.allowed) return scopeResult.response ?? NextResponse.json({ success: false, error: 'Not authorized to manage this House.' }, { status: 403 });
 
   const existingResult = await loadEvent(eventId, houseId);
-  if ('response' in existingResult) return existingResult.response;
+  if ('response' in existingResult) return existingResult.response ?? NextResponse.json({ success: false, error: 'Resource not found.' }, { status: 404 });
 
   try {
     const { error } = await supabaseAdmin
@@ -200,5 +200,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { house
     );
   }
 }
+
 
 
