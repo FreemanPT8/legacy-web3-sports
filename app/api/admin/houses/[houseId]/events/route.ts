@@ -90,13 +90,13 @@ async function ensureHouseExists(houseId: string) {
     .eq('id', houseId)
     .maybeSingle();
   if (error) {
-    if (isMissingTable(error)) return { response: missingTableResponse('houses_of_sports') };
+    if (isMissingTable(error)) return missingTableResponse('houses_of_sports');
     throw error;
   }
   if (!data) {
-    return { response: NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 }) };
+    return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
   }
-  return {};
+  return null;
 }
 
 export async function GET(request: NextRequest, { params }: { params: { houseId: string } }) {
@@ -118,8 +118,8 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
   const scopeResult = await ensureHouseScope(houseId, auth.user);
   if (!scopeResult.allowed) return scopeResult.response ?? NextResponse.json({ success: false, error: 'Not authorized to manage this House.' }, { status: 403 });
 
-  const existence = await ensureHouseExists(houseId);
-  if ('response' in existence) return existence.response ?? NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+  const existenceResponse = await ensureHouseExists(houseId);
+  if (existenceResponse) return existenceResponse;
 
   try {
     const { data, error } = await supabaseAdmin
@@ -168,8 +168,8 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
   const scopeResult = await ensureHouseScope(houseId, auth.user);
   if (!scopeResult.allowed) return scopeResult.response ?? NextResponse.json({ success: false, error: 'Not authorized to manage this House.' }, { status: 403 });
 
-  const houseExistence = await ensureHouseExists(houseId);
-  if ('response' in houseExistence) return houseExistence.response ?? NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+  const houseExistenceResponse = await ensureHouseExists(houseId);
+  if (houseExistenceResponse) return houseExistenceResponse;
 
   const body = (await request.json().catch(() => ({}))) as EventPayload;
   const title = (body.title || '').trim();
