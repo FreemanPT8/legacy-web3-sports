@@ -76,7 +76,9 @@ function resolveLocaleName(name_i18n: Record<string, string> | null | undefined,
   );
 }
 
-async function loadHouse(houseId: string) {
+type LoadHouseResult = { response: NextResponse } | { house: HouseRow | null };
+
+async function loadHouse(houseId: string): Promise<LoadHouseResult> {
   if (!supabaseAdmin) return { response: NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 }) };
 
   let detailQuery = await supabaseAdmin
@@ -106,7 +108,10 @@ async function loadHouse(houseId: string) {
 }
 
 // GET /api/admin/houses/[houseId]
-export async function GET(request: NextRequest, { params }: { params: { houseId: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { houseId: string } },
+): Promise<NextResponse> {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
   if (!supabaseAdmin) return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
@@ -260,7 +265,10 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
 }
 
 // PATCH /api/admin/houses/[houseId]
-export async function PATCH(request: NextRequest, { params }: { params: { houseId: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { houseId: string } },
+): Promise<NextResponse> {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
 
@@ -336,7 +344,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
 }
 
 // DELETE /api/admin/houses/[houseId]
-export async function DELETE(request: NextRequest, { params }: { params: { houseId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { houseId: string } },
+): Promise<NextResponse> {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
   if (!supabaseAdmin) {
