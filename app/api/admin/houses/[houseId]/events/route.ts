@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { formatMissingResourceError, isMissingTable } from '@/lib/postgres';
 import { getHouseHeadHouseIds } from '@/lib/server/house-heads';
+import { logHouseHistory } from '@/lib/houses/history';
 import type { JWTPayload } from '@/lib/jwt';
 
 const MAX_EVENTS_PER_HOUSE = 20;
@@ -239,10 +240,24 @@ export async function POST(
       throw error;
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       event: mapEvent(data as EventRow),
     });
+
+    await logHouseHistory({
+      houseId,
+      actorId: auth.user?.userId ?? null,
+      action: 'events.created',
+      payload: {
+        eventId: (data as EventRow).id,
+        title: insertPayload.title_i18n?.pt ?? insertPayload.title_i18n?.en ?? title,
+        startAt: insertPayload.start_at,
+        visibility,
+      },
+    });
+
+    return response;
   } catch (error) {
     console.error('[admin/houses/events] failed to create event', error);
     return NextResponse.json(

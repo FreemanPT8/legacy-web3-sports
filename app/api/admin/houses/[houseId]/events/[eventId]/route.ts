@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { formatMissingResourceError, isMissingTable } from '@/lib/postgres';
 import { getHouseHeadHouseIds } from '@/lib/server/house-heads';
+import { logHouseHistory } from '@/lib/houses/history';
 import type { JWTPayload } from '@/lib/jwt';
 
 type EventPayload = {
@@ -151,6 +152,15 @@ export async function PATCH(
       if (isMissingTable(error)) return missingTableResponse('house_events');
       throw error;
     }
+    await logHouseHistory({
+      houseId,
+      actorId: auth.user?.userId ?? null,
+      action: 'events.updated',
+      payload: {
+        eventId,
+        fields: Object.keys(updates).filter((key) => key !== 'updated_at'),
+      },
+    });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[admin/houses/events] update failed', error);
@@ -195,6 +205,12 @@ export async function DELETE(
       if (isMissingTable(error)) return missingTableResponse('house_events');
       throw error;
     }
+    await logHouseHistory({
+      houseId,
+      actorId: auth.user?.userId ?? null,
+      action: 'events.deleted',
+      payload: { eventId },
+    });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[admin/houses/events] delete failed', error);
