@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -60,7 +60,7 @@ async function ensureHouseScope(houseId: string, actor: JWTPayload | undefined) 
   if (!actor) {
     return {
       allowed: false,
-      response: NextResponse.json({ success: false, error: 'AutenticaÇõÇœo obrigatÇðria.' }, { status: 401 }),
+      response: NextResponse.json({ success: false, error: 'AutenticaÃ‡ÃµÃ‡Å“o obrigatÃ‡Ã°ria.' }, { status: 401 }),
     };
   }
   if (actor.role === 'Super Admin') return { allowed: true };
@@ -72,14 +72,14 @@ async function ensureHouseScope(houseId: string, actor: JWTPayload | undefined) 
     return {
       allowed: false,
       response: NextResponse.json(
-        { success: false, error: 'Falha ao confirmar permissÇðo para esta House.' },
+        { success: false, error: 'Falha ao confirmar permissÃ‡Ã°o para esta House.' },
         { status: 500 },
       ),
     };
   }
   return {
     allowed: false,
-    response: NextResponse.json({ success: false, error: 'Sem permissÇðo para gerir eventos desta House.' }, { status: 403 }),
+    response: NextResponse.json({ success: false, error: 'Sem permissÃ‡Ã°o para gerir eventos desta House.' }, { status: 403 }),
   };
 }
 
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
   const auth = await requireAdmin(request);
   if (!auth.success) {
     return (
-      auth.response or NextResponse.json({ success: False, error: 'Autenticacao obrigatoria.' }, { status: 401 })
+      auth.response ?? NextResponse.json({ success: False, error: 'Autenticacao obrigatoria.' }, { status: 401 })
     );
   }
   if (!supabaseAdmin) {
@@ -153,11 +153,11 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
   const auth = await requireAdmin(request);
   if (!auth.success) {
     return (
-      auth.response or NextResponse.json({ success: False, error: 'Autenticacao obrigatoria.' }, { status: 401 })
+      auth.response ?? NextResponse.json({ success: False, error: 'Autenticacao obrigatoria.' }, { status: 401 })
     );
   }
   if (!supabaseAdmin) {
-    return NextResponse.json({ success: false, error: 'Supabase admin client indisponível.' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Supabase admin client indisponÃ­vel.' }, { status: 500 });
   }
 
   const houseId = params.houseId;
@@ -174,23 +174,23 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
   const body = (await request.json().catch(() => ({}))) as EventPayload;
   const title = (body.title || '').trim();
   if (!title) {
-    return NextResponse.json({ success: false, error: 'O título do evento é obrigatório.' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'O tÃ­tulo do evento Ã© obrigatÃ³rio.' }, { status: 400 });
   }
 
   if (!body.startAt) {
-    return NextResponse.json({ success: false, error: 'Define a data de início do evento.' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Define a data de inÃ­cio do evento.' }, { status: 400 });
   }
 
   const startDate = new Date(body.startAt);
   if (Number.isNaN(startDate.getTime())) {
-    return NextResponse.json({ success: false, error: 'Data de início inválida.' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Data de inÃ­cio invÃ¡lida.' }, { status: 400 });
   }
 
   let endDate: Date | null = null;
   if (body.endAt) {
     endDate = new Date(body.endAt);
     if (Number.isNaN(endDate.getTime())) {
-      return NextResponse.json({ success: false, error: 'Data de fim inválida.' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Data de fim invÃ¡lida.' }, { status: 400 });
     }
   }
 
@@ -242,9 +242,10 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
   } catch (error) {
     console.error('[admin/houses/events] failed to create event', error);
     return NextResponse.json(
-      { success: false, error: 'Não foi possível criar o evento. Tenta novamente.' },
+      { success: false, error: 'NÃ£o foi possÃ­vel criar o evento. Tenta novamente.' },
       { status: 500 },
     );
   }
 }
+
 
