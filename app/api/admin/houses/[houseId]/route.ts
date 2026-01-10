@@ -1,7 +1,8 @@
-// app/api/admin/houses/[houseId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import { formatMissingResourceError, isMissingColumn, isMissingTable } from '@/lib/postgres';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -10,10 +11,10 @@ type HouseRow = {
   sport_id: string | null;
   country_code: string | null;
   status: string | null;
-  name_i18n: Record<string, string> | null;
+  name_i18n?: Record<string, string> | null;
   created_at: string | null;
   avatar_url: string | null;
-  description: string | null;
+  description?: string | null;
 };
 
 type SportRow = {
@@ -46,6 +47,14 @@ type HouseModeratorRow = {
   permissions: Record<string, any> | null;
 };
 
+const DETAIL_SELECT =
+  'id, sport_id, country_code, status, name_i18n, created_at, avatar_url, description';
+const LEGACY_DETAIL_SELECT = 'id, sport_id, country_code, status, created_at, avatar_url';
+
+function missingTableResponse(table: string) {
+  return NextResponse.json({ success: false, error: formatMissingResourceError(table) }, { status: 500 });
+}
+
 function normalizeStatus(raw: string | null): HouseStatus {
   if (raw === 'active' || raw === 'under_construction') {
     return raw as HouseStatus;
@@ -53,11 +62,8 @@ function normalizeStatus(raw: string | null): HouseStatus {
   return 'development';
 }
 
-function resolveLocaleName(
-  name_i18n: Record<string, string> | null,
-  fallback?: string | null
-): string {
-  if (!name_i18n) return fallback ?? 'Unnamed House';
+function resolveLocaleName(name_i18n: Record<string, string> | null | undefined, fallback?: string | null) {
+  if (!name_i18n) return fallback ?? null;
   return (
     name_i18n.en ||
     name_i18n.pt ||
@@ -66,204 +72,195 @@ function resolveLocaleName(
     name_i18n.de ||
     name_i18n.it ||
     fallback ||
-    'Unnamed House'
+    null
   );
 }
 
-// GET /api/admin/houses/[houseId]  -> detalhe + head + moderators
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { houseId: string } }
-) {
+async function loadHouse(houseId: string) {
+  if (!supabaseAdmin) return { response: NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 }) };
+
+  let detailQuery = await supabaseAdmin
+    .from('houses_of_sports')
+    .select(DETAIL_SELECT)
+    .eq('id', houseId)
+    .maybeSingle();
+
+  if (detailQuery.error) {
+    if (isMissingColumn(detailQuery.error)) {
+      console.warn('[admin/houses] houses_of_sports missing new columns, retrying with legacy select');
+      const legacyResult = await supabaseAdmin
+        .from('houses_of_sports')
+        .select(LEGACY_DETAIL_SELECT)
+        .eq('id', houseId)
+        .maybeSingle();
+      detailQuery = legacyResult;
+    } else if (isMissingTable(detailQuery.error)) {
+      return { response: missingTableResponse('houses_of_sports') };
+    } else {
+      console.error('Supabase error (house detail load):', detailQuery.error);
+      return { response: NextResponse.json({ success: false, error: 'Error loading House of Sports.' }, { status: 500 }) };
+    }
+  }
+
+  return { house: (detailQuery.data as HouseRow | null) ?? null };
+}
+
+// GET /api/admin/houses/[houseId]
+export async function GET(request: NextRequest, { params }: { params: { houseId: string } }) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
+  if (!supabaseAdmin) return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
 
   const houseId = params.houseId;
+  if (!houseId) {
+    return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+  }
 
-  try {
-    // 1) House base
-    const { data: houseRow, error: houseError } = await supabaseAdmin
-      .from('houses_of_sports')
-      .select(
-        'id, sport_id, country_code, status, name_i18n, created_at, avatar_url, description'
-      )
-      .eq('id', houseId)
-      .maybeSingle();
+  const loadResult = await loadHouse(houseId);
+  if ('response' in loadResult) return loadResult.response;
+  const house = loadResult.house;
 
-    if (houseError) {
-      console.error('Supabase error (house detail):', houseError);
-      return NextResponse.json(
-        { success: false, error: 'Error loading House of Sports.' },
-        { status: 500 }
-      );
-    }
+  if (!house) {
+    return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
+  }
 
-    if (!houseRow) {
-      return NextResponse.json(
-        { success: false, error: 'House not found.' },
-        { status: 404 }
-      );
-    }
-
-    const house = houseRow as HouseRow;
-
-    // 2) Sport
-    let sport: SportRow | null = null;
-    if (house.sport_id) {
-      const { data: sportData, error: sportError } = await supabaseAdmin
+  let sport: SportRow | null = null;
+  if (house.sport_id) {
+    try {
+      const { data, error } = await supabaseAdmin
         .from('sports')
         .select('id, code, name_i18n')
         .eq('id', house.sport_id)
         .maybeSingle();
-
-      if (sportError) {
-        console.error('Supabase error (house sport):', sportError);
-      } else if (sportData) {
-        sport = sportData as SportRow;
-      }
+      if (error && !isMissingTable(error)) throw error;
+      sport = (data as SportRow | null) ?? null;
+    } catch (error) {
+      console.error('Supabase error (house sport):', error);
     }
+  }
 
-    // 3) Head
+  let headUser: UserRow | null = null;
+  try {
     const { data: headRow, error: headError } = await supabaseAdmin
       .from('house_heads')
       .select('house_id, admin_id')
       .eq('house_id', house.id)
       .maybeSingle();
+    if (headError) throw headError;
 
-    if (headError) {
-      console.error('Supabase error (house head):', headError);
-    }
-
-    let headUser: UserRow | null = null;
     if (headRow) {
-      const head = headRow as HouseHeadRow;
-      const { data: adminAssign, error: adminAssignError } =
-        await supabaseAdmin
-          .from('admin_assignments')
-          .select('id, user_id')
-          .eq('id', head.admin_id)
-          .maybeSingle();
+      const { data: assignment, error: assignmentError } = await supabaseAdmin
+        .from('admin_assignments')
+        .select('id, user_id')
+        .eq('id', (headRow as HouseHeadRow).admin_id)
+        .maybeSingle();
+      if (assignmentError) throw assignmentError;
 
-      if (adminAssignError) {
-        console.error('Supabase error (head admin assignment):', adminAssignError);
-      } else if (adminAssign) {
-        const assignment = adminAssign as AdminAssignmentRow;
+      if (assignment?.user_id) {
         const { data: userData, error: userError } = await supabaseAdmin
           .from('users')
           .select('id, username, full_name, role, avatar_url')
           .eq('id', assignment.user_id)
           .maybeSingle();
-
-        if (userError) {
-          console.error('Supabase error (head user):', userError);
-        } else if (userData) {
-          headUser = userData as UserRow;
-        }
+        if (userError) throw userError;
+        headUser = (userData as UserRow | null) ?? null;
       }
     }
+  } catch (error: any) {
+    if (isMissingTable(error)) {
+      console.warn('[admin/houses] head tables missing. Continuing without head info.');
+    } else {
+      console.error('Supabase error (head resolution):', error);
+    }
+  }
 
-    // 4) Moderadores
-    const { data: modsRows, error: modsError } = await supabaseAdmin
+  let moderators: {
+    id: string;
+    username: string | null;
+    full_name: string | null;
+    role: string | null;
+    avatar_url: string | null;
+    permissions: Record<string, any> | null;
+  }[] = [];
+
+  try {
+    const { data: moderatorRows, error: moderatorsError } = await supabaseAdmin
       .from('house_moderators')
       .select('house_id, user_id, permissions')
       .eq('house_id', house.id);
+    if (moderatorsError) throw moderatorsError;
 
-    if (modsError) {
-      console.error('Supabase error (house moderators):', modsError);
-    }
-
-    const moderatorsRows = (modsRows ?? []) as HouseModeratorRow[];
-
-    const moderatorUserIds = moderatorsRows.map((m) => m.user_id);
-    let moderatorsUsers: UserRow[] = [];
-
-    if (moderatorUserIds.length > 0) {
-      const { data: modsUsersData, error: modsUsersError } = await supabaseAdmin
+    const rows = (moderatorRows as HouseModeratorRow[] | null) ?? [];
+    const ids = rows.map((row) => row.user_id);
+    if (ids.length) {
+      const { data: usersData, error: usersError } = await supabaseAdmin
         .from('users')
         .select('id, username, full_name, role, avatar_url')
-        .in('id', moderatorUserIds);
-
-      if (modsUsersError) {
-        console.error('Supabase error (moderator users):', modsUsersError);
-      } else if (modsUsersData) {
-        moderatorsUsers = modsUsersData as UserRow[];
-      }
+        .in('id', ids);
+      if (usersError) throw usersError;
+      const usersById = new Map<string, UserRow>();
+      (usersData as UserRow[] | null)?.forEach((user) => usersById.set(user.id, user));
+      moderators = rows
+        .map((row) => {
+          const user = usersById.get(row.user_id);
+          if (!user) return null;
+          return {
+            id: user.id,
+            username: user.username,
+            full_name: user.full_name ?? null,
+            role: user.role,
+            avatar_url: user.avatar_url ?? null,
+            permissions: row.permissions ?? null,
+          };
+        })
+        .filter(Boolean) as any[];
     }
-
-    const userById = new Map<string, UserRow>();
-    for (const u of moderatorsUsers) {
-      userById.set(u.id, u);
+  } catch (error: any) {
+    if (isMissingTable(error)) {
+      console.warn('[admin/houses] house_moderators table missing. Moderators list empty.');
+    } else {
+      console.error('Supabase error (house moderators):', error);
     }
-
-    const moderators = moderatorsRows
-      .map((m) => {
-        const u = userById.get(m.user_id);
-        if (!u) return null;
-        return {
-          id: u.id,
-          username: u.username,
-          full_name: u.full_name ?? null,
-          role: u.role,
-          avatar_url: u.avatar_url ?? null,
-          permissions: m.permissions ?? null,
-        };
-      })
-      .filter(Boolean);
-
-    const status: HouseStatus = normalizeStatus(house.status);
-
-    const sportName = sport
-      ? resolveLocaleName(sport.name_i18n, sport.code)
-      : null;
-
-    const houseName = resolveLocaleName(
-      house.name_i18n,
-      sportName ? `House of ${sportName} ${house.country_code ?? ''}` : null
-    );
-
-    return NextResponse.json(
-      {
-        success: true,
-        house: {
-          id: house.id,
-          // incluímos sport_id para a página /edit
-          sport_id: house.sport_id,
-          name: houseName,
-          sport_name: sportName,
-          sport_code: sport?.code ?? null,
-          country_code: house.country_code ?? '',
-          status,
-          created_at: house.created_at,
-          avatar_url: house.avatar_url ?? null,
-          description: house.description ?? null,
-        },
-        head: headUser
-          ? {
-              id: headUser.id,
-              username: headUser.username,
-              full_name: headUser.full_name ?? null,
-              role: headUser.role,
-              avatar_url: headUser.avatar_url ?? null,
-            }
-          : null,
-        moderators,
-      },
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error('Unexpected error in GET /api/admin/houses/[houseId]:', err);
-    return NextResponse.json(
-      { success: false, error: 'Unexpected error loading house detail' },
-      { status: 500 }
-    );
   }
+
+  const status: HouseStatus = normalizeStatus(house.status);
+  const sportName = sport ? resolveLocaleName(sport.name_i18n, sport.code) : null;
+  const houseName =
+    resolveLocaleName(house.name_i18n, sportName ? `House of ${sportName} ${house.country_code ?? ''}` : null) ??
+    'House of Sports';
+
+  return NextResponse.json(
+    {
+      success: true,
+      house: {
+        id: house.id,
+        sport_id: house.sport_id,
+        name: houseName,
+        sport_name: sportName,
+        sport_code: sport?.code ?? null,
+        country_code: house.country_code ?? '',
+        status,
+        created_at: house.created_at,
+        avatar_url: house.avatar_url ?? null,
+        description: house.description ?? null,
+      },
+      head: headUser
+        ? {
+            id: headUser.id,
+            username: headUser.username,
+            full_name: headUser.full_name ?? null,
+            role: headUser.role,
+            avatar_url: headUser.avatar_url ?? null,
+          }
+        : null,
+      moderators,
+    },
+    { status: 200 },
+  );
 }
 
-// PATCH /api/admin/houses/[houseId]  -> atualizar status / avatar / descrição / país / sport_id
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { houseId: string } }
-) {
+// PATCH /api/admin/houses/[houseId]
+export async function PATCH(request: NextRequest, { params }: { params: { houseId: string } }) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
 
@@ -272,14 +269,7 @@ export async function PATCH(
 
   try {
     const body = await request.json().catch(() => ({} as any));
-
-    const {
-      status,
-      avatar_url,
-      description,
-      country_code,
-      sport_id,
-    } = body as {
+    const { status, avatar_url, description, country_code, sport_id } = body as {
       status?: HouseStatus;
       avatar_url?: string | null;
       description?: string | null;
@@ -291,10 +281,7 @@ export async function PATCH(
 
     if (status) {
       if (!['development', 'under_construction', 'active'].includes(status)) {
-        return NextResponse.json(
-          { success: false, error: 'Invalid status value.' },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, error: 'Invalid status value.' }, { status: 400 });
       }
       updates.status = status;
     }
@@ -307,15 +294,11 @@ export async function PATCH(
       updates.description = description;
     }
 
-    // Só Super Admin pode alterar país e sport_id (campos estruturais)
     if (typeof country_code !== 'undefined') {
       if (currentUser.role !== 'Super Admin') {
         return NextResponse.json(
-          {
-            success: false,
-            error: 'Only Super Admin can change country_code of a House.',
-          },
-          { status: 403 }
+          { success: false, error: 'Only Super Admin can change country_code of a House.' },
+          { status: 403 },
         );
       }
       updates.country_code = country_code;
@@ -324,37 +307,22 @@ export async function PATCH(
     if (typeof sport_id !== 'undefined') {
       if (currentUser.role !== 'Super Admin') {
         return NextResponse.json(
-          {
-            success: false,
-            error: 'Only Super Admin can change sport_id of a House.',
-          },
-          { status: 403 }
+          { success: false, error: 'Only Super Admin can change sport_id of a House.' },
+          { status: 403 },
         );
       }
       updates.sport_id = sport_id || null;
     }
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'No valid fields to update.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'No valid fields to update.' }, { status: 400 });
     }
 
-    const { error: updateError } = await supabaseAdmin
-      .from('houses_of_sports')
-      .update(updates)
-      .eq('id', houseId);
-
+    const { error: updateError } = await supabaseAdmin!.from('houses_of_sports').update(updates).eq('id', houseId);
     if (updateError) {
-      console.error(
-        'Supabase error in PATCH /api/admin/houses/[houseId]:',
-        updateError
-      );
-      return NextResponse.json(
-        { success: false, error: 'Error updating House of Sports.' },
-        { status: 500 }
-      );
+      if (isMissingTable(updateError)) return missingTableResponse('houses_of_sports');
+      console.error('Supabase error in PATCH /api/admin/houses/[houseId]:', updateError);
+      return NextResponse.json({ success: false, error: 'Error updating House of Sports.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
@@ -362,37 +330,28 @@ export async function PATCH(
     console.error('Unexpected error in PATCH /api/admin/houses/[houseId]:', err);
     return NextResponse.json(
       { success: false, error: 'Unexpected error updating House of Sports' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { houseId: string } }
-) {
+// DELETE /api/admin/houses/[houseId]
+export async function DELETE(request: NextRequest, { params }: { params: { houseId: string } }) {
   const authResult = await requireAdmin(request);
   if (!authResult.success) return authResult.response!;
   if (!supabaseAdmin) {
-    return NextResponse.json(
-      { success: false, error: 'Supabase admin client unavailable.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
   }
 
   const houseId = params.houseId;
   if (!houseId) {
-    return NextResponse.json(
-      { success: false, error: 'Missing house id.' },
-      { status: 400 }
-    );
+    return NextResponse.json({ success: false, error: 'Missing house id.' }, { status: 400 });
   }
 
-  const role = authResult.user?.role ?? 'Member';
-  if (role !== 'Super Admin') {
+  if ((authResult.user?.role ?? 'Member') !== 'Super Admin') {
     return NextResponse.json(
       { success: false, error: 'Only Super Admin can delete Houses.' },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -404,20 +363,15 @@ export async function DELETE(
       .maybeSingle();
 
     if (houseError) {
+      if (isMissingTable(houseError)) return missingTableResponse('houses_of_sports');
       console.error('[admin/houses] delete load failed', houseError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load House.' },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: false, error: 'Failed to load House.' }, { status: 500 });
     }
     if (!houseRow) {
-      return NextResponse.json(
-        { success: false, error: 'House not found.' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
     }
 
-    const houseKey: string | null = houseRow.house_key ?? null;
+    const houseKey: string | null = (houseRow as any).house_key ?? null;
 
     const deletionTargets: { table: string; column: string; value: string | null }[] = [
       { table: 'house_notes', column: 'house_id', value: houseId },
@@ -436,29 +390,16 @@ export async function DELETE(
 
     for (const target of deletionTargets) {
       if (!target.value) continue;
-      const { error } = await supabaseAdmin
-        .from(target.table)
-        .delete()
-        .eq(target.column, target.value);
-      if (error) {
-        console.error(
-          `[admin/houses] delete step failed for ${target.table}`,
-          error
-        );
+      const { error } = await supabaseAdmin.from(target.table).delete().eq(target.column, target.value);
+      if (error && !isMissingTable(error)) {
+        console.error(`[admin/houses] delete step failed for ${target.table}`, error);
       }
     }
 
-    const { error: deleteHouseError } = await supabaseAdmin
-      .from('houses_of_sports')
-      .delete()
-      .eq('id', houseId);
-
+    const { error: deleteHouseError } = await supabaseAdmin.from('houses_of_sports').delete().eq('id', houseId);
     if (deleteHouseError) {
       console.error('[admin/houses] failed to delete house row', deleteHouseError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to delete House.' },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: false, error: 'Failed to delete House.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
@@ -466,7 +407,7 @@ export async function DELETE(
     console.error('[admin/houses] unexpected delete error', err);
     return NextResponse.json(
       { success: false, error: 'Unexpected error while deleting House.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

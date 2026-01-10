@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAuth } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import { formatMissingResourceError, isMissingTable } from '@/lib/postgres';
 
 function normalizeEmail(value?: string | null) {
   return value?.trim().toLowerCase() ?? null;
@@ -51,7 +52,15 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      if (isMissingTable(error)) {
+        return NextResponse.json(
+          { success: true, invites: [], warning: formatMissingResourceError('house_head_invites') },
+          { status: 200 },
+        );
+      }
+      throw error;
+    }
 
     const invites =
       data?.map((invite: {

@@ -1,9 +1,10 @@
-﻿import crypto from 'crypto';
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getHouseHeadHouseIds } from '@/lib/server/house-heads';
+import { formatMissingResourceError, isMissingColumn, isMissingTable } from '@/lib/postgres';
 
 type InviteRow = {
   id: string;
@@ -15,32 +16,60 @@ type InviteRow = {
   target_user_id: string | null;
 };
 
+type InviteInsertPayload = {
+  house_id: string;
+  email: string;
+  token: string;
+  status: string;
+  target_user_id?: string | null;
+  expires_at?: string | null;
+  created_by?: string | null;
+  payload?: Record<string, unknown>;
+};
+
+const OPTIONAL_INSERT_FIELDS: (keyof InviteInsertPayload)[] = ['target_user_id', 'created_by', 'payload', 'expires_at'];
+
 function normalizeEmail(value?: string | null) {
   return value?.trim().toLowerCase() ?? null;
 }
 
-function isMissingColumn(error?: { code?: string }) {
-  return error?.code === '42703';
+function missingTableResponse(table: string) {
+  return NextResponse.json({ success: false, error: formatMissingResourceError(table) }, { status: 500 });
 }
 
-function isMissingTable(error?: { code?: string }) {
-  return error?.code === '42P01';
-}
+async function insertInviteWithFallback(basePayload: InviteInsertPayload) {
+  if (!supabaseAdmin) return { error: new Error('Supabase admin client unavailable.') };
 
-function missingTableResponse(tableName: string) {
-  return NextResponse.json(
-    {
-      success: false,
-      error: `Tabela ${tableName} inexistente. Corre as migrações pendentes no Supabase.`,
-    },
-    { status: 500 },
-  );
+  const omitPermutations: (keyof InviteInsertPayload)[][] = [[]];
+  OPTIONAL_INSERT_FIELDS.forEach((field) => {
+    omitPermutations.push([...omitPermutations[omitPermutations.length - 1], field]);
+  });
+
+  for (const omitList of omitPermutations) {
+    const attemptPayload: InviteInsertPayload = { ...basePayload };
+    omitList.forEach((field) => {
+      delete attemptPayload[field];
+    });
+
+    const { error } = await supabaseAdmin.from('house_head_invites').insert(attemptPayload);
+    if (!error) return { success: true };
+
+    if (isMissingTable(error)) {
+      return { tableMissing: true };
+    }
+
+    if (!isMissingColumn(error)) {
+      return { error };
+    }
+  }
+
+  return { error: new Error('house_head_invites schema missing required columns.') };
 }
 
 export async function GET(request: NextRequest, { params }: { params: { houseId: string } }) {
   const auth = await requireAdmin(request);
   if (!auth.success) return auth.response!;
-  if (!supabaseAdmin) return NextResponse.json({ success: false, error: 'Admin client unavailable.' }, { status: 500 });
+  if (!supabaseAdmin) return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
 
   const houseId = params.houseId;
   if (!houseId) return NextResponse.json({ success: false, error: 'Missing houseId' }, { status: 400 });
@@ -53,8 +82,9 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       .order('created_at', { ascending: false });
 
     if (error) {
+      if (isMissingTable(error)) return missingTableResponse('house_head_invites');
       if (isMissingColumn(error)) {
-        console.warn('[head-invites] target_user_id column missing, falling back to legacy schema');
+        console.warn('[head-invites] legacy schema detected when listing invites.');
         const fallback = await supabaseAdmin
           .from('house_head_invites')
           .select('id, email, token, status, expires_at, created_at')
@@ -65,20 +95,19 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
           throw fallback.error;
         }
         data = (fallback.data ?? []).map((row: InviteRow) => ({ ...row, target_user_id: null }));
-      } else if (isMissingTable(error)) {
-        return missingTableResponse('house_head_invites');
       } else {
         throw error;
       }
     }
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || '';
-    const baseUrl = origin.startsWith('http') ? origin : `https://${origin}`;
+    const baseUrl = origin.startsWith('http') ? origin : `https://${origin || 'legacy.local'}`;
     const invites =
       (data as InviteRow[] | null)?.map((invite) => ({
         ...invite,
         inviteUrl: `${baseUrl}/head/invite?token=${invite.token}`,
       })) ?? [];
+
     return NextResponse.json({ success: true, invites });
   } catch (error) {
     console.error('[head-invites] list failed', error);
@@ -96,7 +125,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
   const auth = await requireAdmin(request);
   if (!auth.success) return auth.response!;
   const actor = auth.user;
-  if (!supabaseAdmin) return NextResponse.json({ success: false, error: 'Admin client unavailable.' }, { status: 500 });
+  if (!supabaseAdmin) return NextResponse.json({ success: false, error: 'Supabase admin client unavailable.' }, { status: 500 });
 
   const houseId = params.houseId;
   if (!houseId) return NextResponse.json({ success: false, error: 'Missing houseId' }, { status: 400 });
@@ -128,7 +157,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
       .maybeSingle();
     if (userError) throw userError;
     if (!targetUser) {
-      return NextResponse.json({ success: false, error: 'Utilizador nuo encontrado.' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Utilizador não encontrado.' }, { status: 404 });
     }
 
     if (targetUser.role !== 'Super Admin' && targetUser.role !== 'Admin') {
@@ -137,7 +166,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
 
     const normalizedEmail = normalizeEmail(body.email) ?? normalizeEmail(targetUser.email);
     if (!normalizedEmail) {
-      return NextResponse.json({ success: false, error: 'A conta selecionada nuo tem email volido.' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'A conta selecionada não tem email válido.' }, { status: 400 });
     }
 
     let existingInvite: InviteRow | null = null;
@@ -147,26 +176,22 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
       .eq('house_id', houseId)
       .eq('target_user_id', targetUserId)
       .maybeSingle();
-
     if (existingError) {
-      if (existingError.code === 'PGRST116') {
-        // no rows
-      } else if (isMissingColumn(existingError)) {
-        console.warn('[head-invites] target_user_id missing while checking duplicates, falling back to email');
+      if (isMissingTable(existingError)) return missingTableResponse('house_head_invites');
+      if (isMissingColumn(existingError)) {
         const fallback = await supabaseAdmin
           .from('house_head_invites')
           .select('id, status')
           .eq('house_id', houseId)
           .eq('email', normalizedEmail)
           .maybeSingle();
-        if (fallback.error && fallback.error.code !== 'PGRST116') {
+        if (fallback.error) {
           if (isMissingTable(fallback.error)) return missingTableResponse('house_head_invites');
-          throw fallback.error;
+          if (fallback.error.code !== 'PGRST116') throw fallback.error;
+        } else {
+          existingInvite = (fallback.data as InviteRow | null) ?? null;
         }
-        existingInvite = (fallback.data as InviteRow | null) ?? null;
-      } else if (isMissingTable(existingError)) {
-        return missingTableResponse('house_head_invites');
-      } else {
+      } else if (existingError.code !== 'PGRST116') {
         throw existingError;
       }
     } else {
@@ -174,7 +199,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
     }
 
     if (existingInvite && existingInvite.status === 'pending') {
-      return NextResponse.json({ success: false, error: 'Jo existe um convite pendente para este utilizador.' }, { status: 409 });
+      return NextResponse.json({ success: false, error: 'Já existe um convite pendente para este utilizador.' }, { status: 409 });
     }
 
     const token = crypto.randomBytes(24).toString('hex');
@@ -182,7 +207,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + days);
 
-    const baseInvitePayload: Record<string, unknown> = {
+    const baseInvitePayload: InviteInsertPayload = {
       house_id: houseId,
       email: normalizedEmail,
       token,
@@ -193,19 +218,9 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
       status: 'pending',
     };
 
-    let insertError = (await supabaseAdmin.from('house_head_invites').insert(baseInvitePayload)).error;
-    if (insertError) {
-      if (isMissingColumn(insertError)) {
-        console.warn('[head-invites] missing target_user_id column, retrying without it');
-        const fallbackPayload = { ...baseInvitePayload };
-        delete fallbackPayload.target_user_id;
-        insertError = (await supabaseAdmin.from('house_head_invites').insert(fallbackPayload)).error;
-      }
-      if (insertError) {
-        if (isMissingTable(insertError)) return missingTableResponse('house_head_invites');
-        throw insertError;
-      }
-    }
+    const insertResult = await insertInviteWithFallback(baseInvitePayload);
+    if (insertResult.tableMissing) return missingTableResponse('house_head_invites');
+    if (insertResult.error) throw insertResult.error;
 
     return NextResponse.json({
       success: true,
@@ -224,4 +239,3 @@ export async function POST(request: NextRequest, { params }: { params: { houseId
     );
   }
 }
-
