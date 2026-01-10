@@ -43,6 +43,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -161,6 +163,8 @@ export default function AdminHousesPage() {
   const [invitesError, setInvitesError] = useState<string | null>(null);
   const [acceptingInviteId, setAcceptingInviteId] = useState<string | null>(null);
   const [decliningInviteId, setDecliningInviteId] = useState<string | null>(null);
+  const [termInvite, setTermInvite] = useState<HeadInvite | null>(null);
+  const [termChecked, setTermChecked] = useState(false);
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
   const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
@@ -433,6 +437,20 @@ export default function AdminHousesPage() {
     },
     [getToken, refreshHeadInvites, toast],
   );
+
+  const handleConfirmInvite = useCallback(async () => {
+    if (!termInvite) return;
+    if (!termChecked) {
+      toast({
+        title: 'Confirmação necessária',
+        description: 'Lê e aceita o termo antes de assumir a House.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    await handleAcceptInvite(termInvite);
+    setTermInvite(null);
+  }, [handleAcceptInvite, termChecked, termInvite, toast]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -767,10 +785,13 @@ export default function AdminHousesPage() {
                       <div className="flex flex-wrap gap-2">
                         <Button
                           className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:opacity-90"
-                          onClick={() => void handleAcceptInvite(invite)}
+                          onClick={() => {
+                            setTermInvite(invite);
+                            setTermChecked(false);
+                          }}
                           disabled={acceptingInviteId === invite.id}
                         >
-                          {acceptingInviteId === invite.id ? (
+                          {acceptingInviteId === invite.id && termInvite?.id === invite.id ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               A confirmar...
@@ -1238,6 +1259,79 @@ export default function AdminHousesPage() {
         </section>
         </div>
       </div>
+      <Dialog
+        open={Boolean(termInvite)}
+        onOpenChange={(open) => {
+          if (!open && acceptingInviteId !== termInvite?.id) {
+            setTermInvite(null);
+            setTermChecked(false);
+          }
+        }}
+      >
+        <DialogContent className="border border-white/10 bg-[#02121c] text-white sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Termo de responsabilidade</DialogTitle>
+            <DialogDescription className="text-slate-300">
+              Antes de assumir o cargo lê o compromisso oficial. Só avançamos quando aceitas estes pontos.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[320px] rounded-2xl border border-white/5 bg-black/20 p-4 text-sm text-slate-200">
+            <p className="mb-3">
+              Ao aceitar o papel de Head of House representas o Legacy e a blockchain Apertum. Comprometes-te a:
+            </p>
+            <ul className="list-disc space-y-2 pl-5">
+              <li>Colocar o interesse dos membros acima de qualquer agenda pessoal ou comercial.</li>
+              <li>Respeitar a autonomia de cada utilizador — ninguém é obrigado a seguir links, falar contigo ou aderir a iniciativas externas.</li>
+              <li>Comunicar com verdade, sem promessas de rendimento, sem omitir riscos e sem linguagem enganadora.</li>
+              <li>Cumprir limites operacionais: frequência de mensagens, templates aprovados, auditoria e mecanismos anti-spam.</li>
+              <li>Atuar como guardião da reputação do Legacy e da Apertum; qualquer abuso implica remoção imediata.</li>
+              <li>Aceitar avaliação contínua, relatórios de abuso e consequências definidas pela plataforma.</li>
+            </ul>
+            <p className="mt-4 text-xs text-slate-400">
+              Aceitação válida por 90 dias ou até existir nova versão oficial.
+            </p>
+          </ScrollArea>
+          <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white">
+            <Checkbox
+              id="term-checkbox"
+              checked={termChecked}
+              onCheckedChange={(value) => setTermChecked(Boolean(value))}
+              className="border-white/40 data-[state=checked]:bg-cyan-400 data-[state=checked]:text-[#04131b]"
+            />
+            <label htmlFor="term-checkbox" className="leading-relaxed">
+              Confirmo que li e aceito integralmente este termo de responsabilidade.
+            </label>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className={secondaryButtonClasses}
+              onClick={() => {
+                if (acceptingInviteId === termInvite?.id) return;
+                setTermInvite(null);
+                setTermChecked(false);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+              disabled={!termInvite || acceptingInviteId === termInvite.id}
+              onClick={() => void handleConfirmInvite()}
+            >
+              {acceptingInviteId === termInvite?.id ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  A confirmar...
+                </>
+              ) : (
+                'Aceitar e assumir'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={sportModalOpen} onOpenChange={handleSportDialogChange}>
         <DialogContent className="border border-white/10 bg-[#02121c] text-white sm:max-w-xl">
           <DialogHeader>
