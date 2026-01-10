@@ -19,7 +19,9 @@ function localizeCopy(value: Record<string, string> | null | undefined, locale: 
   );
 }
 
-async function resolveHouseId(houseKey: string) {
+async function resolveHouseId(
+  houseKey: string,
+): Promise<{ houseId: string } | { response: NextResponse }> {
   const { data, error } = await supabaseAdmin!
     .from('houses_of_sports')
     .select('id')
@@ -28,8 +30,13 @@ async function resolveHouseId(houseKey: string) {
 
   if (error) {
     if (isMissingTable(error)) {
-      return { response: NextResponse.json({ success: false, error: formatMissingResourceError('houses_of_sports') }, { status: 500 }) };
-    }
+    return {
+      response: NextResponse.json(
+        { success: false, error: formatMissingResourceError('houses_of_sports') },
+        { status: 500 },
+      ),
+    };
+  }
     throw error;
   }
 
@@ -83,9 +90,7 @@ export async function GET(
 
   try {
     const houseResult = await resolveHouseId(houseKey);
-    if ('response' in houseResult) {
-      return houseResult.response;
-    }
+    if ('response' in houseResult) return houseResult.response;
     const { houseId } = houseResult;
 
     const canAccess = await hasHouseAccess(houseId, auth.user!.userId, auth.user!.role ?? null);
