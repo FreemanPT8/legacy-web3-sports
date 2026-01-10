@@ -102,7 +102,7 @@ export async function GET(
     }
 
     const localeParam = request.nextUrl.searchParams.get('locale');
-    const locale = normalizeLocale(localeParam || auth.user?.language || 'pt');
+    const locale = normalizeLocale(localeParam || undefined);
 
     const { data: eventRows, error: eventError } = await supabaseAdmin
       .from('house_events')
