@@ -967,55 +967,6 @@ export default function AdminUsersPage() {
             ))}
           </div>
 
-          {isSuperAdmin && (
-            <Card className="border border-white/10 bg-[#031824] shadow-xl shadow-black/30">
-              <CardHeader>
-                <CardTitle className="text-white">Permissão para criar desportos</CardTitle>
-                <p className="text-sm text-slate-300">
-                  Decide quais Admin podem criar novos desportos. Super Admin tem sempre acesso.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {loadingSportAdmins ? (
-                  <p className="text-sm text-slate-200">A carregar admins...</p>
-                ) : sportPermissionAdmins.length === 0 ? (
-                  <p className="text-sm text-slate-300">Ainda não existem admins configurados.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {sportPermissionAdmins.map((admin) => (
-                      <div
-                        key={admin.id}
-                        className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-[#010d16] p-3"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-white">{admin.displayName}</p>
-                          <p className="text-xs text-slate-400">
-                            {admin.role === 'Super Admin'
-                              ? 'Super Admin'
-                              : admin.username
-                              ? `@${admin.username}`
-                              : 'Admin'}
-                          </p>
-                        </div>
-                        {admin.role === 'Super Admin' ? (
-                          <span className="text-xs text-cyan-300">Sempre ativo</span>
-                        ) : (
-                          <Switch
-                            checked={admin.hasPermission}
-                            disabled={updatingSportAdminId === admin.id}
-                            onCheckedChange={(value) =>
-                              handleToggleAdminSportPermission(admin.id, Boolean(value))
-                            }
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {/* USER MANAGEMENT */}
           <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
             <CardHeader>
