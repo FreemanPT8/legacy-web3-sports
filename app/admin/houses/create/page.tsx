@@ -722,6 +722,28 @@ export default function CreateHousePage() {
                 )}
               </CardContent>
             </Card>
+            <div className="flex flex-col gap-2 rounded-3xl border border-white/10 bg-[#010b16]/60 p-4 text-center shadow-[0_30px_80px_rgba(3,10,25,0.5)] md:flex-row md:items-center md:justify-between md:text-left">
+              <div>
+                <p className="text-sm font-semibold text-white">Guardar House</p>
+                <p className="text-xs text-slate-400">
+                  Garante que escolheste o desporto e o país antes de continuares.
+                </p>
+              </div>
+              <Button
+                type="submit"
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffe099] to-[#ffc262] px-6 py-5 text-[#1f1400] shadow-[0_20px_50px_rgba(253,216,124,0.45)] hover:opacity-90"
+                disabled={!isFormValid || formSubmitting}
+              >
+                {formSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    A criar House...
+                  </>
+                ) : (
+                  'Criar House'
+                )}
+              </Button>
+            </div>
           </form>
         </div>
       </div>
