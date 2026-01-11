@@ -147,7 +147,12 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
     let active = true;
     setEventsLoading(true);
     setEventsError(null);
-    fetch(`/api/houses/${houseKey}/events`, { cache: 'no-store' })
+    const eventParams = new URLSearchParams();
+    if (localeGuess) {
+      eventParams.set('locale', localeGuess);
+    }
+    const querySuffix = eventParams.toString();
+    fetch(`/api/houses/${houseKey}/events${querySuffix ? `?${querySuffix}` : ''}`, { cache: 'no-store' })
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as
           | { success: true; events: HouseEvent[] }
