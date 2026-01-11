@@ -1026,11 +1026,11 @@ export default function AdminHousesPage() {
               <Loader2 className="h-4 w-4 animate-spin" />
               A carregar pedidos...
             </div>
-          ) : joinRequests.length === 0 ? (
+          ) : !joinRequestsError && joinRequests.length === 0 ? (
             <p className="text-sm text-slate-400">
               Não existem pedidos pendentes nas Houses que geres.
             </p>
-          ) : (
+          ) : joinRequestsError ? null : (
             <div className="space-y-4">
               {joinRequests.map((request) => (
                 <article
