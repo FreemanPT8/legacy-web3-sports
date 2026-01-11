@@ -33,5 +33,5 @@ export default function AdminForumPage() {
     return null;
   }
 
-  return <ForumSunset />;
+  return <ForumSunset hideChrome />;
 }

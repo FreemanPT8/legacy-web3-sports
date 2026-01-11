@@ -4,8 +4,6 @@ import { useCallback, useMemo, useState, useEffect } from 'react';
 
 import Link from 'next/link';
 
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1337,8 +1335,6 @@ export default function AdminOnboardingPage() {
 
   return (
     <div className="min-h-screen bg-[#010913] text-white">
-      <Header />
-
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-12">
         <div>
           <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-300">Admin · Onboarding</p>
@@ -2270,9 +2266,6 @@ export default function AdminOnboardingPage() {
         </div>
 
       </main>
-
-      <Footer />
-
       {previewOpen ? (
         <OnboardingPopup
           data={resolvePopupForLanguage(resolvedDraft, activeLanguage)}

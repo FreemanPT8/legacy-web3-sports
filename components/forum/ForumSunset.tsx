@@ -6,7 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-export function ForumSunset() {
+export type ForumSunsetProps = {
+  hideChrome?: boolean;
+};
+
+export function ForumSunset({ hideChrome = false }: ForumSunsetProps = {}) {
   const points = [
     'Private comments now live inside lessons, blog posts, and the Houses of Sports once you reach 369 XP.',
     'Emoji reactions replace likes: +1 (5/day), 🔥 (1/day), and -1 (1/day) with moderation visibility.',
@@ -15,7 +19,7 @@ export function ForumSunset() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#000c12] text-white">
-      <Header />
+      {!hideChrome ? <Header /> : null}
       <main className="flex-1 px-4 py-16">
         <div className="mx-auto max-w-4xl">
           <Card className="border border-white/10 bg-gradient-to-br from-[#04141c] via-[#03121a] to-[#020b11] shadow-[0_40px_120px_rgba(2,8,18,0.4)]">
@@ -90,7 +94,7 @@ export function ForumSunset() {
           </Card>
         </div>
       </main>
-      <Footer />
+      {!hideChrome ? <Footer /> : null}
     </div>
   );
 }
