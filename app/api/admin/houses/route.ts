@@ -466,7 +466,7 @@ export async function POST(request: NextRequest) {
         house_key: houseKey,
         name_i18n,
       })
-      .select('id')
+      .select('id, sport_id, country_code')
       .single();
 
     if (error || !data) {
@@ -478,6 +478,10 @@ export async function POST(request: NextRequest) {
     }
 
     const id = data.id as string;
+    const houseSportId = (data as { sport_id: string | null }).sport_id;
+    const houseCountry = (data as { country_code: string | null }).country_code;
+
+    await syncExistingMembersForHouse(id, houseSportId, houseCountry);
 
     // Responder de forma compatível com o teu CreateHousePage
     return NextResponse.json<HousesPostResponse>(
@@ -496,3 +500,43 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+async function syncExistingMembersForHouse(
+  houseId: string,
+  sportId: string | null,
+  countryCode: string | null,
+) {
+  if (!sportId || !countryCode) return;
+  if (!supabaseAdmin) return;
+
+  try {
+    const upperCountry = countryCode.toUpperCase();
+    const { data: users, error } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('primary_sport_id', sportId)
+      .eq('primary_country_code', upperCountry);
+
+    if (error) {
+      console.error('[admin/houses] Failed to load users for membership sync:', error);
+      return;
+    }
+
+    if (!users?.length) return;
+
+    await Promise.all(
+      users.map(async (user) => {
+        const result = await syncUserHouseMembership(user.id, {
+          assignedVia: 'ADMIN_SYNC',
+          logPrefix: `house:${houseId}`,
+        });
+        if (!result.success) {
+          console.error('[admin/houses] Failed to sync membership for user', user.id, result.error);
+        }
+      }),
+    );
+  } catch (error) {
+    console.error('[admin/houses] Unexpected error syncing members for new house:', error);
+  }
+}
+
