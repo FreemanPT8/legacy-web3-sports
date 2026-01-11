@@ -47,11 +47,45 @@ const EVENT_EMPTY_COPY = {
   en: 'No events scheduled yet. Once the Head posts exclusive sessions they will show up here.',
 } as const;
 
+const EVENT_SECTION_TITLES = {
+  pt: {
+    upcoming: 'Próximos eventos',
+    past: 'Eventos anteriores',
+  },
+  es: {
+    upcoming: 'Próximos eventos',
+    past: 'Eventos pasados',
+  },
+  en: {
+    upcoming: 'Upcoming events',
+    past: 'Past events',
+  },
+} as const;
+
+const EVENT_VISIBILITY = {
+  pt: { open: 'Aberto', reserved: 'Reservado' },
+  es: { open: 'Abierto', reserved: 'Reservado' },
+  en: { open: 'Open', reserved: 'Members only' },
+} as const;
+
+const EVENT_DETAIL_LINK = {
+  pt: 'Ver detalhes',
+  es: 'Ver detalles',
+  en: 'View details',
+} as const;
+
 function resolveEventEmptyCopy(locale: string) {
   const normalized = locale.toLowerCase();
   if (normalized.startsWith('es')) return EVENT_EMPTY_COPY.es;
   if (normalized.startsWith('en')) return EVENT_EMPTY_COPY.en;
   return EVENT_EMPTY_COPY.pt;
+}
+
+function resolveLocaleBucket(locale: string): keyof typeof EVENT_SECTION_TITLES {
+  const normalized = locale.toLowerCase();
+  if (normalized.startsWith('es')) return 'es';
+  if (normalized.startsWith('en')) return 'en';
+  return 'pt';
 }
 
 type Props = {
@@ -75,6 +109,8 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
   const [eventsError, setEventsError] = useState<string | null>(null);
   const localeGuess = typeof navigator !== 'undefined' ? navigator.language || 'pt-PT' : 'pt-PT';
   const eventsEmptyCopy = resolveEventEmptyCopy(localeGuess);
+  const localeBucket = resolveLocaleBucket(localeGuess);
+  const sectionTitles = EVENT_SECTION_TITLES[localeBucket];
 
   useEffect(() => {
     if (loading || !user) {
@@ -335,33 +371,13 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
                 </div>
               ) : eventsError ? (
                 <p className="text-rose-200">{eventsError}</p>
-              ) : houseEvents.length ? (
-                houseEvents.map((event) => (
-                  <div key={event.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-cyan-300">
-                      <Calendar className="h-4 w-4" />
-                      {event.visibility === 'members' ? 'Reservado' : 'Aberto'}
-                    </div>
-                    <p className="mt-2 text-base font-semibold text-white">{event.title}</p>
-                    <p className="text-sm text-white/60">{formatEventDate(event.startAt, event.endAt)}</p>
-                    {event.location ? <p className="text-xs text-white/60">Local: {event.location}</p> : null}
-                    {event.description ? (
-                      <p className="mt-2 text-sm text-white/70 line-clamp-3">{event.description}</p>
-                    ) : null}
-                    {event.linkUrl ? (
-                      <a
-                        href={event.linkUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-flex text-sm font-semibold text-cyan-300 hover:text-cyan-200"
-                      >
-                        Ver detalhes
-                      </a>
-                    ) : null}
-                  </div>
-                ))
               ) : (
-                <p className="text-sm text-white/70">{eventsEmptyCopy}</p>
+                <EventsSection
+                  events={houseEvents}
+                  localeBucket={localeBucket}
+                  sectionTitles={sectionTitles}
+                  emptyCopy={eventsEmptyCopy}
+                />
               )}
             </CardContent>
           </Card>
@@ -398,6 +414,74 @@ function ProgressStat({ label, value }: { label: string; value: string }) {
     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
       <p className="text-xs uppercase tracking-[0.3em] text-white/60">{label}</p>
       <p className="mt-1 text-xl font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function EventsSection({
+  events,
+  localeBucket,
+  sectionTitles,
+  emptyCopy,
+}: {
+  events: HouseEvent[];
+  localeBucket: keyof typeof EVENT_SECTION_TITLES;
+  sectionTitles: (typeof EVENT_SECTION_TITLES)[keyof typeof EVENT_SECTION_TITLES];
+  emptyCopy: string;
+}) {
+  if (!events.length) {
+    return <p className="text-sm text-white/70">{emptyCopy}</p>;
+  }
+
+  const now = Date.now();
+  const upcoming = [...events]
+    .filter((event) => new Date(event.startAt).getTime() >= now)
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  const past = [...events]
+    .filter((event) => new Date(event.startAt).getTime() < now)
+    .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+
+  const visibilityLabels = EVENT_VISIBILITY[localeBucket];
+  const detailLabel = EVENT_DETAIL_LINK[localeBucket];
+
+  const renderEvent = (event: HouseEvent) => (
+    <div key={event.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-cyan-300">
+        <Calendar className="h-4 w-4" />
+        {event.visibility === 'members' ? visibilityLabels.reserved : visibilityLabels.open}
+      </div>
+      <p className="mt-2 text-base font-semibold text-white">{event.title}</p>
+      <p className="text-sm text-white/60">{formatEventDate(event.startAt, event.endAt)}</p>
+      {event.location ? <p className="text-xs text-white/60">Local: {event.location}</p> : null}
+      {event.description ? <p className="mt-2 text-sm text-white/70 line-clamp-3">{event.description}</p> : null}
+      {event.linkUrl ? (
+        <a
+          href={event.linkUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+        >
+          {detailLabel}
+        </a>
+      ) : null}
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {upcoming.length ? (
+        <section>
+          <p className="mb-3 text-xs uppercase tracking-[0.4em] text-white/60">{sectionTitles.upcoming}</p>
+          <div className="space-y-4">{upcoming.map(renderEvent)}</div>
+        </section>
+      ) : null}
+      {past.length ? (
+        <section>
+          <p className="mb-3 mt-4 text-xs uppercase tracking-[0.4em] text-white/60">{sectionTitles.past}</p>
+          <div className="space-y-4">{past.map(renderEvent)}</div>
+        </section>
+      ) : null}
+      {!upcoming.length && !past.length ? <p className="text-sm text-white/70">{emptyCopy}</p> : null}
     </div>
   );
 }
