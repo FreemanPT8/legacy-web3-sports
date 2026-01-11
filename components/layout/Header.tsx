@@ -42,18 +42,28 @@ export const Header = memo(function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingHeadInvites, setPendingHeadInvites] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
-  const [notifications, setNotifications] = useState<
-    {
-      id: string;
-      title: string;
-      message: string;
-      created_at: string;
-      link?: string | null;
-      type?: string | null;
-    }[]
-  >([]);
+  type NotificationPreview = {
+    id: string;
+    title: string;
+    message: string;
+    created_at: string;
+    link?: string | null;
+    type?: string | null;
+  };
+  type InvitePreview = {
+    id: string;
+    houseName: string;
+    houseKey: string;
+    createdAt: string;
+    expiresAt?: string | null;
+  };
+
+  const [notifications, setNotifications] = useState<NotificationPreview[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [bellInvites, setBellInvites] = useState<InvitePreview[]>([]);
+  const [bellInvitesLoading, setBellInvitesLoading] = useState(false);
+  const [bellInvitesError, setBellInvitesError] = useState<string | null>(null);
   const selectableLanguages = SUPPORTED_LANGUAGES.map((code) => ({
     code,
     label: LANGUAGES[code] ?? code.toUpperCase(),
@@ -113,8 +123,6 @@ export const Header = memo(function Header() {
 
   const canAccessAdmin = user ? isAdminRole(user.role) : false;
   const totalBellCount = unreadCount + pendingHeadInvites;
-  const notificationLink =
-    pendingHeadInvites > 0 ? '/admin/houses?tab=invites' : '/notifications';
   const noNotificationsText =
     {
       pt: 'Não existem novas notificações neste momento.',
@@ -127,6 +135,18 @@ export const Header = memo(function Header() {
       en: 'Notifications',
       es: 'Notificaciones',
     }[language] || 'Notifications';
+  const invitesLabel =
+    {
+      pt: 'Convites de House',
+      en: 'House invites',
+      es: 'Invitaciones House',
+    }[language] || 'House invites';
+  const invitesCtaLabel =
+    {
+      pt: 'Ver convites',
+      en: 'View invites',
+      es: 'Ver invitaciones',
+    }[language] || 'View invites';
 
   const loadBellNotifications = useCallback(async () => {
     if (!user) {
@@ -155,6 +175,59 @@ export const Header = memo(function Header() {
       setNotificationsLoading(false);
     }
   }, [language, user]);
+
+  const loadBellInvites = useCallback(async () => {
+    if (!user) {
+      setBellInvites([]);
+      return;
+    }
+    const token = getToken();
+    if (!token) {
+      setBellInvites([]);
+      return;
+    }
+    setBellInvitesLoading(true);
+    setBellInvitesError(null);
+    try {
+      const response = await fetch('/api/head-invites', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to load invites');
+      }
+      setBellInvites(
+        (data.invites || []).map((invite: any) => ({
+          id: invite.id,
+          houseName: invite.houseName || invite.houseKey || 'House',
+          houseKey: invite.houseKey || 'HOUSE',
+          createdAt: invite.createdAt || invite.created_at || new Date().toISOString(),
+          expiresAt: invite.expiresAt || invite.expires_at || null,
+        })),
+      );
+    } catch (error) {
+      console.error('[Header] load invites failed', error);
+      setBellInvitesError(
+        language === 'pt'
+          ? 'Falha ao carregar convites.'
+          : language === 'es'
+            ? 'Error al cargar invitaciones.'
+            : 'Failed to load invites.',
+      );
+      setBellInvites([]);
+    } finally {
+      setBellInvitesLoading(false);
+    }
+  }, [getToken, language, user]);
+
+  const formatDate = useCallback(
+    (isoDate: string) =>
+      new Date(isoDate).toLocaleString(
+        language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US',
+        { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' },
+      ),
+    [language],
+  );
 
   return (
     <header
@@ -348,12 +421,16 @@ export const Header = memo(function Header() {
 
           {/* NOTIFICAÇÕES */}
           {user && (
-            <DropdownMenu open={bellOpen} onOpenChange={(open) => {
-              setBellOpen(open);
-              if (open) {
-                void loadBellNotifications();
-              }
-            }}>
+            <DropdownMenu
+              open={bellOpen}
+              onOpenChange={(open) => {
+                setBellOpen(open);
+                if (open) {
+                  void loadBellNotifications();
+                  void loadBellInvites();
+                }
+              }}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -377,7 +454,7 @@ export const Header = memo(function Header() {
                   {notificationsLabel}
                 </div>
                 <div className="max-h-80 overflow-y-auto px-4 py-3 space-y-3">
-                  {notificationsLoading ? (
+                  {notificationsLoading || bellInvitesLoading ? (
                     <div className="flex items-center gap-2 text-sm text-slate-300">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {language === 'pt'
@@ -386,50 +463,88 @@ export const Header = memo(function Header() {
                           ? 'Cargando notificaciones...'
                           : 'Loading notifications...'}
                     </div>
-                  ) : notificationsError ? (
-                    <p className="text-sm text-rose-300">{notificationsError}</p>
-                  ) : notifications.length === 0 ? (
+                  ) : notificationsError || bellInvitesError ? (
+                    <p className="text-sm text-rose-300">
+                      {notificationsError || bellInvitesError}
+                    </p>
+                  ) : notifications.length === 0 && bellInvites.length === 0 ? (
                     <p className="text-sm text-slate-400">{noNotificationsText}</p>
                   ) : (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm"
-                      >
-                        <p className="font-semibold text-white">{notification.title}</p>
-                        <p className="text-slate-300">{notification.message}</p>
-                        <p className="text-[11px] text-slate-500">
-                          {new Date(notification.created_at).toLocaleString(language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                        {notification.link && (
-                          <Link
-                            href={notification.link}
-                            className="mt-2 inline-flex text-xs font-semibold text-cyan-300 hover:text-cyan-100"
-                          >
-                            {language === 'pt'
-                              ? 'Abrir detalhe'
-                              : language === 'es'
-                                ? 'Abrir detalle'
-                                : 'Open'}
-                          </Link>
-                        )}
-                      </div>
-                    ))
+                    <>
+                      {bellInvites.length > 0 && (
+                        <div className="rounded-2xl border border-white/10 bg-[#020b16]/80 p-3 text-sm">
+                          <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.3em] text-cyan-200">
+                            {invitesLabel}
+                            <span className="rounded-full bg-sky-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                              {bellInvites.length > 9 ? '9+' : bellInvites.length}
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {bellInvites.map((invite) => (
+                              <div key={invite.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                                <p className="font-semibold text-white">{invite.houseName}</p>
+                                <p className="text-xs text-slate-400">{invite.houseKey}</p>
+                                <p className="text-[11px] text-slate-500">
+                                  {formatDate(invite.createdAt)}
+                                  {invite.expiresAt ? ` · expira ${formatDate(invite.expiresAt)}` : ''}
+                                </p>
+                                <Link
+                                  href="/admin/houses?tab=invites"
+                                  className="mt-2 inline-flex text-xs font-semibold text-sky-300 hover:text-sky-100"
+                                >
+                                  {invitesCtaLabel}
+                                </Link>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {notifications.length > 0 && (
+                        <div className="space-y-3">
+                          {notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm"
+                            >
+                              <p className="font-semibold text-white">{notification.title}</p>
+                              <p className="text-slate-300">{notification.message}</p>
+                              <p className="text-[11px] text-slate-500">
+                                {formatDate(notification.created_at)}
+                              </p>
+                              {notification.link && (
+                                <Link
+                                  href={notification.link}
+                                  className="mt-2 inline-flex text-xs font-semibold text-cyan-300 hover:text-cyan-100"
+                                >
+                                  {language === 'pt'
+                                    ? 'Abrir detalhe'
+                                    : language === 'es'
+                                      ? 'Abrir detalle'
+                                      : 'Open'}
+                                </Link>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="border-t border-white/10 px-4 py-2 text-right">
-                  <Link href={notificationLink} className="text-xs font-semibold text-cyan-300 hover:text-cyan-100">
-                    {language === 'pt'
-                      ? 'Ver todas'
-                      : language === 'es'
-                        ? 'Ver todas'
-                        : 'View all'}
-                  </Link>
+                  <div className="flex items-center justify-between text-xs font-semibold text-cyan-300">
+                    <Link href="/notifications" className="hover:text-cyan-100">
+                      {language === 'pt'
+                        ? 'Ver histórico'
+                        : language === 'es'
+                          ? 'Ver historial'
+                          : 'View history'}
+                    </Link>
+                    {bellInvites.length > 0 && (
+                      <Link href="/admin/houses?tab=invites" className="text-sky-400 hover:text-sky-200">
+                        {invitesCtaLabel}
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
