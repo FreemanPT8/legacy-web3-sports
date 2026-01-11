@@ -1401,14 +1401,14 @@ export default function AdminHousesPage() {
           </DialogHeader>
           <ScrollArea className="max-h-[320px] rounded-2xl border border-white/5 bg-black/20 p-4 text-sm text-slate-200">
             <p className="mb-3">
-              Ao aceitar o papel de Head of House representas o Legacy e a blockchain Apertum. Comprometes-te a:
+              Ao aceitar o papel de Head of House representas o Legacy. Comprometes-te a:
             </p>
             <ul className="list-disc space-y-2 pl-5">
               <li>Colocar o interesse dos membros acima de qualquer agenda pessoal ou comercial.</li>
               <li>Respeitar a autonomia de cada utilizador — ninguém é obrigado a seguir links, falar contigo ou aderir a iniciativas externas.</li>
               <li>Comunicar com verdade, sem promessas de rendimento, sem omitir riscos e sem linguagem enganadora.</li>
               <li>Cumprir limites operacionais: frequência de mensagens, templates aprovados, auditoria e mecanismos anti-spam.</li>
-              <li>Atuar como guardião da reputação do Legacy e da Apertum; qualquer abuso implica remoção imediata.</li>
+              <li>Atuar como guardião da reputação do Legacy; qualquer abuso implica remoção imediata.</li>
               <li>Aceitar avaliação contínua, relatórios de abuso e consequências definidas pela plataforma.</li>
             </ul>
             <p className="mt-4 text-xs text-slate-400">

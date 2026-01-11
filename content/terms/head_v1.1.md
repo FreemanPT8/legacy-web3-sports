@@ -1,5 +1,5 @@
 TERMO DE RESPONSABILIDADE  
-HEAD OF HOUSE OF SPORT — LEGACY & APERTUM  
+HEAD OF HOUSE OF SPORT — LEGACY  
 Versão 1.1 — Janeiro 2026
 
 Este não é um cargo decorativo. É uma função de confiança assumida perante toda a comunidade Legacy.
@@ -19,8 +19,8 @@ Ao aceitar o papel de Head of House of Sport no ecossistema Legacy, declaro, de 
 4. Cumpro os limites operacionais definidos pela plataforma  
    - Aceito integralmente os limites de frequência de comunicação, o uso obrigatório de templates aprovados, a auditoria de mensagens e os mecanismos anti-spam com feedback dos membros.
 
-5. Atuo como guardião da reputação do Legacy e da Apertum  
-   - Compreendo que qualquer abuso da minha posição prejudica a confiança dos utilizadores, a integridade do ecossistema e a reputação global do Legacy e da Apertum.
+5. Atuo como guardião da reputação do Legacy  
+   - Compreendo que qualquer abuso da minha posição prejudica a confiança dos utilizadores, a integridade do ecossistema e a reputação global do Legacy.
 
 6. Aceito avaliação contínua e consequências  
    - Reconheço que o meu desempenho pode ser avaliado, reports de abuso serão analisados e o incumprimento deste termo pode resultar na remoção imediata do cargo.
