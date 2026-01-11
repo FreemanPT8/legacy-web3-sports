@@ -525,7 +525,7 @@ async function syncExistingMembersForHouse(
     if (!users?.length) return;
 
     await Promise.all(
-      users.map(async (user) => {
+      users.map(async (user: { id: string }) => {
         const result = await syncUserHouseMembership(user.id, {
           assignedVia: 'ADMIN_SYNC',
           logPrefix: `house:${houseId}`,
