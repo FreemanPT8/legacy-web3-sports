@@ -18,6 +18,7 @@ import type {
 } from '@/types/onboarding';
 import { useOnboardingLogs } from '@/hooks/useOnboardingLogs';
 import { useAuth } from '@/contexts/AuthContext';
+import { HEAD_TERM_VALIDITY_MS } from '@/lib/constants/headTerms';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Loader2,
@@ -79,8 +80,6 @@ const LANGUAGE_LABELS: Record<PopupLanguage, string> = {
   es: 'ES',
   en: 'EN',
 };
-
-const TERM_VALIDITY_DAYS = 90;
 
 const BASE_LOCALIZED_COPY: Record<PopupLanguage, OnboardingPopupLocalizedFields> = {
   pt: {
@@ -380,7 +379,7 @@ export default function AdminOnboardingPage() {
     if (!termContext?.acceptedAt) return null;
     const acceptedAt = new Date(termContext.acceptedAt);
     if (Number.isNaN(acceptedAt.getTime())) return null;
-    const expires = new Date(acceptedAt.getTime() + TERM_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
+    const expires = new Date(acceptedAt.getTime() + HEAD_TERM_VALIDITY_MS);
     return { acceptedAt, expires };
   }, [termContext?.acceptedAt]);
   const getLogsToken = useCallback(() => getToken?.() ?? null, [getToken]);

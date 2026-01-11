@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { loadHeadTerm } from '@/lib/head-terms';
+import { HEAD_TERM_VALIDITY_MS } from '@/lib/constants/headTerms';
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdmin(request);
@@ -54,7 +55,12 @@ export async function GET(request: NextRequest) {
     if (termError) throw termError;
 
     const acceptedVersion = existing?.version ?? null;
-    const needsAcceptance = acceptedVersion !== latestTerm.version;
+    const acceptedTimestamp = existing?.accepted_at ? Date.parse(existing.accepted_at) : null;
+    const isExpired =
+      typeof acceptedTimestamp === 'number' && !Number.isNaN(acceptedTimestamp)
+        ? Date.now() - acceptedTimestamp >= HEAD_TERM_VALIDITY_MS
+        : false;
+    const needsAcceptance = acceptedVersion !== latestTerm.version || isExpired;
 
     return NextResponse.json({
       success: true,
