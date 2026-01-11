@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { logHouseHistory } from '@/lib/houses/history';
 import { loadHeadTerm } from '@/lib/head-terms';
+import { isAdminRole } from '@/lib/roles';
 
 type AcceptPayload = {
   token?: string;
@@ -89,7 +90,21 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('user_id', auth.user!.userId)
       .maybeSingle();
-    if (!assignment) {
+
+    let assignmentId = assignment?.id ?? null;
+    if (!assignmentId) {
+      if (isAdminRole(auth.user!.role)) {
+        const { data: createdAssignment, error: createAssignmentError } = await supabaseAdmin
+          .from('admin_assignments')
+          .insert({ user_id: auth.user!.userId })
+          .select('id')
+          .single();
+        if (createAssignmentError) throw createAssignmentError;
+        assignmentId = createdAssignment?.id ?? null;
+      }
+    }
+
+    if (!assignmentId) {
       return NextResponse.json({
         success: false,
         error: 'Apenas contas com permissão de Admin/Super Admin podem aceitar este convite.',
@@ -103,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     await supabaseAdmin.from('house_heads').insert({
       house_id: invite.house_id,
-      admin_id: assignment.id,
+      admin_id: assignmentId,
     });
 
     await supabaseAdmin.from('house_head_terms').upsert(
