@@ -66,8 +66,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
         .from('house_join_requests')
         .select('*', { head: true, count: 'exact' })
         .eq('house_id', houseRow.id)
-        .eq('status', 'pending')
-        .gte('created_at', startOfMonth.toISOString()),
+        .eq('status', 'pending'),
       supabaseAdmin
         .from('user_houses')
         .select('*', { head: true, count: 'exact' })
