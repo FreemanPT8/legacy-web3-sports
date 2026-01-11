@@ -1,8 +1,9 @@
-// app/api/admin/houses/route.ts
+﻿// app/api/admin/houses/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
-import { getCountryName } from '@/lib/countries'; // 👈 NOVO
+import { getCountryName } from '@/lib/countries'; // ðŸ‘ˆ NOVO
+import { syncUserHouseMembership } from '@/lib/user-houses';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -395,7 +396,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 🔹 1) Garantir que o sport existe e obter nome
+    // ðŸ”¹ 1) Garantir que o sport existe e obter nome
     const { data: sportData, error: sportError } = await supabaseAdmin
       .from('sports')
       .select('id, code, name_i18n')
@@ -421,8 +422,8 @@ export async function POST(request: NextRequest) {
     const sportName =
       resolveLocaleName(sportRow.name_i18n, sportRow.code) || 'Sport';
 
-    // 🔹 2) Obter nome do país e gerar nome base da House
-    const countryName = getCountryName(rawCountryCode); // 👈 AQUI
+    // ðŸ”¹ 2) Obter nome do paÃ­s e gerar nome base da House
+    const countryName = getCountryName(rawCountryCode); // ðŸ‘ˆ AQUI
     const baseName = `House of ${sportName} ${countryName}`;
 
     const name_i18n = {
@@ -454,7 +455,7 @@ export async function POST(request: NextRequest) {
       houseKey = `${baseKey}_${attempt++}`;
     }
 
-    // ð¹ 3) Criar House com name_i18n preenchido
+    // Ã°ÂŸÂ”Â¹ 3) Criar House com name_i18n preenchido
     const { data, error } = await supabaseAdmin
       .from('houses_of_sports')
       .insert({
@@ -483,7 +484,7 @@ export async function POST(request: NextRequest) {
 
     await syncExistingMembersForHouse(id, houseSportId, houseCountry);
 
-    // Responder de forma compatível com o teu CreateHousePage
+    // Responder de forma compatÃ­vel com o teu CreateHousePage
     return NextResponse.json<HousesPostResponse>(
       {
         success: true,
