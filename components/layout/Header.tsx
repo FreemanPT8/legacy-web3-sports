@@ -30,8 +30,9 @@ import {
   Menu,
   Bell,
   Shield,
+  Loader2,
 } from 'lucide-react';
-import { useState, memo, useEffect } from 'react';
+import { useState, memo, useEffect, useCallback } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export const Header = memo(function Header() {
@@ -40,6 +41,19 @@ export const Header = memo(function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingHeadInvites, setPendingHeadInvites] = useState(0);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [notifications, setNotifications] = useState<
+    {
+      id: string;
+      title: string;
+      message: string;
+      created_at: string;
+      link?: string | null;
+      type?: string | null;
+    }[]
+  >([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
   const selectableLanguages = SUPPORTED_LANGUAGES.map((code) => ({
     code,
     label: LANGUAGES[code] ?? code.toUpperCase(),
@@ -101,6 +115,46 @@ export const Header = memo(function Header() {
   const totalBellCount = unreadCount + pendingHeadInvites;
   const notificationLink =
     pendingHeadInvites > 0 ? '/admin/houses?tab=invites' : '/notifications';
+  const noNotificationsText =
+    {
+      pt: 'Não existem novas notificações neste momento.',
+      en: 'No new notifications right now.',
+      es: 'No hay nuevas notificaciones en este momento.',
+    }[language] || 'No notifications available.';
+  const notificationsLabel =
+    {
+      pt: 'Notificações',
+      en: 'Notifications',
+      es: 'Notificaciones',
+    }[language] || 'Notifications';
+
+  const loadBellNotifications = useCallback(async () => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+    setNotificationsLoading(true);
+    setNotificationsError(null);
+    try {
+      const response = await fetch(`/api/notifications?userId=${user.id}&limit=5`);
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to load notifications');
+      }
+      setNotifications(data.notifications || []);
+    } catch (error) {
+      console.error('[Header] load notifications failed', error);
+      setNotificationsError(
+        language === 'pt'
+          ? 'Falha ao carregar notificações.'
+          : language === 'es'
+            ? 'Error al cargar notificaciones.'
+            : 'Failed to load notifications.',
+      );
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [language, user]);
 
   return (
     <header
@@ -294,21 +348,91 @@ export const Header = memo(function Header() {
 
           {/* NOTIFICAÇÕES */}
           {user && (
-            <Link href={notificationLink} className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-9 px-0 text-gray-200"
-                aria-label="Notifications"
+            <DropdownMenu open={bellOpen} onOpenChange={(open) => {
+              setBellOpen(open);
+              if (open) {
+                void loadBellNotifications();
+              }
+            }}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative w-9 px-0 text-gray-200"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-4 w-4" />
+                  {totalBellCount > 0 && (
+                    <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                      {totalBellCount > 9 ? '9+' : totalBellCount}
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-80 border border-white/10 bg-[#010915] text-white shadow-[0_25px_70px_rgba(0,0,0,0.65)]"
               >
-                <Bell className="h-4 w-4" />
-                {totalBellCount > 0 && (
-                  <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
-                    {totalBellCount > 9 ? '9+' : totalBellCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
+                <div className="border-b border-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.25em] text-cyan-200">
+                  {notificationsLabel}
+                </div>
+                <div className="max-h-80 overflow-y-auto px-4 py-3 space-y-3">
+                  {notificationsLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {language === 'pt'
+                        ? 'A carregar notificações...'
+                        : language === 'es'
+                          ? 'Cargando notificaciones...'
+                          : 'Loading notifications...'}
+                    </div>
+                  ) : notificationsError ? (
+                    <p className="text-sm text-rose-300">{notificationsError}</p>
+                  ) : notifications.length === 0 ? (
+                    <p className="text-sm text-slate-400">{noNotificationsText}</p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm"
+                      >
+                        <p className="font-semibold text-white">{notification.title}</p>
+                        <p className="text-slate-300">{notification.message}</p>
+                        <p className="text-[11px] text-slate-500">
+                          {new Date(notification.created_at).toLocaleString(language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                        {notification.link && (
+                          <Link
+                            href={notification.link}
+                            className="mt-2 inline-flex text-xs font-semibold text-cyan-300 hover:text-cyan-100"
+                          >
+                            {language === 'pt'
+                              ? 'Abrir detalhe'
+                              : language === 'es'
+                                ? 'Abrir detalle'
+                                : 'Open'}
+                          </Link>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="border-t border-white/10 px-4 py-2 text-right">
+                  <Link href={notificationLink} className="text-xs font-semibold text-cyan-300 hover:text-cyan-100">
+                    {language === 'pt'
+                      ? 'Ver todas'
+                      : language === 'es'
+                        ? 'Ver todas'
+                        : 'View all'}
+                  </Link>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {/* USER DROPDOWN / LOGIN */}
