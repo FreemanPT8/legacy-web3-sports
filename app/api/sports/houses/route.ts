@@ -75,6 +75,21 @@ type HouseModeratorRow = {
 
 type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
 
+const normalizeNumeric = (
+  value: number | string | null | undefined,
+  fallback = 0,
+): number => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : fallback;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+};
+
 /**
  * Regra de negócio:
  * - ACTIVE: se o status na DB estiver explicitamente como 'active'
@@ -189,12 +204,12 @@ export async function GET(request: NextRequest) {
         console.warn('Failed to load house_xp_totals for /sports/houses', statsError);
       } else {
         for (const row of (statsData ?? []) as HouseStatsRow[]) {
-          const headCount = row.head_count ?? 0;
-          const moderatorCount = row.moderator_count ?? 0;
-          const memberOnlyCount = row.member_only_count ?? 0;
-          const headXp = row.head_xp ?? 0;
-          const moderatorXp = row.moderator_xp ?? 0;
-          const memberXp = row.member_xp ?? 0;
+          const headCount = normalizeNumeric(row.head_count);
+          const moderatorCount = normalizeNumeric(row.moderator_count);
+          const memberOnlyCount = normalizeNumeric(row.member_only_count);
+          const headXp = normalizeNumeric(row.head_xp);
+          const moderatorXp = normalizeNumeric(row.moderator_xp);
+          const memberXp = normalizeNumeric(row.member_xp);
           statsByHouseId.set(row.house_id, {
             member_count: headCount + moderatorCount + memberOnlyCount,
             member_only_count: memberOnlyCount,
@@ -372,18 +387,24 @@ export async function GET(request: NextRequest) {
 
       const hasHead = !!headUser;
       const publicStatus = normalizeStatusFromData(house.status, hasHead);
-      const headCount = stats?.head_count ?? (headUser ? 1 : 0);
-      const moderatorCount =
-        stats?.moderator_count ?? (Array.isArray(moderators) ? moderators.length : 0);
-      const memberOnlyCount =
-        stats?.member_only_count ??
-        Math.max((stats?.member_count ?? 0) - headCount - moderatorCount, 0);
-      const totalMembers =
-        stats?.member_count ?? headCount + moderatorCount + memberOnlyCount;
+      const headCount = stats ? stats.head_count : headUser ? 1 : 0;
+      const moderatorCount = stats
+        ? stats.moderator_count
+        : Array.isArray(moderators)
+          ? moderators.length
+          : 0;
+      const memberOnlyCount = stats
+        ? stats.member_only_count
+        : Math.max((stats?.member_count ?? 0) - headCount - moderatorCount, 0);
+      const totalMembers = stats
+        ? stats.member_count
+        : headCount + moderatorCount + memberOnlyCount;
       const xpBreakdown = {
         head: stats?.head_xp ?? 0,
         moderators: stats?.moderator_xp ?? 0,
-        members: stats?.member_xp ?? (stats?.total_xp ?? 0),
+        members:
+          stats?.member_xp ??
+          Math.max((stats?.total_xp ?? 0) - (stats?.head_xp ?? 0) - (stats?.moderator_xp ?? 0), 0),
       };
       const totalXp =
         stats?.total_xp ??

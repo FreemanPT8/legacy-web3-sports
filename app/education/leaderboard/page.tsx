@@ -277,33 +277,42 @@ export default function LeaderboardPage() {
               const fallbackJson: SportsHousesApiResponse = await fallbackRes.json();
               if (fallbackJson.success && Array.isArray(fallbackJson.houses)) {
                 leaderboardEntries = fallbackJson.houses.map((house) => {
-                  const xpBreakdown = {
-                    head: house.xp_breakdown?.head ?? 0,
-                    moderators: house.xp_breakdown?.moderators ?? 0,
-                    members:
-                      house.xp_breakdown?.members ??
-                      Math.max(
-                        (house.xp_total ?? 0) -
-                          (house.xp_breakdown?.head ?? 0) -
-                          (house.xp_breakdown?.moderators ?? 0),
-                        0,
-                      ),
-                  };
-                  const totalMembers =
-                    house.participant_breakdown?.total ??
-                    house.member_count ??
-                    0;
-                  const headCount =
-                    house.participant_breakdown?.head ??
-                    (house.head ? 1 : 0);
-                  const moderatorCount =
-                    house.participant_breakdown?.moderators ??
-                    (Array.isArray(house.moderators) ? house.moderators.length : 0);
-                  const memberOnly =
-                    house.participant_breakdown?.members ??
-                    Math.max(totalMembers - headCount - moderatorCount, 0);
-                  const totalXp =
-                    xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
+              const numeric = (value: number | string | null | undefined, fallback?: number) => {
+                if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+                if (typeof value === 'string') {
+                  const parsed = Number(value);
+                  return Number.isFinite(parsed) ? parsed : fallback;
+                }
+                return fallback;
+              };
+
+              const xpHead = numeric(house.xp_breakdown?.head) ?? 0;
+              const xpMods = numeric(house.xp_breakdown?.moderators) ?? 0;
+              const xpMembersRaw = numeric(house.xp_breakdown?.members);
+              const xpMembers =
+                xpMembersRaw ||
+                Math.max(
+                  numeric(house.xp_total) - xpHead - xpMods,
+                  0,
+                );
+              const xpBreakdown = {
+                head: xpHead,
+                moderators: xpMods,
+                members: xpMembers,
+              };
+              const totalMembers =
+                numeric(house.participant_breakdown?.total) ?? numeric(house.member_count) ?? 0;
+              const headCount =
+                numeric(house.participant_breakdown?.head) ??
+                (house.head ? 1 : 0);
+              const moderatorCount =
+                numeric(house.participant_breakdown?.moderators) ??
+                (Array.isArray(house.moderators) ? house.moderators.length : 0);
+              const memberOnly =
+                numeric(house.participant_breakdown?.members) ??
+                Math.max(totalMembers - headCount - moderatorCount, 0);
+              const totalXp =
+                xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
 
                   return {
                     houseId: house.id,
@@ -414,8 +423,14 @@ export default function LeaderboardPage() {
     mediaLibrary.closeLibrary();
   };
 
-  const formatNumber = (value: number | null | undefined) => {
-    const safeValue = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  const formatNumber = (value: number | string | null | undefined) => {
+    const numeric =
+      typeof value === 'number'
+        ? value
+        : typeof value === 'string'
+          ? Number(value)
+          : 0;
+    const safeValue = Number.isFinite(numeric) ? numeric : 0;
     return safeValue.toLocaleString();
   };
 
