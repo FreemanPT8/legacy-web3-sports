@@ -159,30 +159,22 @@ export default function HousesPage() {
     const active: House[] = [];
     const underConstruction: House[] = [];
     const inDevelopment: House[] = [];
-    const housesWithXp: House[] = [];
-    const housesWithMembers: House[] = [];
 
     for (const h of houses) {
       if (h.status === 'ACTIVE') active.push(h);
       else if (h.status === 'UNDER_CONSTRUCTION') underConstruction.push(h);
       else inDevelopment.push(h);
-
-      const currentXp = h.xp_total ?? 0;
-      if (currentXp > 0) {
-        housesWithXp.push(h);
-      }
-
-      if ((h.member_count ?? 0) > 0) {
-        housesWithMembers.push(h);
-      }
     }
 
+    const activeWithXp = active.filter((house) => (house.xp_total ?? 0) > 0);
+    const activeWithMembers = active.filter((house) => (house.member_count ?? 0) > 0);
+
     const pickPool =
-      housesWithXp.length > 0
-        ? housesWithXp
+      activeWithXp.length > 0
+        ? activeWithXp
         : active.length > 0
           ? active
-          : houses;
+          : [];
 
     const xpLeader =
       pickPool
@@ -198,11 +190,11 @@ export default function HousesPage() {
         })[0] ?? null;
 
     const memberPickPool =
-      housesWithMembers.length > 0
-        ? housesWithMembers
+      activeWithMembers.length > 0
+        ? activeWithMembers
         : active.length > 0
           ? active
-          : houses;
+          : [];
 
     const membersLeader =
       memberPickPool
