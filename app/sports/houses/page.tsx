@@ -23,6 +23,8 @@ interface House {
   name: string;
   avatar_url?: string | null;
   cover_image_url?: string | null;
+  member_count?: number;
+  xp_total?: number;
   country_code: string | null;
   status: HouseStatus;
   created_at: string | null;
