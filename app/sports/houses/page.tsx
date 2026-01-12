@@ -358,14 +358,14 @@ function HousesSection({
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
               <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
-                <div className="mb-3 h-20 overflow-hidden rounded-lg border border-white/10 bg-[#000c12]">
+                <div className="mb-3 h-20 overflow-hidden rounded-lg border border-white/10 bg-[#000c12] sm:h-24">
                   {house.cover_image_url || house.avatar_url ? (
                     <SafeImage
                       src={house.cover_image_url || house.avatar_url || ''}
                       alt={house.name}
                       className="h-full w-full object-cover"
-                      width={1600}
-                      height={400}
+                      width={2000}
+                      height={500}
                     />
                   ) : (
                     <div className="h-full w-full bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950" />
@@ -375,17 +375,7 @@ function HousesSection({
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#000c12] text-[11px] font-semibold text-slate-200">
-                      {house.avatar_url ? (
-                        <SafeImage
-                          src={house.avatar_url}
-                          alt={house.name}
-                          className="h-full w-full object-cover"
-                          width={400}
-                          height={400}
-                        />
-                      ) : (
-                        <span>{initials}</span>
-                      )}
+                      <span>{initials}</span>
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-white">
