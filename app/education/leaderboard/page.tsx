@@ -66,6 +66,29 @@ type HouseLeaderboardEntry = {
   };
 };
 
+type SportsHouseStatus = 'ACTIVE' | 'UNDER_CONSTRUCTION' | 'IN_DEVELOPMENT';
+
+type SportsHouse = {
+  id: string;
+  name: string;
+  sport?: {
+    code: string | null;
+    name: string | null;
+  } | null;
+  country_code: string | null;
+  status: SportsHouseStatus | null;
+  created_at: string | null;
+  xp_total?: number | null;
+  member_count?: number | null;
+  head?: Record<string, any> | null;
+  moderators?: Array<Record<string, any>>;
+};
+
+type SportsHousesApiResponse = {
+  success: boolean;
+  houses?: SportsHouse[];
+};
+
 type HousesSummary = {
   totalHouses: number;
   activeHouses: number;
@@ -225,35 +248,124 @@ export default function LeaderboardPage() {
           );
         }
 
-        if (housesJson.success) {
-          const leaderboardEntries: HouseLeaderboardEntry[] = Array.isArray(housesJson.leaderboard)
-            ? housesJson.leaderboard
-            : [];
-          setHouseLeaderboard(leaderboardEntries);
+        let housesSuccess = false;
+        let leaderboardEntries: HouseLeaderboardEntry[] = Array.isArray(housesJson.leaderboard)
+          ? housesJson.leaderboard
+          : [];
+
+        if (housesJson.success && leaderboardEntries.length > 0) {
+          housesSuccess = true;
+        } else {
+          console.error('Error loading houses leaderboard data:', housesJson);
+        }
+
+        if (!housesSuccess) {
+          try {
+            const fallbackRes = await fetch('/api/sports/houses?locale=pt');
+            if (fallbackRes.ok) {
+              const fallbackJson: SportsHousesApiResponse = await fallbackRes.json();
+              if (fallbackJson.success && Array.isArray(fallbackJson.houses)) {
+                leaderboardEntries = fallbackJson.houses.map((house) => {
+                  const headCount = house.head ? 1 : 0;
+                  const moderatorCount = Array.isArray(house.moderators)
+                    ? house.moderators.length
+                    : 0;
+                  const totalMembers = house.member_count ?? headCount + moderatorCount;
+                  const memberOnly = Math.max(
+                    totalMembers - headCount - moderatorCount,
+                    0,
+                  );
+
+                  return {
+                    houseId: house.id,
+                    name: house.name,
+                    sportCode: house.sport?.code ?? null,
+                    sportName: house.sport?.name ?? null,
+                    countryCode: house.country_code,
+                    status: (house.status ?? 'IN_DEVELOPMENT') as HouseLeaderboardEntry['status'],
+                    totalXp: house.xp_total ?? 0,
+                    memberCount: totalMembers,
+                    headCount,
+                    moderatorCount,
+                    createdAt: house.created_at,
+                    xpBreakdown: {
+                      head: 0,
+                      moderators: 0,
+                      members: house.xp_total ?? 0,
+                    },
+                    participantBreakdown: {
+                      total: totalMembers,
+                      head: headCount,
+                      moderators: moderatorCount,
+                      members: memberOnly,
+                    },
+                  };
+                });
+
+                if (leaderboardEntries.length > 0) {
+                  housesSuccess = true;
+                }
+              }
+            }
+          } catch (fallbackError) {
+            console.error('Fallback fetch for houses leaderboard failed:', fallbackError);
+          }
+        }
+
+        if (housesSuccess) {
+          const sortedEntries = [...leaderboardEntries].sort(
+            (a, b) => (b.totalXp ?? 0) - (a.totalXp ?? 0),
+          );
+          setHouseLeaderboard(sortedEntries);
 
           const summaryPayload = (housesJson.summary ?? {}) as Partial<HousesSummary>;
+          const derivedTopCountry =
+            summaryPayload.topCountry ??
+            (() => {
+              const totals = new Map<
+                string,
+                {
+                  totalXp: number;
+                  houses: number;
+                }
+              >();
+              sortedEntries.forEach((entry) => {
+                if (!entry.countryCode) return;
+                const key = entry.countryCode.toUpperCase();
+                const current = totals.get(key) ?? { totalXp: 0, houses: 0 };
+                current.totalXp += entry.totalXp ?? 0;
+                current.houses += 1;
+                totals.set(key, current);
+              });
+              const top = Array.from(totals.entries()).sort(
+                (a, b) => b[1].totalXp - a[1].totalXp,
+              )[0];
+              return top
+                ? { code: top[0], totalXp: top[1].totalXp, houses: top[1].houses }
+                : null;
+            })();
+
           setHouseSummary({
-            totalHouses: summaryPayload.totalHouses ?? leaderboardEntries.length,
+            totalHouses: summaryPayload.totalHouses ?? sortedEntries.length,
             activeHouses:
               summaryPayload.activeHouses ??
-              leaderboardEntries.filter((entry) => entry.status === 'ACTIVE').length,
+              sortedEntries.filter((entry) => entry.status === 'ACTIVE').length,
             totalMembers:
               summaryPayload.totalMembers ??
-              leaderboardEntries.reduce((acc, entry) => acc + (entry.memberCount ?? 0), 0),
+              sortedEntries.reduce((acc, entry) => acc + (entry.memberCount ?? 0), 0),
             totalXp:
               summaryPayload.totalXp ??
-              leaderboardEntries.reduce((acc, entry) => acc + (entry.totalXp ?? 0), 0),
+              sortedEntries.reduce((acc, entry) => acc + (entry.totalXp ?? 0), 0),
             totalCountries:
               summaryPayload.totalCountries ??
               new Set(
-                leaderboardEntries
+                sortedEntries
                   .map((entry) => entry.countryCode)
                   .filter((code): code is string => !!code),
               ).size,
-            topCountry: summaryPayload.topCountry ?? null,
+            topCountry: derivedTopCountry,
           });
         } else {
-          console.error('Error loading houses leaderboard data:', housesJson);
           setError((prev) => prev ?? 'leaderboard.errorLoadingHouses');
         }
       } catch (err) {
