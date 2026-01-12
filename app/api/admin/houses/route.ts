@@ -61,6 +61,7 @@ interface AdminHouseDTO {
     avatar_url: string | null;
   } | null;
   moderators_count: number;
+  total_members: number;
 }
 
 interface HousesGetResponse {
@@ -262,7 +263,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 5) Moderators count por house
+    // 5) Contagem total de membros (Head + moderadores + membros)
+    const { data: totalsData, error: totalsError } = await supabaseAdmin
+      .from('house_xp_totals')
+      .select('house_id, member_count')
+      .in('house_id', houseIds);
+
+    if (totalsError) {
+      console.error('Error loading house_xp_totals for admin list:', totalsError);
+    }
+
+    const totalMembersByHouseId = new Map<string, number>();
+    for (const row of (totalsData || []) as { house_id: string; member_count: number | null }[]) {
+      totalMembersByHouseId.set(row.house_id, row.member_count ?? 0);
+    }
+
+    // 6) Moderators count por house
     const { data: modsData, error: modsError } = await supabaseAdmin
       .from('house_moderators')
       .select('house_id, user_id')
@@ -281,7 +297,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 6) Montar DTO final
+    // 7) Montar DTO final
     const result: AdminHouseDTO[] = houses.map((h) => {
       const sport = h.sport_id ? sportsById[h.sport_id] : undefined;
       const sportName = sport
@@ -312,6 +328,7 @@ export async function GET(request: NextRequest) {
             }
           : null,
         moderators_count: moderatorsCountByHouseId.get(h.id) || 0,
+        total_members: totalMembersByHouseId.get(h.id) ?? 0,
       };
     });
 

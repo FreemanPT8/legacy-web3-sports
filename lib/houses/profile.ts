@@ -84,6 +84,11 @@ export type HouseProfilePayload = {
       visibility: 'public' | 'members';
       linkUrl: string | null;
     }[];
+    roster: {
+      head: HouseMemberSummary | null;
+      moderators: HouseMemberSummary[];
+      members: HouseMemberSummary[];
+    };
   };
 };
 
@@ -104,6 +109,14 @@ function getAudience(value: unknown, locale: SupportedLocale) {
     notFor: listNotFor,
   };
 }
+
+type HouseMemberSummary = {
+  id: string;
+  name: string;
+  username: string | null;
+  avatarUrl: string | null;
+  xpTotal: number;
+};
 
 export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Promise<HouseProfilePayload | null> {
   if (!supabaseAdmin) return null;
@@ -249,12 +262,42 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     ),
   );
 
-  let fallbackMembersOnlyCount = memberUserIds.length;
+  let moderatorUserIds: string[] = [];
+  try {
+    const { data: moderatorRows, error: moderatorError } = await supabaseAdmin
+      .from('house_moderators')
+      .select('user_id')
+      .eq('house_id', house.id);
+    if (moderatorError) {
+      if (isMissingTable(moderatorError)) {
+        console.warn('[houses/profile] house_moderators table missing. Moderator stats default to zero.');
+      } else {
+        throw moderatorError;
+      }
+    } else {
+      moderatorUserIds =
+        moderatorRows
+          ?.map((row: { user_id: string | null }) => row.user_id)
+          .filter((id: string | null): id is string => Boolean(id)) ?? [];
+    }
+  } catch (error) {
+    console.error('[houses/profile] Failed to load moderator assignments for XP fallback', error);
+  }
+
+  const headUserId = headUser?.id ?? null;
+  if (headUserId) {
+    moderatorUserIds = moderatorUserIds.filter((id) => id !== headUserId);
+  }
+  moderatorUserIds = Array.from(new Set(moderatorUserIds));
+  const moderatorIdSet = new Set(moderatorUserIds);
+  const filteredMemberIds = memberUserIds.filter((id) => id !== headUserId && !moderatorIdSet.has(id));
+
+  let fallbackMembersOnlyCount = filteredMemberIds.length;
   let fallbackMemberXp = 0;
   let fallbackHeadXp = 0;
   let fallbackModeratorXp = 0;
-  let fallbackHeadCount = 0;
-  let fallbackModeratorCount = 0;
+  let fallbackHeadCount = headUserId ? 1 : 0;
+  let fallbackModeratorCount = moderatorUserIds.length;
 
   const aggregates = {
     totalXp: typeof xpRow?.total_xp === 'number' ? (xpRow.total_xp as number) : null,
@@ -280,7 +323,6 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     aggregates.memberXp === null;
 
   if (needsFallback) {
-    const headUserId = headUser?.id ?? null;
     if (headUserId) {
       fallbackHeadCount = 1;
       if (typeof headUser?.xp_total === 'number') {
@@ -298,38 +340,6 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       }
     }
 
-    let moderatorUserIds: string[] = [];
-    try {
-      const { data: moderatorRows, error: moderatorError } = await supabaseAdmin
-        .from('house_moderators')
-        .select('user_id')
-        .eq('house_id', house.id);
-      if (moderatorError) {
-        if (isMissingTable(moderatorError)) {
-          console.warn('[houses/profile] house_moderators table missing. Moderator stats default to zero.');
-        } else {
-          throw moderatorError;
-        }
-      } else {
-        moderatorUserIds =
-          moderatorRows
-            ?.map((row: { user_id: string | null }) => row.user_id)
-            .filter((id: string | null): id is string => Boolean(id)) ?? [];
-      }
-    } catch (error) {
-      console.error('[houses/profile] Failed to load moderator assignments for XP fallback', error);
-    }
-
-    if (headUser?.id) {
-      moderatorUserIds = moderatorUserIds.filter((id) => id !== headUser.id);
-    }
-    moderatorUserIds = Array.from(new Set(moderatorUserIds));
-    fallbackModeratorCount = moderatorUserIds.length;
-
-    const moderatorIdSet = new Set(moderatorUserIds);
-    const filteredMemberIds = memberUserIds.filter(
-      (id) => id !== headUser?.id && !moderatorIdSet.has(id),
-    );
     fallbackMembersOnlyCount = filteredMemberIds.length;
 
     const sumXpTotals = async (userIds: string[], context: string) => {
@@ -381,6 +391,43 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     aggregates.participantCount ?? roleCounts.head + roleCounts.moderators + roleCounts.members;
   const computedXpTotal =
     aggregates.totalXp ?? xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
+
+  const toRosterEntry = (user: {
+    id: string;
+    full_name?: string | null;
+    username?: string | null;
+    avatar_url?: string | null;
+    xp_total?: number | null;
+  }): HouseMemberSummary => ({
+    id: user.id,
+    name: user.full_name || user.username || 'Membro oficial',
+    username: user.username ?? null,
+    avatarUrl: user.avatar_url ?? null,
+    xpTotal: typeof user.xp_total === 'number' ? (user.xp_total as number) : 0,
+  });
+
+  const loadRosterUsers = async (ids: string[], label: string) => {
+    if (!ids.length) return [];
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select('id, username, full_name, avatar_url, xp_total')
+      .in('id', ids);
+    if (error) {
+      console.error(`[houses/profile] Failed to load roster users (${label})`, error);
+      return [];
+    }
+    return (
+      data
+        ?.map((user) => toRosterEntry(user as any))
+        .sort((a, b) => b.xpTotal - a.xpTotal || a.name.localeCompare(b.name)) ?? []
+    );
+  };
+
+  const ROSTER_MEMBER_LIMIT = 48;
+  const ROSTER_MODERATOR_LIMIT = 24;
+  const rosterHead = headUser ? toRosterEntry(headUser) : null;
+  const rosterModerators = await loadRosterUsers(moderatorUserIds.slice(0, ROSTER_MODERATOR_LIMIT), 'moderators');
+  const rosterMembers = await loadRosterUsers(filteredMemberIds.slice(0, ROSTER_MEMBER_LIMIT), 'members');
 
   const { data: onboardingStatus, error: onboardingStatusError } = await supabaseAdmin
     .from('house_onboarding_status')
@@ -542,6 +589,11 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       culture,
       recommendedContent,
       events,
+      roster: {
+        head: rosterHead,
+        moderators: rosterModerators,
+        members: rosterMembers,
+      },
     },
   };
 

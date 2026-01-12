@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Calendar } from 'lucide-react';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
+import { HouseMembersList } from './HouseMembersList';
 
 type RecommendedContent = {
   id: string;
@@ -94,9 +95,11 @@ type Props = {
   culture: string[];
   metrics: HouseProfilePayload['house']['metrics'];
   events: HouseEvent[];
+  roster: HouseProfilePayload['house']['roster'];
+  houseLabel: string;
 };
 
-export function PrivateArea({ houseKey, recommendedContent, culture, metrics, events }: Props) {
+export function PrivateArea({ houseKey, recommendedContent, culture, metrics, events, roster, houseLabel }: Props) {
   const { user, loading } = useAuth();
   const [membership, setMembership] = useState<MembershipResponse | null>(null);
   const [loadingMembership, setLoadingMembership] = useState(false);
@@ -340,6 +343,19 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
               <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
                 Novas mensagens oficiais são enviadas via pop-ups e notificações internas. Confirma se tens o onboarding em dia.
               </div>
+            </CardContent>
+          </Card>
+          <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Rede oficial da {houseLabel}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <HouseMembersList
+                roster={roster}
+                badgeLabel={houseLabel}
+                totalCount={metrics.memberCount}
+                variant="private"
+              />
             </CardContent>
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90">

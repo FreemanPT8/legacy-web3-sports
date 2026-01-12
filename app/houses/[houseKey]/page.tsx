@@ -4,11 +4,12 @@ import { notFound } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { loadHouseProfile, normalizeLocale } from '@/lib/houses/profile';
 import { HouseCTAForm } from './CTAForm';
 import { PrivateArea } from './PrivateArea';
+import { HouseMembersList } from './HouseMembersList';
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30',
@@ -39,6 +40,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
     notFound();
   }
   const { house } = payload;
+  const houseBadgeLabel = `House of ${house.sportCode} ${house.countryCode ?? ''}`.trim();
   const statusStyle = STATUS_COLORS[house.governanceStatus] || STATUS_COLORS[house.status] || STATUS_COLORS.active;
   const supportLabel = SUPPORT_LABELS[house.supportModel.contactMode] ?? 'Modelo definido pela House';
 
@@ -85,6 +87,27 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
               <MetricCard label="Pop-ups prontos" value={house.metrics.onboarding.published.toLocaleString()} />
             </div>
           </div>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">
+            REDE DA HOUSE
+          </p>
+          <Card className="border border-white/10 bg-[#03131b]/80">
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Membros oficiais</CardTitle>
+              <CardDescription className="text-sm text-white/70">
+                Transparência sobre quem lidera e participa na {house.name}. Atualizado em tempo real.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HouseMembersList
+                roster={house.roster}
+                badgeLabel={houseBadgeLabel}
+                totalCount={house.metrics.memberCount}
+              />
+            </CardContent>
+          </Card>
         </section>
 
         <section className="grid gap-6 md:grid-cols-2">
@@ -240,6 +263,8 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
           culture={house.culture}
           metrics={house.metrics}
           events={house.events}
+          roster={house.roster}
+          houseLabel={houseBadgeLabel}
         />
       </div>
     </div>

@@ -70,6 +70,7 @@ interface AdminHouse {
     avatar_url?: string | null;
   } | null;
   moderators_count?: number;
+  total_members?: number;
 }
 
 interface ApiResponse {
@@ -1335,6 +1336,12 @@ export default function AdminHousesPage() {
                               Moderadores ativos:{' '}
                               <span className="font-semibold text-white">
                                 {house.moderators_count ?? 0}
+                              </span>
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              Membros oficiais:{' '}
+                              <span className="font-semibold text-white">
+                                {house.total_members?.toLocaleString() ?? '0'}
                               </span>
                             </p>
                           </div>
