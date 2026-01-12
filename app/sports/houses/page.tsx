@@ -25,6 +25,7 @@ interface House {
   cover_image_url?: string | null;
   member_count?: number;
   xp_total?: number;
+  house_key?: string | null;
   country_code: string | null;
   status: HouseStatus;
   created_at: string | null;
@@ -64,6 +65,19 @@ interface HouseLeaderboardEntry {
 interface HouseLeaderboardResponse {
   success: boolean;
   leaderboard: HouseLeaderboardEntry[];
+}
+
+interface HouseProfileMetricsResponse {
+  success: boolean;
+  profile?: {
+    house: {
+      houseKey: string;
+      metrics: {
+        xpTotal: number;
+        memberCount: number;
+      };
+    };
+  };
 }
 
 const STATUS_LABELS: Record<HouseStatus, string> = {
@@ -136,7 +150,60 @@ export default function HousesPage() {
           };
         });
 
-        setHouses(enhancedHouses);
+        const housesNeedingProfiles = enhancedHouses.filter(
+          (house) => (house.xp_total ?? 0) <= 0 && typeof house.house_key === 'string' && house.house_key.trim() !== '',
+        );
+
+        const profileMetrics = new Map<string, { xpTotal: number; memberCount: number }>();
+
+        if (housesNeedingProfiles.length > 0) {
+          const profileResults = await Promise.allSettled(
+            housesNeedingProfiles.map(async (house) => {
+              try {
+                const res = await fetch(
+                  `/api/houses/${encodeURIComponent(house.house_key ?? '')}?locale=pt`,
+                  { cache: 'no-store' },
+                );
+                const json: HouseProfileMetricsResponse = await res.json();
+                if (!res.ok || !json.success) return null;
+                const metrics = json.profile?.house?.metrics;
+                const houseKey = json.profile?.house?.houseKey;
+                if (!metrics || !houseKey) return null;
+                return {
+                  houseKey,
+                  xpTotal: typeof metrics.xpTotal === 'number' ? metrics.xpTotal : 0,
+                  memberCount: typeof metrics.memberCount === 'number' ? metrics.memberCount : 0,
+                };
+              } catch (profileError) {
+                console.warn('Falha ao carregar métricas do perfil da House:', profileError);
+                return null;
+              }
+            }),
+          );
+
+          profileResults.forEach((result) => {
+            if (result.status === 'fulfilled' && result.value) {
+              profileMetrics.set(result.value.houseKey, {
+                xpTotal: result.value.xpTotal,
+                memberCount: result.value.memberCount,
+              });
+            }
+          });
+        }
+
+        const fullyHydratedHouses = enhancedHouses.map((house) => {
+          if (house.house_key && profileMetrics.has(house.house_key)) {
+            const metrics = profileMetrics.get(house.house_key)!;
+            return {
+              ...house,
+              xp_total: metrics.xpTotal,
+              member_count: Math.max(metrics.memberCount, house.member_count ?? 0),
+            };
+          }
+          return house;
+        });
+
+        setHouses(fullyHydratedHouses);
       } catch (err: any) {
         console.error('Erro ao carregar Houses:', err);
         setError(err?.message || 'Erro inesperado ao carregar Houses.');
