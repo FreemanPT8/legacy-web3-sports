@@ -337,10 +337,13 @@ export async function GET(request: NextRequest) {
 
       return {
         id: h.id,
+        sport_id: h.sport_id ?? null,
+        sport_code: sport?.code ?? null,
         sport_name: sportName,
         country_code: (h.country_code || '').toUpperCase(),
         status: normalizedStatus,
         created_at: h.created_at || new Date().toISOString(),
+        avatar_url: h.avatar_url ?? null,
         head: headUser
           ? {
               user_id: headUser.id,
