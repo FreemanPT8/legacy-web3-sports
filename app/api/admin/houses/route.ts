@@ -244,8 +244,12 @@ export async function GET(request: NextRequest) {
         console.error('Error loading users for house_heads:', usersError);
       } else {
         for (const u of (usersData || []) as any[]) {
-          usersById[u.id as string] = {
-            id: u.id as string,
+          const userId = u.id as string;
+          usersById[userId] = {
+            id: userId,
+            username: (u.username as string | null) ?? null,
+            full_name: (u.full_name as string | null) ?? null,
+            avatar_url: (u.avatar_url as string | null) ?? null,
           };
         }
       }
