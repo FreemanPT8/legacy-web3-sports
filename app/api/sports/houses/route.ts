@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { AggregatedHouseStats, loadAggregatedHouseStats } from '@/lib/houses/stats';
+import { AggregatedHouseStats, loadHouseStatsWithFallback } from '@/lib/houses/stats';
 
 const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
     const houseIds = houses.map((h) => h.id);
 
     const statsByHouseId: Map<string, AggregatedHouseStats> =
-      houseIds.length > 0 ? await loadAggregatedHouseStats(houseIds) : new Map();
+      houseIds.length > 0 ? await loadHouseStatsWithFallback(houseIds) : new Map();
 
     const { data: headsData, error: headsError } = await supabaseAdmin
       .from('house_heads')

@@ -233,3 +233,81 @@ export async function loadAggregatedHouseStats(
 
   return statsMap;
 }
+
+async function loadHouseStatsFromView(
+  houseIds: string[],
+): Promise<Map<string, AggregatedHouseStats>> {
+  const statsMap = new Map<string, AggregatedHouseStats>();
+  if (!houseIds.length) {
+    return statsMap;
+  }
+  if (!supabaseAdmin) {
+    return statsMap;
+  }
+
+  houseIds.forEach((id) => ensureStats(statsMap, id));
+
+  for (const chunk of chunkArray(houseIds)) {
+    const { data, error } = await supabaseAdmin
+      .from('house_xp_totals')
+      .select(
+        'house_id, member_count, member_only_count, head_count, moderator_count, total_xp, head_xp, moderator_xp, member_xp',
+      )
+      .in('house_id', chunk);
+    if (error) {
+      console.error('[house-stats] Failed to load house_xp_totals chunk', error);
+      continue;
+    }
+    for (const row of (data ?? []) as {
+      house_id: string;
+      member_count: number | null;
+      member_only_count: number | null;
+      head_count: number | null;
+      moderator_count: number | null;
+      total_xp: number | null;
+      head_xp: number | null;
+      moderator_xp: number | null;
+      member_xp: number | null;
+    }[]) {
+      const headCount = normalizeNumber(row.head_count);
+      const moderatorCount = normalizeNumber(row.moderator_count);
+      const memberOnly = normalizeNumber(row.member_only_count);
+      const headXp = normalizeNumber(row.head_xp);
+      const moderatorXp = normalizeNumber(row.moderator_xp);
+      const memberXp = normalizeNumber(row.member_xp);
+      const derivedMemberCount = headCount + moderatorCount + memberOnly;
+      const totalXp =
+        normalizeNumber(row.total_xp) || headXp + moderatorXp + memberXp;
+      statsMap.set(row.house_id, {
+        member_count: normalizeNumber(row.member_count) || derivedMemberCount,
+        member_only_count: memberOnly,
+        head_count: headCount,
+        moderator_count: moderatorCount,
+        total_xp: totalXp,
+        head_xp: headXp,
+        moderator_xp: moderatorXp,
+        member_xp: memberXp,
+      });
+    }
+  }
+
+  return statsMap;
+}
+
+export async function loadHouseStatsWithFallback(
+  houseIds: string[],
+): Promise<Map<string, AggregatedHouseStats>> {
+  try {
+    return await loadAggregatedHouseStats(houseIds);
+  } catch (error) {
+    console.error('[house-stats] Aggregated computation failed; falling back to view.', error);
+    try {
+      return await loadHouseStatsFromView(houseIds);
+    } catch (fallbackError) {
+      console.error('[house-stats] Fallback view lookup failed.', fallbackError);
+      const emptyMap = new Map<string, AggregatedHouseStats>();
+      houseIds.forEach((id) => ensureStats(emptyMap, id));
+      return emptyMap;
+    }
+  }
+}

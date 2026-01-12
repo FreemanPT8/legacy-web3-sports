@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { AggregatedHouseStats, loadAggregatedHouseStats } from '@/lib/houses/stats';
+import { AggregatedHouseStats, loadHouseStatsWithFallback } from '@/lib/houses/stats';
 
 type HouseRow = {
   id: string;
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     const houseIds = houses.map((house) => house.id);
     const sportIds = Array.from(new Set(houses.map((house) => house.sport_id)));
 
-    const totalsMap: Map<string, AggregatedHouseStats> = await loadAggregatedHouseStats(houseIds);
+    const totalsMap: Map<string, AggregatedHouseStats> = await loadHouseStatsWithFallback(houseIds);
 
     const chunkedSports: SportRow[] = [];
     if (sportIds.length > 0) {
