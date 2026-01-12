@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { logHouseHistory } from '@/lib/houses/history';
 import { loadHeadTerm } from '@/lib/head-terms';
 import { isAdminRole } from '@/lib/roles';
+import { syncUserHouseMembership } from '@/lib/user-houses';
 
 type AcceptPayload = {
   token?: string;
@@ -120,6 +121,31 @@ export async function POST(request: NextRequest) {
       house_id: invite.house_id,
       admin_id: assignmentId,
     });
+
+    try {
+      await supabaseAdmin
+        .from('user_houses')
+        .delete()
+        .eq('house_id', invite.house_id)
+        .eq('membership_role', 'HEAD');
+      await supabaseAdmin
+        .from('user_houses')
+        .upsert(
+          {
+            user_id: auth.user!.userId,
+            house_id: invite.house_id,
+            membership_role: 'HEAD',
+            assigned_via: 'MANUAL',
+          },
+          { onConflict: 'user_id,house_id,membership_role' },
+        );
+      await syncUserHouseMembership(auth.user!.userId, {
+        assignedVia: 'ONBOARDING',
+        logPrefix: `house-head:${invite.house_id}`,
+      });
+    } catch (membershipError) {
+      console.error('[head-invite/accept] failed to sync head membership', membershipError);
+    }
 
     await supabaseAdmin.from('house_head_terms').upsert(
       {

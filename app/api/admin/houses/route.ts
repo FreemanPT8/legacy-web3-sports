@@ -512,27 +512,47 @@ async function syncExistingMembersForHouse(
 
   try {
     const upperCountry = countryCode.toUpperCase();
-    const { data: users, error } = await supabaseAdmin
+    const candidateIds = new Set<string>();
+
+    const { data: primaryMatches, error: primaryError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('primary_sport_id', sportId)
       .eq('primary_country_code', upperCountry);
 
-    if (error) {
-      console.error('[admin/houses] Failed to load users for membership sync:', error);
-      return;
+    if (primaryError) {
+      console.error('[admin/houses] Failed to load users for membership sync (primary fields):', primaryError);
+    } else {
+      primaryMatches?.forEach((row: { id: string | null }) => {
+        if (row?.id) candidateIds.add(row.id);
+      });
     }
 
-    if (!users?.length) return;
+    const legacyCountryName = getCountryName(upperCountry);
+    const { data: legacyMatches, error: legacyError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('sport_id', sportId)
+      .eq('country', legacyCountryName);
+
+    if (legacyError) {
+      console.error('[admin/houses] Failed legacy user lookup for membership sync:', legacyError);
+    } else {
+      legacyMatches?.forEach((row: { id: string | null }) => {
+        if (row?.id) candidateIds.add(row.id);
+      });
+    }
+
+    if (!candidateIds.size) return;
 
     await Promise.all(
-      users.map(async (user: { id: string }) => {
-        const result = await syncUserHouseMembership(user.id, {
+      Array.from(candidateIds).map(async (userId) => {
+        const result = await syncUserHouseMembership(userId, {
           assignedVia: 'ADMIN_SYNC',
           logPrefix: `house:${houseId}`,
         });
         if (!result.success) {
-          console.error('[admin/houses] Failed to sync membership for user', user.id, result.error);
+          console.error('[admin/houses] Failed to sync membership for user', userId, result.error);
         }
       }),
     );

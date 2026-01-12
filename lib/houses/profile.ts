@@ -173,7 +173,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     if (assignment?.user_id) {
       const { data: user, error: userError } = await supabaseAdmin
         .from('users')
-        .select('id, username, full_name, avatar_url, country, bio')
+        .select('id, username, full_name, avatar_url, country, bio, xp_total')
         .eq('id', assignment.user_id)
         .maybeSingle();
       if (userError) {
@@ -212,19 +212,71 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     }
   }
 
+  let membershipRows: { user_id: string | null }[] = [];
   let memberCountFallback = 0;
-  const { count: fallbackCount, error: memberFallbackError } = await supabaseAdmin
+  const { data: membershipData, error: membershipError } = await supabaseAdmin
     .from('user_houses')
-    .select('*', { head: true, count: 'exact' })
-    .eq('house_id', house.id);
-  if (memberFallbackError) {
-    if (isMissingTable(memberFallbackError)) {
+    .select('user_id')
+    .eq('house_id', house.id)
+    .is('removed_at', null);
+  if (membershipError) {
+    if (isMissingTable(membershipError)) {
       console.warn('[houses/profile] user_houses missing. Member metrics default to zero.');
     } else {
-      throw memberFallbackError;
+      throw membershipError;
     }
   } else {
-    memberCountFallback = fallbackCount ?? 0;
+    membershipRows = membershipData ?? [];
+    memberCountFallback = membershipRows.length;
+  }
+
+  const memberUserIds =
+    membershipRows
+      ?.map((row: { user_id: string | null }) => row.user_id)
+      .filter((id): id is string => Boolean(id)) ?? [];
+
+  let computedMemberCount =
+    memberUserIds.length > 0
+      ? memberUserIds.length
+      : xpRow?.member_count ?? memberCountFallback ?? 0;
+  let computedXpTotal = xpRow?.total_xp ?? 0;
+
+  if (memberUserIds.length) {
+    const { data: xpUsers, error: xpUsersError } = await supabaseAdmin
+      .from('users')
+      .select('id, xp_total')
+      .in('id', memberUserIds);
+    if (xpUsersError) {
+      console.error('[houses/profile] Failed to load XP totals for members', xpUsersError);
+    } else {
+      computedXpTotal =
+        xpUsers?.reduce(
+          (sum: number, row: { xp_total: number | null }) => sum + (row.xp_total ?? 0),
+          0,
+        ) ?? 0;
+      computedMemberCount = memberUserIds.length;
+    }
+  }
+
+  const headOutsideMembership = headUser?.id && !memberUserIds.includes(headUser.id);
+  if (headOutsideMembership) {
+    let xpValue =
+      typeof headUser?.xp_total === 'number' ? (headUser.xp_total as number) : null;
+    if (xpValue === null && headUser?.id) {
+      const { data: headXpRow, error: headXpError } = await supabaseAdmin
+        .from('users')
+        .select('xp_total')
+        .eq('id', headUser.id)
+        .maybeSingle();
+      if (headXpError) {
+        console.error('[houses/profile] Failed to load Head XP total', headXpError);
+      }
+      xpValue = (headXpRow?.xp_total as number | null) ?? null;
+    }
+    if (typeof xpValue === 'number') {
+      computedXpTotal += xpValue;
+      computedMemberCount += 1;
+    }
   }
 
   const { data: onboardingStatus, error: onboardingStatusError } = await supabaseAdmin
@@ -331,7 +383,11 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       name: house.name_i18n?.[normalizedLocale] ?? house.name_i18n?.en ?? identityTitle,
       countryCode: house.country_code,
       sportCode: sport?.code ?? '',
-      status: (house.status || 'in_development').toLowerCase(),
+      status: ['active', 'under_construction', 'development'].includes(
+        (house.status ?? '').toLowerCase(),
+      )
+        ? (house.status ?? '').toLowerCase()
+        : 'development',
       governanceStatus: house.governance_status ?? 'active',
       badge: house.is_public ? 'validated' : 'preview',
       isExemplar: Boolean(house.is_exemplar),
@@ -367,8 +423,8 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
         checkbox: cta?.checkbox ?? 'Confirmo que aceito o termo de responsabilidade.',
       },
       metrics: {
-        memberCount: xpRow?.member_count ?? memberCountFallback ?? 0,
-        xpTotal: xpRow?.total_xp ?? 0,
+        memberCount: computedMemberCount,
+        xpTotal: computedXpTotal,
         termAcceptances: termCount ?? 0,
         onboarding: {
           published: onboardingStatus?.published_popups ?? 0,

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase';
+import { getCountryCodeFromName } from './countries';
 
 export type HouseMembershipRole = 'HEAD' | 'MODERATOR' | 'MEMBER';
 export type HouseAssignmentSource =
@@ -11,6 +12,8 @@ export type HouseAssignmentSource =
 interface UserRow {
   primary_country_code: string | null;
   primary_sport_id: string | null;
+  country?: string | null;
+  sport_id?: string | null;
 }
 
 interface HouseRow {
@@ -54,7 +57,7 @@ export async function syncUserHouseMembership(
 
     const { data: userRowRaw, error: userError } = await supabaseAdmin
       .from('users')
-      .select('primary_country_code, primary_sport_id')
+      .select('primary_country_code, primary_sport_id, country, sport_id')
       .eq('id', userId)
       .maybeSingle();
 
@@ -75,10 +78,15 @@ export async function syncUserHouseMembership(
       };
     }
 
-    const countryCode = userRow.primary_country_code
+    let countryCode = userRow.primary_country_code
       ? userRow.primary_country_code.toUpperCase()
       : null;
-    const sportId = userRow.primary_sport_id;
+    if (!countryCode && userRow.country) {
+      countryCode =
+        getCountryCodeFromName(userRow.country) ??
+        userRow.country.trim().slice(0, 2).toUpperCase();
+    }
+    const sportId = userRow.primary_sport_id ?? userRow.sport_id ?? null;
 
     const buildDeleteQuery = () =>
       supabaseAdmin

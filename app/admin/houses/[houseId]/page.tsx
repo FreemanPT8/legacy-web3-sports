@@ -160,11 +160,25 @@ type MetricsResponse = {
   metrics: QualityMetrics;
 };
 
+type HouseStatus = 'development' | 'under_construction' | 'active';
+
+const HOUSE_STATUS_LABELS: Record<HouseStatus, string> = {
+  development: 'In development',
+  under_construction: 'Under construction',
+  active: 'Active',
+};
+
+const HOUSE_STATUS_OPTIONS: { value: HouseStatus; label: string }[] = [
+  { value: 'development', label: HOUSE_STATUS_LABELS.development },
+  { value: 'under_construction', label: HOUSE_STATUS_LABELS.under_construction },
+  { value: 'active', label: HOUSE_STATUS_LABELS.active },
+];
+
 export default function AdminHouseGovernancePage() {
   const params = useParams<{ houseId: string }>();
   const router = useRouter();
   const { toast } = useToast();
-  const { getToken } = useAuth();
+  const { getToken, user } = useAuth();
 
   const fetcher = useCallback(
     async (url: string) => {
@@ -190,6 +204,7 @@ export default function AdminHouseGovernancePage() {
     data: profileData,
     error: profileError,
     isLoading: profileLoading,
+    mutate: profileMutate,
   } = useSWR<ProfileResponse>(
     params?.houseId ? `/api/admin/houses/${params.houseId}/profile` : null,
     fetcher,
