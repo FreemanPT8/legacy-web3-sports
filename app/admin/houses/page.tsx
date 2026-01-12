@@ -19,6 +19,13 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Loader2, Plus, Building2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -124,6 +131,28 @@ const statusOptions: { value: 'all' | HouseStatus; label: string }[] = [
   { value: 'development', label: 'In development' },
 ];
 
+const statusEditOptions: Array<{
+  value: HouseStatus;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'active',
+    label: STATUS_LABELS.active,
+    description: 'House visivel publicamente e pronta para aceitar pedidos.',
+  },
+  {
+    value: 'under_construction',
+    label: STATUS_LABELS.under_construction,
+    description: 'Head definido mas ainda em preparacao para abrir.',
+  },
+  {
+    value: 'development',
+    label: STATUS_LABELS.development,
+    description: 'Fase inicial, apenas equipa interna usa a house.',
+  },
+];
+
 const secondaryButtonClasses =
   'border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60';
 
@@ -182,6 +211,7 @@ export default function AdminHousesPage() {
   } | null>(null);
   const [joinSummaryLoading, setJoinSummaryLoading] = useState(false);
   const [joinSummaryError, setJoinSummaryError] = useState<string | null>(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   const isSuperAdmin = user?.role === 'Super Admin';
   const highlightInvites = searchParams?.get('tab') === 'invites';
@@ -220,6 +250,58 @@ export default function AdminHousesPage() {
       setLoading(false);
     }
   }, [getToken]);
+
+  const handleStatusUpdate = useCallback(
+    async (house: AdminHouse, nextStatus: HouseStatus) => {
+      if (house.status === nextStatus) return;
+
+      const token = getToken();
+      if (!token) {
+        toast({
+          title: 'Sem autenticacao',
+          description: 'Faz login novamente para editar o estado da house.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setUpdatingStatusId(house.id);
+      try {
+        const response = await fetch(`/api/admin/houses/${house.id}`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || 'Nao foi possivel atualizar o estado.');
+        }
+
+        setHouses((prev) =>
+          prev.map((item) =>
+            item.id === house.id ? { ...item, status: nextStatus } : item
+          )
+        );
+        toast({
+          title: 'Estado atualizado',
+          description: `${house.sport_name ?? 'House'} esta agora como ${STATUS_LABELS[nextStatus]}.`,
+        });
+      } catch (err) {
+        console.error('[admin/houses] status update failed', err);
+        toast({
+          title: 'Erro ao atualizar estado',
+          description: err instanceof Error ? err.message : 'Tenta novamente mais tarde.',
+          variant: 'destructive',
+        });
+      } finally {
+        setUpdatingStatusId(null);
+      }
+    },
+    [getToken, toast]
+  );
 
   const handleDeleteHouse = useCallback(async () => {
     if (!houseToDelete) return;
@@ -1257,11 +1339,57 @@ export default function AdminHousesPage() {
                             </p>
                           </div>
                           <div className="flex flex-1 flex-col gap-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <StatusBadge status={house.status} />
                               <span className="text-xs text-slate-400">
                                 Criada em {formatCreatedAt(house.created_at)}
                               </span>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-white/20 text-xs text-white hover:border-cyan-300/70 hover:text-cyan-200"
+                                    disabled={updatingStatusId === house.id}
+                                  >
+                                    {updatingStatusId === house.id ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                        A atualizar...
+                                      </>
+                                    ) : (
+                                      'Editar estado'
+                                    )}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-64 border border-white/10 bg-[#03121a] text-white"
+                                >
+                                  <DropdownMenuRadioGroup
+                                    value={house.status}
+                                    onValueChange={(value) =>
+                                      void handleStatusUpdate(house, value as HouseStatus)
+                                    }
+                                  >
+                                    {statusEditOptions.map((option) => (
+                                      <DropdownMenuRadioItem
+                                        key={option.value}
+                                        value={option.value}
+                                        disabled={updatingStatusId === house.id}
+                                        className="data-[state=checked]:bg-white/10 data-[state=checked]:text-white focus:bg-white/10"
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className="text-sm">{option.label}</span>
+                                          <span className="text-xs text-slate-400">
+                                            {option.description}
+                                          </span>
+                                        </div>
+                                      </DropdownMenuRadioItem>
+                                    ))}
+                                  </DropdownMenuRadioGroup>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <Button
