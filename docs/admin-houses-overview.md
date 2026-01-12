@@ -5,6 +5,10 @@ screen. It builds on the existing schema + migrations recently added.
 
 ---
 
+> Nota: a capacidade mensal é apenas um indicador. O painel deve focar pedidos
+> pendentes (CTA backlog) e pressões na pool por desporto/país, já que a
+> capacidade é ilimitada por agora.
+
 ## Required KPIs
 
 1. **Total Houses** – Total number of rows in `houses_of_sports`.
@@ -16,11 +20,9 @@ screen. It builds on the existing schema + migrations recently added.
 3. **Users per House**
    - Count from `user_houses` (role = `MEMBER`, `removed_at is null`).
    - Derive a “top 5 Houses” list ordered by member count.
-4. **Capacity vs Load**
-   - Pull `monthly_capacity` from `houses_of_sports`.
-   - Compare against current month join requests (`house_join_requests` with `status='pending'`
-     and `created_at` in current month).
-   - Flag Houses where `pending_requests >= monthly_capacity`.
+4. **CTA backlog**
+   - Contar `house_join_requests` com `status='pending'`.
+   - Destacar as Houses com mais pedidos pendentes e o timestamp do ?ltimo pedido.
 5. **Alert Summary**
    - From `house_alerts`: number of open alerts grouped by severity (low/medium/high).
    - Provide top unresolved alerts with metadata (`house_id`, `type`, `created_at`).
@@ -53,13 +55,16 @@ type HouseOverviewResponse = {
     globalCount: number;
     topHouses: Array<{ houseId: string; houseKey: string; name: string; members: number }>;
   };
-  capacity: Array<{
-    houseId: string;
-    name: string;
-    monthlyCapacity: number | null;
-    pendingRequests: number;
-    status: 'ok' | 'limit' | 'blocked';
-  }>;
+  ctaQueue: {
+    totals: Record<string, number>;
+    houses: Array<{
+      houseId: string;
+      houseKey: string;
+      name: string;
+      pending: number;
+      lastRequest: string | null;
+    }>;
+  };
   alerts: {
     openBySeverity: Record<'low' | 'medium' | 'high', number>;
     top: Array<{
@@ -104,7 +109,7 @@ Only Admin / Super Admin should be able to call the endpoint (reuse `requireAdmi
 | --- | ------ |
 | Totals | `houses_of_sports` |
 | Members & top houses | `user_houses` joined with `houses_of_sports` |
-| Capacity vs pending | `houses_of_sports.monthly_capacity` + `house_join_requests` |
+| CTA backlog | `house_join_requests` (`status='pending'`) |
 | Alerts | `house_alerts` |
 | Onboarding readiness | `house_onboarding_status` |
 | Qualitative feedback | `house_feedback` (filtered por `house_id`) |

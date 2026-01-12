@@ -1,22 +1,33 @@
 # House Alerts Cron Runner
 
-Para que o sistema de alertas deixe de depender manualmente do botão “varrer alertas” no painel,
-podemos agendar um cron job (Vercel Cron, GitHub Actions ou um worker dedicado) que invoque
-o endpoint `POST /api/admin/houses/alerts/scan` periodicamente (ex.: de hora em hora).
+O sistema de alertas monitoriza apenas CTAs manuais que ficaram pendentes para
+além do SLA configurado (a capacidade mensal é ilimitada). Para evitar depender
+do botão manual no painel, usa o endpoint protegido `POST /api/admin/houses/alerts/run`
+que dispara o mesmo scan server-side.
 
-## 1. Configurar uma rota “cron-safe”
+## 1. Configurar execução segura
 
-- Usa uma Vercel Cron configurada com `POST https://<project>.vercel.app/api/admin/houses/alerts/scan`.
-- Adiciona uma env `CRON_SHARED_SECRET` e valida-a no route (para evitar chamadas públicas).
+- Define a env `HOUSES_ALERTS_CRON_SECRET` com um token aleatório nas deploys.
+- Agenda um Vercel Cron (ex.: `0 * * * *`) apontando para
+  `https://<project>.vercel.app/api/admin/houses/alerts/run` com o header
+  `x-cron-secret: <HOUSES_ALERTS_CRON_SECRET>`. Em execuções locais podes enviar
+  `?secret=<...>` no query string.
+- O endpoint responde com `{ success, scanned, triggered, resolved, warnings }`.
+  Qualquer warning indica falha a carregar alertas ou pedidos de uma House
+  específica.
 
-## 2. Script auxiliar
+## 2. Execução manual
 
-`node scripts/house-alerts-cron.js <cronUrl>`
+- `/api/admin/houses/alerts/scan` continua disponível para Admin / Super Admin
+  autenticados. Serve como botão “Executar scan” no painel.
+- O scan cria alertas `cta.pending` sempre que existirem pedidos
+  (`house_join_requests.status='pending'`) com `created_at` superior a
+  `HOUSE_ALERTS_PENDING_SLA_HOURS` (48h por omissão). Sem pedidos em atraso, o
+  alerta aberto é resolvido automaticamente.
 
-Este script foi adicionado para quem quiser correr localmente ou dentro de um worker dedicado.
+## 3. Checklist rápido
 
-## 3. Plano de implementação
-
-1. Criar env `CRON_SHARED_SECRET` e validar no route `alerts/scan`.
-2. Configurar Vercel Cron (ex.: `0 * * * *`).
-3. Atualizar docs/checklists para incluir validação no Sprint 6/QA.
+1. Confirmar `HOUSES_ALERTS_CRON_SECRET` nas envs de staging/produção.
+2. Configurar o cron (Vercel Cron, worker, etc.) chamando `/alerts/run`.
+3. Atualizar o QA para validar alertas com CTAs pendentes e garantir que não há
+   mais bloqueio por capacidade.

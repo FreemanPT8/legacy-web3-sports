@@ -8,8 +8,8 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response!;
 
   try {
-    const summary = await scanHouseCapacityAlerts(auth.user?.userId);
-    return NextResponse.json({ success: true, summary });
+    const summary = await scanHouseCapacityAlerts();
+    return NextResponse.json({ success: true, ...summary });
   } catch (error) {
     console.error('[admin/houses/alerts/scan] failed', error);
     return NextResponse.json({ success: false, error: 'Failed to scan alerts.' }, { status: 500 });

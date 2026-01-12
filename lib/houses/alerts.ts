@@ -1,128 +1,163 @@
 import { supabaseAdmin } from '@/lib/supabase';
 
-type HouseRow = {
-  id: string;
-  name_i18n: Record<string, string> | null;
-  monthly_capacity: number | null;
+export type AlertScanSummary = {
+  scanned: number;
+  triggered: number;
+  resolved: number;
+  warnings: string[];
 };
 
-type PendingRow = {
-  house_id: string;
-  count: number;
+type HouseRow = {
+  id: string;
+  house_key: string | null;
+  governance_status: string | null;
 };
 
 type OpenAlertRow = {
-  id: string;
-  house_id: string;
-  severity: string;
+  id: string | null;
+  type: string | null;
 };
 
-const ALERT_TYPE = 'capacity_pending';
-
-export type AlertScanSummary = {
-  created: number;
-  escalated: number;
-  resolved: number;
-  ignored: number;
+type PendingRequestRow = {
+  created_at: string | null;
 };
 
-export async function scanHouseCapacityAlerts(actorId?: string | null): Promise<AlertScanSummary> {
+const DEFAULT_SLA_HOURS = Number(process.env.HOUSE_ALERTS_PENDING_SLA_HOURS || 48);
+
+async function createAlert(
+  houseId: string,
+  type: string,
+  severity: 'low' | 'medium' | 'high',
+  details: Record<string, unknown>,
+) {
+  if (!supabaseAdmin) return;
+  await supabaseAdmin.from('house_alerts').insert({
+    house_id: houseId,
+    type,
+    severity,
+    details,
+  });
+}
+
+async function resolveAlert(houseId: string, type: string) {
+  if (!supabaseAdmin) return;
+  await supabaseAdmin
+    .from('house_alerts')
+    .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+    .eq('house_id', houseId)
+    .eq('type', type)
+    .eq('status', 'open');
+}
+
+async function scanHouseRequests(
+  house: HouseRow,
+  slaHours: number,
+): Promise<{ triggered: number; resolved: number; warnings: string[] }> {
+  const warnings: string[] = [];
+  const admin = supabaseAdmin;
+  if (!admin) {
+    return { triggered: 0, resolved: 0, warnings: ['Admin client unavailable.'] };
+  }
+
+  const now = Date.now();
+  const slaMs = slaHours * 60 * 60 * 1000;
+  const openAlerts = new Map<string, OpenAlertRow>();
+
+  const { data: openRows, error: openError } = await admin
+    .from('house_alerts')
+    .select('id, type')
+    .eq('house_id', house.id)
+    .eq('status', 'open');
+  if (openError) {
+    warnings.push('Falha ao carregar alertas existentes.');
+  } else {
+    (openRows ?? []).forEach((row: OpenAlertRow) => {
+      if (row?.type && row?.id) {
+        openAlerts.set(row.type, row);
+      }
+    });
+  }
+
+  const { data: pendingRows, error: pendingError } = await admin
+    .from('house_join_requests')
+    .select('created_at')
+    .eq('house_id', house.id)
+    .eq('status', 'pending');
+  if (pendingError) {
+    warnings.push('Tabela house_join_requests indisponível.');
+    return { triggered: 0, resolved: 0, warnings };
+  }
+
+  const overdue = (pendingRows ?? []).filter((row: PendingRequestRow) => {
+    if (!row?.created_at) return false;
+    const created = new Date(row.created_at).getTime();
+    return Number.isFinite(created) && now - created > slaMs;
+  }).length;
+
+  let triggered = 0;
+  let resolved = 0;
+
+  if (overdue > 0) {
+    if (!openAlerts.has('cta.pending')) {
+      await createAlert(house.id, 'cta.pending', 'medium', {
+        message: 'Pedidos pendentes com SLA ultrapassado.',
+        overdue,
+        cutoffHours: slaHours,
+      });
+      triggered += 1;
+    }
+  } else if (openAlerts.has('cta.pending')) {
+    await resolveAlert(house.id, 'cta.pending');
+    resolved += 1;
+  }
+
+  return { triggered, resolved, warnings };
+}
+
+export async function scanHouseCapacityAlerts(
+  options: { slaHours?: number } = {},
+): Promise<AlertScanSummary> {
   if (!supabaseAdmin) {
     throw new Error('Supabase admin client not configured.');
   }
 
-  const summary: AlertScanSummary = {
-    created: 0,
-    escalated: 0,
-    resolved: 0,
-    ignored: 0,
-  };
+  const { data: houses, error: housesError } = await supabaseAdmin
+    .from('houses_of_sports')
+    .select('id, house_key, governance_status');
+  if (housesError) {
+    throw housesError;
+  }
 
-  const [{ data: houses, error: houseError }, { data: pendingRows, error: pendingError }, { data: openAlerts }] =
-    await Promise.all([
-      supabaseAdmin
-        .from('houses_of_sports')
-        .select('id, name_i18n, monthly_capacity')
-        .not('monthly_capacity', 'is', null),
-      supabaseAdmin
-        .from('house_join_requests')
-        .select('house_id, count:id', { count: 'exact', head: false })
-        .eq('status', 'pending')
-        .group('house_id'),
-      supabaseAdmin
-        .from('house_alerts')
-        .select('id, house_id, severity')
-        .eq('status', 'open')
-        .eq('type', ALERT_TYPE),
-    ]);
+  const activeHouses = (houses ?? []).filter(
+    (house: HouseRow) => (house.governance_status ?? 'active').toLowerCase() === 'active',
+  );
+  let triggered = 0;
+  let resolved = 0;
+  const warnings: string[] = [];
+  const slaHours = options.slaHours ?? DEFAULT_SLA_HOURS;
 
-  if (houseError) throw houseError;
-  if (pendingError) throw pendingError;
-
-  const pendingByHouse = new Map<string, number>();
-  (pendingRows as PendingRow[] | null)?.forEach((row) => {
-    pendingByHouse.set(row.house_id, Number(row.count) || 0);
-  });
-
-  const openByHouse = new Map<string, OpenAlertRow>();
-  (openAlerts as OpenAlertRow[] | null)?.forEach((row) => {
-    openByHouse.set(row.house_id, row);
-  });
-
-  const nowISO = new Date().toISOString();
-
-  for (const house of (houses as HouseRow[] | null) ?? []) {
-    const capacity = house.monthly_capacity ?? 0;
-    const pending = pendingByHouse.get(house.id) ?? 0;
-    const ratio = capacity > 0 ? pending / capacity : pending > 0 ? 1 : 0;
-
-    let severity: 'medium' | 'high' | null = null;
-    if (capacity <= 0 && pending > 0) {
-      severity = 'high';
-    } else if (ratio >= 1) {
-      severity = 'high';
-    } else if (ratio >= 0.8) {
-      severity = 'medium';
-    }
-
-    const existing = openByHouse.get(house.id);
-
-    if (severity) {
-      if (!existing) {
-        const { error } = await supabaseAdmin.from('house_alerts').insert({
-          house_id: house.id,
-          type: ALERT_TYPE,
-          severity,
-          status: 'open',
-          details: {
-            capacity,
-            pending,
-            ratio,
-          },
-        });
-        if (error) throw error;
-        summary.created += 1;
-      } else if (existing.severity !== severity) {
-        const { error } = await supabaseAdmin
-          .from('house_alerts')
-          .update({ severity, details: { capacity, pending, ratio } })
-          .eq('id', existing.id);
-        if (error) throw error;
-        summary.escalated += 1;
-      } else {
-        summary.ignored += 1;
+  for (const house of activeHouses) {
+    try {
+      const result = await scanHouseRequests(house, slaHours);
+      triggered += result.triggered;
+      resolved += result.resolved;
+      if (result.warnings.length) {
+        warnings.push(
+          ...result.warnings.map(
+            (warning) => `${house.house_key ?? house.id}: ${warning}`,
+          ),
+        );
       }
-    } else if (existing) {
-      const { error } = await supabaseAdmin
-        .from('house_alerts')
-        .update({ status: 'resolved', resolved_at: nowISO, resolved_by: actorId ?? null })
-        .eq('id', existing.id);
-      if (error) throw error;
-      summary.resolved += 1;
-    } else {
-      summary.ignored += 1;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unexpected error.';
+      warnings.push(`${house.house_key ?? house.id}: ${message}`);
     }
   }
 
-  return summary;
+  return {
+    scanned: activeHouses.length,
+    triggered,
+    resolved,
+    warnings,
+  };
 }
