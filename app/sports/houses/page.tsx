@@ -364,6 +364,8 @@ function HousesSection({
                       src={house.cover_image_url || house.avatar_url || ''}
                       alt={house.name}
                       className="h-full w-full object-cover"
+                      width={1600}
+                      height={400}
                     />
                   ) : (
                     <div className="h-full w-full bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950" />
@@ -378,6 +380,8 @@ function HousesSection({
                           src={house.avatar_url}
                           alt={house.name}
                           className="h-full w-full object-cover"
+                          width={400}
+                          height={400}
                         />
                       ) : (
                         <span>{initials}</span>
