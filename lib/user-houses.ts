@@ -44,6 +44,37 @@ export interface SyncHouseMembersResult {
   reason?: string;
 }
 
+type SupabaseClient = typeof supabaseAdmin;
+
+let adminClient: SupabaseClient = supabaseAdmin;
+
+export function __setUserHousesSupabaseAdmin(client?: SupabaseClient | null) {
+  adminClient = client ?? supabaseAdmin;
+}
+
+let ensureHouseHandler = ensureHouseForSportCountry;
+
+export function __setEnsureHouseForTests(handler?: typeof ensureHouseForSportCountry) {
+  ensureHouseHandler = handler ?? ensureHouseForSportCountry;
+}
+
+type BackgroundSyncFn = (
+  houseId: string,
+  sportId?: string | null,
+  countryCode?: string | null,
+  options?: { logPrefix?: string },
+) => Promise<SyncHouseMembersResult>;
+
+let backgroundSyncHandler: BackgroundSyncFn | null = null;
+
+export function __setSyncHouseMembersForTests(handler?: BackgroundSyncFn | null) {
+  backgroundSyncHandler = handler ?? null;
+}
+
+function getBackgroundSyncHandler(): BackgroundSyncFn {
+  return backgroundSyncHandler ?? syncHouseMembersBySportCountry;
+}
+
 const DEFAULT_SOURCE: HouseAssignmentSource = 'PROFILE';
 const RPC_FUNCTION = 'sync_user_house_membership_db';
 const RPC_UNDEFINED_FUNCTION = '42883';
@@ -53,11 +84,11 @@ async function syncMembershipViaRpc(
   sportId: string | null,
   countryCode: string | null,
 ): Promise<SyncUserHouseMembershipResult | null> {
-  if (!supabaseAdmin) return null;
+  if (!adminClient) return null;
   if (!sportId && !countryCode) return null;
 
   try {
-    const { data, error } = await supabaseAdmin.rpc(RPC_FUNCTION, {
+    const { data, error } = await adminClient.rpc(RPC_FUNCTION, {
       p_user_id: userId,
       p_sport_id: sportId,
       p_country_code: countryCode,
@@ -96,7 +127,7 @@ export async function syncUserHouseMembership(
   userId: string,
   options: SyncUserHouseMembershipOptions = {},
 ): Promise<SyncUserHouseMembershipResult> {
-  if (!supabaseAdmin) {
+  if (!adminClient) {
     return {
       success: false,
       error: 'Supabase admin client is not configured.',
@@ -107,7 +138,7 @@ export async function syncUserHouseMembership(
     const assignedVia = options.assignedVia ?? DEFAULT_SOURCE;
     const logPrefix = options.logPrefix ? `[${options.logPrefix}] ` : '';
 
-    const { data: userRowRaw, error: userError } = await supabaseAdmin
+    const { data: userRowRaw, error: userError } = await adminClient
       .from('users')
       .select('primary_country_code, primary_sport_id, country, sport_id')
       .eq('id', userId)
@@ -141,7 +172,7 @@ export async function syncUserHouseMembership(
     const sportId = userRow.primary_sport_id ?? userRow.sport_id ?? null;
 
     const buildDeleteQuery = () =>
-      supabaseAdmin
+      adminClient
         .from('user_houses')
         .delete()
         .eq('user_id', userId)
@@ -174,7 +205,7 @@ export async function syncUserHouseMembership(
 
     if (allowAutoCreation) {
       try {
-        const ensureResult = await ensureHouseForSportCountry({
+        const ensureResult = await ensureHouseHandler({
           sportId,
           countryCode,
           actorId,
@@ -196,7 +227,8 @@ export async function syncUserHouseMembership(
           const backgroundLog = options.logPrefix
             ? `${options.logPrefix}:auto-house`
             : 'auto-house';
-          syncHouseMembersBySportCountry(
+          const backgroundSync = getBackgroundSyncHandler();
+          backgroundSync(
             ensureResult.houseId,
             sportId,
             ensureResult.countryCode,
@@ -237,7 +269,7 @@ export async function syncUserHouseMembership(
       return rpcResult;
     }
 
-    const { data: membershipRows, error: membershipError } = await supabaseAdmin
+    const { data: membershipRows, error: membershipError } = await adminClient
       .from('user_houses')
       .select('house_id')
       .eq('user_id', userId)
@@ -258,7 +290,7 @@ export async function syncUserHouseMembership(
     let targetHouseId = ensuredHouseId;
 
     if (!targetHouseId) {
-      const { data: houseRowRaw, error: houseError } = await supabaseAdmin
+      const { data: houseRowRaw, error: houseError } = await adminClient
         .from('houses_of_sports')
         .select('id')
         .eq('sport_id', sportId)
@@ -311,7 +343,7 @@ export async function syncUserHouseMembership(
       };
     }
 
-    const { error: upsertError } = await supabaseAdmin
+    const { error: upsertError } = await adminClient
       .from('user_houses')
       .upsert(
         [
@@ -353,7 +385,7 @@ export async function syncHouseMembersBySportCountry(
   countryCode?: string | null,
   options: { logPrefix?: string } = {},
 ): Promise<SyncHouseMembersResult> {
-  if (!supabaseAdmin) {
+  if (!adminClient) {
     return { success: false, attempted: 0, assigned: 0, reason: 'Supabase admin client unavailable.' };
   }
   if (!sportId || !countryCode) {
@@ -365,7 +397,7 @@ export async function syncHouseMembersBySportCountry(
     const upperCountry = countryCode.toUpperCase();
     const candidateIds = new Set<string>();
 
-    const { data: primaryMatches, error: primaryError } = await supabaseAdmin
+    const { data: primaryMatches, error: primaryError } = await adminClient
       .from('users')
       .select('id')
       .eq('primary_sport_id', sportId)
@@ -381,7 +413,7 @@ export async function syncHouseMembersBySportCountry(
 
     const legacyCountryName = getCountryName(upperCountry);
     if (legacyCountryName) {
-      const { data: legacyMatches, error: legacyError } = await supabaseAdmin
+      const { data: legacyMatches, error: legacyError } = await adminClient
         .from('users')
         .select('id')
         .eq('sport_id', sportId)

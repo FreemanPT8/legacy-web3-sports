@@ -9,6 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test:unlock": "tsc -p tests/tsconfig.json && node -r ./tests/register-alias.js .tmp-tests/tests/unlockEngine.helpers.test.js",
+    "test:houses": "tsc -p tests/tsconfig.json && node -r ./tests/register-alias.js .tmp-tests/tests/houses-membership.test.js",
     "seed": "ts-node scripts/seed.ts",
     "sync:levels": "node scripts/syncAcademyLevels.js"
   },

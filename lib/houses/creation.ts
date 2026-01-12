@@ -1,6 +1,21 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { getCountryName } from '@/lib/countries';
 
+type SupabaseClient = typeof supabaseAdmin;
+
+let adminClient: SupabaseClient = supabaseAdmin;
+
+export function __setHouseCreationSupabaseAdmin(client?: SupabaseClient | null) {
+  adminClient = client ?? supabaseAdmin;
+}
+
+function getAdminClient(): SupabaseClient {
+  if (!adminClient) {
+    throw new EnsureHouseError('Supabase admin client unavailable.', 'admin_unavailable');
+  }
+  return adminClient;
+}
+
 export type HouseStatus = 'development' | 'under_construction' | 'active';
 
 type SportRow = {
@@ -77,15 +92,13 @@ function slugify(value: string): string {
 }
 
 async function generateUniqueHouseKey(baseKey: string): Promise<string> {
-  if (!supabaseAdmin) {
-    throw new EnsureHouseError('Supabase admin client unavailable.', 'admin_unavailable');
-  }
+  const admin = getAdminClient();
 
   let attempt = 0;
   let candidate = baseKey;
 
   while (attempt < 25) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await admin
       .from('houses_of_sports')
       .select('id')
       .eq('house_key', candidate)
@@ -135,9 +148,7 @@ function buildHouseName(
 export async function ensureHouseForSportCountry(
   params: EnsureHouseParams,
 ): Promise<EnsureHouseResult> {
-  if (!supabaseAdmin) {
-    throw new EnsureHouseError('Supabase admin client unavailable.', 'admin_unavailable');
-  }
+  const admin = getAdminClient();
 
   const sportId = params.sportId?.trim();
   const rawCountry = params.countryCode?.trim().toUpperCase();
@@ -146,7 +157,7 @@ export async function ensureHouseForSportCountry(
     throw new EnsureHouseError('Sport and country are required.', 'invalid_input');
   }
 
-  const { data: existingRow, error: existingError } = await supabaseAdmin
+  const { data: existingRow, error: existingError } = await admin
     .from('houses_of_sports')
     .select('id, house_key, status, country_code')
     .eq('sport_id', sportId)
@@ -172,7 +183,7 @@ export async function ensureHouseForSportCountry(
     };
   }
 
-  const { data: sportRow, error: sportError } = await supabaseAdmin
+  const { data: sportRow, error: sportError } = await admin
     .from('sports')
     .select('id, code, name_i18n')
     .eq('id', sportId)
@@ -192,7 +203,7 @@ export async function ensureHouseForSportCountry(
   const status = normalizeHouseStatus(params.status ?? 'under_construction', 'under_construction');
 
   try {
-    const { data: inserted, error: insertError } = await supabaseAdmin
+    const { data: inserted, error: insertError } = await admin
       .from('houses_of_sports')
       .insert({
         sport_id: sportId,
@@ -212,7 +223,7 @@ export async function ensureHouseForSportCountry(
 
     if (!inserted) {
       // 23505 (unique violation) means another process inserted the row simultaneously.
-      const { data: fallback } = await supabaseAdmin
+      const { data: fallback } = await admin
         .from('houses_of_sports')
         .select('id, house_key, status, country_code')
         .eq('sport_id', sportId)
@@ -241,7 +252,7 @@ export async function ensureHouseForSportCountry(
     };
   } catch (error: any) {
     if (error?.code === '23505' && !params.rejectIfExists) {
-      const { data: existingAfterConflict } = await supabaseAdmin
+      const { data: existingAfterConflict } = await admin
         .from('houses_of_sports')
         .select('id, house_key, status, country_code')
         .eq('sport_id', sportId)
