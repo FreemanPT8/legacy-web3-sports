@@ -387,12 +387,10 @@ export async function GET(request: NextRequest) {
 
       const hasHead = !!headUser;
       const publicStatus = normalizeStatusFromData(house.status, hasHead);
-      const headCount = stats ? stats.head_count : headUser ? 1 : 0;
-      const moderatorCount = stats
-        ? stats.moderator_count
-        : Array.isArray(moderators)
-          ? moderators.length
-          : 0;
+      const fallbackHeadCount = headUser ? 1 : 0;
+      const fallbackModeratorCount = Array.isArray(moderators) ? moderators.length : 0;
+      const headCount = stats ? stats.head_count : fallbackHeadCount;
+      const moderatorCount = stats ? stats.moderator_count : fallbackModeratorCount;
       const memberOnlyCount = stats
         ? stats.member_only_count
         : Math.max((stats?.member_count ?? 0) - headCount - moderatorCount, 0);
