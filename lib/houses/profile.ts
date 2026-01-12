@@ -419,7 +419,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     return (
       data
         ?.map((user: any) => toRosterEntry(user))
-        .sort((a, b) => b.xpTotal - a.xpTotal || a.name.localeCompare(b.name)) ?? []
+        .sort(
+          (a: HouseMemberSummary, b: HouseMemberSummary) =>
+            b.xpTotal - a.xpTotal || a.name.localeCompare(b.name),
+        ) ?? []
     );
   };
 
