@@ -47,7 +47,18 @@ export type HouseProfilePayload = {
     cta: { label: string; helper: string; checkbox: string };
     metrics: {
       memberCount: number;
+      registeredMembers: number;
       xpTotal: number;
+      xpBreakdown: {
+        head: number;
+        moderators: number;
+        members: number;
+      };
+      roleCounts: {
+        head: number;
+        moderators: number;
+        members: number;
+      };
       termAcceptances: number;
       onboarding: {
         published: number;
@@ -201,7 +212,9 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
 
   const { data: xpRow, error: xpError } = await supabaseAdmin
     .from('house_xp_totals')
-    .select('total_xp, member_count')
+    .select(
+      'total_xp, member_count, member_only_count, head_count, head_xp, moderator_count, moderator_xp, member_xp',
+    )
     .eq('house_id', house.id)
     .maybeSingle();
   if (xpError) {
@@ -213,7 +226,6 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
   }
 
   let membershipRows: { user_id: string | null }[] = [];
-  let memberCountFallback = 0;
   const { data: membershipData, error: membershipError } = await supabaseAdmin
     .from('user_houses')
     .select('user_id')
@@ -227,65 +239,148 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     }
   } else {
     membershipRows = membershipData ?? [];
-    memberCountFallback = membershipRows.length;
   }
 
-  const memberUserIds =
-    membershipRows
-      ?.map((row: { user_id: string | null }) => row.user_id)
-      .filter((id): id is string => Boolean(id)) ?? [];
+  const memberUserIds = Array.from(
+    new Set(
+      membershipRows
+        .map((row: { user_id: string | null }) => row.user_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
 
-  const viewMemberCount =
-    typeof xpRow?.member_count === 'number' ? (xpRow.member_count as number) : null;
-  const viewXpTotal = typeof xpRow?.total_xp === 'number' ? (xpRow.total_xp as number) : null;
-  const hasAggregatedTotals = viewMemberCount !== null && viewXpTotal !== null;
+  let fallbackMembersOnlyCount = memberUserIds.length;
+  let fallbackMemberXp = 0;
+  let fallbackHeadXp = 0;
+  let fallbackModeratorXp = 0;
+  let fallbackHeadCount = 0;
+  let fallbackModeratorCount = 0;
 
-  let computedMemberCount = hasAggregatedTotals
-    ? (viewMemberCount as number)
-    : memberUserIds.length > 0
-    ? memberUserIds.length
-    : memberCountFallback ?? 0;
-  let computedXpTotal = hasAggregatedTotals ? (viewXpTotal as number) : 0;
+  const aggregates = {
+    totalXp: typeof xpRow?.total_xp === 'number' ? (xpRow.total_xp as number) : null,
+    participantCount: typeof xpRow?.member_count === 'number' ? (xpRow.member_count as number) : null,
+    registeredMembers:
+      typeof xpRow?.member_only_count === 'number' ? (xpRow.member_only_count as number) : null,
+    headCount: typeof xpRow?.head_count === 'number' ? (xpRow.head_count as number) : null,
+    moderatorCount:
+      typeof xpRow?.moderator_count === 'number' ? (xpRow.moderator_count as number) : null,
+    headXp: typeof xpRow?.head_xp === 'number' ? (xpRow.head_xp as number) : null,
+    moderatorXp: typeof xpRow?.moderator_xp === 'number' ? (xpRow.moderator_xp as number) : null,
+    memberXp: typeof xpRow?.member_xp === 'number' ? (xpRow.member_xp as number) : null,
+  };
 
-  if (!hasAggregatedTotals) {
-    if (memberUserIds.length) {
-      const { data: xpUsers, error: xpUsersError } = await supabaseAdmin
-        .from('users')
-        .select('id, xp_total')
-        .in('id', memberUserIds);
-      if (xpUsersError) {
-        console.error('[houses/profile] Failed to load XP totals for members', xpUsersError);
+  const needsFallback =
+    aggregates.totalXp === null ||
+    aggregates.participantCount === null ||
+    aggregates.registeredMembers === null ||
+    aggregates.headCount === null ||
+    aggregates.moderatorCount === null ||
+    aggregates.headXp === null ||
+    aggregates.moderatorXp === null ||
+    aggregates.memberXp === null;
+
+  if (needsFallback) {
+    const headUserId = headUser?.id ?? null;
+    if (headUserId) {
+      fallbackHeadCount = 1;
+      if (typeof headUser?.xp_total === 'number') {
+        fallbackHeadXp = headUser.xp_total as number;
       } else {
-        computedXpTotal =
-          xpUsers?.reduce(
-            (sum: number, row: { xp_total: number | null }) => sum + (row.xp_total ?? 0),
-            0,
-          ) ?? 0;
-        computedMemberCount = memberUserIds.length;
-      }
-    }
-
-    const headOutsideMembership = headUser?.id && !memberUserIds.includes(headUser.id);
-    if (headOutsideMembership) {
-      let xpValue =
-        typeof headUser?.xp_total === 'number' ? (headUser.xp_total as number) : null;
-      if (xpValue === null && headUser?.id) {
         const { data: headXpRow, error: headXpError } = await supabaseAdmin
           .from('users')
           .select('xp_total')
-          .eq('id', headUser.id)
+          .eq('id', headUserId)
           .maybeSingle();
         if (headXpError) {
           console.error('[houses/profile] Failed to load Head XP total', headXpError);
         }
-        xpValue = (headXpRow?.xp_total as number | null) ?? null;
-      }
-      if (typeof xpValue === 'number') {
-        computedXpTotal += xpValue;
-        computedMemberCount += 1;
+        fallbackHeadXp = (headXpRow?.xp_total as number | null) ?? 0;
       }
     }
+
+    let moderatorUserIds: string[] = [];
+    try {
+      const { data: moderatorRows, error: moderatorError } = await supabaseAdmin
+        .from('house_moderators')
+        .select('user_id')
+        .eq('house_id', house.id);
+      if (moderatorError) {
+        if (isMissingTable(moderatorError)) {
+          console.warn('[houses/profile] house_moderators table missing. Moderator stats default to zero.');
+        } else {
+          throw moderatorError;
+        }
+      } else {
+        moderatorUserIds =
+          moderatorRows
+            ?.map((row: { user_id: string | null }) => row.user_id)
+            .filter((id): id is string => Boolean(id)) ?? [];
+      }
+    } catch (error) {
+      console.error('[houses/profile] Failed to load moderator assignments for XP fallback', error);
+    }
+
+    if (headUser?.id) {
+      moderatorUserIds = moderatorUserIds.filter((id) => id !== headUser.id);
+    }
+    moderatorUserIds = Array.from(new Set(moderatorUserIds));
+    fallbackModeratorCount = moderatorUserIds.length;
+
+    const moderatorIdSet = new Set(moderatorUserIds);
+    const filteredMemberIds = memberUserIds.filter(
+      (id) => id !== headUser?.id && !moderatorIdSet.has(id),
+    );
+    fallbackMembersOnlyCount = filteredMemberIds.length;
+
+    const sumXpTotals = async (userIds: string[], context: string) => {
+      if (userIds.length === 0) return 0;
+      const { data, error } = await supabaseAdmin
+        .from('users')
+        .select('id, xp_total')
+        .in('id', userIds);
+      if (error) {
+        console.error(`[houses/profile] Failed to load XP totals for ${context}`, error);
+        return 0;
+      }
+      return (
+        data?.reduce((sum: number, row: { xp_total: number | null }) => sum + (row.xp_total ?? 0), 0) ??
+        0
+      );
+    };
+
+    fallbackMemberXp = await sumXpTotals(filteredMemberIds, 'members');
+    fallbackModeratorXp = await sumXpTotals(moderatorUserIds, 'moderators');
+
+    const fallbackParticipants =
+      fallbackMembersOnlyCount + fallbackHeadCount + fallbackModeratorCount;
+    const fallbackTotalXp = fallbackMemberXp + fallbackHeadXp + fallbackModeratorXp;
+
+    aggregates.totalXp = aggregates.totalXp ?? fallbackTotalXp;
+    aggregates.participantCount = aggregates.participantCount ?? fallbackParticipants;
+    aggregates.registeredMembers = aggregates.registeredMembers ?? fallbackMembersOnlyCount;
+    aggregates.headCount = aggregates.headCount ?? fallbackHeadCount;
+    aggregates.moderatorCount = aggregates.moderatorCount ?? fallbackModeratorCount;
+    aggregates.headXp = aggregates.headXp ?? fallbackHeadXp;
+    aggregates.moderatorXp = aggregates.moderatorXp ?? fallbackModeratorXp;
+    aggregates.memberXp = aggregates.memberXp ?? fallbackMemberXp;
   }
+
+  const xpBreakdown = {
+    head: aggregates.headXp ?? 0,
+    moderators: aggregates.moderatorXp ?? 0,
+    members: aggregates.memberXp ?? 0,
+  };
+
+  const roleCounts = {
+    head: aggregates.headCount ?? fallbackHeadCount,
+    moderators: aggregates.moderatorCount ?? fallbackModeratorCount,
+    members: aggregates.registeredMembers ?? fallbackMembersOnlyCount,
+  };
+
+  const computedMemberCount =
+    aggregates.participantCount ?? roleCounts.head + roleCounts.moderators + roleCounts.members;
+  const computedXpTotal =
+    aggregates.totalXp ?? xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
 
   const { data: onboardingStatus, error: onboardingStatusError } = await supabaseAdmin
     .from('house_onboarding_status')
@@ -432,7 +527,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       },
       metrics: {
         memberCount: computedMemberCount,
+        registeredMembers: roleCounts.members,
         xpTotal: computedXpTotal,
+        xpBreakdown,
+        roleCounts,
         termAcceptances: termCount ?? 0,
         onboarding: {
           published: onboardingStatus?.published_popups ?? 0,

@@ -53,6 +53,17 @@ type HouseLeaderboardEntry = {
   memberCount: number;
   headCount: number;
   moderatorCount: number;
+  xpBreakdown: {
+    head: number;
+    moderators: number;
+    members: number;
+  };
+  participantBreakdown: {
+    total: number;
+    head: number;
+    moderators: number;
+    members: number;
+  };
 };
 
 type HousesSummary = {
@@ -427,6 +438,7 @@ type RankingEntry = {
   valueLabel: string;
   valueClass?: string;
   extra?: string;
+  meta?: string;
   highlight?: boolean;
 };
 
@@ -484,6 +496,9 @@ type RankingEntry = {
                   <p className={`text-sm font-semibold ${entry.valueClass ?? 'text-[#5af3ff]'}`}>
                     {entry.valueLabel}
                   </p>
+                  {entry.meta && (
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-200">{entry.meta}</p>
+                  )}
                   {entry.extra && (
                     <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{entry.extra}</p>
                   )}
@@ -514,14 +529,23 @@ type RankingEntry = {
     highlight: matchesCurrentUser(userEntry.id, userEntry.username),
   }));
 
-  const houseEntries: RankingEntry[] = houseLeaderboard.map((house, index) => ({
-    key: house.houseId,
-    rank: index + 1,
-    title: stripCountryFromName(house.name, house.countryCode),
-    subtitle: formatSubtitle(house.countryCode, house.countryCode ? getCountryName(house.countryCode) : t('leaderboard.countryRankings')),
-    valueLabel: `${formatNumber(house.totalXp ?? 0)} XP`,
-    extra: house.sportName || house.sportCode || '',
-  }));
+  const houseEntries: RankingEntry[] = houseLeaderboard.map((house, index) => {
+    const xpHead = house.xpBreakdown?.head ?? 0;
+    const xpModerators = house.xpBreakdown?.moderators ?? 0;
+    const xpMembers = house.xpBreakdown?.members ?? 0;
+    return {
+      key: house.houseId,
+      rank: index + 1,
+      title: stripCountryFromName(house.name, house.countryCode),
+      subtitle: formatSubtitle(
+        house.countryCode,
+        house.countryCode ? getCountryName(house.countryCode) : t('leaderboard.countryRankings'),
+      ),
+      valueLabel: `${formatNumber(house.totalXp ?? 0)} XP`,
+      meta: `Head ${formatNumber(xpHead)} · Mods ${formatNumber(xpModerators)} · Membros ${formatNumber(xpMembers)}`,
+      extra: house.sportName || house.sportCode || '',
+    };
+  });
 
   const countryEntries: RankingEntry[] = countryLeaders.map((country, index) => ({
     key: country.code,

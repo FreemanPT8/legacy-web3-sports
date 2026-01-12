@@ -71,9 +71,16 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
                 <span>{house.sportCode}</span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <MetricCard label="Membros" value={house.metrics.memberCount.toLocaleString()} />
-              <MetricCard label="XP total" value={house.metrics.xpTotal.toLocaleString()} />
+            <div className="grid gap-3 text-sm sm:grid-cols-3">
+              <MetricCard label="Participantes totais" value={house.metrics.memberCount.toLocaleString()} />
+              <MetricCard label="Membros registados" value={house.metrics.registeredMembers.toLocaleString()} />
+              <MetricCard label="XP total" value={`${house.metrics.xpTotal.toLocaleString()} XP`} />
+              <MetricCard label="XP Head" value={`${house.metrics.xpBreakdown.head.toLocaleString()} XP`} />
+              <MetricCard
+                label="XP Moderadores"
+                value={`${house.metrics.xpBreakdown.moderators.toLocaleString()} XP`}
+              />
+              <MetricCard label="XP Membros" value={`${house.metrics.xpBreakdown.members.toLocaleString()} XP`} />
               <MetricCard label="Termos aceites" value={house.metrics.termAcceptances.toLocaleString()} />
               <MetricCard label="Pop-ups prontos" value={house.metrics.onboarding.published.toLocaleString()} />
             </div>

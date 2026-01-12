@@ -264,10 +264,26 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-white/80">
               <div className="grid gap-3 sm:grid-cols-2">
-                <ProgressStat label="Membros confirmados" value={metrics.memberCount.toLocaleString()} />
-                <ProgressStat label="XP total" value={metrics.xpTotal.toLocaleString()} />
+                <ProgressStat label="Participantes totais" value={metrics.memberCount.toLocaleString()} />
+                <ProgressStat label="Membros registados" value={metrics.registeredMembers.toLocaleString()} />
+                <ProgressStat label="XP total" value={`${metrics.xpTotal.toLocaleString()} XP`} />
                 <ProgressStat label="Termos aceites" value={metrics.termAcceptances.toLocaleString()} />
                 <ProgressStat label="Pop-ups publicados" value={metrics.onboarding.published.toLocaleString()} />
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-xs text-white/80">
+                <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">Distribuição de XP</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <ProgressStat label="Head" value={`${metrics.xpBreakdown.head.toLocaleString()} XP`} />
+                  <ProgressStat
+                    label="Moderadores"
+                    value={`${metrics.xpBreakdown.moderators.toLocaleString()} XP`}
+                  />
+                  <ProgressStat label="Membros" value={`${metrics.xpBreakdown.members.toLocaleString()} XP`} />
+                </div>
+                <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-white/60">
+                  Head: {metrics.roleCounts.head} · Moderadores: {metrics.roleCounts.moderators} · Membros:{' '}
+                  {metrics.roleCounts.members}
+                </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
                 <p className="font-semibold text-white/90">Próximos passos</p>

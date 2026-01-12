@@ -649,10 +649,11 @@ export default function AdminHouseGovernancePage() {
                     </p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-xs text-white/70">
-                    <p>Membros: {profileHouse.metrics.memberCount.toLocaleString()}</p>
-                    <p>
-                      XP total (Head + membros): {profileHouse.metrics.xpTotal.toLocaleString()}
-                    </p>
+                    <p>Participantes totais: {profileHouse.metrics.memberCount.toLocaleString()}</p>
+                    <p>Membros registados: {profileHouse.metrics.registeredMembers.toLocaleString()}</p>
+                    <p>XP do Head: {profileHouse.metrics.xpBreakdown.head.toLocaleString()}</p>
+                    <p>XP dos moderadores: {profileHouse.metrics.xpBreakdown.moderators.toLocaleString()}</p>
+                    <p>XP dos membros: {profileHouse.metrics.xpBreakdown.members.toLocaleString()}</p>
                     <p>
                       Termos aceites:{' '}
                       <span className="font-semibold text-white">{profileHouse.metrics.termAcceptances}</span>

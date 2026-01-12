@@ -20,6 +20,12 @@ type HouseTotalsRow = {
   house_id: string;
   total_xp: number | null;
   member_count: number | null;
+  member_only_count: number | null;
+  head_count: number | null;
+  head_xp: number | null;
+  moderator_count: number | null;
+  moderator_xp: number | null;
+  member_xp: number | null;
 };
 
 type HouseRoleRow = {
@@ -46,6 +52,17 @@ interface HouseLeaderboardEntry {
   headCount: number;
   moderatorCount: number;
   createdAt: string | null;
+  xpBreakdown: {
+    head: number;
+    moderators: number;
+    members: number;
+  };
+  participantBreakdown: {
+    total: number;
+    head: number;
+    moderators: number;
+    members: number;
+  };
 }
 
 const resolveName = (
@@ -120,7 +137,9 @@ export async function GET(request: NextRequest) {
 
     const totalsPromise = supabaseAdmin
       .from('house_xp_totals')
-      .select('house_id, total_xp, member_count')
+      .select(
+        'house_id, total_xp, member_count, member_only_count, head_count, head_xp, moderator_count, moderator_xp, member_xp',
+      )
       .in('house_id', houseIds);
 
     const sportsPromise =
@@ -199,10 +218,34 @@ export async function GET(request: NextRequest) {
       .map<HouseLeaderboardEntry>((house) => {
         const totals = totalsMap.get(house.id);
         const sport = sportsMap.get(house.sport_id) || null;
-        const headCount = headCountMap.get(house.id) ?? 0;
-        const moderatorCount = moderatorCountMap.get(house.id) ?? 0;
-        const totalXp = totals?.total_xp ?? 0;
-        const memberCount = totals?.member_count ?? 0;
+        const viewHeadCount = typeof totals?.head_count === 'number' ? totals.head_count : null;
+        const viewModeratorCount =
+          typeof totals?.moderator_count === 'number' ? totals.moderator_count : null;
+        const headCount = viewHeadCount ?? headCountMap.get(house.id) ?? 0;
+        const moderatorCount = viewModeratorCount ?? moderatorCountMap.get(house.id) ?? 0;
+        const membersOnly =
+          typeof totals?.member_only_count === 'number'
+            ? totals.member_only_count
+            : null;
+        const participantCount =
+          typeof totals?.member_count === 'number'
+            ? totals.member_count
+            : headCount + moderatorCount + (membersOnly ?? 0);
+        const xpBreakdown = {
+          head: totals?.head_xp ?? 0,
+          moderators: totals?.moderator_xp ?? 0,
+          members: totals?.member_xp ?? 0,
+        };
+        const totalXp =
+          totals?.total_xp ??
+          xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
+        const memberCount = participantCount;
+        const participantBreakdown = {
+          total: memberCount,
+          head: headCount,
+          moderators: moderatorCount,
+          members: membersOnly ?? Math.max(memberCount - headCount - moderatorCount, 0),
+        };
         const sportName = sport ? resolveName(sport.name_i18n, sport.code) : null;
         const houseName = resolveName(house.name_i18n, sportName);
 
@@ -218,6 +261,8 @@ export async function GET(request: NextRequest) {
           headCount,
           moderatorCount,
           createdAt: house.created_at,
+          xpBreakdown,
+          participantBreakdown,
         };
       })
       .sort((a, b) => b.totalXp - a.totalXp || (b.memberCount - a.memberCount));
