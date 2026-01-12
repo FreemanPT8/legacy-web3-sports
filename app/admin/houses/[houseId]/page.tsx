@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +16,7 @@ import { SafeImage } from '@/app/components/SafeImage';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
+import { HouseMembersList } from '@/app/houses/[houseKey]/HouseMembersList';
 
 type GovernanceResponse = {
   success: true;
@@ -467,6 +466,9 @@ export default function AdminHouseGovernancePage() {
 
   const { house } = data;
   const profileHouse = profileData?.profile.house;
+  const houseBadgeLabel = profileHouse
+    ? `House of ${profileHouse.sportCode} ${profileHouse.countryCode ?? ''}`.trim()
+    : 'House';
   const supportModeLabel: Record<string, string> = {
     async: 'Assíncrono (mensagens)',
     sync: 'Síncrono (calls)',
@@ -485,7 +487,6 @@ export default function AdminHouseGovernancePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
-      <Header />
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 md:px-6">
         <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#041021]/90 via-[#021624]/80 to-[#021f2f]/80 p-6 shadow-[0_35px_90px_rgba(3,10,25,0.6)] md:p-10">
           <div className="space-y-3">
@@ -496,6 +497,27 @@ export default function AdminHouseGovernancePage() {
             </p>
           </div>
         </section>
+
+        {profileHouse ? (
+          <section className="grid gap-6">
+            <Card className="border-white/10 bg-[#03131d]/90">
+              <CardHeader>
+                <CardTitle className="text-lg text-white">Rede oficial da House</CardTitle>
+                <CardDescription className="text-xs text-white/60">
+                  Lista de todos os utilizadores já vinculados (Head, moderadores e membros) para este desporto e país.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <HouseMembersList
+                  roster={profileHouse.roster}
+                  badgeLabel={houseBadgeLabel}
+                  totalCount={profileHouse.metrics.memberCount}
+                  variant="private"
+                />
+              </CardContent>
+            </Card>
+          </section>
+        ) : null}
 
         <section className="grid gap-6 lg:grid-cols-3">
           {profileLoading ? (
@@ -1191,7 +1213,6 @@ export default function AdminHouseGovernancePage() {
           </Button>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }
