@@ -118,8 +118,7 @@ export function HouseMembersList({
           </span>
         </p>
         <p className="text-xs text-slate-400">
-          Mostramos até {variant === 'public' ? 48 : 48} membros nas listas
-          públicas. Contacta o Head para detalhes adicionais.
+          Mostramos ate {variant === 'public' ? 48 : 48} membros nas listas publicas. Contacta o Head para detalhes adicionais.
         </p>
       </div>
       {sections.map((section) => (
@@ -130,7 +129,12 @@ export function HouseMembersList({
             </p>
             {section.key === 'members' && roster.members.length > 0 ? (
               <p className="text-[11px] text-slate-400">
-                A mostrar {roster.members.length} de {Math.max(totalCount - (roster.head ? 1 : 0) - roster.moderators.length, roster.members.length)} membros
+                A mostrar {roster.members.length} de{' '}
+                {Math.max(
+                  roster.members.length,
+                  totalCount - (roster.head ? 1 : 0) - roster.moderators.length,
+                )}{' '}
+                membros
               </p>
             ) : null}
           </div>

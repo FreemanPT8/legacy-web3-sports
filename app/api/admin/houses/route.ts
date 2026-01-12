@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/middleware';
 import { getCountryName } from '@/lib/countries'; // 👈 NOVO
 import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
 import { logHouseHistory } from '@/lib/houses/history';
+import { isMissingTable } from '@/lib/postgres';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -278,7 +279,32 @@ export async function GET(request: NextRequest) {
       totalMembersByHouseId.set(row.house_id, row.member_count ?? 0);
     }
 
-    // 6) Moderators count por house
+    // 6) Contagem fallback de membros oficiais (sem Head/Moderadores)
+    const membersCountByHouseId = new Map<string, number>();
+    try {
+      const { data: memberRows, error: membersError } = await supabaseAdmin
+        .from('user_houses')
+        .select('house_id')
+        .eq('membership_role', 'MEMBER')
+        .is('removed_at', null)
+        .in('house_id', houseIds);
+      if (membersError) {
+        if (!isMissingTable(membersError)) {
+          console.error('Error loading user_houses member counts:', membersError);
+        }
+      } else {
+        (memberRows ?? []).forEach((row: { house_id: string }) => {
+          membersCountByHouseId.set(
+            row.house_id,
+            (membersCountByHouseId.get(row.house_id) || 0) + 1,
+          );
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error loading user_houses member counts:', error);
+    }
+
+    // 7) Moderators count por house
     const { data: modsData, error: modsError } = await supabaseAdmin
       .from('house_moderators')
       .select('house_id, user_id')
@@ -297,7 +323,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 7) Montar DTO final
+    // 8) Montar DTO final
     const result: AdminHouseDTO[] = houses.map((h) => {
       const sport = h.sport_id ? sportsById[h.sport_id] : undefined;
       const sportName = sport
@@ -328,7 +354,11 @@ export async function GET(request: NextRequest) {
             }
           : null,
         moderators_count: moderatorsCountByHouseId.get(h.id) || 0,
-        total_members: totalMembersByHouseId.get(h.id) ?? 0,
+        total_members:
+          totalMembersByHouseId.get(h.id) ??
+          (membersCountByHouseId.get(h.id) || 0) +
+            (headUser ? 1 : 0) +
+            (moderatorsCountByHouseId.get(h.id) || 0),
       };
     });
 

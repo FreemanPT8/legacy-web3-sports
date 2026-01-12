@@ -429,8 +429,19 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
   const ROSTER_MEMBER_LIMIT = 48;
   const ROSTER_MODERATOR_LIMIT = 24;
   const rosterHead = headUser ? toRosterEntry(headUser) : null;
-  const rosterModerators = await loadRosterUsers(moderatorUserIds.slice(0, ROSTER_MODERATOR_LIMIT), 'moderators');
-  const rosterMembers = await loadRosterUsers(filteredMemberIds.slice(0, ROSTER_MEMBER_LIMIT), 'members');
+  let rosterModerators: HouseMemberSummary[] = [];
+  let rosterMembers: HouseMemberSummary[] = [];
+  try {
+    rosterModerators = await loadRosterUsers(
+      moderatorUserIds.slice(0, ROSTER_MODERATOR_LIMIT),
+      'moderators',
+    );
+    rosterMembers = await loadRosterUsers(filteredMemberIds.slice(0, ROSTER_MEMBER_LIMIT), 'members');
+  } catch (error) {
+    console.error('[houses/profile] Failed to build roster lists', error);
+    rosterModerators = [];
+    rosterMembers = [];
+  }
 
   const { data: onboardingStatus, error: onboardingStatusError } = await supabaseAdmin
     .from('house_onboarding_status')

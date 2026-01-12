@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { verifyAuth } from '@/lib/auth';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { syncUserHouseMembership } from '@/lib/user-houses';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -100,6 +101,15 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Failed to assign sport' },
         { status: 500 },
       );
+    }
+
+    try {
+      await syncUserHouseMembership(authUser.id, {
+        assignedVia: 'PROFILE',
+        logPrefix: 'profile:sport',
+      });
+    } catch (error) {
+      console.error('[profile/sport] Failed to sync house membership after sport update', error);
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
