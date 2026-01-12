@@ -333,6 +333,7 @@ export async function GET(request: NextRequest) {
     // 7) montar resposta final
     const result = houses.map((house) => {
       const sport = sportById.get(house.sport_id) || null;
+      const stats = statsByHouseId.get(house.id);
 
       // Head da House
       const headRow = headByHouse.get(house.id) || null;
@@ -371,6 +372,22 @@ export async function GET(request: NextRequest) {
 
       const hasHead = !!headUser;
       const publicStatus = normalizeStatusFromData(house.status, hasHead);
+      const headCount = stats?.head_count ?? (headUser ? 1 : 0);
+      const moderatorCount =
+        stats?.moderator_count ?? (Array.isArray(moderators) ? moderators.length : 0);
+      const memberOnlyCount =
+        stats?.member_only_count ??
+        Math.max((stats?.member_count ?? 0) - headCount - moderatorCount, 0);
+      const totalMembers =
+        stats?.member_count ?? headCount + moderatorCount + memberOnlyCount;
+      const xpBreakdown = {
+        head: stats?.head_xp ?? 0,
+        moderators: stats?.moderator_xp ?? 0,
+        members: stats?.member_xp ?? (stats?.total_xp ?? 0),
+      };
+      const totalXp =
+        stats?.total_xp ??
+        xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
 
       return {
         id: house.id,
@@ -405,8 +422,15 @@ export async function GET(request: NextRequest) {
           : null,
 
         moderators,
-        member_count: statsByHouseId.get(house.id)?.member_count ?? 0,
-        xp_total: statsByHouseId.get(house.id)?.total_xp ?? 0,
+        member_count: totalMembers,
+        xp_total: totalXp,
+        xp_breakdown: xpBreakdown,
+        participant_breakdown: {
+          total: totalMembers,
+          head: headCount,
+          moderators: moderatorCount,
+          members: memberOnlyCount,
+        },
       };
     });
 

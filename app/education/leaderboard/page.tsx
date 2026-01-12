@@ -82,6 +82,17 @@ type SportsHouse = {
   member_count?: number | null;
   head?: Record<string, any> | null;
   moderators?: Array<Record<string, any>>;
+  xp_breakdown?: {
+    head: number;
+    moderators: number;
+    members: number;
+  };
+  participant_breakdown?: {
+    total: number;
+    head: number;
+    moderators: number;
+    members: number;
+  };
 };
 
 type SportsHousesApiResponse = {
@@ -266,15 +277,33 @@ export default function LeaderboardPage() {
               const fallbackJson: SportsHousesApiResponse = await fallbackRes.json();
               if (fallbackJson.success && Array.isArray(fallbackJson.houses)) {
                 leaderboardEntries = fallbackJson.houses.map((house) => {
-                  const headCount = house.head ? 1 : 0;
-                  const moderatorCount = Array.isArray(house.moderators)
-                    ? house.moderators.length
-                    : 0;
-                  const totalMembers = house.member_count ?? headCount + moderatorCount;
-                  const memberOnly = Math.max(
-                    totalMembers - headCount - moderatorCount,
-                    0,
-                  );
+                  const xpBreakdown = {
+                    head: house.xp_breakdown?.head ?? 0,
+                    moderators: house.xp_breakdown?.moderators ?? 0,
+                    members:
+                      house.xp_breakdown?.members ??
+                      Math.max(
+                        (house.xp_total ?? 0) -
+                          (house.xp_breakdown?.head ?? 0) -
+                          (house.xp_breakdown?.moderators ?? 0),
+                        0,
+                      ),
+                  };
+                  const totalMembers =
+                    house.participant_breakdown?.total ??
+                    house.member_count ??
+                    0;
+                  const headCount =
+                    house.participant_breakdown?.head ??
+                    (house.head ? 1 : 0);
+                  const moderatorCount =
+                    house.participant_breakdown?.moderators ??
+                    (Array.isArray(house.moderators) ? house.moderators.length : 0);
+                  const memberOnly =
+                    house.participant_breakdown?.members ??
+                    Math.max(totalMembers - headCount - moderatorCount, 0);
+                  const totalXp =
+                    xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
 
                   return {
                     houseId: house.id,
@@ -283,15 +312,15 @@ export default function LeaderboardPage() {
                     sportName: house.sport?.name ?? null,
                     countryCode: house.country_code,
                     status: (house.status ?? 'IN_DEVELOPMENT') as HouseLeaderboardEntry['status'],
-                    totalXp: house.xp_total ?? 0,
+                    totalXp,
                     memberCount: totalMembers,
                     headCount,
                     moderatorCount,
                     createdAt: house.created_at,
                     xpBreakdown: {
-                      head: 0,
-                      moderators: 0,
-                      members: house.xp_total ?? 0,
+                      head: xpBreakdown.head,
+                      moderators: xpBreakdown.moderators,
+                      members: xpBreakdown.members,
                     },
                     participantBreakdown: {
                       total: totalMembers,
