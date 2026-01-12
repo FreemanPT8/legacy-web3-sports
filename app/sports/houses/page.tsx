@@ -374,14 +374,6 @@ function HousesSection({
                   <p className="text-[11px] text-slate-200">{headLine}</p>
                 </div>
 
-                <div className="mb-2 flex items-center justify-end">
-                  <span className="text-[11px] text-slate-400">
-                    {house.created_at
-                      ? new Date(house.created_at).toLocaleDateString('pt-PT')
-                      : 'Data por definir'}
-                  </span>
-                </div>
-
                 <div className="space-y-2 text-[11px] text-slate-400">
                   {house.moderators.length > 0 ? (
                     <p>
