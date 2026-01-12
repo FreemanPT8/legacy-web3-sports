@@ -161,7 +161,10 @@ async function handleRequest(request: NextRequest) {
     let totalResolved = 0;
     const warnings: string[] = [];
     const activeHouses =
-      houses?.filter((house) => (house.governance_status ?? 'active').toLowerCase() === 'active') ?? [];
+      (houses ?? []).filter(
+        (house: { governance_status: string | null }) =>
+          (house.governance_status ?? 'active').toLowerCase() === 'active',
+      ) ?? [];
 
     for (const house of activeHouses) {
       const { triggered, resolved, warnings: houseWarnings } = await scanHouse({ house: house as HouseRow });
