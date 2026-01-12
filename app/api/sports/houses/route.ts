@@ -26,7 +26,15 @@ type HouseRow = {
   name_i18n: Record<string, string> | null;
   status: string | null;
   created_at: string | null;
+  avatar_url?: string | null;
+  cover_image_url?: string | null;
   house_key?: string | null;
+};
+
+type HouseStatsRow = {
+  house_id: string;
+  member_count: number | null;
+  total_xp: number | null;
 };
 
 type SportRow = {
@@ -96,7 +104,9 @@ export async function GET(request: NextRequest) {
     // 1) Buscar todas as houses
     const { data: housesData, error: housesError } = await supabaseAdmin
       .from('houses_of_sports')
-      .select('id, sport_id, country_code, name_i18n, status, created_at, house_key');
+      .select(
+        'id, sport_id, country_code, name_i18n, status, created_at, house_key, avatar_url, cover_image_url',
+      );
 
     if (housesError) {
       console.error('Error loading houses_of_sports:', housesError);
@@ -147,6 +157,25 @@ export async function GET(request: NextRequest) {
 
     // 3) House heads
     const houseIds = houses.map((h) => h.id);
+
+    const statsByHouseId = new Map<string, { member_count: number; total_xp: number }>();
+    if (houseIds.length > 0) {
+      const { data: statsData, error: statsError } = await supabaseAdmin
+        .from('house_xp_totals')
+        .select('house_id, member_count, total_xp')
+        .in('house_id', houseIds);
+
+      if (statsError) {
+        console.warn('Failed to load house_xp_totals for /sports/houses', statsError);
+      } else {
+        for (const row of (statsData ?? []) as HouseStatsRow[]) {
+          statsByHouseId.set(row.house_id, {
+            member_count: row.member_count ?? 0,
+            total_xp: row.total_xp ?? 0,
+          });
+        }
+      }
+    }
 
     const { data: headsData, error: headsError } = await supabaseAdmin
       .from('house_heads')
@@ -313,6 +342,8 @@ export async function GET(request: NextRequest) {
 
       return {
         id: house.id,
+        avatar_url: house.avatar_url ?? null,
+        cover_image_url: house.cover_image_url ?? null,
         country_code: house.country_code,
         status: publicStatus,
         created_at: house.created_at,
@@ -342,6 +373,8 @@ export async function GET(request: NextRequest) {
           : null,
 
         moderators,
+        member_count: statsByHouseId.get(house.id)?.member_count ?? 0,
+        xp_total: statsByHouseId.get(house.id)?.total_xp ?? 0,
       };
     });
 

@@ -339,6 +339,10 @@ function HousesSection({
           const headUsername = house.head?.username
             ? `@${house.head.username}`
             : null;
+          const firstModerator = house.moderators?.[0];
+          const moderatorUsername = firstModerator?.username
+            ? `@${firstModerator.username}`
+            : null;
 
           const initialsSource = house.head?.username || house.name || 'H';
 
@@ -389,11 +393,23 @@ function HousesSection({
                     </div>
                   </div>
 
-                  {house.country_code && (
-                    <span className="rounded px-2 py-0.5 text-[10px] font-mono uppercase text-cyan-100 border border-white/20 bg-[#020b16]">
-                      {house.country_code}
-                    </span>
-                  )}
+                  <div className="flex flex-col items-end gap-1">
+                    {house.country_code && (
+                      <span className="rounded px-2 py-0.5 text-[10px] font-mono uppercase text-cyan-100 border border-white/20 bg-[#020b16]">
+                        {house.country_code}
+                      </span>
+                    )}
+                    {headUsername && (
+                      <span className="text-[10px] text-slate-200">
+                        Head {headUsername}
+                      </span>
+                    )}
+                    {moderatorUsername && (
+                      <span className="text-[10px] text-slate-400">
+                        Mod {moderatorUsername}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mb-2 flex items-center justify-between">
@@ -407,24 +423,40 @@ function HousesSection({
                   </span>
                 </div>
 
-                {headUsername ? (
-                  <p className="mt-1 text-[11px] text-slate-200">
-                    Head of House:{' '}
-                    <span className="font-medium text-white">
-                      {headUsername}
-                    </span>
+                <div className="space-y-2 text-[11px] text-slate-200">
+                  {headUsername ? (
+                    <p>
+                      Head of House:{' '}
+                      <span className="font-medium text-white">{headUsername}</span>
+                    </p>
+                  ) : (
+                    <p className="text-slate-400">Head of House a definir.</p>
+                  )}
+                  <p className="text-slate-400">
+                    {house.moderators.length > 0
+                      ? `${house.moderators.length} moderador(es) atribuídos.`
+                      : 'Sem moderadores definidos ainda.'}
                   </p>
-                ) : (
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    Head of House a definir.
-                  </p>
-                )}
+                </div>
 
-                <p className="mt-auto pt-2 text-[11px] text-slate-400">
-                  {house.moderators.length > 0
-                    ? `${house.moderators.length} moderador(es) atribuídos.`
-                    : 'Sem moderadores definidos ainda.'}
-                </p>
+                <div className="mt-3 flex items-center justify-between rounded-lg border border-white/10 bg-[#020b16] px-3 py-2 text-xs text-slate-200">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                      Membros
+                    </p>
+                    <p className="text-sm font-semibold text-white">
+                      {(house.member_count ?? 0).toLocaleString('pt-PT')}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                      XP Total
+                    </p>
+                    <p className="text-sm font-semibold text-white">
+                      {(house.xp_total ?? 0).toLocaleString('pt-PT')}
+                    </p>
+                  </div>
+                </div>
               </div>
             </Link>
           );
