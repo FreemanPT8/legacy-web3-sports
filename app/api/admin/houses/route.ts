@@ -1,9 +1,9 @@
-﻿// app/api/admin/houses/route.ts
+// app/api/admin/houses/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
-import { getCountryName } from '@/lib/countries'; // ðŸ‘ˆ NOVO
-import { syncUserHouseMembership } from '@/lib/user-houses';
+import { getCountryName } from '@/lib/countries'; // 👈 NOVO
+import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -396,7 +396,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ðŸ”¹ 1) Garantir que o sport existe e obter nome
+    // 🔹 1) Garantir que o sport existe e obter nome
     const { data: sportData, error: sportError } = await supabaseAdmin
       .from('sports')
       .select('id, code, name_i18n')
@@ -422,8 +422,8 @@ export async function POST(request: NextRequest) {
     const sportName =
       resolveLocaleName(sportRow.name_i18n, sportRow.code) || 'Sport';
 
-    // ðŸ”¹ 2) Obter nome do paÃ­s e gerar nome base da House
-    const countryName = getCountryName(rawCountryCode); // ðŸ‘ˆ AQUI
+    // 🔹 2) Obter nome do país e gerar nome base da House
+    const countryName = getCountryName(rawCountryCode); // 👈 AQUI
     const baseName = `House of ${sportName} ${countryName}`;
 
     const name_i18n = {
@@ -455,7 +455,7 @@ export async function POST(request: NextRequest) {
       houseKey = `${baseKey}_${attempt++}`;
     }
 
-    // Ã°ÂŸÂ”Â¹ 3) Criar House com name_i18n preenchido
+    // ð¹ 3) Criar House com name_i18n preenchido
     const { data, error } = await supabaseAdmin
       .from('houses_of_sports')
       .insert({
@@ -482,9 +482,9 @@ export async function POST(request: NextRequest) {
     const houseSportId = (data as { sport_id: string | null }).sport_id;
     const houseCountry = (data as { country_code: string | null }).country_code;
 
-    await syncExistingMembersForHouse(id, houseSportId, houseCountry);
+    await syncHouseMembersBySportCountry(id, houseSportId, houseCountry, { logPrefix: 'house:create' });
 
-    // Responder de forma compatÃ­vel com o teu CreateHousePage
+    // Responder de forma compatível com o teu CreateHousePage
     return NextResponse.json<HousesPostResponse>(
       {
         success: true,
@@ -502,62 +502,5 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function syncExistingMembersForHouse(
-  houseId: string,
-  sportId: string | null,
-  countryCode: string | null,
-) {
-  if (!sportId || !countryCode) return;
-  if (!supabaseAdmin) return;
 
-  try {
-    const upperCountry = countryCode.toUpperCase();
-    const candidateIds = new Set<string>();
-
-    const { data: primaryMatches, error: primaryError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('primary_sport_id', sportId)
-      .eq('primary_country_code', upperCountry);
-
-    if (primaryError) {
-      console.error('[admin/houses] Failed to load users for membership sync (primary fields):', primaryError);
-    } else {
-      primaryMatches?.forEach((row: { id: string | null }) => {
-        if (row?.id) candidateIds.add(row.id);
-      });
-    }
-
-    const legacyCountryName = getCountryName(upperCountry);
-    const { data: legacyMatches, error: legacyError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('sport_id', sportId)
-      .eq('country', legacyCountryName);
-
-    if (legacyError) {
-      console.error('[admin/houses] Failed legacy user lookup for membership sync:', legacyError);
-    } else {
-      legacyMatches?.forEach((row: { id: string | null }) => {
-        if (row?.id) candidateIds.add(row.id);
-      });
-    }
-
-    if (!candidateIds.size) return;
-
-    await Promise.all(
-      Array.from(candidateIds).map(async (userId) => {
-        const result = await syncUserHouseMembership(userId, {
-          assignedVia: 'ADMIN_SYNC',
-          logPrefix: `house:${houseId}`,
-        });
-        if (!result.success) {
-          console.error('[admin/houses] Failed to sync membership for user', userId, result.error);
-        }
-      }),
-    );
-  } catch (error) {
-    console.error('[admin/houses] Unexpected error syncing members for new house:', error);
-  }
-}
 

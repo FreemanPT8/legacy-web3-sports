@@ -28,6 +28,7 @@ type GovernanceResponse = {
     monthlyCapacity: number | null;
     supportMode: string | null;
     governanceStatus: string;
+    publicStatus: HouseStatus;
     isExemplar: boolean;
     pendingRequests: number;
     memberCount: number;
@@ -246,6 +247,7 @@ export default function AdminHouseGovernancePage() {
   const [monthlyCapacity, setMonthlyCapacity] = useState<string>('');
   const [supportMode, setSupportMode] = useState<string>('async');
   const [governanceStatus, setGovernanceStatus] = useState<string>('active');
+  const [houseStatus, setHouseStatus] = useState<HouseStatus>('development');
   const [isExemplar, setIsExemplar] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
   const [alerts, setAlerts] = useState<
@@ -277,6 +279,7 @@ export default function AdminHouseGovernancePage() {
       setMonthlyCapacity(data.house.monthlyCapacity?.toString() ?? '');
       setSupportMode(data.house.supportMode ?? 'async');
       setGovernanceStatus(data.house.governanceStatus ?? 'active');
+      setHouseStatus(data.house.publicStatus ?? 'development');
       setIsExemplar(Boolean(data.house.isExemplar));
       void loadAlerts(data.house.houseKey);
     }
@@ -313,6 +316,7 @@ export default function AdminHouseGovernancePage() {
         supportMode,
         governanceStatus,
         isExemplar,
+        houseStatus,
       };
       const response = await fetch(`/api/admin/houses/${params.houseId}/governance`, {
         method: 'PATCH',

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from './supabase';
-import { getCountryCodeFromName } from './countries';
+import { getCountryCodeFromName, getCountryName } from './countries';
 
 export type HouseMembershipRole = 'HEAD' | 'MODERATOR' | 'MEMBER';
 export type HouseAssignmentSource =
@@ -31,6 +31,13 @@ export interface SyncUserHouseMembershipResult {
 export interface SyncUserHouseMembershipOptions {
   assignedVia?: HouseAssignmentSource;
   logPrefix?: string;
+}
+
+export interface SyncHouseMembersResult {
+  success: boolean;
+  attempted: number;
+  assigned: number;
+  reason?: string;
 }
 
 const DEFAULT_SOURCE: HouseAssignmentSource = 'PROFILE';
@@ -215,5 +222,78 @@ export async function syncUserHouseMembership(
       success: false,
       error: 'Unexpected error syncing membership.',
     };
+  }
+}
+
+export async function syncHouseMembersBySportCountry(
+  houseId: string,
+  sportId?: string | null,
+  countryCode?: string | null,
+  options: { logPrefix?: string } = {},
+): Promise<SyncHouseMembersResult> {
+  if (!supabaseAdmin) {
+    return { success: false, attempted: 0, assigned: 0, reason: 'Supabase admin client unavailable.' };
+  }
+  if (!sportId || !countryCode) {
+    return { success: false, attempted: 0, assigned: 0, reason: 'Missing sport or country context.' };
+  }
+
+  const logPrefix = options.logPrefix ? `[${options.logPrefix}] ` : '';
+  try {
+    const upperCountry = countryCode.toUpperCase();
+    const candidateIds = new Set<string>();
+
+    const { data: primaryMatches, error: primaryError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('primary_sport_id', sportId)
+      .eq('primary_country_code', upperCountry);
+
+    if (primaryError) {
+      console.error(`${logPrefix}Failed to load users for membership sync (primary fields):`, primaryError);
+    } else {
+      primaryMatches?.forEach((row: { id: string | null }) => {
+        if (row?.id) candidateIds.add(row.id);
+      });
+    }
+
+    const legacyCountryName = getCountryName(upperCountry);
+    if (legacyCountryName) {
+      const { data: legacyMatches, error: legacyError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('sport_id', sportId)
+        .eq('country', legacyCountryName);
+
+      if (legacyError) {
+        console.error(`${logPrefix}Failed legacy user lookup for membership sync:`, legacyError);
+      } else {
+        legacyMatches?.forEach((row: { id: string | null }) => {
+          if (row?.id) candidateIds.add(row.id);
+        });
+      }
+    }
+
+    if (!candidateIds.size) {
+      return { success: true, attempted: 0, assigned: 0, reason: 'No matching users found.' };
+    }
+
+    let assigned = 0;
+    for (const userId of candidateIds) {
+      const result = await syncUserHouseMembership(userId, {
+        assignedVia: 'ADMIN_SYNC',
+        logPrefix: `${logPrefix}house:${houseId}`,
+      });
+      if (result.success && result.houseId) {
+        assigned += 1;
+      } else if (!result.success) {
+        console.error(`${logPrefix}Failed to sync membership for user ${userId}:`, result.error ?? result.reason);
+      }
+    }
+
+    return { success: true, attempted: candidateIds.size, assigned };
+  } catch (error) {
+    console.error(`${logPrefix}Unexpected error syncing members for house ${houseId}:`, error);
+    return { success: false, attempted: 0, assigned: 0, reason: 'Unexpected error syncing memberships.' };
   }
 }

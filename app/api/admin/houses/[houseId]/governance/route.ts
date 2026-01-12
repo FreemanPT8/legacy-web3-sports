@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { logHouseHistory } from '@/lib/houses/history';
+import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
 
 const SUPPORT_MODES = ['async', 'sync', 'hybrid'] as const;
 const GOVERNANCE_STATUSES = ['active', 'limited', 'paused', 'under_review'] as const;
@@ -10,8 +11,11 @@ const GOVERNANCE_STATUSES = ['active', 'limited', 'paused', 'under_review'] as c
 const POSTGRES_MISSING_COLUMN = '42703';
 const POSTGRES_MISSING_TABLE = '42P01';
 const BASE_SELECT =
-  'id, house_key, name_i18n, monthly_capacity, support_mode, governance_status, is_exemplar';
-const LEGACY_SELECT = 'id, house_key, name_i18n, monthly_capacity, governance_status';
+  'id, house_key, name_i18n, monthly_capacity, support_mode, governance_status, is_exemplar, sport_id, country_code, status';
+const LEGACY_SELECT = 'id, house_key, name_i18n, monthly_capacity, governance_status, status';
+
+type HouseStatus = 'development' | 'under_construction' | 'active';
+const PUBLIC_STATUSES: HouseStatus[] = ['development', 'under_construction', 'active'];
 
 function isMissingColumn(error?: { code?: string }) {
   return error?.code === POSTGRES_MISSING_COLUMN;
@@ -29,6 +33,12 @@ function missingTableResponse(table: string) {
     },
     { status: 500 },
   );
+}
+
+function normalizeHouseStatus(status?: string | null): HouseStatus {
+  if (!status) return 'development';
+  const normalized = status.toLowerCase() as HouseStatus;
+  return PUBLIC_STATUSES.includes(normalized) ? normalized : 'development';
 }
 
 async function loadHouse(houseId: string) {
@@ -105,6 +115,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
         monthlyCapacity: house.monthly_capacity ?? null,
         supportMode: house.support_mode ?? null,
         governanceStatus: house.governance_status ?? 'active',
+        publicStatus: normalizeHouseStatus(house.status ?? null),
         isExemplar: Boolean(house.is_exemplar),
         pendingRequests,
         memberCount,
@@ -124,6 +135,7 @@ type GovernancePayload = {
   supportMode?: string | null;
   governanceStatus?: string | null;
   isExemplar?: boolean;
+  houseStatus?: HouseStatus | null;
 };
 
 export async function PATCH(request: NextRequest, { params }: { params: { houseId: string } }) {
@@ -163,8 +175,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
   ) {
     return NextResponse.json({ success: false, error: 'Invalid governance status.' }, { status: 400 });
   }
+  if (
+    body.houseStatus &&
+    !PUBLIC_STATUSES.includes(body.houseStatus as HouseStatus)
+  ) {
+    return NextResponse.json({ success: false, error: 'Invalid public status.' }, { status: 400 });
+  }
 
   const updatePayload: Record<string, unknown> = {};
+  const previousPublicStatus = normalizeHouseStatus(currentHouse.status ?? null);
+  let nextPublicStatus = previousPublicStatus;
+  let shouldResyncMembers = false;
   if (body.monthlyCapacity !== undefined) {
     if (body.monthlyCapacity === null || Number.isNaN(body.monthlyCapacity)) {
       updatePayload.monthly_capacity = null;
@@ -182,6 +203,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
   }
   if (body.isExemplar !== undefined) {
     updatePayload.is_exemplar = Boolean(body.isExemplar);
+  }
+  if (body.houseStatus !== undefined) {
+    nextPublicStatus = normalizeHouseStatus(body.houseStatus);
+    updatePayload.status = nextPublicStatus;
+    if (previousPublicStatus !== 'active' && nextPublicStatus === 'active') {
+      shouldResyncMembers = true;
+    }
   }
 
   if (Object.keys(updatePayload).length === 0) {
@@ -213,9 +241,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
     }
     if (updateResult.error) throw updateResult.error;
     updatedRow = updateResult.data;
+    nextPublicStatus = normalizeHouseStatus(updatedRow?.status ?? currentHouse.status ?? null);
   } catch (error) {
     console.error('[admin/houses/governance] update failed', error);
     return NextResponse.json({ success: false, error: 'Unable to update governance fields.' }, { status: 500 });
+  }
+
+  if (shouldResyncMembers && nextPublicStatus === 'active') {
+    const sportId = (currentHouse as any)?.sport_id ?? updatedRow?.sport_id ?? null;
+    const countryCode = (currentHouse as any)?.country_code ?? updatedRow?.country_code ?? null;
+    if (sportId && countryCode) {
+      await syncHouseMembersBySportCountry(houseId, sportId, countryCode, { logPrefix: 'house:governance' });
+    }
   }
 
   await logHouseHistory({
@@ -228,15 +265,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
         supportMode: currentHouse.support_mode ?? null,
         governanceStatus: currentHouse.governance_status ?? 'active',
         isExemplar: Boolean(currentHouse.is_exemplar),
+        publicStatus: previousPublicStatus,
       },
       after: {
         monthlyCapacity: updatedRow?.monthly_capacity ?? currentHouse.monthly_capacity ?? null,
         supportMode: updatedRow?.support_mode ?? currentHouse.support_mode ?? null,
         governanceStatus: updatedRow?.governance_status ?? currentHouse.governance_status ?? 'active',
         isExemplar: Boolean(updatedRow?.is_exemplar ?? currentHouse.is_exemplar),
+        publicStatus: nextPublicStatus,
       },
     },
   });
 
   return NextResponse.json({ success: true });
 }
+
