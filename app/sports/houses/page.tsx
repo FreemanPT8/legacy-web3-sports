@@ -346,14 +346,9 @@ function HousesSection({
             ? `@${firstModerator.username}`
             : null;
 
-          const initialsSource = house.head?.username || house.name || 'H';
-
-          const initials = initialsSource
-            .split(' ')
-            .map((p) => p[0])
-            .join('')
-            .slice(0, 2)
-            .toUpperCase();
+          const headLine = headUsername
+            ? `Head of House: ${headUsername}`
+            : 'Head of House a definir.';
 
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
@@ -372,38 +367,16 @@ function HousesSection({
                   )}
                 </div>
 
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-white">
-                      {house.name}
-                    </p>
-                    {house.sport && (
-                      <p className="truncate text-[11px] text-slate-200">
-                        {house.sport.name} · {house.sport.code}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col items-end gap-1 text-[10px]">
-                    <span className="rounded px-2 py-0.5 font-mono uppercase text-slate-100 border border-white/20 bg-[#020b16]">
-                      {initials}
+                <div className="mb-2 flex flex-col gap-1">
+                  <p className="truncate text-base font-semibold text-white">
+                    {house.name}
+                  </p>
+                  <p className="text-[11px] text-slate-200">{headLine}</p>
+                  {house.country_code && (
+                    <span className="w-fit rounded px-2 py-0.5 text-[10px] font-mono uppercase text-cyan-100 border border-white/20 bg-[#020b16]">
+                      {house.country_code}
                     </span>
-                    {house.country_code && (
-                      <span className="rounded px-2 py-0.5 text-[10px] font-mono uppercase text-cyan-100 border border-white/20 bg-[#020b16]">
-                        {house.country_code}
-                      </span>
-                    )}
-                    {headUsername && (
-                      <span className="text-[10px] text-slate-200">
-                        Head {headUsername}
-                      </span>
-                    )}
-                    {moderatorUsername && (
-                      <span className="text-[10px] text-slate-400">
-                        Mod {moderatorUsername}
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 <div className="mb-2 flex items-center justify-between">
@@ -417,38 +390,38 @@ function HousesSection({
                   </span>
                 </div>
 
-                <div className="space-y-2 text-[11px] text-slate-200">
-                  {headUsername ? (
+                <div className="space-y-2 text-[11px] text-slate-400">
+                  {house.moderators.length > 0 ? (
                     <p>
-                      Head of House:{' '}
-                      <span className="font-medium text-white">{headUsername}</span>
+                      Moderadores:{' '}
+                      <span className="text-white">
+                        {house.moderators.length}
+                        {moderatorUsername ? ` (ex: ${moderatorUsername})` : ''}
+                      </span>
                     </p>
                   ) : (
-                    <p className="text-slate-400">Head of House a definir.</p>
+                    <p>Sem moderadores definidos ainda.</p>
                   )}
-                  <p className="text-slate-400">
-                    {house.moderators.length > 0
-                      ? `${house.moderators.length} moderador(es) atribuídos.`
-                      : 'Sem moderadores definidos ainda.'}
-                  </p>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between rounded-lg border border-white/10 bg-[#020b16] px-3 py-2 text-xs text-slate-200">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                      Membros
-                    </p>
-                    <p className="text-sm font-semibold text-white">
-                      {(house.member_count ?? 0).toLocaleString('pt-PT')}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                      XP Total
-                    </p>
-                    <p className="text-sm font-semibold text-white">
-                      {(house.xp_total ?? 0).toLocaleString('pt-PT')}
-                    </p>
+                <div className="mt-auto pt-3">
+                  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-[#020b16] px-3 py-2 text-xs text-slate-200">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                        Membros
+                      </p>
+                      <p className="text-sm font-semibold text-white">
+                        {(house.member_count ?? 0).toLocaleString('pt-PT')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                        XP Total
+                      </p>
+                      <p className="text-sm font-semibold text-white">
+                        {(house.xp_total ?? 0).toLocaleString('pt-PT')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
