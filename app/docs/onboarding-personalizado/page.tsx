@@ -1,116 +1,136 @@
-﻿import type { Metadata } from "next";
-import Link from "next/link";
-
-const sections = [
-  {
-    title: "Princípio estratégico",
-    description:
-      "O Legacy não promete acompanhamento humano constante; promete orientação clara, justa e progressiva. Este guia explica como manter essa promessa em escala.",
-    bullets: [
-      "Mensagens guiadas por maturidade (XP) com pop-ups oficiais validados pela House.",
-      "Governança transparente para proteger Heads, utilizadores e a reputação da plataforma.",
-      "Infra-estrutura que substitui promessas vazias por passos concretos com responsabilidade explícita."
-    ]
-  },
-  {
-    title: "Sequência oficial de pop-ups",
-    description:
-      "Cada House pode personalizar a sua sequência, mas todos partem desta estrutura base para garantir consistência no ecossistema.",
-    bullets: [
-      "Pop-up Legacy inicial (Freeman PT) com boas-vindas e explicação de que o próximo contacto virá do Head.",
-      "Triggers por XP e por conclusão de conteúdos (Glossário, Curso 'Começa Aqui', etc.).",
-      "Limites automáticos: 1 pop-up/dia, 3/semana, com estado dos envios registado no motor de onboarding."
-    ]
-  },
-  {
-    title: "Termo de responsabilidade do Head",
-    description:
-      "Antes de assumir o cargo, o Head lê e aceita o termo oficial. O aceite regista IP, user-agent e data para auditoria.",
-    bullets: [
-      "Interesse da House acima do interesse pessoal (sem pressão comercial nem promessas de rendimento).",
-      "Respeito pela autonomia dos utilizadores: seguir links, participar em projetos ou contactar Heads é sempre opcional.",
-      "Cumprimento dos limites operacionais (frequência, templates, auditoria, anti-spam) com avaliação contínua."
-    ]
-  },
-  {
-    title: "Checklist operacional",
-    description: "Indicadores mínimos para manter o estatuto de House ativa.",
-    bullets: [
-      "Zero submissões sem responsável ou, se existirem, plano de resposta em execução.",
-      "Limites oficiais comunicados a todos os membros (pop-ups e broadcasts).",
-      "Histórico atualizado no painel admin (pausas, reativações, convites, alertas)."
-    ]
-  },
-  {
-    title: "Boas práticas para Heads",
-    description: "Táticas para entregar valor sem entrar em modo 'suporte 24/7'.",
-    bullets: [
-      "Começa sempre pelo conteúdo oficial: Glossário, 'Começa Aqui', House Hub.",
-      "Usa mensagens assíncronas e CTA conscientes. O contacto humano é opcional e contextual.",
-      "Reporta incidentes e feedback negativo no painel para que o motor de alertas possa agir."
-    ]
-  },
-  {
-    title: "Próximos passos",
-    description: "Confirma a leitura deste guia e regressa ao painel para gerir sequências e convites.",
-    bullets: [
-      "Rever as Houses atribuídas em /admin/houses.",
-      "Atualizar copy/CTAs em /admin/onboarding e testar com o modal integrado.",
-      "Monitorizar pedidos pendentes, eventos e métricas na mesma rotina semanal."
-    ]
-  }
-];
+import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: "Guia oficial do Onboarding Personalizado",
-  description: "Referência para Heads e Admins aplicarem o plano escalável de onboarding do Legacy."
+  title: 'Plano Oficial de Onboarding Legacy',
+  description:
+    'Guia de referencia para Heads e equipas internas aplicarem o plano de onboarding personalizado do Legacy.',
 };
+
+type Section = {
+  title: string;
+  description: string;
+  bullets: string[];
+};
+
+const sections: Section[] = [
+  {
+    title: 'Principio estrategico',
+    description:
+      'O Legacy nao promete acompanhamento humano constante. Promete orientacao justa, progressiva e transparente.',
+    bullets: [
+      'Os Heads orientam pelo exemplo: pop-ups validados e CTA conscientes substituem promessas vazias.',
+      'Governanca clara protege utilizadores, Heads e a reputacao da plataforma.',
+      'Cada passo identifica limites e responsabilidades para manter autonomia e reduzir atrito.',
+    ],
+  },
+  {
+    title: 'Sequencia oficial',
+    description:
+      'Todas as Houses podem adaptar triggers, mas esta base garante consistencia e protecao legal.',
+    bullets: [
+      'Pop-up inicial enviado pela conta FreemanPT: explica que o proximo contacto vira do Head.',
+      'Triggers por XP e por conclusao de conteudos (perfil completo, glossario, curso Comeca Aqui).',
+      'Limites automaticos: maximo 1 pop-up por dia e 3 por semana, registados no motor de onboarding.',
+    ],
+  },
+  {
+    title: 'Termo do Head',
+    description:
+      'Antes de assumir o cargo, o Head aceita o termo de responsabilidade com registo de IP e user-agent.',
+    bullets: [
+      'Colocar o interesse da House acima do interesse pessoal; nada de pressao comercial ou hype.',
+      'Respeitar autonomia: seguir links, contactar Heads ou aderir a projetos e sempre opcional.',
+      'Cumprir limites operacionais (templates, frequencia, auditoria, anti-spam) e aceitar avaliacao continua.',
+    ],
+  },
+  {
+    title: 'Checklist operacional',
+    description: 'Indicadores minimos para manter o estatuto de House ativa no ecossistema Legacy.',
+    bullets: [
+      'Zero submissões sem responsavel ou plano de resposta em execucao.',
+      'Limites oficiais comunicados aos membros: 1 pop-up/dia, 3/semana, logs de broadcast e botao Silenciar.',
+      'Heads utilizam o painel admin para gerir governaça, alerts e pedidos CTA.',
+    ],
+  },
+];
+
+const resources = [
+  {
+    title: 'Painel admin de Houses',
+    description: 'Gere pedidos CTA, governaça, feedback e alertas.',
+    href: '/admin/houses',
+  },
+  {
+    title: 'Centro de conformidade',
+    description: 'Checklist semanal e estado do termo de responsabilidade.',
+    href: '/admin/onboarding',
+  },
+  {
+    title: 'Documentacao de migrações',
+    description: 'Assegura que as tabelas house_head_terms, house_history e house_feedback estao ativas.',
+    href: 'https://github.com/FreemanPT8/legacy-web3-sports/tree/main/supabase/migrations',
+  },
+];
 
 export default function OnboardingDocsPage() {
   return (
-    <div className="min-h-screen bg-[#010913] text-white">
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-12">
-        <header className="space-y-3">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-300">Guia oficial</p>
-          <h1 className="text-3xl font-semibold text-[#fdd87c]">Onboarding Personalizado do Legacy</h1>
-          <p className="text-sm text-slate-300">
-            Este documento resume o plano fundacional (96/100) e esclarece o que cada House deve respeitar antes de editar
-            pop-ups ou aceitar novos membros.
+    <main className="min-h-screen bg-gradient-to-b from-[#010913] via-[#00131d] to-[#000a12] px-4 py-12 text-white">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+        <header className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_35px_80px_rgba(1,14,25,0.55)]">
+          <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">Manual oficial</p>
+          <h1 className="mt-2 text-3xl font-semibold text-white">Plano de Onboarding Personalizado</h1>
+          <p className="mt-3 text-sm text-slate-200">
+            Esta pagina resume o plano oficial aprovado para Houses do Legacy. Utiliza como referencia antes de
+            publicar pop-ups, aceitar termos ou ligar CTA publicos.
           </p>
         </header>
 
-        <div className="grid gap-6">
+        <section className="grid gap-6 md:grid-cols-2">
           {sections.map((section) => (
-            <section
+            <article
               key={section.title}
-              className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#020b16] via-[#031726] to-[#000d16] p-6 shadow-[0_25px_80px_rgba(3,10,25,0.55)]"
+              className="rounded-3xl border border-white/10 bg-[#020b16]/80 p-5 shadow-[0_25px_60px_rgba(0,0,0,0.55)]"
             >
-              <h2 className="text-xl font-semibold text-white">{section.title}</h2>
+              <h2 className="text-lg font-semibold text-white">{section.title}</h2>
               <p className="mt-2 text-sm text-slate-300">{section.description}</p>
-              <ul className="mt-4 space-y-2 text-sm text-slate-200">
+              <ul className="mt-4 space-y-2 text-sm text-slate-100">
                 {section.bullets.map((bullet) => (
-                  <li key={bullet} className="flex items-start gap-2">
-                    <span className="mt-[6px] h-1.5 w-1.5 rounded-full bg-[#fdd87c]" />
+                  <li key={bullet} className="flex gap-2">
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-300" />
                     <span>{bullet}</span>
                   </li>
                 ))}
               </ul>
-            </section>
+            </article>
           ))}
-        </div>
+        </section>
 
-        <div className="rounded-3xl border border-white/10 bg-[#04131b]/80 p-6 text-sm text-slate-300">
-          <p>
-            Precisas de ajuda prática? Regressa ao painel de onboarding para editar pop-ups ou contacta o suporte interno.
-          </p>
-          <Link
-            href="/admin/onboarding"
-            className="mt-3 inline-flex items-center text-[#fdd87c] transition hover:text-white"
-          >
-            Abrir painel de onboarding
-          </Link>
-        </div>
-      </main>
-    </div>
+        <section className="rounded-3xl border border-white/10 bg-[#011422]/80 p-6">
+          <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">Recursos</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            {resources.map((resource) => (
+              <Link
+                key={resource.title}
+                href={resource.href}
+                target={resource.href.startsWith('http') ? '_blank' : undefined}
+                rel={resource.href.startsWith('http') ? 'noreferrer' : undefined}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-cyan-300/50 hover:bg-cyan-500/10"
+              >
+                <p className="text-sm font-semibold text-white">{resource.title}</p>
+                <p className="mt-1 text-xs text-slate-300">{resource.description}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <footer className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-200">
+          Este guia resume o plano validado em janeiro de 2026. Atualiza este documento sempre que o motor de
+          onboarding ou os termos dos Heads receberem nova versao. Mantem logs atualizados no painel admin para
+          garantir conformidade.
+        </footer>
+      </div>
+    </main>
   );
 }
+
