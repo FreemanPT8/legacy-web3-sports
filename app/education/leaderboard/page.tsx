@@ -275,13 +275,15 @@ export default function LeaderboardPage() {
             const fallbackRes = await fetch('/api/sports/houses?locale=pt');
             if (fallbackRes.ok) {
               const fallbackJson: SportsHousesApiResponse = await fallbackRes.json();
-              if (fallbackJson.success && Array.isArray(fallbackJson.houses)) {
-                leaderboardEntries = fallbackJson.houses.map((house) => {
-              const numeric = (value: number | string | null | undefined, fallback?: number) => {
-                if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
-                if (typeof value === 'string') {
-                  const parsed = Number(value);
-                  return Number.isFinite(parsed) ? parsed : fallback;
+              const fallbackHousesRaw = fallbackJson.houses;
+              if (fallbackJson.success && Array.isArray(fallbackHousesRaw)) {
+                const fallbackHouses = fallbackHousesRaw as SportsHouse[];
+                leaderboardEntries = fallbackHouses.map((house) => {
+                  const numeric = (value: number | string | null | undefined, fallback?: number) => {
+                    if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+                    if (typeof value === 'string') {
+                      const parsed = Number(value);
+                      return Number.isFinite(parsed) ? parsed : fallback;
                 }
                 return fallback;
               };
@@ -289,10 +291,11 @@ export default function LeaderboardPage() {
               const xpHead = numeric(house.xp_breakdown?.head) ?? 0;
               const xpMods = numeric(house.xp_breakdown?.moderators) ?? 0;
               const xpMembersRaw = numeric(house.xp_breakdown?.members);
+              const xpTotal = numeric(house.xp_total) ?? 0;
               const xpMembers =
-                xpMembersRaw ||
+                xpMembersRaw ??
                 Math.max(
-                  numeric(house.xp_total) - xpHead - xpMods,
+                  xpTotal - xpHead - xpMods,
                   0,
                 );
               const xpBreakdown = {

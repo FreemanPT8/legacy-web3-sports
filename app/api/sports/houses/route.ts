@@ -43,6 +43,17 @@ type HouseStatsRow = {
   member_xp: number | null;
 };
 
+type AggregatedHouseStats = {
+  member_count: number;
+  member_only_count: number;
+  head_count: number;
+  moderator_count: number;
+  total_xp: number;
+  head_xp: number;
+  moderator_xp: number;
+  member_xp: number;
+};
+
 type SportRow = {
   id: string;
   code: string;
@@ -179,19 +190,7 @@ export async function GET(request: NextRequest) {
     // 3) House heads
     const houseIds = houses.map((h) => h.id);
 
-    const statsByHouseId = new Map<
-      string,
-      {
-        member_count: number;
-        member_only_count: number;
-        head_count: number;
-        moderator_count: number;
-        total_xp: number;
-        head_xp: number;
-        moderator_xp: number;
-        member_xp: number;
-      }
-    >();
+    const statsByHouseId: Map<string, AggregatedHouseStats> = new Map();
     if (houseIds.length > 0) {
       const { data: statsData, error: statsError } = await supabaseAdmin
         .from('house_xp_totals')
@@ -389,14 +388,14 @@ export async function GET(request: NextRequest) {
       const publicStatus = normalizeStatusFromData(house.status, hasHead);
       const fallbackHeadCount = headUser ? 1 : 0;
       const fallbackModeratorCount = Array.isArray(moderators) ? moderators.length : 0;
+      const statsMemberCount = stats?.member_count;
+      const statsMemberOnly = stats?.member_only_count;
       const headCount = stats ? stats.head_count : fallbackHeadCount;
       const moderatorCount = stats ? stats.moderator_count : fallbackModeratorCount;
-      const memberOnlyCount = stats
-        ? stats.member_only_count
-        : Math.max((stats?.member_count ?? 0) - headCount - moderatorCount, 0);
-      const totalMembers = stats
-        ? stats.member_count
-        : headCount + moderatorCount + memberOnlyCount;
+      const memberOnlyCount =
+        statsMemberOnly ?? Math.max((statsMemberCount ?? 0) - headCount - moderatorCount, 0);
+      const totalMembers =
+        statsMemberCount ?? headCount + moderatorCount + memberOnlyCount;
       const xpBreakdown = {
         head: stats?.head_xp ?? 0,
         moderators: stats?.moderator_xp ?? 0,
