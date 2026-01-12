@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
 import { getCountryName } from '@/lib/countries'; // 👈 NOVO
 import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
+import { logHouseHistory } from '@/lib/houses/history';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -483,6 +484,19 @@ export async function POST(request: NextRequest) {
     const houseCountry = (data as { country_code: string | null }).country_code;
 
     await syncHouseMembersBySportCountry(id, houseSportId, houseCountry, { logPrefix: 'house:create' });
+
+    await logHouseHistory({
+      houseId: id,
+      actorId: currentUser.userId ?? null,
+      action: 'house.created',
+      payload: {
+        sport_id: rawSportId,
+        country_code: rawCountryCode,
+        status,
+        house_key: houseKey,
+        avatar_url,
+      },
+    });
 
     // Responder de forma compatível com o teu CreateHousePage
     return NextResponse.json<HousesPostResponse>(

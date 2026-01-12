@@ -6,7 +6,7 @@ import { logHouseHistory } from '@/lib/houses/history';
 import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
 
 const SUPPORT_MODES = ['async', 'sync', 'hybrid'] as const;
-const GOVERNANCE_STATUSES = ['active', 'limited', 'paused', 'under_review'] as const;
+const GOVERNANCE_STATUSES = ['active', 'under_construction', 'development'] as const;
 
 const POSTGRES_MISSING_COLUMN = '42703';
 const POSTGRES_MISSING_TABLE = '42P01';

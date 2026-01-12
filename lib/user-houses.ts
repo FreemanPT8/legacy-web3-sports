@@ -41,6 +41,47 @@ export interface SyncHouseMembersResult {
 }
 
 const DEFAULT_SOURCE: HouseAssignmentSource = 'PROFILE';
+const RPC_FUNCTION = 'sync_user_house_membership_db';
+const RPC_UNDEFINED_FUNCTION = '42883';
+
+async function syncMembershipViaRpc(
+  userId: string,
+  sportId: string | null,
+  countryCode: string | null,
+): Promise<SyncUserHouseMembershipResult | null> {
+  if (!supabaseAdmin) return null;
+  if (!sportId && !countryCode) return null;
+
+  try {
+    const { data, error } = await supabaseAdmin.rpc(RPC_FUNCTION, {
+      p_user_id: userId,
+      p_sport_id: sportId,
+      p_country_code: countryCode,
+    });
+    if (error) {
+      if (error.code === RPC_UNDEFINED_FUNCTION) {
+        return null;
+      }
+      console.error('[user-houses] RPC sync_user_house_membership_db failed', error);
+      return null;
+    }
+    if (!data || typeof data !== 'object') {
+      return null;
+    }
+
+    const payload = data as Record<string, any>;
+    return {
+      success: Boolean(payload.success),
+      updated: payload.updated ?? undefined,
+      houseId: (payload.house_id ?? payload.houseId ?? null) as string | null,
+      reason: payload.reason ?? undefined,
+      error: payload.error ?? undefined,
+    };
+  } catch (error) {
+    console.error('[user-houses] Unexpected membership RPC error', error);
+    return null;
+  }
+}
 
 /**
  * Synchronizes user_houses rows (membership_role = 'MEMBER') with the primary sport/country stored on the user record.
@@ -121,6 +162,11 @@ export async function syncUserHouseMembership(
         houseId: null,
         reason: 'User is missing primary sport or country; membership removed.',
       };
+    }
+
+    const rpcResult = await syncMembershipViaRpc(userId, sportId, countryCode);
+    if (rpcResult) {
+      return rpcResult;
     }
 
     const { data: membershipRows, error: membershipError } = await supabaseAdmin
@@ -278,8 +324,9 @@ export async function syncHouseMembersBySportCountry(
       return { success: true, attempted: 0, assigned: 0, reason: 'No matching users found.' };
     }
 
+    const candidateList = Array.from(candidateIds);
     let assigned = 0;
-    for (const userId of candidateIds) {
+    for (const userId of candidateList) {
       const result = await syncUserHouseMembership(userId, {
         assignedVia: 'ADMIN_SYNC',
         logPrefix: `${logPrefix}house:${houseId}`,
@@ -291,7 +338,7 @@ export async function syncHouseMembersBySportCountry(
       }
     }
 
-    return { success: true, attempted: candidateIds.size, assigned };
+    return { success: true, attempted: candidateList.length, assigned };
   } catch (error) {
     console.error(`${logPrefix}Unexpected error syncing members for house ${houseId}:`, error);
     return { success: false, attempted: 0, assigned: 0, reason: 'Unexpected error syncing memberships.' };
