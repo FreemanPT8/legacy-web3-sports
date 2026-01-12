@@ -336,6 +336,15 @@ export async function GET(request: NextRequest) {
       const adminAssign = headRow ? adminAssignById[headRow.admin_id] : null;
       const headUser = adminAssign ? usersById[adminAssign.user_id] : null;
 
+      const moderatorCount = moderatorsCountByHouseId.get(h.id) || 0;
+      const headCount = headUser ? 1 : 0;
+      const memberOnlyCount = membersCountByHouseId.get(h.id) || 0;
+      const xpParticipants = totalMembersByHouseId.get(h.id);
+      const computedOfficialCount =
+        typeof xpParticipants === 'number'
+          ? Math.max(xpParticipants, memberOnlyCount + headCount + moderatorCount)
+          : memberOnlyCount + headCount + moderatorCount;
+
       return {
         id: h.id,
         sport_id: h.sport_id ?? null,
@@ -353,12 +362,8 @@ export async function GET(request: NextRequest) {
               avatar_url: headUser.avatar_url,
             }
           : null,
-        moderators_count: moderatorsCountByHouseId.get(h.id) || 0,
-        total_members:
-          totalMembersByHouseId.get(h.id) ??
-          (membersCountByHouseId.get(h.id) || 0) +
-            (headUser ? 1 : 0) +
-            (moderatorsCountByHouseId.get(h.id) || 0),
+        moderators_count: moderatorCount,
+        total_members: computedOfficialCount,
       };
     });
 

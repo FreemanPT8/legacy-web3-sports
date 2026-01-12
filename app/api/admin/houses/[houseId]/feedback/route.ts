@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 100) : 25;
 
   try {
-    const { data, error } = await supabaseAdmin
+    const baseQuery = supabaseAdmin
       .from('house_feedback')
       .select(
         `
@@ -47,6 +47,9 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
       .order('created_at', { ascending: false })
       .limit(limit);
 
+    const { data, error } = await baseQuery;
+
+    let rows: any[] | null = data ?? null;
     if (error) {
       if (isMissingTable(error)) {
         console.warn('[admin/houses/feedback] house_feedback table missing. Returning empty list.');
@@ -60,11 +63,71 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
         console.warn('[admin/houses/feedback] missing column in house_feedback. Returning empty list.');
         return NextResponse.json({ success: true, feedback: [] });
       }
-      throw error;
+
+      console.warn('[admin/houses/feedback] relationship join failed. Falling back to manual reporter lookup.', error);
+      const { data: fallbackRows, error: fallbackError } = await supabaseAdmin
+        .from('house_feedback')
+        .select(
+          `
+          id,
+          source,
+          category,
+          sentiment,
+          severity,
+          status,
+          summary,
+          details,
+          created_at,
+          resolved_at,
+          reporter_user_id
+        `,
+        )
+        .eq('house_id', houseId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (fallbackError) {
+        if (isMissingTable(fallbackError) || isMissingColumn(fallbackError)) {
+          console.warn('[admin/houses/feedback] fallback query missing columns. Returning empty list.');
+          return NextResponse.json({ success: true, feedback: [] });
+        }
+        throw fallbackError;
+      }
+
+      rows = fallbackRows ?? [];
+
+      const reporterIds = Array.from(
+        new Set(
+          rows
+            .map((row: { reporter_user_id?: string | null }) => row.reporter_user_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      );
+      let reporterMap: Record<string, { id: string; full_name: string | null; username: string | null; avatar_url: string | null }> = {};
+      if (reporterIds.length) {
+        const { data: reporterRows, error: reporterError } = await supabaseAdmin
+          .from('users')
+          .select('id, full_name, username, avatar_url')
+          .in('id', reporterIds);
+        if (reporterError) {
+          if (!isMissingTable(reporterError) && !isMissingColumn(reporterError)) {
+            console.error('[admin/houses/feedback] Failed to load reporter profiles', reporterError);
+          }
+        } else {
+          reporterRows?.forEach((row: any) => {
+            reporterMap[row.id as string] = row;
+          });
+        }
+      }
+
+      rows = rows.map((row: any) => ({
+        ...row,
+        reporter: row.reporter_user_id ? reporterMap[row.reporter_user_id] ?? null : null,
+      }));
     }
 
     const feedback =
-      data?.map((row: any) => ({
+      rows?.map((row: any) => ({
         id: row.id as string,
         source: (row.source as string | null) ?? 'manual',
         category: (row.category as string | null) ?? null,
@@ -94,4 +157,3 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
     );
   }
 }
-

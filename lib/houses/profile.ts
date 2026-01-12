@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { isMissingColumn, isMissingTable } from '@/lib/postgres';
+import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
 
 export const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -145,10 +146,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .eq('id', house.sport_id)
     .maybeSingle();
   if (sportError) {
-    if (isMissingTable(sportError)) {
-      console.warn('[houses/profile] sports table missing. Continuing without sport metadata.');
+    if (isMissingTable(sportError) || isMissingColumn(sportError)) {
+      console.warn('[houses/profile] sports metadata unavailable. Continuing without sport details.', sportError);
     } else {
-      throw sportError;
+      console.error('[houses/profile] Failed to load sport metadata', sportError);
     }
   } else {
     sport = sportRow;
@@ -160,10 +161,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .eq('house_id', house.id)
     .maybeSingle();
   if (profileError) {
-    if (isMissingTable(profileError)) {
-      console.warn('[houses/profile] house_profiles table missing. Using defaults.');
+    if (isMissingTable(profileError) || isMissingColumn(profileError)) {
+      console.warn('[houses/profile] house_profiles table or columns missing. Using defaults.');
     } else {
-      throw profileError;
+      console.error('[houses/profile] Failed to load house profile row', profileError);
     }
   }
 
@@ -173,10 +174,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .eq('house_id', house.id)
     .maybeSingle();
   if (headError) {
-    if (isMissingTable(headError)) {
-      console.warn('[houses/profile] house_heads table missing. House will show without Head.');
+    if (isMissingTable(headError) || isMissingColumn(headError)) {
+      console.warn('[houses/profile] house_heads metadata missing. House will show without Head.');
     } else {
-      throw headError;
+      console.error('[houses/profile] Failed to load house_heads row', headError);
     }
   }
 
@@ -188,10 +189,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       .eq('id', headRow.admin_id)
       .maybeSingle();
     if (assignmentError) {
-      if (isMissingTable(assignmentError)) {
-        console.warn('[houses/profile] admin_assignments table missing. Cannot resolve Head user.');
+      if (isMissingTable(assignmentError) || isMissingColumn(assignmentError)) {
+        console.warn('[houses/profile] admin_assignments metadata missing. Cannot resolve Head user.');
       } else {
-        throw assignmentError;
+        console.error('[houses/profile] Failed to resolve Head assignment row', assignmentError);
       }
     }
     if (assignment?.user_id) {
@@ -214,10 +215,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .select('*', { head: true, count: 'exact' })
     .eq('house_key', houseKey);
   if (termError) {
-    if (isMissingTable(termError)) {
-      console.warn('[houses/profile] house_term_acceptances table missing. Term metrics default to zero.');
+    if (isMissingTable(termError) || isMissingColumn(termError)) {
+      console.warn('[houses/profile] house_term_acceptances metrics unavailable. Term metrics default to zero.');
     } else {
-      throw termError;
+      console.error('[houses/profile] Failed to load term acceptance stats', termError);
     }
   } else {
     termCount = termCountResult ?? 0;
@@ -231,10 +232,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .eq('house_id', house.id)
     .maybeSingle();
   if (xpError) {
-    if (isMissingTable(xpError)) {
+    if (isMissingTable(xpError) || isMissingColumn(xpError)) {
       console.warn('[houses/profile] house_xp_totals missing. Falling back to user_houses counts.');
     } else {
-      throw xpError;
+      console.error('[houses/profile] Failed to load house_xp_totals row', xpError);
     }
   }
 
@@ -245,13 +246,38 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .eq('house_id', house.id)
     .is('removed_at', null);
   if (membershipError) {
-    if (isMissingTable(membershipError)) {
+    if (isMissingTable(membershipError) || isMissingColumn(membershipError)) {
       console.warn('[houses/profile] user_houses missing. Member metrics default to zero.');
     } else {
-      throw membershipError;
+      console.error('[houses/profile] Failed to load user_houses entries', membershipError);
     }
   } else {
     membershipRows = membershipData ?? [];
+  }
+
+  if ((!membershipRows?.length) && house.sport_id && house.country_code) {
+    try {
+      const syncResult = await syncHouseMembersBySportCountry(
+        house.id,
+        house.sport_id,
+        house.country_code,
+        { logPrefix: 'houses/profile:auto-sync' },
+      );
+      if (syncResult.success && syncResult.assigned > 0) {
+        const { data: refreshedMemberships, error: refreshError } = await supabaseAdmin
+          .from('user_houses')
+          .select('user_id')
+          .eq('house_id', house.id)
+          .is('removed_at', null);
+        if (!refreshError) {
+          membershipRows = refreshedMemberships ?? [];
+        } else if (!isMissingTable(refreshError) && !isMissingColumn(refreshError)) {
+          console.error('[houses/profile] Failed to reload memberships after auto-sync', refreshError);
+        }
+      }
+    } catch (error) {
+      console.error('[houses/profile] Auto-sync of members failed', error);
+    }
   }
 
   const memberUserIds = Array.from(
@@ -269,10 +295,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       .select('user_id')
       .eq('house_id', house.id);
     if (moderatorError) {
-      if (isMissingTable(moderatorError)) {
+      if (isMissingTable(moderatorError) || isMissingColumn(moderatorError)) {
         console.warn('[houses/profile] house_moderators table missing. Moderator stats default to zero.');
       } else {
-        throw moderatorError;
+        console.error('[houses/profile] Failed to load house_moderators rows', moderatorError);
       }
     } else {
       moderatorUserIds =
@@ -449,10 +475,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .eq('house_key', houseKey)
     .maybeSingle();
   if (onboardingStatusError) {
-    if (isMissingTable(onboardingStatusError)) {
+    if (isMissingTable(onboardingStatusError) || isMissingColumn(onboardingStatusError)) {
       console.warn('[houses/profile] house_onboarding_status missing. Onboarding stats default to zero.');
     } else {
-      throw onboardingStatusError;
+      console.error('[houses/profile] Failed to load onboarding status row', onboardingStatusError);
     }
   }
 
@@ -462,10 +488,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .eq('house_key', houseKey)
     .maybeSingle();
   if (sequenceError) {
-    if (isMissingTable(sequenceError)) {
+    if (isMissingTable(sequenceError) || isMissingColumn(sequenceError)) {
       console.warn('[houses/profile] house_onboarding_sequences missing. Recommended content empty.');
     } else {
-      throw sequenceError;
+      console.error('[houses/profile] Failed to load onboarding sequence row', sequenceError);
     }
   }
 
@@ -487,10 +513,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     .order('start_at', { ascending: true })
     .limit(8);
   if (eventError) {
-    if (isMissingTable(eventError)) {
+    if (isMissingTable(eventError) || isMissingColumn(eventError)) {
       console.warn('[houses/profile] house_events table missing. Events list empty.');
     } else {
-      throw eventError;
+      console.error('[houses/profile] Failed to load house events', eventError);
     }
   }
 

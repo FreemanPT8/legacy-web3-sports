@@ -32,6 +32,11 @@ type HouseRoleRow = {
   house_id: string;
 };
 
+type HouseMemberCountRow = {
+  house_id: string;
+  count: number | null;
+};
+
 const PUBLIC_STATUS = {
   ACTIVE: 'ACTIVE',
   UNDER_CONSTRUCTION: 'UNDER_CONSTRUCTION',
@@ -142,13 +147,23 @@ export async function GET(request: NextRequest) {
       )
       .in('house_id', houseIds);
 
+    const memberCountsPromise = supabaseAdmin
+      .from('user_houses')
+      .select('house_id, count:user_id', { head: false })
+      .eq('membership_role', 'MEMBER')
+      .is('removed_at', null)
+      .in('house_id', houseIds);
+
     const sportsPromise =
       sportIds.length > 0
         ? supabaseAdmin.from('sports').select('id, code, name_i18n').in('id', sportIds)
         : Promise.resolve({ data: [] as SportRow[], error: null });
 
-    const [{ data: totalsData, error: totalsError }, { data: sportsData, error: sportsError }] =
-      await Promise.all([totalsPromise, sportsPromise]);
+    const [
+      { data: totalsData, error: totalsError },
+      { data: sportsData, error: sportsError },
+      { data: memberCountsData, error: memberCountsError },
+    ] = await Promise.all([totalsPromise, sportsPromise, memberCountsPromise]);
 
     if (totalsError) {
       console.error('Error loading house_xp_totals:', totalsError);
@@ -164,6 +179,10 @@ export async function GET(request: NextRequest) {
         { success: false, error: 'Failed to load sports metadata.' },
         { status: 500 },
       );
+    }
+
+    if (memberCountsError) {
+      console.warn('Error loading user_houses counts. Falling back to XP data only.', memberCountsError);
     }
 
     const { data: headRows, error: headError } = await supabaseAdmin
@@ -202,6 +221,11 @@ export async function GET(request: NextRequest) {
       sportsMap.set(sport.id, sport);
     });
 
+    const memberCountsMap = new Map<string, number>();
+    (memberCountsData ?? []).forEach((row: HouseMemberCountRow) => {
+      memberCountsMap.set(row.house_id, Number(row.count) || 0);
+    });
+
     const headCountMap = new Map<string, number>();
     (headRows ?? []).forEach((row: HouseRoleRow) => {
       const current = headCountMap.get(row.house_id) ?? 0;
@@ -226,11 +250,12 @@ export async function GET(request: NextRequest) {
         const membersOnly =
           typeof totals?.member_only_count === 'number'
             ? totals.member_only_count
-            : null;
+            : memberCountsMap.get(house.id) ?? 0;
+        const fallbackParticipants = headCount + moderatorCount + (membersOnly ?? 0);
         const participantCount =
           typeof totals?.member_count === 'number'
-            ? totals.member_count
-            : headCount + moderatorCount + (membersOnly ?? 0);
+            ? Math.max(totals.member_count, fallbackParticipants)
+            : fallbackParticipants;
         const xpBreakdown = {
           head: totals?.head_xp ?? 0,
           moderators: totals?.moderator_xp ?? 0,
