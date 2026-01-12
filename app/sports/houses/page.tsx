@@ -372,17 +372,9 @@ function HousesSection({
                     {house.name}
                   </p>
                   <p className="text-[11px] text-slate-200">{headLine}</p>
-                  {house.country_code && (
-                    <span className="w-fit rounded px-2 py-0.5 text-[10px] font-mono uppercase text-cyan-100 border border-white/20 bg-[#020b16]">
-                      {house.country_code}
-                    </span>
-                  )}
                 </div>
 
-                <div className="mb-2 flex items-center justify-between">
-                  <span className={STATUS_BADGE_CLASSES[house.status]}>
-                    {STATUS_LABELS[house.status]}
-                  </span>
+                <div className="mb-2 flex items-center justify-end">
                   <span className="text-[11px] text-slate-400">
                     {house.created_at
                       ? new Date(house.created_at).toLocaleDateString('pt-PT')
