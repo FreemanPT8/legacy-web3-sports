@@ -101,6 +101,9 @@ function resolveLocaleName(
   name_i18n: Record<string, string> | null,
   fallback?: string | null
 ): string | null {
+  if (!name_i18n) {
+    return fallback ?? null;
+  }
   return (
     name_i18n.en ||
     name_i18n.pt ||
