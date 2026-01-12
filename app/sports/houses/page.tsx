@@ -415,7 +415,6 @@ function XpLeaderSummaryCard({ house }: { house: House | null }) {
   }
 
   const xpTotal = (house.xp_total ?? 0).toLocaleString('pt-PT');
-  const country = house.country_code?.toUpperCase() ?? '—';
 
   return (
     <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
@@ -428,22 +427,6 @@ function XpLeaderSummaryCard({ house }: { house: House | null }) {
         <span className="text-[11px] uppercase tracking-wide text-slate-400">
           XP acumulada
         </span>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-4 text-xs text-slate-300">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-slate-400">
-            Desporto
-          </p>
-          <p className="text-sm font-medium text-white">
-            {house.sport?.name ?? '—'}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-slate-400">
-            País
-          </p>
-          <p className="text-sm font-medium text-white">{country}</p>
-        </div>
       </div>
     </div>
   );
@@ -472,26 +455,18 @@ function MembersLeaderSummaryCard({ house }: { house: House | null }) {
         HOUSE COM MAIS MEMBROS
       </p>
       <p className="mt-2 text-base font-semibold text-white">{house.name}</p>
-      <div className="mt-3 flex items-baseline gap-2">
-        <p className="text-2xl font-bold text-white">{memberCount}</p>
-        <span className="text-[11px] uppercase tracking-wide text-slate-400">
-          Membros
-        </span>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-4 text-xs text-slate-300">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-slate-400">
-            XP acumulada
-          </p>
-          <p className="text-sm font-medium text-white">{xpTotal}</p>
+      <div className="mt-3 flex flex-wrap gap-3">
+        <div className="flex items-baseline gap-2">
+          <p className="text-2xl font-bold text-white">{memberCount}</p>
+          <span className="text-[11px] uppercase tracking-wide text-slate-400">
+            Membros
+          </span>
         </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-slate-400">
-            Estado
-          </p>
-          <p className="text-sm font-medium text-white">
-            {STATUS_LABELS[house.status]}
-          </p>
+        <div className="flex items-baseline gap-2">
+          <p className="text-2xl font-bold text-white">{xpTotal}</p>
+          <span className="text-[11px] uppercase tracking-wide text-slate-400">
+            XP acumulada
+          </span>
         </div>
       </div>
     </div>
