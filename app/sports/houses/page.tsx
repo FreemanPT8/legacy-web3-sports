@@ -114,7 +114,7 @@ export default function HousesPage() {
     const active: House[] = [];
     const underConstruction: House[] = [];
     const inDevelopment: House[] = [];
-    let xpLeader: House | null = null;
+    const housesWithXp: House[] = [];
     const sportCountryMap = new Map<
       string,
       { name: string; countries: Set<string> }
@@ -126,15 +126,15 @@ export default function HousesPage() {
       else inDevelopment.push(h);
 
       const currentXp = h.xp_total ?? 0;
-      if (!xpLeader || currentXp > (xpLeader.xp_total ?? 0)) {
-        xpLeader = h;
+      if (currentXp > 0) {
+        housesWithXp.push(h);
       }
 
       const sportId = h.sport?.id;
       const sportName = h.sport?.name;
       const countryCode = h.country_code?.toUpperCase();
 
-      if (sportId && sportName && countryCode) {
+      if (h.status === 'ACTIVE' && sportId && sportName && countryCode) {
         const existing =
           sportCountryMap.get(sportId) ?? {
             name: sportName,
@@ -145,6 +145,26 @@ export default function HousesPage() {
         sportCountryMap.set(sportId, existing);
       }
     }
+
+    const pickPool =
+      housesWithXp.length > 0
+        ? housesWithXp
+        : active.length > 0
+          ? active
+          : houses;
+
+    const xpLeader =
+      pickPool
+        .slice()
+        .sort((a, b) => {
+          const xpDiff = (b.xp_total ?? 0) - (a.xp_total ?? 0);
+          if (xpDiff !== 0) return xpDiff;
+
+          const memberDiff = (b.member_count ?? 0) - (a.member_count ?? 0);
+          if (memberDiff !== 0) return memberDiff;
+
+          return (a.name || '').localeCompare(b.name || '');
+        })[0] ?? null;
 
     let sportsMostCountries: { name: string; countryCount: number }[] = [];
     let sportsCountryCount = 0;
@@ -201,27 +221,10 @@ export default function HousesPage() {
                   value={totalActive.toLocaleString('pt-PT')}
                   description="Comunidades que já estão a receber membros de forma estruturada."
                 />
-                <StatusSummaryItem
-                  label="House com mais XP total"
-                  value={xpLeader ? xpLeader.name : 'Sem dados'}
-                  description={
-                    xpLeader
-                      ? `XP acumulada: ${(xpLeader.xp_total ?? 0).toLocaleString('pt-PT')}`
-                      : 'Ainda não existem Houses com XP registada.'
-                  }
-                />
-                <StatusSummaryItem
-                  label="Desporto representado em mais Houses"
-                  value={
-                    sportsMostCountries.length > 0
-                      ? sportsMostCountries.map((sport) => sport.name).join(', ')
-                      : 'Sem dados'
-                  }
-                  description={
-                    sportsMostCountries.length > 0
-                      ? `${sportsCountryCount} ${sportsCountryCount === 1 ? 'país' : 'países'} com Houses mapeadas.`
-                      : 'Ainda não existem desportos com Houses atribuídas por país.'
-                  }
+                <XpLeaderSummaryCard house={xpLeader} />
+                <SportsCoverageSummaryCard
+                  sports={sportsMostCountries}
+                  countryCount={sportsCountryCount}
                 />
               </div>
 
@@ -371,6 +374,97 @@ function StatusSummaryItem(props: {
       </p>
       <p className="mt-2 text-2xl font-bold text-white">{value}</p>
       <p className="mt-1 text-xs text-slate-200">{description}</p>
+    </div>
+  );
+}
+
+function XpLeaderSummaryCard({ house }: { house: House | null }) {
+  if (!house) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
+          HOUSE COM MAIS XP TOTAL
+        </p>
+        <p className="mt-2 text-sm text-slate-200">
+          Ainda não existem Houses com XP registada.
+        </p>
+      </div>
+    );
+  }
+
+  const xpTotal = (house.xp_total ?? 0).toLocaleString('pt-PT');
+  const country = house.country_code?.toUpperCase() ?? '—';
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
+        HOUSE COM MAIS XP TOTAL
+      </p>
+      <p className="mt-2 text-base font-semibold text-white">{house.name}</p>
+      <div className="mt-3 flex items-baseline gap-2">
+        <p className="text-2xl font-bold text-white">{xpTotal}</p>
+        <span className="text-[11px] uppercase tracking-wide text-slate-400">
+          XP acumulada
+        </span>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-4 text-xs text-slate-300">
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-slate-400">
+            Desporto
+          </p>
+          <p className="text-sm font-medium text-white">
+            {house.sport?.name ?? '—'}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-slate-400">
+            País
+          </p>
+          <p className="text-sm font-medium text-white">{country}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SportsCoverageSummaryCard({
+  sports,
+  countryCount,
+}: {
+  sports: { name: string; countryCount: number }[];
+  countryCount: number;
+}) {
+  const hasCoverage = sports.length > 0 && countryCount > 0;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
+        DESPORTO REPRESENTADO EM MAIS HOUSES
+      </p>
+      {hasCoverage ? (
+        <>
+          <p className="mt-2 text-2xl font-bold text-white">
+            {countryCount} {countryCount === 1 ? 'país' : 'países'}
+          </p>
+          <p className="mt-1 text-xs text-slate-200">
+            Com Houses mapeadas para o(s) desporto(s) abaixo.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {sports.map((sport) => (
+              <span
+                key={`${sport.name}-${sport.countryCount}`}
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-white"
+              >
+                {sport.name}
+              </span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="mt-2 text-sm text-slate-200">
+          Ainda não existem desportos com Houses atribuídas por país.
+        </p>
+      )}
     </div>
   );
 }
