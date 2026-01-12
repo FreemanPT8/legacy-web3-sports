@@ -49,7 +49,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseId:
 
     const { data, error } = await baseQuery;
 
-    let rows: any[] | null = data ?? null;
+    let rows: any[] = data ?? [];
     if (error) {
       if (isMissingTable(error)) {
         console.warn('[admin/houses/feedback] house_feedback table missing. Returning empty list.');
