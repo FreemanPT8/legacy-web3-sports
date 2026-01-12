@@ -245,7 +245,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     new Set(
       membershipRows
         .map((row: { user_id: string | null }) => row.user_id)
-        .filter((id): id is string => Boolean(id)),
+        .filter((id: string | null): id is string => Boolean(id)),
     ),
   );
 
@@ -314,7 +314,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
         moderatorUserIds =
           moderatorRows
             ?.map((row: { user_id: string | null }) => row.user_id)
-            .filter((id): id is string => Boolean(id)) ?? [];
+            .filter((id: string | null): id is string => Boolean(id)) ?? [];
       }
     } catch (error) {
       console.error('[houses/profile] Failed to load moderator assignments for XP fallback', error);
