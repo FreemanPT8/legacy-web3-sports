@@ -103,23 +103,75 @@ export default function HousesPage() {
     fetchHouses();
   }, []);
 
-  const { active, underConstruction, inDevelopment } = useMemo(() => {
+  const {
+    active,
+    underConstruction,
+    inDevelopment,
+    xpLeader,
+    sportsMostCountries,
+    sportsCountryCount,
+  } = useMemo(() => {
     const active: House[] = [];
     const underConstruction: House[] = [];
     const inDevelopment: House[] = [];
+    let xpLeader: House | null = null;
+    const sportCountryMap = new Map<
+      string,
+      { name: string; countries: Set<string> }
+    >();
 
     for (const h of houses) {
       if (h.status === 'ACTIVE') active.push(h);
       else if (h.status === 'UNDER_CONSTRUCTION') underConstruction.push(h);
       else inDevelopment.push(h);
+
+      const currentXp = h.xp_total ?? 0;
+      if (!xpLeader || currentXp > (xpLeader.xp_total ?? 0)) {
+        xpLeader = h;
+      }
+
+      const sportId = h.sport?.id;
+      const sportName = h.sport?.name;
+      const countryCode = h.country_code?.toUpperCase();
+
+      if (sportId && sportName && countryCode) {
+        const existing =
+          sportCountryMap.get(sportId) ?? {
+            name: sportName,
+            countries: new Set<string>(),
+          };
+
+        existing.countries.add(countryCode);
+        sportCountryMap.set(sportId, existing);
+      }
     }
 
-    return { active, underConstruction, inDevelopment };
+    let sportsMostCountries: { name: string; countryCount: number }[] = [];
+    let sportsCountryCount = 0;
+
+    sportCountryMap.forEach((entry) => {
+      const count = entry.countries.size;
+      if (count === 0) return;
+
+      if (count > sportsCountryCount) {
+        sportsCountryCount = count;
+        sportsMostCountries = [{ name: entry.name, countryCount: count }];
+      } else if (count === sportsCountryCount) {
+        sportsMostCountries.push({ name: entry.name, countryCount: count });
+      }
+    });
+
+    return {
+      active,
+      underConstruction,
+      inDevelopment,
+      xpLeader,
+      sportsMostCountries,
+      sportsCountryCount,
+    };
   }, [houses]);
 
   const totalActive = active.length;
-  const totalUnderConstruction = underConstruction.length;
-  const totalInDevelopment = inDevelopment.length;
 
   const visibleInDevelopment = isLegacyTeam ? inDevelopment : [];
 
@@ -146,18 +198,30 @@ export default function HousesPage() {
               <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#04131b]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.65)] md:grid-cols-3 md:p-6">
                 <StatusSummaryItem
                   label="Houses ativas"
-                  value={totalActive}
+                  value={totalActive.toLocaleString('pt-PT')}
                   description="Comunidades que já estão a receber membros de forma estruturada."
                 />
                 <StatusSummaryItem
-                  label="Houses em construção"
-                  value={totalUnderConstruction}
-                  description="Equipas a formar e primeiros membros a serem ligados."
+                  label="House com mais XP total"
+                  value={xpLeader ? xpLeader.name : 'Sem dados'}
+                  description={
+                    xpLeader
+                      ? `XP acumulada: ${(xpLeader.xp_total ?? 0).toLocaleString('pt-PT')}`
+                      : 'Ainda não existem Houses com XP registada.'
+                  }
                 />
                 <StatusSummaryItem
-                  label="Houses em desenvolvimento"
-                  value={totalInDevelopment}
-                  description="Mapeadas pela equipa LEGACY. Visíveis apenas para a equipa LEGACY."
+                  label="Desporto representado em mais Houses"
+                  value={
+                    sportsMostCountries.length > 0
+                      ? sportsMostCountries.map((sport) => sport.name).join(', ')
+                      : 'Sem dados'
+                  }
+                  description={
+                    sportsMostCountries.length > 0
+                      ? `${sportsCountryCount} ${sportsCountryCount === 1 ? 'país' : 'países'} com Houses mapeadas.`
+                      : 'Ainda não existem desportos com Houses atribuídas por país.'
+                  }
                 />
               </div>
 
@@ -295,7 +359,7 @@ export default function HousesPage() {
 
 function StatusSummaryItem(props: {
   label: string;
-  value: number;
+  value: string | number;
   description: string;
 }) {
   const { label, value, description } = props;
