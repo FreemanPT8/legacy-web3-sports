@@ -14,6 +14,15 @@ type AlertRow = {
   type: string;
 };
 
+type OpenAlertRow = {
+  id: string | null;
+  type: string | null;
+};
+
+type PendingRequestRow = {
+  created_at: string | null;
+};
+
 const DEFAULT_CAPACITY = Number(process.env.HOUSE_ALERTS_DEFAULT_CAPACITY || 50);
 const PENDING_SLA_HOURS = Number(process.env.HOUSE_ALERTS_PENDING_SLA_HOURS || 48);
 const SECRET = process.env.HOUSES_ALERTS_CRON_SECRET;
@@ -61,7 +70,7 @@ async function scanHouse({
 
   const openAlerts = new Map<string, AlertRow>();
   const { data: openRows, error: openError }: {
-    data: { id: string | null; type: string | null }[] | null;
+    data: OpenAlertRow[] | null;
     error: any;
   } = await supabaseAdmin!
     .from('house_alerts')
@@ -71,13 +80,13 @@ async function scanHouse({
   if (openError) {
     warnings.push('Falha ao carregar alertas existentes.');
   } else {
-    (openRows ?? []).forEach((row) => {
+    (openRows ?? []).forEach((row: OpenAlertRow) => {
       if (row?.type && row?.id) openAlerts.set(row.type, { id: row.id, type: row.type });
     });
   }
 
   const { data: pendingRows, error: pendingError }: {
-    data: { created_at: string | null }[] | null;
+    data: PendingRequestRow[] | null;
     error: any;
   } = await supabaseAdmin!
     .from('house_join_requests')
@@ -89,7 +98,7 @@ async function scanHouse({
     return { triggered, resolved, warnings };
   }
   const pendingCount = pendingRows?.length ?? 0;
-  const overdue = (pendingRows ?? []).filter((row) => {
+  const overdue = (pendingRows ?? []).filter((row: PendingRequestRow) => {
     if (!row?.created_at) return false;
     const created = new Date(row.created_at).getTime();
     return Number.isFinite(created) && now - created > slaMs;
@@ -152,19 +161,20 @@ async function handleRequest(request: NextRequest) {
   }
 
   try {
-    const { data: houses, error: housesError } = await supabaseAdmin
-      .from('houses_of_sports')
-      .select('id, house_key, governance_status, monthly_capacity');
-    if (housesError) throw housesError;
+  const { data: houses, error: housesError }: {
+    data: HouseRow[] | null;
+    error: any;
+  } = await supabaseAdmin
+    .from('houses_of_sports')
+    .select('id, house_key, governance_status, monthly_capacity');
+  if (housesError) throw housesError;
 
     let totalTriggered = 0;
     let totalResolved = 0;
     const warnings: string[] = [];
-    const activeHouses =
-      (houses ?? []).filter(
-        (house: { governance_status: string | null }) =>
-          (house.governance_status ?? 'active').toLowerCase() === 'active',
-      ) ?? [];
+    const activeHouses = (houses ?? []).filter(
+      (house: HouseRow) => (house.governance_status ?? 'active').toLowerCase() === 'active',
+    );
 
     for (const house of activeHouses) {
       const { triggered, resolved, warnings: houseWarnings } = await scanHouse({ house: house as HouseRow });
