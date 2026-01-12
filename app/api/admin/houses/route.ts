@@ -2,12 +2,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/middleware';
-import { getCountryName } from '@/lib/countries'; // 👈 NOVO
 import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
 import { logHouseHistory } from '@/lib/houses/history';
 import { isMissingTable } from '@/lib/postgres';
+import {
+  ensureHouseForSportCountry,
+  EnsureHouseError,
+  HouseStatus,
+  normalizeHouseStatus,
+} from '@/lib/houses/creation';
 
-type HouseStatus = 'development' | 'under_construction' | 'active';
 
 interface HouseRow {
   id: string;
@@ -86,16 +90,6 @@ interface HousesPostBody {
   description?: string | null;
 }
 
-function slugify(value: string) {
-  return value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-+/g, '-')
-    .toUpperCase();
-}
-
 interface HousesPostResponse {
   success: boolean;
   houseId?: string;
@@ -103,18 +97,10 @@ interface HousesPostResponse {
   error?: string;
 }
 
-function normalizeStatus(raw: string | null): HouseStatus {
-  if (raw === 'active' || raw === 'under_construction') {
-    return raw as HouseStatus;
-  }
-  return 'development';
-}
-
 function resolveLocaleName(
   name_i18n: Record<string, string> | null,
   fallback?: string | null
 ): string | null {
-  if (!name_i18n) return fallback ?? null;
   return (
     name_i18n.en ||
     name_i18n.pt ||
@@ -180,8 +166,6 @@ export async function GET(request: NextRequest) {
         for (const s of (sportsData || []) as any[]) {
           sportsById[s.id as string] = {
             id: s.id as string,
-            code: (s.code as string) ?? null,
-            name_i18n: (s.name_i18n as Record<string, string> | null) ?? null,
           };
         }
       }
@@ -256,9 +240,6 @@ export async function GET(request: NextRequest) {
         for (const u of (usersData || []) as any[]) {
           usersById[u.id as string] = {
             id: u.id as string,
-            username: (u.username as string) ?? null,
-            full_name: (u.full_name as string) ?? null,
-            avatar_url: (u.avatar_url as string) ?? null,
           };
         }
       }
@@ -276,7 +257,6 @@ export async function GET(request: NextRequest) {
 
     const totalMembersByHouseId = new Map<string, number>();
     for (const row of (totalsData || []) as { house_id: string; member_count: number | null }[]) {
-      totalMembersByHouseId.set(row.house_id, row.member_count ?? 0);
     }
 
     // 6) Contagem fallback de membros oficiais (sem Head/Moderadores)
@@ -330,7 +310,7 @@ export async function GET(request: NextRequest) {
         ? resolveLocaleName(sport.name_i18n, sport.code)
         : null;
 
-      const normalizedStatus = normalizeStatus(h.status);
+      const normalizedStatus = normalizeHouseStatus(h.status);
 
       const headRow = headByHouseId.get(h.id) || null;
       const adminAssign = headRow ? adminAssignById[headRow.admin_id] : null;
@@ -347,13 +327,10 @@ export async function GET(request: NextRequest) {
 
       return {
         id: h.id,
-        sport_id: h.sport_id ?? null,
         sport_name: sportName,
-        sport_code: sport?.code ?? null,
         country_code: (h.country_code || '').toUpperCase(),
         status: normalizedStatus,
         created_at: h.created_at || new Date().toISOString(),
-        avatar_url: h.avatar_url ?? null,
         head: headUser
           ? {
               user_id: headUser.id,
@@ -419,6 +396,7 @@ export async function POST(request: NextRequest) {
 
     const status: HouseStatus = body.status ?? 'development';
 
+
     const avatar_url =
       typeof body.avatar_url === 'string' && body.avatar_url.trim()
         ? body.avatar_url.trim()
@@ -450,102 +428,32 @@ export async function POST(request: NextRequest) {
     }
 
     // 🔹 1) Garantir que o sport existe e obter nome
-    const { data: sportData, error: sportError } = await supabaseAdmin
-      .from('sports')
-      .select('id, code, name_i18n')
-      .eq('id', rawSportId)
-      .maybeSingle();
 
-    if (sportError) {
-      console.error('Supabase error loading sport in Houses POST:', sportError);
-      return NextResponse.json<HousesPostResponse>(
-        { success: false, error: 'Failed to validate sport_id.' },
-        { status: 500 }
-      );
-    }
+    const result = await ensureHouseForSportCountry({
+      sportId: rawSportId,
+      countryCode: rawCountryCode,
+      status,
+      avatarUrl: avatar_url,
+      description,
+      actorId: currentUser.userId ?? null,
+      rejectIfExists: true,
+    });
 
-    if (!sportData) {
-      return NextResponse.json<HousesPostResponse>(
-        { success: false, error: 'Sport not found.' },
-        { status: 404 }
-      );
-    }
+    const houseId = result.houseId;
 
-    const sportRow = sportData as SportRow;
-    const sportName =
-      resolveLocaleName(sportRow.name_i18n, sportRow.code) || 'Sport';
-
-    // 🔹 2) Obter nome do país e gerar nome base da House
-    const countryName = getCountryName(rawCountryCode); // 👈 AQUI
-    const baseName = `House of ${sportName} ${countryName}`;
-
-    const name_i18n = {
-      en: baseName,
-      pt: baseName,
-      es: baseName,
-      fr: baseName,
-      de: baseName,
-      it: baseName,
-    };
-
-    const baseKey = `${slugify(sportRow.code || sportName)}_${rawCountryCode}`;
-    let houseKey = baseKey;
-    let attempt = 1;
-    while (true) {
-      const { data: existing, error: keyError } = await supabaseAdmin
-        .from('houses_of_sports')
-        .select('id')
-        .eq('house_key', houseKey)
-        .maybeSingle();
-      if (keyError && keyError.code !== 'PGRST116') {
-        console.error('Supabase error checking house_key uniqueness:', keyError);
-        return NextResponse.json<HousesPostResponse>(
-          { success: false, error: 'Failed to validate house_key uniqueness.' },
-          { status: 500 },
-        );
-      }
-      if (!existing) break;
-      houseKey = `${baseKey}_${attempt++}`;
-    }
-
-    // ð¹ 3) Criar House com name_i18n preenchido
-    const { data, error } = await supabaseAdmin
-      .from('houses_of_sports')
-      .insert({
-        sport_id: rawSportId,
-        country_code: rawCountryCode,
-        status,
-        avatar_url,
-        description,
-        house_key: houseKey,
-        name_i18n,
-      })
-      .select('id, sport_id, country_code')
-      .single();
-
-    if (error || !data) {
-      console.error('Supabase error inserting new House of Sports:', error);
-      return NextResponse.json<HousesPostResponse>(
-        { success: false, error: 'Failed to create House of Sports.' },
-        { status: 500 }
-      );
-    }
-
-    const id = data.id as string;
-    const houseSportId = (data as { sport_id: string | null }).sport_id;
-    const houseCountry = (data as { country_code: string | null }).country_code;
-
-    await syncHouseMembersBySportCountry(id, houseSportId, houseCountry, { logPrefix: 'house:create' });
+    await syncHouseMembersBySportCountry(houseId, rawSportId, result.countryCode, {
+      logPrefix: 'house:create',
+    });
 
     await logHouseHistory({
-      houseId: id,
+      houseId,
       actorId: currentUser.userId ?? null,
       action: 'house.created',
       payload: {
         sport_id: rawSportId,
-        country_code: rawCountryCode,
-        status,
-        house_key: houseKey,
+        country_code: result.countryCode,
+        status: result.status,
+        house_key: result.houseKey,
         avatar_url,
       },
     });
@@ -554,16 +462,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<HousesPostResponse>(
       {
         success: true,
-        houseId: id,
-        house: { id },
+        houseId,
+        house: { id: houseId },
       },
       { status: 201 }
     );
   } catch (err: any) {
+    if (err instanceof EnsureHouseError) {
+      if (err.code === 'sport_not_found') {
+        return NextResponse.json<HousesPostResponse>(
+          { success: false, error: 'Sport not found.' },
+          { status: 404 },
+        );
+      }
+      if (err.code === 'house_exists') {
+        return NextResponse.json<HousesPostResponse>(
+          { success: false, error: 'House already exists for this sport and country.' },
+          { status: 409 },
+        );
+      }
+      if (err.code === 'invalid_input') {
+        return NextResponse.json<HousesPostResponse>(
+          { success: false, error: err.message },
+          { status: 400 },
+        );
+      }
+    }
+
     console.error('Unexpected error in POST /api/admin/houses:', err);
     return NextResponse.json<HousesPostResponse>(
       { success: false, error: err?.message || 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

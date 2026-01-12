@@ -142,6 +142,7 @@ export async function POST(request: NextRequest) {
       await syncUserHouseMembership(auth.user!.userId, {
         assignedVia: 'ONBOARDING',
         logPrefix: `house-head:${invite.house_id}`,
+        actorId: auth.user!.userId,
       });
     } catch (membershipError) {
       console.error('[head-invite/accept] failed to sync head membership', membershipError);

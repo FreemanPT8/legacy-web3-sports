@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabase';
+import { ensureHouseForSportCountry } from '../lib/houses/creation';
 
 type HouseRow = {
   id: string;
@@ -164,21 +165,39 @@ async function main() {
   const memberRows: UserHouseInsert[] = [];
   let skippedMembers = 0;
 
-  memberCandidates.forEach((user) => {
+  for (const user of memberCandidates) {
     const countryCode = user.primary_country_code?.toUpperCase();
     const sportId = user.primary_sport_id;
 
     if (!countryCode || !sportId) {
       skippedMembers += 1;
-      return;
+      continue;
     }
 
     const key = `${sportId}:${countryCode}`;
-    const house = houseByKey.get(key);
+    let house = houseByKey.get(key);
 
     if (!house) {
-      skippedMembers += 1;
-      return;
+      try {
+        const ensureResult = await ensureHouseForSportCountry({
+          sportId,
+          countryCode,
+          actorId: null,
+        });
+        house = {
+          id: ensureResult.houseId,
+          sport_id: sportId,
+          country_code: ensureResult.countryCode,
+        };
+        houseByKey.set(`${sportId}:${ensureResult.countryCode}`, house);
+        if (ensureResult.countryCode !== countryCode) {
+          houseByKey.set(`${sportId}:${countryCode}`, house);
+        }
+      } catch (error) {
+        console.error(`[backfill] Failed to ensure house for ${key}:`, error);
+        skippedMembers += 1;
+        continue;
+      }
     }
 
     memberRows.push({
@@ -187,7 +206,7 @@ async function main() {
       membership_role: 'MEMBER',
       assigned_via: 'SCRIPT',
     });
-  });
+  }
 
   await chunkedUpsert(memberRows, 'MEMBER');
 

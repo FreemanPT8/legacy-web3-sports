@@ -315,6 +315,7 @@ export async function POST(request: NextRequest) {
         const syncResult = await syncUserHouseMembership(userId, {
           assignedVia: 'ONBOARDING',
           logPrefix: 'signup',
+          actorId: userId,
         });
         if (!syncResult.success || !syncResult.houseId) {
           const note =

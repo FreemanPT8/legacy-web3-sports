@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
       await syncUserHouseMembership(authUser.id, {
         assignedVia: 'PROFILE',
         logPrefix: 'profile:sport',
+        actorId: authUser.id,
       });
     } catch (error) {
       console.error('[profile/sport] Failed to sync house membership after sport update', error);

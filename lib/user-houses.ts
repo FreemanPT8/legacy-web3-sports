@@ -1,5 +1,7 @@
 import { supabaseAdmin } from './supabase';
 import { getCountryCodeFromName, getCountryName } from './countries';
+import { ensureHouseForSportCountry, EnsureHouseError } from './houses/creation';
+import { logHouseHistory } from './houses/history';
 
 export type HouseMembershipRole = 'HEAD' | 'MODERATOR' | 'MEMBER';
 export type HouseAssignmentSource =
@@ -31,6 +33,8 @@ export interface SyncUserHouseMembershipResult {
 export interface SyncUserHouseMembershipOptions {
   assignedVia?: HouseAssignmentSource;
   logPrefix?: string;
+  actorId?: string | null;
+  autoCreateHouse?: boolean;
 }
 
 export interface SyncHouseMembersResult {
@@ -164,6 +168,70 @@ export async function syncUserHouseMembership(
       };
     }
 
+    const actorId = options.actorId ?? userId;
+    const allowAutoCreation = options.autoCreateHouse !== false;
+    let ensuredHouseId: string | null = null;
+
+    if (allowAutoCreation) {
+      try {
+        const ensureResult = await ensureHouseForSportCountry({
+          sportId,
+          countryCode,
+          actorId,
+        });
+        ensuredHouseId = ensureResult.houseId;
+
+        if (ensureResult.created) {
+          await logHouseHistory({
+            houseId: ensureResult.houseId,
+            actorId,
+            action: 'house.auto_created',
+            payload: {
+              sport_id: sportId,
+              country_code: ensureResult.countryCode,
+              source: assignedVia,
+            },
+          });
+
+          const backgroundLog = options.logPrefix
+            ? `${options.logPrefix}:auto-house`
+            : 'auto-house';
+          syncHouseMembersBySportCountry(
+            ensureResult.houseId,
+            sportId,
+            ensureResult.countryCode,
+            { logPrefix: backgroundLog },
+          ).catch((error) => {
+            console.error(
+              `${logPrefix}Failed to sync auto-created house members:`,
+              error,
+            );
+          });
+        }
+      } catch (error: any) {
+        if (error instanceof EnsureHouseError) {
+          if (error.code === 'sport_not_found') {
+            return {
+              success: false,
+              error: 'Sport not found while ensuring target house.',
+            };
+          }
+          if (error.code === 'invalid_input') {
+            return {
+              success: false,
+              error: 'Invalid data while ensuring target house.',
+            };
+          }
+        }
+
+        console.error(`${logPrefix}Failed to ensure matching house for user:`, error);
+        return {
+          success: false,
+          error: 'Failed to ensure matching house.',
+        };
+      }
+    }
+
     const rpcResult = await syncMembershipViaRpc(userId, sportId, countryCode);
     if (rpcResult) {
       return rpcResult;
@@ -187,25 +255,33 @@ export async function syncUserHouseMembership(
       existingHouseId = membershipRows[0]?.house_id ?? null;
     }
 
-    const { data: houseRowRaw, error: houseError } = await supabaseAdmin
-      .from('houses_of_sports')
-      .select('id')
-      .eq('sport_id', sportId)
-      .eq('country_code', countryCode)
-      .limit(1)
-      .maybeSingle();
+    let targetHouseId = ensuredHouseId;
 
-    const houseRow = (houseRowRaw ?? null) as HouseRow | null;
+    if (!targetHouseId) {
+      const { data: houseRowRaw, error: houseError } = await supabaseAdmin
+        .from('houses_of_sports')
+        .select('id')
+        .eq('sport_id', sportId)
+        .eq('country_code', countryCode)
+        .limit(1)
+        .maybeSingle();
 
-    if (houseError) {
-      console.error(`${logPrefix}Failed to load matching house for user:`, houseError);
-      return {
-        success: false,
-        error: 'Failed to load matching house.',
-      };
+      const houseRow = (houseRowRaw ?? null) as HouseRow | null;
+
+      if (houseError) {
+        console.error(`${logPrefix}Failed to load matching house for user:`, houseError);
+        return {
+          success: false,
+          error: 'Failed to load matching house.',
+        };
+      }
+
+      if (houseRow) {
+        targetHouseId = houseRow.id;
+      }
     }
 
-    if (!houseRow) {
+    if (!targetHouseId) {
       const { error: cleanupError } = await buildDeleteQuery();
       if (cleanupError) {
         console.error(`${logPrefix}Failed to clean up memberships for unmatched house:`, cleanupError);
@@ -225,7 +301,7 @@ export async function syncUserHouseMembership(
 
     const { error: deleteOthersError } = await buildDeleteQuery().neq(
       'house_id',
-      houseRow.id,
+      targetHouseId,
     );
     if (deleteOthersError) {
       console.error(`${logPrefix}Failed to remove non-matching memberships:`, deleteOthersError);
@@ -241,7 +317,7 @@ export async function syncUserHouseMembership(
         [
           {
             user_id: userId,
-            house_id: houseRow.id,
+            house_id: targetHouseId,
             membership_role: 'MEMBER' as HouseMembershipRole,
             assigned_via: assignedVia,
           },
@@ -259,8 +335,8 @@ export async function syncUserHouseMembership(
 
     return {
       success: true,
-      updated: existingHouseId !== houseRow.id,
-      houseId: houseRow.id,
+      updated: existingHouseId !== targetHouseId,
+      houseId: targetHouseId,
     };
   } catch (err) {
     console.error('Unexpected error in syncUserHouseMembership:', err);

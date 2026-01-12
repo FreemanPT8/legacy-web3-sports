@@ -573,6 +573,7 @@ export async function PATCH(request: NextRequest) {
     const syncResult = await syncUserHouseMembership(entry.user_id, {
       assignedVia: 'ADMIN_SYNC',
       logPrefix: 'sport-pools',
+      actorId: adminUserId ?? null,
     });
 
     if (!syncResult.success) {

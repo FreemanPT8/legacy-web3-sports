@@ -109,7 +109,11 @@ export async function PUT(request: NextRequest) {
     const membershipFields = ['country', 'primary_country_code', 'primary_sport_id', 'sport_id'];
     if (updates && membershipFields.some((field) => field in updates)) {
       try {
-        await syncUserHouseMembership(userId, { assignedVia: 'PROFILE', logPrefix: 'profile:update' });
+        await syncUserHouseMembership(userId, {
+          assignedVia: 'PROFILE',
+          logPrefix: 'profile:update',
+          actorId: userId,
+        });
       } catch (err) {
         console.error('[profile] Failed to sync house membership after profile update', err);
       }
