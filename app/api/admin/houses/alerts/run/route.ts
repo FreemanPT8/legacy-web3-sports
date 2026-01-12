@@ -60,7 +60,10 @@ async function scanHouse({
   const slaMs = PENDING_SLA_HOURS * 60 * 60 * 1000;
 
   const openAlerts = new Map<string, AlertRow>();
-  const { data: openRows, error: openError } = await supabaseAdmin!
+  const { data: openRows, error: openError }: {
+    data: { id: string | null; type: string | null }[] | null;
+    error: any;
+  } = await supabaseAdmin!
     .from('house_alerts')
     .select('id, type')
     .eq('house_id', house.id)
@@ -68,8 +71,8 @@ async function scanHouse({
   if (openError) {
     warnings.push('Falha ao carregar alertas existentes.');
   } else {
-    openRows?.forEach((row) => {
-      if (row?.type && row?.id) openAlerts.set(row.type, row as AlertRow);
+    (openRows ?? []).forEach((row) => {
+      if (row?.type && row?.id) openAlerts.set(row.type, { id: row.id, type: row.type });
     });
   }
 
@@ -188,4 +191,3 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   return handleRequest(request);
 }
-
