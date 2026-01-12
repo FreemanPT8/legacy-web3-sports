@@ -167,8 +167,11 @@ export async function GET(request: NextRequest) {
         console.error('Error loading sports for houses:', sportsError);
       } else {
         for (const s of (sportsData || []) as any[]) {
-          sportsById[s.id as string] = {
-            id: s.id as string,
+          const sportId = s.id as string;
+          sportsById[sportId] = {
+            id: sportId,
+            code: (s.code as string | null) ?? null,
+            name_i18n: (s.name_i18n as Record<string, string> | null) ?? null,
           };
         }
       }
