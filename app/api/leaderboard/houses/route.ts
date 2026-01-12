@@ -37,6 +37,18 @@ type HouseMemberCountRow = {
   count: number | null;
 };
 
+const normalizeNumeric = (
+  value: number | string | null | undefined,
+): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
 const PUBLIC_STATUS = {
   ACTIVE: 'ACTIVE',
   UNDER_CONSTRUCTION: 'UNDER_CONSTRUCTION',
@@ -213,7 +225,17 @@ export async function GET(request: NextRequest) {
 
     const totalsMap = new Map<string, HouseTotalsRow>();
     (totalsData ?? []).forEach((row: HouseTotalsRow) => {
-      totalsMap.set(row.house_id, row);
+      totalsMap.set(row.house_id, {
+        house_id: row.house_id,
+        total_xp: normalizeNumeric(row.total_xp),
+        member_count: normalizeNumeric(row.member_count),
+        member_only_count: normalizeNumeric(row.member_only_count),
+        head_count: normalizeNumeric(row.head_count),
+        head_xp: normalizeNumeric(row.head_xp),
+        moderator_count: normalizeNumeric(row.moderator_count),
+        moderator_xp: normalizeNumeric(row.moderator_xp),
+        member_xp: normalizeNumeric(row.member_xp),
+      });
     });
 
     const sportsMap = new Map<string, SportRow>();
@@ -223,7 +245,8 @@ export async function GET(request: NextRequest) {
 
     const memberCountsMap = new Map<string, number>();
     (memberCountsData ?? []).forEach((row: HouseMemberCountRow) => {
-      memberCountsMap.set(row.house_id, Number(row.count) || 0);
+      const normalizedCount = normalizeNumeric(row.count);
+      memberCountsMap.set(row.house_id, normalizedCount ?? 0);
     });
 
     const headCountMap = new Map<string, number>();
