@@ -55,6 +55,17 @@ interface HousesApiResponse {
   error?: string;
 }
 
+interface HouseLeaderboardEntry {
+  houseId: string;
+  totalXp: number;
+  memberCount: number;
+}
+
+interface HouseLeaderboardResponse {
+  success: boolean;
+  leaderboard: HouseLeaderboardEntry[];
+}
+
 const STATUS_LABELS: Record<HouseStatus, string> = {
   ACTIVE: 'Ativa',
   UNDER_CONSTRUCTION: 'Em construção',
@@ -84,14 +95,48 @@ export default function HousesPage() {
       setError(null);
 
       try {
-        const res = await fetch('/api/sports/houses?locale=pt');
-        const json: HousesApiResponse = await res.json();
+        const [housesRes, leaderboardRes] = await Promise.all([
+          fetch('/api/sports/houses?locale=pt'),
+          fetch('/api/leaderboard/houses?limit=500'),
+        ]);
 
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Erro ao carregar Houses of Sports.');
+        const housesJson: HousesApiResponse = await housesRes.json();
+        if (!housesRes.ok || !housesJson.success) {
+          throw new Error(housesJson.error || 'Erro ao carregar Houses of Sports.');
         }
 
-        setHouses(json.houses || []);
+        const leaderboardJson: HouseLeaderboardResponse | null = leaderboardRes.ok
+          ? await leaderboardRes.json()
+          : null;
+
+        const leaderboardMap = new Map<string, HouseLeaderboardEntry>();
+        if (leaderboardJson?.success) {
+          leaderboardJson.leaderboard?.forEach((entry) => {
+            leaderboardMap.set(entry.houseId, entry);
+          });
+        }
+
+        const enhancedHouses = (housesJson.houses || []).map((house) => {
+          const leaderboardEntry = leaderboardMap.get(house.id);
+          if (!leaderboardEntry) return house;
+
+          const patchedXp =
+            typeof leaderboardEntry.totalXp === 'number'
+              ? leaderboardEntry.totalXp
+              : house.xp_total ?? 0;
+          const patchedMembers =
+            typeof leaderboardEntry.memberCount === 'number'
+              ? leaderboardEntry.memberCount
+              : house.member_count ?? 0;
+
+          return {
+            ...house,
+            xp_total: patchedXp,
+            member_count: patchedMembers,
+          };
+        });
+
+        setHouses(enhancedHouses);
       } catch (err: any) {
         console.error('Erro ao carregar Houses:', err);
         setError(err?.message || 'Erro inesperado ao carregar Houses.');
