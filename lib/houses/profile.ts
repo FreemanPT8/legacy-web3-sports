@@ -235,47 +235,55 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       ?.map((row: { user_id: string | null }) => row.user_id)
       .filter((id): id is string => Boolean(id)) ?? [];
 
-  let computedMemberCount =
-    memberUserIds.length > 0
-      ? memberUserIds.length
-      : xpRow?.member_count ?? memberCountFallback ?? 0;
-  let computedXpTotal = xpRow?.total_xp ?? 0;
+  const viewMemberCount =
+    typeof xpRow?.member_count === 'number' ? (xpRow.member_count as number) : null;
+  const viewXpTotal = typeof xpRow?.total_xp === 'number' ? (xpRow.total_xp as number) : null;
+  const hasAggregatedTotals = viewMemberCount !== null && viewXpTotal !== null;
 
-  if (memberUserIds.length) {
-    const { data: xpUsers, error: xpUsersError } = await supabaseAdmin
-      .from('users')
-      .select('id, xp_total')
-      .in('id', memberUserIds);
-    if (xpUsersError) {
-      console.error('[houses/profile] Failed to load XP totals for members', xpUsersError);
-    } else {
-      computedXpTotal =
-        xpUsers?.reduce(
-          (sum: number, row: { xp_total: number | null }) => sum + (row.xp_total ?? 0),
-          0,
-        ) ?? 0;
-      computedMemberCount = memberUserIds.length;
-    }
-  }
+  let computedMemberCount = hasAggregatedTotals
+    ? (viewMemberCount as number)
+    : memberUserIds.length > 0
+    ? memberUserIds.length
+    : memberCountFallback ?? 0;
+  let computedXpTotal = hasAggregatedTotals ? (viewXpTotal as number) : 0;
 
-  const headOutsideMembership = headUser?.id && !memberUserIds.includes(headUser.id);
-  if (headOutsideMembership) {
-    let xpValue =
-      typeof headUser?.xp_total === 'number' ? (headUser.xp_total as number) : null;
-    if (xpValue === null && headUser?.id) {
-      const { data: headXpRow, error: headXpError } = await supabaseAdmin
+  if (!hasAggregatedTotals) {
+    if (memberUserIds.length) {
+      const { data: xpUsers, error: xpUsersError } = await supabaseAdmin
         .from('users')
-        .select('xp_total')
-        .eq('id', headUser.id)
-        .maybeSingle();
-      if (headXpError) {
-        console.error('[houses/profile] Failed to load Head XP total', headXpError);
+        .select('id, xp_total')
+        .in('id', memberUserIds);
+      if (xpUsersError) {
+        console.error('[houses/profile] Failed to load XP totals for members', xpUsersError);
+      } else {
+        computedXpTotal =
+          xpUsers?.reduce(
+            (sum: number, row: { xp_total: number | null }) => sum + (row.xp_total ?? 0),
+            0,
+          ) ?? 0;
+        computedMemberCount = memberUserIds.length;
       }
-      xpValue = (headXpRow?.xp_total as number | null) ?? null;
     }
-    if (typeof xpValue === 'number') {
-      computedXpTotal += xpValue;
-      computedMemberCount += 1;
+
+    const headOutsideMembership = headUser?.id && !memberUserIds.includes(headUser.id);
+    if (headOutsideMembership) {
+      let xpValue =
+        typeof headUser?.xp_total === 'number' ? (headUser.xp_total as number) : null;
+      if (xpValue === null && headUser?.id) {
+        const { data: headXpRow, error: headXpError } = await supabaseAdmin
+          .from('users')
+          .select('xp_total')
+          .eq('id', headUser.id)
+          .maybeSingle();
+        if (headXpError) {
+          console.error('[houses/profile] Failed to load Head XP total', headXpError);
+        }
+        xpValue = (headXpRow?.xp_total as number | null) ?? null;
+      }
+      if (typeof xpValue === 'number') {
+        computedXpTotal += xpValue;
+        computedMemberCount += 1;
+      }
     }
   }
 

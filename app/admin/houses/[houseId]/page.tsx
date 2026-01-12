@@ -650,7 +650,9 @@ export default function AdminHouseGovernancePage() {
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-xs text-white/70">
                     <p>Membros: {profileHouse.metrics.memberCount.toLocaleString()}</p>
-                    <p>XP total: {profileHouse.metrics.xpTotal.toLocaleString()}</p>
+                    <p>
+                      XP total (Head + membros): {profileHouse.metrics.xpTotal.toLocaleString()}
+                    </p>
                     <p>
                       Termos aceites:{' '}
                       <span className="font-semibold text-white">{profileHouse.metrics.termAcceptances}</span>
