@@ -358,14 +358,14 @@ function HousesSection({
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
               <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
-                <div className="-mx-4 -mt-4 mb-3 h-32 overflow-hidden rounded-t-xl border-b border-white/10 bg-[#000c12] sm:h-40">
+                <div className="-mx-4 -mt-4 mb-3 h-40 overflow-hidden rounded-t-xl border-b border-white/10 bg-[#000c12] sm:h-48">
                   {house.cover_image_url || house.avatar_url ? (
                     <SafeImage
                       src={house.cover_image_url || house.avatar_url || ''}
                       alt={house.name}
                       className="h-full w-full object-cover"
-                      width={3000}
-                      height={700}
+                      width={3750}
+                      height={875}
                     />
                   ) : (
                     <div className="h-full w-full bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950" />
