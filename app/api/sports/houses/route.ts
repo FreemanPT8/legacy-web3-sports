@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { AggregatedHouseStats, loadAggregatedHouseStats } from '@/lib/houses/stats';
 
 const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -29,29 +30,6 @@ type HouseRow = {
   avatar_url?: string | null;
   cover_image_url?: string | null;
   house_key?: string | null;
-};
-
-type HouseStatsRow = {
-  house_id: string;
-  member_count: number | null;
-  member_only_count: number | null;
-  head_count: number | null;
-  moderator_count: number | null;
-  total_xp: number | null;
-  head_xp: number | null;
-  moderator_xp: number | null;
-  member_xp: number | null;
-};
-
-type AggregatedHouseStats = {
-  member_count: number;
-  member_only_count: number;
-  head_count: number;
-  moderator_count: number;
-  total_xp: number;
-  head_xp: number;
-  moderator_xp: number;
-  member_xp: number;
 };
 
 type SportRow = {
@@ -85,21 +63,6 @@ type HouseModeratorRow = {
 };
 
 type PublicHouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
-
-const normalizeNumeric = (
-  value: number | string | null | undefined,
-  fallback = 0,
-): number => {
-  if (value === null || value === undefined) return fallback;
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : fallback;
-  }
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-  return fallback;
-};
 
 /**
  * Regra de negócio:
@@ -190,38 +153,8 @@ export async function GET(request: NextRequest) {
     // 3) House heads
     const houseIds = houses.map((h) => h.id);
 
-    const statsByHouseId: Map<string, AggregatedHouseStats> = new Map();
-    if (houseIds.length > 0) {
-      const { data: statsData, error: statsError } = await supabaseAdmin
-        .from('house_xp_totals')
-        .select(
-          'house_id, member_count, member_only_count, head_count, moderator_count, total_xp, head_xp, moderator_xp, member_xp',
-        )
-        .in('house_id', houseIds);
-
-      if (statsError) {
-        console.warn('Failed to load house_xp_totals for /sports/houses', statsError);
-      } else {
-        for (const row of (statsData ?? []) as HouseStatsRow[]) {
-          const headCount = normalizeNumeric(row.head_count);
-          const moderatorCount = normalizeNumeric(row.moderator_count);
-          const memberOnlyCount = normalizeNumeric(row.member_only_count);
-          const headXp = normalizeNumeric(row.head_xp);
-          const moderatorXp = normalizeNumeric(row.moderator_xp);
-          const memberXp = normalizeNumeric(row.member_xp);
-          statsByHouseId.set(row.house_id, {
-            member_count: headCount + moderatorCount + memberOnlyCount,
-            member_only_count: memberOnlyCount,
-            head_count: headCount,
-            moderator_count: moderatorCount,
-            total_xp: headXp + moderatorXp + memberXp,
-            head_xp: headXp,
-            moderator_xp: moderatorXp,
-            member_xp: memberXp,
-          });
-        }
-      }
-    }
+    const statsByHouseId: Map<string, AggregatedHouseStats> =
+      houseIds.length > 0 ? await loadAggregatedHouseStats(houseIds) : new Map();
 
     const { data: headsData, error: headsError } = await supabaseAdmin
       .from('house_heads')

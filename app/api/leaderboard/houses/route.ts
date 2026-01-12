@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { AggregatedHouseStats, loadAggregatedHouseStats } from '@/lib/houses/stats';
 
 type HouseRow = {
   id: string;
@@ -14,30 +15,6 @@ type SportRow = {
   id: string;
   code: string;
   name_i18n: Record<string, string> | null;
-};
-
-type HouseTotalsRow = {
-  house_id: string;
-  total_xp: number | null;
-  member_count: number | null;
-  member_only_count: number | null;
-  head_count: number | null;
-  head_xp: number | null;
-  moderator_count: number | null;
-  moderator_xp: number | null;
-  member_xp: number | null;
-};
-
-const normalizeNumeric = (
-  value: number | string | null | undefined,
-): number | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
 };
 
 const PUBLIC_STATUS = {
@@ -152,24 +129,7 @@ export async function GET(request: NextRequest) {
     const houseIds = houses.map((house) => house.id);
     const sportIds = Array.from(new Set(houses.map((house) => house.sport_id)));
 
-    const chunkedTotals = [];
-    for (const chunk of chunkArray(houseIds, 100)) {
-      const { data, error } = await supabaseAdmin
-        .from('house_xp_totals')
-        .select(
-          'house_id, total_xp, member_count, member_only_count, head_count, head_xp, moderator_count, moderator_xp, member_xp',
-        )
-        .in('house_id', chunk);
-
-      if (error) {
-        console.error('Error loading house_xp_totals chunk:', error);
-        return NextResponse.json(
-          { success: false, error: 'Failed to load XP totals.' },
-          { status: 500 },
-        );
-      }
-      chunkedTotals.push(...((data ?? []) as HouseTotalsRow[]));
-    }
+    const totalsMap: Map<string, AggregatedHouseStats> = await loadAggregatedHouseStats(houseIds);
 
     const chunkedSports: SportRow[] = [];
     if (sportIds.length > 0) {
@@ -191,21 +151,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const totalsMap = new Map<string, HouseTotalsRow>();
-    (chunkedTotals ?? []).forEach((row: HouseTotalsRow) => {
-      totalsMap.set(row.house_id, {
-        house_id: row.house_id,
-        total_xp: normalizeNumeric(row.total_xp),
-        member_count: normalizeNumeric(row.member_count),
-        member_only_count: normalizeNumeric(row.member_only_count),
-        head_count: normalizeNumeric(row.head_count),
-        head_xp: normalizeNumeric(row.head_xp),
-        moderator_count: normalizeNumeric(row.moderator_count),
-        moderator_xp: normalizeNumeric(row.moderator_xp),
-        member_xp: normalizeNumeric(row.member_xp),
-      });
-    });
-
     const sportsMap = new Map<string, SportRow>();
     (chunkedSports ?? []).forEach((sport: SportRow) => {
       sportsMap.set(sport.id, sport);
@@ -218,7 +163,7 @@ export async function GET(request: NextRequest) {
         const headCount = totals?.head_count ?? 0;
         const moderatorCount = totals?.moderator_count ?? 0;
         const membersOnly = totals?.member_only_count ?? 0;
-        const participantCount = headCount + moderatorCount + membersOnly;
+        const participantCount = totals?.member_count ?? headCount + moderatorCount + membersOnly;
         const xpBreakdown = {
           head: totals?.head_xp ?? 0,
           moderators: totals?.moderator_xp ?? 0,
