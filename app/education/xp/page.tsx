@@ -2145,6 +2145,13 @@ export default function EducationXpPage() {
   const [houseLoading, setHouseLoading] = useState(false);
   const [houseError, setHouseError] = useState<string | null>(null);
   const [houseReloadKey, setHouseReloadKey] = useState(0);
+  const [houseMetrics, setHouseMetrics] = useState<{
+    xpBreakdown: { head: number; moderators: number; members: number };
+    xpTotal: number;
+    roleCounts: { head: number; moderators: number; members: number };
+  } | null>(null);
+  const [houseMetricsLoading, setHouseMetricsLoading] = useState(false);
+  const [houseMetricsError, setHouseMetricsError] = useState<string | null>(null);
   const [remoteQueueLoaded, setRemoteQueueLoaded] = useState(() => !user);
   const [remoteQueueSignature, setRemoteQueueSignature] = useState<string | null>(null);
   const [remoteQueuePayload, setRemoteQueuePayload] = useState<OnboardingPopupData[] | null>(null);
@@ -2426,6 +2433,49 @@ const localizedQueueSource = useMemo(
   }, [houseKey, analyticsReloadKey, language]);
 
   useEffect(() => {
+    let active = true;
+    const targetHouseKey = (houseKey || fallbackHouseKey).toUpperCase();
+    const fetchMetrics = async () => {
+      try {
+        setHouseMetricsLoading(true);
+        setHouseMetricsError(null);
+        const response = await fetch(
+          `/api/houses/${encodeURIComponent(targetHouseKey)}?locale=${language}`,
+          { cache: 'no-store' },
+        );
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok || !data?.success || !data?.profile?.house?.metrics) {
+          throw new Error(data?.error || 'Failed to load house metrics');
+        }
+        const metrics = data.profile.house.metrics;
+        setHouseMetrics({
+          xpBreakdown: metrics.xpBreakdown,
+          xpTotal: metrics.xpTotal,
+          roleCounts: metrics.roleCounts,
+        });
+      } catch (error) {
+        if (!active) return;
+        console.error('[education/xp] Failed to load house metrics', error);
+        setHouseMetrics(null);
+        setHouseMetricsError(
+          language === 'pt'
+            ? 'Falhou o carregamento do XP oficial da tua House.'
+            : language === 'es'
+            ? 'No se pudo cargar el XP oficial de tu House.'
+            : 'Unable to load official House XP.',
+        );
+      } finally {
+        if (active) setHouseMetricsLoading(false);
+      }
+    };
+    void fetchMetrics();
+    return () => {
+      active = false;
+    };
+  }, [houseKey, fallbackHouseKey, language]);
+
+  useEffect(() => {
     if (!activePopup) return;
     void logRemoteAction(activePopup.id, 'delivered');
   }, [activePopup, logRemoteAction]);
@@ -2658,6 +2708,39 @@ const localizedQueueSource = useMemo(
       : language === 'es'
       ? 'Secuencia demo'
       : 'Demo sequence';
+  const houseXpCopy = useMemo(() => {
+    if (language === 'pt') {
+      return {
+        title: 'XP oficial da House',
+        description: `XP do Head, moderadores e membros da House ${houseLabel}. Fonte: house_xp_totals.`,
+        head: 'Head',
+        moderators: 'Moderadores',
+        members: 'Membros',
+        total: 'XP total',
+        empty: 'Sem dados oficiais ainda.',
+      };
+    }
+    if (language === 'es') {
+      return {
+        title: 'XP oficial de la House',
+        description: `Head, moderadores y miembros de la House ${houseLabel}. Fuente: house_xp_totals.`,
+        head: 'Head',
+        moderators: 'Moderadores',
+        members: 'Miembros',
+        total: 'XP total',
+        empty: 'Todavía no hay datos oficiales.',
+      };
+    }
+    return {
+      title: 'Official House XP',
+      description: `Head, moderators, and members inside ${houseLabel}. Source: house_xp_totals.`,
+      head: 'Head',
+      moderators: 'Moderators',
+      members: 'Members',
+      total: 'Total XP',
+      empty: 'No official data yet.',
+    };
+  }, [language, houseLabel]);
   const readyPopups = useMemo(
     () => queueWithLegacy.filter((popup) => isTriggerSatisfied(popup)),
     [queueWithLegacy, isTriggerSatisfied],
@@ -5703,6 +5786,51 @@ const localizedQueueSource = useMemo(
                       : 'Showing metrics stored in the Admin Panel.'}
                   </p>
                 ) : null}
+              <Card className={cn(UI.cardSurface, 'mt-4')}>
+                <CardContent className="space-y-4 p-5">
+                  <div className="flex flex-col gap-1">
+                    <h3 className={UI.cardTitle}>{houseXpCopy.title}</h3>
+                    <p className={cn(UI.bodyMuted, 'text-sm text-slate-300')}>{houseXpCopy.description}</p>
+                  </div>
+                  {houseMetricsLoading ? (
+                    <p className="text-sm text-slate-300">
+                      {language === 'pt'
+                        ? 'A carregar XP oficial...'
+                        : language === 'es'
+                        ? 'Cargando XP oficial...'
+                        : 'Loading official House XP...'}
+                    </p>
+                  ) : houseMetrics ? (
+                    <>
+                      <div className="space-y-3">
+                        {[
+                          { label: houseXpCopy.head, value: houseMetrics.xpBreakdown.head },
+                          { label: houseXpCopy.moderators, value: houseMetrics.xpBreakdown.moderators },
+                          { label: houseXpCopy.members, value: houseMetrics.xpBreakdown.members },
+                        ].map((row) => (
+                          <div
+                            key={row.label}
+                            className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#000c12]/40 px-4 py-3"
+                          >
+                            <p className="text-sm font-semibold text-white">{row.label}</p>
+                            <span className="text-lg font-semibold text-[#5af3ff]">
+                              {row.value.toLocaleString()} XP
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="rounded-2xl border border-[#5af3ff]/30 bg-[#00121c]/60 px-4 py-3 text-white">
+                        <p className="text-xs uppercase tracking-[0.3em] text-slate-300">{houseXpCopy.total}</p>
+                        <p className="text-3xl font-semibold text-[#5af3ff]">
+                          {houseMetrics.xpTotal.toLocaleString()} XP
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-slate-400">{houseMetricsError ?? houseXpCopy.empty}</p>
+                  )}
+                </CardContent>
+              </Card>
               </div>
             </section>
 

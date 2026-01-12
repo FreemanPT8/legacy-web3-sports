@@ -88,12 +88,13 @@ type StatsUsers = {
   new30d: number;
 };
 
-type SportPermissionAdmin = {
+type SpecialPermissionAdmin = {
   id: string;
   displayName: string;
   username: string | null;
   role: 'Admin' | 'Super Admin';
-  hasPermission: boolean;
+  canManageHouses: boolean;
+  canCreateSports: boolean;
 };
 
 export default function AdminUsersPage() {
@@ -139,15 +140,18 @@ export default function AdminUsersPage() {
   const [loadingUserPermissions, setLoadingUserPermissions] = useState(false);
   const [savingUserPermissions, setSavingUserPermissions] = useState(false);
   const [userStats, setUserStats] = useState<StatsUsers | null>(null);
-  const [sportPermissionAdmins, setSportPermissionAdmins] = useState<SportPermissionAdmin[]>([]);
-  const [loadingSportAdmins, setLoadingSportAdmins] = useState(false);
-  const [updatingSportAdminId, setUpdatingSportAdminId] = useState<string | null>(null);
+  const [specialPermissionAdmins, setSpecialPermissionAdmins] = useState<SpecialPermissionAdmin[]>([]);
+  const [loadingSpecialPermissions, setLoadingSpecialPermissions] = useState(false);
+  const [updatingSpecialPermission, setUpdatingSpecialPermission] = useState<{
+    adminId: string;
+    key: PermissionKey;
+  } | null>(null);
 
   const isSuperAdmin = user?.role === 'Super Admin';
 
-  const loadSportPermissionAdmins = useCallback(async () => {
+  const loadSpecialPermissionAdmins = useCallback(async () => {
     if (!isSuperAdmin) return;
-    setLoadingSportAdmins(true);
+    setLoadingSpecialPermissions(true);
     try {
       const token = getToken();
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -159,7 +163,7 @@ export default function AdminUsersPage() {
         throw new Error(data?.error || 'Failed to load admin permissions list.');
       }
 
-      const rows: SportPermissionAdmin[] = (data.admins as any[])
+      const rows: SpecialPermissionAdmin[] = (data.admins as any[])
         .filter((admin) => admin.role === 'Super Admin' || admin.role === 'Admin')
         .map((admin) => {
           const effective = new Set<string>([
@@ -172,8 +176,9 @@ export default function AdminUsersPage() {
             displayName,
             username: admin.username,
             role: admin.role,
-            hasPermission: effective.has('canCreateSports'),
-          } as SportPermissionAdmin;
+            canCreateSports: effective.has('canCreateSports'),
+            canManageHouses: effective.has('canManageHouses'),
+          } as SpecialPermissionAdmin;
         })
         .sort((a, b) => {
           if (a.role === b.role) {
@@ -182,9 +187,9 @@ export default function AdminUsersPage() {
           return a.role === 'Super Admin' ? -1 : 1;
         });
 
-      setSportPermissionAdmins(rows);
+      setSpecialPermissionAdmins(rows);
     } catch (err) {
-      console.error('Error loading sport permission admins:', err);
+      console.error('Error loading special permission admins:', err);
       toast({
         title: 'Erro ao carregar permissões',
         description:
@@ -192,7 +197,7 @@ export default function AdminUsersPage() {
         variant: 'destructive',
       });
     } finally {
-      setLoadingSportAdmins(false);
+      setLoadingSpecialPermissions(false);
     }
   }, [getToken, isSuperAdmin, toast]);
 
@@ -323,9 +328,9 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (isSuperAdmin) {
-      loadSportPermissionAdmins();
+      loadSpecialPermissionAdmins();
     }
-  }, [isSuperAdmin, loadSportPermissionAdmins]);
+  }, [isSuperAdmin, loadSpecialPermissionAdmins]);
 
   // Opcoes de filtros (pais e desporto)
   const countryOptions = useMemo(() => {
@@ -344,8 +349,12 @@ export default function AdminUsersPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [users]);
 
-  const handleToggleAdminSportPermission = async (adminId: string, enabled: boolean) => {
-    setUpdatingSportAdminId(adminId);
+  const handleToggleAdminPermission = async (
+    adminId: string,
+    key: PermissionKey,
+    enabled: boolean,
+  ) => {
+    setUpdatingSpecialPermission({ adminId, key });
     try {
       const token = getToken();
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -354,29 +363,57 @@ export default function AdminUsersPage() {
       const response = await fetch(`/api/admin/users/${adminId}/permissions`, {
         method: 'PATCH',
         headers,
-        body: JSON.stringify({ permissions: { canCreateSports: enabled } }),
+        body: JSON.stringify({ permissions: { [key]: enabled } }),
       });
       const data = await response.json();
       if (!response.ok || !data?.success) {
         throw new Error(data?.error || 'Não foi possível atualizar a permissão.');
       }
 
+      const permissionMessages: Record<
+        PermissionKey,
+        { enabled: string; disabled: string }
+      > = {
+        canCreateSports: {
+          enabled: 'Este Admin pode agora criar novos desportos.',
+          disabled: 'Permissão de criar desportos removida.',
+        },
+        canManageHouses: {
+          enabled: 'Este Admin pode agora criar Houses manualmente.',
+          disabled: 'Permissão de gestão de Houses removida.',
+        },
+        canManageUsers: { enabled: '', disabled: '' },
+        canManageHeads: { enabled: '', disabled: '' },
+        canManageOnboarding: { enabled: '', disabled: '' },
+        canManageCourses: { enabled: '', disabled: '' },
+        canManageBlog: { enabled: '', disabled: '' },
+        canManageForum: { enabled: '', disabled: '' },
+        canManageXP: { enabled: '', disabled: '' },
+        canManageAnalytics: { enabled: '', disabled: '' },
+        canManageSettings: { enabled: '', disabled: '' },
+      };
+
+      const descriptor = permissionMessages[key];
+      const description = descriptor
+        ? enabled
+          ? descriptor.enabled
+          : descriptor.disabled
+        : 'Permissões atualizadas.';
+
       toast({
         title: 'Permissões atualizadas',
-        description: enabled
-          ? 'Este Admin pode agora criar novos desportos.'
-          : 'Permissão removida com sucesso.',
+        description,
       });
-      await loadSportPermissionAdmins();
+      await loadSpecialPermissionAdmins();
     } catch (err) {
-      console.error('Erro ao atualizar permissão de desporto:', err);
+      console.error('Erro ao atualizar permissão:', err);
       toast({
         title: 'Erro ao atualizar permissão',
         description: err instanceof Error ? err.message : 'Não foi possível atualizar esta permissão.',
         variant: 'destructive',
       });
     } finally {
-      setUpdatingSportAdminId(null);
+      setUpdatingSpecialPermission(null);
     }
   };
 
@@ -911,6 +948,10 @@ export default function AdminUsersPage() {
   const inactiveFilterButtonClasses =
     'border-white/40 text-white hover:bg-white/10';
 
+  const isUpdatingSpecialPermission = (adminId: string, key: PermissionKey) =>
+    updatingSpecialPermission?.adminId === adminId &&
+    updatingSpecialPermission?.key === key;
+
   if (loading || !permissionsLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#000c12] text-white">
@@ -966,6 +1007,94 @@ export default function AdminUsersPage() {
               </Card>
             ))}
           </div>
+
+          {isSuperAdmin && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card className="border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
+                <CardHeader>
+                  <CardTitle className="text-[#fdd87c]">Governança das Houses</CardTitle>
+                  <p className="text-sm text-slate-200">
+                    Escolhe quem pode criar Houses manualmente e gerir pedidos pendentes.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {loadingSpecialPermissions ? (
+                    <p className="text-sm text-slate-300">A carregar lista de admins...</p>
+                  ) : specialPermissionAdmins.length === 0 ? (
+                    <p className="text-sm text-slate-400">Sem Admins registados.</p>
+                  ) : (
+                    specialPermissionAdmins.map((admin) => (
+                      <div
+                        key={`house-${admin.id}`}
+                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white"
+                      >
+                        <div>
+                          <p className="font-semibold text-white">{admin.displayName}</p>
+                          <p className="text-xs text-slate-400">
+                            {admin.role}
+                            {admin.username ? ` · ${admin.username}` : ''}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={admin.canManageHouses}
+                          disabled={
+                            !canEditUsers ||
+                            !isSuperAdmin ||
+                            isUpdatingSpecialPermission(admin.id, 'canManageHouses')
+                          }
+                          onCheckedChange={(checked) =>
+                            handleToggleAdminPermission(admin.id, 'canManageHouses', Boolean(checked))
+                          }
+                        />
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
+                <CardHeader>
+                  <CardTitle className="text-[#fdd87c]">Criar novos desportos</CardTitle>
+                  <p className="text-sm text-slate-200">
+                    Define que Admins podem adicionar desportos à plataforma.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {loadingSpecialPermissions ? (
+                    <p className="text-sm text-slate-300">A carregar lista de admins...</p>
+                  ) : specialPermissionAdmins.length === 0 ? (
+                    <p className="text-sm text-slate-400">Sem Admins registados.</p>
+                  ) : (
+                    specialPermissionAdmins.map((admin) => (
+                      <div
+                        key={`sport-${admin.id}`}
+                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white"
+                      >
+                        <div>
+                          <p className="font-semibold text-white">{admin.displayName}</p>
+                          <p className="text-xs text-slate-400">
+                            {admin.role}
+                            {admin.username ? ` · ${admin.username}` : ''}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={admin.canCreateSports}
+                          disabled={
+                            !canEditUsers ||
+                            !isSuperAdmin ||
+                            isUpdatingSpecialPermission(admin.id, 'canCreateSports')
+                          }
+                          onCheckedChange={(checked) =>
+                            handleToggleAdminPermission(admin.id, 'canCreateSports', Boolean(checked))
+                          }
+                        />
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* USER MANAGEMENT */}
           <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
