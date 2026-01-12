@@ -274,25 +274,19 @@ export async function GET(request: NextRequest) {
           typeof totals?.member_only_count === 'number'
             ? totals.member_only_count
             : memberCountsMap.get(house.id) ?? 0;
-        const fallbackParticipants = headCount + moderatorCount + (membersOnly ?? 0);
-        const participantCount =
-          typeof totals?.member_count === 'number'
-            ? Math.max(totals.member_count, fallbackParticipants)
-            : fallbackParticipants;
+        const participantCount = headCount + moderatorCount + (membersOnly ?? 0);
         const xpBreakdown = {
           head: totals?.head_xp ?? 0,
           moderators: totals?.moderator_xp ?? 0,
           members: totals?.member_xp ?? 0,
         };
-        const totalXp =
-          totals?.total_xp ??
-          xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
+        const totalXp = xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
         const memberCount = participantCount;
         const participantBreakdown = {
           total: memberCount,
           head: headCount,
           moderators: moderatorCount,
-          members: membersOnly ?? Math.max(memberCount - headCount - moderatorCount, 0),
+          members: membersOnly,
         };
         const sportName = sport ? resolveName(sport.name_i18n, sport.code) : null;
         const houseName = resolveName(house.name_i18n, sportName);

@@ -34,7 +34,13 @@ type HouseRow = {
 type HouseStatsRow = {
   house_id: string;
   member_count: number | null;
+  member_only_count: number | null;
+  head_count: number | null;
+  moderator_count: number | null;
   total_xp: number | null;
+  head_xp: number | null;
+  moderator_xp: number | null;
+  member_xp: number | null;
 };
 
 type SportRow = {
@@ -158,20 +164,46 @@ export async function GET(request: NextRequest) {
     // 3) House heads
     const houseIds = houses.map((h) => h.id);
 
-    const statsByHouseId = new Map<string, { member_count: number; total_xp: number }>();
+    const statsByHouseId = new Map<
+      string,
+      {
+        member_count: number;
+        member_only_count: number;
+        head_count: number;
+        moderator_count: number;
+        total_xp: number;
+        head_xp: number;
+        moderator_xp: number;
+        member_xp: number;
+      }
+    >();
     if (houseIds.length > 0) {
       const { data: statsData, error: statsError } = await supabaseAdmin
         .from('house_xp_totals')
-        .select('house_id, member_count, total_xp')
+        .select(
+          'house_id, member_count, member_only_count, head_count, moderator_count, total_xp, head_xp, moderator_xp, member_xp',
+        )
         .in('house_id', houseIds);
 
       if (statsError) {
         console.warn('Failed to load house_xp_totals for /sports/houses', statsError);
       } else {
         for (const row of (statsData ?? []) as HouseStatsRow[]) {
+          const headCount = row.head_count ?? 0;
+          const moderatorCount = row.moderator_count ?? 0;
+          const memberOnlyCount = row.member_only_count ?? 0;
+          const headXp = row.head_xp ?? 0;
+          const moderatorXp = row.moderator_xp ?? 0;
+          const memberXp = row.member_xp ?? 0;
           statsByHouseId.set(row.house_id, {
-            member_count: row.member_count ?? 0,
-            total_xp: row.total_xp ?? 0,
+            member_count: headCount + moderatorCount + memberOnlyCount,
+            member_only_count: memberOnlyCount,
+            head_count: headCount,
+            moderator_count: moderatorCount,
+            total_xp: headXp + moderatorXp + memberXp,
+            head_xp: headXp,
+            moderator_xp: moderatorXp,
+            member_xp: memberXp,
           });
         }
       }
