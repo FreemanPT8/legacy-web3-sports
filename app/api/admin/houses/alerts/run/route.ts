@@ -76,7 +76,10 @@ async function scanHouse({
     });
   }
 
-  const { data: pendingRows, error: pendingError } = await supabaseAdmin!
+  const { data: pendingRows, error: pendingError }: {
+    data: { created_at: string | null }[] | null;
+    error: any;
+  } = await supabaseAdmin!
     .from('house_join_requests')
     .select('created_at')
     .eq('house_id', house.id)
@@ -86,7 +89,7 @@ async function scanHouse({
     return { triggered, resolved, warnings };
   }
   const pendingCount = pendingRows?.length ?? 0;
-  const overdue = pendingRows?.filter((row) => {
+  const overdue = (pendingRows ?? []).filter((row) => {
     if (!row?.created_at) return false;
     const created = new Date(row.created_at).getTime();
     return Number.isFinite(created) && now - created > slaMs;
