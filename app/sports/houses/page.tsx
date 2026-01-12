@@ -358,7 +358,7 @@ function HousesSection({
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
               <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
-                <div className="mb-3 h-20 overflow-hidden rounded-lg border border-white/10 bg-[#000c12] sm:h-24">
+                <div className="-mx-4 -mt-4 mb-3 h-24 overflow-hidden rounded-t-xl border-b border-white/10 bg-[#000c12] sm:h-32">
                   {house.cover_image_url || house.avatar_url ? (
                     <SafeImage
                       src={house.cover_image_url || house.avatar_url || ''}
@@ -372,24 +372,22 @@ function HousesSection({
                   )}
                 </div>
 
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#000c12] text-[11px] font-semibold text-slate-200">
-                      <span>{initials}</span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-white">
-                        {house.name}
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-white">
+                      {house.name}
+                    </p>
+                    {house.sport && (
+                      <p className="truncate text-[11px] text-slate-200">
+                        {house.sport.name} · {house.sport.code}
                       </p>
-                      {house.sport && (
-                        <p className="truncate text-[11px] text-slate-200">
-                          {house.sport.name} · {house.sport.code}
-                        </p>
-                      )}
-                    </div>
+                    )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 text-[10px]">
+                    <span className="rounded px-2 py-0.5 font-mono uppercase text-slate-100 border border-white/20 bg-[#020b16]">
+                      {initials}
+                    </span>
                     {house.country_code && (
                       <span className="rounded px-2 py-0.5 text-[10px] font-mono uppercase text-cyan-100 border border-white/20 bg-[#020b16]">
                         {house.country_code}
