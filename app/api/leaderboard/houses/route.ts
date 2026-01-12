@@ -28,15 +28,6 @@ type HouseTotalsRow = {
   member_xp: number | null;
 };
 
-type HouseRoleRow = {
-  house_id: string;
-};
-
-type HouseMemberCountRow = {
-  house_id: string;
-  count: number | null;
-};
-
 const normalizeNumeric = (
   value: number | string | null | undefined,
 ): number | null => {
@@ -93,6 +84,15 @@ const resolveName = (
   }
   return fallback ?? 'Unnamed House';
 };
+
+const chunkArray = <T,>(items: T[], size: number) => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+};
+
 
 const normalizeStatus = (
   dbStatus: string | null,
@@ -152,79 +152,47 @@ export async function GET(request: NextRequest) {
     const houseIds = houses.map((house) => house.id);
     const sportIds = Array.from(new Set(houses.map((house) => house.sport_id)));
 
-    const totalsPromise = supabaseAdmin
-      .from('house_xp_totals')
-      .select(
-        'house_id, total_xp, member_count, member_only_count, head_count, head_xp, moderator_count, moderator_xp, member_xp',
-      )
-      .in('house_id', houseIds);
+    const chunkedTotals = [];
+    for (const chunk of chunkArray(houseIds, 100)) {
+      const { data, error } = await supabaseAdmin
+        .from('house_xp_totals')
+        .select(
+          'house_id, total_xp, member_count, member_only_count, head_count, head_xp, moderator_count, moderator_xp, member_xp',
+        )
+        .in('house_id', chunk);
 
-    const memberCountsPromise = supabaseAdmin
-      .from('user_houses')
-      .select('house_id, count:user_id', { head: false })
-      .eq('membership_role', 'MEMBER')
-      .is('removed_at', null)
-      .in('house_id', houseIds);
-
-    const sportsPromise =
-      sportIds.length > 0
-        ? supabaseAdmin.from('sports').select('id, code, name_i18n').in('id', sportIds)
-        : Promise.resolve({ data: [] as SportRow[], error: null });
-
-    const [
-      { data: totalsData, error: totalsError },
-      { data: sportsData, error: sportsError },
-      { data: memberCountsData, error: memberCountsError },
-    ] = await Promise.all([totalsPromise, sportsPromise, memberCountsPromise]);
-
-    if (totalsError) {
-      console.error('Error loading house_xp_totals:', totalsError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load XP totals.' },
-        { status: 500 },
-      );
+      if (error) {
+        console.error('Error loading house_xp_totals chunk:', error);
+        return NextResponse.json(
+          { success: false, error: 'Failed to load XP totals.' },
+          { status: 500 },
+        );
+      }
+      chunkedTotals.push(...((data ?? []) as HouseTotalsRow[]));
     }
 
-    if (sportsError) {
-      console.error('Error loading sports for houses:', sportsError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load sports metadata.' },
-        { status: 500 },
-      );
-    }
+    const chunkedSports: SportRow[] = [];
+    if (sportIds.length > 0) {
+      for (const chunk of chunkArray(sportIds, 100)) {
+        const { data, error } = await supabaseAdmin
+          .from('sports')
+          .select('id, code, name_i18n')
+          .in('id', chunk);
 
-    if (memberCountsError) {
-      console.warn('Error loading user_houses counts. Falling back to XP data only.', memberCountsError);
-    }
+        if (error) {
+          console.error('Error loading sports for houses:', error);
+          return NextResponse.json(
+            { success: false, error: 'Failed to load sports metadata.' },
+            { status: 500 },
+          );
+        }
 
-    const { data: headRows, error: headError } = await supabaseAdmin
-      .from('house_heads')
-      .select('house_id')
-      .in('house_id', houseIds);
-
-    if (headError) {
-      console.error('Error loading house_heads:', headError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load house head counts.' },
-        { status: 500 },
-      );
-    }
-
-    const { data: moderatorRows, error: moderatorError } = await supabaseAdmin
-      .from('house_moderators')
-      .select('house_id')
-      .in('house_id', houseIds);
-
-    if (moderatorError) {
-      console.error('Error loading house_moderators:', moderatorError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load house moderator counts.' },
-        { status: 500 },
-      );
+        chunkedSports.push(...((data ?? []) as SportRow[]));
+      }
     }
 
     const totalsMap = new Map<string, HouseTotalsRow>();
-    (totalsData ?? []).forEach((row: HouseTotalsRow) => {
+    (chunkedTotals ?? []).forEach((row: HouseTotalsRow) => {
       totalsMap.set(row.house_id, {
         house_id: row.house_id,
         total_xp: normalizeNumeric(row.total_xp),
@@ -239,48 +207,27 @@ export async function GET(request: NextRequest) {
     });
 
     const sportsMap = new Map<string, SportRow>();
-    (sportsData ?? []).forEach((sport: SportRow) => {
+    (chunkedSports ?? []).forEach((sport: SportRow) => {
       sportsMap.set(sport.id, sport);
-    });
-
-    const memberCountsMap = new Map<string, number>();
-    (memberCountsData ?? []).forEach((row: HouseMemberCountRow) => {
-      const normalizedCount = normalizeNumeric(row.count);
-      memberCountsMap.set(row.house_id, normalizedCount ?? 0);
-    });
-
-    const headCountMap = new Map<string, number>();
-    (headRows ?? []).forEach((row: HouseRoleRow) => {
-      const current = headCountMap.get(row.house_id) ?? 0;
-      headCountMap.set(row.house_id, current + 1);
-    });
-
-    const moderatorCountMap = new Map<string, number>();
-    (moderatorRows ?? []).forEach((row: HouseRoleRow) => {
-      const current = moderatorCountMap.get(row.house_id) ?? 0;
-      moderatorCountMap.set(row.house_id, current + 1);
     });
 
     const leaderboard = houses
       .map<HouseLeaderboardEntry>((house) => {
         const totals = totalsMap.get(house.id);
         const sport = sportsMap.get(house.sport_id) || null;
-        const viewHeadCount = typeof totals?.head_count === 'number' ? totals.head_count : null;
-        const viewModeratorCount =
-          typeof totals?.moderator_count === 'number' ? totals.moderator_count : null;
-        const headCount = viewHeadCount ?? headCountMap.get(house.id) ?? 0;
-        const moderatorCount = viewModeratorCount ?? moderatorCountMap.get(house.id) ?? 0;
-        const membersOnly =
-          typeof totals?.member_only_count === 'number'
-            ? totals.member_only_count
-            : memberCountsMap.get(house.id) ?? 0;
-        const participantCount = headCount + moderatorCount + (membersOnly ?? 0);
+        const headCount = totals?.head_count ?? 0;
+        const moderatorCount = totals?.moderator_count ?? 0;
+        const membersOnly = totals?.member_only_count ?? 0;
+        const participantCount = headCount + moderatorCount + membersOnly;
         const xpBreakdown = {
           head: totals?.head_xp ?? 0,
           moderators: totals?.moderator_xp ?? 0,
           members: totals?.member_xp ?? 0,
         };
-        const totalXp = xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
+        const totalXp =
+          typeof totals?.total_xp === 'number'
+            ? totals.total_xp
+            : xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
         const memberCount = participantCount;
         const participantBreakdown = {
           total: memberCount,
