@@ -350,6 +350,33 @@ function HousesSection({
             ? `Head of House: ${headUsername}`
             : 'Head of House a definir.';
 
+          const renderTitle = () => {
+            if (!house.sport?.name) return house.name;
+
+            const houseNameLower = house.name.toLowerCase();
+            const sportNameLower = house.sport.name.toLowerCase();
+            const sportIndex = houseNameLower.indexOf(sportNameLower);
+
+            if (sportIndex === -1) return house.name;
+
+            const before = house.name.slice(0, sportIndex);
+            const sportText = house.name.slice(
+              sportIndex,
+              sportIndex + house.sport.name.length,
+            );
+            const after = house.name.slice(
+              sportIndex + house.sport.name.length,
+            );
+
+            return (
+              <>
+                {before}
+                <span className="text-[#fdd87c]">{sportText}</span>
+                {after}
+              </>
+            );
+          };
+
           return (
             <Link key={house.id} href={`/sports/houses/${house.id}`}>
               <div className="flex h-full flex-col rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_20px_60px_rgba(3,10,25,0.55)] transition hover:border-cyan-400/70 hover:shadow-[0_0_22px_rgba(34,211,238,0.32)]">
@@ -369,7 +396,7 @@ function HousesSection({
 
                 <div className="mb-2 flex flex-col gap-1">
                   <p className="truncate text-base font-semibold text-white">
-                    {house.name}
+                    {renderTitle()}
                   </p>
                   <p className="text-[11px] text-slate-200">{headLine}</p>
                 </div>
