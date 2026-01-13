@@ -429,6 +429,21 @@ export async function syncHouseMembersBySportCountry(
       }
     }
 
+    try {
+      const { error: userError } = await adminClient
+        .from('users')
+        .update({
+          requires_sport_assignment: false,
+          sport_assignment_notes: null,
+        })
+        .in('id', candidateList);
+      if (userError) {
+        console.error(`${logPrefix}Failed to clear assignment flags for users in house ${houseId}:`, userError);
+      }
+    } catch (error) {
+      console.error(`${logPrefix}Unexpected error clearing assignment flags for house ${houseId}:`, error);
+    }
+
     return { success: true, attempted: candidateList.length, assigned };
   } catch (error) {
     console.error(`${logPrefix}Unexpected error syncing members for house ${houseId}:`, error);
