@@ -545,6 +545,23 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const entryCountry =
+      entry.country_code ??
+      entry.suggested_country_code ??
+      entry.user?.primary_country_code ??
+      entry.user?.country ??
+      null;
+    if (
+      entryCountry &&
+      houseRow.country_code &&
+      entryCountry.toUpperCase() !== houseRow.country_code.toUpperCase()
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'House country does not match pool entry.' },
+        { status: 400 },
+      );
+    }
+
     const currentPrimarySport = entry.user?.sport_id ?? null;
     const currentSecondarySport = entry.user?.primary_sport_id ?? null;
     if (
