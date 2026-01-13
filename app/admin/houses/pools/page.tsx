@@ -294,10 +294,24 @@ export default function SportPoolsAdminPage() {
     };
   }, []);
 
+  const assignCountryCode = useMemo(() => {
+    if (!assignModalEntry) return null;
+    const raw =
+      assignModalEntry.countryCode ??
+      assignModalEntry.suggestedCountryCode ??
+      assignModalEntry.user?.primaryCountryCode ??
+      null;
+    return raw ? raw.toUpperCase() : null;
+  }, [assignModalEntry]);
+
   const filteredHouses = useMemo(() => {
     if (!assignSportId) return [];
-    return houses.filter((house) => house.sport_id === assignSportId);
-  }, [houses, assignSportId]);
+    return houses.filter((house) => {
+      if (house.sport_id !== assignSportId) return false;
+      if (!assignCountryCode) return true;
+      return (house.country_code || '').toUpperCase() === assignCountryCode;
+    });
+  }, [houses, assignSportId, assignCountryCode]);
 
   const availableCountries = useMemo(() => {
     const codes = new Set<string>();
@@ -515,6 +529,13 @@ export default function SportPoolsAdminPage() {
     setAssignHouseId(entry.houseId ?? '');
     setAssignNote(entry.notes ?? '');
   };
+
+  useEffect(() => {
+    if (!assignModalEntry || !assignSportId || assignHouseId) return;
+    if (filteredHouses.length === 1) {
+      setAssignHouseId(filteredHouses[0].id);
+    }
+  }, [assignModalEntry, assignSportId, assignHouseId, filteredHouses]);
 
   const handleAssign = async () => {
     if (!assignModalEntry) return;
