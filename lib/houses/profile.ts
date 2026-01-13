@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { isMissingColumn, isMissingTable } from '@/lib/postgres';
 import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
+import { loadHouseStatsWithFallback } from '@/lib/houses/stats';
 
 export const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -224,19 +225,12 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
     termCount = termCountResult ?? 0;
   }
 
-  const { data: xpRow, error: xpError } = await supabaseAdmin
-    .from('house_xp_totals')
-    .select(
-      'total_xp, member_count, member_only_count, head_count, head_xp, moderator_count, moderator_xp, member_xp',
-    )
-    .eq('house_id', house.id)
-    .maybeSingle();
-  if (xpError) {
-    if (isMissingTable(xpError) || isMissingColumn(xpError)) {
-      console.warn('[houses/profile] house_xp_totals missing. Falling back to user_houses counts.');
-    } else {
-      console.error('[houses/profile] Failed to load house_xp_totals row', xpError);
-    }
+  let statsForHouse = null;
+  try {
+    const statsMap = await loadHouseStatsWithFallback([house.id]);
+    statsForHouse = statsMap.get(house.id) ?? null;
+  } catch (error) {
+    console.error('[houses/profile] Failed to load aggregated house stats', error);
   }
 
   let membershipRows: { user_id: string | null }[] = [];
@@ -326,16 +320,21 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
   let fallbackModeratorCount = moderatorUserIds.length;
 
   const aggregates = {
-    totalXp: typeof xpRow?.total_xp === 'number' ? (xpRow.total_xp as number) : null,
-    participantCount: typeof xpRow?.member_count === 'number' ? (xpRow.member_count as number) : null,
+    totalXp: typeof statsForHouse?.total_xp === 'number' ? statsForHouse.total_xp : null,
+    participantCount:
+      typeof statsForHouse?.member_count === 'number' ? statsForHouse.member_count : null,
     registeredMembers:
-      typeof xpRow?.member_only_count === 'number' ? (xpRow.member_only_count as number) : null,
-    headCount: typeof xpRow?.head_count === 'number' ? (xpRow.head_count as number) : null,
+      typeof statsForHouse?.member_only_count === 'number'
+        ? statsForHouse.member_only_count
+        : null,
+    headCount: typeof statsForHouse?.head_count === 'number' ? statsForHouse.head_count : null,
     moderatorCount:
-      typeof xpRow?.moderator_count === 'number' ? (xpRow.moderator_count as number) : null,
-    headXp: typeof xpRow?.head_xp === 'number' ? (xpRow.head_xp as number) : null,
-    moderatorXp: typeof xpRow?.moderator_xp === 'number' ? (xpRow.moderator_xp as number) : null,
-    memberXp: typeof xpRow?.member_xp === 'number' ? (xpRow.member_xp as number) : null,
+      typeof statsForHouse?.moderator_count === 'number' ? statsForHouse.moderator_count : null,
+    headXp: typeof statsForHouse?.head_xp === 'number' ? statsForHouse.head_xp : null,
+    moderatorXp:
+      typeof statsForHouse?.moderator_xp === 'number' ? statsForHouse.moderator_xp : null,
+    memberXp:
+      typeof statsForHouse?.member_xp === 'number' ? statsForHouse.member_xp : null,
   };
 
   const needsFallback =
