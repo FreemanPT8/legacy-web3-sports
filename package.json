@@ -14,6 +14,7 @@
     "seed": "ts-node scripts/seed.ts",
     "sync:levels": "node scripts/syncAcademyLevels.js",
     "sync:houses": "ts-node scripts/sync_all_house_members.ts",
+    "sync:pool-pending": "ts-node scripts/process_sport_pending_pool.ts",
     "backfill:pool-sources": "ts-node scripts/tag_pool_entry_sources.ts"
   },
   "dependencies": {
