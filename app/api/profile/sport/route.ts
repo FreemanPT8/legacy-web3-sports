@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { syncUserHouseMembership } from '@/lib/user-houses';
+import { getCountryCodeFromName } from '@/lib/countries';
+import { notifySportPoolEntry } from '@/lib/sport-pool-notifications';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const { data: existingUser, error: fetchError } = await db
       .from('users')
-      .select('id, sport_id, primary_sport_id')
+      .select('id, sport_id, primary_sport_id, primary_country_code, country, email, full_name')
       .eq('id', authUser.id)
       .maybeSingle();
 
@@ -112,11 +114,26 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      await syncUserHouseMembership(authUser.id, {
+      const syncResult = await syncUserHouseMembership(authUser.id, {
         assignedVia: 'signup-auto',
         logPrefix: 'profile:sport',
         actorId: authUser.id,
       });
+      if (syncResult.reason === 'no_house_found' && syncResult.poolEntryId) {
+        const countryCode =
+          existingUser.primary_country_code ??
+          (existingUser.country ? getCountryCodeFromName(existingUser.country) : null) ??
+          (existingUser.country ? existingUser.country.trim().slice(0, 2).toUpperCase() : null);
+        await notifySportPoolEntry({
+          entryId: syncResult.poolEntryId,
+          poolType: 'sport_pending',
+          userEmail: authUser.email ?? existingUser.email ?? 'unknown',
+          fullName: existingUser.full_name ?? authUser.username ?? undefined,
+          country: existingUser.country ?? undefined,
+          countryCode,
+          sportId,
+        });
+      }
     } catch (error) {
       console.error('[profile/sport] Failed to sync house membership after sport update', error);
     }
