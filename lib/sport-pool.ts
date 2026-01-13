@@ -72,6 +72,22 @@ export async function queueSportPendingEntry(
       return { entryId: assignedEntry[0]?.id ?? null, created: false };
     }
 
+    const { data: dismissedEntry, error: dismissedError } = await admin
+      .from('sport_pool_entries')
+      .select('id, status')
+      .eq('user_id', payload.userId)
+      .eq('pool_type', 'sport_pending')
+      .eq('sport_id', payload.sportId ?? null)
+      .eq('country_code', normalizedCountry)
+      .in('status', ['dismissed'])
+      .limit(1);
+
+    if (dismissedError) {
+      console.error('[sport-pool] Failed to inspect dismissed entries', dismissedError);
+    } else if (dismissedEntry && dismissedEntry.length > 0) {
+      return { entryId: dismissedEntry[0]?.id ?? null, created: false };
+    }
+
     await markUserRequiresAssignment(payload.userId, note, admin);
 
     const { data: existing, error: existingError } = await admin
