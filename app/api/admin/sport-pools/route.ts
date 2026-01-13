@@ -271,7 +271,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const fetchLimit = isSuperAdmin ? limit : Math.min(limit * 5, 500);
-    let query = supabaseAdmin
+    const { data: baseEntries, error: baseError } = await supabaseAdmin
       .from('sport_pool_entries')
       .select(
         `
@@ -289,31 +289,7 @@ export async function GET(request: NextRequest) {
           created_at,
           updated_at,
           assigned_at,
-          assigned_by,
-          user:users(
-            id,
-            username,
-            full_name,
-            email,
-            country,
-            primary_country_code,
-            primary_sport_id,
-            sport_selection_method,
-            requires_sport_assignment,
-            sport_assignment_notes,
-            created_at
-          ),
-          sport:sports(
-            id,
-            code,
-            name_i18n
-          ),
-          house:houses_of_sports(
-            id,
-            country_code,
-            status,
-            name_i18n
-          )
+          assigned_by
         `,
       )
       .eq('pool_type', poolType)
@@ -321,17 +297,141 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(fetchLimit);
 
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('[sport-pools] Failed to load entries', error);
+    if (baseError) {
+      console.error('[sport-pools] Failed to load entries', baseError);
       return NextResponse.json(
-        { success: false, error: 'Failed to load sport pool entries.' },
+        { success: false, error: baseError.message ?? 'Failed to load sport pool entries.' },
         { status: 500 },
       );
     }
 
-    const entries = ((data ?? []) as SportPoolEntryRow[]).slice(0, limit).map((row) => ({
+    const rows = (baseEntries ?? []) as SportPoolEntryRow[];
+    const userIds = Array.from(
+      new Set(rows.map((row) => row.user_id).filter((value): value is string => Boolean(value))),
+    );
+    const sportIds = Array.from(
+      new Set(rows.map((row) => row.sport_id).filter((value): value is string => Boolean(value))),
+    );
+    const houseIds = Array.from(
+      new Set(rows.map((row) => row.house_id).filter((value): value is string => Boolean(value))),
+    );
+
+    const [usersRes, sportsRes, housesRes] = await Promise.all([
+      userIds.length
+        ? supabaseAdmin
+            .from('users')
+            .select(
+              `
+                id,
+                username,
+                full_name,
+                email,
+                country,
+                primary_country_code,
+                primary_sport_id,
+                sport_selection_method,
+                requires_sport_assignment,
+                sport_assignment_notes,
+                created_at
+              `,
+            )
+            .in('id', userIds)
+        : Promise.resolve({ data: [], error: null }),
+      sportIds.length
+        ? supabaseAdmin.from('sports').select('id, code, name_i18n').in('id', sportIds)
+        : Promise.resolve({ data: [], error: null }),
+      houseIds.length
+        ? supabaseAdmin
+            .from('houses_of_sports')
+            .select('id, country_code, status, name_i18n')
+            .in('id', houseIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (usersRes.error) {
+      console.error('[sport-pools] Failed to load users', usersRes.error);
+      return NextResponse.json(
+        { success: false, error: usersRes.error.message ?? 'Failed to load user data.' },
+        { status: 500 },
+      );
+    }
+    if (sportsRes.error) {
+      console.error('[sport-pools] Failed to load sports', sportsRes.error);
+      return NextResponse.json(
+        { success: false, error: sportsRes.error.message ?? 'Failed to load sports data.' },
+        { status: 500 },
+      );
+    }
+    if (housesRes.error) {
+      console.error('[sport-pools] Failed to load houses', housesRes.error);
+      return NextResponse.json(
+        { success: false, error: housesRes.error.message ?? 'Failed to load house data.' },
+        { status: 500 },
+      );
+    }
+
+    const userMap = new Map(
+      ((usersRes.data ?? []) as SportPoolEntryRow['user'][]).map((user) => [user!.id, user!]),
+    );
+    const sportMap = new Map(
+      ((sportsRes.data ?? []) as SportPoolEntryRow['sport'][]).map((sport) => [sport!.id, sport!]),
+    );
+    const houseMap = new Map(
+      ((housesRes.data ?? []) as SportPoolEntryRow['house'][]).map((house) => [house!.id, house!]),
+    );
+
+    const entries = rows.slice(0, limit).map((row) => {
+      const user = row.user_id ? userMap.get(row.user_id) ?? null : null;
+      const sport = row.sport_id ? sportMap.get(row.sport_id) ?? null : null;
+      const house = row.house_id ? houseMap.get(row.house_id) ?? null : null;
+      return {
+        id: row.id,
+        poolType: row.pool_type as PoolType,
+        status: row.status as PoolStatus,
+        sportId: row.sport_id,
+        houseId: row.house_id,
+        countryCode: row.country_code,
+        suggestedSportName: row.suggested_sport_name,
+        suggestedCountryCode: row.suggested_country_code,
+        notes: row.notes,
+        metadata: row.metadata ?? {},
+        notifiedAt: (row.metadata as Record<string, any> | null)?.notified_at ?? null,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        assignedAt: row.assigned_at,
+        assignedBy: row.assigned_by,
+        user: user
+          ? {
+              id: user.id,
+              username: user.username,
+              fullName: user.full_name,
+              email: user.email,
+              country: user.country,
+              primaryCountryCode: user.primary_country_code,
+              primarySportId: user.primary_sport_id,
+              sportSelectionMethod: user.sport_selection_method,
+              requiresAssignment: Boolean(user.requires_sport_assignment),
+              assignmentNotes: user.sport_assignment_notes,
+              createdAt: user.created_at,
+            }
+          : null,
+        sport: sport
+          ? {
+              id: sport.id,
+              code: sport.code,
+              name: resolveLocalizedName(sport.name_i18n, sport.code),
+            }
+          : null,
+        house: house
+          ? {
+              id: house.id,
+              countryCode: house.country_code,
+              status: house.status,
+              name: resolveLocalizedName(house.name_i18n),
+            }
+          : null,
+      };
+    });
       id: row.id,
       poolType: row.pool_type as PoolType,
       status: row.status as PoolStatus,
@@ -393,8 +493,8 @@ export async function GET(request: NextRequest) {
         assigned: assignedCount,
         dismissed: dismissedCount,
       },
-      entries,
-    });
+        entries,
+      });
   } catch (err) {
     console.error('[sport-pools] Unexpected error', err);
     return NextResponse.json(
