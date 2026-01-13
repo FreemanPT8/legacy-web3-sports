@@ -8,6 +8,7 @@ type SportPoolEntry = {
   country_code: string | null;
   status: string;
   pool_type: string;
+  metadata?: Record<string, unknown> | null;
 };
 
 async function main() {
@@ -17,7 +18,7 @@ async function main() {
 
   const { data: entries, error } = await supabaseAdmin
     .from('sport_pool_entries')
-    .select('id, user_id, sport_id, country_code, status, pool_type')
+    .select('id, user_id, sport_id, country_code, status, pool_type, metadata')
     .eq('pool_type', 'sport_pending')
     .eq('status', 'pending');
 
@@ -64,6 +65,8 @@ async function main() {
       }
 
       const now = new Date().toISOString();
+      const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+      const nextMetadata = metadata.source ? metadata : { ...metadata, source: 'script' };
       await supabaseAdmin
         .from('sport_pool_entries')
         .update({
@@ -74,6 +77,7 @@ async function main() {
           assigned_at: now,
           updated_at: now,
           notes: 'Processado automaticamente pelo script de backlog.',
+          metadata: nextMetadata,
         })
         .eq('id', entry.id);
 
