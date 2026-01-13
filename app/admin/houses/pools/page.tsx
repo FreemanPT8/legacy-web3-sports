@@ -937,10 +937,15 @@ export default function SportPoolsAdminPage() {
                         <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Notas</p>
                         <p className="text-sm text-slate-200">{entry.notes || 'Sem notas ainda.'}</p>
                       </div>
-                      <div className="rounded-xl border border-white/5 bg-white/5 p-3">
-                        <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Metadata</p>
-                        <p className="text-xs text-slate-300 truncate">{JSON.stringify(entry.metadata)}</p>
-                      </div>
+                        <div className="rounded-xl border border-white/5 bg-white/5 p-3">
+                          <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Metadata</p>
+                          <p className="text-xs text-slate-300 truncate">{JSON.stringify(entry.metadata)}</p>
+                          {entry.metadata?.source ? (
+                            <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                              Origem: {String(entry.metadata.source)}
+                            </p>
+                          ) : null}
+                        </div>
                       <div className="rounded-xl border border-white/5 bg-white/5 p-3">
                         <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Contexto</p>
                         <p className="text-sm text-slate-200">
