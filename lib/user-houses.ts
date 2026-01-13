@@ -1,10 +1,12 @@
 import { supabaseAdmin } from './supabase';
 import { getCountryCodeFromName, getCountryName } from './countries';
-import { ensureHouseForSportCountry, EnsureHouseError } from './houses/creation';
-import { logHouseHistory } from './houses/history';
+import { queueSportPendingEntry } from './sport-pool';
 
 export type HouseMembershipRole = 'HEAD' | 'MODERATOR' | 'MEMBER';
 export type HouseAssignmentSource =
+  | 'signup-auto'
+  | 'pool-auto'
+  | 'admin-manual'
   | 'ONBOARDING'
   | 'PROFILE'
   | 'ADMIN_SYNC'
@@ -27,6 +29,7 @@ export interface SyncUserHouseMembershipResult {
   updated?: boolean;
   houseId?: string | null;
   reason?: string;
+  poolEntryId?: string | null;
   error?: string;
 }
 
@@ -34,7 +37,6 @@ export interface SyncUserHouseMembershipOptions {
   assignedVia?: HouseAssignmentSource;
   logPrefix?: string;
   actorId?: string | null;
-  autoCreateHouse?: boolean;
 }
 
 export interface SyncHouseMembersResult {
@@ -50,12 +52,6 @@ let adminClient: SupabaseClient = supabaseAdmin;
 
 export function __setUserHousesSupabaseAdmin(client?: SupabaseClient | null) {
   adminClient = client ?? supabaseAdmin;
-}
-
-let ensureHouseHandler = ensureHouseForSportCountry;
-
-export function __setEnsureHouseForTests(handler?: typeof ensureHouseForSportCountry) {
-  ensureHouseHandler = handler ?? ensureHouseForSportCountry;
 }
 
 type BackgroundSyncFn = (
@@ -75,7 +71,7 @@ function getBackgroundSyncHandler(): BackgroundSyncFn {
   return backgroundSyncHandler ?? syncHouseMembersBySportCountry;
 }
 
-const DEFAULT_SOURCE: HouseAssignmentSource = 'PROFILE';
+const DEFAULT_SOURCE: HouseAssignmentSource = 'signup-auto';
 const RPC_FUNCTION = 'sync_user_house_membership_db';
 const RPC_UNDEFINED_FUNCTION = '42883';
 
@@ -119,9 +115,9 @@ async function syncMembershipViaRpc(
 }
 
 /**
- * Synchronizes user_houses rows (membership_role = 'MEMBER') with the primary sport/country stored on the user record.
- * - Removes previous MEMBER links that no longer match the current country/sport.
- * - Adds or updates the MEMBER link for the matching House, if it exists.
+ * Synchronizes user_houses rows (membership_role = 'MEMBER') with the sport/country stored on the user record.
+ * - Adds or updates MEMBER links for every applicable sport.
+ * - Queues pool entries when no matching House exists.
  */
 export async function syncUserHouseMembership(
   userId: string,
@@ -169,104 +165,28 @@ export async function syncUserHouseMembership(
         getCountryCodeFromName(userRow.country) ??
         userRow.country.trim().slice(0, 2).toUpperCase();
     }
-    const sportId = userRow.primary_sport_id ?? userRow.sport_id ?? null;
+    const sportIds = [userRow.sport_id ?? null, userRow.primary_sport_id ?? null]
+      .filter((sportId): sportId is string => Boolean(sportId))
+      .filter((sportId, index, list) => list.indexOf(sportId) === index);
 
-    const buildDeleteQuery = () =>
-      adminClient
-        .from('user_houses')
-        .delete()
-        .eq('user_id', userId)
-        .eq('membership_role', 'MEMBER');
-
-    // If we have a potential target house we only delete rows that do not match it.
-    let existingHouseId: string | null = null;
-
-    if (!countryCode || !sportId) {
-      const { error: cleanupError } = await buildDeleteQuery();
-      if (cleanupError) {
-        console.error(`${logPrefix}Failed to remove stale user_houses entries:`, cleanupError);
-        return {
-          success: false,
-          error: 'Failed to clean up previous memberships.',
-        };
-      }
-
+    if (!countryCode || sportIds.length === 0) {
       return {
         success: true,
-        updated: true,
+        updated: false,
         houseId: null,
-        reason: 'User is missing primary sport or country; membership removed.',
+        reason: 'missing_country_or_sport',
       };
     }
 
     const actorId = options.actorId ?? userId;
-    const allowAutoCreation = options.autoCreateHouse !== false;
-    let ensuredHouseId: string | null = null;
+    const targetHouseIds: string[] = [];
+    let existingHouseId: string | null = null;
 
-    if (allowAutoCreation) {
-      try {
-        const ensureResult = await ensureHouseHandler({
-          sportId,
-          countryCode,
-          actorId,
-        });
-        ensuredHouseId = ensureResult.houseId;
-
-        if (ensureResult.created) {
-          await logHouseHistory({
-            houseId: ensureResult.houseId,
-            actorId,
-            action: 'house.auto_created',
-            payload: {
-              sport_id: sportId,
-              country_code: ensureResult.countryCode,
-              source: assignedVia,
-            },
-          });
-
-          const backgroundLog = options.logPrefix
-            ? `${options.logPrefix}:auto-house`
-            : 'auto-house';
-          const backgroundSync = getBackgroundSyncHandler();
-          backgroundSync(
-            ensureResult.houseId,
-            sportId,
-            ensureResult.countryCode,
-            { logPrefix: backgroundLog },
-          ).catch((error) => {
-            console.error(
-              `${logPrefix}Failed to sync auto-created house members:`,
-              error,
-            );
-          });
-        }
-      } catch (error: any) {
-        if (error instanceof EnsureHouseError) {
-          if (error.code === 'sport_not_found') {
-            return {
-              success: false,
-              error: 'Sport not found while ensuring target house.',
-            };
-          }
-          if (error.code === 'invalid_input') {
-            return {
-              success: false,
-              error: 'Invalid data while ensuring target house.',
-            };
-          }
-        }
-
-        console.error(`${logPrefix}Failed to ensure matching house for user:`, error);
-        return {
-          success: false,
-          error: 'Failed to ensure matching house.',
-        };
+    if (sportIds.length === 1) {
+      const rpcResult = await syncMembershipViaRpc(userId, sportIds[0], countryCode);
+      if (rpcResult) {
+        return rpcResult;
       }
-    }
-
-    const rpcResult = await syncMembershipViaRpc(userId, sportId, countryCode);
-    if (rpcResult) {
-      return rpcResult;
     }
 
     const { data: membershipRows, error: membershipError } = await adminClient
@@ -287,88 +207,89 @@ export async function syncUserHouseMembership(
       existingHouseId = membershipRows[0]?.house_id ?? null;
     }
 
-    let targetHouseId = ensuredHouseId;
+    const { data: houseRows, error: houseError } = await adminClient
+      .from('houses_of_sports')
+      .select('id, sport_id')
+      .eq('country_code', countryCode)
+      .in('sport_id', sportIds);
 
-    if (!targetHouseId) {
-      const { data: houseRowRaw, error: houseError } = await adminClient
-        .from('houses_of_sports')
-        .select('id')
-        .eq('sport_id', sportId)
-        .eq('country_code', countryCode)
-        .limit(1)
-        .maybeSingle();
-
-      const houseRow = (houseRowRaw ?? null) as HouseRow | null;
-
-      if (houseError) {
-        console.error(`${logPrefix}Failed to load matching house for user:`, houseError);
-        return {
-          success: false,
-          error: 'Failed to load matching house.',
-        };
-      }
-
-      if (houseRow) {
-        targetHouseId = houseRow.id;
-      }
-    }
-
-    if (!targetHouseId) {
-      const { error: cleanupError } = await buildDeleteQuery();
-      if (cleanupError) {
-        console.error(`${logPrefix}Failed to clean up memberships for unmatched house:`, cleanupError);
-        return {
-          success: false,
-          error: 'Failed to clean up previous memberships.',
-        };
-      }
-
+    if (houseError) {
+      console.error(`${logPrefix}Failed to load matching houses for user:`, houseError);
       return {
-        success: true,
-        updated: true,
-        houseId: null,
-        reason: 'No matching house found for the current sport/country.',
+        success: false,
+        error: 'Failed to load matching house.',
       };
     }
 
-    const { error: deleteOthersError } = await buildDeleteQuery().neq(
-      'house_id',
-      targetHouseId,
-    );
-    if (deleteOthersError) {
-      console.error(`${logPrefix}Failed to remove non-matching memberships:`, deleteOthersError);
+    const houseBySport = new Map<string, string>();
+    houseRows?.forEach((row: { id: string; sport_id: string }) => {
+      if (row?.id && row?.sport_id) {
+        houseBySport.set(row.sport_id, row.id);
+      }
+    });
+
+    const poolEntries: string[] = [];
+    for (const sportId of sportIds) {
+      const houseId = houseBySport.get(sportId);
+      if (houseId) {
+        targetHouseIds.push(houseId);
+      } else {
+        const queueResult = await queueSportPendingEntry({
+          userId,
+          sportId,
+          countryCode,
+          metadata: {
+            assignedVia,
+            logPrefix: options.logPrefix ?? null,
+          },
+          client: adminClient,
+        });
+        if (queueResult.entryId) {
+          poolEntries.push(queueResult.entryId);
+        }
+      }
+    }
+
+    if (!targetHouseIds.length) {
       return {
-        success: false,
-        error: 'Failed to remove non-matching memberships.',
+        success: true,
+        updated: false,
+        houseId: existingHouseId,
+        reason: 'no_house_found',
+        poolEntryId: poolEntries[0] ?? null,
       };
     }
 
     const { error: upsertError } = await adminClient
       .from('user_houses')
       .upsert(
-        [
-          {
-            user_id: userId,
-            house_id: targetHouseId,
-            membership_role: 'MEMBER' as HouseMembershipRole,
-            assigned_via: assignedVia,
-          },
-        ],
+        targetHouseIds.map((houseId) => ({
+          user_id: userId,
+          house_id: houseId,
+          membership_role: 'MEMBER' as HouseMembershipRole,
+          assigned_via: assignedVia,
+        })),
         { onConflict: 'user_id,house_id,membership_role' },
       );
 
     if (upsertError) {
-      console.error(`${logPrefix}Failed to upsert user_houses row:`, upsertError);
+      console.error(`${logPrefix}Failed to upsert user_houses rows:`, upsertError);
       return {
         success: false,
-        error: 'Failed to upsert membership row.',
+        error: 'Failed to upsert membership rows.',
       };
     }
 
+    const existingHouseIds = new Set(
+      (membershipRows ?? []).map((row: { house_id?: string | null }) => row?.house_id).filter(Boolean),
+    );
+    const isUpdated = targetHouseIds.some((houseId) => !existingHouseIds.has(houseId));
+
     return {
       success: true,
-      updated: existingHouseId !== targetHouseId,
-      houseId: targetHouseId,
+      updated: isUpdated,
+      houseId: targetHouseIds[0] ?? null,
+      poolEntryId: poolEntries[0] ?? null,
     };
   } catch (err) {
     console.error('Unexpected error in syncUserHouseMembership:', err);
@@ -383,7 +304,7 @@ export async function syncHouseMembersBySportCountry(
   houseId: string,
   sportId?: string | null,
   countryCode?: string | null,
-  options: { logPrefix?: string } = {},
+  options: { logPrefix?: string; assignedVia?: HouseAssignmentSource } = {},
 ): Promise<SyncHouseMembersResult> {
   if (!adminClient) {
     return { success: false, attempted: 0, assigned: 0, reason: 'Supabase admin client unavailable.' };
@@ -393,6 +314,7 @@ export async function syncHouseMembersBySportCountry(
   }
 
   const logPrefix = options.logPrefix ? `[${options.logPrefix}] ` : '';
+  const assignedVia = options.assignedVia ?? 'pool-auto';
   try {
     const upperCountry = countryCode.toUpperCase();
     const candidateIds = new Set<string>();
@@ -400,13 +322,27 @@ export async function syncHouseMembersBySportCountry(
     const { data: primaryMatches, error: primaryError } = await adminClient
       .from('users')
       .select('id')
-      .eq('primary_sport_id', sportId)
+      .eq('sport_id', sportId)
       .eq('primary_country_code', upperCountry);
 
     if (primaryError) {
       console.error(`${logPrefix}Failed to load users for membership sync (primary fields):`, primaryError);
     } else {
       primaryMatches?.forEach((row: { id: string | null }) => {
+        if (row?.id) candidateIds.add(row.id);
+      });
+    }
+
+    const { data: secondaryMatches, error: secondaryError } = await adminClient
+      .from('users')
+      .select('id')
+      .eq('primary_sport_id', sportId)
+      .eq('primary_country_code', upperCountry);
+
+    if (secondaryError) {
+      console.error(`${logPrefix}Failed to load users for membership sync (secondary fields):`, secondaryError);
+    } else {
+      secondaryMatches?.forEach((row: { id: string | null }) => {
         if (row?.id) candidateIds.add(row.id);
       });
     }
@@ -436,7 +372,7 @@ export async function syncHouseMembersBySportCountry(
     let assigned = 0;
     for (const userId of candidateList) {
       const result = await syncUserHouseMembership(userId, {
-        assignedVia: 'ADMIN_SYNC',
+        assignedVia,
         logPrefix: `${logPrefix}house:${houseId}`,
       });
       if (result.success && result.houseId) {

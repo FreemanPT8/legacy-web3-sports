@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
           { onConflict: 'user_id,house_id,membership_role' },
         );
       await syncUserHouseMembership(auth.user!.userId, {
-        assignedVia: 'ONBOARDING',
+        assignedVia: 'admin-manual',
         logPrefix: `house-head:${invite.house_id}`,
         actorId: auth.user!.userId,
       });

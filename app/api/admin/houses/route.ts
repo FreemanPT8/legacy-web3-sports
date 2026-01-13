@@ -1,7 +1,7 @@
 // app/api/admin/houses/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { requireAdmin } from '@/lib/middleware';
+import { requireAdmin, requirePermission } from '@/lib/middleware';
 import { syncHouseMembersBySportCountry } from '@/lib/user-houses';
 import { logHouseHistory } from '@/lib/houses/history';
 import { isMissingTable } from '@/lib/postgres';
@@ -386,17 +386,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/houses -> criar nova House
 export async function POST(request: NextRequest) {
-  const authResult = await requireAdmin(request);
+  const authResult = await requirePermission(request, 'canManageHouses');
   if (!authResult.success) return authResult.response!;
 
   const currentUser = authResult.user!;
-  // Admin + Super Admin podem criar Houses
-  if (currentUser.role !== 'Super Admin' && currentUser.role !== 'Admin') {
-    return NextResponse.json<HousesPostResponse>(
-      { success: false, error: 'Only Admin or Super Admin can create Houses.' },
-      { status: 403 }
-    );
-  }
 
   try {
     const body = (await request.json()) as HousesPostBody;
@@ -456,6 +449,7 @@ export async function POST(request: NextRequest) {
 
     await syncHouseMembersBySportCountry(houseId, rawSportId, result.countryCode, {
       logPrefix: 'house:create',
+      assignedVia: 'pool-auto',
     });
 
     await logHouseHistory({
@@ -509,6 +503,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
 
 

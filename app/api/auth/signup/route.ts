@@ -5,6 +5,7 @@ import { sendEmail, getWelcomeEmailTemplate } from '@/lib/email';
 import { supabaseAdmin } from '@/lib/supabase';
 import { syncUserHouseMembership } from '@/lib/user-houses';
 import { getCountryCodeFromName } from '@/lib/countries';
+import { markUserRequiresAssignment, queueSportPendingEntry } from '@/lib/sport-pool';
 
 type PoolType = 'no_sport' | 'sport_pending' | 'suggestion';
 
@@ -14,20 +15,6 @@ function normalizeCountryCode(value?: string | null): string | null {
     getCountryCodeFromName(value) ??
     value.trim().slice(0, 2).toUpperCase()
   );
-}
-
-async function markUserRequiresAssignment(userId: string, note?: string | null) {
-  if (!supabaseAdmin) return;
-  const { error } = await supabaseAdmin
-    .from('users')
-    .update({
-      requires_sport_assignment: true,
-      sport_assignment_notes: note ?? null,
-    })
-    .eq('id', userId);
-  if (error) {
-    console.error('[signup] Failed to update requires_sport_assignment:', error);
-  }
 }
 
 async function upsertSportPoolEntry(payload: {
@@ -313,22 +300,41 @@ export async function POST(request: NextRequest) {
 
       if (selectionMethod === 'chosen' && sport_id) {
         const syncResult = await syncUserHouseMembership(userId, {
-          assignedVia: 'ONBOARDING',
+          assignedVia: 'signup-auto',
           logPrefix: 'signup',
           actorId: userId,
         });
         if (!syncResult.success || !syncResult.houseId) {
+          const defaultNote =
+            'Sem House ativa para este desporto e pa??s. Na fila para abertura.';
           const note =
-            syncResult.reason ??
-            'Sem House ativa para este desporto e país. Na fila para abertura.';
-          await markUserRequiresAssignment(userId, note);
-          const entryId = await upsertSportPoolEntry({
-            user_id: userId,
-            pool_type: 'sport_pending',
-            sport_id,
-            country_code: normalizedCountryCode,
-            notes: note,
-          });
+            syncResult.reason && syncResult.reason !== 'no_house_found'
+              ? syncResult.reason
+              : defaultNote;
+          let entryId = syncResult.poolEntryId ?? null;
+
+          if (syncResult.reason === 'no_house_found') {
+            if (!entryId) {
+              const queueResult = await queueSportPendingEntry({
+                userId,
+                sportId: sport_id,
+                countryCode: normalizedCountryCode,
+                metadata: { source: 'signup' },
+                note: defaultNote,
+              });
+              entryId = queueResult.entryId;
+            }
+          } else {
+            await markUserRequiresAssignment(userId, note);
+            entryId = await upsertSportPoolEntry({
+              user_id: userId,
+              pool_type: 'sport_pending',
+              sport_id,
+              country_code: normalizedCountryCode,
+              notes: note,
+            });
+          }
+
           await notifySportPoolEntry({
             entryId,
             poolType: 'sport_pending',
@@ -339,6 +345,7 @@ export async function POST(request: NextRequest) {
             country,
           });
         }
+      }
       } else if (selectionMethod === 'random_pool') {
         const note =
           'Conta registada sem desporto preferido. Aguardando atribuição manual.';

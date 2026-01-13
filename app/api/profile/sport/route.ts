@@ -76,12 +76,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (existingUser.sport_id || existingUser.primary_sport_id) {
+    const currentPrimary = existingUser.sport_id ?? null;
+    const currentSecondary = existingUser.primary_sport_id ?? null;
+
+    if (sportId === currentPrimary || sportId === currentSecondary) {
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+
+    const updatePayload: Record<string, string> = {};
+    if (!currentPrimary) {
+      updatePayload.sport_id = sportId;
+    } else if (!currentSecondary) {
+      updatePayload.primary_sport_id = sportId;
+    } else {
       return NextResponse.json(
         {
           success: false,
-          error:
-            'Sport already assigned. Contact support if you need to change it.',
+          error: 'Secondary sport already assigned. Contact support to change it.',
         },
         { status: 400 },
       );
@@ -89,10 +100,7 @@ export async function POST(request: NextRequest) {
 
     const { error: updateError } = await db
       .from('users')
-      .update({
-        sport_id: sportId,
-        primary_sport_id: sportId,
-      })
+      .update(updatePayload)
       .eq('id', authUser.id);
 
     if (updateError) {
@@ -105,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     try {
       await syncUserHouseMembership(authUser.id, {
-        assignedVia: 'PROFILE',
+        assignedVia: 'signup-auto',
         logPrefix: 'profile:sport',
         actorId: authUser.id,
       });

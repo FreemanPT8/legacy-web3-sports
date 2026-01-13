@@ -33,6 +33,7 @@ type SportPoolEntryRow = {
     email: string | null;
     country: string | null;
     primary_country_code: string | null;
+    sport_id?: string | null;
     primary_sport_id: string | null;
     sport_selection_method: string | null;
     requires_sport_assignment: boolean | null;
@@ -477,6 +478,8 @@ export async function PATCH(request: NextRequest) {
           id,
           country,
           primary_country_code,
+          sport_id,
+          primary_sport_id,
           sport_selection_method
         )
       `,
@@ -542,6 +545,20 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const currentPrimarySport = entry.user?.sport_id ?? null;
+    const currentSecondarySport = entry.user?.primary_sport_id ?? null;
+    if (
+      currentPrimarySport &&
+      currentSecondarySport &&
+      sportId !== currentPrimarySport &&
+      sportId !== currentSecondarySport
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'User already has a primary and secondary sport.' },
+        { status: 409 },
+      );
+    }
+
     const preferredCountry =
       houseRow.country_code ??
       entry.country_code ??
@@ -549,17 +566,22 @@ export async function PATCH(request: NextRequest) {
       entry.user?.primary_country_code ??
       null;
 
+    const userUpdates: Record<string, any> = {
+      requires_sport_assignment: false,
+      sport_assignment_notes: note,
+    };
+    if (!currentPrimarySport) {
+      userUpdates.sport_id = sportId;
+    } else if (!currentSecondarySport && sportId !== currentPrimarySport) {
+      userUpdates.primary_sport_id = sportId;
+    }
+    if (!entry.user?.primary_country_code && preferredCountry) {
+      userUpdates.primary_country_code = preferredCountry.toUpperCase();
+    }
+
     const { error: userUpdateError } = await supabaseAdmin
       .from('users')
-      .update({
-        sport_id: sportId,
-        primary_sport_id: sportId,
-        primary_country_code: preferredCountry
-          ? preferredCountry.toUpperCase()
-          : null,
-        requires_sport_assignment: false,
-        sport_assignment_notes: note,
-      })
+      .update(userUpdates)
       .eq('id', entry.user_id);
 
     if (userUpdateError) {
@@ -571,7 +593,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const syncResult = await syncUserHouseMembership(entry.user_id, {
-      assignedVia: 'ADMIN_SYNC',
+      assignedVia: 'admin-manual',
       logPrefix: 'sport-pools',
       actorId: adminUserId ?? null,
     });

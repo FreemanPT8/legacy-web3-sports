@@ -1,5 +1,4 @@
 import { supabaseAdmin } from '../lib/supabase';
-import { ensureHouseForSportCountry } from '../lib/houses/creation';
 import { syncUserHouseMembership } from '../lib/user-houses';
 
 type SportPoolEntry = {
@@ -38,14 +37,20 @@ async function main() {
     }
 
     try {
-      const ensureResult = await ensureHouseForSportCountry({
-        sportId: entry.sport_id,
-        countryCode: entry.country_code,
-        actorId: null,
-      });
+      const { data: houseRow, error: houseError } = await supabaseAdmin
+        .from('houses_of_sports')
+        .select('id, country_code')
+        .eq('sport_id', entry.sport_id)
+        .eq('country_code', entry.country_code)
+        .maybeSingle();
+      if (houseError) throw houseError;
+      if (!houseRow) {
+        console.warn(`[skip] Entry ${entry.id} sem House manual para ${entry.sport_id}/${entry.country_code}.`);
+        continue;
+      }
 
       const syncResult = await syncUserHouseMembership(entry.user_id, {
-        assignedVia: 'ADMIN_SYNC',
+        assignedVia: 'pool-auto',
         logPrefix: 'sport-pool-script',
         actorId: null,
       });
@@ -63,9 +68,9 @@ async function main() {
         .from('sport_pool_entries')
         .update({
           status: 'assigned',
-          house_id: ensureResult.houseId,
+          house_id: houseRow.id,
           sport_id: entry.sport_id,
-          country_code: ensureResult.countryCode,
+          country_code: houseRow.country_code ?? entry.country_code,
           assigned_at: now,
           updated_at: now,
           notes: 'Processado automaticamente pelo script de backlog.',
@@ -82,7 +87,7 @@ async function main() {
 
       assigned += 1;
       console.log(
-        `[done] Entry ${entry.id} linked to house ${ensureResult.houseId} for user ${entry.user_id}.`,
+        `[done] Entry ${entry.id} linked to house ${houseRow.id} for user ${entry.user_id}.`,
       );
     } catch (err) {
       console.error(`[error] Failed to process entry ${entry.id}:`, err);

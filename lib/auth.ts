@@ -101,7 +101,6 @@ export async function signUp(data: {
 
     const requiresAssignment = Boolean(data.requires_sport_assignment);
     const sportId = data.sport_id ?? null;
-    const primarySportId = sportId;
     const primaryCountryCode =
       getCountryCodeFromName(data.country) ??
       (data.country ? data.country.trim().slice(0, 2).toUpperCase() : null);
@@ -114,7 +113,7 @@ export async function signUp(data: {
         password_hash,
         country: data.country,
         sport_id: sportId,
-        primary_sport_id: primarySportId,
+        primary_sport_id: null,
         primary_country_code: primaryCountryCode,
         role: 'Member',
         xp_total: 0,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { awardXP } from '@/lib/xp';
+import { getCountryCodeFromName } from '@/lib/countries';
 import { syncUserHouseMembership } from '@/lib/user-houses';
 
 const XP_REWARDS: Record<string, number> = {
@@ -69,9 +70,16 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const updatesPayload = { ...(updates ?? {}) };
+    if (updatesPayload.country && !updatesPayload.primary_country_code) {
+      updatesPayload.primary_country_code =
+        getCountryCodeFromName(updatesPayload.country) ??
+        updatesPayload.country.trim().slice(0, 2).toUpperCase();
+    }
+
     const { data, error } = await supabase
       .from('users')
-      .update(updates)
+      .update(updatesPayload)
       .eq('id', userId)
       .select()
       .single();
@@ -88,7 +96,7 @@ export async function PUT(request: NextRequest) {
     for (const [field, xpReward] of Object.entries(XP_REWARDS)) {
       if (xpReward > 0) {
         const hadValue = previousProfile && previousProfile[field];
-        const hasValue = updates[field];
+        const hasValue = updatesPayload[field];
 
         if (!hadValue && hasValue) {
           const xpResult = await awardXP(
@@ -107,10 +115,10 @@ export async function PUT(request: NextRequest) {
     }
 
     const membershipFields = ['country', 'primary_country_code', 'primary_sport_id', 'sport_id'];
-    if (updates && membershipFields.some((field) => field in updates)) {
+    if (updatesPayload && membershipFields.some((field) => field in updatesPayload)) {
       try {
         await syncUserHouseMembership(userId, {
-          assignedVia: 'PROFILE',
+          assignedVia: 'signup-auto',
           logPrefix: 'profile:update',
           actorId: userId,
         });
