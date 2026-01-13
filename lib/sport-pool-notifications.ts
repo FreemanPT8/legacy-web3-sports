@@ -89,6 +89,22 @@ async function resolveSportInfo(sportId: string): Promise<{ name: string; code: 
 export async function notifySportPoolEntry(payload: PoolNotificationPayload) {
   if (!supabaseAdmin) return;
   try {
+    if (payload.entryId) {
+      const { data: entryRow, error: entryError } = await supabaseAdmin
+        .from('sport_pool_entries')
+        .select('metadata')
+        .eq('id', payload.entryId)
+        .maybeSingle();
+      if (entryError) {
+        console.error('[sport-pool] Failed to load pool entry metadata', entryError);
+      } else {
+        const metadata = (entryRow?.metadata as Record<string, unknown> | null) ?? null;
+        if (metadata?.notified_at) {
+          return;
+        }
+      }
+    }
+
     const recipientIds = new Set<string>();
     const superAdmins = await fetchSuperAdminIds();
     superAdmins.forEach((id) => recipientIds.add(id));
@@ -152,6 +168,27 @@ export async function notifySportPoolEntry(payload: PoolNotificationPayload) {
       },
     }));
     await supabaseAdmin.from('notifications').insert(rows);
+
+    if (payload.entryId) {
+      const { data: entryRow, error: entryError } = await supabaseAdmin
+        .from('sport_pool_entries')
+        .select('metadata')
+        .eq('id', payload.entryId)
+        .maybeSingle();
+      if (entryError) {
+        console.error('[sport-pool] Failed to reload pool entry metadata', entryError);
+      } else {
+        const metadata = (entryRow?.metadata as Record<string, unknown> | null) ?? {};
+        const nextMetadata = { ...metadata, notified_at: new Date().toISOString() };
+        const { error: updateError } = await supabaseAdmin
+          .from('sport_pool_entries')
+          .update({ metadata: nextMetadata })
+          .eq('id', payload.entryId);
+        if (updateError) {
+          console.error('[sport-pool] Failed to update pool entry metadata', updateError);
+        }
+      }
+    }
   } catch (error) {
     console.error('[sport-pool] Failed to create sport pool notifications:', error);
   }
