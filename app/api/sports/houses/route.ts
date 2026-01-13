@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { AggregatedHouseStats, loadHouseStatsWithFallback } from '@/lib/houses/stats';
+import {
+  AggregatedHouseStats,
+  loadHouseStatsWithFallback,
+  deriveHouseParticipantCounts,
+  deriveHouseXpSummary,
+} from '@/lib/houses/stats';
 
 const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -319,26 +324,15 @@ export async function GET(request: NextRequest) {
 
       const hasHead = !!headUser;
       const publicStatus = normalizeStatusFromData(house.status, hasHead);
-      const fallbackHeadCount = headUser ? 1 : 0;
-      const fallbackModeratorCount = Array.isArray(moderators) ? moderators.length : 0;
-      const statsMemberCount = stats?.member_count;
-      const statsMemberOnly = stats?.member_only_count;
-      const headCount = stats ? stats.head_count : fallbackHeadCount;
-      const moderatorCount = stats ? stats.moderator_count : fallbackModeratorCount;
-      const memberOnlyCount =
-        statsMemberOnly ?? Math.max((statsMemberCount ?? 0) - headCount - moderatorCount, 0);
-      const totalMembers =
-        statsMemberCount ?? headCount + moderatorCount + memberOnlyCount;
-      const xpBreakdown = {
-        head: stats?.head_xp ?? 0,
-        moderators: stats?.moderator_xp ?? 0,
-        members:
-          stats?.member_xp ??
-          Math.max((stats?.total_xp ?? 0) - (stats?.head_xp ?? 0) - (stats?.moderator_xp ?? 0), 0),
-      };
-      const totalXp =
-        stats?.total_xp ??
-        xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
+      const participantBreakdown = deriveHouseParticipantCounts(stats);
+      if (!stats && headUser) {
+        participantBreakdown.head = 1;
+        participantBreakdown.total = Math.max(
+          participantBreakdown.head + participantBreakdown.moderators + participantBreakdown.members,
+          participantBreakdown.total,
+        );
+      }
+      const { xpBreakdown, totalXp } = deriveHouseXpSummary(stats);
 
       return {
         id: house.id,
@@ -373,14 +367,14 @@ export async function GET(request: NextRequest) {
           : null,
 
         moderators,
-        member_count: totalMembers,
+        member_count: participantBreakdown.total,
         xp_total: totalXp,
         xp_breakdown: xpBreakdown,
         participant_breakdown: {
-          total: totalMembers,
-          head: headCount,
-          moderators: moderatorCount,
-          members: memberOnlyCount,
+          total: participantBreakdown.total,
+          head: participantBreakdown.head,
+          moderators: participantBreakdown.moderators,
+          members: participantBreakdown.members,
         },
       };
     });

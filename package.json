@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:unlock": "tsc -p tests/tsconfig.json && node -r ./tests/register-alias.js .tmp-tests/tests/unlockEngine.helpers.test.js",
     "test:houses": "tsc -p tests/tsconfig.json && node -r ./tests/register-alias.js .tmp-tests/tests/houses-membership.test.js",
+    "test:house-xp": "tsc -p tests/tsconfig.json && node -r ./tests/register-alias.js .tmp-tests/tests/house-xp-aggregation.test.js",
     "seed": "ts-node scripts/seed.ts",
     "sync:levels": "node scripts/syncAcademyLevels.js",
     "sync:houses": "ts-node scripts/sync_all_house_members.ts"

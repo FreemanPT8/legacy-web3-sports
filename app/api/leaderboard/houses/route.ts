@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { AggregatedHouseStats, loadHouseStatsWithFallback } from '@/lib/houses/stats';
+import {
+  AggregatedHouseStats,
+  loadHouseStatsWithFallback,
+  deriveHouseParticipantCounts,
+  deriveHouseXpSummary,
+} from '@/lib/houses/stats';
 
 type HouseRow = {
   id: string;
@@ -160,26 +165,8 @@ export async function GET(request: NextRequest) {
       .map<HouseLeaderboardEntry>((house) => {
         const totals = totalsMap.get(house.id);
         const sport = sportsMap.get(house.sport_id) || null;
-        const headCount = totals?.head_count ?? 0;
-        const moderatorCount = totals?.moderator_count ?? 0;
-        const membersOnly = totals?.member_only_count ?? 0;
-        const participantCount = totals?.member_count ?? headCount + moderatorCount + membersOnly;
-        const xpBreakdown = {
-          head: totals?.head_xp ?? 0,
-          moderators: totals?.moderator_xp ?? 0,
-          members: totals?.member_xp ?? 0,
-        };
-        const totalXp =
-          typeof totals?.total_xp === 'number'
-            ? totals.total_xp
-            : xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
-        const memberCount = participantCount;
-        const participantBreakdown = {
-          total: memberCount,
-          head: headCount,
-          moderators: moderatorCount,
-          members: membersOnly,
-        };
+        const participantBreakdown = deriveHouseParticipantCounts(totals);
+        const { xpBreakdown, totalXp } = deriveHouseXpSummary(totals);
         const sportName = sport ? resolveName(sport.name_i18n, sport.code) : null;
         const houseName = resolveName(house.name_i18n, sportName);
 
@@ -189,11 +176,11 @@ export async function GET(request: NextRequest) {
           sportCode: sport?.code ?? null,
           sportName,
           countryCode: house.country_code,
-          status: normalizeStatus(house.status, headCount > 0),
+          status: normalizeStatus(house.status, participantBreakdown.head > 0),
           totalXp,
-          memberCount,
-          headCount,
-          moderatorCount,
+          memberCount: participantBreakdown.total,
+          headCount: participantBreakdown.head,
+          moderatorCount: participantBreakdown.moderators,
           createdAt: house.created_at,
           xpBreakdown,
           participantBreakdown,

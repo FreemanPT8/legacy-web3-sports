@@ -298,16 +298,63 @@ export async function loadHouseStatsWithFallback(
   houseIds: string[],
 ): Promise<Map<string, AggregatedHouseStats>> {
   try {
-    return await loadAggregatedHouseStats(houseIds);
+    return await loadHouseStatsFromView(houseIds);
   } catch (error) {
-    console.error('[house-stats] Aggregated computation failed; falling back to view.', error);
+    console.error('[house-stats] Failed to load house_xp_totals view; falling back to aggregate computation.', error);
     try {
-      return await loadHouseStatsFromView(houseIds);
+      return await loadAggregatedHouseStats(houseIds);
     } catch (fallbackError) {
-      console.error('[house-stats] Fallback view lookup failed.', fallbackError);
+      console.error('[house-stats] Fallback aggregate computation failed.', fallbackError);
       const emptyMap = new Map<string, AggregatedHouseStats>();
       houseIds.forEach((id) => ensureStats(emptyMap, id));
       return emptyMap;
     }
   }
+}
+
+export type HouseParticipantBreakdown = {
+  total: number;
+  head: number;
+  moderators: number;
+  members: number;
+};
+
+export type HouseXpSummary = {
+  xpBreakdown: {
+    head: number;
+    moderators: number;
+    members: number;
+  };
+  totalXp: number;
+};
+
+export function deriveHouseParticipantCounts(
+  stats?: AggregatedHouseStats | null,
+): HouseParticipantBreakdown {
+  const head = stats?.head_count ?? 0;
+  const moderators = stats?.moderator_count ?? 0;
+  const memberOnly = stats?.member_only_count ?? Math.max((stats?.member_count ?? 0) - head - moderators, 0);
+  const total = stats?.member_count ?? head + moderators + memberOnly;
+  return {
+    total,
+    head,
+    moderators,
+    members: memberOnly,
+  };
+}
+
+export function deriveHouseXpSummary(stats?: AggregatedHouseStats | null): HouseXpSummary {
+  const xpBreakdown = {
+    head: stats?.head_xp ?? 0,
+    moderators: stats?.moderator_xp ?? 0,
+    members: stats?.member_xp ?? 0,
+  };
+  const totalXp =
+    typeof stats?.total_xp === 'number'
+      ? stats.total_xp
+      : xpBreakdown.head + xpBreakdown.moderators + xpBreakdown.members;
+  return {
+    xpBreakdown,
+    totalXp,
+  };
 }
