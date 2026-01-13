@@ -42,13 +42,16 @@ async function main() {
   let updated = 0;
   for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
     const batch = toUpdate.slice(i, i + BATCH_SIZE);
-    const { error: updateError } = await supabaseAdmin
-      .from('sport_pool_entries')
-      .upsert(batch, { onConflict: 'id' });
-    if (updateError) {
-      throw updateError;
+    for (const row of batch) {
+      const { error: updateError } = await supabaseAdmin
+        .from('sport_pool_entries')
+        .update({ metadata: row.metadata })
+        .eq('id', row.id);
+      if (updateError) {
+        throw updateError;
+      }
+      updated += 1;
     }
-    updated += batch.length;
   }
 
   console.log(`[done] Updated ${updated} pool entries with source metadata.`);
