@@ -171,7 +171,11 @@ export async function notifySportPoolEntry(payload: PoolNotificationPayload) {
         userEmail: payload.userEmail,
       },
     }));
-    await supabaseAdmin.from('notifications').insert(rows);
+    const { error: insertError } = await supabaseAdmin.from('notifications').insert(rows);
+    if (insertError) {
+      console.error('[sport-pool] Failed to insert notifications', insertError);
+      return;
+    }
 
     if (payload.entryId) {
       const { data: entryRow, error: entryError } = await supabaseAdmin
