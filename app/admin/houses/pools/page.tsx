@@ -201,6 +201,18 @@ export default function SportPoolsAdminPage() {
       }
       setEntries(data.entries);
       setTotals(data.totals);
+      if (
+        poolType === 'no_sport' &&
+        statusFilter === 'pending' &&
+        data.entries.length === 0
+      ) {
+        const nextParams = new URLSearchParams(searchParams.toString());
+        nextParams.set('pool', 'sport_pending');
+        nextParams.set('status', 'pending');
+        setPoolType('sport_pending');
+        setStatusFilter('pending');
+        router.replace(`${pathname}?${nextParams.toString()}`);
+      }
     } catch (err: any) {
       console.error('Failed to load sport pools:', err);
       setEntries([]);
