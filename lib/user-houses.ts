@@ -85,6 +85,29 @@ const chunkArray = <T,>(items: T[], size: number = CHUNK_SIZE): T[][] => {
   return chunks;
 };
 
+const derivePoolSource = (assignedVia: HouseAssignmentSource): string => {
+  switch (assignedVia) {
+    case 'signup-auto':
+      return 'signup';
+    case 'pool-auto':
+      return 'pool';
+    case 'admin-manual':
+      return 'admin';
+    case 'PROFILE':
+      return 'profile';
+    case 'ADMIN_SYNC':
+      return 'admin-sync';
+    case 'SCRIPT':
+      return 'script';
+    case 'ONBOARDING':
+      return 'onboarding';
+    case 'MANUAL':
+      return 'manual';
+    default:
+      return 'unknown';
+  }
+};
+
 async function syncMembershipViaRpc(
   userId: string,
   sportId: string | null,
@@ -249,6 +272,7 @@ export async function syncUserHouseMembership(
           sportId,
           countryCode,
           metadata: {
+            source: derivePoolSource(assignedVia),
             assignedVia,
             logPrefix: options.logPrefix ?? null,
           },
