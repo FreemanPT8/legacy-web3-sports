@@ -57,19 +57,21 @@ export async function queueSportPendingEntry(
   await markUserRequiresAssignment(payload.userId, note, admin);
 
   try {
+    const normalizedCountry = normalizeCountry(payload.countryCode);
     const { data: existing, error: existingError } = await admin
       .from('sport_pool_entries')
       .select('id')
       .eq('user_id', payload.userId)
       .eq('pool_type', 'sport_pending')
       .eq('status', 'pending')
+      .eq('sport_id', payload.sportId ?? null)
+      .eq('country_code', normalizedCountry)
       .maybeSingle();
 
     if (existingError) {
       console.error('[sport-pool] Failed to inspect existing pending entries', existingError);
     }
 
-    const normalizedCountry = normalizeCountry(payload.countryCode);
     if (existing?.id) {
       const { error: updateError } = await admin
         .from('sport_pool_entries')

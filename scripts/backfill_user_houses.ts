@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../lib/supabase';
-import { ensureHouseForSportCountry } from '../lib/houses/creation';
+import { queueSportPendingEntry } from '../lib/sport-pool';
+import { getCountryCodeFromName } from '../lib/countries';
 
 type HouseRow = {
   id: string;
@@ -26,6 +27,8 @@ type UserProfileRow = {
   id: string;
   primary_country_code: string | null;
   primary_sport_id: string | null;
+  sport_id: string | null;
+  country: string | null;
 };
 
 type UserHouseInsert = {
@@ -153,9 +156,7 @@ async function main() {
   const { data: memberCandidatesData, error: memberCandidatesError } =
     await supabaseAdmin
       .from('users')
-      .select('id, primary_country_code, primary_sport_id')
-      .not('primary_country_code', 'is', null)
-      .not('primary_sport_id', 'is', null);
+      .select('id, primary_country_code, primary_sport_id, sport_id, country');
 
   if (memberCandidatesError) {
     throw memberCandidatesError;
@@ -166,47 +167,46 @@ async function main() {
   let skippedMembers = 0;
 
   for (const user of memberCandidates) {
-    const countryCode = user.primary_country_code?.toUpperCase();
-    const sportId = user.primary_sport_id;
+    const countryCode =
+      user.primary_country_code?.toUpperCase() ??
+      (user.country ? getCountryCodeFromName(user.country) : null) ??
+      (user.country ? user.country.trim().slice(0, 2).toUpperCase() : null);
 
-    if (!countryCode || !sportId) {
+    const sportIds = [user.sport_id ?? null, user.primary_sport_id ?? null]
+      .filter((sportId): sportId is string => Boolean(sportId))
+      .filter((sportId, index, list) => list.indexOf(sportId) === index);
+
+    if (!countryCode || sportIds.length === 0) {
       skippedMembers += 1;
       continue;
     }
 
-    const key = `${sportId}:${countryCode}`;
-    let house = houseByKey.get(key);
+    for (const sportId of sportIds) {
+      const key = `${sportId}:${countryCode}`;
+      const house = houseByKey.get(key);
 
-    if (!house) {
-      try {
-        const ensureResult = await ensureHouseForSportCountry({
+      if (!house) {
+        console.warn(`[backfill] No house for ${key}. Queuing user ${user.id} for manual assignment.`);
+        await queueSportPendingEntry({
+          userId: user.id,
           sportId,
           countryCode,
-          actorId: null,
+          metadata: { source: 'backfill_script' },
+          note: 'Backfill: sem House ativa para este desporto e pais.',
         });
-        house = {
-          id: ensureResult.houseId,
-          sport_id: sportId,
-          country_code: ensureResult.countryCode,
-        };
-        houseByKey.set(`${sportId}:${ensureResult.countryCode}`, house);
-        if (ensureResult.countryCode !== countryCode) {
-          houseByKey.set(`${sportId}:${countryCode}`, house);
-        }
-      } catch (error) {
-        console.error(`[backfill] Failed to ensure house for ${key}:`, error);
         skippedMembers += 1;
         continue;
       }
-    }
 
-    memberRows.push({
-      user_id: user.id,
-      house_id: house.id,
-      membership_role: 'MEMBER',
-      assigned_via: 'SCRIPT',
-    });
+      memberRows.push({
+        user_id: user.id,
+        house_id: house.id,
+        membership_role: 'MEMBER',
+        assigned_via: 'SCRIPT',
+      });
+    }
   }
+
 
   await chunkedUpsert(memberRows, 'MEMBER');
 
