@@ -53,11 +53,41 @@ interface House {
     moderators: number;
     members: number;
   } | null;
+  participant_breakdown?: {
+    total: number;
+    head: number;
+    moderators: number;
+    members: number;
+  } | null;
 }
 
 interface HousesApiResponse {
   success: boolean;
   houses?: House[];
+  error?: string;
+}
+
+interface HouseLeaderboardEntry {
+  houseId: string;
+  totalXp: number | string;
+  memberCount: number | string;
+  status: string;
+  xpBreakdown?: {
+    head?: number | string;
+    moderators?: number | string;
+    members?: number | string;
+  } | null;
+  participantBreakdown?: {
+    total?: number | string;
+    head?: number | string;
+    moderators?: number | string;
+    members?: number | string;
+  } | null;
+}
+
+interface HouseLeaderboardResponse {
+  success: boolean;
+  leaderboard?: HouseLeaderboardEntry[];
   error?: string;
 }
 
@@ -76,6 +106,49 @@ const STATUS_BADGE_CLASSES: Record<HouseStatus, string> = {
     'inline-flex items-center rounded-full border border-slate-400/40 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-medium text-slate-200',
 };
 
+const numeric = (value: unknown, fallback = 0) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : fallback;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+};
+
+const normalizeBreakdown = (
+  source?: {
+    head?: unknown;
+    moderators?: unknown;
+    members?: unknown;
+  } | null,
+) => {
+  if (!source) return null;
+  return {
+    head: numeric(source.head, 0),
+    moderators: numeric(source.moderators, 0),
+    members: numeric(source.members, 0),
+  };
+};
+
+const normalizeParticipants = (
+  source?: {
+    total?: unknown;
+    head?: unknown;
+    moderators?: unknown;
+    members?: unknown;
+  } | null,
+) => {
+  if (!source) return null;
+  return {
+    total: numeric(source.total, 0),
+    head: numeric(source.head, 0),
+    moderators: numeric(source.moderators, 0),
+    members: numeric(source.members, 0),
+  };
+};
+
 export default function HousesPage() {
   const { user } = useAuth();
   const isLegacyTeam = user?.role === 'Admin' || user?.role === 'Super Admin';
@@ -90,13 +163,49 @@ export default function HousesPage() {
       setError(null);
 
       try {
-        const housesRes = await fetch('/api/sports/houses?locale=pt');
+        const [housesRes, leaderboardRes] = await Promise.all([
+          fetch('/api/sports/houses?locale=pt'),
+          fetch('/api/leaderboard/houses?limit=500'),
+        ]);
+
         const housesJson: HousesApiResponse = await housesRes.json();
         if (!housesRes.ok || !housesJson.success) {
           throw new Error(housesJson.error || 'Erro ao carregar Houses of Sports.');
         }
 
-        setHouses(housesJson.houses || []);
+        let leaderboardMap = new Map<string, HouseLeaderboardEntry>();
+        if (leaderboardRes.ok) {
+          const leaderboardJson: HouseLeaderboardResponse = await leaderboardRes.json();
+          if (leaderboardJson.success && Array.isArray(leaderboardJson.leaderboard)) {
+            leaderboardMap = new Map(
+              leaderboardJson.leaderboard.map((entry) => [entry.houseId, entry]),
+            );
+          }
+        }
+
+        const enhancedHouses = (housesJson.houses || []).map((house) => {
+          const leaderboardEntry = leaderboardMap.get(house.id);
+          const xpBreakdown =
+            normalizeBreakdown(leaderboardEntry?.xpBreakdown) ||
+            normalizeBreakdown(house.xp_breakdown) || {
+              head: 0,
+              moderators: 0,
+              members: 0,
+            };
+          const participantBreakdown =
+            normalizeParticipants(leaderboardEntry?.participantBreakdown) ||
+            normalizeParticipants(house.participant_breakdown);
+
+          return {
+            ...house,
+            xp_total: numeric(leaderboardEntry?.totalXp ?? house.xp_total, 0),
+            member_count: numeric(leaderboardEntry?.memberCount ?? house.member_count, 0),
+            xp_breakdown: xpBreakdown,
+            participant_breakdown: participantBreakdown,
+          };
+        });
+
+        setHouses(enhancedHouses);
       } catch (err: any) {
         console.error('Erro ao carregar Houses:', err);
         setError(err?.message || 'Erro inesperado ao carregar Houses.');
