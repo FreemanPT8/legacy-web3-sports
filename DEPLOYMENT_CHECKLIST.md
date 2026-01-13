@@ -76,6 +76,11 @@ Use esta checklist para garantir que tudo está pronto para o deploy.
 - [ ] Dashboard admin acessível
 - [ ] Ferramentas de moderação funcionam
 
+### Houses of Sports
+- [ ] Backfill de sources da pool executado (`npm run backfill:pool-sources`)
+- [ ] Pool pendente processada (`npm run sync:pool-pending`)
+- [ ] Members sincronizados para todas as Houses (`npm run sync:houses`)
+
 ### Performance
 - [ ] Tempo de carregamento < 3 segundos
 - [ ] Sem erros no console do browser
