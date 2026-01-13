@@ -13,7 +13,8 @@
     "test:house-xp": "tsc -p tests/tsconfig.json && node -r ./tests/register-alias.js .tmp-tests/tests/house-xp-aggregation.test.js",
     "seed": "ts-node scripts/seed.ts",
     "sync:levels": "node scripts/syncAcademyLevels.js",
-    "sync:houses": "ts-node scripts/sync_all_house_members.ts"
+    "sync:houses": "ts-node scripts/sync_all_house_members.ts",
+    "backfill:pool-sources": "ts-node scripts/tag_pool_entry_sources.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.0.8",
