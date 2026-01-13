@@ -345,7 +345,6 @@ export async function POST(request: NextRequest) {
             country,
           });
         }
-      }
       } else if (selectionMethod === 'random_pool') {
         const note =
           'Conta registada sem desporto preferido. Aguardando atribuição manual.';
