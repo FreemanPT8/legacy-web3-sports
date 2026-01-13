@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, supabase } from '@/lib/supabase';
+import {
+  loadHouseStatsWithFallback,
+  deriveHouseParticipantCounts,
+  deriveHouseXpSummary,
+} from '@/lib/houses/stats';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
@@ -49,6 +54,19 @@ interface HousePublicDTO {
   avatar_url: string | null;
   description: string | null;
   created_at: string | null;
+  member_count: number;
+  xp_total: number;
+  xp_breakdown: {
+    head: number;
+    moderators: number;
+    members: number;
+  };
+  participant_breakdown: {
+    total: number;
+    head: number;
+    moderators: number;
+    members: number;
+  };
 }
 
 interface PublicUserDTO {
@@ -219,6 +237,11 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    const statsByHouse = await loadHouseStatsWithFallback([house.id]);
+    const stats = statsByHouse.get(house.id);
+    const participantBreakdown = deriveHouseParticipantCounts(stats);
+    const { xpBreakdown, totalXp } = deriveHouseXpSummary(stats);
+
     const dto: HousePublicDTO = {
       id: house.id,
       name: resolveLocaleName(house.name_i18n, null) || 'Unnamed House',
@@ -229,6 +252,15 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       avatar_url: house.avatar_url ?? null,
       description: house.description ?? null,
       created_at: house.created_at ?? null,
+      member_count: participantBreakdown.total,
+      xp_total: totalXp,
+      xp_breakdown: xpBreakdown,
+      participant_breakdown: {
+        total: participantBreakdown.total,
+        head: participantBreakdown.head,
+        moderators: participantBreakdown.moderators,
+        members: participantBreakdown.members,
+      },
     };
 
     return NextResponse.json<HousePublicResponse>(

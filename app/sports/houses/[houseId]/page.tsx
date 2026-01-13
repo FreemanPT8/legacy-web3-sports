@@ -22,6 +22,19 @@ interface HousePublic {
   avatar_url: string | null;
   description: string | null;
   created_at: string | null;
+  member_count: number;
+  xp_total: number;
+  xp_breakdown: {
+    head: number;
+    moderators: number;
+    members: number;
+  };
+  participant_breakdown: {
+    total: number;
+    head: number;
+    moderators: number;
+    members: number;
+  };
 }
 
 interface PublicUser {
@@ -405,31 +418,52 @@ export default function PublicHouseProfilePage() {
             </div>
           </div>
 
-          {/* Secção futura para membros / XP / chat */}
-          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/70 p-5 text-xs text-body">
+          <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-5 text-xs text-body">
             <h2 className="text-sm font-semibold text-heading mb-2">
-              O que vem a seguir para esta House?
+              Membros e XP da House
             </h2>
-            <p className="mb-2">Em próximos desenvolvimentos, esta página vai mostrar:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>
-                Número de membros ativos da House e XP coletivo (soma de XP de
-                todos os membros).
-              </li>
-              <li>
-                Um botão para entrar no <strong>chat privado da House</strong>{' '}
-                (apenas para membros).
-              </li>
-              <li>
-                Missões e trilhos de aprendizagem específicos deste desporto,
-                com recompensas em XP e, mais tarde, integração on-chain.
-              </li>
-            </ul>
-            <p className="mt-3 text-[11px] text-muted-custom">
-              Para já, garante que o teu perfil tem o desporto certo quando
-              crias conta. Nós tratamos da ligação automática ou guardamos o
-              teu lugar até esta House abrir vagas.
-            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-custom">Participantes</p>
+                <p className="text-lg font-semibold text-heading">{house.participant_breakdown.total}</p>
+              </div>
+              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-custom">Heads</p>
+                <p className="text-lg font-semibold text-heading">{house.participant_breakdown.head}</p>
+              </div>
+              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-custom">Moderadores</p>
+                <p className="text-lg font-semibold text-heading">{house.participant_breakdown.moderators}</p>
+              </div>
+              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-custom">Membros</p>
+                <p className="text-lg font-semibold text-heading">{house.participant_breakdown.members}</p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-custom">XP total</p>
+                <p className="text-lg font-semibold text-heading">{house.xp_total.toLocaleString('pt-PT')}</p>
+              </div>
+              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-custom">XP Head</p>
+                <p className="text-lg font-semibold text-heading">
+                  {house.xp_breakdown.head.toLocaleString('pt-PT')}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-custom">XP Moderadores</p>
+                <p className="text-lg font-semibold text-heading">
+                  {house.xp_breakdown.moderators.toLocaleString('pt-PT')}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-custom">XP Membros</p>
+                <p className="text-lg font-semibold text-heading">
+                  {house.xp_breakdown.members.toLocaleString('pt-PT')}
+                </p>
+              </div>
+            </div>
           </div>
 
           <ContentComments
