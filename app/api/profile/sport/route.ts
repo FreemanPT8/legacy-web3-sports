@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     const { data: sport, error: sportError } = await db
       .from('sports')
-      .select('id')
+      .select('id, code, name_i18n')
       .eq('id', sportId)
       .maybeSingle();
 
@@ -124,6 +124,16 @@ export async function POST(request: NextRequest) {
           existingUser.primary_country_code ??
           (existingUser.country ? getCountryCodeFromName(existingUser.country) : null) ??
           (existingUser.country ? existingUser.country.trim().slice(0, 2).toUpperCase() : null);
+        const name_i18n = (sport?.name_i18n as Record<string, string> | null) ?? null;
+        const sportName =
+          name_i18n?.pt ||
+          name_i18n?.en ||
+          name_i18n?.es ||
+          name_i18n?.fr ||
+          name_i18n?.de ||
+          name_i18n?.it ||
+          (sport?.code as string | null) ||
+          undefined;
         await notifySportPoolEntry({
           entryId: syncResult.poolEntryId,
           poolType: 'sport_pending',
@@ -132,6 +142,7 @@ export async function POST(request: NextRequest) {
           country: existingUser.country ?? undefined,
           countryCode,
           sportId,
+          sportName,
         });
       }
     } catch (error) {
