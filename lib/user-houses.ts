@@ -373,6 +373,20 @@ export async function syncHouseMembersBySportCountry(
           if (row?.id) candidateIds.add(row.id);
         });
       }
+
+      const { data: legacySecondaryMatches, error: legacySecondaryError } = await adminClient
+        .from('users')
+        .select('id')
+        .eq('primary_sport_id', sportId)
+        .eq('country', legacyCountryName);
+
+      if (legacySecondaryError) {
+        console.error(`${logPrefix}Failed legacy secondary user lookup for membership sync:`, legacySecondaryError);
+      } else {
+        legacySecondaryMatches?.forEach((row: { id: string | null }) => {
+          if (row?.id) candidateIds.add(row.id);
+        });
+      }
     }
 
     if (!candidateIds.size) {
