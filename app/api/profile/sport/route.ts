@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const syncResult = await syncUserHouseMembership(authUser.id, {
-        assignedVia: 'signup-auto',
+        assignedVia: 'PROFILE',
         logPrefix: 'profile:sport',
         actorId: authUser.id,
       });
