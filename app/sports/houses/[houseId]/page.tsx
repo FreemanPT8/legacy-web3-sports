@@ -275,14 +275,16 @@ export default function PublicHouseProfilePage() {
                   Esta House representa a comunidade de{' '}
                   {house.sport_name || 'um desporto'} em{' '}
                   {house.country_code || 'um país'} dentro do ecossistema
-                  Web3/Apertum.
+                  Web3/Apertum. Ao criares conta, ligamos-te automaticamente a
+                  esta House (quando houver vaga) ou guardamos o teu perfil até
+                  a comunidade abrir portas.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    href="/sports/onboarding"
+                    href="/signup"
                     className="inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
                   >
-                    Fazer onboarding de desporto
+                    Criar conta e ligar-me
                   </Link>
                   {user && (
                     <Link
@@ -424,9 +426,9 @@ export default function PublicHouseProfilePage() {
               </li>
             </ul>
             <p className="mt-3 text-[11px] text-muted-custom">
-              Para já, o passo mais importante é garantires que o teu perfil
-              está alinhado com o desporto certo através do onboarding
-              personalizado.
+              Para já, garante que o teu perfil tem o desporto certo quando
+              crias conta. Nós tratamos da ligação automática ou guardamos o
+              teu lugar até esta House abrir vagas.
             </p>
           </div>
 
@@ -450,10 +452,10 @@ export default function PublicHouseProfilePage() {
               </p>
             </div>
             <Link
-              href="/sports/onboarding"
+              href="/signup"
               className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
             >
-              Começar onboarding personalizado
+              Criar conta no LEGACY
             </Link>
           </div>
         </section>

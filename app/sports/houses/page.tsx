@@ -129,11 +129,19 @@ export default function HousesPage() {
             typeof leaderboardEntry.memberCount === 'number'
               ? leaderboardEntry.memberCount
               : house.member_count ?? 0;
+          const patchedBreakdown =
+            leaderboardEntry.xpBreakdown ??
+            house.xp_breakdown ?? {
+              head: 0,
+              moderators: 0,
+              members: 0,
+            };
 
           return {
             ...house,
             xp_total: patchedXp,
             member_count: patchedMembers,
+            xp_breakdown: patchedBreakdown,
           };
         });
 
@@ -268,10 +276,10 @@ export default function HousesPage() {
                       construção ou em desenvolvimento).
                     </li>
                     <li>
-                      No passo seguinte, através de um{' '}
-                      <strong>formulário simples de onboarding</strong>,
-                      mostras quem és e o que procuras. A partir daí a equipa
-                      consegue orientar-te com muito mais precisão.
+                      No passo seguinte, ao criares conta respondes a um{' '}
+                      <strong>formulário simples</strong>, mostras quem és e o
+                      que procuras. A partir daí a equipa consegue orientar-te
+                      com muito mais precisão.
                     </li>
                   </ul>
                   <p className="text-xs text-slate-200">
@@ -287,11 +295,9 @@ export default function HousesPage() {
                     PRÓXIMO PASSO
                   </p>
                   <p className="text-sm text-slate-200">
-                    Quando te sentires pronto, faz o onboarding e diz-nos qual é
-                    a tua relação com o desporto, o teu contexto e o que
-                    queres construir. A partir daí a equipa LEGACY ajuda-te a
-                    encontrar a House certa – ou a preparar o terreno para
-                    uma nova.
+                    Quando te sentires pronto, cria conta. Ligamos o teu perfil
+                    automaticamente à melhor House disponível ou mantemos-te em
+                    pool até nascer uma comunidade para o teu país e desporto.
                   </p>
                   <div className="flex flex-wrap gap-3 pt-1">
                     <Button
@@ -299,7 +305,7 @@ export default function HousesPage() {
                       size="sm"
                       className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                     >
-                      <Link href="/sports/onboarding">Fazer Onboarding</Link>
+                      <Link href="/signup">Criar conta no LEGACY</Link>
                     </Button>
                     <Button
                       asChild
@@ -596,6 +602,28 @@ function HousesSection({
                       </p>
                     </div>
                   </div>
+                  {house.xp_breakdown ? (
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-slate-400">
+                      <div>
+                        <p className="uppercase tracking-[0.2em]">Head</p>
+                        <p className="font-semibold text-white">
+                          {house.xp_breakdown.head.toLocaleString('pt-PT')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="uppercase tracking-[0.2em]">Mods</p>
+                        <p className="font-semibold text-white">
+                          {house.xp_breakdown.moderators.toLocaleString('pt-PT')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="uppercase tracking-[0.2em]">Membros</p>
+                        <p className="font-semibold text-white">
+                          {house.xp_breakdown.members.toLocaleString('pt-PT')}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </Link>

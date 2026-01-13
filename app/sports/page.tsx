@@ -96,32 +96,33 @@ export default function SportsLandingPage() {
                   Cada House é um hub para treino, networking e XP. Escolhe a comunidade certa e acompanha o teu progresso
                   com o mesmo design system da homepage.
                 </HeroDescription>
-              <div className="flex flex-wrap gap-4">
-                <Button
-                  size="lg"
-                  asChild
-                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                >
-                  <Link href="/sports/onboarding" className="flex items-center gap-2">
-                    Começar onboarding
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/40 text-white hover:bg-white/10"
-                  asChild
-                >
-                  <Link href="/sports/houses" className="flex items-center gap-2">
-                    Ver Houses
-                    <Users className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <p className="text-xs text-cyan-200/80">
-                Podes sempre ajustar o teu desporto principal e a tua House mais tarde no teu perfil Legacy.
-              </p>
+                <div className="flex flex-wrap gap-4">
+                  <Button
+                    size="lg"
+                    asChild
+                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                  >
+                    <Link href="/signup" className="flex items-center gap-2">
+                      Criar conta no LEGACY
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/40 text-white hover:bg-white/10"
+                    asChild
+                  >
+                    <Link href="/sports/houses" className="flex items-center gap-2">
+                      Ver Houses
+                      <Users className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+                <p className="text-xs text-cyan-200/80">
+                  Assim que crias conta ligamos o teu perfil à melhor House disponível ou mantemos o teu lugar em espera
+                  até existir uma comunidade oficial para o teu país e desporto.
+                </p>
               </HeroTextColumn>
 
               <div>
@@ -367,8 +368,8 @@ export default function SportsLandingPage() {
               Define o desporto, a House e começa a ganhar XP genuíno.
             </h2>
             <p className="mt-2 text-sm text-slate-200">
-              O onboarding personalizado do Legacy ajuda-te a escolher a melhor combinação entre Academia Web3 e Houses
-              of Sports para o teu contexto.
+              Ao criares conta ligamos-te automaticamente à House existente mais próxima do teu contexto ou guardamos o
+              teu perfil numa pool até nascer uma comunidade oficial para o teu país e desporto.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-4">
               <Button
@@ -376,7 +377,7 @@ export default function SportsLandingPage() {
                 asChild
                 className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
               >
-                <Link href="/sports/onboarding">Começar onboarding</Link>
+                <Link href="/signup">Criar conta no LEGACY</Link>
               </Button>
               <Button
                 size="lg"

@@ -90,18 +90,18 @@ export const Footer = memo(function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/sports/houses"
+                  href="/sports"
                   className="text-sm text-gray-400 hover:text-sky-400 transition-colors"
                 >
-                  {t('nav.houses')}
+                  {t('nav.overview')}
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/sports/onboarding"
+                  href="/sports/houses"
                   className="text-sm text-gray-400 hover:text-sky-400 transition-colors"
                 >
-                  {t('nav.onboarding')}
+                  {t('nav.houses')}
                 </Link>
               </li>
             </ul>

@@ -163,7 +163,7 @@ export function RichTextEditor({
   const [ctaPopoverOpen, setCtaPopoverOpen] = useState(false);
   const [ctaConfig, setCtaConfig] = useState({
     text: 'Quero fazer onboarding',
-    href: '/sports/onboarding',
+    href: '/sports/houses',
     textColor: '#001014',
     bg: '#06b6d4',
     hover: '#0ea5e9',
@@ -406,7 +406,7 @@ export function RichTextEditor({
   const insertCTAButton = useCallback(() => {
     if (!editor) return;
     const safeText = ctaConfig.text.trim() || 'Quero fazer onboarding';
-    const safeHref = ctaConfig.href.trim() || '/sports/onboarding';
+    const safeHref = ctaConfig.href.trim() || '/sports/houses';
     const finalHtml = `<p><a class="legacy-cta-button" href="${safeHref}" target="_blank" rel="noopener" style="--legacy-cta-bg:${ctaConfig.bg};--legacy-cta-hover:${ctaConfig.hover};--legacy-cta-text:${ctaConfig.textColor};">${safeText}</a></p>`;
     editor.chain().focus().insertContent(finalHtml).run();
     setCtaPopoverOpen(false);
@@ -638,7 +638,7 @@ export function RichTextEditor({
                   setCtaConfig((prev) => ({ ...prev, href: event.target.value }))
                 }
                 className="mt-1"
-                placeholder="/sports/onboarding"
+                placeholder="/sports/houses"
               />
             </div>
             <div className="grid grid-cols-3 gap-2">

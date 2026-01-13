@@ -22,7 +22,7 @@ const SECONDARY_CTA = { label: 'Explorar a Academia', href: '/education/courses'
 const storySteps = [
   {
     title: '1 · Regista-te',
-    copy: 'Cria a tua conta em segundos e recebe onboarding personalizado para a tua realidade.',
+    copy: 'Cria a tua conta em segundos e liga-te automaticamente à House que faz sentido ou ficas em pool até abrirmos uma para ti.',
     icon: Activity,
     bullets: [],
   },
@@ -171,7 +171,7 @@ export default function HomePage() {
   const heroOffset = heroMedia.offset ?? 0;
   const heroActionDescription = user
     ? 'Explora cursos e liga-te a Houses globais.'
-    : 'Começa a tua jornada Web3 com onboarding personalizado.';
+    : 'Começa a tua jornada Web3 com ligação automática às Houses certas.';
   const handleHeroSelect = async (asset: MediaAsset) => {
     await heroMedia.setAsset(asset);
   };
@@ -267,8 +267,8 @@ export default function HomePage() {
         <section className="px-6">
           <div className="mx-auto max-w-5xl rounded-3xl border border-white/10 bg-[#020b16] px-6 py-8 text-sm text-slate-200 shadow-[0_25px_60px_rgba(3,10,25,0.45)]">
             <p>
-              O portal Legacy junta onboarding personalizado, cursos com XP autenticado e ligação às Houses of Sports num único fluxo. Começas a entender o
-              ecossistema Apertum sem ruído, descobres onde o XP aparece e vês como a comunidade se organiza antes de dar o passo seguinte.
+              O portal Legacy junta ligação automática às Houses, cursos com XP autenticado e acompanhamento num único fluxo. Começas a entender o ecossistema
+              Apertum sem ruído, descobres onde o XP aparece e vês como a comunidade se organiza antes de dar o passo seguinte.
             </p>
             <p className="mt-3 text-cyan-200">{heroActionDescription}</p>
           </div>
@@ -676,8 +676,8 @@ export default function HomePage() {
                     explora as Houses
                   </Link>{' '}
                   ou{' '}
-                  <Link href="/sports/onboarding" className="text-cyan-200 hover:text-white">
-                    encontra a tua House ideal
+                  <Link href="/signup" className="text-cyan-200 hover:text-white">
+                    cria conta e tratamos do matching
                   </Link>
                   .
                 </p>
@@ -691,8 +691,8 @@ export default function HomePage() {
                 }}
               />
               <p className="mt-4 text-xs text-slate-200">
-                Começa pelo onboarding personalizado, partilha o teu contexto (atleta, treinador, gestor, criador de conteúdo ou fã) e recebe recomendações
-                sobre a melhor House para ti.
+                Cria conta, partilha o teu contexto (atleta, treinador, gestor, criador de conteúdo ou fã) e ligamos-te automaticamente à House certa ou
+                mantemos o teu perfil numa pool até existir vaga.
               </p>
             </div>
           </div>

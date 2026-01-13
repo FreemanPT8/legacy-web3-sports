@@ -184,9 +184,9 @@ export default function SportDetailPage() {
                   <div className="text-xs text-blue-100/90 max-w-xs">
                     <p>
                       Se este é o teu desporto, o próximo passo é simples:{' '}
-                      <strong>ver as Houses ativas</strong> e, se fizer
-                      sentido, avançar para o{' '}
-                      <strong>onboarding personalizado</strong> no LEGACY.
+                      <strong>cria conta</strong> e ligamos-te automaticamente à
+                      melhor House disponível ou guardamos o teu perfil numa
+                      pool até existir uma comunidade ativa para ti.
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Link href="/sports/houses">
@@ -194,9 +194,9 @@ export default function SportDetailPage() {
                           Ver Houses deste e de outros desportos
                         </span>
                       </Link>
-                      <Link href="/sports/onboarding">
+                      <Link href="/signup">
                         <span className="inline-flex items-center rounded-md bg-white text-slate-950 px-2.5 py-1 text-[11px] font-semibold hover:bg-slate-100">
-                          Fazer onboarding
+                          Criar conta e ligar-me
                         </span>
                       </Link>
                     </div>

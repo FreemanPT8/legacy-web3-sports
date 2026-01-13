@@ -196,11 +196,11 @@ find app/api -name "route.ts" | wc -l
 /blog/category/[slug] ............ Posts por categoria
 ```
 
-#### Sports (3)
+#### Sports (2)
 ```
 /sports .......................... Hub de desportos
 /sports/houses ................... Casas de desportos
-/sports/onboarding ............... Onboarding desportivo
+(/sports/onboarding removido — onboarding agora é automático via registo)
 ```
 
 #### Perfis Públicos (1)

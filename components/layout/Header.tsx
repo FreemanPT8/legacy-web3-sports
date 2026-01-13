@@ -350,15 +350,6 @@ export const Header = memo(function Header() {
                         </NavigationMenuLink>
                       </Link>
                     </li>
-                    <li>
-                      <Link href="/sports/onboarding" legacyBehavior passHref>
-                        <NavigationMenuLink className="block select-none space-y-1 rounded-xl border border-white/10 bg-white/5 p-3 leading-none no-underline outline-none transition hover:border-cyan-300/40 hover:bg-cyan-500/10">
-                          <div className="text-sm font-medium text-slate-100">
-                            {t('nav.onboarding')}
-                          </div>
-                        </NavigationMenuLink>
-                      </Link>
-                    </li>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
@@ -732,13 +723,6 @@ export const Header = memo(function Header() {
                     className="text-lg pl-4 block mb-2"
                   >
                     {t('nav.houses')}
-                  </Link>
-                  <Link
-                    href="/sports/onboarding"
-                    onClick={() => setMobileOpen(false)}
-                    className="text-lg pl-4 block"
-                  >
-                    {t('nav.onboarding')}
                   </Link>
                 </div>
 
