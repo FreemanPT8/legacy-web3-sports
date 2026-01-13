@@ -173,6 +173,7 @@ export default function HousesPage() {
     inDevelopment,
     xpLeader,
     membersLeader,
+    totals,
   } = useMemo(() => {
     const active: House[] = [];
     const underConstruction: House[] = [];
@@ -184,46 +185,43 @@ export default function HousesPage() {
       else inDevelopment.push(h);
     }
 
-    const activeWithXp = active.filter((house) => (house.xp_total ?? 0) > 0);
-    const activeWithMembers = active.filter((house) => (house.member_count ?? 0) > 0);
+    const totals = {
+      total: houses.length,
+      active: active.length,
+      underConstruction: underConstruction.length,
+      inDevelopment: inDevelopment.length,
+    };
 
-    const pickPool =
-      activeWithXp.length > 0
-        ? activeWithXp
-        : active.length > 0
-          ? active
-          : [];
-
-    const xpLeader =
-      pickPool
+    const sortByXpThenMembers = (list: House[]) =>
+      list
         .slice()
         .sort((a, b) => {
           const xpDiff = (b.xp_total ?? 0) - (a.xp_total ?? 0);
           if (xpDiff !== 0) return xpDiff;
-
           const memberDiff = (b.member_count ?? 0) - (a.member_count ?? 0);
           if (memberDiff !== 0) return memberDiff;
-
           return (a.name || '').localeCompare(b.name || '');
-        })[0] ?? null;
+        });
 
-    const memberPickPool =
-      activeWithMembers.length > 0
-        ? activeWithMembers
-        : active.length > 0
-          ? active
-          : [];
+    const sortByMembersThenXp = (list: House[]) =>
+      list
+        .slice()
+        .sort((a, b) => {
+          const memberDiff = (b.member_count ?? 0) - (a.member_count ?? 0);
+          if (memberDiff !== 0) return memberDiff;
+          const xpDiff = (b.xp_total ?? 0) - (a.xp_total ?? 0);
+          if (xpDiff !== 0) return xpDiff;
+          return (a.name || '').localeCompare(b.name || '');
+        });
 
+    const housesWithXp = houses.filter((house) => (house.xp_total ?? 0) > 0);
+    const xpPool = housesWithXp.length > 0 ? housesWithXp : houses;
+    const xpLeader = xpPool.length > 0 ? sortByXpThenMembers(xpPool)[0] ?? null : null;
+
+    const housesWithMembers = houses.filter((house) => (house.member_count ?? 0) > 0);
+    const membersPool = housesWithMembers.length > 0 ? housesWithMembers : houses;
     const membersLeader =
-      memberPickPool
-        .slice()
-        .sort((a, b) => {
-          const memberDiff = (b.member_count ?? 0) - (a.member_count ?? 0);
-          if (memberDiff !== 0) return memberDiff;
-          const xpDiff = (b.xp_total ?? 0) - (a.xp_total ?? 0);
-          if (xpDiff !== 0) return xpDiff;
-          return (a.name || '').localeCompare(b.name || '');
-        })[0] ?? null;
+      membersPool.length > 0 ? sortByMembersThenXp(membersPool)[0] ?? null : null;
 
     return {
       active,
@@ -231,12 +229,13 @@ export default function HousesPage() {
       inDevelopment,
       xpLeader,
       membersLeader,
+      totals,
     };
   }, [houses]);
 
-  const totalActive = active.length;
-
   const visibleInDevelopment = isLegacyTeam ? inDevelopment : [];
+  const totalSummaryValue = totals.total.toLocaleString('pt-PT');
+  const statusBreakdownDescription = `Ativas: ${totals.active} · Em construção: ${totals.underConstruction} · Em desenvolvimento: ${totals.inDevelopment}`;
 
   return (
     <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
@@ -260,9 +259,9 @@ export default function HousesPage() {
 
               <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#04131b]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.65)] md:grid-cols-3 md:p-6">
                 <StatusSummaryItem
-                  label="Houses ativas"
-                  value={totalActive.toLocaleString('pt-PT')}
-                  description="Comunidades que já estão a receber membros de forma estruturada."
+                  label="Mapa de Houses"
+                  value={totalSummaryValue}
+                  description={statusBreakdownDescription}
                 />
                 <XpLeaderSummaryCard house={xpLeader} />
                 <MembersLeaderSummaryCard house={membersLeader} />
@@ -500,8 +499,6 @@ function HousesSection({
 }) {
   if (!houses || houses.length === 0) return null;
 
-  const subset = houses.slice(0, 9);
-
   return (
     <div>
       <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -515,17 +512,18 @@ function HousesSection({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {subset.map((house) => {
-          const headUsername = house.head?.username
-            ? `@${house.head.username}`
-            : null;
+        {houses.map((house) => {
+          const headDisplay =
+            house.head?.full_name?.trim() ||
+            (house.head?.username ? `@${house.head.username}` : null);
           const firstModerator = house.moderators?.[0];
-          const moderatorUsername = firstModerator?.username
-            ? `@${firstModerator.username}`
-            : null;
+          const moderatorExample =
+            firstModerator?.username
+              ? `@${firstModerator.username}`
+              : firstModerator?.full_name?.trim() || null;
 
-          const headLine = headUsername
-            ? `Head of House: ${headUsername}`
+          const headLine = headDisplay
+            ? `Head of House: ${headDisplay}`
             : 'Head of House a definir.';
 
           const renderTitle = () => {
@@ -585,7 +583,7 @@ function HousesSection({
                       Moderadores:{' '}
                       <span className="text-white">
                         {house.moderators.length}
-                        {moderatorUsername ? ` (ex: ${moderatorUsername})` : ''}
+                        {moderatorExample ? ` (ex: ${moderatorExample})` : ''}
                       </span>
                     </p>
                   ) : (
