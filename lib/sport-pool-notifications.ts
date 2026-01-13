@@ -92,13 +92,17 @@ export async function notifySportPoolEntry(payload: PoolNotificationPayload) {
     if (payload.entryId) {
       const { data: entryRow, error: entryError } = await supabaseAdmin
         .from('sport_pool_entries')
-        .select('metadata')
+        .select('metadata, status')
         .eq('id', payload.entryId)
         .maybeSingle();
       if (entryError) {
         console.error('[sport-pool] Failed to load pool entry metadata', entryError);
       } else {
         const metadata = (entryRow?.metadata as Record<string, unknown> | null) ?? null;
+        const status = (entryRow as { status?: string | null } | null)?.status ?? null;
+        if (status && status !== 'pending') {
+          return;
+        }
         if (metadata?.notified_at) {
           return;
         }
@@ -172,13 +176,17 @@ export async function notifySportPoolEntry(payload: PoolNotificationPayload) {
     if (payload.entryId) {
       const { data: entryRow, error: entryError } = await supabaseAdmin
         .from('sport_pool_entries')
-        .select('metadata')
+        .select('metadata, status')
         .eq('id', payload.entryId)
         .maybeSingle();
       if (entryError) {
         console.error('[sport-pool] Failed to reload pool entry metadata', entryError);
       } else {
         const metadata = (entryRow?.metadata as Record<string, unknown> | null) ?? {};
+        const status = (entryRow as { status?: string | null } | null)?.status ?? null;
+        if (status && status !== 'pending') {
+          return;
+        }
         const nextMetadata = { ...metadata, notified_at: new Date().toISOString() };
         const { error: updateError } = await supabaseAdmin
           .from('sport_pool_entries')
