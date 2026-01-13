@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { loadHouseStatsWithFallback, deriveHouseParticipantCounts, deriveHouseXpSummary } from '@/lib/houses/stats';
 
 const SUPPORTED_LOCALES = ['en', 'pt', 'es', 'fr', 'de', 'it'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -146,6 +147,8 @@ export async function GET(request: NextRequest) {
 
     // 3) House heads
     const houseIds = houses.map((h) => h.id);
+    const statsByHouseId =
+      houseIds.length > 0 ? await loadHouseStatsWithFallback(houseIds) : new Map();
 
     const { data: headsData, error: headsError } = await supabaseAdmin
       .from('house_heads')
@@ -271,6 +274,9 @@ export async function GET(request: NextRequest) {
     // 7) montar resposta final
     const result = houses.map((house) => {
       const sport = sportById.get(house.sport_id) || null;
+      const stats = statsByHouseId.get(house.id);
+      const participantBreakdown = deriveHouseParticipantCounts(stats);
+      const { xpBreakdown, totalXp } = deriveHouseXpSummary(stats);
 
       // Head da House
       const headRow = headByHouse.get(house.id) || null;
@@ -340,6 +346,15 @@ export async function GET(request: NextRequest) {
           : null,
 
         moderators,
+        member_count: participantBreakdown.total,
+        xp_total: totalXp,
+        xp_breakdown: xpBreakdown,
+        participant_breakdown: {
+          total: participantBreakdown.total,
+          head: participantBreakdown.head,
+          moderators: participantBreakdown.moderators,
+          members: participantBreakdown.members,
+        },
       };
     });
 
