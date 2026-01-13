@@ -450,6 +450,7 @@ export async function POST(request: NextRequest) {
     await syncHouseMembersBySportCountry(houseId, rawSportId, result.countryCode, {
       logPrefix: 'house:create',
       assignedVia: 'pool-auto',
+      assignedBy: currentUser.userId ?? null,
     });
 
     await logHouseHistory({

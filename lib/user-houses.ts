@@ -74,6 +74,16 @@ function getBackgroundSyncHandler(): BackgroundSyncFn {
 const DEFAULT_SOURCE: HouseAssignmentSource = 'signup-auto';
 const RPC_FUNCTION = 'sync_user_house_membership_db';
 const RPC_UNDEFINED_FUNCTION = '42883';
+const CHUNK_SIZE = 200;
+
+const chunkArray = <T,>(items: T[], size: number = CHUNK_SIZE): T[][] => {
+  if (size <= 0) return [items];
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+};
 
 async function syncMembershipViaRpc(
   userId: string,
@@ -304,7 +314,7 @@ export async function syncHouseMembersBySportCountry(
   houseId: string,
   sportId?: string | null,
   countryCode?: string | null,
-  options: { logPrefix?: string; assignedVia?: HouseAssignmentSource } = {},
+  options: { logPrefix?: string; assignedVia?: HouseAssignmentSource; assignedBy?: string | null } = {},
 ): Promise<SyncHouseMembersResult> {
   if (!adminClient) {
     return { success: false, attempted: 0, assigned: 0, reason: 'Supabase admin client unavailable.' };
@@ -315,6 +325,7 @@ export async function syncHouseMembersBySportCountry(
 
   const logPrefix = options.logPrefix ? `[${options.logPrefix}] ` : '';
   const assignedVia = options.assignedVia ?? 'pool-auto';
+  const assignedBy = options.assignedBy ?? null;
   try {
     const upperCountry = countryCode.toUpperCase();
     const candidateIds = new Set<string>();
@@ -379,6 +390,28 @@ export async function syncHouseMembersBySportCountry(
         assigned += 1;
       } else if (!result.success) {
         console.error(`${logPrefix}Failed to sync membership for user ${userId}:`, result.error ?? result.reason);
+      }
+    }
+
+    const now = new Date().toISOString();
+    for (const chunk of chunkArray(candidateList)) {
+      const { error: poolError } = await adminClient
+        .from('sport_pool_entries')
+        .update({
+          status: 'assigned',
+          house_id: houseId,
+          assigned_at: now,
+          assigned_by: assignedBy,
+          updated_at: now,
+        })
+        .eq('pool_type', 'sport_pending')
+        .eq('status', 'pending')
+        .eq('sport_id', sportId)
+        .eq('country_code', upperCountry)
+        .in('user_id', chunk);
+
+      if (poolError) {
+        console.error(`${logPrefix}Failed to update sport_pool_entries for house ${houseId}:`, poolError);
       }
     }
 

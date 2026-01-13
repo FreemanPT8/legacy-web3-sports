@@ -251,7 +251,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseI
     const sportId = (currentHouse as any)?.sport_id ?? updatedRow?.sport_id ?? null;
     const countryCode = (currentHouse as any)?.country_code ?? updatedRow?.country_code ?? null;
     if (sportId && countryCode) {
-      await syncHouseMembersBySportCountry(houseId, sportId, countryCode, { logPrefix: 'house:governance' });
+      await syncHouseMembersBySportCountry(houseId, sportId, countryCode, {
+        logPrefix: 'house:governance',
+        assignedVia: 'pool-auto',
+        assignedBy: actorId,
+      });
     }
   }
 

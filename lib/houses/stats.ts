@@ -256,7 +256,7 @@ async function loadHouseStatsFromView(
       .in('house_id', chunk);
     if (error) {
       console.error('[house-stats] Failed to load house_xp_totals chunk', error);
-      continue;
+      throw error;
     }
     for (const row of (data ?? []) as {
       house_id: string;
