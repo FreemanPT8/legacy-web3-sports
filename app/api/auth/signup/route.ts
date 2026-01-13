@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
           pool_type: 'no_sport',
           country_code: normalizedCountryCode,
           notes: note,
-          metadata: { allowRandomAssignment: Boolean(allow_random_assignment) },
+          metadata: { source: 'signup', allowRandomAssignment: Boolean(allow_random_assignment) },
         });
         await notifySportPoolEntry({
           entryId,
@@ -222,6 +222,7 @@ export async function POST(request: NextRequest) {
           suggested_sport_name: trimmedSuggestion,
           suggested_country_code: normalizedSuggestedCountry,
           notes: note,
+          metadata: { source: 'signup' },
         });
         await notifySportPoolEntry({
           entryId,
