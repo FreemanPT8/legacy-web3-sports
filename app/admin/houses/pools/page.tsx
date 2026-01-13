@@ -45,6 +45,7 @@ interface PoolEntry {
   suggestedCountryCode: string | null;
   notes: string | null;
   metadata: Record<string, unknown>;
+  notifiedAt?: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   assignedAt: string | null;
@@ -862,8 +863,9 @@ export default function SportPoolsAdminPage() {
                         <p className="text-xs text-slate-400">{userEmail}</p>
                         <div className="flex flex-wrap gap-3 text-xs text-slate-400">
                           <span>Registo: {formatDate(entry.createdAt)}</span>
-                          {entry.assignedAt ? <span>Atribuído: {formatDate(entry.assignedAt)}</span> : null}
-                          {entry.countryCode ? <span>País alvo: {entry.countryCode}</span> : null}
+                          {entry.assignedAt ? <span>Atribu?do: {formatDate(entry.assignedAt)}</span> : null}
+                          {entry.notifiedAt ? <span>Notificado: {formatDate(entry.notifiedAt)}</span> : null}
+                          {entry.countryCode ? <span>Pa?s alvo: {entry.countryCode}</span> : null}
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">

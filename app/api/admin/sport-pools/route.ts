@@ -374,6 +374,7 @@ export async function GET(request: NextRequest) {
       suggestedCountryCode: row.suggested_country_code,
       notes: row.notes,
       metadata: row.metadata ?? {},
+      notifiedAt: (row.metadata as Record<string, any> | null)?.notified_at ?? null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       assignedAt: row.assigned_at,
