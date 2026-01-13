@@ -48,6 +48,11 @@ interface House {
     role: string | null;
     avatar_url: string | null;
   }[];
+  xp_breakdown?: {
+    head: number;
+    moderators: number;
+    members: number;
+  } | null;
 }
 
 interface HousesApiResponse {
@@ -60,6 +65,11 @@ interface HouseLeaderboardEntry {
   houseId: string;
   totalXp: number;
   memberCount: number;
+  xpBreakdown?: {
+    head: number;
+    moderators: number;
+    members: number;
+  };
 }
 
 interface HouseLeaderboardResponse {
