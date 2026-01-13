@@ -11,6 +11,7 @@ import {
   HouseStatus,
   normalizeHouseStatus,
 } from '@/lib/houses/creation';
+import { loadHouseStatsWithFallback } from '@/lib/houses/stats';
 
 
 interface HouseRow {
@@ -256,17 +257,14 @@ export async function GET(request: NextRequest) {
     }
 
     // 5) Contagem total de membros (Head + moderadores + membros)
-    const { data: totalsData, error: totalsError } = await supabaseAdmin
-      .from('house_xp_totals')
-      .select('house_id, member_count')
-      .in('house_id', houseIds);
-
-    if (totalsError) {
-      console.error('Error loading house_xp_totals for admin list:', totalsError);
-    }
-
     const totalMembersByHouseId = new Map<string, number>();
-    for (const row of (totalsData || []) as { house_id: string; member_count: number | null }[]) {
+    try {
+      const statsByHouse = await loadHouseStatsWithFallback(houseIds);
+      statsByHouse.forEach((stats, houseId) => {
+        totalMembersByHouseId.set(houseId, stats.member_count ?? 0);
+      });
+    } catch (error) {
+      console.error('Error loading house stats for admin list:', error);
     }
 
     // 6) Contagem fallback de membros oficiais (sem Head/Moderadores)

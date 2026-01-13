@@ -2,14 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
-
-type CapacityEntry = {
-  house_id: string;
-  name: string;
-  monthly_capacity: number | null;
-  pending_requests: number;
-  status: 'ok' | 'limit' | 'blocked';
-};
+import { loadHouseStatsWithFallback } from '@/lib/houses/stats';
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAdmin(request);
@@ -23,46 +16,40 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 
-  const [
-    housesRes,
-    membersRes,
-    joinRequestsRes,
-    alertsRes,
-    onboardingRes,
-    poolRes,
-    joinStatusRes,
-    joinPendingDetailRes,
-  ] = await Promise.all([
-    supabaseAdmin
-      .from('houses_of_sports')
-      .select('id, house_key, name_i18n, status, governance_status, monthly_capacity'),
-    supabaseAdmin
-      .from('user_houses')
-        .select('house_id, count:user_id', { count: 'exact', head: false })
-        .is('removed_at', null),
+    const [
+      housesRes,
+      joinRequestsRes,
+      alertsRes,
+      onboardingRes,
+      poolRes,
+      joinStatusRes,
+      joinPendingDetailRes,
+    ] = await Promise.all([
+      supabaseAdmin
+        .from('houses_of_sports')
+        .select('id, house_key, name_i18n, status, governance_status, monthly_capacity'),
       supabaseAdmin
         .from('house_join_requests')
         .select('house_id, count:id', { count: 'exact', head: false })
         .eq('status', 'pending')
         .gte('created_at', monthStart),
       supabaseAdmin.from('house_alerts').select('id, house_id, type, severity, status, created_at').eq('status', 'open'),
-    supabaseAdmin.from('house_onboarding_status').select('house_key, name_i18n, published_popups'),
-    supabaseAdmin
-      .from('sport_pool_entries')
-      .select('sport: sports(code), status')
-      .eq('status', 'pending'),
-    supabaseAdmin.from('house_join_requests').select('status, count:id', { head: false }).group('status'),
-    supabaseAdmin.from('house_join_requests').select('house_id, created_at').eq('status', 'pending'),
-  ]);
+      supabaseAdmin.from('house_onboarding_status').select('house_key, name_i18n, published_popups'),
+      supabaseAdmin
+        .from('sport_pool_entries')
+        .select('sport: sports(code), status')
+        .eq('status', 'pending'),
+      supabaseAdmin.from('house_join_requests').select('status, count:id', { head: false }).group('status'),
+      supabaseAdmin.from('house_join_requests').select('house_id, created_at').eq('status', 'pending'),
+    ]);
 
-  if (housesRes.error) throw housesRes.error;
-  if (membersRes.error) throw membersRes.error;
-  if (joinRequestsRes.error) throw joinRequestsRes.error;
-  if (alertsRes.error) throw alertsRes.error;
-  if (onboardingRes.error) throw onboardingRes.error;
-  if (poolRes.error) throw poolRes.error;
-  if (joinStatusRes.error) throw joinStatusRes.error;
-  if (joinPendingDetailRes.error) throw joinPendingDetailRes.error;
+    if (housesRes.error) throw housesRes.error;
+    if (joinRequestsRes.error) throw joinRequestsRes.error;
+    if (alertsRes.error) throw alertsRes.error;
+    if (onboardingRes.error) throw onboardingRes.error;
+    if (poolRes.error) throw poolRes.error;
+    if (joinStatusRes.error) throw joinStatusRes.error;
+    if (joinPendingDetailRes.error) throw joinPendingDetailRes.error;
 
     const houses = housesRes.data ?? [];
     const totalHouses = houses.length;
@@ -75,9 +62,11 @@ export async function GET(request: NextRequest) {
     };
 
     const memberCountsByHouse = new Map<string, number>();
-    for (const row of membersRes.data ?? []) {
-      memberCountsByHouse.set(row.house_id as string, Number(row.count) || 0);
-    }
+    const houseIds = houses.map((house: any) => house.id);
+    const statsByHouse = houseIds.length > 0 ? await loadHouseStatsWithFallback(houseIds) : new Map();
+    statsByHouse.forEach((stats, houseId) => {
+      memberCountsByHouse.set(houseId, stats.member_count ?? 0);
+    });
     const globalMemberCount = Array.from(memberCountsByHouse.values()).reduce((acc, cur) => acc + cur, 0);
     type TopHouse = { houseId: string; houseKey: string; name: string; members: number };
     const topHouses = houses
@@ -89,24 +78,6 @@ export async function GET(request: NextRequest) {
       }))
       .sort((a: TopHouse, b: TopHouse) => (b.members || 0) - (a.members || 0))
       .slice(0, 5);
-
-    const pendingRequests = new Map<string, number>();
-    for (const row of joinRequestsRes.data ?? []) {
-      pendingRequests.set(row.house_id as string, Number(row.count) || 0);
-    }
-    const capacityEntries: CapacityEntry[] = houses.map((house: any) => {
-      const pending = pendingRequests.get(house.id) ?? 0;
-      const monthlyCapacity = house.monthly_capacity ?? null;
-      const status: CapacityEntry['status'] =
-        monthlyCapacity && pending >= monthlyCapacity ? 'blocked' : pending >= (monthlyCapacity ?? Infinity) * 0.8 ? 'limit' : 'ok';
-      return {
-        house_id: house.id,
-        name: house.name_i18n?.pt ?? house.name_i18n?.en ?? 'House',
-        monthly_capacity: monthlyCapacity,
-        pending_requests: pending,
-        status,
-      };
-    });
 
     const alerts = alertsRes.data ?? [];
     const severityMap = { low: 0, medium: 0, high: 0 };
@@ -187,17 +158,17 @@ export async function GET(request: NextRequest) {
         globalCount: globalMemberCount,
         topHouses,
       },
-      capacity: capacityEntries,
+      ctaQueue: {
+        totals: joinTotals,
+        houses: joinReportHouses,
+      },
       alerts: {
         openBySeverity: severityMap,
         top: topAlerts,
       },
       onboarding: onboardingIssues,
       poolPressure,
-      joinReport: {
-        totals: joinTotals,
-        houses: joinReportHouses,
-      },
+
     });
   } catch (error) {
     console.error('[admin/houses/overview] failed', error);
