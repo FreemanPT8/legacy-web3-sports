@@ -120,6 +120,20 @@ export async function POST(request: NextRequest) {
         actorId: authUser.id,
       });
       if (syncResult.reason === 'no_house_found' && syncResult.poolEntryId) {
+        try {
+          const { data: entryRow } = await db
+            .from('sport_pool_entries')
+            .select('metadata')
+            .eq('id', syncResult.poolEntryId)
+            .maybeSingle();
+          const metadata = (entryRow?.metadata as Record<string, unknown> | null) ?? {};
+          await db
+            .from('sport_pool_entries')
+            .update({ metadata: { ...metadata, source: 'profile' } })
+            .eq('id', syncResult.poolEntryId);
+        } catch (metadataError) {
+          console.error('[profile/sport] Failed to tag pool entry metadata', metadataError);
+        }
         const countryCode =
           existingUser.primary_country_code ??
           (existingUser.country ? getCountryCodeFromName(existingUser.country) : null) ??

@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
               sport_id,
               country_code: normalizedCountryCode,
               notes: note,
+              metadata: { source: 'signup' },
             });
           }
 
