@@ -432,52 +432,6 @@ export async function GET(request: NextRequest) {
           : null,
       };
     });
-      id: row.id,
-      poolType: row.pool_type as PoolType,
-      status: row.status as PoolStatus,
-      sportId: row.sport_id,
-      houseId: row.house_id,
-      countryCode: row.country_code,
-      suggestedSportName: row.suggested_sport_name,
-      suggestedCountryCode: row.suggested_country_code,
-      notes: row.notes,
-      metadata: row.metadata ?? {},
-      notifiedAt: (row.metadata as Record<string, any> | null)?.notified_at ?? null,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      assignedAt: row.assigned_at,
-      assignedBy: row.assigned_by,
-      user: row.user
-        ? {
-            id: row.user.id,
-            username: row.user.username,
-            fullName: row.user.full_name,
-            email: row.user.email,
-            country: row.user.country,
-            primaryCountryCode: row.user.primary_country_code,
-            primarySportId: row.user.primary_sport_id,
-            sportSelectionMethod: row.user.sport_selection_method,
-            requiresAssignment: Boolean(row.user.requires_sport_assignment),
-            assignmentNotes: row.user.sport_assignment_notes,
-            createdAt: row.user.created_at,
-          }
-        : null,
-      sport: row.sport
-        ? {
-            id: row.sport.id,
-            code: row.sport.code,
-            name: resolveLocalizedName(row.sport.name_i18n, row.sport.code),
-          }
-        : null,
-      house: row.house
-        ? {
-            id: row.house.id,
-            countryCode: row.house.country_code,
-            status: row.house.status,
-            name: resolveLocalizedName(row.house.name_i18n),
-          }
-        : null,
-    }));
 
     const [pendingCount, assignedCount, dismissedCount] = await Promise.all(
       STATUS_TYPES.map((state) => countEntries(poolType, state as PoolStatus, headAccess)),
@@ -493,8 +447,8 @@ export async function GET(request: NextRequest) {
         assigned: assignedCount,
         dismissed: dismissedCount,
       },
-        entries,
-      });
+      entries,
+    });
   } catch (err) {
     console.error('[sport-pools] Unexpected error', err);
     return NextResponse.json(
