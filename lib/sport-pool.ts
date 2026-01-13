@@ -51,13 +51,29 @@ export async function queueSportPendingEntry(
   const admin = payload.client ?? supabaseAdmin;
   if (!admin) return { entryId: null, created: false };
 
+  const normalizedCountry = normalizeCountry(payload.countryCode);
   const note =
     payload.note ??
-      'Sem House ativa para este desporto e paÇðs. Entrada na pool de governaÇõÇœ aguardando criaÇõÇœo manual.';
-  await markUserRequiresAssignment(payload.userId, note, admin);
+      'Sem House ativa para este desporto e pa????s. Entrada na pool de governa???????" aguardando cria???????"o manual.';
 
   try {
-    const normalizedCountry = normalizeCountry(payload.countryCode);
+    const { data: assignedEntry, error: assignedError } = await admin
+      .from('sport_pool_entries')
+      .select('id, status')
+      .eq('user_id', payload.userId)
+      .eq('pool_type', 'sport_pending')
+      .eq('sport_id', payload.sportId ?? null)
+      .eq('country_code', normalizedCountry)
+      .in('status', ['assigned']);
+
+    if (assignedError) {
+      console.error('[sport-pool] Failed to inspect assigned entries', assignedError);
+    } else if (assignedEntry && assignedEntry.length > 0) {
+      return { entryId: assignedEntry[0]?.id ?? null, created: false };
+    }
+
+    await markUserRequiresAssignment(payload.userId, note, admin);
+
     const { data: existing, error: existingError } = await admin
       .from('sport_pool_entries')
       .select('id')
