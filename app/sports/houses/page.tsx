@@ -660,28 +660,6 @@ function HousesSection({
                       </p>
                     </div>
                   </div>
-                  {house.xp_breakdown ? (
-                    <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-slate-400">
-                      <div>
-                        <p className="uppercase tracking-[0.2em]">Head</p>
-                        <p className="font-semibold text-white">
-                          {house.xp_breakdown.head.toLocaleString('pt-PT')}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="uppercase tracking-[0.2em]">Mods</p>
-                        <p className="font-semibold text-white">
-                          {house.xp_breakdown.moderators.toLocaleString('pt-PT')}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="uppercase tracking-[0.2em]">Membros</p>
-                        <p className="font-semibold text-white">
-                          {house.xp_breakdown.members.toLocaleString('pt-PT')}
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </div>
             </Link>

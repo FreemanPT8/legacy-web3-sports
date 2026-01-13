@@ -267,31 +267,7 @@ export async function GET(request: NextRequest) {
   const poolType = normalizePool(searchParams.get('pool'));
   const status = normalizeStatus(searchParams.get('status'));
   const limit = clampLimit(searchParams.get('limit'));
-  let headAccess: HeadAccessContext | null = null;
-
-  if (!isSuperAdmin) {
-    if (poolType !== 'sport_pending') {
-      return NextResponse.json(
-        { success: false, error: 'Heads only have access to the sport pending pool.' },
-        { status: 403 },
-      );
-    }
-    headAccess = await resolveHeadAccess(user!.userId);
-    if (!headAccess) {
-      return NextResponse.json({
-        success: true,
-        pool: poolType,
-        status,
-        total: 0,
-        totals: {
-          pending: 0,
-          assigned: 0,
-          dismissed: 0,
-        },
-        entries: [],
-      });
-    }
-  }
+  const headAccess: HeadAccessContext | null = null;
 
   try {
     const fetchLimit = isSuperAdmin ? limit : Math.min(limit * 5, 500);
@@ -345,10 +321,6 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(fetchLimit);
 
-    if (headAccess) {
-      query = query.in('sport_id', headAccess.sportIds);
-    }
-
     const { data, error } = await query;
 
     if (error) {
@@ -359,11 +331,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let filteredRows = ((data ?? []) as SportPoolEntryRow[]);
-    if (headAccess) {
-      filteredRows = filteredRows.filter((row) => shouldExposeEntry(row, headAccess!));
-    }
-    const entries = filteredRows.slice(0, limit).map((row) => ({
+    const entries = ((data ?? []) as SportPoolEntryRow[]).slice(0, limit).map((row) => ({
       id: row.id,
       poolType: row.pool_type as PoolType,
       status: row.status as PoolStatus,
