@@ -126,8 +126,8 @@ export default function SportPoolsAdminPage() {
   const { user, loading: authLoading, getToken } = useAuth();
 
   const normalizePoolParam = (value: string | null): PoolType => {
-    if (value === 'sport_pending' || value === 'suggestion') return value;
-    return 'no_sport';
+    if (value === 'no_sport' || value === 'suggestion') return value;
+    return 'sport_pending';
   };
   const normalizeStatusParam = (value: string | null): PoolStatus => {
     if (value === 'assigned' || value === 'dismissed') return value;
