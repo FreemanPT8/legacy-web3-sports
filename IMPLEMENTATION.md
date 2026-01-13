@@ -91,6 +91,19 @@ npm run dev
 npm run build
 ```
 
+### House Maintenance Scripts
+
+```bash
+# Backfill missing pool entry sources
+npm run backfill:pool-sources
+
+# Process pending pool entries for newly created houses
+npm run sync:pool-pending
+
+# Sync all houses (membership recalculation)
+npm run sync:houses
+```
+
 ### Default Admin Credentials
 
 After seeding:
