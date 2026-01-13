@@ -15,7 +15,6 @@ type JoinRequestRow = {
     house_key?: string | null;
     name_i18n?: Record<string, string>;
     country_code?: string | null;
-    monthly_capacity?: number | null;
   } | null;
   users?: {
     id: string;
@@ -66,7 +65,6 @@ export async function GET(request: NextRequest) {
           name_i18n,
           country_code,
           status,
-          monthly_capacity
         ),
         users:users(
           id,

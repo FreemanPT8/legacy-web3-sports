@@ -980,7 +980,7 @@ export default function AdminHouseGovernancePage() {
         <section className="grid gap-6 md:grid-cols-2">
           <Card className="border-white/10 bg-[#03121d]/85">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Capacidade mensal</CardTitle>
+              <CardTitle className="text-lg text-white">Capacidade mensal (indicador)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Label htmlFor="capacity" className="text-sm text-white/70">

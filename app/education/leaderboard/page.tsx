@@ -354,7 +354,21 @@ export default function LeaderboardPage() {
         }
 
         if (housesSuccess) {
-          const sortedEntries = [...leaderboardEntries].sort(
+          const normalizedEntries = leaderboardEntries.map((entry) => {
+            const headXp = entry.xpBreakdown?.head ?? 0;
+            const moderatorsXp = entry.xpBreakdown?.moderators ?? 0;
+            const membersXp = entry.xpBreakdown?.members ?? 0;
+            return {
+              ...entry,
+              xpBreakdown: {
+                head: headXp,
+                moderators: moderatorsXp,
+                members: membersXp,
+              },
+              totalXp: headXp + moderatorsXp + membersXp,
+            };
+          });
+          const sortedEntries = [...normalizedEntries].sort(
             (a, b) => (b.totalXp ?? 0) - (a.totalXp ?? 0),
           );
           setHouseLeaderboard(sortedEntries);

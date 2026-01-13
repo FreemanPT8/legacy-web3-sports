@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
   try {
     const { data: houseRow, error: houseError } = await supabaseAdmin
       .from('houses_of_sports')
-      .select('id, monthly_capacity, governance_status')
+      .select('id, governance_status')
       .eq('house_key', houseKey)
       .maybeSingle();
     if (houseError) throw houseError;
@@ -51,63 +51,6 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
       userAgent: userAgent ?? null,
       version: 'member-cta-v1',
     };
-
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const DEFAULT_MONTHLY_CAPACITY = 50;
-    const normalizedCapacity =
-      Number.isFinite(houseRow.monthly_capacity) && houseRow.monthly_capacity !== null
-        ? Math.max(0, houseRow.monthly_capacity)
-        : DEFAULT_MONTHLY_CAPACITY;
-
-    const [pendingSnapshot, memberSnapshot, monthlySnapshot] = await Promise.all([
-      supabaseAdmin
-        .from('house_join_requests')
-        .select('*', { head: true, count: 'exact' })
-        .eq('house_id', houseRow.id)
-        .eq('status', 'pending'),
-      supabaseAdmin
-        .from('user_houses')
-        .select('*', { head: true, count: 'exact' })
-        .eq('house_id', houseRow.id)
-        .is('removed_at', null),
-      supabaseAdmin
-        .from('house_join_requests')
-        .select('*', { head: true, count: 'exact' })
-        .eq('house_id', houseRow.id)
-        .gte('created_at', startOfMonth.toISOString()),
-    ]);
-
-    if (pendingSnapshot.error) throw pendingSnapshot.error;
-    if (memberSnapshot.error) throw memberSnapshot.error;
-    if (monthlySnapshot.error) throw monthlySnapshot.error;
-
-    const pendingCount = pendingSnapshot.count ?? 0;
-    const memberCount = memberSnapshot.count ?? 0;
-    const monthlyRequestCount = monthlySnapshot.count ?? 0;
-
-    if (monthlyRequestCount >= normalizedCapacity) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            'A capacidade mensal desta House jケ foi atingida. Acompanha as novidades ou tenta novamente no prИximo ciclo.',
-        },
-        { status: 429 },
-      );
-    }
-
-    if (memberCount + pendingCount >= normalizedCapacity) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            'A capacidade mensal desta House já foi atingida. Acompanha as novidades ou tenta novamente no próximo ciclo.',
-        },
-        { status: 429 },
-      );
-    }
 
     await supabaseAdmin
       .from('house_join_requests')

@@ -392,11 +392,13 @@ export default function SportPoolsAdminPage() {
       'status',
       'created_at',
       'assigned_at',
+      'notified_at',
       'user_full_name',
       'user_email',
       'country',
       'sport_name',
       'suggested_sport',
+      'source',
       'notes',
     ];
 
@@ -420,11 +422,13 @@ export default function SportPoolsAdminPage() {
         entry.status,
         entry.createdAt ?? '',
         entry.assignedAt ?? '',
+        entry.notifiedAt ?? '',
         entry.user?.fullName ?? entry.user?.username ?? '',
         entry.user?.email ?? '',
         country,
         sportName,
         entry.suggestedSportName ?? '',
+        entry.metadata?.source ? String(entry.metadata.source) : '',
         entry.notes ?? '',
       ]
         .map(escapeCell)

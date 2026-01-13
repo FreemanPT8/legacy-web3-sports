@@ -91,14 +91,47 @@ export default function CreateHousePage() {
   const [invites, setInvites] = useState<InviteRow[]>([]);
   const [invitesLoading, setInvitesLoading] = useState(false);
   const [invitesError, setInvitesError] = useState<string | null>(null);
+  const [checkingPermission, setCheckingPermission] = useState(true);
+  const [canManageHouses, setCanManageHouses] = useState(false);
 
   const countries = useMemo(() => getSortedCountries(), []);
 
   useEffect(() => {
     if (!user || (user.role !== 'Admin' && user.role !== 'Super Admin')) {
       router.push('/login');
+      return;
     }
-  }, [user, router]);
+    if (user.role === 'Super Admin') {
+      setCanManageHouses(true);
+      setCheckingPermission(false);
+      return;
+    }
+    let active = true;
+    const fetchPermissions = async () => {
+      setCheckingPermission(true);
+      try {
+        const token = getToken();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const response = await fetch('/api/admin/permissions/self', { headers });
+        const data = await response.json();
+        if (!active) return;
+        if (response.ok && data?.success && data.permissions) {
+          setCanManageHouses(!!data.permissions.canManageHouses);
+        } else {
+          setCanManageHouses(false);
+        }
+      } catch (error) {
+        if (active) setCanManageHouses(false);
+      } finally {
+        if (active) setCheckingPermission(false);
+      }
+    };
+    fetchPermissions();
+    return () => {
+      active = false;
+    };
+  }, [user, router, getToken]);
 
   useEffect(() => {
     const fetchSports = async () => {
@@ -409,11 +442,25 @@ export default function CreateHousePage() {
     }
   };
 
-  if (loading || !user) {
+  if (loading || !user || checkingPermission) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#010913] text-slate-100">
         <Loader2 className="mr-2 h-6 w-6 animate-spin" />
         Carregando painel de Houses...
+      </div>
+    );
+  }
+
+  if (!canManageHouses) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#010913] px-4 text-center text-slate-100">
+        <p className="text-lg font-semibold">Sem permissões para criar Houses.</p>
+        <p className="text-sm text-slate-400">
+          Pede a um Super Admin para te atribuir o acesso “Manage Houses of Sports” antes de continuar.
+        </p>
+        <Button variant="outline" onClick={() => router.push('/admin/houses')}>
+          Voltar às Houses
+        </Button>
       </div>
     );
   }

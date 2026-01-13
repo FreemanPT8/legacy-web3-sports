@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
@@ -24,13 +24,16 @@ type OverviewResponse = {
     globalCount: number;
     topHouses: Array<{ houseId: string; houseKey: string; name: string; members: number }>;
   };
-  capacity: Array<{
-    house_id: string;
-    name: string;
-    monthly_capacity: number | null;
-    pending_requests: number;
-    status: 'ok' | 'limit' | 'blocked';
-  }>;
+  ctaQueue: {
+    totals: Record<string, number>;
+    houses: Array<{
+      houseId: string;
+      houseKey: string;
+      name: string;
+      pending: number;
+      lastRequest: string | null;
+    }>;
+  };
   alerts: {
     openBySeverity: Record<'low' | 'medium' | 'high', number>;
     top: Array<{
@@ -50,8 +53,6 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function AdminHousesOverviewPage() {
   const { data, error } = useSWR<OverviewResponse>('/api/admin/houses/overview', fetcher, { refreshInterval: 60_000 });
   const loading = !data && !error;
-  const [scanningAlerts, setScanningAlerts] = useState(false);
-  const [scanResult, setScanResult] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -88,29 +89,8 @@ export default function AdminHousesOverviewPage() {
     () => data.poolPressure?.reduce((acc, entry) => acc + (entry.pending || 0), 0) ?? 0,
     [data.poolPressure],
   );
-
-  const handleScanAlerts = async () => {
-    setScanningAlerts(true);
-    setScanResult(null);
-    try {
-      const response = await fetch('/api/admin/houses/alerts/scan', { method: 'POST' });
-      const payload = await response.json();
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error || 'Falha ao executar varredura.');
-      }
-      const summary = payload.summary || {};
-      setScanResult(
-        `Cr: ${summary.created || 0}, Esc: ${summary.escalated || 0}, Res: ${summary.resolved || 0}, Ok: ${
-          summary.ignored || 0
-        }`,
-      );
-    } catch (err) {
-      console.error('[admin/alerts/scan] failed', err);
-      setScanResult('Erro ao executar varredura.');
-    } finally {
-      setScanningAlerts(false);
-    }
-  };
+  const ctaPending = data.ctaQueue?.totals?.pending ?? 0;
+  const ctaHouses = data.ctaQueue?.houses ?? [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010913] via-[#02121c] to-[#04131b] text-white">
@@ -219,58 +199,48 @@ export default function AdminHousesOverviewPage() {
                   <Link href="/admin/houses/pools">Abrir painel de pools</Link>
                 </Button>
               </div>
-              {scanResult && <p className="text-xs text-white/60">Asltima varredura: {scanResult}</p>}
             </CardContent>
           </Card>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
           <Card className="border-white/10 bg-[#03101b]/80">
-            <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-col gap-2">
-                <CardTitle className="text-lg text-white">Capacidade vs pedidos</CardTitle>
-                <Badge className="w-fit border-white/20 bg-white/10 text-white">MAas atual</Badge>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-white/30 text-white hover:text-cyan-300 hover:border-cyan-300/60"
-                onClick={handleScanAlerts}
-                disabled={scanningAlerts}
-              >
-                {scanningAlerts ? 'A verificar...' : 'Varredura automAtica de alertas'}
-              </Button>
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Fila de pedidos manuais</CardTitle>
+              <p className="text-xs text-white/60">
+                Pending CTA sem House confirmada. Pendentes atuais: {ctaPending.toLocaleString()}
+              </p>
             </CardHeader>
             <CardContent className="space-y-3">
-              {data.capacity.length ? (
-                data.capacity.slice(0, 5).map((entry) => (
-                  <div key={entry.house_id} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/80">
+              {ctaHouses.length ? (
+                ctaHouses.slice(0, 5).map((house) => (
+                  <div key={house.houseId} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/80">
                     <div className="flex items-center justify-between">
-                      <p className="font-semibold text-white">{entry.name}</p>
-                      <span
-                        className={`rounded-full px-3 py-0.5 text-xs font-medium ${
-                          entry.status === 'blocked'
-                            ? 'bg-rose-500/15 text-rose-200 border border-rose-400/40'
-                            : entry.status === 'limit'
-                            ? 'bg-amber-500/15 text-amber-200 border border-amber-400/40'
-                            : 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/40'
-                        }`}
-                      >
-                        {entry.status === 'blocked' ? 'Bloqueada' : entry.status === 'limit' ? 'Limite' : 'Ok'}
+                      <p className="font-semibold text-white">{house.name}</p>
+                      <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-3 py-0.5 text-xs font-medium text-amber-100">
+                        {house.pending.toLocaleString()} pedidos
                       </span>
                     </div>
                     <p className="text-xs text-white/50">
-                      Capacidade: {entry.monthly_capacity ? entry.monthly_capacity : 'a'} A Pedidos pendentes:{' '}
-                      {entry.pending_requests}
+                      Último pedido:{' '}
+                      {house.lastRequest ? new Date(house.lastRequest).toLocaleString('pt-PT') : 'Sem registo'}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-white/70">Ainda nAo existem dados de pedidos vs. capacidade.</p>
+                <p className="text-sm text-white/70">Sem pedidos manuais pendentes.</p>
               )}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  className="border-white/20 text-white hover:border-cyan-300/60 hover:text-cyan-200"
+                  asChild
+                >
+                  <Link href="/admin/houses?tab=invites">Abrir pedidos</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
-
           <Card className="border-white/10 bg-[#030c16]/80">
             <CardHeader>
               <CardTitle className="text-lg text-white">Alertas recentes</CardTitle>

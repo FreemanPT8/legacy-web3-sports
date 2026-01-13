@@ -7,7 +7,6 @@ import {
 import {
   syncUserHouseMembership,
   __setUserHousesSupabaseAdmin,
-  __setEnsureHouseForTests,
   __setSyncHouseMembersForTests,
 } from '@/lib/user-houses';
 
@@ -15,7 +14,7 @@ type StepResult = { data?: any; error?: any };
 
 type TableStep = {
   table: string;
-  action: 'select' | 'maybeSingle' | 'single' | 'delete' | 'upsert';
+  action: 'select' | 'maybeSingle' | 'single' | 'delete' | 'upsert' | 'update';
   result?: StepResult;
   expectPayload?: (payload: any) => void;
 };
@@ -118,6 +117,14 @@ class QueryBuilder {
   insert(payload: any) {
     this.insertPayload = payload;
     return this;
+  }
+
+  update(payload: any) {
+    const { result } = this.mock.consume(
+      { action: 'update', table: this.table },
+      payload,
+    );
+    return Promise.resolve(result ?? { error: null });
   }
 
   delete() {
@@ -247,7 +254,7 @@ async function main() {
     __setHouseCreationSupabaseAdmin();
   });
 
-  await runTest('syncUserHouseMembership auto-creates house and assigns membership', async () => {
+  await runTest('syncUserHouseMembership queues sport pool entry when no house exists', async () => {
     const mock = new SupabaseMock([
       {
         table: 'users',
@@ -272,35 +279,42 @@ async function main() {
         result: { data: [], error: null },
       },
       {
-        table: 'user_houses',
-        action: 'delete',
+        table: 'houses_of_sports',
+        action: 'maybeSingle',
+        result: { data: null, error: null },
+      },
+      {
+        table: 'users',
+        action: 'update',
+        expectPayload: (payload) => {
+          assert.equal(payload.requires_sport_assignment, true);
+          assert.ok(
+            typeof payload.sport_assignment_notes === 'string' &&
+              payload.sport_assignment_notes.includes('Sem House ativa'),
+          );
+        },
         result: { error: null },
       },
       {
-        table: 'user_houses',
-        action: 'upsert',
+        table: 'sport_pool_entries',
+        action: 'maybeSingle',
+        result: { data: null, error: null },
+      },
+      {
+        table: 'sport_pool_entries',
+        action: 'single',
         expectPayload: (payload) => {
-          assert.equal(payload[0].house_id, 'house-42');
-          assert.equal(payload[0].user_id, 'user-1');
+          assert.equal(payload.user_id, 'user-1');
+          assert.equal(payload.pool_type, 'sport_pending');
+          assert.equal(payload.sport_id, 'sport-9');
+          assert.equal(payload.country_code, 'PT');
         },
-        result: { error: null },
+        result: { data: { id: 'entry-42' }, error: null },
       },
     ]);
 
     __setUserHousesSupabaseAdmin(mock as any);
-    __setEnsureHouseForTests(async () => ({
-      houseId: 'house-42',
-      houseKey: 'HOUSE_42',
-      status: 'under_construction',
-      countryCode: 'PT',
-      created: true,
-    }));
-
-    const backgroundCalls: Array<{ houseId: string; sportId?: string | null; countryCode?: string | null }> = [];
-    __setSyncHouseMembersForTests(async (houseId, sportId, countryCode) => {
-      backgroundCalls.push({ houseId, sportId: sportId ?? null, countryCode: countryCode ?? null });
-      return { success: true, attempted: 0, assigned: 0 };
-    });
+    __setSyncHouseMembersForTests();
 
     const result = await syncUserHouseMembership('user-1', {
       assignedVia: 'PROFILE',
@@ -308,15 +322,12 @@ async function main() {
     });
 
     assert.equal(result.success, true);
-    assert.equal(result.houseId, 'house-42');
-    assert.equal(backgroundCalls.length, 1);
-    assert.equal(backgroundCalls[0].houseId, 'house-42');
-    assert.equal(backgroundCalls[0].sportId, 'sport-9');
-    assert.equal(backgroundCalls[0].countryCode, 'PT');
+    assert.equal(result.houseId, null);
+    assert.equal(result.reason, 'no_house_found');
+    assert.equal(result.poolEntryId, 'entry-42');
 
     mock.assertComplete();
     __setUserHousesSupabaseAdmin();
-    __setEnsureHouseForTests();
     __setSyncHouseMembersForTests();
   });
 }

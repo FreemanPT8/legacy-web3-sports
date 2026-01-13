@@ -178,6 +178,7 @@ export default function AdminHousesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | HouseStatus>('all');
   const [canCreateSports, setCanCreateSports] = useState(false);
+  const [canManageHouses, setCanManageHouses] = useState(false);
   const [checkingSportPermission, setCheckingSportPermission] =
     useState(true);
   const [sportModalOpen, setSportModalOpen] = useState(false);
@@ -611,6 +612,7 @@ export default function AdminHousesPage() {
     if (authLoading || !user) return;
     if (isSuperAdmin) {
       setCanCreateSports(true);
+      setCanManageHouses(true);
       setCheckingSportPermission(false);
       return;
     }
@@ -627,11 +629,16 @@ export default function AdminHousesPage() {
         if (!active) return;
         if (response.ok && data?.success && data.permissions) {
           setCanCreateSports(!!data.permissions.canCreateSports);
+          setCanManageHouses(!!data.permissions.canManageHouses);
         } else {
           setCanCreateSports(false);
+          setCanManageHouses(false);
         }
       } catch (err) {
-        if (active) setCanCreateSports(false);
+        if (active) {
+          setCanCreateSports(false);
+          setCanManageHouses(false);
+        }
       } finally {
         if (active) setCheckingSportPermission(false);
       }
@@ -768,6 +775,7 @@ export default function AdminHousesPage() {
   };
 
   const canShowSportActions = isSuperAdmin || canCreateSports;
+  const canShowCreateHouse = isSuperAdmin || canManageHouses;
 
   const normalizedSearch = search.trim().toLowerCase();
   const filtered = houses.filter((house) => {
@@ -1207,13 +1215,15 @@ export default function AdminHousesPage() {
                 >
                   Limpar filtros
                 </Button>
-                <Button
-                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                  onClick={() => router.push('/admin/houses/create')}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova house
-                </Button>
+                {canShowCreateHouse ? (
+                  <Button
+                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                    onClick={() => router.push('/admin/houses/create')}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nova house
+                  </Button>
+                ) : null}
               </div>
             </CardContent>
           </Card>
