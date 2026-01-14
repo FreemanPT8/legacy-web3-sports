@@ -70,6 +70,7 @@ function normalizeStatus(value: string | null): PoolStatus {
 }
 
 function clampLimit(raw: string | null): number {
+  if (raw === null) return 50;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed)) return 50;
   return Math.min(Math.max(parsed, 1), 200);
