@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
 
 type HouseRoster = HouseProfilePayload['house']['roster'];
@@ -10,6 +11,13 @@ type Props = {
   badgeLabel: string;
   totalCount: number;
   variant?: 'public' | 'private';
+};
+
+const applyTemplate = (value: string, replacements: Record<string, string>) => {
+  return Object.entries(replacements).reduce((current, [key, replacement]) => {
+    const regex = new RegExp(`\\{${key}\\}`, 'g');
+    return current.replace(regex, replacement);
+  }, value);
 };
 
 const getInitials = (name?: string | null, username?: string | null) => {
@@ -76,6 +84,13 @@ export function HouseMembersList({
   totalCount,
   variant = 'public',
 }: Props) {
+  const { t } = useLanguage();
+  const limitValue = variant === 'public' ? '48' : '48';
+  const totalLabel = applyTemplate(t('houses.members.totalLabel'), {
+    count: totalCount.toLocaleString(),
+  });
+  const noteLabel = applyTemplate(t('houses.members.note'), { limit: limitValue });
+
   const sections: Array<{
     key: string;
     title: string;
@@ -86,40 +101,38 @@ export function HouseMembersList({
   }> = [
     {
       key: 'head',
-      title: 'Head of House',
-      badge: `Head of House da ${badgeLabel}`,
+      title: t('houses.members.section.head'),
+      badge: applyTemplate(t('houses.members.badge.head'), { house: badgeLabel }),
       entries: roster.head ? [roster.head] : [],
       highlight: true,
-      emptyLabel: 'Head a anunciar em breve.',
+      emptyLabel: t('houses.members.empty.head'),
     },
     {
       key: 'moderators',
-      title: 'Moderadores oficiais',
-      badge: `Moderador(a) da ${badgeLabel}`,
+      title: t('houses.members.section.moderators'),
+      badge: applyTemplate(t('houses.members.badge.moderator'), { house: badgeLabel }),
       entries: roster.moderators,
-      emptyLabel: 'Sem moderadores atribuídos.',
+      emptyLabel: t('houses.members.empty.moderators'),
     },
     {
       key: 'members',
-      title: 'Membros oficiais',
-      badge: `Membro oficial da ${badgeLabel}`,
+      title: t('houses.members.section.members'),
+      badge: applyTemplate(t('houses.members.badge.member'), { house: badgeLabel }),
       entries: roster.members,
-      emptyLabel: 'Ainda não existem membros públicos desta House.',
+      emptyLabel: t('houses.members.empty.members'),
     },
   ];
+
+  const maxMembersVisible = Math.max(
+    roster.members.length,
+    totalCount - (roster.head ? 1 : 0) - roster.moderators.length,
+  );
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-sm text-white/80">
-        <p>
-          Total de membros oficiais:{' '}
-          <span className="font-semibold text-white">
-            {totalCount.toLocaleString()}
-          </span>
-        </p>
-        <p className="text-xs text-slate-400">
-          Mostramos ate {variant === 'public' ? 48 : 48} membros nas listas publicas. Contacta o Head para detalhes adicionais.
-        </p>
+        <p className="text-sm">{totalLabel}</p>
+        <p className="text-xs text-slate-400">{noteLabel}</p>
       </div>
       {sections.map((section) => (
         <div key={section.key} className="space-y-3">
@@ -127,16 +140,14 @@ export function HouseMembersList({
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
               {section.title}
             </p>
-            {section.key === 'members' && roster.members.length > 0 ? (
+            {section.key === 'members' && roster.members.length > 0 && (
               <p className="text-[11px] text-slate-400">
-                A mostrar {roster.members.length} de{' '}
-                {Math.max(
-                  roster.members.length,
-                  totalCount - (roster.head ? 1 : 0) - roster.moderators.length,
-                )}{' '}
-                membros
+                {applyTemplate(t('houses.members.displaying'), {
+                  shown: roster.members.length.toLocaleString(),
+                  total: maxMembersVisible.toLocaleString(),
+                })}
               </p>
-            ) : null}
+            )}
           </div>
           {section.entries.length === 0 ? (
             <p className="text-sm text-slate-400">{section.emptyLabel}</p>
@@ -157,3 +168,4 @@ export function HouseMembersList({
     </div>
   );
 }
+'@ 

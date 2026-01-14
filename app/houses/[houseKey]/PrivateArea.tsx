@@ -63,6 +63,11 @@ type RecipientOption = {
   role: 'head' | 'moderator';
 };
 
+const applyTemplate = (value: string, replacements: Record<string, string>) =>
+  Object.entries(replacements).reduce((current, [key, replacement]) => {
+    return current.replace(new RegExp(`{${key}}`, 'g'), replacement);
+  }, value);
+
 const EVENT_EMPTY_COPY = {
   pt: 'Sem eventos programados para já. Quando o Head agendar sessões exclusivas, ficam disponíveis aqui.',
   es: 'Sin eventos programados por ahora. Cuando el Head programe sesiones exclusivas aparecerán aquí.',
@@ -386,39 +391,39 @@ export function PrivateArea({
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 px-4 md:px-8">
       <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#030d18] via-[#021523] to-[#031b27] p-6 shadow-[0_35px_90px_rgba(3,10,25,0.45)] md:p-8">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">Área Privada</p>
-            <h2 className="text-2xl font-semibold text-white">Operação da House</h2>
-            <p className="text-sm text-white/70">Conteúdos e mensagens reservadas a membros confirmados.</p>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">{t('houses.private.areaLabel')}</p>
+              <h2 className="text-2xl font-semibold text-white">{t('houses.private.areaTitle')}</h2>
+              <p className="text-sm text-white/70">{t('houses.private.areaDescription')}</p>
+            </div>
+            {!user ? (
+              <Button
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500]"
+                onClick={() => {
+                  window.location.href = '/login?next=' + encodeURIComponent(`/houses/${houseKey}`);
+                }}
+              >
+                {t('houses.private.loginCta')}
+              </Button>
+            ) : null}
           </div>
-          {!user ? (
-            <Button
-              className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500]"
-              onClick={() => {
-                window.location.href = '/login?next=' + encodeURIComponent(`/houses/${houseKey}`);
-              }}
-            >
-              Iniciar sessão
-            </Button>
-          ) : null}
-        </div>
       </div>
 
       {loadingMembership ? (
         <div className="flex min-h-[200px] items-center justify-center rounded-3xl border border-white/10 bg-[#030d18] text-white/70">
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>A verificar acesso...</span>
+        <span>{t('houses.private.accessChecking')}</span>
           </div>
         </div>
       ) : !user ? (
         <div className="rounded-3xl border border-white/10 bg-[#020b16]/70 p-6 text-sm text-white/80">
-          Inicia sessão para ver a operação interna desta House.
+        {t('houses.private.loginPrompt')}
         </div>
       ) : !membership?.isMember ? (
         <div className="rounded-3xl border border-white/10 bg-[#020b16]/70 p-6 text-sm text-white/80">
-          Esta secção é reservada aos membros confirmados da House. Aguarda aprovação ou contacta o Head após completar o onboarding recomendado.
+        {t('houses.private.membershipAccessRequired')}
         </div>
       ) : (
         <>
@@ -435,9 +440,9 @@ export function PrivateArea({
           </div>
           <div className="grid gap-6 lg:grid-cols-4">
           <Card className="border-white/10 bg-[#03131d]/90">
-            <CardHeader>
-              <CardTitle className="text-lg text-white">Progresso da House</CardTitle>
-            </CardHeader>
+          <CardHeader>
+            <CardTitle className="text-lg text-white">{t('houses.private.section.progress')}</CardTitle>
+          </CardHeader>
             <CardContent className="space-y-4 text-sm text-white/80">
               <div className="grid gap-3 sm:grid-cols-2">
                 <ProgressStat label="Participantes totais" value={metrics.memberCount.toLocaleString()} />
