@@ -326,6 +326,11 @@ export default function AdminHouseMessagesPage() {
                     <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
                       {message.houseLabel}
                     </p>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                      {message.direction === 'incoming'
+                        ? t('admin.houses.messages.direction.incoming')
+                        : t('admin.houses.messages.direction.outgoing')}
+                    </p>
                     <h3 className="text-lg font-semibold text-white">{message.subject}</h3>
                   </div>
                   <Badge
