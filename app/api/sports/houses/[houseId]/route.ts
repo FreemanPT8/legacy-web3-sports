@@ -23,6 +23,7 @@ interface HouseRow {
   avatar_url: string | null;
   description: string | null;
   created_at: string | null;
+  house_key: string | null;
 }
 
 interface SportRow {
@@ -46,6 +47,7 @@ interface UserRow {
 
 interface HousePublicDTO {
   id: string;
+  house_key: string;
   name: string;
   sport_name: string | null;
   sport_code: string | null;
@@ -113,7 +115,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const { data: houseRow, error: houseError } = await client
       .from('houses_of_sports')
       .select(
-        'id, name_i18n, sport_id, country_code, status, avatar_url, description, created_at'
+        'id, name_i18n, sport_id, country_code, status, avatar_url, description, created_at, house_key'
       )
       .eq('id', houseId)
       .maybeSingle();
@@ -244,6 +246,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     const dto: HousePublicDTO = {
       id: house.id,
+      house_key: (house.house_key || house.id).toUpperCase(),
       name: resolveLocaleName(house.name_i18n, null) || 'Unnamed House',
       sport_name: sport ? resolveLocaleName(sport.name_i18n, sport.code) : null,
       sport_code: sport?.code ?? null,

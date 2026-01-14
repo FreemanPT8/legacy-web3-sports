@@ -8,12 +8,12 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { SafeImage } from '@/app/components/SafeImage';
 import { Loader2, ArrowLeft, Users, User, Trophy } from 'lucide-react';
-import { ContentComments } from '@/components/comments/ContentComments';
 
 type HouseStatus = 'development' | 'under_construction' | 'active';
 
 interface HousePublic {
   id: string;
+  house_key: string;
   name: string;
   sport_name: string | null;
   sport_code: string | null;
@@ -307,7 +307,16 @@ export default function PublicHouseProfilePage() {
                       Ir para a minha dashboard
                     </Link>
                   )}
+                  <Link
+                    href={`/houses/${encodeURIComponent(house.house_key)}`}
+                    className="inline-flex items-center rounded-lg border border-slate-600 bg-transparent px-3 py-1.5 text-xs font-medium text-body hover:bg-slate-800"
+                  >
+                    Ver perfil completo
+                  </Link>
                 </div>
+                <p className="text-[11px] text-muted-custom max-w-xs text-left md:text-right">
+                  A area privada da House fica disponivel apenas para membros.
+                </p>
               </div>
             </div>
           </div>
@@ -466,12 +475,6 @@ export default function PublicHouseProfilePage() {
             </div>
           </div>
 
-          <ContentComments
-            contentId={house.id}
-            contentType="house"
-            houseId={house.id}
-            title="Comentários privados desta House"
-          />
 
           {/* CTA final */}
           <div className="border-t border-slate-800 pt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">

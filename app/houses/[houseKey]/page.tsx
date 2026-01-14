@@ -263,6 +263,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
       <div className="py-12">
         <PrivateArea
           houseKey={house.houseKey}
+          houseId={house.id}
           recommendedContent={house.recommendedContent}
           culture={house.culture}
           metrics={house.metrics}

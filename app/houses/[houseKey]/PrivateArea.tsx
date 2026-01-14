@@ -10,6 +10,7 @@ import { Loader2, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { HouseMembersList } from './HouseMembersList';
+import { ContentComments } from '@/components/comments/ContentComments';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MESSAGE_XP_THRESHOLD } from '@/lib/private-messages';
@@ -118,6 +119,7 @@ function resolveLocaleBucket(locale: string): keyof typeof EVENT_SECTION_TITLES 
 
 type Props = {
   houseKey: string;
+  houseId: string;
   recommendedContent: RecommendedContent[];
   culture: string[];
   metrics: HouseProfilePayload['house']['metrics'];
@@ -129,6 +131,7 @@ type Props = {
 
 export function PrivateArea({
   houseKey,
+  houseId,
   recommendedContent,
   culture,
   metrics,
@@ -705,6 +708,19 @@ export function PrivateArea({
                   emptyCopy={eventsEmptyCopy}
                 />
               )}
+            </CardContent>
+          </Card>
+          <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Comentários internos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ContentComments
+                contentId={houseId}
+                contentType="house"
+                houseId={houseId}
+                title="Comentários privados desta House"
+              />
             </CardContent>
           </Card>
         </div>
