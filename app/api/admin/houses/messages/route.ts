@@ -37,10 +37,17 @@ async function resolveAccessibleHouses(user: { userId: string; role: string }): 
   }
 
   if (user.role === 'Super Admin') {
-    return (housesData ?? []).map((house: any) => ({
-      houseKey: house.house_key,
-      label: resolveHouseName(house),
-    }));
+    return (housesData ?? [])
+      .map((house: any) => {
+        const rawKey = (house.house_key || '').trim();
+        if (!rawKey) return null;
+        const upperKey = rawKey.toUpperCase();
+        return {
+          houseKey: upperKey,
+          label: resolveHouseName(house),
+        };
+      })
+      .filter(Boolean) as HouseOption[];
   }
 
   const { data: assignments } = await supabaseAdmin
@@ -180,7 +187,9 @@ export async function GET(request: NextRequest) {
     const offset = Math.max(Number(searchParams.get('offset') || 0), 0);
     const prefetchLimit = offset + limit;
 
-    const allowedHouseKeys = houses.map((h) => h.houseKey).filter(Boolean);
+    const allowedHouseKeys = Array.from(
+      new Set(houses.map((h) => h.houseKey).filter(Boolean)),
+    );
     if (!allowedHouseKeys.length) {
       return NextResponse.json({
         success: true,
