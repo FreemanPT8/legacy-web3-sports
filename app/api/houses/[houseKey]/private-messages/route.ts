@@ -206,6 +206,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
 
   const senderRole = membership.get(user.userId) ?? 'member';
   const recipientRole = membership.get(recipientId) ?? 'member';
+  const isSenderMember = senderRole === 'member' || senderRole === 'unknown';
 
   const permission = canSendPrivateMessage({
     senderRole,
