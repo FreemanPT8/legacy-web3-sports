@@ -265,6 +265,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
           events={house.events}
           roster={house.roster}
           houseLabel={houseBadgeLabel}
+          welcomeMessage={house.welcomeMessage ?? null}
         />
       </div>
     </div>

@@ -31,6 +31,7 @@ import {
   Bell,
   Shield,
   Loader2,
+  MessageSquare,
 } from 'lucide-react';
 import { useState, memo, useEffect, useCallback } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -147,6 +148,12 @@ export const Header = memo(function Header() {
       en: 'View invites',
       es: 'Ver invitaciones',
     }[language] || 'View invites';
+  const messagesLabel =
+    {
+      pt: 'Mensagens',
+      en: 'Messages',
+      es: 'Mensajes',
+    }[language] || 'Messages';
 
   const loadBellNotifications = useCallback(async () => {
     if (!user) {
@@ -409,6 +416,18 @@ export const Header = memo(function Header() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Link href="/sports/houses">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="relative w-9 px-0 text-gray-200"
+              aria-label={messagesLabel}
+              title={messagesLabel}
+            >
+              <MessageSquare className="h-4 w-4" />
+            </Button>
+          </Link>
 
           {/* NOTIFICAÇÕES */}
           {user && (

@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Calendar } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { HouseMembersList } from './HouseMembersList';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 type RecommendedContent = {
   id: string;
@@ -40,6 +43,24 @@ type HouseEvent = {
   location: string | null;
   visibility: 'public' | 'members';
   linkUrl: string | null;
+};
+
+type PrivateMessage = {
+  id: string;
+  subject: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+  isIncoming: boolean;
+  isUnread: boolean;
+  sender: { id: string; username: string | null; name: string; avatarUrl: string | null } | null;
+  recipient: { id: string; username: string | null; name: string; avatarUrl: string | null } | null;
+};
+
+type RecipientOption = {
+  id: string;
+  label: string;
+  role: 'head' | 'moderator';
 };
 
 const EVENT_EMPTY_COPY = {
@@ -97,9 +118,19 @@ type Props = {
   events: HouseEvent[];
   roster: HouseProfilePayload['house']['roster'];
   houseLabel: string;
+  welcomeMessage: string | null;
 };
 
-export function PrivateArea({ houseKey, recommendedContent, culture, metrics, events, roster, houseLabel }: Props) {
+export function PrivateArea({
+  houseKey,
+  recommendedContent,
+  culture,
+  metrics,
+  events,
+  roster,
+  houseLabel,
+  welcomeMessage,
+}: Props) {
   const { user, loading } = useAuth();
   const [membership, setMembership] = useState<MembershipResponse | null>(null);
   const [loadingMembership, setLoadingMembership] = useState(false);
@@ -114,6 +145,32 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
   const eventsEmptyCopy = resolveEventEmptyCopy(localeGuess);
   const localeBucket = resolveLocaleBucket(localeGuess);
   const sectionTitles = EVENT_SECTION_TITLES[localeBucket];
+  const { language, t } = useLanguage();
+  const MESSAGE_XP_THRESHOLD = 369;
+  const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
+  const [privateMessagesLoading, setPrivateMessagesLoading] = useState(false);
+  const [privateMessagesError, setPrivateMessagesError] = useState<string | null>(null);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [selectedRecipient, setSelectedRecipient] = useState<string | null>(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const xpTotal = user?.xp_total ?? 0;
+  const hasXpForMessages = xpTotal >= MESSAGE_XP_THRESHOLD;
+  const recipientOptions = useMemo<RecipientOption[]>(() => {
+    const entries: RecipientOption[] = [];
+    if (roster.head) {
+      entries.push({ id: roster.head.id, label: roster.head.name, role: 'head' });
+    }
+    roster.moderators.forEach((moderator) => {
+      entries.push({ id: moderator.id, label: moderator.name, role: 'moderator' });
+    });
+    return entries;
+  }, [roster.head, roster.moderators]);
+
+  useEffect(() => {
+    if (!selectedRecipient && recipientOptions.length > 0) {
+      setSelectedRecipient(recipientOptions[0].id);
+    }
+  }, [recipientOptions, selectedRecipient]);
 
   useEffect(() => {
     if (loading || !user) {
@@ -174,6 +231,110 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
         setMessagesLoading(false);
       });
   }, [houseKey, membership?.isMember]);
+
+  const loadPrivateMessages = useCallback(async () => {
+    if (!membership?.isMember) {
+      setPrivateMessages([]);
+      return;
+    }
+    setPrivateMessagesLoading(true);
+    setPrivateMessagesError(null);
+    try {
+      const response = await fetch(`/api/houses/${houseKey}/private-messages`, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('Failed to load private messages.');
+      }
+      const data = await response.json();
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to load private messages.');
+      }
+      setPrivateMessages(data.messages ?? []);
+    } catch (error) {
+      console.error('[private messages] failed to load', error);
+      setPrivateMessagesError(
+        language === 'pt'
+          ? 'Falha ao carregar mensagens privadas.'
+          : language === 'es'
+            ? 'Error al cargar los mensajes privados.'
+            : 'Failed to load private messages.',
+      );
+      setPrivateMessages([]);
+    } finally {
+      setPrivateMessagesLoading(false);
+    }
+  }, [houseKey, membership?.isMember, language]);
+
+  useEffect(() => {
+    void loadPrivateMessages();
+  }, [loadPrivateMessages]);
+
+  const formatPrivateMessageDate = (timestamp: string) =>
+    new Date(timestamp).toLocaleString(
+      language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US',
+      { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' },
+    );
+
+  const handleSendPrivateMessage = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedRecipient || !messageDraft.trim()) return;
+    setSendingMessage(true);
+    try {
+      const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientId: selectedRecipient,
+          body: messageDraft.trim(),
+          subject: t('houses.private.messageSubject'),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to send private message.');
+      }
+      const data = await response.json();
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to send private message.');
+      }
+      setMessageDraft('');
+      void loadPrivateMessages();
+      toast({
+        title: language === 'pt' ? 'Mensagem enviada' : language === 'es' ? 'Mensaje enviado' : 'Message sent',
+        description:
+          language === 'pt'
+            ? 'A tua mensagem foi entregue ao Head da House.'
+            : language === 'es'
+              ? 'Tu mensaje fue entregado al Head de la House.'
+              : 'Your message was delivered to the House leadership.',
+      });
+    } catch (error) {
+      console.error('[private messages] send failed', error);
+      toast({
+        title: language === 'pt' ? 'Falha ao enviar' : language === 'es' ? 'Error al enviar' : 'Failed to send',
+        description:
+          language === 'pt'
+            ? 'Tenta novamente mais tarde.'
+            : language === 'es'
+              ? 'Intenta de nuevo más tarde.'
+              : 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const markMessageRead = async (messageId: string) => {
+    try {
+      await fetch(`/api/houses/${houseKey}/private-messages`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId }),
+      });
+      void loadPrivateMessages();
+    } catch (error) {
+      console.error('[private messages] mark read failed', error);
+    }
+  };
 
   useEffect(() => {
     if (!membership?.isMember) {
@@ -260,7 +421,19 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
           Esta secção é reservada aos membros confirmados da House. Aguarda aprovação ou contacta o Head após completar o onboarding recomendado.
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-4">
+        <>
+          <div className="rounded-3xl border border-slate-700 bg-[#020b16]/80 p-5 text-sm text-white/80 shadow-[0_20px_60px_rgba(0,0,0,0.65)]">
+            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+              {t('houses.private.welcomeTitle')}
+            </p>
+            <p className="mt-2 text-lg font-semibold text-white">
+              {welcomeMessage || t('houses.private.welcomeFallback')}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {t('houses.private.welcomeHint')}
+            </p>
+          </div>
+          <div className="grid gap-6 lg:grid-cols-4">
           <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
               <CardTitle className="text-lg text-white">Progresso da House</CardTitle>
@@ -359,6 +532,123 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
             </CardContent>
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-lg text-white">{t('houses.private.messagesTitle')}</CardTitle>
+              <CardDescription className="text-sm text-slate-300">
+                {t('houses.private.messagesDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {recipientOptions.length ? (
+                <form className="space-y-4" onSubmit={handleSendPrivateMessage}>
+                  <div className="space-y-1">
+                    <Label htmlFor="recipient" className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                      {t('houses.private.recipientLabel')}
+                    </Label>
+                    <select
+                      id="recipient"
+                      value={selectedRecipient ?? ''}
+                      onChange={(event) => setSelectedRecipient(event.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-[#020b16] px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring focus:ring-cyan-400/40"
+                    >
+                      {recipientOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label} ({option.role === 'head' ? t('houses.private.roleHead') : t('houses.private.roleModerator')})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="private-message" className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                      {t('houses.private.messageLabel')}
+                    </Label>
+                    <Textarea
+                      id="private-message"
+                      value={messageDraft}
+                      onChange={(event) => setMessageDraft(event.target.value)}
+                      placeholder={t('houses.private.messagePlaceholder')}
+                      disabled={!hasXpForMessages}
+                      className="min-h-[120px]"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button
+                      type="submit"
+                      disabled={!hasXpForMessages || sendingMessage || !recipientOptions.length || !messageDraft.trim()}
+                      className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                    >
+                      {sendingMessage
+                        ? language === 'pt'
+                          ? 'A enviar...'
+                          : language === 'es'
+                            ? 'Enviando...'
+                            : 'Sending...'
+                        : t('houses.private.sendMessage')}
+                    </Button>
+                    {!hasXpForMessages && (
+                      <p className="text-xs text-rose-300">
+                        {t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString())}
+                      </p>
+                    )}
+                  </div>
+                </form>
+              ) : (
+                <p className="text-sm text-white/70">{t('houses.private.noRecipients')}</p>
+              )}
+              <div className="space-y-3">
+                {privateMessagesLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {language === 'pt'
+                      ? 'A carregar mensagens privadas...'
+                      : language === 'es'
+                        ? 'Cargando mensajes privados...'
+                        : 'Loading private messages...'}
+                  </div>
+                ) : privateMessagesError ? (
+                  <p className="text-sm text-rose-200">{privateMessagesError}</p>
+                ) : privateMessages.length === 0 ? (
+                  <p className="text-sm text-slate-400">{t('houses.private.emptyState')}</p>
+                ) : (
+                  privateMessages.map((message) => (
+                    <article
+                      key={message.id}
+                      className={`space-y-2 rounded-2xl border px-4 py-3 transition ${
+                        message.isIncoming ? 'border-cyan-500/20 bg-cyan-500/10' : 'border-white/10 bg-black/20'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">
+                            {message.isIncoming ? t('houses.private.incomingLabel') : t('houses.private.outgoingLabel')}
+                          </p>
+                          <p className="text-base font-semibold text-white">{message.subject}</p>
+                        </div>
+                        <span className="text-xs text-slate-400">
+                          {formatPrivateMessageDate(message.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-white/70 line-clamp-4">{message.body}</p>
+                      {message.isIncoming && message.isUnread && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-cyan-100">
+                          <span className="rounded-full border border-cyan-400/40 px-2 py-0.5 text-[10px]">{t('houses.private.unread')}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-cyan-200 hover:text-cyan-100"
+                            onClick={() => markMessageRead(message.id)}
+                          >
+                            {t('houses.private.markAsRead')}
+                          </Button>
+                        </div>
+                      )}
+                    </article>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
               <CardTitle className="text-lg text-white">Mensagens oficiais recentes</CardTitle>
             </CardHeader>
@@ -414,6 +704,7 @@ export function PrivateArea({ houseKey, recommendedContent, culture, metrics, ev
             </CardContent>
           </Card>
         </div>
+        </>
       )}
     </section>
   );

@@ -70,6 +70,7 @@ export type HouseProfilePayload = {
       };
     };
     culture: string[];
+    welcomeMessage: string | null;
     recommendedContent: {
       id: string;
       title: string;
@@ -564,6 +565,10 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
   const culture =
     getLocalizedValue<Record<string, string[]>>(profile?.culture_i18n, normalizedLocale)?.list ??
     (Array.isArray(profile?.culture_i18n) ? (profile?.culture_i18n as string[]) : []);
+  const welcomeMessage =
+    getLocalizedValue<string>(profile?.welcome_message_i18n, normalizedLocale) ??
+    (typeof profile?.welcome_message === 'string' ? profile.welcome_message : null) ??
+    null;
 
   const payload: HouseProfilePayload = {
     locale: normalizedLocale,
@@ -626,6 +631,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
         },
       },
       culture,
+      welcomeMessage,
       recommendedContent,
       events,
       roster: {
