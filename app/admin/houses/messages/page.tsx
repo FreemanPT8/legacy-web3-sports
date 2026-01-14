@@ -1,6 +1,6 @@
  'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import useSWR, { useSWRConfig } from 'swr';
 
@@ -41,6 +41,7 @@ type HouseOption = {
 export default function AdminHouseMessagesPage() {
   const { language, t } = useLanguage();
   const { mutate } = useSWRConfig();
+  const [hasPurgedSeeded, setHasPurgedSeeded] = useState(false);
   const [filters, setFilters] = useState({
     house: 'all',
     status: 'all',
@@ -71,6 +72,22 @@ export default function AdminHouseMessagesPage() {
   };
 
   const refreshMessages = () => mutate(apiUrl);
+
+  useEffect(() => {
+    if (hasPurgedSeeded || isLoading || !messages.length) return;
+    const allSeeded = messages.every((message: any) => {
+      const subject = (message?.subject || '').toLowerCase();
+      return subject.startsWith('boas-vindas da house') || subject.startsWith('dúvida sobre a');
+    });
+    if (!allSeeded) return;
+
+    setHasPurgedSeeded(true);
+    fetch('/api/admin/houses/messages/purge-seeded', { method: 'POST' })
+      .then(() => refreshMessages())
+      .catch((error) => {
+        console.error('[admin house messages] purge seeded failed', error);
+      });
+  }, [hasPurgedSeeded, isLoading, messages, refreshMessages]);
 
   return (
     <div className="space-y-6">
