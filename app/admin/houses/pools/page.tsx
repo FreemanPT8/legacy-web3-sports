@@ -638,7 +638,7 @@ export default function SportPoolsAdminPage() {
     if (!token) {
       toast({
         title: 'Token em falta',
-        description: 'Inicia sessÇœo novamente para continuar.',
+        description: 'Inicia sessão novamente para continuar.',
         variant: 'destructive',
       });
       return;
@@ -664,7 +664,7 @@ export default function SportPoolsAdminPage() {
       }
       toast({
         title: 'Desporto atualizado',
-        description: 'AtualizÇ­mos o desporto deste utilizador.',
+        description: 'Atualizámos o desporto deste utilizador.',
       });
       setChangeSportEntry(null);
       setChangeSportId('');
@@ -674,7 +674,7 @@ export default function SportPoolsAdminPage() {
       console.error('Failed to change sport:', err);
       toast({
         title: 'Erro ao alterar desporto',
-        description: err instanceof Error ? err.message : 'NÇœo foi possÇðvel concluir a aÇõÇœo.',
+        description: err instanceof Error ? err.message : 'Não foi possível concluir a ação.',
         variant: 'destructive',
       });
     } finally {
@@ -947,9 +947,9 @@ export default function SportPoolsAdminPage() {
                         <p className="text-xs text-slate-400">{userEmail}</p>
                         <div className="flex flex-wrap gap-3 text-xs text-slate-400">
                           <span>Registo: {formatDate(entry.createdAt)}</span>
-                          {entry.assignedAt ? <span>Atribu?do: {formatDate(entry.assignedAt)}</span> : null}
+                          {entry.assignedAt ? <span>Atribuído: {formatDate(entry.assignedAt)}</span> : null}
                           {entry.notifiedAt ? <span>Notificado: {formatDate(entry.notifiedAt)}</span> : null}
-                          {entry.countryCode ? <span>Pa?s alvo: {entry.countryCode}</span> : null}
+                          {entry.countryCode ? <span>País alvo: {entry.countryCode}</span> : null}
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -1167,7 +1167,7 @@ export default function SportPoolsAdminPage() {
                 value={changeSportNote}
                 onChange={(event) => setChangeSportNote(event.target.value)}
                 rows={3}
-                placeholder="Opcional: contexto para a alteraÇõÇœo."
+                placeholder="Opcional: contexto para a alteração."
                 className="mt-2 border-white/10 bg-[#020d15]"
               />
             </div>

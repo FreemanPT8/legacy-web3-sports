@@ -497,15 +497,20 @@ export async function PATCH(request: NextRequest) {
     .from('sport_pool_entries')
     .select(
       `
-        *,
-        user:users(
-          id,
-          country,
-          primary_country_code,
-          sport_id,
-          primary_sport_id,
-          sport_selection_method
-        )
+        id,
+        user_id,
+        pool_type,
+        status,
+        sport_id,
+        house_id,
+        country_code,
+        suggested_country_code,
+        notes,
+        metadata,
+        created_at,
+        updated_at,
+        assigned_at,
+        assigned_by
       `,
     )
     .eq('id', body.entryId)
@@ -527,6 +532,31 @@ export async function PATCH(request: NextRequest) {
   }
 
   const entry = entryRaw as SportPoolEntryRow;
+
+  const { data: userRow, error: userError } = await supabaseAdmin
+    .from('users')
+    .select('id, country, primary_country_code, sport_id, primary_sport_id, sport_selection_method')
+    .eq('id', entry.user_id)
+    .maybeSingle();
+
+  if (userError) {
+    console.error('[sport-pools] Failed to load entry user', userError);
+    return NextResponse.json(
+      { success: false, error: 'Failed to load pool entry user.' },
+      { status: 500 },
+    );
+  }
+
+  entry.user = userRow
+    ? {
+        id: userRow.id,
+        country: userRow.country,
+        primary_country_code: userRow.primary_country_code,
+        sport_id: userRow.sport_id,
+        primary_sport_id: userRow.primary_sport_id,
+        sport_selection_method: userRow.sport_selection_method,
+      }
+    : null;
   const timestamp = new Date().toISOString();
   const note = normalizeNote(body.note) ?? entry.notes ?? null;
   const adminUserId = authResult.user?.userId ?? null;
