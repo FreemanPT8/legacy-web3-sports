@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { requirePermission } from '@/lib/middleware';
+import { requireAuth } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import { hasGlobalPermission } from '@/lib/server/permissions';
 
 type HouseOption = {
   houseKey: string;
@@ -209,11 +210,18 @@ function buildMessageResponse(row: any, housesMap: Record<string, string>, userM
 
 export async function GET(request: NextRequest) {
   try {
-    const permission = await requirePermission(request, 'canManageHouses');
-    if (!permission.success) return permission.response!;
-    const user = permission.user!;
+    const auth = await requireAuth(request);
+    if (!auth.success) return auth.response!;
+    const user = auth.user!;
+    const hasManageHouses = await hasGlobalPermission(user, 'canManageHouses');
 
     const houses = await resolveAccessibleHouses(user);
+    if (!hasManageHouses && user.role !== 'Super Admin' && houses.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Permission denied' },
+        { status: 403 },
+      );
+    }
     if (!houses.length) {
       return NextResponse.json({
         success: true,

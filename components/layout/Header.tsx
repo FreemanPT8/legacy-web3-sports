@@ -42,6 +42,7 @@ export const Header = memo(function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageBadgeCount, setMessageBadgeCount] = useState(0);
+  const [messageStaffAccess, setMessageStaffAccess] = useState(false);
   const [pendingHeadInvites, setPendingHeadInvites] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
   type NotificationPreview = {
@@ -96,6 +97,7 @@ export const Header = memo(function Header() {
   useEffect(() => {
     if (!user) {
       setMessageBadgeCount(0);
+      setMessageStaffAccess(false);
       return;
     }
 
@@ -106,6 +108,7 @@ export const Header = memo(function Header() {
         if (response.ok && data?.success) {
           const count = typeof data.unreadCount === 'number' ? data.unreadCount : 0;
           setMessageBadgeCount(count);
+          setMessageStaffAccess(!!data.isStaff);
         }
       } catch (error) {
         console.error('Failed to fetch private message count:', error);
@@ -148,7 +151,8 @@ export const Header = memo(function Header() {
   }, [user, getToken]);
 
   const canAccessAdmin = user ? isAdminRole(user.role) : false;
-  const messagesHref = user && canAccessAdmin ? '/admin/houses/messages' : '/sports/houses';
+  const canAccessMessagesAdmin = !!user && (canAccessAdmin || messageStaffAccess);
+  const messagesHref = canAccessMessagesAdmin ? '/admin/houses/messages' : '/sports/houses';
   const totalBellCount = unreadCount + pendingHeadInvites;
   const noNotificationsText =
     {

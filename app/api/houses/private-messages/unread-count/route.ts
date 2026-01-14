@@ -31,8 +31,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const { data: staffRows, error: staffError } = await supabaseAdmin
+    .from('user_houses')
+    .select('id, membership_role')
+    .eq('user_id', user.userId)
+    .is('removed_at', null)
+    .in('membership_role', ['head', 'moderator', 'HEAD', 'MODERATOR']);
+
+  if (staffError) {
+    console.error('[private-messages/unread-count] staff lookup failed', staffError);
+  }
+
   return NextResponse.json({
     success: true,
     unreadCount: count ?? 0,
+    isStaff: (staffRows ?? []).length > 0,
   });
 }
