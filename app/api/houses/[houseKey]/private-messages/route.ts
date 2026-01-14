@@ -362,6 +362,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
     .eq('id', messageId)
     .is('read_at', null);
 
+  await supabaseAdmin
+    .from('notifications')
+    .update({ read: true })
+    .eq('user_id', user.userId)
+    .eq('read', false)
+    .contains('data', { messageId });
+
   const membership = await loadMembershipMap(house.id, [user.userId, messageRow.sender_id]);
   const userRole = membership.get(user.userId) ?? 'member';
   const senderRole = membership.get(messageRow.sender_id) ?? 'member';

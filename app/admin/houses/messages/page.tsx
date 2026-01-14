@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const fetcher = (url: string) =>
   fetch(url).then((response) => {
@@ -47,6 +48,7 @@ type HouseOption = {
 };
 
 export default function AdminHouseMessagesPage() {
+  const { user } = useAuth();
   const { language, t } = useLanguage();
   const { mutate } = useSWRConfig();
   const [hasPurgedSeeded, setHasPurgedSeeded] = useState(false);
@@ -54,6 +56,7 @@ export default function AdminHouseMessagesPage() {
   const [replyDraft, setReplyDraft] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [markingReadId, setMarkingReadId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     house: 'all',
     status: 'all',
@@ -170,6 +173,23 @@ export default function AdminHouseMessagesPage() {
       setReplyError(t('admin.houses.messages.replyError'));
     } finally {
       setSendingReply(false);
+    }
+  };
+
+  const handleMarkRead = async (message: any) => {
+    if (!message?.id) return;
+    setMarkingReadId(message.id);
+    try {
+      await fetch(`/api/houses/${message.houseKey}/private-messages`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: message.id }),
+      });
+      refreshMessages();
+    } catch (error) {
+      console.error('[admin house messages] mark read failed', error);
+    } finally {
+      setMarkingReadId(null);
     }
   };
 
@@ -349,6 +369,20 @@ export default function AdminHouseMessagesPage() {
                   </div>
                   <div>{formatDateTime(message.createdAt)}</div>
                 </div>
+                {message.direction === 'incoming' && message.status === 'unread' && message.recipient?.id === user?.id && (
+                  <div className="mt-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMarkRead(message)}
+                      disabled={markingReadId === message.id}
+                    >
+                      {markingReadId === message.id
+                        ? t('admin.houses.messages.action.markingRead')
+                        : t('admin.houses.messages.action.markRead')}
+                    </Button>
+                  </div>
+                )}
                 {Array.isArray(message.history) && message.history.length > 0 && (
                   <div className="mt-4 space-y-1 text-xs text-slate-400">
                     <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">

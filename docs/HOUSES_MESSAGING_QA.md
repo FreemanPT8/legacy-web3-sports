@@ -14,12 +14,12 @@
 - Confirmar que o link do ícone leva à inbox apropriada (`/admin/houses/messages` para administradores ou `/sports/houses` para demais contas).
 
 ### 3. Admin inbox
-- Aceder a `/admin/houses/messages` com uma conta com permissão `canManageHouses`;
-- Testar filtros por House/status/busca e confirmar que a lista reflete as mudanças imediatamente;
-- Validar tags “Unread/Read”, timestamps e campos “From/To” baseado nas mensagens privadas;
-- Verificar que “Total messages” e botão “Refresh inbox” funcionam;
-- Simular leitura de mensagem pelo membro e garantir que o admin vê o estado atualizado após refresh.
-
+- Aceder a `/admin/houses/messages` com uma conta com permissao `canManageHouses`;
+- Testar filtros por House, status (Unread/Read/Open/Sent), direcao (Incoming/Outgoing) e pesquisa;
+- Validar tags, timestamps e campos From/To com base nas mensagens privadas;
+- Marcar uma mensagem recebida como lida e confirmar que gera registo no historico;
+- Responder a uma mensagem e confirmar que gera historico de resposta;
+- Verificar que `Total messages` e botao `Refresh inbox` funcionam.
 ### 4. Página pública de Houses
 - Navegar para `/sports/houses` em português, inglês e espanhol;
 - Verificar a secção de filtros: alterar estado, desporto, país e ativar o toggle de proximidade (detecta o país do browser);
@@ -27,11 +27,8 @@
 - Confirmar a nova secção “Como liderar uma House” e seus passos traduzidos em cada idioma;
 - Testar o botão “Repor filtros” e garantir que limpa todos os selects e toggle.
 
-### 5. Notas técnicas
-- Mensagens privadas usam `house_private_messages` + notificações (`notifications` table);
-- O endpoint `/api/admin/houses/messages` agora retorna Houses quando o user é Super Admin ou tem `admin_assignments.houses`, mesmo sem `house_heads`, garantindo fallback automático;
-- O guardião de XP/permissões está em `lib/private-messages.ts`, compartilhado entre backend, UI e testes (`tests/private-messages-permissions.test.ts`);
-- Filtragem pública usa arrays (`DEFAULT_STATUS_FILTERS`) e `filteredHouses` memorizados para alimentar os summaries e o painel da secção.
-- Para popular a inbox durante a QA sem editar dados manualmente, execute `npm run seed:house-messages` (o script usa o client service role e ignora subjects duplicados).
-
-Use este ficheiro como base para a validação manual antes de avançar para um deploy.
+### 5. Notas tecnicas
+- Mensagens privadas usam `house_private_messages`, historico em `house_private_message_events` e notificacoes em `notifications`;
+- O endpoint `/api/admin/houses/messages` filtra por Houses onde o user e Head/Moderador; Super Admin ve tudo;
+- O guardiao de XP/permissoes esta em `lib/private-messages.ts`, compartilhado entre backend, UI e testes (`tests/private-messages-permissions.test.ts`);
+- Filtragem publica usa arrays (`DEFAULT_STATUS_FILTERS`) e `filteredHouses` memorizados para alimentar os summaries e o painel da secao.
