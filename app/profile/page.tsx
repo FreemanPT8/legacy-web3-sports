@@ -319,6 +319,9 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
+    if (!user) {
+      return;
+    }
     if (profileData.bio && (profileData.bio.length < 8 || profileData.bio.length > 888)) {
       toast({
         title: 'Bio invalida',
