@@ -6,6 +6,13 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { SafeImage } from '@/app/components/SafeImage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -16,8 +23,15 @@ import {
   HeroTextColumn,
   HeroTitle,
 } from '@/components/sections/HeroSection';
+import { Switch } from '@/components/ui/switch';
 
 type HouseStatus = 'IN_DEVELOPMENT' | 'UNDER_CONSTRUCTION' | 'ACTIVE';
+
+const DEFAULT_STATUS_FILTERS: HouseStatus[] = [
+  'ACTIVE',
+  'UNDER_CONSTRUCTION',
+  'IN_DEVELOPMENT',
+];
 
 interface House {
   id: string;
@@ -129,6 +143,19 @@ const COPY = {
     emptyTitle: 'Ainda não existem Houses of Sports visíveis.',
     emptyDesc:
       'A equipa do LEGACY está a preparar a primeira vaga de comunidades. Mantém-te atento ao portal e à Academia.',
+    filtersTitle: 'Filtra as Houses',
+    filtersSubtitle:
+      'Combina estado, desporto, país e proximidade para encontrar a comunidade ideal.',
+    filtersStatusLabel: 'Estado',
+    filtersSportLabel: 'Desporto',
+    filtersSportPlaceholder: 'Todos os desportos',
+    filtersCountryLabel: 'País',
+    filtersCountryPlaceholder: 'Todos os países',
+    filtersProximityLabel: 'Proximidade preferida',
+    filtersProximityHint: 'Mostra Houses no teu país ({country}) quando ativado.',
+    filtersProximityHintNoLocation: 'Ativa a proximidade para destacar Houses próximas de ti.',
+    filtersActiveCount: '{count} Houses em destaque',
+    filtersReset: 'Repor filtros',
     errorLoading: 'Erro ao carregar Houses of Sports.',
     headLabel: 'Head of House',
     headPending: 'Head of House a definir.',
@@ -151,6 +178,25 @@ const COPY = {
       'No passo seguinte, ao criares conta respondes a um formulário simples, mostras quem és e o que procuras. A partir daí a equipa consegue orientar-te com muito mais precisão.',
     journeyFooter:
       'Não precisas de entrar em tudo. A ideia é perceber onde faz sentido colocar a tua energia - como membro, como líder ou simplesmente como alguém que quer aprender com estrutura.',
+    leadSectionTitle: 'Como liderar uma House',
+    leadSectionSubtitle:
+      'Coordena visão, equipa e ação para criar uma comunidade Web3 inspiradora.',
+    leadSteps: [
+      {
+        title: 'Passo 1',
+        description: 'Define a missão, o desporto e os indicadores que a tua House vai perseguir.',
+      },
+      {
+        title: 'Passo 2',
+        description:
+          'Reúne moderadores e membros iniciais que equilibrem experiência e vontade de aprender.',
+      },
+      {
+        title: 'Passo 3',
+        description:
+          'Partilha rituais, experiências e eventos exclusivos que marcam a cultura da tua comunidade.',
+      },
+    ],
   },
   en: {
     heroEyebrow: 'HOUSES OF SPORTS',
@@ -188,6 +234,20 @@ const COPY = {
     emptyTitle: 'There are no visible Houses of Sports yet.',
     emptyDesc:
       'The LEGACY team is preparing the first wave of communities. Stay tuned to the portal and the Academy.',
+    filtersTitle: 'Find your House',
+    filtersSubtitle:
+      'Mix status, sport, country, and proximity to narrow down the right community.',
+    filtersStatusLabel: 'Status',
+    filtersSportLabel: 'Sport',
+    filtersSportPlaceholder: 'All sports',
+    filtersCountryLabel: 'Country',
+    filtersCountryPlaceholder: 'All countries',
+    filtersProximityLabel: 'Proximity focus',
+    filtersProximityHint: 'Highlight Houses in {country} when enabled.',
+    filtersProximityHintNoLocation:
+      'Enable proximity to prioritize Houses near your locale.',
+    filtersActiveCount: '{count} Houses available',
+    filtersReset: 'Reset filters',
     errorLoading: 'Failed to load Houses of Sports.',
     headLabel: 'Head of House',
     headPending: 'Head of House to be defined.',
@@ -210,6 +270,25 @@ const COPY = {
       'Next, when you create an account you fill a simple form, show who you are and what you seek. From there the team can guide you with much more precision.',
     journeyFooter:
       'You do not need to join everything. The idea is to see where it makes sense to invest your energy - as a member, as a leader, or simply as someone who wants structured learning.',
+    leadSectionTitle: 'How to lead a House',
+    leadSectionSubtitle:
+      'Build momentum by aligning vision, people, and experiences.',
+    leadSteps: [
+      {
+        title: 'Step 1',
+        description: 'Clarify the sport, values, and goals that define your House.',
+      },
+      {
+        title: 'Step 2',
+        description:
+          'Gather your leadership team and recruit members with complementary XP.',
+      },
+      {
+        title: 'Step 3',
+        description:
+          'Launch shared rituals, learning moments, and local events that set the tone.',
+      },
+    ],
   },
   es: {
     heroEyebrow: 'HOUSES OF SPORTS',
@@ -247,6 +326,20 @@ const COPY = {
     emptyTitle: 'Aún no hay Houses of Sports visibles.',
     emptyDesc:
       'El equipo LEGACY está preparando la primera ola de comunidades. Mantente atento al portal y a la Academia.',
+    filtersTitle: 'Encuentra tu House',
+    filtersSubtitle:
+      'Combina estado, deporte, país y proximidad para acotar la comunidad correcta.',
+    filtersStatusLabel: 'Estado',
+    filtersSportLabel: 'Deporte',
+    filtersSportPlaceholder: 'Todos los deportes',
+    filtersCountryLabel: 'País',
+    filtersCountryPlaceholder: 'Todos los países',
+    filtersProximityLabel: 'Proximidad activa',
+    filtersProximityHint: 'Muestra Houses en {country} cuando está activo.',
+    filtersProximityHintNoLocation:
+      'Activa la proximidad para priorizar Houses cercanas a ti.',
+    filtersActiveCount: '{count} Houses disponibles',
+    filtersReset: 'Reiniciar filtros',
     errorLoading: 'No se pudieron cargar las Houses of Sports.',
     headLabel: 'Head of House',
     headPending: 'Head of House por definir.',
@@ -269,6 +362,25 @@ const COPY = {
       'Luego, al crear una cuenta respondes a un formulario sencillo, muestras quién eres y lo que buscas. Desde ahí el equipo puede orientarte con más precisión.',
     journeyFooter:
       'No necesitas entrar en todo. La idea es entender dónde tiene sentido poner tu energía - como miembro, como líder o como alguien que quiere aprender con estructura.',
+    leadSectionTitle: 'Cómo liderar una House',
+    leadSectionSubtitle:
+      'Diseña visión, equipo y acciones que inspiren a la comunidad.',
+    leadSteps: [
+      {
+        title: 'Paso 1',
+        description: 'Define la misión, el deporte y la propuesta de valor de tu House.',
+      },
+      {
+        title: 'Paso 2',
+        description:
+          'Reúne moderadores y miembros fundadores con XP diverso y ganas de liderar.',
+      },
+      {
+        title: 'Paso 3',
+        description:
+          'Lanza experiencias, eventos y rituales que marquen la cultura de tu comunidad.',
+      },
+    ],
   },
 } as const;
 
@@ -359,6 +471,20 @@ export default function HousesPage() {
   const [houses, setHouses] = useState<House[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilters, setStatusFilters] = useState<HouseStatus[]>(DEFAULT_STATUS_FILTERS);
+  const [selectedSport, setSelectedSport] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [nearbyOnly, setNearbyOnly] = useState(false);
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    const localeFromBrowser = navigator.language || 'en-US';
+    const [, country] = localeFromBrowser.split('-');
+    if (country) {
+      setDetectedCountry(country.toUpperCase());
+    }
+  }, []);
 
   useEffect(() => {
     const fetchHouses = async () => {
@@ -420,6 +546,78 @@ export default function HousesPage() {
     fetchHouses();
   }, [copy.errorLoading, localeKey]);
 
+  const toggleStatusFilter = (status: HouseStatus) => {
+    setStatusFilters((prev) => {
+      if (prev.includes(status)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((current) => current !== status);
+      }
+      return [...prev, status];
+    });
+  };
+
+  const resetFilters = () => {
+    setStatusFilters(DEFAULT_STATUS_FILTERS);
+    setSelectedSport('');
+    setSelectedCountry('');
+    setNearbyOnly(false);
+  };
+
+  const sportOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    houses.forEach((house) => {
+      if (house.sport) {
+        map.set(house.sport.id, house.sport.name);
+      }
+    });
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [houses]);
+
+  const countryOptions = useMemo(() => {
+    const codes = Array.from(
+      new Set(
+        houses
+          .map((house) => house.country_code?.toUpperCase() || '')
+          .filter(Boolean),
+      ),
+    );
+    return codes.sort((a, b) => a.localeCompare(b));
+  }, [houses]);
+
+  const filteredHouses = useMemo(() => {
+    const normalizedStatus = new Set(statusFilters);
+    return houses.filter((house) => {
+      if (!normalizedStatus.has(house.status)) {
+        return false;
+      }
+      if (selectedSport && house.sport?.id !== selectedSport) {
+        return false;
+      }
+      if (selectedCountry) {
+        const countryCode = house.country_code?.toUpperCase() || '';
+        if (countryCode !== selectedCountry) {
+          return false;
+        }
+      }
+      if (nearbyOnly && detectedCountry) {
+        const countryCode = house.country_code?.toUpperCase() || '';
+        if (countryCode !== detectedCountry) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [
+    houses,
+    statusFilters,
+    selectedSport,
+    selectedCountry,
+    nearbyOnly,
+    detectedCountry,
+  ]);
+
   const {
     active,
     underConstruction,
@@ -432,14 +630,14 @@ export default function HousesPage() {
     const underConstruction: House[] = [];
     const inDevelopment: House[] = [];
 
-    for (const h of houses) {
+    for (const h of filteredHouses) {
       if (h.status === 'ACTIVE') active.push(h);
       else if (h.status === 'UNDER_CONSTRUCTION') underConstruction.push(h);
       else inDevelopment.push(h);
     }
 
     const totals = {
-      total: houses.length,
+      total: filteredHouses.length,
       active: active.length,
       underConstruction: underConstruction.length,
       inDevelopment: inDevelopment.length,
@@ -467,12 +665,12 @@ export default function HousesPage() {
           return (a.name || '').localeCompare(b.name || '');
         });
 
-    const housesWithXp = houses.filter((house) => (house.xp_total ?? 0) > 0);
-    const xpPool = housesWithXp.length > 0 ? housesWithXp : houses;
+    const housesWithXp = filteredHouses.filter((house) => (house.xp_total ?? 0) > 0);
+    const xpPool = housesWithXp.length > 0 ? housesWithXp : filteredHouses;
     const xpLeader = xpPool.length > 0 ? sortByXpThenMembers(xpPool)[0] ?? null : null;
 
-    const housesWithMembers = houses.filter((house) => (house.member_count ?? 0) > 0);
-    const membersPool = housesWithMembers.length > 0 ? housesWithMembers : houses;
+    const housesWithMembers = filteredHouses.filter((house) => (house.member_count ?? 0) > 0);
+    const membersPool = housesWithMembers.length > 0 ? housesWithMembers : filteredHouses;
     const membersLeader =
       membersPool.length > 0 ? sortByMembersThenXp(membersPool)[0] ?? null : null;
 
@@ -484,7 +682,7 @@ export default function HousesPage() {
       membersLeader,
       totals,
     };
-  }, [houses]);
+  }, [filteredHouses]);
 
   const visibleInDevelopment = isLegacyTeam ? inDevelopment : [];
   const totalSummaryValue = totals.total.toLocaleString(locale);
@@ -577,6 +775,23 @@ export default function HousesPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#020b16] via-[#00141f] to-[#021c27]" />
           </div>
           <div className="relative mx-auto max-w-6xl space-y-10">
+            <FilterPanel
+              copy={copy}
+              localeKey={localeKey}
+              statusFilters={statusFilters}
+              toggleStatus={toggleStatusFilter}
+              resetFilters={resetFilters}
+              selectedSport={selectedSport}
+              setSelectedSport={setSelectedSport}
+              sportOptions={sportOptions}
+              selectedCountry={selectedCountry}
+              setSelectedCountry={setSelectedCountry}
+              countryOptions={countryOptions}
+              nearbyOnly={nearbyOnly}
+              setNearbyOnly={setNearbyOnly}
+              detectedCountry={detectedCountry}
+              filteredCount={totals.total}
+            />
             {error && (
               <div className="rounded-xl border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
                 {error}
@@ -634,6 +849,7 @@ export default function HousesPage() {
             )}
           </div>
         </section>
+        <LeadSection copy={copy} />
       </main>
 
       <Footer />
@@ -882,5 +1098,196 @@ function HousesSection({
         })}
       </div>
     </div>
+  );
+}
+
+type FilterPanelProps = {
+  copy: CopyType;
+  localeKey: 'pt' | 'en' | 'es';
+  statusFilters: HouseStatus[];
+  toggleStatus: (status: HouseStatus) => void;
+  resetFilters: () => void;
+  selectedSport: string;
+  setSelectedSport: (value: string) => void;
+  sportOptions: { id: string; name: string }[];
+  selectedCountry: string;
+  setSelectedCountry: (value: string) => void;
+  countryOptions: string[];
+  nearbyOnly: boolean;
+  setNearbyOnly: (value: boolean) => void;
+  detectedCountry: string | null;
+  filteredCount: number;
+};
+
+function FilterPanel({
+  copy,
+  localeKey,
+  statusFilters,
+  toggleStatus,
+  resetFilters,
+  selectedSport,
+  setSelectedSport,
+  sportOptions,
+  selectedCountry,
+  setSelectedCountry,
+  countryOptions,
+  nearbyOnly,
+  setNearbyOnly,
+  detectedCountry,
+  filteredCount,
+}: FilterPanelProps) {
+  const proximityHint = detectedCountry
+    ? copy.filtersProximityHint.replace('{country}', detectedCountry)
+    : copy.filtersProximityHintNoLocation;
+
+  const filteredLabel = copy.filtersActiveCount.replace(
+    '{count}',
+    filteredCount.toLocaleString(),
+  );
+
+  return (
+    <section className="rounded-3xl border border-white/10 bg-[#02111c]/80 p-6 shadow-[0_35px_90px_rgba(0,0,0,0.45)]">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
+            {copy.filtersTitle}
+          </p>
+          <p className="text-sm text-slate-200">{copy.filtersSubtitle}</p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-white/20 px-4 text-xs uppercase tracking-[0.35em] text-white"
+          onClick={resetFilters}
+        >
+          {copy.filtersReset}
+        </Button>
+      </div>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+            {copy.filtersStatusLabel}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {DEFAULT_STATUS_FILTERS.map((status) => {
+              const active = statusFilters.includes(status);
+              const label = STATUS_LABELS[status][localeKey];
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => toggleStatus(status)}
+                  className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] transition ${
+                    active
+                      ? 'border-cyan-400 bg-cyan-500/20 text-white'
+                      : 'border-white/10 text-slate-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+            {copy.filtersSportLabel}
+          </p>
+          <Select
+            value={selectedSport}
+            onValueChange={(value) => setSelectedSport(value)}
+          >
+            <SelectTrigger className="rounded-xl border border-white/10 bg-[#020b16] text-white">
+              <SelectValue placeholder={copy.filtersSportPlaceholder} />
+            </SelectTrigger>
+            <SelectContent className="bg-[#02121c] text-white">
+              <SelectItem value="">
+                {copy.filtersSportPlaceholder}
+              </SelectItem>
+              {sportOptions.map((sport) => (
+                <SelectItem key={sport.id} value={sport.id}>
+                  {sport.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+            {copy.filtersCountryLabel}
+          </p>
+          <Select
+            value={selectedCountry}
+            onValueChange={(value) => setSelectedCountry(value)}
+          >
+            <SelectTrigger className="rounded-xl border border-white/10 bg-[#020b16] text-white">
+              <SelectValue placeholder={copy.filtersCountryPlaceholder} />
+            </SelectTrigger>
+            <SelectContent className="bg-[#02121c] text-white">
+              <SelectItem value="">
+                {copy.filtersCountryPlaceholder}
+              </SelectItem>
+              {countryOptions.map((country) => (
+                <SelectItem key={country} value={country}>
+                  {country}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Switch checked={nearbyOnly} onCheckedChange={setNearbyOnly} />
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                {copy.filtersProximityLabel}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                {proximityHint}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-4 text-xs uppercase tracking-[0.4em] text-slate-400">
+        {filteredLabel}
+      </p>
+    </section>
+  );
+}
+
+function LeadSection({ copy }: { copy: CopyType }) {
+  return (
+    <section className="px-6 py-12 md:py-16">
+      <div className="mx-auto max-w-6xl">
+        <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-[#030d18] via-[#021523] to-[#031b27] p-8 shadow-[0_35px_90px_rgba(0,0,0,0.45)]">
+          <div className="space-y-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
+                {copy.leadSectionTitle}
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold text-white">
+                {copy.leadSectionSubtitle}
+              </h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {copy.leadSteps.map((step) => (
+                <div
+                  key={step.title}
+                  className="rounded-2xl border border-white/10 bg-[#04131b]/70 p-4 text-sm text-white/80"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
+                    {step.title}
+                  </p>
+                  <p className="mt-3 text-sm text-slate-200">{step.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
