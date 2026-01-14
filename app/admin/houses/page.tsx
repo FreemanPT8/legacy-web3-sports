@@ -1359,11 +1359,11 @@ export default function AdminHousesPage() {
                                 house.head.avatar_url.trim() !== '' ? (
                                   <SafeImage
                                     src={house.head.avatar_url}
-                                    alt={headName}
-                                  className="h-full w-full rounded-full object-cover"
-                                  width={48}
-                                  height={48}
-                                />
+                                    alt={headName || headDisplay}
+                                    className="h-full w-full rounded-full object-cover"
+                                    width={48}
+                                    height={48}
+                                  />
                               ) : (
                                 <span className="flex h-full w-full items-center justify-center">
                                     {(rawHeadUsername || headDisplay).slice(0, 2).toUpperCase()}
