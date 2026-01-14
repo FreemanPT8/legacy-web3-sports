@@ -116,8 +116,7 @@ export async function PUT(request: NextRequest) {
       .from('users')
       .update(updatesPayload)
       .eq('id', userId)
-      .select()
-      .single();
+      .select();
 
     if (error) {
       return NextResponse.json(
@@ -149,9 +148,11 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    const updatedProfile = Array.isArray(data) ? data[0] : data;
+
     return NextResponse.json({
       success: true,
-      profile: data,
+      profile: updatedProfile ?? null,
       xpAwarded: totalXpAwarded
     });
   } catch (error) {
