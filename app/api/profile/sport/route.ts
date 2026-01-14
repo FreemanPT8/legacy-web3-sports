@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { sportId } = body ?? {};
+    const { sportId, target, replace } = body ?? {};
+    const resolvedTarget = target === 'primary' || target === 'secondary' ? target : null;
 
     if (!sportId || typeof sportId !== 'string') {
       return NextResponse.json(
@@ -81,23 +82,67 @@ export async function POST(request: NextRequest) {
     const currentPrimary = existingUser.sport_id ?? null;
     const currentSecondary = existingUser.primary_sport_id ?? null;
 
-    if (sportId === currentPrimary || sportId === currentSecondary) {
-      return NextResponse.json({ success: true }, { status: 200 });
-    }
+    const updatePayload: Record<string, string | null> = {};
 
-    const updatePayload: Record<string, string> = {};
-    if (!currentPrimary) {
-      updatePayload.sport_id = sportId;
-    } else if (!currentSecondary) {
-      updatePayload.primary_sport_id = sportId;
+    if (resolvedTarget === 'primary') {
+      if (sportId === currentPrimary) {
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+      if (!replace && currentPrimary) {
+        return NextResponse.json(
+          { success: false, error: 'Primary sport already assigned.' },
+          { status: 400 },
+        );
+      }
+      if (sportId === currentSecondary) {
+        updatePayload.sport_id = sportId;
+        if (currentPrimary && currentPrimary !== sportId) {
+          updatePayload.primary_sport_id = currentPrimary;
+        }
+      } else {
+        updatePayload.sport_id = sportId;
+      }
+    } else if (resolvedTarget === 'secondary') {
+      if (sportId === currentSecondary) {
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+      if (!replace && currentSecondary) {
+        return NextResponse.json(
+          { success: false, error: 'Secondary sport already assigned.' },
+          { status: 400 },
+        );
+      }
+      if (sportId === currentPrimary) {
+        if (!currentSecondary) {
+          return NextResponse.json(
+            { success: false, error: 'Secondary sport must be different from primary.' },
+            { status: 400 },
+          );
+        }
+        updatePayload.primary_sport_id = sportId;
+        if (currentSecondary !== sportId) {
+          updatePayload.sport_id = currentSecondary;
+        }
+      } else {
+        updatePayload.primary_sport_id = sportId;
+      }
     } else {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Secondary sport already assigned. Contact support to change it.',
-        },
-        { status: 400 },
-      );
+      if (sportId === currentPrimary || sportId === currentSecondary) {
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+      if (!currentPrimary) {
+        updatePayload.sport_id = sportId;
+      } else if (!currentSecondary) {
+        updatePayload.primary_sport_id = sportId;
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Secondary sport already assigned. Contact support to change it.',
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const { error: updateError } = await db

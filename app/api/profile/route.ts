@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { awardXP } from '@/lib/xp';
-import { getCountryCodeFromName } from '@/lib/countries';
-import { syncUserHouseMembership } from '@/lib/user-houses';
 
 const XP_REWARDS: Record<string, number> = {
   bio: 25,
@@ -63,18 +61,55 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (updates.bio && (updates.bio.length < 8 || updates.bio.length > 888)) {
+    if (updates?.bio && (updates.bio.length < 8 || updates.bio.length > 888)) {
       return NextResponse.json(
         { success: false, error: 'Bio must be between 8 and 888 characters' },
         { status: 400 }
       );
     }
 
-    const updatesPayload = { ...(updates ?? {}) };
-    if (updatesPayload.country && !updatesPayload.primary_country_code) {
-      updatesPayload.primary_country_code =
-        getCountryCodeFromName(updatesPayload.country) ??
-        updatesPayload.country.trim().slice(0, 2).toUpperCase();
+    const allowedFields = new Set([
+      'username',
+      'full_name',
+      'email',
+      'bio',
+      'sports_role',
+      'telegram',
+      'dao1_did_nft',
+      'wallet_address',
+      'website',
+      'youtube',
+      'linkhub',
+      'facebook',
+      'instagram',
+      'profile_visibility',
+    ]);
+    const updatesPayload = Object.entries(updates ?? {}).reduce<Record<string, unknown>>((acc, [key, value]) => {
+      if (allowedFields.has(key) && value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+
+    if (typeof updatesPayload.username === 'string' && updatesPayload.username.trim().length < 3) {
+      return NextResponse.json(
+        { success: false, error: 'Username must have at least 3 characters.' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof updatesPayload.email === 'string' && !updatesPayload.email.includes('@')) {
+      return NextResponse.json(
+        { success: false, error: 'Email format is invalid.' },
+        { status: 400 }
+      );
+    }
+
+    if (!Object.keys(updatesPayload).length) {
+      return NextResponse.json(
+        { success: false, error: 'No updates provided.' },
+        { status: 400 }
+      );
     }
 
     const { data, error } = await supabase
@@ -111,19 +146,6 @@ export async function PUT(request: NextRequest) {
             totalXpAwarded += xpReward;
           }
         }
-      }
-    }
-
-    const membershipFields = ['country', 'primary_country_code', 'primary_sport_id', 'sport_id'];
-    if (updatesPayload && membershipFields.some((field) => field in updatesPayload)) {
-      try {
-        await syncUserHouseMembership(userId, {
-          assignedVia: 'signup-auto',
-          logPrefix: 'profile:update',
-          actorId: userId,
-        });
-      } catch (err) {
-        console.error('[profile] Failed to sync house membership after profile update', err);
       }
     }
 
