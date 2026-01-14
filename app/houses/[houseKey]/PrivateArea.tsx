@@ -281,7 +281,22 @@ export function PrivateArea({
 
   const handleSendPrivateMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!selectedRecipient || !messageDraft.trim()) return;
+    if (!selectedRecipient) {
+      toast({
+        title: language === 'pt' ? 'Destinatario em falta' : language === 'es' ? 'Falta destinatario' : 'Missing recipient',
+        description: t('houses.private.errorRecipient'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!messageDraft.trim()) {
+      toast({
+        title: language === 'pt' ? 'Mensagem vazia' : language === 'es' ? 'Mensaje vacio' : 'Empty message',
+        description: t('houses.private.errorMessage'),
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!hasXpForMessages) {
       toast({
         title: language === 'pt' ? 'XP insuficiente' : language === 'es' ? 'XP insuficiente' : 'Not enough XP',
@@ -596,7 +611,7 @@ export function PrivateArea({
                   <div className="flex flex-wrap items-center gap-3">
                     <Button
                       type="submit"
-                      disabled={sendingMessage || !recipientOptions.length || !messageDraft.trim()}
+                      disabled={sendingMessage || !recipientOptions.length}
                       className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                     >
                       {sendingMessage ? t('houses.private.sending') : t('houses.private.sendMessage')}
