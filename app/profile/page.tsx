@@ -86,6 +86,8 @@ const COPY = {
     badgeLocked: 'Requires 99 XP',
     basicInfoTitle: 'Basic information',
     basicInfoDesc: 'Main data of your account.',
+    basicInfoSave: 'Save basic info',
+    basicInfoHint: 'Use the button below to confirm changes.',
     labelUsername: 'Username',
     labelCountry: 'Country',
     labelFullName: 'Full name',
@@ -159,6 +161,8 @@ const COPY = {
     badgeLocked: 'Requer 99 XP',
     basicInfoTitle: 'Informacao basica',
     basicInfoDesc: 'Dados principais da tua conta.',
+    basicInfoSave: 'Guardar dados base',
+    basicInfoHint: 'Usa o botao abaixo para confirmar as alteracoes.',
     labelUsername: 'Username',
     labelCountry: 'Pais',
     labelFullName: 'Nome completo',
@@ -232,6 +236,8 @@ const COPY = {
     badgeLocked: 'Requiere 99 XP',
     basicInfoTitle: 'Informacion basica',
     basicInfoDesc: 'Datos principales de tu cuenta.',
+    basicInfoSave: 'Guardar datos base',
+    basicInfoHint: 'Usa el boton de abajo para confirmar los cambios.',
     labelUsername: 'Usuario',
     labelCountry: 'Pais',
     labelFullName: 'Nombre completo',
@@ -759,6 +765,16 @@ export default function ProfilePage() {
                 onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                 className="bg-[#000c12] border border-white/10"
               />
+            </div>
+            <div className="md:col-span-2 flex flex-col gap-3 pt-2">
+              <p className={UI.micro}>{copy.basicInfoHint}</p>
+              <Button
+                onClick={handleSave}
+                className="w-full border border-white/10 bg-white/5 text-white shadow-2xl md:w-fit"
+                disabled={saving}
+              >
+                {saving ? copy.saving : copy.basicInfoSave}
+              </Button>
             </div>
           </CardContent>
         </Card>
