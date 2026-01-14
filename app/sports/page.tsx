@@ -34,6 +34,10 @@ type House = {
   sportName?: string | null;
   headOfHouse?: {
     name?: string | null;
+    username?: string | null;
+  } | null;
+  head?: {
+    username?: string | null;
   } | null;
   membersCount?: number | null;
 };
@@ -295,6 +299,7 @@ export default function SportsLandingPage() {
                 {houses.map((house) => {
                   const href = `/sports/houses/${encodeURIComponent(house.slug ?? house.id)}`;
                   const members = house.membersCount ?? 0;
+                  const headUsername = house.head?.username || house.headOfHouse?.username || null;
 
                   return (
                     <Card
@@ -323,10 +328,10 @@ export default function SportsLandingPage() {
                               <span>{house.sportName}</span>
                             </div>
                           )}
-                          {house.headOfHouse?.name && (
+                          {headUsername && (
                             <div className="flex items-center gap-2">
                               <ShieldCheck className="h-3.5 w-3.5 text-cyan-300" />
-                              <span>Head of House: {house.headOfHouse.name}</span>
+                              <span>Head of House: @{headUsername}</span>
                             </div>
                           )}
                           <div className="flex items-center gap-2">

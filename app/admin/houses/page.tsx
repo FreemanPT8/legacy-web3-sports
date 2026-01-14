@@ -1303,13 +1303,11 @@ export default function AdminHousesPage() {
               ) : (
                 <div className="space-y-4">
                   {filtered.map((house) => {
-                    const headName =
-                      house.head?.full_name ||
-                      house.head?.username ||
-                      'Sem head atribuido';
-                    const headUsername = house.head?.username
-                      ? `@${house.head.username}`
-                      : null;
+                    const rawHeadUsername = house.head?.username?.trim() || null;
+                    const headDisplay = rawHeadUsername
+                      ? `@${rawHeadUsername}`
+                      : 'Sem username';
+                    const headName = house.head?.full_name?.trim() || null;
 
                     return (
                       <article
@@ -1362,27 +1360,27 @@ export default function AdminHousesPage() {
                                   <SafeImage
                                     src={house.head.avatar_url}
                                     alt={headName}
-                                    className="h-full w-full rounded-full object-cover"
-                                    width={48}
-                                    height={48}
-                                  />
-                                ) : (
-                                  <span className="flex h-full w-full items-center justify-center">
-                                    {headName.slice(0, 2).toUpperCase()}
-                                  </span>
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-semibold text-white">
-                                  {headName}
-                                </p>
-                                {headUsername ? (
+                                  className="h-full w-full rounded-full object-cover"
+                                  width={48}
+                                  height={48}
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center">
+                                    {(rawHeadUsername || headDisplay).slice(0, 2).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-white">
+                                  {headDisplay}
+                              </p>
+                                {headName ? (
                                   <p className="text-xs text-slate-400">
-                                    {headUsername}
+                                    {headName}
                                   </p>
                                 ) : (
                                   <p className="text-xs text-rose-300">
-                                    Sem username
+                                    Sem nome
                                   </p>
                                 )}
                               </div>

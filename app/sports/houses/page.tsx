@@ -564,8 +564,7 @@ function HousesSection({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {houses.map((house) => {
           const headDisplay =
-            house.head?.full_name?.trim() ||
-            (house.head?.username ? `@${house.head.username}` : null);
+            house.head?.username ? `@${house.head.username}` : house.head?.full_name?.trim() || null;
           const firstModerator = house.moderators?.[0];
           const moderatorExample =
             firstModerator?.username
