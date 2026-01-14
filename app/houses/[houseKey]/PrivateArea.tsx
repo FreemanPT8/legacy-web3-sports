@@ -282,6 +282,14 @@ export function PrivateArea({
   const handleSendPrivateMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedRecipient || !messageDraft.trim()) return;
+    if (!hasXpForMessages) {
+      toast({
+        title: language === 'pt' ? 'XP insuficiente' : language === 'es' ? 'XP insuficiente' : 'Not enough XP',
+        description: t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString()),
+        variant: 'destructive',
+      });
+      return;
+    }
     setSendingMessage(true);
     try {
       const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
@@ -548,6 +556,11 @@ export function PrivateArea({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {!hasXpForMessages && (
+                <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">
+                  {t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString())}
+                </div>
+              )}
               {recipientOptions.length ? (
                 <form className="space-y-4" onSubmit={handleSendPrivateMessage}>
                   <div className="space-y-1">
@@ -583,16 +596,11 @@ export function PrivateArea({
                   <div className="flex flex-wrap items-center gap-3">
                     <Button
                       type="submit"
-                      disabled={!hasXpForMessages || sendingMessage || !recipientOptions.length || !messageDraft.trim()}
+                      disabled={sendingMessage || !recipientOptions.length || !messageDraft.trim()}
                       className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                     >
                       {sendingMessage ? t('houses.private.sending') : t('houses.private.sendMessage')}
                     </Button>
-                    {!hasXpForMessages && (
-                      <p className="text-xs text-rose-300">
-                        {t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString())}
-                      </p>
-                    )}
                   </div>
                 </form>
               ) : (
