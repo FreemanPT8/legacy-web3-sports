@@ -194,8 +194,7 @@ export async function GET(request: NextRequest) {
       )
       .in('house_key', allowedHouseKeys)
       .order('created_at', { ascending: false })
-      .limit(limit)
-      .offset(offset);
+      .range(offset, Math.max(offset + limit - 1, offset));
 
     if (houseKeyFilter) {
       query = query.eq('house_key', houseKeyFilter);
