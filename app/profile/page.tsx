@@ -246,7 +246,7 @@ export default function ProfilePage() {
     };
   }, [language, sportOptions.length, user]);
 
-  const isUnlocked = user?.xp_total >= XP_UNLOCK;
+  const isUnlocked = (user?.xp_total ?? 0) >= XP_UNLOCK;
 
   const handleAssignSport = async (target: 'primary' | 'secondary') => {
     const selection = target === 'primary' ? primarySportSelection : secondarySportSelection;
