@@ -461,7 +461,7 @@ export async function GET(request: NextRequest) {
 
 type PatchPayload = {
   entryId?: string;
-  action?: 'assign' | 'dismiss';
+  action?: 'assign' | 'dismiss' | 'change_sport';
   sportId?: string;
   houseId?: string;
   note?: string;
@@ -709,6 +709,71 @@ export async function PATCH(request: NextRequest) {
     }
 
     await markPoolNotificationsHandled(entry.id);
+    return NextResponse.json({ success: true });
+  }
+
+  if (body.action === 'change_sport') {
+    const sportId = body.sportId;
+    if (!sportId) {
+      return NextResponse.json(
+        { success: false, error: 'sportId is required to change sport.' },
+        { status: 400 },
+      );
+    }
+
+    if (entry.pool_type !== 'sport_pending') {
+      return NextResponse.json(
+        { success: false, error: 'Only sport_pending entries can change sport.' },
+        { status: 400 },
+      );
+    }
+
+    const userUpdates: Record<string, any> = {};
+    const currentPrimarySport = entry.user?.sport_id ?? null;
+    const currentSecondarySport = entry.user?.primary_sport_id ?? null;
+
+    if (!currentPrimarySport || currentPrimarySport === entry.sport_id) {
+      userUpdates.sport_id = sportId;
+    } else if (currentSecondarySport === entry.sport_id) {
+      userUpdates.primary_sport_id = sportId;
+    } else {
+      userUpdates.sport_id = sportId;
+    }
+
+    const note = normalizeNote(body.note) ?? entry.notes ?? null;
+    userUpdates.sport_assignment_notes = note;
+
+    const { error: userUpdateError } = await supabaseAdmin
+      .from('users')
+      .update(userUpdates)
+      .eq('id', entry.user_id);
+
+    if (userUpdateError) {
+      console.error('[sport-pools] Failed to update user sport', userUpdateError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update user sport.' },
+        { status: 500 },
+      );
+    }
+
+    const { error: entryUpdateError } = await supabaseAdmin
+      .from('sport_pool_entries')
+      .update({
+        sport_id: sportId,
+        notes: note,
+        updated_at: timestamp,
+        assigned_by: adminUserId,
+      })
+      .eq('id', entry.id);
+
+    if (entryUpdateError) {
+      console.error('[sport-pools] Failed to update pool entry sport', entryUpdateError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update pool entry.' },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json({ success: true });
   }
 

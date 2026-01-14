@@ -155,6 +155,10 @@ export default function SportPoolsAdminPage() {
   const [assignHouseId, setAssignHouseId] = useState('');
   const [assignNote, setAssignNote] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [changeSportEntry, setChangeSportEntry] = useState<PoolEntry | null>(null);
+  const [changeSportId, setChangeSportId] = useState('');
+  const [changeSportNote, setChangeSportNote] = useState('');
+  const [changingSport, setChangingSport] = useState(false);
 
   const [dismissEntry, setDismissEntry] = useState<PoolEntry | null>(null);
   const [dismissNote, setDismissNote] = useState('');
@@ -547,6 +551,12 @@ export default function SportPoolsAdminPage() {
     setAssignNote(entry.notes ?? '');
   };
 
+  const handleOpenChangeSport = (entry: PoolEntry) => {
+    setChangeSportEntry(entry);
+    setChangeSportId(entry.sportId ?? '');
+    setChangeSportNote(entry.notes ?? '');
+  };
+
   useEffect(() => {
     if (!assignModalEntry || !assignSportId || assignHouseId) return;
     if (filteredHouses.length === 1) {
@@ -611,6 +621,64 @@ export default function SportPoolsAdminPage() {
       });
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const handleChangeSport = async () => {
+    if (!changeSportEntry) return;
+    if (!changeSportId) {
+      toast({
+        title: 'Seleciona o desporto',
+        description: 'Escolhe o desporto antes de alterar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const token = getToken?.();
+    if (!token) {
+      toast({
+        title: 'Token em falta',
+        description: 'Inicia sessÇœo novamente para continuar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setChangingSport(true);
+    try {
+      const response = await fetch('/api/admin/sport-pools', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          entryId: changeSportEntry.id,
+          action: 'change_sport',
+          sportId: changeSportId,
+          note: changeSportNote,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Falha ao alterar desporto.');
+      }
+      toast({
+        title: 'Desporto atualizado',
+        description: 'AtualizÇ­mos o desporto deste utilizador.',
+      });
+      setChangeSportEntry(null);
+      setChangeSportId('');
+      setChangeSportNote('');
+      void fetchEntries();
+    } catch (err: any) {
+      console.error('Failed to change sport:', err);
+      toast({
+        title: 'Erro ao alterar desporto',
+        description: err instanceof Error ? err.message : 'NÇœo foi possÇðvel concluir a aÇõÇœo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setChangingSport(false);
     }
   };
 
@@ -899,6 +967,15 @@ export default function SportPoolsAdminPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              className="border-white/30 text-white hover:border-cyan-300/60 hover:text-cyan-200"
+                              onClick={() => handleOpenChangeSport(entry)}
+                              disabled={sportsLoading}
+                            >
+                              Alterar desporto
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
                               className="border-white/30 text-white hover:border-amber-300/60 hover:text-amber-200"
                               onClick={() => {
                                 setDismissEntry(entry);
@@ -1051,6 +1128,65 @@ export default function SportPoolsAdminPage() {
               <Button onClick={handleAssign} disabled={assigning} className="bg-cyan-500 text-[#04131b] hover:bg-cyan-400">
                 {assigning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
                 Confirmar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(changeSportEntry)}
+        onOpenChange={(open) => (!open ? setChangeSportEntry(null) : null)}
+      >
+        <DialogContent className="max-w-xl border-white/10 bg-[#04131b] text-white">
+          <DialogHeader>
+            <DialogTitle>Alterar desporto do utilizador</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Atualiza o desporto associado a esta entrada da pool.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Novo desporto</p>
+              <Select value={changeSportId} onValueChange={(value) => setChangeSportId(value)}>
+                <SelectTrigger className="mt-2 border-white/10 bg-[#020d15] text-left text-white">
+                  <SelectValue placeholder={sportsLoading ? 'A carregar...' : 'Escolhe o desporto'} />
+                </SelectTrigger>
+                <SelectContent className="border-white/10 bg-[#03131d] text-white">
+                  {sports.map((sport) => (
+                    <SelectItem key={sport.id} value={sport.id}>
+                      {sport.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Notas</p>
+              <Textarea
+                value={changeSportNote}
+                onChange={(event) => setChangeSportNote(event.target.value)}
+                rows={3}
+                placeholder="Opcional: contexto para a alteraÇõÇœo."
+                className="mt-2 border-white/10 bg-[#020d15]"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setChangeSportEntry(null)}
+                className="text-slate-200"
+                disabled={changingSport}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleChangeSport}
+                disabled={changingSport}
+                className="bg-cyan-500 text-[#04131b] hover:bg-cyan-400"
+              >
+                {changingSport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Guardar
               </Button>
             </div>
           </div>
