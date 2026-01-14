@@ -20,6 +20,7 @@ export function normalizeLocale(raw?: string | null): SupportedLocale {
 export type HouseProfilePayload = {
   locale: SupportedLocale;
   house: {
+    id: string;
     houseKey: string;
     name: string;
     countryCode: string | null;
@@ -573,6 +574,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
   const payload: HouseProfilePayload = {
     locale: normalizedLocale,
     house: {
+      id: house.id,
       houseKey,
       name: house.name_i18n?.[normalizedLocale] ?? house.name_i18n?.en ?? identityTitle,
       countryCode: house.country_code,
