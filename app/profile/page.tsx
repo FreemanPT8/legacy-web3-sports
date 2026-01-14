@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Header } from '@/components/layout/Header';
@@ -66,6 +66,228 @@ const xpRewards: Record<string, number> = {
   instagram: 9,
 };
 
+const COPY = {
+  en: {
+    heroEyebrow: 'OFFICIAL PROFILE',
+    heroTitle: 'Legacy Account',
+    heroSubtitle: 'Update official data, choose sports, and control public visibility.',
+    levelLabel: 'Level',
+    xpLabel: 'XP',
+    profileLoadingTitle: 'Profile',
+    profileLoadingDesc: 'Loading profile data...',
+    profileLoadError: 'Failed to load profile. Please try again.',
+    sportLoadError: 'Failed to load sports list.',
+    lockedTitle: 'Premium fields locked',
+    lockedDescPrefix: 'Earn',
+    lockedDescSuffix: 'more XP to unlock all bonus fields.',
+    sectionEyebrow: 'PROFILE DATA',
+    sectionSubtitle: 'Keep your profile updated. Some fields unlock XP when completed.',
+    badgeUnlocked: 'Profile unlocked',
+    badgeLocked: 'Requires 99 XP',
+    basicInfoTitle: 'Basic information',
+    basicInfoDesc: 'Main data of your account.',
+    labelUsername: 'Username',
+    labelCountry: 'Country',
+    labelFullName: 'Full name',
+    labelEmail: 'Email',
+    usernameHint: 'Publicly visible.',
+    countryHint: 'Defined at signup.',
+    sportsTitle: 'Official sports',
+    sportsDesc: 'The primary sport defines your House. The secondary adds you to another House in the same country.',
+    primarySportLabel: 'Primary sport',
+    secondarySportLabel: 'Secondary sport',
+    selectPrimarySport: 'Select the primary sport',
+    selectSecondarySport: 'Select the secondary sport',
+    saving: 'Saving...',
+    savePrimary: 'Save primary',
+    saveSecondary: 'Save secondary',
+    secondaryHint: 'If you do not want a secondary sport, leave it empty.',
+    visibilityTitle: 'Visibility and XP',
+    visibilityDesc: 'Set visibility for each field and see the XP reward.',
+    publicLabel: 'Public',
+    bioLabel: 'Bio',
+    bioPlaceholder: 'Write about yourself...',
+    sportsRoleLabel: 'Sports role',
+    selectRole: 'Select your role',
+    fieldTelegram: 'Telegram',
+    fieldDao: 'DAO1 DID NFT',
+    fieldWallet: 'Wallet address',
+    fieldWebsite: 'Website',
+    fieldYoutube: 'YouTube',
+    fieldLinkhub: 'LinkHub',
+    fieldFacebook: 'Facebook',
+    fieldInstagram: 'Instagram',
+    fieldPlaceholderPrefix: 'Your',
+    xpBonusTitle: 'XP Bonus Grid',
+    xpBonusDesc: 'Each field can be submitted once to earn XP.',
+    saveProfile: 'Save profile',
+    loading: 'Loading...',
+    toastSelectSportTitle: 'Select a sport',
+    toastSelectSportDesc: 'Choose a sport before continuing.',
+    toastSessionExpiredTitle: 'Session expired',
+    toastSessionExpiredDesc: 'Sign in again to save your sport.',
+    toastSportUpdatedTitle: 'Sport updated',
+    toastSportUpdatedPrimary: 'Your primary sport was updated.',
+    toastSportUpdatedSecondary: 'Your secondary sport was updated.',
+    toastSportUpdateErrorTitle: 'Error',
+    toastSportUpdateErrorDesc: 'Could not save the sport. Try again.',
+    toastBioInvalidTitle: 'Invalid bio',
+    toastBioInvalidDesc: 'Bio must be between 8 and 888 characters.',
+    toastProfileSavedTitle: 'Profile updated',
+    toastProfileSavedPrefix: 'Changes saved. +',
+    toastProfileSavedSuffix: ' XP.',
+    toastProfileSavedDesc: 'Changes saved successfully.',
+    toastProfileSaveErrorTitle: 'Error',
+    toastProfileSaveErrorDesc: 'Failed to save the profile. Try again.',
+  },
+  pt: {
+    heroEyebrow: 'PERFIL OFICIAL',
+    heroTitle: 'Conta Legacy',
+    heroSubtitle: 'Atualiza dados oficiais, escolhe desportos e controla a visibilidade publica.',
+    levelLabel: 'Nivel',
+    xpLabel: 'XP',
+    profileLoadingTitle: 'Perfil',
+    profileLoadingDesc: 'A carregar dados do perfil...',
+    profileLoadError: 'Falha ao carregar o perfil. Tenta novamente.',
+    sportLoadError: 'Falha ao carregar a lista de desportos.',
+    lockedTitle: 'Campos premium bloqueados',
+    lockedDescPrefix: 'Ganha mais',
+    lockedDescSuffix: 'XP para desbloquear todos os campos de bonus.',
+    sectionEyebrow: 'DADOS DO PERFIL',
+    sectionSubtitle: 'Mantem o perfil atualizado. Alguns campos desbloqueiam XP quando completos.',
+    badgeUnlocked: 'Perfil desbloqueado',
+    badgeLocked: 'Requer 99 XP',
+    basicInfoTitle: 'Informacao basica',
+    basicInfoDesc: 'Dados principais da tua conta.',
+    labelUsername: 'Username',
+    labelCountry: 'Pais',
+    labelFullName: 'Nome completo',
+    labelEmail: 'Email',
+    usernameHint: 'Visivel publicamente.',
+    countryHint: 'Definido no registo.',
+    sportsTitle: 'Desportos oficiais',
+    sportsDesc: 'O desporto principal define a tua House. O secundario adiciona-te a outra House no mesmo pais.',
+    primarySportLabel: 'Desporto principal',
+    secondarySportLabel: 'Desporto secundario',
+    selectPrimarySport: 'Seleciona o desporto principal',
+    selectSecondarySport: 'Seleciona o desporto secundario',
+    saving: 'A guardar...',
+    savePrimary: 'Guardar principal',
+    saveSecondary: 'Guardar secundario',
+    secondaryHint: 'Se nao quiseres secundario, deixa por definir.',
+    visibilityTitle: 'Visibilidade e XP',
+    visibilityDesc: 'Define a visibilidade de cada campo e ve o XP associado.',
+    publicLabel: 'Publico',
+    bioLabel: 'Bio',
+    bioPlaceholder: 'Escreve sobre ti...',
+    sportsRoleLabel: 'Funcao no desporto',
+    selectRole: 'Seleciona o teu papel',
+    fieldTelegram: 'Telegram',
+    fieldDao: 'DAO1 DID NFT',
+    fieldWallet: 'Carteira',
+    fieldWebsite: 'Website',
+    fieldYoutube: 'YouTube',
+    fieldLinkhub: 'LinkHub',
+    fieldFacebook: 'Facebook',
+    fieldInstagram: 'Instagram',
+    fieldPlaceholderPrefix: 'O teu',
+    xpBonusTitle: 'Grelha de bonus XP',
+    xpBonusDesc: 'Cada campo pode ser submetido uma vez para ganhar XP.',
+    saveProfile: 'Guardar perfil',
+    loading: 'A carregar...',
+    toastSelectSportTitle: 'Seleciona um desporto',
+    toastSelectSportDesc: 'Escolhe um desporto antes de continuar.',
+    toastSessionExpiredTitle: 'Sessao expirada',
+    toastSessionExpiredDesc: 'Inicia sessao novamente para guardar o desporto.',
+    toastSportUpdatedTitle: 'Desporto atualizado',
+    toastSportUpdatedPrimary: 'Atualizaste o teu desporto principal.',
+    toastSportUpdatedSecondary: 'Atualizaste o teu desporto secundario.',
+    toastSportUpdateErrorTitle: 'Erro',
+    toastSportUpdateErrorDesc: 'Nao foi possivel guardar o desporto. Tenta novamente.',
+    toastBioInvalidTitle: 'Bio invalida',
+    toastBioInvalidDesc: 'A bio tem de ter entre 8 e 888 caracteres.',
+    toastProfileSavedTitle: 'Perfil atualizado',
+    toastProfileSavedPrefix: 'Mudancas guardadas. +',
+    toastProfileSavedSuffix: ' XP.',
+    toastProfileSavedDesc: 'Mudancas guardadas com sucesso.',
+    toastProfileSaveErrorTitle: 'Erro',
+    toastProfileSaveErrorDesc: 'Falha ao guardar o perfil. Tenta novamente.',
+  },
+  es: {
+    heroEyebrow: 'PERFIL OFICIAL',
+    heroTitle: 'Cuenta Legacy',
+    heroSubtitle: 'Actualiza datos oficiales, elige deportes y controla la visibilidad publica.',
+    levelLabel: 'Nivel',
+    xpLabel: 'XP',
+    profileLoadingTitle: 'Perfil',
+    profileLoadingDesc: 'Cargando datos del perfil...',
+    profileLoadError: 'No se pudo cargar el perfil. Intenta de nuevo.',
+    sportLoadError: 'No se pudo cargar la lista de deportes.',
+    lockedTitle: 'Campos premium bloqueados',
+    lockedDescPrefix: 'Gana',
+    lockedDescSuffix: 'XP mas para desbloquear todos los campos bonus.',
+    sectionEyebrow: 'DATOS DEL PERFIL',
+    sectionSubtitle: 'Manten el perfil actualizado. Algunos campos desbloquean XP al completarse.',
+    badgeUnlocked: 'Perfil desbloqueado',
+    badgeLocked: 'Requiere 99 XP',
+    basicInfoTitle: 'Informacion basica',
+    basicInfoDesc: 'Datos principales de tu cuenta.',
+    labelUsername: 'Usuario',
+    labelCountry: 'Pais',
+    labelFullName: 'Nombre completo',
+    labelEmail: 'Email',
+    usernameHint: 'Visible publicamente.',
+    countryHint: 'Definido en el registro.',
+    sportsTitle: 'Deportes oficiales',
+    sportsDesc: 'El deporte principal define tu House. El secundario te anade a otra House en el mismo pais.',
+    primarySportLabel: 'Deporte principal',
+    secondarySportLabel: 'Deporte secundario',
+    selectPrimarySport: 'Selecciona el deporte principal',
+    selectSecondarySport: 'Selecciona el deporte secundario',
+    saving: 'Guardando...',
+    savePrimary: 'Guardar principal',
+    saveSecondary: 'Guardar secundario',
+    secondaryHint: 'Si no quieres secundario, dejalo sin definir.',
+    visibilityTitle: 'Visibilidad y XP',
+    visibilityDesc: 'Define la visibilidad de cada campo y mira el XP asociado.',
+    publicLabel: 'Publico',
+    bioLabel: 'Bio',
+    bioPlaceholder: 'Escribe sobre ti...',
+    sportsRoleLabel: 'Rol deportivo',
+    selectRole: 'Selecciona tu rol',
+    fieldTelegram: 'Telegram',
+    fieldDao: 'DAO1 DID NFT',
+    fieldWallet: 'Billetera',
+    fieldWebsite: 'Website',
+    fieldYoutube: 'YouTube',
+    fieldLinkhub: 'LinkHub',
+    fieldFacebook: 'Facebook',
+    fieldInstagram: 'Instagram',
+    fieldPlaceholderPrefix: 'Tu',
+    xpBonusTitle: 'Cuadro de bonus XP',
+    xpBonusDesc: 'Cada campo puede enviarse una vez para ganar XP.',
+    saveProfile: 'Guardar perfil',
+    loading: 'Cargando...',
+    toastSelectSportTitle: 'Selecciona un deporte',
+    toastSelectSportDesc: 'Elige un deporte antes de continuar.',
+    toastSessionExpiredTitle: 'Sesion expirada',
+    toastSessionExpiredDesc: 'Inicia sesion de nuevo para guardar el deporte.',
+    toastSportUpdatedTitle: 'Deporte actualizado',
+    toastSportUpdatedPrimary: 'Tu deporte principal fue actualizado.',
+    toastSportUpdatedSecondary: 'Tu deporte secundario fue actualizado.',
+    toastSportUpdateErrorTitle: 'Error',
+    toastSportUpdateErrorDesc: 'No se pudo guardar el deporte. Intenta de nuevo.',
+    toastBioInvalidTitle: 'Bio invalida',
+    toastBioInvalidDesc: 'La bio debe tener entre 8 y 888 caracteres.',
+    toastProfileSavedTitle: 'Perfil actualizado',
+    toastProfileSavedPrefix: 'Cambios guardados. +',
+    toastProfileSavedSuffix: ' XP.',
+    toastProfileSavedDesc: 'Cambios guardados con exito.',
+    toastProfileSaveErrorTitle: 'Error',
+    toastProfileSaveErrorDesc: 'No se pudo guardar el perfil. Intenta de nuevo.',
+  },
+} as const;
+
 type SportOption = { id: string; name: string };
 
 type ProfilePayload = {
@@ -102,8 +324,10 @@ type ProfilePayload = {
 export default function ProfilePage() {
   const router = useRouter();
   const { user, loading, getToken, refreshUser } = useAuth();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const { toast } = useToast();
+
+  const copy = useMemo(() => COPY[language] ?? COPY.en, [language]);
 
   const [saving, setSaving] = useState(false);
   const [profileData, setProfileData] = useState<ProfilePayload>({
@@ -201,7 +425,7 @@ export default function ProfilePage() {
       } catch (error) {
         if (!active) return;
         console.error('[profile] Failed to load profile', error);
-        setProfileError('Falha ao carregar o perfil. Tenta novamente.');
+        setProfileError(copy.profileLoadError);
       } finally {
         if (active) setProfileLoading(false);
       }
@@ -210,7 +434,7 @@ export default function ProfilePage() {
     return () => {
       active = false;
     };
-  }, [profileLoaded, user]);
+  }, [copy.profileLoadError, profileLoaded, user]);
 
   useEffect(() => {
     if (!user || sportOptions.length) return;
@@ -235,7 +459,7 @@ export default function ProfilePage() {
       } catch (error) {
         if (!active) return;
         console.error('[profile] Failed to load sports', error);
-        setSportError('Falha ao carregar a lista de desportos.');
+        setSportError(copy.sportLoadError);
       } finally {
         if (active) setSportLoading(false);
       }
@@ -244,7 +468,7 @@ export default function ProfilePage() {
     return () => {
       active = false;
     };
-  }, [language, sportOptions.length, user]);
+  }, [copy.sportLoadError, language, sportOptions.length, user]);
 
   const isUnlocked = (user?.xp_total ?? 0) >= XP_UNLOCK;
 
@@ -252,8 +476,8 @@ export default function ProfilePage() {
     const selection = target === 'primary' ? primarySportSelection : secondarySportSelection;
     if (!selection) {
       toast({
-        title: 'Seleciona um desporto',
-        description: 'Escolhe um desporto antes de continuar.',
+        title: copy.toastSelectSportTitle,
+        description: copy.toastSelectSportDesc,
         variant: 'destructive',
       });
       return;
@@ -261,8 +485,8 @@ export default function ProfilePage() {
     const token = getToken?.();
     if (!token) {
       toast({
-        title: 'Sessao expirada',
-        description: 'Inicia sessao novamente para guardar o desporto.',
+        title: copy.toastSessionExpiredTitle,
+        description: copy.toastSessionExpiredDesc,
         variant: 'destructive',
       });
       return;
@@ -300,17 +524,14 @@ export default function ProfilePage() {
       }));
       refreshUser();
       toast({
-        title: 'Desporto atualizado',
-        description:
-          target === 'primary'
-            ? 'Atualizaste o teu desporto principal.'
-            : 'Atualizaste o teu desporto secundario.',
+        title: copy.toastSportUpdatedTitle,
+        description: target === 'primary' ? copy.toastSportUpdatedPrimary : copy.toastSportUpdatedSecondary,
       });
     } catch (error) {
       console.error('[profile] Failed to assign sport', error);
       toast({
-        title: 'Erro',
-        description: 'Nao foi possivel guardar o desporto. Tenta novamente.',
+        title: copy.toastSportUpdateErrorTitle,
+        description: copy.toastSportUpdateErrorDesc,
         variant: 'destructive',
       });
     } finally {
@@ -324,8 +545,8 @@ export default function ProfilePage() {
     }
     if (profileData.bio && (profileData.bio.length < 8 || profileData.bio.length > 888)) {
       toast({
-        title: 'Bio invalida',
-        description: 'A bio tem de ter entre 8 e 888 caracteres.',
+        title: copy.toastBioInvalidTitle,
+        description: copy.toastBioInvalidDesc,
         variant: 'destructive',
       });
       return;
@@ -371,23 +592,23 @@ export default function ProfilePage() {
       if (data.success) {
         setPreviousProfile(data.profile ?? previousProfile);
         toast({
-          title: 'Perfil atualizado',
+          title: copy.toastProfileSavedTitle,
           description: data.xpAwarded
-            ? `Mudancas guardadas. +${data.xpAwarded} XP.`
-            : 'Mudancas guardadas com sucesso.',
+            ? `${copy.toastProfileSavedPrefix}${data.xpAwarded}${copy.toastProfileSavedSuffix}`
+            : copy.toastProfileSavedDesc,
         });
         refreshUser();
       } else {
         toast({
-          title: 'Erro',
-          description: data.error || 'Falha ao guardar o perfil.',
+          title: copy.toastProfileSaveErrorTitle,
+          description: data.error || copy.toastProfileSaveErrorDesc,
           variant: 'destructive',
         });
       }
     } catch (error) {
       toast({
-        title: 'Erro',
-        description: 'Falha ao guardar o perfil. Tenta novamente.',
+        title: copy.toastProfileSaveErrorTitle,
+        description: copy.toastProfileSaveErrorDesc,
         variant: 'destructive',
       });
     }
@@ -402,13 +623,25 @@ export default function ProfilePage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
             <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
-            <p className="text-sm text-slate-300">Loading...</p>
+            <p className="text-sm text-slate-300">{copy.loading}</p>
           </div>
         </main>
         <Footer />
       </div>
     );
   }
+
+  const roleOptions = SPORTS_ROLES[language] ?? SPORTS_ROLES.en;
+  const contactFields = [
+    { key: 'telegram', label: copy.fieldTelegram, xp: xpRewards.telegram },
+    { key: 'dao1_did_nft', label: copy.fieldDao, xp: xpRewards.dao1_did_nft },
+    { key: 'wallet_address', label: copy.fieldWallet, xp: xpRewards.wallet_address },
+    { key: 'website', label: copy.fieldWebsite, xp: 0 },
+    { key: 'youtube', label: copy.fieldYoutube, xp: xpRewards.youtube },
+    { key: 'linkhub', label: copy.fieldLinkhub, xp: xpRewards.linkhub },
+    { key: 'facebook', label: copy.fieldFacebook, xp: xpRewards.facebook },
+    { key: 'instagram', label: copy.fieldInstagram, xp: xpRewards.instagram },
+  ] as const;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#02070b] text-white">
@@ -419,15 +652,19 @@ export default function ProfilePage() {
           <div className={UI.haloGold} />
           <HeroContent className="relative items-end gap-6">
             <HeroTextColumn className="space-y-3">
-              <HeroEyebrow className={UI.eyebrow}>PERFIL OFICIAL</HeroEyebrow>
-              <HeroTitle className={UI.heroTitle}>Conta Legacy</HeroTitle>
+              <HeroEyebrow className={UI.eyebrow}>{copy.heroEyebrow}</HeroEyebrow>
+              <HeroTitle className={UI.heroTitle}>{copy.heroTitle}</HeroTitle>
               <HeroDescription className={UI.sectionSubtitle}>
-                Atualiza dados oficiais, escolhe desportos e controla a visibilidade publica.
+                {copy.heroSubtitle}
               </HeroDescription>
             </HeroTextColumn>
             <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-right">
-              <div className="text-2xl font-bold text-[#5af3ff]">{user.xp_total} XP</div>
-              <p className={UI.micro}>Nivel {Math.floor(user.xp_total / 100)}</p>
+              <div className="text-2xl font-bold text-[#5af3ff]">
+                {user.xp_total} {copy.xpLabel}
+              </div>
+              <p className={UI.micro}>
+                {copy.levelLabel} {Math.floor(user.xp_total / 100)}
+              </p>
             </div>
           </HeroContent>
         </HeroSection>
@@ -435,8 +672,8 @@ export default function ProfilePage() {
         {profileLoading ? (
           <Card className={UI.cardSurface}>
             <CardHeader>
-              <CardTitle className={UI.cardTitle}>Perfil</CardTitle>
-              <CardDescription className={UI.bodyMuted}>A carregar dados do perfil...</CardDescription>
+              <CardTitle className={UI.cardTitle}>{copy.profileLoadingTitle}</CardTitle>
+              <CardDescription className={UI.bodyMuted}>{copy.profileLoadingDesc}</CardDescription>
             </CardHeader>
           </Card>
         ) : null}
@@ -448,10 +685,10 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-white">
                 <Lock className="h-5 w-5 text-yellow-400" />
-                Campos premium bloqueados
+                {copy.lockedTitle}
               </CardTitle>
               <CardDescription className={UI.bodyMuted}>
-                Ganha mais {XP_UNLOCK - user.xp_total} XP para desbloquear todos os campos de bonus.
+                {copy.lockedDescPrefix} {XP_UNLOCK - user.xp_total} {copy.lockedDescSuffix}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -473,13 +710,13 @@ export default function ProfilePage() {
         <section className="space-y-3">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className={UI.eyebrow}>DADOS DO PERFIL</p>
+              <p className={UI.eyebrow}>{copy.sectionEyebrow}</p>
               <p className={UI.bodyMuted}>
-                Mantem o perfil atualizado. Alguns campos desbloqueiam XP quando completos.
+                {copy.sectionSubtitle}
               </p>
             </div>
             <Badge className="border-white/30 bg-black/40 text-cyan-100">
-              {isUnlocked ? 'Perfil desbloqueado' : 'Requer 99 XP'}
+              {isUnlocked ? copy.badgeUnlocked : copy.badgeLocked}
             </Badge>
           </div>
         </section>
@@ -488,29 +725,27 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-white">
               <User className="h-5 w-5 text-cyan-300" />
-              Informacao basica
+              {copy.basicInfoTitle}
             </CardTitle>
-            <CardDescription className={UI.bodyMuted}>
-              Dados principais da tua conta.
-            </CardDescription>
+            <CardDescription className={UI.bodyMuted}>{copy.basicInfoDesc}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label className="text-slate-200">Username</Label>
+              <Label className="text-slate-200">{copy.labelUsername}</Label>
               <Input
                 value={profileData.username}
                 onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
                 className="bg-[#000c12] border border-white/10"
               />
-              <p className={UI.micro}>Visivel publicamente.</p>
+              <p className={UI.micro}>{copy.usernameHint}</p>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-200">Pais</Label>
+              <Label className="text-slate-200">{copy.labelCountry}</Label>
               <Input value={profileData.country || '---'} disabled className="bg-[#000c12] border border-white/10" />
-              <p className={UI.micro}>Definido no registo.</p>
+              <p className={UI.micro}>{copy.countryHint}</p>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-200">Nome completo</Label>
+              <Label className="text-slate-200">{copy.labelFullName}</Label>
               <Input
                 value={profileData.full_name}
                 onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
@@ -518,7 +753,7 @@ export default function ProfilePage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-200">Email</Label>
+              <Label className="text-slate-200">{copy.labelEmail}</Label>
               <Input
                 value={profileData.email}
                 onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
@@ -532,22 +767,20 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-white">
               <Trophy className="h-5 w-5 text-cyan-300" />
-              Desportos oficiais
+              {copy.sportsTitle}
             </CardTitle>
-            <CardDescription className={UI.bodyMuted}>
-              O desporto principal define a tua House. O secundario adiciona-te a outra House no mesmo pais.
-            </CardDescription>
+            <CardDescription className={UI.bodyMuted}>{copy.sportsDesc}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label className="text-slate-200">Desporto principal</Label>
+              <Label className="text-slate-200">{copy.primarySportLabel}</Label>
               <Select
                 value={primarySportSelection}
                 onValueChange={setPrimarySportSelection}
                 disabled={sportLoading}
               >
                 <SelectTrigger className="bg-[#000c12] border border-white/10">
-                  <SelectValue placeholder={sportLoading ? 'A carregar...' : 'Seleciona o desporto principal'} />
+                  <SelectValue placeholder={sportLoading ? copy.loading : copy.selectPrimarySport} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#05212b] text-white">
                   {sportOptions.map((sport) => (
@@ -564,18 +797,18 @@ export default function ProfilePage() {
                 onClick={() => handleAssignSport('primary')}
                 disabled={sportSaving || sportLoading || !primarySportSelection}
               >
-                {sportSaving ? 'A guardar...' : 'Guardar principal'}
+                {sportSaving ? copy.saving : copy.savePrimary}
               </Button>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-200">Desporto secundario</Label>
+              <Label className="text-slate-200">{copy.secondarySportLabel}</Label>
               <Select
                 value={secondarySportSelection}
                 onValueChange={setSecondarySportSelection}
                 disabled={sportLoading}
               >
                 <SelectTrigger className="bg-[#000c12] border border-white/10">
-                  <SelectValue placeholder={sportLoading ? 'A carregar...' : 'Seleciona o desporto secundario'} />
+                  <SelectValue placeholder={sportLoading ? copy.loading : copy.selectSecondarySport} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#05212b] text-white">
                   {sportOptions.map((sport) => (
@@ -591,9 +824,9 @@ export default function ProfilePage() {
                 onClick={() => handleAssignSport('secondary')}
                 disabled={sportSaving || sportLoading || !secondarySportSelection}
               >
-                {sportSaving ? 'A guardar...' : 'Guardar secundario'}
+                {sportSaving ? copy.saving : copy.saveSecondary}
               </Button>
-              <p className={UI.micro}>Se nao quiseres secundario, deixa por definir.</p>
+              <p className={UI.micro}>{copy.secondaryHint}</p>
             </div>
           </CardContent>
         </Card>
@@ -602,22 +835,20 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-white">
               <Trophy className="h-5 w-5 text-cyan-300" />
-              Visibilidade e XP
+              {copy.visibilityTitle}
               {!isUnlocked && <Lock className="h-4 w-4 text-slate-300" />}
             </CardTitle>
-            <CardDescription className={UI.bodyMuted}>
-              Define a visibilidade de cada campo e ve o XP associado.
-            </CardDescription>
+            <CardDescription className={UI.bodyMuted}>{copy.visibilityDesc}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="bio" className="text-slate-200">
-                  {t('profile.bioLabel')}
+                  {copy.bioLabel}
                 </Label>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="border-white/30 bg-black/40 text-cyan-100">
-                    +{xpRewards.bio} XP
+                    +{xpRewards.bio} {copy.xpLabel}
                   </Badge>
                   <Switch
                     checked={profileData.profile_visibility.bio}
@@ -632,13 +863,13 @@ export default function ProfilePage() {
                     }
                     disabled={!isUnlocked}
                   />
-                  <span className="text-xs text-slate-300">Publico</span>
+                  <span className="text-xs text-slate-300">{copy.publicLabel}</span>
                 </div>
               </div>
               <Textarea
                 id="bio"
                 rows={4}
-                placeholder="Escreve sobre ti..."
+                placeholder={copy.bioPlaceholder}
                 value={profileData.bio}
                 onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
                 disabled={!isUnlocked}
@@ -651,11 +882,11 @@ export default function ProfilePage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label htmlFor="sports_role" className="text-slate-200">
-                  Sports Role
+                  {copy.sportsRoleLabel}
                 </Label>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="border-white/30 bg-black/40 text-cyan-100">
-                    +{xpRewards.sports_role} XP
+                    +{xpRewards.sports_role} {copy.xpLabel}
                   </Badge>
                   <Switch
                     checked={profileData.profile_visibility.sports_role}
@@ -670,7 +901,7 @@ export default function ProfilePage() {
                     }
                     disabled={!isUnlocked}
                   />
-                  <span className="text-xs text-slate-300">Publico</span>
+                  <span className="text-xs text-slate-300">{copy.publicLabel}</span>
                 </div>
               </div>
               <Select
@@ -679,10 +910,10 @@ export default function ProfilePage() {
                 disabled={!isUnlocked}
               >
                 <SelectTrigger className="bg-[#000c12] border border-white/10">
-                  <SelectValue placeholder="Seleciona o teu papel" />
+                  <SelectValue placeholder={copy.selectRole} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#05212b] text-white">
-                  {(SPORTS_ROLES[language] ?? SPORTS_ROLES.en).map((role) => (
+                  {roleOptions.map((role) => (
                     <SelectItem key={role.value} value={role.value}>
                       {role.label}
                     </SelectItem>
@@ -692,16 +923,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              {[
-                { key: 'telegram', label: 'Telegram', xp: xpRewards.telegram },
-                { key: 'dao1_did_nft', label: 'DAO1 DID NFT', xp: xpRewards.dao1_did_nft },
-                { key: 'wallet_address', label: 'Wallet Address', xp: xpRewards.wallet_address },
-                { key: 'website', label: 'Website', xp: 0 },
-                { key: 'youtube', label: 'YouTube', xp: xpRewards.youtube },
-                { key: 'linkhub', label: 'LinkHub', xp: xpRewards.linkhub },
-                { key: 'facebook', label: 'Facebook', xp: xpRewards.facebook },
-                { key: 'instagram', label: 'Instagram', xp: xpRewards.instagram },
-              ].map((field) => (
+              {contactFields.map((field) => (
                 <div key={field.key} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor={field.key} className="text-slate-200">
@@ -710,7 +932,7 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-2">
                       {field.xp > 0 && (
                         <Badge variant="outline" className="border-white/30 bg-black/40 text-cyan-100 text-xs">
-                          +{field.xp} XP
+                          +{field.xp} {copy.xpLabel}
                         </Badge>
                       )}
                       <Switch
@@ -732,7 +954,7 @@ export default function ProfilePage() {
                   </div>
                   <Input
                     id={field.key}
-                    placeholder={`Your ${field.label.toLowerCase()}`}
+                    placeholder={`${copy.fieldPlaceholderPrefix} ${field.label}`}
                     value={profileData[field.key as keyof typeof profileData] as string}
                     onChange={(e) => setProfileData({ ...profileData, [field.key]: e.target.value })}
                     disabled={!isUnlocked}
@@ -748,16 +970,16 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-white">
               <Award className="h-5 w-5 text-cyan-300" />
-              XP Bonus Grid
+              {copy.xpBonusTitle}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className={UI.bodyMuted}>Cada campo pode ser submetido uma vez para ganhar XP.</p>
+            <p className={UI.bodyMuted}>{copy.xpBonusDesc}</p>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              {Object.entries(xpRewards).map(([key, xp]) => (
-                <div key={key} className="rounded-2xl border border-white/10 bg-[#000c12] p-4 text-center">
-                  <div className="text-xl font-bold text-primary">+{xp}</div>
-                  <p className="text-xs text-slate-300 capitalize">{key.replace('_', ' ')}</p>
+              {contactFields.map((field) => (
+                <div key={field.key} className="rounded-2xl border border-white/10 bg-[#000c12] p-4 text-center">
+                  <div className="text-xl font-bold text-primary">+{field.xp}</div>
+                  <p className="text-xs text-slate-300">{field.label}</p>
                 </div>
               ))}
             </div>
@@ -770,7 +992,7 @@ export default function ProfilePage() {
           className="w-full border border-white/10 bg-white/5 text-white shadow-2xl"
           disabled={saving}
         >
-          {saving ? t('profile.saving') : t('profile.saveProfile')}
+          {saving ? copy.saving : copy.saveProfile}
         </Button>
       </PageShell>
       <Footer />
