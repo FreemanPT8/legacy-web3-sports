@@ -547,16 +547,7 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  entry.user = userRow
-    ? {
-        id: userRow.id,
-        country: userRow.country,
-        primary_country_code: userRow.primary_country_code,
-        sport_id: userRow.sport_id,
-        primary_sport_id: userRow.primary_sport_id,
-        sport_selection_method: userRow.sport_selection_method,
-      }
-    : null;
+  const entryUser = userRow ?? null;
   const timestamp = new Date().toISOString();
   const note = normalizeNote(body.note) ?? entry.notes ?? null;
   const adminUserId = authResult.user?.userId ?? null;
@@ -602,8 +593,8 @@ export async function PATCH(request: NextRequest) {
     const entryCountry =
       entry.country_code ??
       entry.suggested_country_code ??
-      entry.user?.primary_country_code ??
-      entry.user?.country ??
+      entryUser?.primary_country_code ??
+      entryUser?.country ??
       null;
     if (
       entryCountry &&
@@ -616,8 +607,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const currentPrimarySport = entry.user?.sport_id ?? null;
-    const currentSecondarySport = entry.user?.primary_sport_id ?? null;
+    const currentPrimarySport = entryUser?.sport_id ?? null;
+    const currentSecondarySport = entryUser?.primary_sport_id ?? null;
     if (
       currentPrimarySport &&
       currentSecondarySport &&
@@ -634,7 +625,7 @@ export async function PATCH(request: NextRequest) {
       houseRow.country_code ??
       entry.country_code ??
       entry.suggested_country_code ??
-      entry.user?.primary_country_code ??
+      entryUser?.primary_country_code ??
       null;
 
     const userUpdates: Record<string, any> = {
@@ -646,7 +637,7 @@ export async function PATCH(request: NextRequest) {
     } else if (!currentSecondarySport && sportId !== currentPrimarySport) {
       userUpdates.primary_sport_id = sportId;
     }
-    if (!entry.user?.primary_country_code && preferredCountry) {
+    if (!entryUser?.primary_country_code && preferredCountry) {
       userUpdates.primary_country_code = preferredCountry.toUpperCase();
     }
 
@@ -759,8 +750,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const userUpdates: Record<string, any> = {};
-    const currentPrimarySport = entry.user?.sport_id ?? null;
-    const currentSecondarySport = entry.user?.primary_sport_id ?? null;
+    const currentPrimarySport = entryUser?.sport_id ?? null;
+    const currentSecondarySport = entryUser?.primary_sport_id ?? null;
 
     if (!currentPrimarySport || currentPrimarySport === entry.sport_id) {
       userUpdates.sport_id = sportId;
