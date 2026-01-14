@@ -472,8 +472,8 @@ export default function HousesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilters, setStatusFilters] = useState<HouseStatus[]>(DEFAULT_STATUS_FILTERS);
-  const [selectedSport, setSelectedSport] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedSport, setSelectedSport] = useState('all');
+  const [selectedCountry, setSelectedCountry] = useState('all');
   const [nearbyOnly, setNearbyOnly] = useState(false);
   const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
 
@@ -558,8 +558,8 @@ export default function HousesPage() {
 
   const resetFilters = () => {
     setStatusFilters(DEFAULT_STATUS_FILTERS);
-    setSelectedSport('');
-    setSelectedCountry('');
+    setSelectedSport('all');
+    setSelectedCountry('all');
     setNearbyOnly(false);
   };
 
@@ -592,10 +592,10 @@ export default function HousesPage() {
       if (!normalizedStatus.has(house.status)) {
         return false;
       }
-      if (selectedSport && house.sport?.id !== selectedSport) {
+      if (selectedSport !== 'all' && house.sport?.id !== selectedSport) {
         return false;
       }
-      if (selectedCountry) {
+      if (selectedCountry !== 'all') {
         const countryCode = house.country_code?.toUpperCase() || '';
         if (countryCode !== selectedCountry) {
           return false;
@@ -1202,7 +1202,7 @@ function FilterPanel({
               <SelectValue placeholder={copy.filtersSportPlaceholder} />
             </SelectTrigger>
             <SelectContent className="bg-[#02121c] text-white">
-              <SelectItem value="">
+              <SelectItem value="all">
                 {copy.filtersSportPlaceholder}
               </SelectItem>
               {sportOptions.map((sport) => (
@@ -1225,7 +1225,7 @@ function FilterPanel({
               <SelectValue placeholder={copy.filtersCountryPlaceholder} />
             </SelectTrigger>
             <SelectContent className="bg-[#02121c] text-white">
-              <SelectItem value="">
+              <SelectItem value="all">
                 {copy.filtersCountryPlaceholder}
               </SelectItem>
               {countryOptions.map((country) => (
