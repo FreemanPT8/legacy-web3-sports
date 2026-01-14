@@ -30,17 +30,21 @@ async function resolveHouse(houseKeyRaw: string) {
 
 async function loadMembershipMap(houseId: string, userIds: string[]) {
   if (!supabaseAdmin) return new Map<string, NormalizedPrivateMessageRole>();
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('user_houses')
-    .select('user_id, role')
+    .select('user_id, membership_role')
     .eq('house_id', houseId)
     .is('removed_at', null)
     .in('user_id', userIds);
+  if (error) {
+    console.error('[private-messages] Failed to load memberships', error);
+    return new Map<string, NormalizedPrivateMessageRole>();
+  }
 
   const map = new Map<string, NormalizedPrivateMessageRole>();
-  (data ?? []).forEach((row: { user_id: string | null; role: string | null }) => {
+  (data ?? []).forEach((row: { user_id: string | null; membership_role: string | null }) => {
     if (!row.user_id) return;
-    const normalized = classifyRole(row.role);
+    const normalized = classifyRole(row.membership_role);
     const existing = map.get(row.user_id);
     if (!existing || existing === 'unknown') {
       map.set(row.user_id, normalized);

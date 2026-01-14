@@ -26,12 +26,12 @@ const TEMPLATE_MESSAGES = [
 
 type Template = typeof TEMPLATE_MESSAGES[number];
 
-type UserHouseRecord = { user_id: string | null; role: string | null };
+type UserHouseRecord = { user_id: string | null; membership_role: string | null };
 
 async function hydrateParticipants(houseId: string) {
   const { data } = await supabaseAdmin
     .from('user_houses')
-    .select('user_id, role')
+    .select('user_id, membership_role')
     .eq('house_id', houseId)
     .is('removed_at', null);
 
@@ -44,7 +44,7 @@ async function hydrateParticipants(houseId: string) {
     )
     .map((record) => ({
       userId: record.user_id as string,
-      role: classifyRole(record.role),
+      role: classifyRole(record.membership_role),
     }));
 }
 

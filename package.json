@@ -17,6 +17,7 @@
     "sync:houses": "ts-node scripts/sync_all_house_members.ts",
     "sync:pool-pending": "ts-node scripts/process_sport_pending_pool.ts",
     "seed:house-messages": "cross-env DOTENV_CONFIG_PATH=.env.local ts-node -r dotenv/config -P tsconfig.scripts.json scripts/seed_house_messages.ts",
+    "seed:house-roles": "cross-env DOTENV_CONFIG_PATH=.env.local ts-node -r dotenv/config -P tsconfig.scripts.json scripts/seed_house_roles.ts",
     "backfill:pool-sources": "ts-node scripts/tag_pool_entry_sources.ts"
   },
   "dependencies": {
