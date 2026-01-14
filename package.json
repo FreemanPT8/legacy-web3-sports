@@ -16,7 +16,7 @@
     "sync:levels": "node scripts/syncAcademyLevels.js",
     "sync:houses": "ts-node scripts/sync_all_house_members.ts",
     "sync:pool-pending": "ts-node scripts/process_sport_pending_pool.ts",
-    "seed:house-messages": "ts-node scripts/seed_house_messages.ts",
+    "seed:house-messages": "cross-env DOTENV_CONFIG_PATH=.env.local ts-node -r dotenv/config -P tsconfig.scripts.json scripts/seed_house_messages.ts",
     "backfill:pool-sources": "ts-node scripts/tag_pool_entry_sources.ts"
   },
   "dependencies": {
@@ -117,6 +117,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3",
     "ts-node": "^10.9.2"
   }
 }
