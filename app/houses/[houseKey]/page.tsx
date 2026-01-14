@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { loadHouseProfile, normalizeLocale } from '@/lib/houses/profile';
@@ -171,6 +172,9 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
               ) : (
                 <p className="text-sm text-slate-300">Head a anunciar em breve.</p>
               )}
+              <Button asChild variant="outline" className="w-full border-white/20 text-white">
+                <a href="#house-private-messages">Enviar mensagem ao Head</a>
+              </Button>
               {house.head?.manifesto?.length ? (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
                   {house.head.manifesto.map((line, index) => (

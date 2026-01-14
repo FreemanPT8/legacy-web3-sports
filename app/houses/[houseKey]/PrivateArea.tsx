@@ -484,7 +484,7 @@ export function PrivateArea({
               </div>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-[#03131d]/90">
+          <Card id="house-private-messages" className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
               <CardTitle className="text-lg text-white">{t('houses.private.section.recommended')}</CardTitle>
             </CardHeader>
