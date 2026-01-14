@@ -176,7 +176,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     .filter((id: unknown): id is string => typeof id === 'string');
   const participantSet = new Set<string>();
   participantCandidateIds.forEach((id: string) => participantSet.add(id));
-  const participantIds = Array.from(participantSet);
+  const participantIds = Array.from(participantSet) as string[];
   const users = await loadUsers(participantIds);
   const userMap: Record<string, any> = {};
   users.forEach((usr: any) => {

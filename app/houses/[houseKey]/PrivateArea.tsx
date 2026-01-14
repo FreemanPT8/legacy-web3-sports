@@ -445,11 +445,11 @@ export function PrivateArea({
           </CardHeader>
             <CardContent className="space-y-4 text-sm text-white/80">
               <div className="grid gap-3 sm:grid-cols-2">
-                <ProgressStat label="Participantes totais" value={metrics.memberCount.toLocaleString()} />
-                <ProgressStat label="Membros registados" value={metrics.registeredMembers.toLocaleString()} />
-                <ProgressStat label="XP total" value={`${metrics.xpTotal.toLocaleString()} XP`} />
-                <ProgressStat label="Termos aceites" value={metrics.termAcceptances.toLocaleString()} />
-                <ProgressStat label="Pop-ups publicados" value={metrics.onboarding.published.toLocaleString()} />
+                <ProgressStat label={t('houses.private.stats.totalParticipants')} value={metrics.memberCount.toLocaleString()} />
+                <ProgressStat label={t('houses.private.stats.registeredMembers')} value={metrics.registeredMembers.toLocaleString()} />
+                <ProgressStat label={t('houses.private.stats.totalXp')} value={`${metrics.xpTotal.toLocaleString()} XP`} />
+                <ProgressStat label={t('houses.private.stats.termsAccepted')} value={metrics.termAcceptances.toLocaleString()} />
+                <ProgressStat label={t('houses.private.stats.popupsPublished')} value={metrics.onboarding.published.toLocaleString()} />
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-xs text-white/80">
                 <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">Distribuição de XP</p>
@@ -486,7 +486,7 @@ export function PrivateArea({
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Conteúdos recomendados</CardTitle>
+              <CardTitle className="text-lg text-white">{t('houses.private.section.recommended')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {recommendedContent.length ? (
@@ -498,13 +498,13 @@ export function PrivateArea({
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-white/70">Ainda não existe uma sequência recomendada para esta House.</p>
+                <p className="text-sm text-white/70">{t('houses.private.recommended.empty')}</p>
               )}
             </CardContent>
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Mensagens & Cultura</CardTitle>
+              <CardTitle className="text-lg text-white">{t('houses.private.section.culture')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {culture.length ? (
@@ -516,16 +516,21 @@ export function PrivateArea({
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-white/70">O Head ainda não definiu a cultura interna partilhada.</p>
+                <p className="text-sm text-white/70">{t('houses.private.culture.empty')}</p>
               )}
               <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
-                Novas mensagens oficiais são enviadas via pop-ups e notificações internas. Confirma se tens o onboarding em dia.
+                {t('houses.private.culture.note')}
               </div>
             </CardContent>
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Rede oficial da {houseLabel}</CardTitle>
+              <CardTitle className="text-lg text-white">
+                {applyTemplate(t('houses.private.section.network'), { house: houseLabel })}
+              </CardTitle>
+              <CardDescription className="text-sm text-white/70">
+                {applyTemplate(t('houses.private.section.networkDescription'), { house: houseLabel })}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <HouseMembersList
@@ -582,13 +587,7 @@ export function PrivateArea({
                       disabled={!hasXpForMessages || sendingMessage || !recipientOptions.length || !messageDraft.trim()}
                       className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                     >
-                      {sendingMessage
-                        ? language === 'pt'
-                          ? 'A enviar...'
-                          : language === 'es'
-                            ? 'Enviando...'
-                            : 'Sending...'
-                        : t('houses.private.sendMessage')}
+                      {sendingMessage ? t('houses.private.sending') : t('houses.private.sendMessage')}
                     </Button>
                     {!hasXpForMessages && (
                       <p className="text-xs text-rose-300">
