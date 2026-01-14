@@ -60,11 +60,14 @@ async function resolveAccessibleHouses(user: { userId: string; role: string }): 
 
   if (!adminIds.length && !extraHouses.size) return [];
 
-  const { data: houseHeads } = await supabaseAdmin
-    .from('house_heads')
-    .select('house_id')
-    .in('admin_id', adminIds);
-  const houseIds = (houseHeads ?? []).map((row: any) => row.house_id).filter(Boolean);
+  let houseIds: string[] = [];
+  if (adminIds.length) {
+    const { data: houseHeads } = await supabaseAdmin
+      .from('house_heads')
+      .select('house_id')
+      .in('admin_id', adminIds);
+    houseIds = (houseHeads ?? []).map((row: any) => row.house_id).filter(Boolean);
+  }
 
   const candidateHouses = new Map<string, HouseOption>();
   (housesData ?? []).forEach((house: any) => {
