@@ -74,13 +74,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token');
   const inviteId = searchParams.get('inviteId');
+  const lang = searchParams.get('lang') ?? 'pt';
 
   if (!token && !inviteId) {
     return NextResponse.json({ success: false, error: 'Missing invite identifier.' }, { status: 400 });
   }
 
   try {
-    const latestTerm = await loadHeadTerm();
+    const latestTerm = await loadHeadTerm(lang);
 
     if (token) {
       const invite = await fetchInviteByToken(token);
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
         term: {
           version: latestTerm.version,
           content: latestTerm.content,
+          locale: latestTerm.locale,
         },
       });
     }
@@ -123,6 +125,7 @@ export async function GET(request: NextRequest) {
       term: {
         version: latestTerm.version,
         content: latestTerm.content,
+        locale: latestTerm.locale,
       },
     });
   } catch (error) {

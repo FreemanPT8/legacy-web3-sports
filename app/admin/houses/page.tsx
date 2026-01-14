@@ -196,6 +196,11 @@ export default function AdminHousesPage() {
   const [decliningInviteId, setDecliningInviteId] = useState<string | null>(null);
   const [termInvite, setTermInvite] = useState<HeadInvite | null>(null);
   const [termChecked, setTermChecked] = useState(false);
+  const [termLanguage, setTermLanguage] = useState<'pt' | 'en' | 'es'>('pt');
+  const [termContent, setTermContent] = useState<string | null>(null);
+  const [termVersion, setTermVersion] = useState<string | null>(null);
+  const [termLoading, setTermLoading] = useState(false);
+  const [termError, setTermError] = useState<string | null>(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
   const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
@@ -580,10 +585,50 @@ export default function AdminHousesPage() {
     setTermInvite(null);
   }, [handleAcceptInvite, termChecked, termInvite, toast]);
 
+  const loadInviteTerm = useCallback(async () => {
+    if (!termInvite) return;
+    const token = getToken();
+    if (!token) {
+      setTermError('Sessao invalida.');
+      return;
+    }
+    try {
+      setTermLoading(true);
+      setTermError(null);
+      const response = await fetch(
+        `/api/head-invites/context?inviteId=${encodeURIComponent(termInvite.id)}&lang=${termLanguage}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Falha ao carregar o termo.');
+      }
+      setTermContent(payload.term?.content ?? null);
+      setTermVersion(payload.term?.version ?? null);
+    } catch (err) {
+      console.error('[admin/houses] load invite term failed', err);
+      setTermContent(null);
+      setTermVersion(null);
+      setTermError(err instanceof Error ? err.message : 'Falha ao carregar o termo.');
+    } finally {
+      setTermLoading(false);
+    }
+  }, [getToken, termInvite, termLanguage]);
+
   useEffect(() => {
     if (authLoading || !user) return;
     void refreshHeadInvites();
   }, [authLoading, user, refreshHeadInvites]);
+
+  useEffect(() => {
+    if (!termInvite) {
+      setTermContent(null);
+      setTermVersion(null);
+      setTermError(null);
+      return;
+    }
+    void loadInviteTerm();
+  }, [termInvite, termLanguage, loadInviteTerm]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -1541,24 +1586,39 @@ export default function AdminHousesPage() {
           <DialogHeader>
             <DialogTitle>Termo de responsabilidade</DialogTitle>
             <DialogDescription className="text-slate-300">
-              Antes de assumir o cargo lê o compromisso oficial. Só avançamos quando aceitas estes pontos.
+              Antes de assumir o cargo le o compromisso oficial. So avancamos quando aceitas estes pontos.
             </DialogDescription>
           </DialogHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
+              Versao {termVersion ?? 'v1.1'}
+            </p>
+            <Select value={termLanguage} onValueChange={(value) => setTermLanguage(value as 'pt' | 'en' | 'es')}>
+              <SelectTrigger className="w-[160px] border-white/20 bg-[#010b15] text-white">
+                <SelectValue placeholder="Idioma" />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#02121c] text-white">
+                <SelectItem value="pt">Portugues</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="es">Espanol</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <ScrollArea className="max-h-[320px] rounded-2xl border border-white/5 bg-black/20 p-4 text-sm text-slate-200">
-            <p className="mb-3">
-              Ao aceitar o papel de Head of House representas o Legacy. Comprometes-te a:
-            </p>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>Colocar o interesse dos membros acima de qualquer agenda pessoal ou comercial.</li>
-              <li>Respeitar a autonomia de cada utilizador — ninguém é obrigado a seguir links, falar contigo ou aderir a iniciativas externas.</li>
-              <li>Comunicar com verdade, sem promessas de rendimento, sem omitir riscos e sem linguagem enganadora.</li>
-              <li>Cumprir limites operacionais: frequência de mensagens, templates aprovados, auditoria e mecanismos anti-spam.</li>
-              <li>Atuar como guardião da reputação do Legacy; qualquer abuso implica remoção imediata.</li>
-              <li>Aceitar avaliação contínua, relatórios de abuso e consequências definidas pela plataforma.</li>
-            </ul>
-            <p className="mt-4 text-xs text-slate-400">
-              Aceitação válida por 90 dias ou até existir nova versão oficial.
-            </p>
+            {termLoading ? (
+              <div className="flex items-center gap-2 text-sm text-slate-300">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                A carregar termo...
+              </div>
+            ) : termError ? (
+              <p className="text-sm text-rose-200">{termError}</p>
+            ) : termContent ? (
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-200">
+                {termContent}
+              </pre>
+            ) : (
+              <p className="text-sm text-slate-300">Termo indisponivel.</p>
+            )}
           </ScrollArea>
           <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white">
             <Checkbox

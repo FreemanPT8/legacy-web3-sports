@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SafeImage } from '@/app/components/SafeImage';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -158,6 +159,7 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
   const [termConfirmed, setTermConfirmed] = useState(false);
   const [acceptingTerm, setAcceptingTerm] = useState(false);
   const [showTermModal, setShowTermModal] = useState(false);
+  const [termLanguage, setTermLanguage] = useState<'pt' | 'en' | 'es'>('pt');
 
   const canManage = user && (user.role === 'Super Admin' || user.role === 'Admin');
   const isSuperAdmin = user?.role === 'Super Admin';
@@ -236,7 +238,7 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
     try {
       setTermLoading(true);
       setTermError(null);
-      const response = await fetch(`/api/admin/head-terms/context?houseId=${houseId}`, {
+      const response = await fetch(`/api/admin/head-terms/context?houseId=${houseId}&lang=${termLanguage}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = (await response.json()) as
@@ -258,7 +260,7 @@ export function HouseRolesScreen({ focus = 'roles' }: HouseRolesScreenProps) {
     } finally {
       setTermLoading(false);
     }
-  }, [getToken, head, houseId, user]);
+  }, [getToken, head, houseId, termLanguage, user]);
 
   useEffect(() => {
     setTermConfirmed(false);
@@ -539,7 +541,19 @@ const acceptedAtFormatted = termContext?.acceptedAt
             <div className="mb-4 space-y-1 text-white">
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">Termo oficial</p>
               <h2 className="text-2xl font-semibold text-[#fdd87c]">Responsabilidade do Head</h2>
-              <p className="text-xs text-white/60">Versão {termContext?.latestVersion ?? '—'}</p>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-white/60">
+                <span>Versao {termContext?.latestVersion ?? 'v1.1'}</span>
+                <Select value={termLanguage} onValueChange={(value) => setTermLanguage(value as 'pt' | 'en' | 'es')}>
+                  <SelectTrigger className="h-8 w-[150px] border-white/20 bg-[#010b15] text-white">
+                    <SelectValue placeholder="Idioma" />
+                  </SelectTrigger>
+                  <SelectContent className="border-white/10 bg-[#02121c] text-white">
+                    <SelectItem value="pt">Portugues</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="es">Espanol</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="mb-4 text-xs text-white/70">
               Antes de alterar permissões ou pop-ups, confirma o termo de confiança do Legacy & Apertum.

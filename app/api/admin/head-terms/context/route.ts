@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const houseId = searchParams.get('houseId');
+  const lang = searchParams.get('lang') ?? 'pt';
   if (!houseId) {
     return NextResponse.json({ success: false, error: 'Missing houseId.' }, { status: 400 });
   }
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   try {
     const [{ data: adminAssignment, error: assignmentError }, latestTerm] = await Promise.all([
       supabaseAdmin.from('admin_assignments').select('id').eq('user_id', auth.user!.userId).maybeSingle(),
-      loadHeadTerm(),
+      loadHeadTerm(lang),
     ]);
 
     if (assignmentError) throw assignmentError;
@@ -73,7 +74,8 @@ export async function GET(request: NextRequest) {
       acceptedVersion,
       acceptedAt: existing?.accepted_at ?? null,
       needsAcceptance,
-      term: needsAcceptance ? { content: latestTerm.content } : null,
+      term: { content: latestTerm.content },
+      termLocale: latestTerm.locale,
     });
   } catch (error) {
     console.error('[admin/head-terms/context] Failed to load term state', error);

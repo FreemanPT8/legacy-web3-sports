@@ -2,14 +2,16 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ShieldCheck, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
 
 type AcceptState =
   | { status: 'idle' }
@@ -24,11 +26,48 @@ export default function HeadInvitePage() {
   const { user, loading } = useAuth();
   const token = searchParams?.get('token') ?? '';
   const [state, setState] = useState<AcceptState>({ status: 'idle' });
+  const [termLanguage, setTermLanguage] = useState<'pt' | 'en' | 'es'>('pt');
+  const [termContent, setTermContent] = useState<string | null>(null);
+  const [termVersion, setTermVersion] = useState<string | null>(null);
+  const [termLoading, setTermLoading] = useState(false);
+  const [termError, setTermError] = useState<string | null>(null);
 
   const loginUrl = useMemo(() => {
     const current = `/head/invite?token=${encodeURIComponent(token || '')}`;
     return `/login?next=${encodeURIComponent(current)}`;
   }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    const loadTerm = async () => {
+      try {
+        setTermLoading(true);
+        setTermError(null);
+        const response = await fetch(
+          `/api/head-invites/context?token=${encodeURIComponent(token)}&lang=${termLanguage}`,
+        );
+        const payload = await response.json();
+        if (!active) return;
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || 'Falha ao carregar o termo.');
+        }
+        setTermContent(payload.term?.content ?? null);
+        setTermVersion(payload.term?.version ?? null);
+      } catch (error: any) {
+        if (!active) return;
+        setTermContent(null);
+        setTermVersion(null);
+        setTermError(error?.message || 'Falha ao carregar o termo.');
+      } finally {
+        if (active) setTermLoading(false);
+      }
+    };
+    void loadTerm();
+    return () => {
+      active = false;
+    };
+  }, [token, termLanguage]);
 
   const handleAccept = async () => {
     if (!token) {
@@ -57,7 +96,7 @@ export default function HeadInvitePage() {
     } catch (error: any) {
       setState({
         status: 'error',
-        message: error?.message || 'Não foi possível aceitar o convite. Tenta novamente.',
+        message: error?.message || 'Nao foi possivel aceitar o convite. Tenta novamente.',
       });
     }
   };
@@ -73,22 +112,22 @@ export default function HeadInvitePage() {
           </div>
           <h1 className="mt-4 text-3xl font-semibold text-[#fdd87c]">Aceitar convite para Head of House</h1>
           <p className="mt-2 text-sm text-white/80">
-            Antes de prosseguir, garante que estás autenticado com a conta Admin/Super Admin associada ao Legacy.
+            Antes de prosseguir, garante que estas autenticado com a conta Admin/Super Admin associada ao Legacy.
           </p>
         </section>
 
         <Card className="border-white/10 bg-[#020c18]/85">
           <CardHeader>
-            <CardTitle className="text-white">Confirmação do convite</CardTitle>
+            <CardTitle className="text-white">Confirmacao do convite</CardTitle>
             <CardDescription className="text-white/70">
-              O token valida o teu acesso como Head da House. Só avança se reconheces o pedido e aceitas as
+              O token valida o teu acesso como Head da House. So avanca se reconheces o pedido e aceitas as
               responsabilidades oficiais.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {!token ? (
               <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                Link inválido. Solicita novamente o convite ao Super Admin.
+                Link invalido. Solicita novamente o convite ao Super Admin.
               </div>
             ) : (
               <>
@@ -98,7 +137,7 @@ export default function HeadInvitePage() {
                 </div>
                 {state.status === 'needs-login' ? (
                   <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                    <p className="font-semibold text-amber-200">Autenticação necessária</p>
+                    <p className="font-semibold text-amber-200">Autenticacao necessaria</p>
                     <p className="mt-1">Entra com a tua conta Legacy para aceitar o convite.</p>
                   </div>
                 ) : null}
@@ -119,7 +158,7 @@ export default function HeadInvitePage() {
                     className="w-full bg-white/10 text-white hover:bg-white/20"
                     asChild
                   >
-                    <Link href={loginUrl}>Iniciar sessão antes de aceitar</Link>
+                    <Link href={loginUrl}>Iniciar sessao antes de aceitar</Link>
                   </Button>
                 ) : null}
 
@@ -140,6 +179,42 @@ export default function HeadInvitePage() {
                     </>
                   )}
                 </Button>
+                <div className="space-y-3 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
+                      Versao {termVersion ?? 'v1.1'}
+                    </p>
+                    <Select
+                      value={termLanguage}
+                      onValueChange={(value) => setTermLanguage(value as 'pt' | 'en' | 'es')}
+                    >
+                      <SelectTrigger className="w-[160px] border-white/20 bg-[#010b15] text-white">
+                        <SelectValue placeholder="Idioma" />
+                      </SelectTrigger>
+                      <SelectContent className="border-white/10 bg-[#02121c] text-white">
+                        <SelectItem value="pt">Portugues</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="es">Espanol</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <ScrollArea className="max-h-[260px] rounded-2xl border border-white/10 bg-black/20 p-4">
+                    {termLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-300">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        A carregar termo...
+                      </div>
+                    ) : termError ? (
+                      <p className="text-sm text-rose-200">{termError}</p>
+                    ) : termContent ? (
+                      <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-200">
+                        {termContent}
+                      </pre>
+                    ) : (
+                      <p className="text-sm text-slate-300">Termo indisponivel.</p>
+                    )}
+                  </ScrollArea>
+                </div>
               </>
             )}
           </CardContent>
