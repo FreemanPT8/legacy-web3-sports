@@ -28,14 +28,15 @@ function resolveHouseName(row: any) {
 async function resolveAccessibleHouses(user: { userId: string; role: string }): Promise<HouseOption[]> {
   if (!supabaseAdmin) return [];
 
+  const { data: housesData, error: housesError } = await supabaseAdmin
+    .from('houses_of_sports')
+    .select('house_key, name_i18n');
+  if (housesError) {
+    console.error('[admin/houses/messages] Failed to load houses for fallback', housesError);
+    return [];
+  }
+
   if (user.role === 'Super Admin') {
-    const { data: housesData, error: housesError } = await supabaseAdmin
-      .from('houses_of_sports')
-      .select('house_key, name_i18n');
-    if (housesError) {
-      console.error('[admin/houses/messages] Failed to load houses', housesError);
-      return [];
-    }
     return (housesData ?? []).map((house: any) => ({
       houseKey: house.house_key,
       label: resolveHouseName(house),
@@ -44,26 +45,60 @@ async function resolveAccessibleHouses(user: { userId: string; role: string }): 
 
   const { data: assignments } = await supabaseAdmin
     .from('admin_assignments')
-    .select('id')
+    .select('id, houses')
     .eq('user_id', user.userId);
+
   const adminIds = (assignments ?? []).map((row: any) => row.id).filter(Boolean);
-  if (!adminIds.length) return [];
+  const extraHouses = new Set<string>();
+  (assignments ?? []).forEach((row: any) => {
+    if (Array.isArray(row.houses)) {
+      row.houses.forEach((houseKey: unknown) => {
+        if (typeof houseKey === 'string') extraHouses.add(houseKey.toUpperCase());
+      });
+    }
+  });
+
+  if (!adminIds.length && !extraHouses.size) return [];
 
   const { data: houseHeads } = await supabaseAdmin
     .from('house_heads')
     .select('house_id')
     .in('admin_id', adminIds);
   const houseIds = (houseHeads ?? []).map((row: any) => row.house_id).filter(Boolean);
-  if (!houseIds.length) return [];
 
-  const { data: houses } = await supabaseAdmin
-    .from('houses_of_sports')
-    .select('house_key, name_i18n')
-    .in('id', houseIds);
-  return (houses ?? []).map((house: any) => ({
-    houseKey: house.house_key,
-    label: resolveHouseName(house),
-  }));
+  const candidateHouses = new Map<string, HouseOption>();
+  (housesData ?? []).forEach((house: any) => {
+    const upperKey = (house.house_key || '').toUpperCase();
+    candidateHouses.set(upperKey, {
+      houseKey: upperKey,
+      label: resolveHouseName(house),
+    });
+  });
+
+  if (houseIds.length) {
+    const { data: headsHouses } = await supabaseAdmin
+      .from('houses_of_sports')
+      .select('house_key, name_i18n')
+      .in('id', houseIds);
+    (headsHouses ?? []).forEach((house: any) => {
+      const upperKey = (house.house_key || '').toUpperCase();
+      candidateHouses.set(upperKey, {
+        houseKey: upperKey,
+        label: resolveHouseName(house),
+      });
+    });
+  }
+
+  extraHouses.forEach((houseKey) => {
+    if (!candidateHouses.has(houseKey)) {
+      candidateHouses.set(houseKey, {
+        houseKey,
+        label: houseKey,
+      });
+    }
+  });
+
+  return Array.from(candidateHouses.values());
 }
 
 async function fetchUsersByIds(userIds: string[]) {
