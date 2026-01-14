@@ -55,6 +55,37 @@ async function loadMembershipMap(houseId: string, userIds: string[]) {
     }
   });
 
+  try {
+    const { data: headRow } = await supabaseAdmin
+      .from('house_heads')
+      .select('admin_id')
+      .eq('house_id', houseId)
+      .maybeSingle();
+    if (headRow?.admin_id) {
+      const { data: assignment } = await supabaseAdmin
+        .from('admin_assignments')
+        .select('user_id')
+        .eq('id', headRow.admin_id)
+        .maybeSingle();
+      if (assignment?.user_id && userIds.includes(assignment.user_id)) {
+        map.set(assignment.user_id, 'head');
+      }
+    }
+
+    const { data: modsRows } = await supabaseAdmin
+      .from('house_moderators')
+      .select('user_id')
+      .eq('house_id', houseId)
+      .in('user_id', userIds);
+    (modsRows ?? []).forEach((row: { user_id: string | null }) => {
+      if (row?.user_id) {
+        map.set(row.user_id, 'moderator');
+      }
+    });
+  } catch (error) {
+    console.error('[private-messages] Failed to resolve staff roles', error);
+  }
+
   userIds.forEach((id) => {
     if (!id) return;
     if (!map.has(id)) {

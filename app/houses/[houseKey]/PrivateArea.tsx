@@ -249,11 +249,8 @@ export function PrivateArea({
     setPrivateMessagesError(null);
     try {
       const response = await fetch(`/api/houses/${houseKey}/private-messages`, { cache: 'no-store' });
-      if (!response.ok) {
-        throw new Error('Failed to load private messages.');
-      }
-      const data = await response.json();
-      if (!data?.success) {
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
         throw new Error(data?.error || 'Failed to load private messages.');
       }
       setPrivateMessages(data.messages ?? []);
@@ -296,11 +293,8 @@ export function PrivateArea({
           subject: t('houses.private.messageSubject'),
         }),
       });
-      if (!response.ok) {
-        throw new Error('Failed to send private message.');
-      }
-      const data = await response.json();
-      if (!data?.success) {
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
         throw new Error(data?.error || 'Failed to send private message.');
       }
       setMessageDraft('');
@@ -314,16 +308,18 @@ export function PrivateArea({
               ? 'Tu mensaje fue entregado al Head de la House.'
               : 'Your message was delivered to the House leadership.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('[private messages] send failed', error);
+      const message = error?.message || '';
       toast({
         title: language === 'pt' ? 'Falha ao enviar' : language === 'es' ? 'Error al enviar' : 'Failed to send',
         description:
-          language === 'pt'
+          message ||
+          (language === 'pt'
             ? 'Tenta novamente mais tarde.'
             : language === 'es'
-              ? 'Intenta de nuevo más tarde.'
-              : 'Please try again later.',
+              ? 'Intenta de nuevo m?s tarde.'
+              : 'Please try again later.'),
         variant: 'destructive',
       });
     } finally {
