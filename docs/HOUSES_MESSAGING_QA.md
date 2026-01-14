@@ -32,5 +32,6 @@
 - O endpoint `/api/admin/houses/messages` agora retorna Houses quando o user é Super Admin ou tem `admin_assignments.houses`, mesmo sem `house_heads`, garantindo fallback automático;
 - O guardião de XP/permissões está em `lib/private-messages.ts`, compartilhado entre backend, UI e testes (`tests/private-messages-permissions.test.ts`);
 - Filtragem pública usa arrays (`DEFAULT_STATUS_FILTERS`) e `filteredHouses` memorizados para alimentar os summaries e o painel da secção.
+- Para popular a inbox durante a QA sem editar dados manualmente, execute `npm run seed:house-messages` (o script usa o client service role e ignora subjects duplicados).
 
 Use este ficheiro como base para a validação manual antes de avançar para um deploy.
