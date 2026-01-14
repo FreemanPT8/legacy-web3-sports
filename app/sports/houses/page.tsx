@@ -641,7 +641,7 @@ export default function HousesPage() {
   );
 }
 
-type CopyType = typeof COPY.pt;
+type CopyType = (typeof COPY)[keyof typeof COPY];
 
 function StatusSummaryItem(props: {
   label: string;
