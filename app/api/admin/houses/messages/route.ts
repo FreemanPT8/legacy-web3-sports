@@ -175,6 +175,7 @@ export async function GET(request: NextRequest) {
     const searchTerm = (searchParams.get('q') || '').trim();
     const limit = Math.min(Math.max(Number(searchParams.get('limit') || 25), 5), 100);
     const offset = Math.max(Number(searchParams.get('offset') || 0), 0);
+    const prefetchLimit = offset + limit;
 
     const allowedHouseKeys = houses.map((h) => h.houseKey).filter(Boolean);
     if (!allowedHouseKeys.length) {
@@ -193,8 +194,7 @@ export async function GET(request: NextRequest) {
         { count: 'exact' },
       )
       .in('house_key', allowedHouseKeys)
-      .order('created_at', { ascending: false })
-      .range(offset, Math.max(offset + limit - 1, offset));
+      .order('created_at', { ascending: false });
 
     if (houseKeyFilter) {
       query = query.eq('house_key', houseKeyFilter);
@@ -208,17 +208,15 @@ export async function GET(request: NextRequest) {
 
     if (searchTerm) {
       const normalized = `%${searchTerm.replace(/%/g, '')}%`;
-      query = query.or(
-        `subject.ilike.${normalized},body.ilike.${normalized}`,
-      );
+      query = query.or(`subject.ilike.${normalized},body.ilike.${normalized}`);
     }
 
-    const { data, error, count } = await query;
+    const { data, error, count } = await query.limit(prefetchLimit);
     if (error) {
       throw error;
     }
 
-    const rows = data ?? [];
+    const rows = (data ?? []).slice(offset, offset + limit);
     const participantCandidateIds = rows
       .flatMap((row: any) => [row.sender_id, row.recipient_id])
       .filter((id: unknown): id is string => typeof id === 'string');
