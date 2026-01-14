@@ -68,7 +68,9 @@ async function resolveAccessibleHouses(user: { userId: string; role: string }): 
 
   const candidateHouses = new Map<string, HouseOption>();
   (housesData ?? []).forEach((house: any) => {
-    const upperKey = (house.house_key || '').toUpperCase();
+    const rawKey = (house.house_key || '').trim();
+    if (!rawKey) return;
+    const upperKey = rawKey.toUpperCase();
     candidateHouses.set(upperKey, {
       houseKey: upperKey,
       label: resolveHouseName(house),
@@ -81,7 +83,9 @@ async function resolveAccessibleHouses(user: { userId: string; role: string }): 
       .select('house_key, name_i18n')
       .in('id', houseIds);
     (headsHouses ?? []).forEach((house: any) => {
-      const upperKey = (house.house_key || '').toUpperCase();
+      const rawKey = (house.house_key || '').trim();
+      if (!rawKey) return;
+      const upperKey = rawKey.toUpperCase();
       candidateHouses.set(upperKey, {
         houseKey: upperKey,
         label: resolveHouseName(house),
@@ -171,7 +175,15 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(Number(searchParams.get('limit') || 25), 5), 100);
   const offset = Math.max(Number(searchParams.get('offset') || 0), 0);
 
-  const allowedHouseKeys = houses.map((h) => h.houseKey);
+  const allowedHouseKeys = houses.map((h) => h.houseKey).filter(Boolean);
+  if (!allowedHouseKeys.length) {
+    return NextResponse.json({
+      success: true,
+      messages: [],
+      total: 0,
+      houses: [],
+    });
+  }
 
   let query = supabaseAdmin
     .from('house_private_messages')
