@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { awardXP } from '@/lib/xp';
+import { requireAuth } from '@/lib/middleware';
 
 const XP_REWARDS: Record<string, number> = {
   bio: 25,
@@ -14,6 +15,32 @@ const XP_REWARDS: Record<string, number> = {
   facebook: 9,
   instagram: 9
 };
+
+const PROFILE_SELECT = [
+  'id',
+  'username',
+  'full_name',
+  'email',
+  'country',
+  'primary_country_code',
+  'sport_id',
+  'primary_sport_id',
+  'bio',
+  'sports_role',
+  'telegram',
+  'dao1_did_nft',
+  'wallet_address',
+  'website',
+  'youtube',
+  'linkhub',
+  'facebook',
+  'instagram',
+  'profile_visibility',
+  'xp_total',
+  'role',
+  'avatar_url',
+  'created_at',
+].join(', ');
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select(PROFILE_SELECT)
       .eq('id', userId)
       .single();
 
@@ -51,6 +78,9 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const auth = await requireAuth(request);
+    if (!auth.success) return auth.response!;
+
     const body = await request.json();
     const { userId, updates, previousProfile } = body;
 
@@ -112,11 +142,25 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase
+    if (auth.user?.userId !== userId) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase admin client unavailable.' },
+        { status: 500 }
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('users')
       .update(updatesPayload)
       .eq('id', userId)
-      .select();
+      .select(PROFILE_SELECT);
 
     if (error) {
       return NextResponse.json(

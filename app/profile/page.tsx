@@ -557,6 +557,15 @@ export default function ProfilePage() {
       });
       return;
     }
+    const token = getToken?.();
+    if (!token) {
+      toast({
+        title: copy.toastSessionExpiredTitle,
+        description: copy.toastSessionExpiredDesc,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setSaving(true);
 
@@ -585,7 +594,7 @@ export default function ProfilePage() {
       }
       const response = await fetch('/api/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           userId: user.id,
           updates: updatesPayload,
@@ -597,6 +606,18 @@ export default function ProfilePage() {
 
       if (data.success) {
         setPreviousProfile(data.profile ?? previousProfile);
+        if (typeof window !== 'undefined' && data.profile) {
+          try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              const parsed = JSON.parse(storedUser);
+              const merged = { ...parsed, ...data.profile };
+              localStorage.setItem('user', JSON.stringify(merged));
+            }
+          } catch (error) {
+            console.error('[profile] Failed to sync local user cache', error);
+          }
+        }
         toast({
           title: copy.toastProfileSavedTitle,
           description: data.xpAwarded
