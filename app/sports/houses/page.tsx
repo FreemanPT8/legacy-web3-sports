@@ -8,6 +8,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { SafeImage } from '@/app/components/SafeImage';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   HeroDescription,
   HeroEyebrow,
@@ -91,10 +92,208 @@ interface HouseLeaderboardResponse {
   error?: string;
 }
 
-const STATUS_LABELS: Record<HouseStatus, string> = {
-  ACTIVE: 'Ativa',
-  UNDER_CONSTRUCTION: 'Em construção',
-  IN_DEVELOPMENT: 'Em desenvolvimento',
+const COPY = {
+  pt: {
+    heroEyebrow: 'HOUSES OF SPORTS',
+    heroTitle: 'Explora as Houses',
+    heroIntro:
+      'Cada House of Sports é uma comunidade que junta desporto, formação Web3 e networking local. Descobre onde estas Houses já estão ativas, quais estão em construção e as próximas a chegar ao ecossistema LEGACY.',
+    heroIntro2:
+      'Escolhe a House alinhada com o teu desporto e contexto ou usa este mapa para perceber onde podes liderar uma nova iniciativa.',
+    mapLabel: 'Mapa de Houses',
+    mapBreakdownPrefix: 'Ativas',
+    mapBreakdownMiddle: 'Em construção',
+    mapBreakdownSuffix: 'Em desenvolvimento',
+    topXpTitle: 'HOUSE COM MAIS XP TOTAL',
+    topMembersTitle: 'HOUSE COM MAIS MEMBROS',
+    noXpLeader: 'Ainda não existem Houses com XP registada.',
+    noMembersLeader: 'Ainda não existem Houses com membros registados.',
+    xpAccumulated: 'XP acumulada',
+    membersLabel: 'Membros',
+    sectionActiveTitle: 'Houses ativas',
+    sectionActiveDesc:
+      'Comunidades que já estão a receber membros e a testar formatos de aprendizagem, treino e networking.',
+    sectionConstructionTitle: 'Houses em construção',
+    sectionConstructionDesc:
+      'Houses a ganhar forma: definição de equipa, visão interna e primeiros membros próximos da comunidade.',
+    sectionDevelopmentTitle: 'Houses em desenvolvimento',
+    sectionDevelopmentDescTeam:
+      'Visão interna para quem está a desenhar o futuro do mapa de Houses e do ecossistema LEGACY.',
+    sectionDevelopmentDescPublic:
+      'Houses em fase inicial de desenho e validação internas. Visíveis apenas para a equipa LEGACY.',
+    sectionCountSingle: 'House',
+    sectionCountPlural: 'Houses',
+    loadingTitle: 'A carregar Houses of Sports...',
+    loadingDesc:
+      'Estamos a buscar o mapa atualizado das Houses. Isto pode demorar alguns segundos.',
+    emptyTitle: 'Ainda não existem Houses of Sports visíveis.',
+    emptyDesc:
+      'A equipa do LEGACY está a preparar a primeira vaga de comunidades. Mantém-te atento ao portal e à Academia.',
+    errorLoading: 'Erro ao carregar Houses of Sports.',
+    headLabel: 'Head of House',
+    headPending: 'Head of House a definir.',
+    modsLabel: 'Moderadores',
+    modsNone: 'Sem moderadores definidos ainda.',
+    membersLabelCard: 'Membros',
+    xpLabelCard: 'XP Total',
+    membersExamplePrefix: ' (ex: ',
+    nextStepTitle: 'PRÓXIMO PASSO',
+    nextStepBody:
+      'Quando te sentires pronto, cria conta. Ligamos o teu perfil automaticamente à melhor House disponível ou mantemos-te em pool até nascer uma comunidade para o teu país e desporto.',
+    nextStepPrimary: 'Criar conta no LEGACY',
+    nextStepSecondary: 'Começar pela Academia',
+    journeyTitle: 'COMO ESTA PÁGINA SE LIGA AO TEU CAMINHO',
+    journeyBullet1:
+      'Na página de entrada do LEGACY tu entendes o que é o portal e porque é que a Apertum se cruza com desporto.',
+    journeyBullet2:
+      'Aqui vês onde já existem comunidades a nascer por desporto, país e estado das Houses (ativas, em construção ou em desenvolvimento).',
+    journeyBullet3:
+      'No passo seguinte, ao criares conta respondes a um formulário simples, mostras quem és e o que procuras. A partir daí a equipa consegue orientar-te com muito mais precisão.',
+    journeyFooter:
+      'Não precisas de entrar em tudo. A ideia é perceber onde faz sentido colocar a tua energia - como membro, como líder ou simplesmente como alguém que quer aprender com estrutura.',
+  },
+  en: {
+    heroEyebrow: 'HOUSES OF SPORTS',
+    heroTitle: 'Explore the Houses',
+    heroIntro:
+      'Each House of Sports is a community that blends sport, Web3 training, and local networking. Discover which Houses are active, which are under construction, and what is coming next in the LEGACY ecosystem.',
+    heroIntro2:
+      'Choose the House aligned with your sport and context or use this map to see where you could lead a new initiative.',
+    mapLabel: 'Houses Map',
+    mapBreakdownPrefix: 'Active',
+    mapBreakdownMiddle: 'Under construction',
+    mapBreakdownSuffix: 'In development',
+    topXpTitle: 'HOUSE WITH MOST TOTAL XP',
+    topMembersTitle: 'HOUSE WITH MOST MEMBERS',
+    noXpLeader: 'There are no Houses with recorded XP yet.',
+    noMembersLeader: 'There are no Houses with registered members yet.',
+    xpAccumulated: 'XP accumulated',
+    membersLabel: 'Members',
+    sectionActiveTitle: 'Active Houses',
+    sectionActiveDesc:
+      'Communities already welcoming members and testing learning, training, and networking formats.',
+    sectionConstructionTitle: 'Houses under construction',
+    sectionConstructionDesc:
+      'Houses taking shape: team definition, internal vision, and first members joining the community.',
+    sectionDevelopmentTitle: 'Houses in development',
+    sectionDevelopmentDescTeam:
+      'Internal view for the team shaping the future Houses map and the LEGACY ecosystem.',
+    sectionDevelopmentDescPublic:
+      'Early-stage Houses under internal validation. Visible only to the LEGACY team.',
+    sectionCountSingle: 'House',
+    sectionCountPlural: 'Houses',
+    loadingTitle: 'Loading Houses of Sports...',
+    loadingDesc:
+      'We are fetching the latest Houses map. This may take a few seconds.',
+    emptyTitle: 'There are no visible Houses of Sports yet.',
+    emptyDesc:
+      'The LEGACY team is preparing the first wave of communities. Stay tuned to the portal and the Academy.',
+    errorLoading: 'Failed to load Houses of Sports.',
+    headLabel: 'Head of House',
+    headPending: 'Head of House to be defined.',
+    modsLabel: 'Moderators',
+    modsNone: 'No moderators defined yet.',
+    membersLabelCard: 'Members',
+    xpLabelCard: 'Total XP',
+    membersExamplePrefix: ' (e.g. ',
+    nextStepTitle: 'NEXT STEP',
+    nextStepBody:
+      'When you feel ready, create an account. We automatically connect your profile to the best available House or keep you in the pool until a community exists for your country and sport.',
+    nextStepPrimary: 'Create a LEGACY account',
+    nextStepSecondary: 'Start with the Academy',
+    journeyTitle: 'HOW THIS PAGE CONNECTS TO YOUR PATH',
+    journeyBullet1:
+      'On the LEGACY entry page you learn what the portal is and why Apertum intersects with sport.',
+    journeyBullet2:
+      'Here you see where communities already exist by sport, country, and House status (active, under construction, or in development).',
+    journeyBullet3:
+      'Next, when you create an account you fill a simple form, show who you are and what you seek. From there the team can guide you with much more precision.',
+    journeyFooter:
+      'You do not need to join everything. The idea is to see where it makes sense to invest your energy - as a member, as a leader, or simply as someone who wants structured learning.',
+  },
+  es: {
+    heroEyebrow: 'HOUSES OF SPORTS',
+    heroTitle: 'Explora las Houses',
+    heroIntro:
+      'Cada House of Sports es una comunidad que une deporte, formación Web3 y networking local. Descubre qué Houses están activas, cuáles están en construcción y lo que viene en el ecosistema LEGACY.',
+    heroIntro2:
+      'Elige la House alineada con tu deporte y contexto o usa este mapa para ver dónde puedes liderar una nueva iniciativa.',
+    mapLabel: 'Mapa de Houses',
+    mapBreakdownPrefix: 'Activas',
+    mapBreakdownMiddle: 'En construcción',
+    mapBreakdownSuffix: 'En desarrollo',
+    topXpTitle: 'HOUSE CON MÁS XP TOTAL',
+    topMembersTitle: 'HOUSE CON MÁS MIEMBROS',
+    noXpLeader: 'Aún no existen Houses con XP registrada.',
+    noMembersLeader: 'Aún no existen Houses con miembros registrados.',
+    xpAccumulated: 'XP acumulada',
+    membersLabel: 'Miembros',
+    sectionActiveTitle: 'Houses activas',
+    sectionActiveDesc:
+      'Comunidades que ya reciben miembros y prueban formatos de aprendizaje, entrenamiento y networking.',
+    sectionConstructionTitle: 'Houses en construcción',
+    sectionConstructionDesc:
+      'Houses tomando forma: definición del equipo, visión interna y primeros miembros cerca de la comunidad.',
+    sectionDevelopmentTitle: 'Houses en desarrollo',
+    sectionDevelopmentDescTeam:
+      'Vista interna para quienes están construyendo el futuro mapa de Houses y el ecosistema LEGACY.',
+    sectionDevelopmentDescPublic:
+      'Houses en fase inicial de diseño y validación interna. Visibles solo para el equipo LEGACY.',
+    sectionCountSingle: 'House',
+    sectionCountPlural: 'Houses',
+    loadingTitle: 'Cargando Houses of Sports...',
+    loadingDesc:
+      'Estamos buscando el mapa actualizado de Houses. Esto puede tardar algunos segundos.',
+    emptyTitle: 'Aún no hay Houses of Sports visibles.',
+    emptyDesc:
+      'El equipo LEGACY está preparando la primera ola de comunidades. Mantente atento al portal y a la Academia.',
+    errorLoading: 'No se pudieron cargar las Houses of Sports.',
+    headLabel: 'Head of House',
+    headPending: 'Head of House por definir.',
+    modsLabel: 'Moderadores',
+    modsNone: 'Aún no hay moderadores definidos.',
+    membersLabelCard: 'Miembros',
+    xpLabelCard: 'XP total',
+    membersExamplePrefix: ' (ej: ',
+    nextStepTitle: 'PRÓXIMO PASO',
+    nextStepBody:
+      'Cuando estés listo, crea una cuenta. Conectamos tu perfil automáticamente a la mejor House disponible o te dejamos en la pool hasta que exista una comunidad para tu país y deporte.',
+    nextStepPrimary: 'Crear cuenta en LEGACY',
+    nextStepSecondary: 'Empezar por la Academia',
+    journeyTitle: 'CÓMO ESTA PÁGINA SE CONECTA A TU CAMINO',
+    journeyBullet1:
+      'En la página de entrada de LEGACY entiendes qué es el portal y por qué Apertum se cruza con el deporte.',
+    journeyBullet2:
+      'Aquí ves dónde ya existen comunidades por deporte, país y estado de House (activas, en construcción o en desarrollo).',
+    journeyBullet3:
+      'Luego, al crear una cuenta respondes a un formulario sencillo, muestras quién eres y lo que buscas. Desde ahí el equipo puede orientarte con más precisión.',
+    journeyFooter:
+      'No necesitas entrar en todo. La idea es entender dónde tiene sentido poner tu energía - como miembro, como líder o como alguien que quiere aprender con estructura.',
+  },
+} as const;
+
+const STATUS_LABELS: Record<HouseStatus, Record<'pt' | 'en' | 'es', string>> = {
+  ACTIVE: {
+    pt: 'Ativa',
+    en: 'Active',
+    es: 'Activa',
+  },
+  UNDER_CONSTRUCTION: {
+    pt: 'Em construção',
+    en: 'Under construction',
+    es: 'En construcción',
+  },
+  IN_DEVELOPMENT: {
+    pt: 'Em desenvolvimento',
+    en: 'In development',
+    es: 'En desarrollo',
+  },
+};
+
+const LOCALE_MAP: Record<'pt' | 'en' | 'es', string> = {
+  pt: 'pt-PT',
+  en: 'en-US',
+  es: 'es-ES',
 };
 
 const STATUS_BADGE_CLASSES: Record<HouseStatus, string> = {
@@ -151,6 +350,10 @@ const normalizeParticipants = (
 
 export default function HousesPage() {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const localeKey = (language === 'pt' || language === 'es' || language === 'en') ? language : 'en';
+  const copy = useMemo(() => COPY[localeKey], [localeKey]);
+  const locale = LOCALE_MAP[localeKey];
   const isLegacyTeam = user?.role === 'Admin' || user?.role === 'Super Admin';
 
   const [houses, setHouses] = useState<House[]>([]);
@@ -164,13 +367,13 @@ export default function HousesPage() {
 
       try {
         const [housesRes, leaderboardRes] = await Promise.all([
-          fetch('/api/sports/houses?locale=pt'),
+          fetch(`/api/sports/houses?locale=${encodeURIComponent(localeKey)}`),
           fetch('/api/leaderboard/houses?limit=500'),
         ]);
 
         const housesJson: HousesApiResponse = await housesRes.json();
         if (!housesRes.ok || !housesJson.success) {
-          throw new Error(housesJson.error || 'Erro ao carregar Houses of Sports.');
+          throw new Error(housesJson.error || copy.errorLoading);
         }
 
         let leaderboardMap = new Map<string, HouseLeaderboardEntry>();
@@ -208,14 +411,14 @@ export default function HousesPage() {
         setHouses(enhancedHouses);
       } catch (err: any) {
         console.error('Erro ao carregar Houses:', err);
-        setError(err?.message || 'Erro inesperado ao carregar Houses.');
+        setError(err?.message || copy.errorLoading);
       } finally {
         setLoading(false);
       }
     };
 
     fetchHouses();
-  }, []);
+  }, [copy.errorLoading, localeKey]);
 
   const {
     active,
@@ -284,8 +487,8 @@ export default function HousesPage() {
   }, [houses]);
 
   const visibleInDevelopment = isLegacyTeam ? inDevelopment : [];
-  const totalSummaryValue = totals.total.toLocaleString('pt-PT');
-  const statusBreakdownDescription = `Ativas: ${totals.active} · Em construção: ${totals.underConstruction} · Em desenvolvimento: ${totals.inDevelopment}`;
+  const totalSummaryValue = totals.total.toLocaleString(locale);
+  const statusBreakdownDescription = `${copy.mapBreakdownPrefix}: ${totals.active} · ${copy.mapBreakdownMiddle}: ${totals.underConstruction} · ${copy.mapBreakdownSuffix}: ${totals.inDevelopment}`;
 
   return (
     <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
@@ -297,66 +500,53 @@ export default function HousesPage() {
           <HeroSection>
             <HeroTextColumn className="mx-auto max-w-5xl space-y-6">
               <div className="space-y-4">
-                <HeroEyebrow>HOUSES OF SPORTS</HeroEyebrow>
-                <HeroTitle className="text-3xl md:text-4xl">Explora as Houses</HeroTitle>
+                <HeroEyebrow>{copy.heroEyebrow}</HeroEyebrow>
+                <HeroTitle className="text-3xl md:text-4xl">{copy.heroTitle}</HeroTitle>
                 <HeroDescription className="max-w-3xl text-slate-200 md:text-base">
-                  Cada House of Sports é uma comunidade que junta desporto, formação Web3 e networking local. Descobre onde estas Houses já estão ativas, quais estão em construção e as próximas a chegar ao ecossistema LEGACY.
+                  {copy.heroIntro}
                 </HeroDescription>
                 <HeroDescription className="max-w-3xl text-slate-200 md:text-base">
-                  Escolhe a House alinhada com o teu desporto e contexto ou usa este mapa para perceber onde podes liderar uma nova iniciativa.
+                  {copy.heroIntro2}
                 </HeroDescription>
               </div>
 
               <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#04131b]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.65)] md:grid-cols-3 md:p-6">
                 <StatusSummaryItem
-                  label="Mapa de Houses"
+                  label={copy.mapLabel}
                   value={totalSummaryValue}
                   description={statusBreakdownDescription}
                 />
-                <XpLeaderSummaryCard house={xpLeader} />
-                <MembersLeaderSummaryCard house={membersLeader} />
+                <XpLeaderSummaryCard house={xpLeader} copy={copy} locale={locale} />
+                <MembersLeaderSummaryCard house={membersLeader} copy={copy} locale={locale} />
               </div>
 
               <div className="grid gap-6 border-t border-white/10 pt-6 md:grid-cols-[1.8fr,1.2fr]">
                 <div className="space-y-3">
                   <h2 className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-200">
-                    COMO ESTA PÁGINA SE LIGA AO TEU CAMINHO
+                    {copy.journeyTitle}
                   </h2>
                   <ul className="space-y-2 text-sm text-slate-200">
                     <li>
-                      Na página de entrada do LEGACY tu entendes{' '}
-                      <strong>o que é o portal</strong> e porque é que a Apertum
-                      se cruza com desporto.
+                      {copy.journeyBullet1}
                     </li>
                     <li>
-                      Aqui vês{' '}
-                      <strong>onde já existem comunidades a nascer</strong> – por
-                      desporto, país e estado das Houses (ativas, em
-                      construção ou em desenvolvimento).
+                      {copy.journeyBullet2}
                     </li>
                     <li>
-                      No passo seguinte, ao criares conta respondes a um{' '}
-                      <strong>formulário simples</strong>, mostras quem és e o
-                      que procuras. A partir daí a equipa consegue orientar-te
-                      com muito mais precisão.
+                      {copy.journeyBullet3}
                     </li>
                   </ul>
                   <p className="text-xs text-slate-200">
-                    Não precisas de &quot;entrar em tudo&quot;. A ideia é
-                    perceber onde faz sentido colocar a tua energia – como
-                    membro, como líder ou simplesmente como alguém que quer
-                    aprender com estrutura.
+                    {copy.journeyFooter}
                   </p>
                 </div>
 
                 <div className="space-y-3 rounded-2xl border border-white/10 bg-[#04131b]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200">
-                    PRÓXIMO PASSO
+                    {copy.nextStepTitle}
                   </p>
                   <p className="text-sm text-slate-200">
-                    Quando te sentires pronto, cria conta. Ligamos o teu perfil
-                    automaticamente à melhor House disponível ou mantemos-te em
-                    pool até nascer uma comunidade para o teu país e desporto.
+                    {copy.nextStepBody}
                   </p>
                   <div className="flex flex-wrap gap-3 pt-1">
                     <Button
@@ -364,7 +554,7 @@ export default function HousesPage() {
                       size="sm"
                       className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_25px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                     >
-                      <Link href="/signup">Criar conta no LEGACY</Link>
+                      <Link href="/signup">{copy.nextStepPrimary}</Link>
                     </Button>
                     <Button
                       asChild
@@ -372,7 +562,7 @@ export default function HousesPage() {
                       size="sm"
                       className="border-white/40 text-white hover:bg-white/10"
                     >
-                      <Link href="/education/courses">Começar pela Academia</Link>
+                      <Link href="/education/courses">{copy.nextStepSecondary}</Link>
                     </Button>
                   </div>
                 </div>
@@ -396,45 +586,49 @@ export default function HousesPage() {
             {loading ? (
               <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#04131b] px-6 py-10 text-center shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
                 <p className="text-sm font-medium text-white">
-                  A carregar Houses of Sports...
+                  {copy.loadingTitle}
                 </p>
                 <p className="text-xs text-slate-200">
-                  Estamos a buscar o mapa atualizado das Houses. Isto pode
-                  demorar alguns segundos.
+                  {copy.loadingDesc}
                 </p>
               </div>
             ) : houses.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#04131b] px-6 py-10 text-center shadow-[0_20px_60px_rgba(3,10,25,0.65)]">
                 <p className="text-sm font-medium text-white">
-                  Ainda não existem Houses of Sports visíveis.
+                  {copy.emptyTitle}
                 </p>
                 <p className="text-xs text-slate-200">
-                  A equipa do LEGACY está a preparar a primeira vaga de
-                  comunidades. Mantém-te atento ao portal e à Academia.
+                  {copy.emptyDesc}
                 </p>
               </div>
             ) : (
               <>
                 <HousesSection
-                  title="Houses ativas"
-                  description="Comunidades que já estão a receber membros e a testar formatos de aprendizagem, treino e networking."
+                  title={copy.sectionActiveTitle}
+                  description={copy.sectionActiveDesc}
                   houses={active}
+                  copy={copy}
+                  locale={locale}
                 />
 
                 <HousesSection
-                  title="Houses em construção"
-                  description="Houses a ganhar forma: definição de equipa, visão interna e primeiros membros próximos da comunidade."
+                  title={copy.sectionConstructionTitle}
+                  description={copy.sectionConstructionDesc}
                   houses={underConstruction}
+                  copy={copy}
+                  locale={locale}
                 />
 
                 <HousesSection
-                  title="Houses em desenvolvimento"
+                  title={copy.sectionDevelopmentTitle}
                   description={
                     isLegacyTeam
-                      ? 'Visão interna para quem está a desenhar o futuro do mapa de Houses e do ecossistema LEGACY.'
-                      : 'Houses em fase inicial de desenho e validação internas. Visíveis apenas para a equipa LEGACY.'
+                      ? copy.sectionDevelopmentDescTeam
+                      : copy.sectionDevelopmentDescPublic
                   }
                   houses={visibleInDevelopment}
+                  copy={copy}
+                  locale={locale}
                 />
               </>
             )}
@@ -446,6 +640,8 @@ export default function HousesPage() {
     </div>
   );
 }
+
+type CopyType = typeof COPY.pt;
 
 function StatusSummaryItem(props: {
   label: string;
@@ -465,72 +661,88 @@ function StatusSummaryItem(props: {
   );
 }
 
-function XpLeaderSummaryCard({ house }: { house: House | null }) {
+function XpLeaderSummaryCard({
+  house,
+  copy,
+  locale,
+}: {
+  house: House | null;
+  copy: CopyType;
+  locale: string;
+}) {
   if (!house) {
     return (
       <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
-          HOUSE COM MAIS XP TOTAL
+          {copy.topXpTitle}
         </p>
         <p className="mt-2 text-sm text-slate-200">
-          Ainda não existem Houses com XP registada.
+          {copy.noXpLeader}
         </p>
       </div>
     );
   }
 
-  const xpTotal = (house.xp_total ?? 0).toLocaleString('pt-PT');
+  const xpTotal = (house.xp_total ?? 0).toLocaleString(locale);
 
   return (
     <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
-        HOUSE COM MAIS XP TOTAL
+        {copy.topXpTitle}
       </p>
       <p className="mt-2 text-base font-semibold text-white">{house.name}</p>
       <div className="mt-3 flex items-baseline gap-2">
         <p className="text-2xl font-bold text-white">{xpTotal}</p>
         <span className="text-[11px] uppercase tracking-wide text-slate-400">
-          XP acumulada
+          {copy.xpAccumulated}
         </span>
       </div>
     </div>
   );
 }
 
-function MembersLeaderSummaryCard({ house }: { house: House | null }) {
+function MembersLeaderSummaryCard({
+  house,
+  copy,
+  locale,
+}: {
+  house: House | null;
+  copy: CopyType;
+  locale: string;
+}) {
   if (!house) {
     return (
       <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
-          HOUSE COM MAIS MEMBROS
+          {copy.topMembersTitle}
         </p>
         <p className="mt-2 text-sm text-slate-200">
-          Ainda não existem Houses com membros registados.
+          {copy.noMembersLeader}
         </p>
       </div>
     );
   }
 
-  const memberCount = (house.member_count ?? 0).toLocaleString('pt-PT');
-  const xpTotal = (house.xp_total ?? 0).toLocaleString('pt-PT');
+  const memberCount = (house.member_count ?? 0).toLocaleString(locale);
+  const xpTotal = (house.xp_total ?? 0).toLocaleString(locale);
 
   return (
     <div className="rounded-xl border border-white/10 bg-[#04131b] p-4 shadow-[0_15px_45px_rgba(3,10,25,0.55)]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan-200">
-        HOUSE COM MAIS MEMBROS
+        {copy.topMembersTitle}
       </p>
       <p className="mt-2 text-base font-semibold text-white">{house.name}</p>
       <div className="mt-3 flex flex-wrap gap-3">
         <div className="flex items-baseline gap-2">
           <p className="text-2xl font-bold text-white">{memberCount}</p>
           <span className="text-[11px] uppercase tracking-wide text-slate-400">
-            Membros
+            {copy.membersLabel}
           </span>
         </div>
         <div className="flex items-baseline gap-2">
           <p className="text-2xl font-bold text-white">{xpTotal}</p>
           <span className="text-[11px] uppercase tracking-wide text-slate-400">
-            XP acumulada
+            {copy.xpAccumulated}
           </span>
         </div>
       </div>
@@ -542,10 +754,14 @@ function HousesSection({
   title,
   description,
   houses,
+  copy,
+  locale,
 }: {
   title: string;
   description: string;
   houses: House[];
+  copy: CopyType;
+  locale: string;
 }) {
   if (!houses || houses.length === 0) return null;
 
@@ -557,7 +773,7 @@ function HousesSection({
           <p className="text-xs text-slate-200">{description}</p>
         </div>
         <p className="text-[11px] text-slate-300">
-          {houses.length} {houses.length === 1 ? 'House' : 'Houses'}
+          {houses.length} {houses.length === 1 ? copy.sectionCountSingle : copy.sectionCountPlural}
         </p>
       </div>
 
@@ -572,8 +788,8 @@ function HousesSection({
               : firstModerator?.full_name?.trim() || null;
 
           const headLine = headDisplay
-            ? `Head of House: ${headDisplay}`
-            : 'Head of House a definir.';
+            ? `${copy.headLabel}: ${headDisplay}`
+            : copy.headPending;
 
           const renderTitle = () => {
             if (!house.sport?.name) return house.name;
@@ -629,14 +845,14 @@ function HousesSection({
                 <div className="space-y-2 text-[11px] text-slate-400">
                   {house.moderators.length > 0 ? (
                     <p>
-                      Moderadores:{' '}
+                      {copy.modsLabel}:{' '}
                       <span className="text-white">
                         {house.moderators.length}
-                        {moderatorExample ? ` (ex: ${moderatorExample})` : ''}
+                        {moderatorExample ? `${copy.membersExamplePrefix}${moderatorExample})` : ''}
                       </span>
                     </p>
                   ) : (
-                    <p>Sem moderadores definidos ainda.</p>
+                    <p>{copy.modsNone}</p>
                   )}
                 </div>
 
@@ -644,18 +860,18 @@ function HousesSection({
                   <div className="flex items-center justify-between rounded-lg border border-white/10 bg-[#020b16] px-3 py-2 text-xs text-slate-200">
                     <div>
                       <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                        Membros
+                        {copy.membersLabelCard}
                       </p>
                       <p className="text-sm font-semibold text-white">
-                        {(house.member_count ?? 0).toLocaleString('pt-PT')}
+                        {(house.member_count ?? 0).toLocaleString(locale)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                        XP Total
+                        {copy.xpLabelCard}
                       </p>
                       <p className="text-sm font-semibold text-white">
-                        {(house.xp_total ?? 0).toLocaleString('pt-PT')}
+                        {(house.xp_total ?? 0).toLocaleString(locale)}
                       </p>
                     </div>
                   </div>
