@@ -29,9 +29,17 @@ const STATUS_OPTIONS = [
   { value: 'all', labelKey: 'admin.houses.messages.status.all' },
   { value: 'unread', labelKey: 'admin.houses.messages.status.unread' },
   { value: 'read', labelKey: 'admin.houses.messages.status.read' },
+  { value: 'open', labelKey: 'admin.houses.messages.status.open' },
+  { value: 'sent', labelKey: 'admin.houses.messages.status.sent' },
 ];
 
 const MESSAGE_LIMIT_OPTIONS = [25, 50, 100];
+
+const DIRECTION_OPTIONS = [
+  { value: 'all', labelKey: 'admin.houses.messages.direction.all' },
+  { value: 'incoming', labelKey: 'admin.houses.messages.direction.incoming' },
+  { value: 'outgoing', labelKey: 'admin.houses.messages.direction.outgoing' },
+];
 
 type HouseOption = {
   houseKey: string;
@@ -42,9 +50,14 @@ export default function AdminHouseMessagesPage() {
   const { language, t } = useLanguage();
   const { mutate } = useSWRConfig();
   const [hasPurgedSeeded, setHasPurgedSeeded] = useState(false);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyDraft, setReplyDraft] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [replyError, setReplyError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     house: 'all',
     status: 'all',
+    direction: 'all',
     search: '',
     limit: 25,
   });
@@ -53,6 +66,7 @@ export default function AdminHouseMessagesPage() {
     const params = new URLSearchParams();
     if (filters.house && filters.house !== 'all') params.set('house', filters.house);
     if (filters.status) params.set('status', filters.status);
+    if (filters.direction && filters.direction !== 'all') params.set('direction', filters.direction);
     if (filters.search) params.set('q', filters.search.trim());
     params.set('limit', filters.limit.toString());
     return params.toString();
@@ -76,8 +90,12 @@ export default function AdminHouseMessagesPage() {
   useEffect(() => {
     if (hasPurgedSeeded || isLoading || !messages.length) return;
     const allSeeded = messages.every((message: any) => {
-      const subject = (message?.subject || '').toLowerCase();
-      return subject.startsWith('boas-vindas da house') || subject.startsWith('dúvida sobre a');
+      const subject = (message?.subject || '')
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      return subject.startsWith('boas-vindas da house') || subject.startsWith('duvida sobre a');
     });
     if (!allSeeded) return;
 
@@ -88,6 +106,72 @@ export default function AdminHouseMessagesPage() {
         console.error('[admin house messages] purge seeded failed', error);
       });
   }, [hasPurgedSeeded, isLoading, messages, refreshMessages]);
+
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString(
+      language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US',
+    );
+
+  const statusLabelKey: Record<string, string> = {
+    unread: 'admin.houses.messages.status.badge.unread',
+    read: 'admin.houses.messages.status.badge.read',
+    open: 'admin.houses.messages.status.badge.open',
+    sent: 'admin.houses.messages.status.badge.sent',
+  };
+
+  const statusClassName: Record<string, string> = {
+    unread: 'border-rose-400/50 text-rose-200',
+    read: 'border-emerald-400/40 text-emerald-200',
+    open: 'border-cyan-400/50 text-cyan-200',
+    sent: 'border-white/20 text-slate-200',
+  };
+
+  const handleStartReply = (message: any) => {
+    setReplyError(null);
+    setReplyDraft('');
+    setReplyingToId(message.id);
+  };
+
+  const handleSendReply = async (message: any) => {
+    if (!replyDraft.trim()) return;
+    const recipientId = message?.direction === 'outgoing'
+      ? message?.recipient?.id
+      : message?.sender?.id;
+    if (!recipientId) {
+      setReplyError(t('admin.houses.messages.replyMissingRecipient'));
+      return;
+    }
+
+    setSendingReply(true);
+    setReplyError(null);
+    try {
+      const response = await fetch(`/api/houses/${message.houseKey}/private-messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientId,
+          body: replyDraft.trim(),
+          subject: `${t('admin.houses.messages.replyPrefix')} ${message.subject || ''}`.trim(),
+          replyToId: message.id,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to send reply.');
+      }
+      const data = await response.json();
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to send reply.');
+      }
+      setReplyingToId(null);
+      setReplyDraft('');
+      refreshMessages();
+    } catch (error) {
+      console.error('[admin house messages] reply failed', error);
+      setReplyError(t('admin.houses.messages.replyError'));
+    } finally {
+      setSendingReply(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -108,7 +192,7 @@ export default function AdminHouseMessagesPage() {
           <CardHeader>
             <CardTitle className="text-lg">{t('admin.houses.messages.filters.title')}</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-4">
+          <CardContent className="grid gap-4 md:grid-cols-5">
             <div>
               <label className="text-xs uppercase tracking-[0.35em] text-slate-400">
                 {t('admin.houses.messages.filters.houseLabel')}
@@ -121,7 +205,7 @@ export default function AdminHouseMessagesPage() {
                   <SelectValue placeholder={t('admin.houses.messages.filters.housePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#02121c] text-white">
-                <SelectItem value="all">{t('admin.houses.messages.filters.allHouses')}</SelectItem>
+                  <SelectItem value="all">{t('admin.houses.messages.filters.allHouses')}</SelectItem>
                   {houses.map((house) => (
                     <SelectItem key={house.houseKey} value={house.houseKey}>
                       {house.label}
@@ -160,6 +244,26 @@ export default function AdminHouseMessagesPage() {
                 onChange={(event) => handleFilterChange('search', event.target.value)}
                 className="bg-[#020b16] border-white/10 text-white"
               />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                {t('admin.houses.messages.filters.directionLabel')}
+              </label>
+              <Select
+                value={filters.direction}
+                onValueChange={(value) => handleFilterChange('direction', value)}
+              >
+                <SelectTrigger className="w-full rounded-xl border border-white/10 bg-[#020b16] text-white">
+                  <SelectValue placeholder={t('admin.houses.messages.filters.directionLabel')} />
+                </SelectTrigger>
+                <SelectContent className="bg-[#02121c] text-white">
+                  {DIRECTION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {t(option.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-xs uppercase tracking-[0.35em] text-slate-400">
@@ -224,28 +328,82 @@ export default function AdminHouseMessagesPage() {
                     </p>
                     <h3 className="text-lg font-semibold text-white">{message.subject}</h3>
                   </div>
-                <Badge
-                  variant={message.status === 'unread' ? 'outline' : 'secondary'}
-                  className={
-                    message.status === 'unread'
-                      ? 'border-rose-400/50 text-rose-200'
-                      : 'border-emerald-400/40 text-emerald-200'
-                  }
-                >
-                    {message.status === 'unread'
-                      ? t('admin.houses.messages.status.badge.unread')
-                      : t('admin.houses.messages.status.badge.read')}
+                  <Badge
+                    variant={message.status === "unread" ? "outline" : "secondary"}
+                    className={statusClassName[message.status] || "border-white/20 text-slate-200"}
+                  >
+                    {t(statusLabelKey[message.status] || statusLabelKey.unread)}
                   </Badge>
                 </div>
                 <p className="mt-3 text-sm text-slate-300 line-clamp-3">{message.body}</p>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
                   <div>
-                    {t('admin.houses.messages.list.from')} {message.sender?.name ?? '-'}
-                    {' • '}
-                    {t('admin.houses.messages.list.to')} {message.recipient?.name ?? '-'}
+                    {t("admin.houses.messages.list.from")} {message.sender?.name ?? "-"}
+                    {" - "}
+                    {t("admin.houses.messages.list.to")} {message.recipient?.name ?? "-"}
                   </div>
-                  <div>{new Date(message.createdAt).toLocaleString(language)}</div>
+                  <div>{formatDateTime(message.createdAt)}</div>
                 </div>
+                {Array.isArray(message.history) && message.history.length > 0 && (
+                  <div className="mt-4 space-y-1 text-xs text-slate-400">
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+                      {t("admin.houses.messages.history.title")}
+                    </p>
+                    {message.history.map((event: any) => (
+                      <div key={event.id}>
+                        {event.type === "read"
+                          ? t("admin.houses.messages.history.read")
+                          : t("admin.houses.messages.history.reply")}
+                        {" "}
+                        {event.actor?.name ? `${event.actor.name} ` : ""}
+                        {event.createdAt ? formatDateTime(event.createdAt) : ""}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {message.canReply && (
+                  <div className="mt-4 border-t border-white/5 pt-3">
+                    {replyingToId !== message.id ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStartReply(message)}
+                      >
+                        {t("admin.houses.messages.replyAction")}
+                      </Button>
+                    ) : (
+                      <div className="space-y-2">
+                        <Input
+                          value={replyDraft}
+                          onChange={(event) => setReplyDraft(event.target.value)}
+                          placeholder={t("admin.houses.messages.replyPlaceholder")}
+                          className="bg-[#020b16] border-white/10 text-white"
+                        />
+                        {replyError ? (
+                          <p className="text-xs text-rose-200">{replyError}</p>
+                        ) : null}
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSendReply(message)}
+                            disabled={sendingReply || !replyDraft.trim()}
+                          >
+                            {sendingReply
+                              ? t("admin.houses.messages.replySending")
+                              : t("admin.houses.messages.replySend")}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setReplyingToId(null)}
+                          >
+                            {t("admin.houses.messages.replyCancel")}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </article>
             ))}
           </CardContent>

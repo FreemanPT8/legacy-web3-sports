@@ -98,6 +98,29 @@ async function createNotification(
   }
 }
 
+async function createMessageEvent(payload: {
+  messageId: string;
+  houseId: string;
+  houseKey: string;
+  actorId: string;
+  eventType: 'read' | 'reply';
+  metadata?: Record<string, unknown>;
+}) {
+  if (!supabaseAdmin) return;
+  try {
+    await supabaseAdmin.from('house_private_message_events').insert({
+      message_id: payload.messageId,
+      house_id: payload.houseId,
+      house_key: payload.houseKey,
+      actor_id: payload.actorId,
+      event_type: payload.eventType,
+      metadata: payload.metadata ?? {},
+    });
+  } catch (error) {
+    console.error('[private-messages] Failed to create message event', error);
+  }
+}
+
 function buildMessagePayload(row: any, userMap: Record<string, any>, currentUserId: string) {
   const sender = userMap[row.sender_id] ?? null;
   const recipient = userMap[row.recipient_id] ?? null;
@@ -194,6 +217,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
   const recipientId = payload?.recipientId;
   const rawBody = (payload?.body || '').toString().trim();
   const subject = (payload?.subject || 'Mensagem da House').toString();
+  const replyToId = payload?.replyToId;
 
   if (!recipientId || !rawBody) {
     return NextResponse.json(
@@ -230,6 +254,18 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
     );
   }
 
+  let replyToMessageId: string | null = null;
+  if (replyToId) {
+    const { data: replyRow } = await supabaseAdmin
+      .from('house_private_messages')
+      .select('id, house_id, house_key')
+      .eq('id', replyToId)
+      .maybeSingle();
+    if (replyRow?.id && replyRow.house_key === house.houseKey) {
+      replyToMessageId = replyRow.id;
+    }
+  }
+
   const { data, error } = await supabaseAdmin
     .from('house_private_messages')
     .insert([
@@ -240,6 +276,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
         recipient_id: recipientId,
         subject,
         body: rawBody,
+        reply_to_id: replyToMessageId,
       },
     ])
     .select()
@@ -258,14 +295,25 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
 
   const inserted = buildMessagePayload(data, userMap, user.userId);
 
-  if (isSenderMember) {
-    await createNotification(
-      recipientId,
-      'Nova mensagem da tua House',
-      `O membro ${user.username || 'autor'} enviou uma nova mensagem privada.`,
-      `/houses/${house.houseKey}`,
-      { houseKey: house.houseKey, messageId: data.id },
-    );
+  await createNotification(
+    recipientId,
+    'Nova mensagem da tua House',
+    isSenderMember
+      ? `O membro ${user.username || 'autor'} enviou uma nova mensagem privada.`
+      : `Recebeste uma nova mensagem privada do Head da House.`,
+    `/houses/${house.houseKey}`,
+    { houseKey: house.houseKey, messageId: data.id },
+  );
+
+  if (replyToMessageId) {
+    await createMessageEvent({
+      messageId: replyToMessageId,
+      houseId: house.id,
+      houseKey: house.houseKey,
+      actorId: user.userId,
+      eventType: 'reply',
+      metadata: { replyMessageId: data.id },
+    });
   }
 
   return NextResponse.json({ success: true, message: inserted });
@@ -299,15 +347,20 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
     return NextResponse.json({ success: false, error: 'Message not found.' }, { status: 404 });
   }
 
-  if (user.userId !== messageRow.recipient_id && user.userId !== messageRow.sender_id) {
+  if (user.userId !== messageRow.recipient_id) {
     return NextResponse.json({ success: false, error: 'Access denied.' }, { status: 403 });
+  }
+
+  if (messageRow.read_at) {
+    return NextResponse.json({ success: true });
   }
 
   const now = new Date().toISOString();
   await supabaseAdmin
     .from('house_private_messages')
     .update({ read_at: now })
-    .eq('id', messageId);
+    .eq('id', messageId)
+    .is('read_at', null);
 
   const membership = await loadMembershipMap(house.id, [user.userId, messageRow.sender_id]);
   const userRole = membership.get(user.userId) ?? 'member';
@@ -325,6 +378,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
       { houseKey: house.houseKey, messageId },
     );
   }
+
+  await createMessageEvent({
+    messageId,
+    houseId: house.id,
+    houseKey: house.houseKey,
+    actorId: user.userId,
+    eventType: 'read',
+  });
 
   return NextResponse.json({ success: true });
 }
