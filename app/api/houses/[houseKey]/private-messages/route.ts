@@ -171,10 +171,12 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
   }
 
   const rows = data ?? [];
-  const rawIds: string[] = rows
+  const participantCandidateIds = rows
     .flatMap((row: any) => [row.sender_id, row.recipient_id])
     .filter((id: unknown): id is string => typeof id === 'string');
-  const participantIds: string[] = Array.from(new Set(rawIds));
+  const participantSet = new Set<string>();
+  participantCandidateIds.forEach((id: string) => participantSet.add(id));
+  const participantIds = Array.from(participantSet);
   const users = await loadUsers(participantIds);
   const userMap: Record<string, any> = {};
   users.forEach((usr: any) => {

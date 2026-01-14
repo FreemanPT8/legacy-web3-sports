@@ -123,6 +123,7 @@ export const Header = memo(function Header() {
   }, [user, getToken]);
 
   const canAccessAdmin = user ? isAdminRole(user.role) : false;
+  const messagesHref = user && canAccessAdmin ? '/admin/houses/messages' : '/sports/houses';
   const totalBellCount = unreadCount + pendingHeadInvites;
   const noNotificationsText =
     {
@@ -417,7 +418,7 @@ export const Header = memo(function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link href="/sports/houses">
+          <Link href={messagesHref}>
             <Button
               variant="ghost"
               size="sm"
