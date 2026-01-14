@@ -2,26 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAuth } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
+import {
+  canSendPrivateMessage,
+  classifyRole,
+  MESSAGE_XP_THRESHOLD,
+  NormalizedPrivateMessageRole,
+  PrivateMessagePermissionReason,
+} from '@/lib/private-messages';
 
-const MESSAGE_XP_THRESHOLD = 369;
 const MESSAGE_FETCH_LIMIT = 40;
-
-const ROLE_KEYWORDS = {
-  head: ['head', 'leader', 'captain'],
-  moderator: ['moderator', 'mod'],
-  member: ['member', 'membro', 'participant'],
-} as const;
-
-type NormalizedMentorship = 'head' | 'moderator' | 'member' | 'unknown';
-
-function classifyRole(role: string | null | undefined): NormalizedMentorship {
-  const normalized = (role ?? '').toLowerCase();
-  if (ROLE_KEYWORDS.head.some((key) => normalized.includes(key))) return 'head';
-  if (ROLE_KEYWORDS.moderator.some((key) => normalized.includes(key))) return 'moderator';
-  if (ROLE_KEYWORDS.member.some((key) => normalized.includes(key))) return 'member';
-  if (normalized === '') return 'member';
-  return 'unknown';
-}
 
 async function resolveHouse(houseKeyRaw: string) {
   if (!supabaseAdmin) return null;
@@ -40,7 +29,7 @@ async function resolveHouse(houseKeyRaw: string) {
 }
 
 async function loadMembershipMap(houseId: string, userIds: string[]) {
-  if (!supabaseAdmin) return new Map<string, NormalizedMentorship>();
+  if (!supabaseAdmin) return new Map<string, NormalizedPrivateMessageRole>();
   const { data } = await supabaseAdmin
     .from('user_houses')
     .select('user_id, role')
@@ -48,7 +37,7 @@ async function loadMembershipMap(houseId: string, userIds: string[]) {
     .is('removed_at', null)
     .in('user_id', userIds);
 
-  const map = new Map<string, NormalizedMentorship>();
+  const map = new Map<string, NormalizedPrivateMessageRole>();
   (data ?? []).forEach((row: { user_id: string | null; role: string | null }) => {
     if (!row.user_id) return;
     const normalized = classifyRole(row.role);
@@ -210,34 +199,28 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
   }
 
   const membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
-  const senderRole = membership.get(user.userId) ?? 'member';
-  const recipientRole = membership.get(recipientId) ?? 'member';
 
   if (!membership.has(recipientId)) {
     return NextResponse.json({ success: false, error: 'Recipient not part of this House.' }, { status: 404 });
   }
 
-  const isSenderMember = senderRole === 'member' || senderRole === 'unknown';
-  const isSenderStaff = senderRole === 'head' || senderRole === 'moderator';
-  const isRecipientStaff = recipientRole === 'head' || recipientRole === 'moderator';
-  const isRecipientMember = recipientRole === 'member' || recipientRole === 'unknown';
+  const senderRole = membership.get(user.userId) ?? 'member';
+  const recipientRole = membership.get(recipientId) ?? 'member';
 
-  if (isSenderMember && !isRecipientStaff) {
-    return NextResponse.json(
-      { success: false, error: 'Members can only message Heads or Moderators.' },
-      { status: 403 },
-    );
-  }
-  if (isSenderStaff && !isRecipientMember) {
-    return NextResponse.json(
-      { success: false, error: 'Heads and Moderators can only reach Members.' },
-      { status: 403 },
-    );
-  }
+  const permission = canSendPrivateMessage({
+    senderRole,
+    recipientRole,
+    senderXp: user.xp_total ?? 0,
+  });
 
-  if (isSenderMember && (user.xp_total ?? 0) < MESSAGE_XP_THRESHOLD) {
+  if (!permission.allowed) {
+    const errorMessages: Record<PrivateMessagePermissionReason, string> = {
+      'member-recipient-staff': 'Members can only message Heads or Moderators.',
+      'staff-recipient-member': 'Heads and Moderators can only reach Members.',
+      'xp-threshold': `${MESSAGE_XP_THRESHOLD} XP required to send private messages.`,
+    };
     return NextResponse.json(
-      { success: false, error: '369 XP required to send private messages.' },
+      { success: false, error: errorMessages[permission.reason] },
       { status: 403 },
     );
   }

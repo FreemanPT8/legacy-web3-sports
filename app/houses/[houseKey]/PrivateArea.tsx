@@ -12,6 +12,7 @@ import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { HouseMembersList } from './HouseMembersList';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { MESSAGE_XP_THRESHOLD } from '@/lib/private-messages';
 
 type RecommendedContent = {
   id: string;
@@ -151,7 +152,6 @@ export function PrivateArea({
   const localeBucket = resolveLocaleBucket(localeGuess);
   const sectionTitles = EVENT_SECTION_TITLES[localeBucket];
   const { language, t } = useLanguage();
-  const MESSAGE_XP_THRESHOLD = 369;
   const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
   const [privateMessagesLoading, setPrivateMessagesLoading] = useState(false);
   const [privateMessagesError, setPrivateMessagesError] = useState<string | null>(null);
