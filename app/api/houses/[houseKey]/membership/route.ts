@@ -30,14 +30,16 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
 
     const { data: membershipRows, error: membershipError } = await supabaseAdmin
       .from('user_houses')
-      .select('role')
+      .select('membership_role, role')
       .eq('user_id', user.userId)
       .eq('house_id', houseRow.id)
       .is('removed_at', null);
     if (membershipError) throw membershipError;
 
     const roles = (membershipRows ?? [])
-      .map((row: { role: string | null }) => row.role)
+      .map((row: { membership_role?: string | null; role?: string | null }) =>
+        row.membership_role ?? row.role ?? null,
+      )
       .filter((role: string | null): role is string => Boolean(role));
     const isMember = roles.length > 0;
 
