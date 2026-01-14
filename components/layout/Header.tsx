@@ -41,6 +41,7 @@ export const Header = memo(function Header() {
   const { language, setLanguage, t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messageBadgeCount, setMessageBadgeCount] = useState(0);
   const [pendingHeadInvites, setPendingHeadInvites] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
   type NotificationPreview = {
@@ -89,6 +90,30 @@ export const Header = memo(function Header() {
 
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setMessageBadgeCount(0);
+      return;
+    }
+
+    const fetchPrivateMessageCount = async () => {
+      try {
+        const response = await fetch('/api/houses/private-messages/unread-count');
+        const data = await response.json();
+        if (response.ok && data?.success) {
+          const count = typeof data.unreadCount === 'number' ? data.unreadCount : 0;
+          setMessageBadgeCount(count);
+        }
+      } catch (error) {
+        console.error('Failed to fetch private message count:', error);
+      }
+    };
+
+    fetchPrivateMessageCount();
+    const interval = setInterval(fetchPrivateMessageCount, 60000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -427,6 +452,11 @@ export const Header = memo(function Header() {
               title={messagesLabel}
             >
               <MessageSquare className="h-4 w-4" />
+              {messageBadgeCount > 0 && (
+                <span className="absolute -top-0.5 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white">
+                  {messageBadgeCount > 9 ? '9+' : messageBadgeCount}
+                </span>
+              )}
             </Button>
           </Link>
 
