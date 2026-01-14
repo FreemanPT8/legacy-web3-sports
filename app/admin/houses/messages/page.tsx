@@ -42,7 +42,7 @@ export default function AdminHouseMessagesPage() {
   const { language, t } = useLanguage();
   const { mutate } = useSWRConfig();
   const [filters, setFilters] = useState({
-    house: '',
+    house: 'all',
     status: 'all',
     search: '',
     limit: 25,
@@ -50,7 +50,7 @@ export default function AdminHouseMessagesPage() {
 
   const queryKey = useMemo(() => {
     const params = new URLSearchParams();
-    if (filters.house) params.set('house', filters.house);
+    if (filters.house && filters.house !== 'all') params.set('house', filters.house);
     if (filters.status) params.set('status', filters.status);
     if (filters.search) params.set('q', filters.search.trim());
     params.set('limit', filters.limit.toString());
@@ -104,7 +104,7 @@ export default function AdminHouseMessagesPage() {
                   <SelectValue placeholder={t('admin.houses.messages.filters.housePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#02121c] text-white">
-                  <SelectItem value="">{t('admin.houses.messages.filters.allHouses')}</SelectItem>
+                <SelectItem value="all">{t('admin.houses.messages.filters.allHouses')}</SelectItem>
                   {houses.map((house) => (
                     <SelectItem key={house.houseKey} value={house.houseKey}>
                       {house.label}
