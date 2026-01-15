@@ -141,6 +141,33 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
       }
     }
 
+    if (roles.size === 0) {
+      const { data: historyRow, error: historyError } = await supabaseAdmin
+        .from('house_private_messages')
+        .select('id')
+        .eq('house_key', houseKey)
+        .or(`sender_id.eq.${user.userId},recipient_id.eq.${user.userId}`)
+        .limit(1)
+        .maybeSingle();
+      if (historyError) {
+        console.error('[houses/membership] Failed to check message history', historyError);
+      }
+      if (historyRow?.id) {
+        await supabaseAdmin
+          .from('user_houses')
+          .upsert(
+            {
+              user_id: user.userId,
+              house_id: houseRow.id,
+              membership_role: 'MEMBER',
+              assigned_via: 'MESSAGE_HISTORY',
+            },
+            { onConflict: 'user_id,house_id,membership_role' },
+          );
+        roles.add('member');
+      }
+    }
+
     return NextResponse.json({ success: true, isMember: roles.size > 0, roles: Array.from(roles) });
   } catch (error) {
     console.error('[houses/membership] failed to load membership', error);
