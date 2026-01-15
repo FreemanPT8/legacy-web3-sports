@@ -198,8 +198,8 @@ export function PrivateArea({
       .catch((error) => {
         console.error('[house membership] failed', error);
         toast({
-          title: 'Falha ao verificar acesso',
-          description: 'Tenta novamente mais tarde.',
+          title: t('houses.private.toastAccessErrorTitle'),
+          description: t('houses.private.toastAccessErrorBody'),
           variant: 'destructive',
         });
       })
@@ -224,8 +224,8 @@ export function PrivateArea({
         if (!response.ok || !payload || !payload.success) {
           const errorMessage =
             !payload || payload.success
-              ? 'Falha ao carregar mensagens.'
-              : payload.error || 'Falha ao carregar mensagens.';
+              ? t('houses.private.errorOfficialMessagesLoad')
+              : payload.error || t('houses.private.errorOfficialMessagesLoad');
           throw new Error(errorMessage);
         }
         setMessages(payload.messages ?? []);
@@ -256,13 +256,7 @@ export function PrivateArea({
       setPrivateMessages(data.messages ?? []);
     } catch (error) {
       console.error('[private messages] failed to load', error);
-      setPrivateMessagesError(
-        language === 'pt'
-          ? 'Falha ao carregar mensagens privadas.'
-          : language === 'es'
-            ? 'Error al cargar los mensajes privados.'
-            : 'Failed to load private messages.',
-      );
+      setPrivateMessagesError(t('houses.private.errorPrivateMessagesLoad'));
       setPrivateMessages([]);
     } finally {
       setPrivateMessagesLoading(false);
@@ -283,7 +277,7 @@ export function PrivateArea({
     event.preventDefault();
     if (!selectedRecipient) {
       toast({
-        title: language === 'pt' ? 'Destinatario em falta' : language === 'es' ? 'Falta destinatario' : 'Missing recipient',
+        title: t('houses.private.toastMissingRecipientTitle'),
         description: t('houses.private.errorRecipient'),
         variant: 'destructive',
       });
@@ -291,7 +285,7 @@ export function PrivateArea({
     }
     if (!messageDraft.trim()) {
       toast({
-        title: language === 'pt' ? 'Mensagem vazia' : language === 'es' ? 'Mensaje vacio' : 'Empty message',
+        title: t('houses.private.toastMissingMessageTitle'),
         description: t('houses.private.errorMessage'),
         variant: 'destructive',
       });
@@ -323,26 +317,15 @@ export function PrivateArea({
       setMessageDraft('');
       void loadPrivateMessages();
       toast({
-        title: language === 'pt' ? 'Mensagem enviada' : language === 'es' ? 'Mensaje enviado' : 'Message sent',
-        description:
-          language === 'pt'
-            ? 'A tua mensagem foi entregue ao Head da House.'
-            : language === 'es'
-              ? 'Tu mensaje fue entregado al Head de la House.'
-              : 'Your message was delivered to the House leadership.',
+        title: t('houses.private.toastSentTitle'),
+        description: t('houses.private.toastSentBody'),
       });
     } catch (error: any) {
       console.error('[private messages] send failed', error);
       const message = error?.message || '';
       toast({
-        title: language === 'pt' ? 'Falha ao enviar' : language === 'es' ? 'Error al enviar' : 'Failed to send',
-        description:
-          message ||
-          (language === 'pt'
-            ? 'Tenta novamente mais tarde.'
-            : language === 'es'
-              ? 'Intenta de nuevo mas tarde.'
-              : 'Please try again later.'),
+        title: t('houses.private.toastSendFailTitle'),
+        description: message || t('houses.private.toastTryLater'),
         variant: 'destructive',
       });
     } finally {
@@ -389,8 +372,8 @@ export function PrivateArea({
         if (!response.ok || !payload || !payload.success) {
           const errorMessage =
             !payload || payload.success
-              ? 'Falha ao carregar eventos.'
-              : payload.error || 'Falha ao carregar eventos.';
+              ? t('houses.private.errorEventsLoad')
+              : payload.error || t('houses.private.errorEventsLoad');
           throw new Error(errorMessage);
         }
         setHouseEvents(payload.events ?? []);
@@ -398,7 +381,7 @@ export function PrivateArea({
       .catch((error) => {
         if (!active) return;
         console.error('[house events] failed', error);
-        setEventsError(error instanceof Error ? error.message : 'Nao foi possivel carregar os eventos.');
+        setEventsError(error instanceof Error ? error.message : t('houses.private.errorEventsLoad'));
         setHouseEvents([]);
       })
       .finally(() => {
@@ -474,29 +457,38 @@ export function PrivateArea({
                 <ProgressStat label={t('houses.private.stats.popupsPublished')} value={metrics.onboarding.published.toLocaleString()} />
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-xs text-white/80">
-                <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">Distribuicao de XP</p>
+                <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">
+                  {t('houses.private.stats.distributionTitle')}
+                </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <ProgressStat label="Head" value={`${metrics.xpBreakdown.head.toLocaleString()} XP`} />
-                  <ProgressStat
-                    label="Moderadores"
-                    value={`${metrics.xpBreakdown.moderators.toLocaleString()} XP`}
-                  />
-                  <ProgressStat label="Membros" value={`${metrics.xpBreakdown.members.toLocaleString()} XP`} />
+                <ProgressStat label={t('houses.private.stats.headXp')} value={`${metrics.xpBreakdown.head.toLocaleString()} XP`} />
+                <ProgressStat
+                  label={t('houses.private.stats.moderatorsXp')}
+                  value={`${metrics.xpBreakdown.moderators.toLocaleString()} XP`}
+                />
+                <ProgressStat label={t('houses.private.stats.membersXp')} value={`${metrics.xpBreakdown.members.toLocaleString()} XP`} />
                 </div>
                 <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-white/60">
-                  Head: {metrics.roleCounts.head} - Moderadores: {metrics.roleCounts.moderators} - Membros:{' '}
-                  {metrics.roleCounts.members}
+                  {applyTemplate(t('houses.private.stats.distributionCaption'), {
+                    head: metrics.roleCounts.head.toString(),
+                    moderators: metrics.roleCounts.moderators.toString(),
+                    members: metrics.roleCounts.members.toString(),
+                  })}
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
-                <p className="font-semibold text-white/90">Proximos passos</p>
+                <p className="font-semibold text-white/90">
+                  {t('houses.private.stats.nextStepsTitle')}
+                </p>
                 <p>
-                  {metrics.onboarding.ready.toLocaleString()} mensagens prontas - {metrics.onboarding.draft.toLocaleString()} em
-                  rascunho.
+                  {applyTemplate(t('houses.private.stats.nextStepsDetail'), {
+                    ready: metrics.onboarding.ready.toLocaleString(),
+                    draft: metrics.onboarding.draft.toLocaleString(),
+                  })}
                 </p>
                 {metrics.onboarding.lastUpdate ? (
                   <p className="mt-2 text-white/60">
-                    Ultima atualizacao{' '}
+                    {t('houses.private.stats.lastUpdateLabel')}{' '}
                     {new Date(metrics.onboarding.lastUpdate).toLocaleDateString('pt-PT', {
                       day: '2-digit',
                       month: 'short',
@@ -628,11 +620,7 @@ export function PrivateArea({
                 {privateMessagesLoading ? (
                   <div className="flex items-center gap-2 text-sm text-slate-300">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {language === 'pt'
-                      ? 'A carregar mensagens privadas...'
-                      : language === 'es'
-                        ? 'Cargando mensajes privados...'
-                        : 'Loading private messages...'}
+                    {t('houses.private.loadingPrivateMessages')}
                   </div>
                 ) : privateMessagesError ? (
                   <p className="text-sm text-rose-200">{privateMessagesError}</p>
@@ -679,13 +667,15 @@ export function PrivateArea({
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Mensagens oficiais recentes</CardTitle>
+              <CardTitle className="text-lg text-white">
+                {t('houses.private.section.officialMessages')}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-white/80">
               {messagesLoading ? (
                 <div className="flex items-center gap-2 text-white/70">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>A carregar mensagens...</span>
+                  <span>{t('houses.private.loadingOfficialMessages')}</span>
                 </div>
               ) : messagesError ? (
                 <p className="text-rose-200">{messagesError}</p>
@@ -706,19 +696,19 @@ export function PrivateArea({
                   </div>
                 ))
               ) : (
-                <p className="text-white/70">Sem mensagens recentes. Quando o Head publicar novas instrucoes elas surgem aqui.</p>
+                <p className="text-white/70">{t('houses.private.officialMessages.empty')}</p>
               )}
             </CardContent>
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Eventos da House</CardTitle>
+              <CardTitle className="text-lg text-white">{t('houses.private.section.events')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-white/80">
               {eventsLoading ? (
                 <div className="flex items-center gap-2 text-white/70">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>A carregar eventos...</span>
+                  <span>{t('houses.private.loadingEvents')}</span>
                 </div>
               ) : eventsError ? (
                 <p className="text-rose-200">{eventsError}</p>
@@ -734,14 +724,14 @@ export function PrivateArea({
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Comentarios internos</CardTitle>
+              <CardTitle className="text-lg text-white">{t('houses.private.section.comments')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ContentComments
                 contentId={houseId}
                 contentType="house"
                 houseId={houseId}
-                title="Comentarios privados desta House"
+                title={t('houses.private.commentsTitle')}
               />
             </CardContent>
           </Card>
@@ -817,7 +807,11 @@ function EventsSection({
       </div>
       <p className="mt-2 text-base font-semibold text-white">{event.title}</p>
       <p className="text-sm text-white/60">{formatEventDate(event.startAt, event.endAt)}</p>
-      {event.location ? <p className="text-xs text-white/60">Local: {event.location}</p> : null}
+      {event.location ? (
+        <p className="text-xs text-white/60">
+          {t('houses.private.locationLabel')}: {event.location}
+        </p>
+      ) : null}
       {event.description ? <p className="mt-2 text-sm text-white/70 line-clamp-3">{event.description}</p> : null}
       {event.linkUrl ? (
         <a
