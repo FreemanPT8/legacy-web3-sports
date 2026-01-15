@@ -446,3 +446,100 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const auth = await requireAuth(request);
+    if (!auth.success) return auth.response!;
+    const user = auth.user!;
+
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection unavailable.' },
+        { status: 500 },
+      );
+    }
+
+    const payload = await request.json().catch(() => null);
+    const messageId = payload?.messageId;
+    const action = payload?.action;
+    if (!messageId || !action) {
+      return NextResponse.json(
+        { success: false, error: 'Missing message action.' },
+        { status: 400 },
+      );
+    }
+
+    const { data: messageRow, error: messageError } = await supabaseAdmin
+      .from('house_private_messages')
+      .select('id, house_key')
+      .eq('id', messageId)
+      .maybeSingle();
+    if (messageError) {
+      console.error('[admin/houses/messages] Failed to load message', messageError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to load message.' },
+        { status: 500 },
+      );
+    }
+    if (!messageRow) {
+      return NextResponse.json(
+        { success: false, error: 'Message not found.' },
+        { status: 404 },
+      );
+    }
+
+    const hasManageHouses = await hasGlobalPermission(user, 'canManageHouses');
+    if (user.role !== 'Super Admin' && !hasManageHouses) {
+      const houses = await resolveAccessibleHouses(user);
+      const allowedKeys = new Set(
+        (houses ?? []).map((house) => (house.houseKey || '').toUpperCase()),
+      );
+      const messageKey = (messageRow.house_key || '').toUpperCase();
+      if (!allowedKeys.has(messageKey)) {
+        return NextResponse.json(
+          { success: false, error: 'Permission denied.' },
+          { status: 403 },
+        );
+      }
+    }
+
+    const now = new Date().toISOString();
+    const updates: Record<string, string | null> = {};
+    if (action === 'archive') {
+      updates.sender_archived_at = now;
+      updates.recipient_archived_at = now;
+    } else if (action === 'unarchive') {
+      updates.sender_archived_at = null;
+      updates.recipient_archived_at = null;
+    } else if (action === 'delete') {
+      updates.sender_deleted_at = now;
+      updates.recipient_deleted_at = now;
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Unsupported action.' },
+        { status: 400 },
+      );
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from('house_private_messages')
+      .update(updates)
+      .eq('id', messageId);
+    if (updateError) {
+      console.error('[admin/houses/messages] Failed to update message', updateError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update message.' },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[admin/houses/messages] PATCH failed', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update message.' },
+      { status: 500 },
+    );
+  }
+}

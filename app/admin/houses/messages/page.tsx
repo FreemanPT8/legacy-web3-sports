@@ -235,7 +235,7 @@ export default function AdminHouseMessagesPage() {
     setActingOnId(message.id);
     try {
       const token = getToken();
-      const response = await fetch(`/api/houses/${message.houseKey}/private-messages`, {
+      const response = await fetch(`/api/admin/houses/messages`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
