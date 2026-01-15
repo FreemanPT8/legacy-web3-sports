@@ -262,6 +262,32 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
   }
 
   if (!membership.has(recipientId)) {
+    await syncUserHouseMembership(recipientId, { assignedVia: 'PROFILE', logPrefix: 'private-messages' });
+    membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
+  }
+
+  let replyToMessageId: string | null = null;
+  let replyParticipants: { senderId: string | null; recipientId: string | null } | null = null;
+  if (replyToId) {
+    const { data: replyRow } = await supabaseAdmin
+      .from('house_private_messages')
+      .select('id, house_id, house_key, sender_id, recipient_id')
+      .eq('id', replyToId)
+      .maybeSingle();
+    if (replyRow?.id && replyRow.house_key === house.houseKey) {
+      replyToMessageId = replyRow.id;
+      replyParticipants = {
+        senderId: replyRow.sender_id ?? null,
+        recipientId: replyRow.recipient_id ?? null,
+      };
+    }
+  }
+
+  const recipientInThread =
+    !!replyParticipants &&
+    (replyParticipants.senderId === recipientId || replyParticipants.recipientId === recipientId);
+
+  if (!membership.has(recipientId) && !recipientInThread) {
     return NextResponse.json({ success: false, error: 'Recipient not part of this House.' }, { status: 404 });
   }
 
@@ -287,17 +313,7 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
     );
   }
 
-  let replyToMessageId: string | null = null;
-  if (replyToId) {
-    const { data: replyRow } = await supabaseAdmin
-      .from('house_private_messages')
-      .select('id, house_id, house_key')
-      .eq('id', replyToId)
-      .maybeSingle();
-    if (replyRow?.id && replyRow.house_key === house.houseKey) {
-      replyToMessageId = replyRow.id;
-    }
-  }
+  // replyToMessageId already resolved above
 
   const { data, error } = await supabaseAdmin
     .from('house_private_messages')

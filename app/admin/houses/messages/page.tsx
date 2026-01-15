@@ -176,6 +176,13 @@ export default function AdminHouseMessagesPage() {
       }
       setReplyingToId(null);
       setReplyDraft('');
+      if (
+        message?.direction === 'incoming' &&
+        message?.status === 'unread' &&
+        message?.recipient?.id === user?.id
+      ) {
+        await handleMarkRead(message);
+      }
       refreshMessages();
     } catch (error) {
       console.error('[admin house messages] reply failed', error);
