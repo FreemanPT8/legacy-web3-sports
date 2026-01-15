@@ -718,6 +718,7 @@ export function PrivateArea({
                   localeBucket={localeBucket}
                   sectionTitles={sectionTitles}
                   emptyCopy={eventsEmptyCopy}
+                  locationLabel={t('houses.private.locationLabel')}
                 />
               )}
             </CardContent>
@@ -778,11 +779,13 @@ function EventsSection({
   localeBucket,
   sectionTitles,
   emptyCopy,
+  locationLabel,
 }: {
   events: HouseEvent[];
   localeBucket: keyof typeof EVENT_SECTION_TITLES;
   sectionTitles: (typeof EVENT_SECTION_TITLES)[keyof typeof EVENT_SECTION_TITLES];
   emptyCopy: string;
+  locationLabel: string;
 }) {
   if (!events.length) {
     return <p className="text-sm text-white/70">{emptyCopy}</p>;
@@ -809,7 +812,7 @@ function EventsSection({
       <p className="text-sm text-white/60">{formatEventDate(event.startAt, event.endAt)}</p>
       {event.location ? (
         <p className="text-xs text-white/60">
-          {t('houses.private.locationLabel')}: {event.location}
+          {locationLabel}: {event.location}
         </p>
       ) : null}
       {event.description ? <p className="mt-2 text-sm text-white/70 line-clamp-3">{event.description}</p> : null}
