@@ -322,21 +322,21 @@ export async function GET(request: NextRequest) {
     }
 
     const rawRows = (data ?? []).slice(offset, offset + limit);
-    const rows =
-      user.role === 'Super Admin'
-        ? rawRows
-        : rawRows.filter((row: any) => {
-            if (row.sender_deleted_at && row.recipient_deleted_at) return false;
-            if (row.sender_id === user.userId) {
-              if (row.sender_deleted_at) return false;
-              if (!includeArchived && row.sender_archived_at) return false;
-            }
-            if (row.recipient_id === user.userId) {
-              if (row.recipient_deleted_at) return false;
-              if (!includeArchived && row.recipient_archived_at) return false;
-            }
-            return true;
-          });
+    const rows = rawRows.filter((row: any) => {
+      if (row.sender_deleted_at && row.recipient_deleted_at) return false;
+      if (row.sender_id === user.userId) {
+        if (row.sender_deleted_at) return false;
+        if (!includeArchived && row.sender_archived_at) return false;
+      }
+      if (row.recipient_id === user.userId) {
+        if (row.recipient_deleted_at) return false;
+        if (!includeArchived && row.recipient_archived_at) return false;
+      }
+      if (!includeArchived && row.sender_archived_at && row.recipient_archived_at) {
+        return false;
+      }
+      return true;
+    });
     const participantCandidateIds = rows
       .flatMap((row: any) => [row.sender_id, row.recipient_id])
       .filter((id: unknown): id is string => typeof id === 'string');
