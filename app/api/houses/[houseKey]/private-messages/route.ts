@@ -9,6 +9,7 @@ import {
   NormalizedPrivateMessageRole,
   PrivateMessagePermissionReason,
 } from '@/lib/private-messages';
+import { syncUserHouseMembership } from '@/lib/user-houses';
 
 const MESSAGE_FETCH_LIMIT = 40;
 
@@ -85,13 +86,6 @@ async function loadMembershipMap(houseId: string, userIds: string[]) {
   } catch (error) {
     console.error('[private-messages] Failed to resolve staff roles', error);
   }
-
-  userIds.forEach((id) => {
-    if (!id) return;
-    if (!map.has(id)) {
-      map.set(id, 'member');
-    }
-  });
 
   return map;
 }
@@ -191,7 +185,11 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
   }
 
-  const membership = await loadMembershipMap(house.id, [user.userId]);
+  let membership = await loadMembershipMap(house.id, [user.userId]);
+  if (!membership.has(user.userId)) {
+    await syncUserHouseMembership(user.userId, { assignedVia: 'PROFILE', logPrefix: 'private-messages' });
+    membership = await loadMembershipMap(house.id, [user.userId]);
+  }
   if (!membership.has(user.userId)) {
     return NextResponse.json({ success: false, error: 'Membership required.' }, { status: 403 });
   }
@@ -257,7 +255,11 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
     );
   }
 
-  const membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
+  let membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
+  if (!membership.has(user.userId)) {
+    await syncUserHouseMembership(user.userId, { assignedVia: 'PROFILE', logPrefix: 'private-messages' });
+    membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
+  }
 
   if (!membership.has(recipientId)) {
     return NextResponse.json({ success: false, error: 'Recipient not part of this House.' }, { status: 404 });

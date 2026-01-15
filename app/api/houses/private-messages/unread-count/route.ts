@@ -31,20 +31,54 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { data: staffRows, error: staffError } = await supabaseAdmin
-    .from('user_houses')
-    .select('id, membership_role')
-    .eq('user_id', user.userId)
-    .is('removed_at', null)
-    .in('membership_role', ['head', 'moderator', 'HEAD', 'MODERATOR']);
+  let isStaff = user.role === 'Super Admin';
+  if (!isStaff) {
+    const { data: staffRows, error: staffError } = await supabaseAdmin
+      .from('user_houses')
+      .select('id, membership_role')
+      .eq('user_id', user.userId)
+      .is('removed_at', null)
+      .in('membership_role', ['head', 'moderator', 'HEAD', 'MODERATOR']);
 
-  if (staffError) {
-    console.error('[private-messages/unread-count] staff lookup failed', staffError);
+    if (staffError) {
+      console.error('[private-messages/unread-count] staff lookup failed', staffError);
+    }
+
+    if ((staffRows ?? []).length > 0) {
+      isStaff = true;
+    }
+  }
+
+  if (!isStaff) {
+    const { data: assignments } = await supabaseAdmin
+      .from('admin_assignments')
+      .select('id')
+      .eq('user_id', user.userId);
+    const adminIds = (assignments ?? []).map((row: any) => row.id).filter(Boolean);
+    if (adminIds.length) {
+      const { data: headRows } = await supabaseAdmin
+        .from('house_heads')
+        .select('id')
+        .in('admin_id', adminIds);
+      if ((headRows ?? []).length > 0) {
+        isStaff = true;
+      }
+    }
+  }
+
+  if (!isStaff) {
+    const { data: modRows } = await supabaseAdmin
+      .from('house_moderators')
+      .select('id')
+      .eq('user_id', user.userId);
+    if ((modRows ?? []).length > 0) {
+      isStaff = true;
+    }
   }
 
   return NextResponse.json({
     success: true,
     unreadCount: count ?? 0,
-    isStaff: (staffRows ?? []).length > 0,
+    isStaff,
   });
 }
