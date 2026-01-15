@@ -71,18 +71,18 @@ const applyTemplate = (value: string, replacements: Record<string, string>) =>
   }, value);
 
 const EVENT_EMPTY_COPY = {
-  pt: 'Sem eventos programados para já. Quando o Head agendar sessões exclusivas, ficam disponíveis aqui.',
-  es: 'Sin eventos programados por ahora. Cuando el Head programe sesiones exclusivas aparecerán aquí.',
+  pt: 'Sem eventos programados para ja. Quando o Head agendar sessoes exclusivas, ficam disponiveis aqui.',
+  es: 'Sin eventos programados por ahora. Cuando el Head programe sesiones exclusivas apareceran aqui.',
   en: 'No events scheduled yet. Once the Head posts exclusive sessions they will show up here.',
 } as const;
 
 const EVENT_SECTION_TITLES = {
   pt: {
-    upcoming: 'Próximos eventos',
+    upcoming: 'Proximos eventos',
     past: 'Eventos anteriores',
   },
   es: {
-    upcoming: 'Próximos eventos',
+    upcoming: 'Proximos eventos',
     past: 'Eventos pasados',
   },
   en: {
@@ -232,7 +232,7 @@ export function PrivateArea({
       })
       .catch((error) => {
         console.error('[house messages] failed', error);
-        setMessagesError('NÇœo foi possÇðvel carregar as mensagens.');
+        setMessagesError('Nao foi possivel carregar as mensagens.');
         setMessages([]);
       })
       .finally(() => {
@@ -341,7 +341,7 @@ export function PrivateArea({
           (language === 'pt'
             ? 'Tenta novamente mais tarde.'
             : language === 'es'
-              ? 'Intenta de nuevo m?s tarde.'
+              ? 'Intenta de nuevo mas tarde.'
               : 'Please try again later.'),
         variant: 'destructive',
       });
@@ -398,7 +398,7 @@ export function PrivateArea({
       .catch((error) => {
         if (!active) return;
         console.error('[house events] failed', error);
-        setEventsError(error instanceof Error ? error.message : 'Não foi possível carregar os eventos.');
+        setEventsError(error instanceof Error ? error.message : 'Nao foi possivel carregar os eventos.');
         setHouseEvents([]);
       })
       .finally(() => {
@@ -474,7 +474,7 @@ export function PrivateArea({
                 <ProgressStat label={t('houses.private.stats.popupsPublished')} value={metrics.onboarding.published.toLocaleString()} />
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-xs text-white/80">
-                <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">Distribuição de XP</p>
+                <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">Distribuicao de XP</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   <ProgressStat label="Head" value={`${metrics.xpBreakdown.head.toLocaleString()} XP`} />
                   <ProgressStat
@@ -484,19 +484,19 @@ export function PrivateArea({
                   <ProgressStat label="Membros" value={`${metrics.xpBreakdown.members.toLocaleString()} XP`} />
                 </div>
                 <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-white/60">
-                  Head: {metrics.roleCounts.head} · Moderadores: {metrics.roleCounts.moderators} · Membros:{' '}
+                  Head: {metrics.roleCounts.head} - Moderadores: {metrics.roleCounts.moderators} - Membros:{' '}
                   {metrics.roleCounts.members}
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
-                <p className="font-semibold text-white/90">Próximos passos</p>
+                <p className="font-semibold text-white/90">Proximos passos</p>
                 <p>
-                  {metrics.onboarding.ready.toLocaleString()} mensagens prontas · {metrics.onboarding.draft.toLocaleString()} em
+                  {metrics.onboarding.ready.toLocaleString()} mensagens prontas - {metrics.onboarding.draft.toLocaleString()} em
                   rascunho.
                 </p>
                 {metrics.onboarding.lastUpdate ? (
                   <p className="mt-2 text-white/60">
-                    Última atualização{' '}
+                    Ultima atualizacao{' '}
                     {new Date(metrics.onboarding.lastUpdate).toLocaleDateString('pt-PT', {
                       day: '2-digit',
                       month: 'short',
@@ -706,7 +706,7 @@ export function PrivateArea({
                   </div>
                 ))
               ) : (
-                <p className="text-white/70">Sem mensagens recentes. Quando o Head publicar novas instruções elas surgem aqui.</p>
+                <p className="text-white/70">Sem mensagens recentes. Quando o Head publicar novas instrucoes elas surgem aqui.</p>
               )}
             </CardContent>
           </Card>
@@ -734,14 +734,14 @@ export function PrivateArea({
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Comentários internos</CardTitle>
+              <CardTitle className="text-lg text-white">Comentarios internos</CardTitle>
             </CardHeader>
             <CardContent>
               <ContentComments
                 contentId={houseId}
                 contentType="house"
                 houseId={houseId}
-                title="Comentários privados desta House"
+                title="Comentarios privados desta House"
               />
             </CardContent>
           </Card>
