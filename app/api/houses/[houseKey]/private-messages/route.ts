@@ -16,12 +16,13 @@ const MESSAGE_FETCH_LIMIT = 40;
 
 async function resolveHouse(houseKeyRaw: string) {
   if (!supabaseAdmin) return null;
-  const houseKey = (houseKeyRaw || '').toUpperCase();
-  if (!houseKey) return null;
+  const rawKey = (houseKeyRaw || '').trim();
+  if (!rawKey) return null;
+  const houseKey = rawKey.toUpperCase();
   const { data, error } = await supabaseAdmin
     .from('houses_of_sports')
     .select('id, name_i18n, country_code, sport_id')
-    .eq('house_key', houseKey)
+    .ilike('house_key', rawKey)
     .maybeSingle();
   if (error) {
     console.error('[private-messages] Failed to resolve house', error);
