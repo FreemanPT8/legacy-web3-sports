@@ -346,6 +346,12 @@ export function PrivateArea({
     }
   };
 
+  const handleMessageOpen = (message: PrivateMessage) => {
+    if (message.isIncoming && message.isUnread) {
+      void markMessageRead(message.id);
+    }
+  };
+
   useEffect(() => {
     if (!membership?.isMember) {
       setHouseEvents(events);
@@ -632,7 +638,8 @@ export function PrivateArea({
                       key={message.id}
                       className={`space-y-2 rounded-2xl border px-4 py-3 transition ${
                         message.isIncoming ? 'border-cyan-500/20 bg-cyan-500/10' : 'border-white/10 bg-black/20'
-                      }`}
+                      } ${message.isIncoming && message.isUnread ? 'cursor-pointer' : ''}`}
+                      onClick={() => handleMessageOpen(message)}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
