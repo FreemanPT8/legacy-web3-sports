@@ -247,7 +247,10 @@ export default function AdminHouseMessagesPage() {
     }
   };
 
-  const handleMessageAction = async (message: any, action: 'archive' | 'delete') => {
+  const handleMessageAction = async (
+    message: any,
+    action: 'archive' | 'unarchive' | 'delete',
+  ) => {
     if (!message?.id) return;
     setActingOnId(message.id);
     try {
@@ -269,7 +272,9 @@ export default function AdminHouseMessagesPage() {
         (current: any) => {
           if (!current) return current;
           const shouldRemove =
-            action === 'delete' || (action === 'archive' && !filters.showArchived);
+            action === 'delete' ||
+            (action === 'archive' && !filters.showArchived) ||
+            (action === 'unarchive' && filters.showArchived);
           if (!shouldRemove) return current;
           const filtered = (current.messages || []).filter((item: any) => item.id !== message.id);
           const nextTotal =
@@ -511,17 +516,31 @@ export default function AdminHouseMessagesPage() {
                   <div>{formatDateTime(message.createdAt)}</div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleMessageAction(message, 'archive');
-                    }}
-                    disabled={actingOnId === message.id}
-                  >
-                    {t('admin.houses.messages.actionArchive')}
-                  </Button>
+                  {message.isArchived ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleMessageAction(message, 'unarchive');
+                      }}
+                      disabled={actingOnId === message.id}
+                    >
+                      {t('admin.houses.messages.actionUnarchive')}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleMessageAction(message, 'archive');
+                      }}
+                      disabled={actingOnId === message.id}
+                    >
+                      {t('admin.houses.messages.actionArchive')}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"
@@ -614,17 +633,31 @@ export default function AdminHouseMessagesPage() {
                           >
                             {t("admin.houses.messages.replyCancel")}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleMessageAction(message, 'archive');
-                            }}
-                            disabled={actingOnId === message.id}
-                          >
-                            {t('admin.houses.messages.actionArchive')}
-                          </Button>
+                          {message.isArchived ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleMessageAction(message, 'unarchive');
+                              }}
+                              disabled={actingOnId === message.id}
+                            >
+                              {t('admin.houses.messages.actionUnarchive')}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleMessageAction(message, 'archive');
+                              }}
+                              disabled={actingOnId === message.id}
+                            >
+                              {t('admin.houses.messages.actionArchive')}
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
