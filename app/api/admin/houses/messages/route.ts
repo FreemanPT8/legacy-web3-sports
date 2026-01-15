@@ -326,6 +326,7 @@ export async function GET(request: NextRequest) {
       user.role === 'Super Admin'
         ? rawRows
         : rawRows.filter((row: any) => {
+            if (row.sender_deleted_at && row.recipient_deleted_at) return false;
             if (row.sender_id === user.userId) {
               if (row.sender_deleted_at) return false;
               if (!includeArchived && row.sender_archived_at) return false;
