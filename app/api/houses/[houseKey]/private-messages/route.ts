@@ -11,6 +11,7 @@ import {
 } from '@/lib/private-messages';
 import { syncUserHouseMembership } from '@/lib/user-houses';
 import { getCountryCodeFromName } from '@/lib/countries';
+import { hasGlobalPermission } from '@/lib/server/permissions';
 
 const MESSAGE_FETCH_LIMIT = 40;
 
@@ -572,6 +573,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
         const roleMap = await loadMembershipMap(house.id, [user.userId]);
         const role = roleMap.get(user.userId);
         if (role === 'head' || role === 'moderator') {
+          isStaff = true;
+        }
+      }
+      if (!isStaff) {
+        const canManageHouses = await hasGlobalPermission(user, 'canManageHouses');
+        if (canManageHouses) {
           isStaff = true;
         }
       }
