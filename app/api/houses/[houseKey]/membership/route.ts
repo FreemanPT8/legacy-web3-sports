@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAuth } from '@/lib/middleware';
+import { getCountryCodeFromName } from '@/lib/countries';
 import { supabaseAdmin } from '@/lib/supabase';
 import { syncUserHouseMembership } from '@/lib/user-houses';
 
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
   try {
     const { data: houseRow, error: houseError } = await supabaseAdmin
       .from('houses_of_sports')
-      .select('id')
+      .select('id, sport_id, country_code')
       .eq('house_key', houseKey)
       .maybeSingle();
     if (houseError) throw houseError;
@@ -84,6 +85,39 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
         const value = row.membership_role ?? row.role ?? null;
         if (value) roles.add(value);
       });
+    }
+
+    if (roles.size === 0) {
+      const { data: userRow } = await supabaseAdmin
+        .from('users')
+        .select('primary_country_code, primary_sport_id, country, sport_id')
+        .eq('id', user.userId)
+        .maybeSingle();
+
+      const houseSport = houseRow.sport_id ?? null;
+      const houseCountry = (houseRow.country_code ?? '').toUpperCase();
+      const userSports = [userRow?.primary_sport_id ?? null, userRow?.sport_id ?? null]
+        .filter((value): value is string => Boolean(value));
+      const userCountry =
+        (userRow?.primary_country_code ?? '') ||
+        (getCountryCodeFromName(userRow?.country) ?? '') ||
+        '';
+      const hasMatch = Boolean(houseSport && userSports.includes(houseSport) && userCountry.toUpperCase() === houseCountry);
+
+      if (hasMatch) {
+        await supabaseAdmin
+          .from('user_houses')
+          .upsert(
+            {
+              user_id: user.userId,
+              house_id: houseRow.id,
+              membership_role: 'MEMBER',
+              assigned_via: 'PROFILE',
+            },
+            { onConflict: 'user_id,house_id,membership_role' },
+          );
+        roles.add('member');
+      }
     }
 
     return NextResponse.json({ success: true, isMember: roles.size > 0, roles: Array.from(roles) });
