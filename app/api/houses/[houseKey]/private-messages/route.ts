@@ -220,7 +220,30 @@ async function createMessageEvent(payload: {
   }
 }
 
-function buildMessagePayload(row: any, userMap: Record<string, any>, currentUserId: string) {
+async function fetchMessageEvents(messageIds: string[]) {
+  if (!supabaseAdmin) return [];
+  const uniqueIds = Array.from(new Set(messageIds)).filter(Boolean);
+  if (!uniqueIds.length) return [];
+  const { data, error } = await supabaseAdmin
+    .from('house_private_message_events')
+    .select('id, message_id, actor_id, event_type, created_at, metadata')
+    .in('message_id', uniqueIds)
+    .order('created_at', { ascending: true });
+  if (error) {
+    if (error.code !== '42P01') {
+      console.error('[private-messages] Failed to load message events', error);
+    }
+    return [];
+  }
+  return data ?? [];
+}
+
+function buildMessagePayload(
+  row: any,
+  userMap: Record<string, any>,
+  currentUserId: string,
+  events: any[] = [],
+) {
   const sender = userMap[row.sender_id] ?? null;
   const recipient = userMap[row.recipient_id] ?? null;
   const isSender = row.sender_id === currentUserId;
@@ -230,6 +253,23 @@ function buildMessagePayload(row: any, userMap: Record<string, any>, currentUser
     : isRecipient
       ? Boolean(row.recipient_archived_at)
       : false;
+  const history = (events ?? []).map((event: any) => {
+    const actor = event.actor_id ? userMap[event.actor_id] ?? null : null;
+    return {
+      id: event.id,
+      type: event.event_type,
+      createdAt: event.created_at,
+      actor: actor
+        ? {
+            id: actor.id,
+            name: actor.full_name || actor.username || 'Membro',
+            username: actor.username,
+            avatarUrl: actor.avatar_url,
+          }
+        : null,
+      metadata: event.metadata ?? {},
+    };
+  });
   return {
     id: row.id,
     subject: row.subject ?? 'Mensagem privada',
@@ -239,6 +279,7 @@ function buildMessagePayload(row: any, userMap: Record<string, any>, currentUser
     isIncoming: row.recipient_id === currentUserId,
     isUnread: !row.read_at && row.recipient_id === currentUserId,
     isArchived,
+    history,
     sender: sender
       ? {
           id: sender.id,
@@ -347,13 +388,29 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
   const participantSet = new Set<string>();
   participantCandidateIds.forEach((id: string) => participantSet.add(id));
   const participantIds = Array.from(participantSet) as string[];
-  const users = await loadUsers(participantIds);
+  const messageIds = rows.map((row: any) => row.id).filter(Boolean) as string[];
+  const events = await fetchMessageEvents(messageIds);
+  const eventActorIds = events
+    .map((event: any) => event.actor_id)
+    .filter((id: unknown): id is string => typeof id === 'string');
+  const users = await loadUsers([...participantIds, ...eventActorIds]);
   const userMap: Record<string, any> = {};
   users.forEach((usr: any) => {
     userMap[usr.id] = usr;
   });
 
-  const messages = rows.map((row: any) => buildMessagePayload(row, userMap, user.userId));
+  const eventMap = new Map<string, any[]>();
+  events.forEach((event: any) => {
+    if (!event.message_id) return;
+    if (!eventMap.has(event.message_id)) {
+      eventMap.set(event.message_id, []);
+    }
+    eventMap.get(event.message_id)!.push(event);
+  });
+
+  const messages = rows.map((row: any) =>
+    buildMessagePayload(row, userMap, user.userId, eventMap.get(row.id) ?? []),
+  );
 
   return NextResponse.json({ success: true, messages });
 }

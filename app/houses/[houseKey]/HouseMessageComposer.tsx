@@ -33,6 +33,13 @@ type PrivateMessage = {
   isIncoming: boolean;
   isUnread: boolean;
   isArchived: boolean;
+  history: {
+    id: string;
+    type: string;
+    createdAt: string;
+    actor: { id: string; username: string | null; name: string; avatarUrl: string | null } | null;
+    metadata: Record<string, unknown>;
+  }[];
   sender: { id: string; username: string | null; name: string; avatarUrl: string | null } | null;
   recipient: { id: string; username: string | null; name: string; avatarUrl: string | null } | null;
 };
@@ -527,6 +534,23 @@ function InboxList({
   setReplyDraft: (value: string) => void;
   t: (key: string) => string;
 }) {
+  const historyLabelFor = (eventType: string) => {
+    switch (eventType) {
+      case 'read':
+        return t('houses.private.history.read');
+      case 'reply':
+        return t('houses.private.history.reply');
+      case 'archive':
+        return t('houses.private.history.archive');
+      case 'unarchive':
+        return t('houses.private.history.unarchive');
+      case 'delete':
+        return t('houses.private.history.delete');
+      default:
+        return t('houses.private.history.reply');
+    }
+  };
+
   return (
     <div className="space-y-3">
       {loading ? (
@@ -601,6 +625,21 @@ function InboxList({
                     {t('houses.private.replyCancel')}
                   </Button>
                 </div>
+              </div>
+            )}
+            {Array.isArray(message.history) && message.history.length > 0 && (
+              <div className="mt-3 space-y-1 text-xs text-slate-400">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+                  {t('houses.private.history.title')}
+                </p>
+                {message.history.slice(0, 3).map((event) => (
+                  <div key={event.id}>
+                    {historyLabelFor(event.type)}
+                    {' '}
+                    {event.actor?.name ? `${event.actor.name} ` : ''}
+                    {event.createdAt ? formatDate(event.createdAt) : ''}
+                  </div>
+                ))}
               </div>
             )}
           </article>
