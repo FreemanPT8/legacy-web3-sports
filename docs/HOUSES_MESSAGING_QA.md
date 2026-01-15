@@ -12,6 +12,7 @@
 - Logar como qualquer conta e verificar o novo ícone de mensagens ao lado da campainha (`components/layout/Header.tsx`);
 - Garantir que o badge mostra o número correto de mensagens não lidas (endpoint `/api/houses/private-messages/unread-count`);
 - Confirmar que o link do ícone leva à inbox apropriada (`/admin/houses/messages` para administradores ou `/sports/houses` para demais contas).
+- Arquivar ou eliminar uma mensagem e confirmar que o badge se atualiza imediatamente.
 
 ### 3. Admin inbox
 - Aceder a `/admin/houses/messages` com uma conta com permissao `canManageHouses`;
@@ -19,6 +20,7 @@
 - Validar tags, timestamps e campos From/To com base nas mensagens privadas;
 - Marcar uma mensagem recebida como lida e confirmar que gera registo no historico;
 - Responder a uma mensagem e confirmar que gera historico de resposta;
+- Arquivar/eliminar e confirmar que aparece no historico (Archivada/Eliminada por).
 - Verificar que `Total messages` e botao `Refresh inbox` funcionam.
 ### 4. Página pública de Houses
 - Navegar para `/sports/houses` em português, inglês e espanhol;
@@ -32,3 +34,4 @@
 - O endpoint `/api/admin/houses/messages` filtra por Houses onde o user e Head/Moderador; Super Admin ve tudo;
 - O guardiao de XP/permissoes esta em `lib/private-messages.ts`, compartilhado entre backend, UI e testes (`tests/private-messages-permissions.test.ts`);
 - Filtragem publica usa arrays (`DEFAULT_STATUS_FILTERS`) e `filteredHouses` memorizados para alimentar os summaries e o painel da secao.
+- Migracao adicional: `20260115143000_extend_house_private_message_events.sql` para suportar archive/delete no historico.
