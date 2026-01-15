@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAuth } from '@/lib/middleware';
 import { getCountryCodeFromName } from '@/lib/countries';
-import { isMissingColumn } from '@/lib/postgres';
+import { isMissingColumn, isMissingTable } from '@/lib/postgres';
 import { supabaseAdmin } from '@/lib/supabase';
 import { syncUserHouseMembership } from '@/lib/user-houses';
 
@@ -38,23 +38,27 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     }
 
     let membershipRows: { membership_role?: string | null; role?: string | null }[] = [];
-    let { data: membershipData, error: membershipError } = await supabaseAdmin
-      .from('user_houses')
-      .select('membership_role, role')
-      .eq('user_id', user.userId)
-      .eq('house_id', houseRow.id)
-      .is('removed_at', null);
-    if (membershipError && isMissingColumn(membershipError)) {
-      const retry = await supabaseAdmin
+    try {
+      let { data: membershipData, error: membershipError } = await supabaseAdmin
         .from('user_houses')
         .select('membership_role, role')
         .eq('user_id', user.userId)
-        .eq('house_id', houseRow.id);
-      membershipData = retry.data ?? null;
-      membershipError = retry.error ?? null;
+        .eq('house_id', houseRow.id)
+        .is('removed_at', null);
+      if (membershipError && isMissingColumn(membershipError)) {
+        const retry = await supabaseAdmin
+          .from('user_houses')
+          .select('membership_role, role')
+          .eq('user_id', user.userId)
+          .eq('house_id', houseRow.id);
+        membershipData = retry.data ?? null;
+        membershipError = retry.error ?? null;
+      }
+      if (membershipError && !isMissingTable(membershipError)) throw membershipError;
+      membershipRows = membershipData ?? [];
+    } catch (error) {
+      console.error('[houses/membership] Failed to load user_houses', error);
     }
-    if (membershipError) throw membershipError;
-    membershipRows = membershipData ?? [];
 
     (membershipRows ?? []).forEach((row: { membership_role?: string | null; role?: string | null }) => {
       const value = row.membership_role ?? row.role ?? null;
@@ -62,55 +66,66 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     });
 
     if (roles.size === 0) {
-      const { data: assignments } = await supabaseAdmin
-        .from('admin_assignments')
-        .select('id')
-        .eq('user_id', user.userId);
-      const adminIds = (assignments ?? []).map((row: any) => row.id).filter(Boolean);
+      try {
+        const { data: assignments, error: assignmentsError } = await supabaseAdmin
+          .from('admin_assignments')
+          .select('id')
+          .eq('user_id', user.userId);
+        if (assignmentsError && !isMissingTable(assignmentsError)) throw assignmentsError;
+        const adminIds = (assignments ?? []).map((row: any) => row.id).filter(Boolean);
 
-      if (adminIds.length) {
-        const { data: headRows } = await supabaseAdmin
-          .from('house_heads')
+        if (adminIds.length) {
+          const { data: headRows, error: headError } = await supabaseAdmin
+            .from('house_heads')
+            .select('id')
+            .eq('house_id', houseRow.id)
+            .in('admin_id', adminIds);
+          if (headError && !isMissingTable(headError)) throw headError;
+          if (headRows && headRows.length > 0) {
+            roles.add('head');
+          }
+        }
+
+        const { data: modRows, error: modError } = await supabaseAdmin
+          .from('house_moderators')
           .select('id')
           .eq('house_id', houseRow.id)
-          .in('admin_id', adminIds);
-        if (headRows && headRows.length > 0) {
-          roles.add('head');
+          .eq('user_id', user.userId);
+        if (modError && !isMissingTable(modError)) throw modError;
+        if (modRows && modRows.length > 0) {
+          roles.add('moderator');
         }
-      }
-
-      const { data: modRows } = await supabaseAdmin
-        .from('house_moderators')
-        .select('id')
-        .eq('house_id', houseRow.id)
-        .eq('user_id', user.userId);
-      if (modRows && modRows.length > 0) {
-        roles.add('moderator');
+      } catch (error) {
+        console.error('[houses/membership] Failed to resolve staff roles', error);
       }
     }
 
     if (roles.size === 0) {
       await syncUserHouseMembership(user.userId, { assignedVia: 'PROFILE', logPrefix: 'houses/membership' });
-      let { data: refreshedRows, error: refreshError } = await supabaseAdmin
-        .from('user_houses')
-        .select('membership_role, role')
-        .eq('user_id', user.userId)
-        .eq('house_id', houseRow.id)
-        .is('removed_at', null);
-      if (refreshError && isMissingColumn(refreshError)) {
-        const retry = await supabaseAdmin
+      try {
+        let { data: refreshedRows, error: refreshError } = await supabaseAdmin
           .from('user_houses')
           .select('membership_role, role')
           .eq('user_id', user.userId)
-          .eq('house_id', houseRow.id);
-        refreshedRows = retry.data ?? null;
-        refreshError = retry.error ?? null;
+          .eq('house_id', houseRow.id)
+          .is('removed_at', null);
+        if (refreshError && isMissingColumn(refreshError)) {
+          const retry = await supabaseAdmin
+            .from('user_houses')
+            .select('membership_role, role')
+            .eq('user_id', user.userId)
+            .eq('house_id', houseRow.id);
+          refreshedRows = retry.data ?? null;
+          refreshError = retry.error ?? null;
+        }
+        if (refreshError && !isMissingTable(refreshError)) throw refreshError;
+        (refreshedRows ?? []).forEach((row: { membership_role?: string | null; role?: string | null }) => {
+          const value = row.membership_role ?? row.role ?? null;
+          if (value) roles.add(value);
+        });
+      } catch (error) {
+        console.error('[houses/membership] Failed to reload user_houses', error);
       }
-      if (refreshError) throw refreshError;
-      (refreshedRows ?? []).forEach((row: { membership_role?: string | null; role?: string | null }) => {
-        const value = row.membership_role ?? row.role ?? null;
-        if (value) roles.add(value);
-      });
     }
 
     if (roles.size === 0) {
@@ -171,7 +186,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
         .or(`sender_id.eq.${user.userId},recipient_id.eq.${user.userId}`)
         .limit(1)
         .maybeSingle();
-      if (historyError) {
+      if (historyError && !isMissingTable(historyError)) {
         console.error('[houses/membership] Failed to check message history', historyError);
       }
       if (historyRow?.id) {
