@@ -143,7 +143,7 @@ export function PrivateArea({
   welcomeMessage,
   showComposer = true,
 }: Props) {
-  const { user, loading } = useAuth();
+  const { user, loading, getToken } = useAuth();
   const [membership, setMembership] = useState<MembershipResponse | null>(null);
   const [loadingMembership, setLoadingMembership] = useState(false);
   const [messages, setMessages] = useState<HouseMessage[]>([]);
@@ -190,7 +190,11 @@ export function PrivateArea({
       return;
     }
     setLoadingMembership(true);
-    fetch(`/api/houses/${houseKey}/membership`, { cache: 'no-store' })
+    const token = getToken();
+    fetch(`/api/houses/${houseKey}/membership`, {
+      cache: 'no-store',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
       .then(async (response) => {
         if (response.status === 401) {
           setMembership(null);
@@ -210,7 +214,7 @@ export function PrivateArea({
       .finally(() => {
         setLoadingMembership(false);
       });
-  }, [loading, user, houseKey, toast]);
+  }, [loading, user, houseKey, toast, getToken]);
 
   useEffect(() => {
     if (!membership?.isMember) {
@@ -219,7 +223,11 @@ export function PrivateArea({
     }
     setMessagesLoading(true);
     setMessagesError(null);
-    fetch(`/api/houses/${houseKey}/messages?limit=5`, { cache: 'no-store' })
+    const token = getToken();
+    fetch(`/api/houses/${houseKey}/messages?limit=5`, {
+      cache: 'no-store',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as
           | { success: true; messages: HouseMessage[] }
@@ -242,7 +250,7 @@ export function PrivateArea({
       .finally(() => {
         setMessagesLoading(false);
       });
-  }, [houseKey, membership?.isMember]);
+  }, [houseKey, membership?.isMember, getToken]);
 
   const loadPrivateMessages = useCallback(async () => {
     if (!membership?.isMember) {
@@ -252,7 +260,11 @@ export function PrivateArea({
     setPrivateMessagesLoading(true);
     setPrivateMessagesError(null);
     try {
-      const response = await fetch(`/api/houses/${houseKey}/private-messages`, { cache: 'no-store' });
+      const token = getToken();
+      const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
+        cache: 'no-store',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.success) {
         throw new Error(data?.error || 'Failed to load private messages.');
@@ -265,7 +277,7 @@ export function PrivateArea({
     } finally {
       setPrivateMessagesLoading(false);
     }
-  }, [houseKey, membership?.isMember, language]);
+  }, [houseKey, membership?.isMember, language, getToken]);
 
   useEffect(() => {
     void loadPrivateMessages();
@@ -313,9 +325,13 @@ export function PrivateArea({
     }
     setSendingMessage(true);
     try {
+      const token = getToken();
       const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           recipientId: selectedRecipient,
           body: messageDraft.trim(),
@@ -348,9 +364,13 @@ export function PrivateArea({
 
   const markMessageRead = async (messageId: string) => {
     try {
+      const token = getToken();
       await fetch(`/api/houses/${houseKey}/private-messages`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ messageId }),
       });
       window.dispatchEvent(new Event('house:messages:update'));
@@ -382,7 +402,11 @@ export function PrivateArea({
       eventParams.set('locale', localeGuess);
     }
     const querySuffix = eventParams.toString();
-    fetch(`/api/houses/${houseKey}/events${querySuffix ? `?${querySuffix}` : ''}`, { cache: 'no-store' })
+    const token = getToken();
+    fetch(`/api/houses/${houseKey}/events${querySuffix ? `?${querySuffix}` : ''}`, {
+      cache: 'no-store',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as
           | { success: true; events: HouseEvent[] }
@@ -411,7 +435,7 @@ export function PrivateArea({
     return () => {
       active = false;
     };
-  }, [events, houseKey, membership?.isMember]);
+  }, [events, houseKey, membership?.isMember, getToken]);
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 px-4 md:px-8">
