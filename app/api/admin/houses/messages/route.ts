@@ -472,7 +472,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: messageRow, error: messageError } = await supabaseAdmin
       .from('house_private_messages')
-      .select('id, house_key')
+      .select('id, house_id, house_key, sender_id, recipient_id')
       .eq('id', messageId)
       .maybeSingle();
     if (messageError) {
@@ -489,8 +489,11 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const isParticipant =
+      messageRow.sender_id === user.userId || messageRow.recipient_id === user.userId;
+
     const hasManageHouses = await hasGlobalPermission(user, 'canManageHouses');
-    if (user.role !== 'Super Admin' && !hasManageHouses) {
+    if (user.role !== 'Super Admin' && !hasManageHouses && !isParticipant) {
       const houses = await resolveAccessibleHouses(user);
       const allowedKeys = new Set(
         (houses ?? []).map((house) => (house.houseKey || '').toUpperCase()),
