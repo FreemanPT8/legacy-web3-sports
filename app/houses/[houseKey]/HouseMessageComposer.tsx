@@ -99,14 +99,6 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
     if (loadingMembership) {
       return;
     }
-    if (!membership || !membership.success || !membership.isMember) {
-      toast({
-        title: t('houses.private.toastAccessErrorTitle'),
-        description: t('houses.private.membershipAccessRequired'),
-        variant: 'destructive',
-      });
-      return;
-    }
     if (!selectedRecipient) {
       toast({
         title: t('houses.private.toastMissingRecipientTitle'),
@@ -204,7 +196,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
 
   return (
     <form className="space-y-4" onSubmit={handleSend}>
-      {!membership?.isMember && (
+      {membership?.success && !membership.isMember && (
         <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
           {t('houses.private.membershipAccessRequired')}
         </div>
