@@ -30,7 +30,7 @@ type Props = {
 };
 
 export function HouseMessageComposer({ houseKey, roster }: Props) {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const { language, t } = useLanguage();
   const { toast } = useToast();
   const [membership, setMembership] = useState<MembershipResponse | null>(null);
@@ -65,7 +65,11 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
       return;
     }
     setLoadingMembership(true);
-    fetch(`/api/houses/${houseKey}/membership`, { cache: 'no-store' })
+    const token = getToken();
+    fetch(`/api/houses/${houseKey}/membership`, {
+      cache: 'no-store',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
       .then(async (response) => {
         if (response.status === 401) {
           setMembership(null);
@@ -134,9 +138,13 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
 
     setSendingMessage(true);
     try {
+      const token = getToken();
       const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           recipientId: selectedRecipient,
           subject: subjectDraft.trim(),
