@@ -250,7 +250,19 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     membership = await loadMembershipMap(house.id, [user.userId]);
   }
   if (!membership.has(user.userId)) {
-    return NextResponse.json({ success: false, error: 'Membership required.' }, { status: 403 });
+    const { data: messageRow, error: messageLookupError } = await supabaseAdmin
+      .from('house_private_messages')
+      .select('id')
+      .eq('house_key', house.houseKey)
+      .or(`sender_id.eq.${user.userId},recipient_id.eq.${user.userId}`)
+      .limit(1)
+      .maybeSingle();
+    if (messageLookupError) {
+      console.error('[private-messages] Failed to validate access by history', messageLookupError);
+    }
+    if (!messageRow) {
+      return NextResponse.json({ success: false, error: 'Membership required.' }, { status: 403 });
+    }
   }
 
   const limitParam = Number(request.nextUrl.searchParams.get('limit') || MESSAGE_FETCH_LIMIT);
