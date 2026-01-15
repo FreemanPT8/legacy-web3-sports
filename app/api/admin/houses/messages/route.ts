@@ -245,6 +245,7 @@ function buildMessageResponse(row: any, housesMap: Record<string, string>, userM
     houseId: row.house_id,
     houseKey: row.house_key,
     houseLabel,
+    isArchived: Boolean(row.sender_archived_at && row.recipient_archived_at),
     subject: row.subject || 'Mensagem privada',
     body: row.body,
     createdAt: row.created_at,
