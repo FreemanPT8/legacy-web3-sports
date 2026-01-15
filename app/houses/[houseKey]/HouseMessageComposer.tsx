@@ -78,22 +78,12 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
         const data = (await response.json()) as MembershipResponse;
         if (!response.ok || !data?.success) {
           setMembership(null);
-          toast({
-            title: t('houses.private.toastAccessErrorTitle'),
-            description: t('houses.private.toastAccessErrorBody'),
-            variant: 'destructive',
-          });
           return;
         }
         setMembership(data);
       })
       .catch((error) => {
         console.error('[house message composer] membership failed', error);
-        toast({
-          title: t('houses.private.toastAccessErrorTitle'),
-          description: t('houses.private.toastAccessErrorBody'),
-          variant: 'destructive',
-        });
       })
       .finally(() => {
         setLoadingMembership(false);
