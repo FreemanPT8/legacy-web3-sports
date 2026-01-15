@@ -569,6 +569,9 @@ export function PrivateArea({
               <CardDescription className="text-sm text-slate-300">
                 {t('houses.private.messagesDescription')}
               </CardDescription>
+              <p className="text-xs text-slate-400">
+                {t('houses.private.messagesHint')}
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               {!hasXpForMessages && (

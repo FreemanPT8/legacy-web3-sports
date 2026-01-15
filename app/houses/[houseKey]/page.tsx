@@ -171,9 +171,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
               ) : (
                 <p className="text-sm text-slate-300">Head a anunciar em breve.</p>
               )}
-              <Button asChild variant="outline" className="w-full border-white/20 text-white">
-                <a href="#house-private-messages">Enviar mensagem ao Head</a>
-              </Button>
+              
               {house.head?.manifesto?.length ? (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
                   {house.head.manifesto.map((line, index) => (
@@ -246,27 +244,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
 
           <Card className="border-white/10 bg-[#03121b]/90">
             <CardHeader className="space-y-2">
-              <CardTitle className="text-lg text-white">Fala com o Head da House</CardTitle>
-              <p className="text-sm text-white/70">
-                O acesso a area privada e automatico quando te registas com o desporto + pais de uma House ativa.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-white/80">
-              <p>
-                Se tiveres duvidas ou curiosidades, podes enviar uma mensagem ao Head ou Moderadores a partir da area privada.
-                A comunicacao privada desbloqueia com <strong>369 XP</strong>.
-              </p>
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
-                Nao sao tolerados discursos de odio, assedio, xenofobia ou spam. Mantem a conversa objetiva e respeitosa.
-              </div>
-              <a
-                href="#house-private-messages"
-                className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                Ir para mensagens privadas
-              </a>
-            </CardContent>
-          </Card>
+              
         </section>
       </main>
       <Footer />
