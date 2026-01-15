@@ -523,10 +523,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
 
   if (!isStaff) {
     try {
-      const { data: assignments } = await supabaseAdmin
+      const { data: assignments, error: assignmentError } = await supabaseAdmin
         .from('admin_assignments')
-        .select('id')
+        .select('id, houses')
         .eq('user_id', user.userId);
+      if (assignmentError && assignmentError.code !== '42703') {
+        console.error('[private-messages] Failed to load admin assignments', assignmentError);
+      }
       const adminIds = (assignments ?? []).map((row: any) => row.id).filter(Boolean);
       if (adminIds.length) {
         const { data: headRows } = await supabaseAdmin
@@ -535,6 +538,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
           .eq('house_id', house.id)
           .in('admin_id', adminIds);
         if (headRows && headRows.length > 0) {
+          isStaff = true;
+        }
+      }
+      if (!isStaff && assignments) {
+        const targetKey = house.houseKey.toUpperCase();
+        const targetId = house.id;
+        const hasAccess = assignments.some((row: any) => {
+          const houses = Array.isArray(row?.houses) ? row.houses : [];
+          return houses.some((value: any) => {
+            if (!value) return false;
+            const normalized = value.toString().toUpperCase();
+            return normalized === targetKey || normalized === targetId;
+          });
+        });
+        if (hasAccess) {
           isStaff = true;
         }
       }
