@@ -56,6 +56,7 @@ export default function AdminHouseMessagesPage() {
     direction: 'all',
     search: '',
     limit: 25,
+    showArchived: false,
   });
 
   const queryKey = useMemo(() => {
@@ -65,6 +66,7 @@ export default function AdminHouseMessagesPage() {
     if (filters.direction && filters.direction !== 'all') params.set('direction', filters.direction);
     if (filters.search) params.set('q', filters.search.trim());
     params.set('limit', filters.limit.toString());
+    if (filters.showArchived) params.set('includeArchived', 'true');
     return params.toString();
   }, [filters]);
 
@@ -90,7 +92,10 @@ export default function AdminHouseMessagesPage() {
   const messages = data?.messages ?? [];
   const total = data?.total ?? 0;
 
-  const handleFilterChange = (field: keyof typeof filters, value: string | number) => {
+  const handleFilterChange = (
+    field: keyof typeof filters,
+    value: string | number | boolean,
+  ) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -362,6 +367,16 @@ export default function AdminHouseMessagesPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-end">
+              <Button
+                variant={filters.showArchived ? 'default' : 'outline'}
+                onClick={() => handleFilterChange('showArchived', !filters.showArchived)}
+              >
+                {filters.showArchived
+                  ? t('admin.houses.messages.filters.hideArchived')
+                  : t('admin.houses.messages.filters.showArchived')}
+              </Button>
             </div>
           </CardContent>
           <CardContent className="flex items-center justify-between gap-3 border-t border-white/5 pt-4">

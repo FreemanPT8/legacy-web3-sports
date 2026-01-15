@@ -204,6 +204,13 @@ async function createMessageEvent(payload: {
 function buildMessagePayload(row: any, userMap: Record<string, any>, currentUserId: string) {
   const sender = userMap[row.sender_id] ?? null;
   const recipient = userMap[row.recipient_id] ?? null;
+  const isSender = row.sender_id === currentUserId;
+  const isRecipient = row.recipient_id === currentUserId;
+  const isArchived = isSender
+    ? Boolean(row.sender_archived_at)
+    : isRecipient
+      ? Boolean(row.recipient_archived_at)
+      : false;
   return {
     id: row.id,
     subject: row.subject ?? 'Mensagem privada',
@@ -212,6 +219,7 @@ function buildMessagePayload(row: any, userMap: Record<string, any>, currentUser
     readAt: row.read_at,
     isIncoming: row.recipient_id === currentUserId,
     isUnread: !row.read_at && row.recipient_id === currentUserId,
+    isArchived,
     sender: sender
       ? {
           id: sender.id,

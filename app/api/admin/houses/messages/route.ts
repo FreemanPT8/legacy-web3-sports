@@ -275,6 +275,7 @@ export async function GET(request: NextRequest) {
     const statusFilter = (searchParams.get('status') || 'all') as keyof typeof STATUS_FILTERS;
     const directionFilter = (searchParams.get('direction') || 'all').toLowerCase();
     const searchTerm = (searchParams.get('q') || '').trim();
+    const includeArchived = searchParams.get('includeArchived') === 'true';
     const limit = Math.min(Math.max(Number(searchParams.get('limit') || 25), 5), 100);
     const offset = Math.max(Number(searchParams.get('offset') || 0), 0);
     const prefetchLimit = offset + limit;
@@ -327,11 +328,11 @@ export async function GET(request: NextRequest) {
         : rawRows.filter((row: any) => {
             if (row.sender_id === user.userId) {
               if (row.sender_deleted_at) return false;
-              if (row.sender_archived_at) return false;
+              if (!includeArchived && row.sender_archived_at) return false;
             }
             if (row.recipient_id === user.userId) {
               if (row.recipient_deleted_at) return false;
-              if (row.recipient_archived_at) return false;
+              if (!includeArchived && row.recipient_archived_at) return false;
             }
             return true;
           });

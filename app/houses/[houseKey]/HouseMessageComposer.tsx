@@ -32,6 +32,7 @@ type PrivateMessage = {
   readAt: string | null;
   isIncoming: boolean;
   isUnread: boolean;
+  isArchived: boolean;
   sender: { id: string; username: string | null; name: string; avatarUrl: string | null } | null;
   recipient: { id: string; username: string | null; name: string; avatarUrl: string | null } | null;
 };
@@ -56,6 +57,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
   const [inboxError, setInboxError] = useState<string | null>(null);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const xpTotal = user?.xp_total ?? 0;
   const hasXpForMessages = xpTotal >= MESSAGE_XP_THRESHOLD;
 
@@ -82,7 +84,8 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
     setInboxLoading(true);
     setInboxError(null);
     try {
-      const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
+      const querySuffix = showArchived ? '?includeArchived=true' : '';
+      const response = await fetch(`/api/houses/${houseKey}/private-messages${querySuffix}`, {
         cache: 'no-store',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -133,7 +136,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
 
   useEffect(() => {
     void loadInboxMessages();
-  }, [houseKey, user]);
+  }, [houseKey, user, showArchived]);
 
   useEffect(() => {
     if (!user) return;
@@ -142,7 +145,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
     };
     window.addEventListener('house:messages:update', handler);
     return () => window.removeEventListener('house:messages:update', handler);
-  }, [user, houseKey]);
+  }, [user, houseKey, showArchived]);
 
   const handleSend = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -281,7 +284,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
     }
   };
 
-  const handleMessageAction = async (messageId: string, action: 'archive' | 'delete') => {
+  const handleMessageAction = async (messageId: string, action: 'archive' | 'unarchive' | 'delete') => {
     try {
       const token = getToken();
       const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
@@ -354,6 +357,16 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
     return (
       <div className="space-y-3">
         <p className="text-xs text-white/70">{t('houses.private.noRecipients')}</p>
+        <div className="flex items-center justify-between text-xs text-slate-300">
+          <span>{t('houses.private.inboxTitle')}</span>
+          <button
+            type="button"
+            onClick={() => setShowArchived((prev) => !prev)}
+            className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-white/70 hover:border-cyan-400/40 hover:text-white"
+          >
+            {showArchived ? t('houses.private.hideArchived') : t('houses.private.showArchived')}
+          </button>
+        </div>
         <InboxList
           loading={inboxLoading}
           error={inboxError}
@@ -361,6 +374,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
           onMarkRead={handleMarkRead}
           formatDate={formatInboxDate}
           onArchive={(messageId) => handleMessageAction(messageId, 'archive')}
+          onUnarchive={(messageId) => handleMessageAction(messageId, 'unarchive')}
           onDelete={(messageId) => handleMessageAction(messageId, 'delete')}
           onReplyStart={(messageId) => {
             setReplyingToId(messageId);
@@ -442,6 +456,16 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
           {sendingMessage ? t('houses.private.sending') : t('houses.private.sendMessage')}
         </Button>
       </form>
+      <div className="flex items-center justify-between text-xs text-slate-300">
+        <span>{t('houses.private.inboxTitle')}</span>
+        <button
+          type="button"
+          onClick={() => setShowArchived((prev) => !prev)}
+          className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-white/70 hover:border-cyan-400/40 hover:text-white"
+        >
+          {showArchived ? t('houses.private.hideArchived') : t('houses.private.showArchived')}
+        </button>
+      </div>
       <InboxList
         loading={inboxLoading}
         error={inboxError}
@@ -449,6 +473,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
         onMarkRead={handleMarkRead}
         formatDate={formatInboxDate}
         onArchive={(messageId) => handleMessageAction(messageId, 'archive')}
+        onUnarchive={(messageId) => handleMessageAction(messageId, 'unarchive')}
         onDelete={(messageId) => handleMessageAction(messageId, 'delete')}
         onReplyStart={(messageId) => {
           setReplyingToId(messageId);
@@ -475,6 +500,7 @@ function InboxList({
   onMarkRead,
   formatDate,
   onArchive,
+  onUnarchive,
   onDelete,
   onReplyStart,
   onReplyCancel,
@@ -490,6 +516,7 @@ function InboxList({
   onMarkRead: (messageId: string) => void;
   formatDate: (timestamp: string) => string;
   onArchive: (messageId: string) => void;
+  onUnarchive: (messageId: string) => void;
   onDelete: (messageId: string) => void;
   onReplyStart: (messageId: string) => void;
   onReplyCancel: () => void;
@@ -544,9 +571,15 @@ function InboxList({
               <Button size="sm" variant="ghost" onClick={() => onReplyStart(message.id)}>
                 {t('houses.private.actionReply')}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => onArchive(message.id)}>
-                {t('houses.private.actionArchive')}
-              </Button>
+              {message.isArchived ? (
+                <Button size="sm" variant="ghost" onClick={() => onUnarchive(message.id)}>
+                  {t('houses.private.actionUnarchive')}
+                </Button>
+              ) : (
+                <Button size="sm" variant="ghost" onClick={() => onArchive(message.id)}>
+                  {t('houses.private.actionArchive')}
+                </Button>
+              )}
               <Button size="sm" variant="ghost" onClick={() => onDelete(message.id)}>
                 {t('houses.private.actionDelete')}
               </Button>
