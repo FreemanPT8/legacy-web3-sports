@@ -10,6 +10,7 @@ import {
   PrivateMessagePermissionReason,
 } from '@/lib/private-messages';
 import { syncUserHouseMembership } from '@/lib/user-houses';
+import { getCountryCodeFromName } from '@/lib/countries';
 
 const MESSAGE_FETCH_LIMIT = 40;
 
@@ -19,7 +20,7 @@ async function resolveHouse(houseKeyRaw: string) {
   if (!houseKey) return null;
   const { data, error } = await supabaseAdmin
     .from('houses_of_sports')
-    .select('id, name_i18n, country_code')
+    .select('id, name_i18n, country_code, sport_id')
     .eq('house_key', houseKey)
     .maybeSingle();
   if (error) {
@@ -27,6 +28,60 @@ async function resolveHouse(houseKeyRaw: string) {
     return null;
   }
   return { ...data, houseKey };
+}
+
+async function ensureHouseMembership(userId: string, house: { id: string; houseKey: string; sport_id?: string | null; country_code?: string | null }) {
+  if (!supabaseAdmin) return false;
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('primary_country_code, primary_sport_id, country, sport_id')
+    .eq('id', userId)
+    .maybeSingle();
+
+  let houseSport = house.sport_id ?? null;
+  const houseCountryFallback = house.houseKey.split('_').pop() ?? '';
+  const houseCountry = (house.country_code ?? houseCountryFallback ?? '').toUpperCase();
+
+  if (!houseSport) {
+    const houseSportCode = house.houseKey.split('_')[0] ?? '';
+    if (houseSportCode) {
+      const { data: sportRow } = await supabaseAdmin
+        .from('sports')
+        .select('id, code')
+        .ilike('code', houseSportCode)
+        .maybeSingle();
+      if (sportRow?.id) {
+        houseSport = sportRow.id;
+      }
+    }
+  }
+
+  let userCountry =
+    (userRow?.primary_country_code ?? '') ||
+    (getCountryCodeFromName(userRow?.country) ?? '') ||
+    '';
+  if (!userCountry && userRow?.country) {
+    userCountry = userRow.country.trim().slice(0, 2).toUpperCase();
+  }
+
+  const userSports = [userRow?.primary_sport_id ?? null, userRow?.sport_id ?? null]
+    .filter((value): value is string => Boolean(value));
+
+  const hasMatch = Boolean(houseSport && userSports.includes(houseSport) && userCountry.toUpperCase() === houseCountry);
+  if (!hasMatch) return false;
+
+  await supabaseAdmin
+    .from('user_houses')
+    .upsert(
+      {
+        user_id: userId,
+        house_id: house.id,
+        membership_role: 'MEMBER',
+        assigned_via: 'PROFILE',
+      },
+      { onConflict: 'user_id,house_id,membership_role' },
+    );
+  return true;
 }
 
 async function loadMembershipMap(houseId: string, userIds: string[]) {
@@ -191,6 +246,10 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     membership = await loadMembershipMap(house.id, [user.userId]);
   }
   if (!membership.has(user.userId)) {
+    await ensureHouseMembership(user.userId, house);
+    membership = await loadMembershipMap(house.id, [user.userId]);
+  }
+  if (!membership.has(user.userId)) {
     return NextResponse.json({ success: false, error: 'Membership required.' }, { status: 403 });
   }
 
@@ -260,9 +319,20 @@ export async function POST(request: NextRequest, { params }: { params: { houseKe
     await syncUserHouseMembership(user.userId, { assignedVia: 'PROFILE', logPrefix: 'private-messages' });
     membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
   }
+  if (!membership.has(user.userId)) {
+    await ensureHouseMembership(user.userId, house);
+    membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
+  }
+  if (!membership.has(user.userId)) {
+    return NextResponse.json({ success: false, error: 'Membership required.' }, { status: 403 });
+  }
 
   if (!membership.has(recipientId)) {
     await syncUserHouseMembership(recipientId, { assignedVia: 'PROFILE', logPrefix: 'private-messages' });
+    membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
+  }
+  if (!membership.has(recipientId)) {
+    await ensureHouseMembership(recipientId, house);
     membership = await loadMembershipMap(house.id, [user.userId, recipientId]);
   }
 
