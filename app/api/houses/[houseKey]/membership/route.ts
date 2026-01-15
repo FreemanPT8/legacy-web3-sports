@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAuth } from '@/lib/middleware';
 import { getCountryCodeFromName } from '@/lib/countries';
+import { isMissingColumn } from '@/lib/postgres';
 import { supabaseAdmin } from '@/lib/supabase';
 import { syncUserHouseMembership } from '@/lib/user-houses';
 
@@ -36,13 +37,24 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
       roles.add('super-admin');
     }
 
-    const { data: membershipRows, error: membershipError } = await supabaseAdmin
+    let membershipRows: { membership_role?: string | null; role?: string | null }[] = [];
+    let { data: membershipData, error: membershipError } = await supabaseAdmin
       .from('user_houses')
       .select('membership_role, role')
       .eq('user_id', user.userId)
       .eq('house_id', houseRow.id)
       .is('removed_at', null);
+    if (membershipError && isMissingColumn(membershipError)) {
+      const retry = await supabaseAdmin
+        .from('user_houses')
+        .select('membership_role, role')
+        .eq('user_id', user.userId)
+        .eq('house_id', houseRow.id);
+      membershipData = retry.data ?? null;
+      membershipError = retry.error ?? null;
+    }
     if (membershipError) throw membershipError;
+    membershipRows = membershipData ?? [];
 
     (membershipRows ?? []).forEach((row: { membership_role?: string | null; role?: string | null }) => {
       const value = row.membership_role ?? row.role ?? null;
@@ -79,12 +91,22 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
 
     if (roles.size === 0) {
       await syncUserHouseMembership(user.userId, { assignedVia: 'PROFILE', logPrefix: 'houses/membership' });
-      const { data: refreshedRows } = await supabaseAdmin
+      let { data: refreshedRows, error: refreshError } = await supabaseAdmin
         .from('user_houses')
         .select('membership_role, role')
         .eq('user_id', user.userId)
         .eq('house_id', houseRow.id)
         .is('removed_at', null);
+      if (refreshError && isMissingColumn(refreshError)) {
+        const retry = await supabaseAdmin
+          .from('user_houses')
+          .select('membership_role, role')
+          .eq('user_id', user.userId)
+          .eq('house_id', houseRow.id);
+        refreshedRows = retry.data ?? null;
+        refreshError = retry.error ?? null;
+      }
+      if (refreshError) throw refreshError;
       (refreshedRows ?? []).forEach((row: { membership_role?: string | null; role?: string | null }) => {
         const value = row.membership_role ?? row.role ?? null;
         if (value) roles.add(value);
