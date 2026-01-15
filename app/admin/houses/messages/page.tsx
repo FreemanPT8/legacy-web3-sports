@@ -18,14 +18,6 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 
-const fetcher = (url: string) =>
-  fetch(url).then((response) => {
-    if (!response.ok) {
-      throw new Error('Failed to load house messages');
-    }
-    return response.json();
-  });
-
 const STATUS_OPTIONS = [
   { value: 'all', labelKey: 'admin.houses.messages.status.all' },
   { value: 'unread', labelKey: 'admin.houses.messages.status.unread' },
@@ -48,7 +40,7 @@ type HouseOption = {
 };
 
 export default function AdminHouseMessagesPage() {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const { language, t } = useLanguage();
   const { mutate } = useSWRConfig();
   const [hasPurgedSeeded, setHasPurgedSeeded] = useState(false);
@@ -76,6 +68,19 @@ export default function AdminHouseMessagesPage() {
   }, [filters]);
 
   const apiUrl = `/api/admin/houses/messages${queryKey ? `?${queryKey}` : ''}`;
+  const fetcher = useMemo(() => {
+    return async (url: string) => {
+      const token = getToken();
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) {
+        throw new Error('Failed to load house messages');
+      }
+      return response.json();
+    };
+  }, [getToken]);
+
   const { data, error, isLoading } = useSWR(apiUrl, fetcher, {
     revalidateOnFocus: false,
   });
@@ -148,9 +153,13 @@ export default function AdminHouseMessagesPage() {
     setSendingReply(true);
     setReplyError(null);
     try {
+      const token = getToken();
       const response = await fetch(`/api/houses/${message.houseKey}/private-messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           recipientId,
           body: replyDraft.trim(),
@@ -180,9 +189,13 @@ export default function AdminHouseMessagesPage() {
     if (!message?.id) return;
     setMarkingReadId(message.id);
     try {
+      const token = getToken();
       await fetch(`/api/houses/${message.houseKey}/private-messages`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ messageId: message.id }),
       });
       window.dispatchEvent(new Event('house:messages:update'));

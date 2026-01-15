@@ -283,6 +283,25 @@ export function PrivateArea({
     void loadPrivateMessages();
   }, [loadPrivateMessages]);
 
+  useEffect(() => {
+    if (!membership?.isMember) return;
+    const interval = setInterval(() => {
+      void loadPrivateMessages();
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [membership?.isMember, loadPrivateMessages]);
+
+  useEffect(() => {
+    if (!membership?.isMember) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadPrivateMessages();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [membership?.isMember, loadPrivateMessages]);
+
   const formatPrivateMessageDate = (timestamp: string) =>
     new Date(timestamp).toLocaleString(
       language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US',
