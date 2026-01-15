@@ -251,7 +251,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
       </main>
       <Footer />
 
-      <div className="py-12">
+      <div className="py-12" id="house-private-messages">
         <PrivateArea
           houseKey={house.houseKey}
           houseId={house.id}
