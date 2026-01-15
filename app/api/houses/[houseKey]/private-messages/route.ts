@@ -518,7 +518,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
 
   const isSender = user.userId === messageRow.sender_id;
   const isRecipient = user.userId === messageRow.recipient_id;
-  let isStaff = user.role === 'Super Admin';
+  let isStaff = user.role === 'Super Admin' || user.role === 'Admin';
 
   if (!isStaff) {
     try {
@@ -545,6 +545,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
           .eq('house_id', house.id)
           .eq('user_id', user.userId);
         if (modRows && modRows.length > 0) {
+          isStaff = true;
+        }
+      }
+
+      if (!isStaff) {
+        const roleMap = await loadMembershipMap(house.id, [user.userId]);
+        const role = roleMap.get(user.userId);
+        if (role === 'head' || role === 'moderator') {
           isStaff = true;
         }
       }
