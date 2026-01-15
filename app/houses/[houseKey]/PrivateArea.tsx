@@ -340,6 +340,7 @@ export function PrivateArea({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId }),
       });
+      window.dispatchEvent(new Event('house:messages:update'));
       void loadPrivateMessages();
     } catch (error) {
       console.error('[private messages] mark read failed', error);

@@ -94,6 +94,20 @@ export const Header = memo(function Header() {
     return () => clearInterval(interval);
   }, [user]);
 
+  const refreshPrivateMessageCount = useCallback(async () => {
+    try {
+      const response = await fetch('/api/houses/private-messages/unread-count');
+      const data = await response.json();
+      if (response.ok && data?.success) {
+        const count = typeof data.unreadCount === 'number' ? data.unreadCount : 0;
+        setMessageBadgeCount(count);
+        setMessageStaffAccess(!!data.isStaff);
+      }
+    } catch (error) {
+      console.error('Failed to fetch private message count:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) {
       setMessageBadgeCount(0);
@@ -101,24 +115,19 @@ export const Header = memo(function Header() {
       return;
     }
 
-    const fetchPrivateMessageCount = async () => {
-      try {
-        const response = await fetch('/api/houses/private-messages/unread-count');
-        const data = await response.json();
-        if (response.ok && data?.success) {
-          const count = typeof data.unreadCount === 'number' ? data.unreadCount : 0;
-          setMessageBadgeCount(count);
-          setMessageStaffAccess(!!data.isStaff);
-        }
-      } catch (error) {
-        console.error('Failed to fetch private message count:', error);
-      }
-    };
-
-    fetchPrivateMessageCount();
-    const interval = setInterval(fetchPrivateMessageCount, 60000);
+    refreshPrivateMessageCount();
+    const interval = setInterval(refreshPrivateMessageCount, 60000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [refreshPrivateMessageCount, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const handler = () => {
+      void refreshPrivateMessageCount();
+    };
+    window.addEventListener('house:messages:update', handler);
+    return () => window.removeEventListener('house:messages:update', handler);
+  }, [refreshPrivateMessageCount, user]);
 
   useEffect(() => {
     if (!user) {

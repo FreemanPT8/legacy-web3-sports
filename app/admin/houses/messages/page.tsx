@@ -185,6 +185,7 @@ export default function AdminHouseMessagesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId: message.id }),
       });
+      window.dispatchEvent(new Event('house:messages:update'));
       refreshMessages();
     } catch (error) {
       console.error('[admin house messages] mark read failed', error);
