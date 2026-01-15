@@ -32,6 +32,10 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
 
     const roles = new Set<string>();
 
+    if (user.role === 'Super Admin') {
+      roles.add('super-admin');
+    }
+
     const { data: membershipRows, error: membershipError } = await supabaseAdmin
       .from('user_houses')
       .select('membership_role, role')
@@ -94,8 +98,22 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
         .eq('id', user.userId)
         .maybeSingle();
 
-      const houseSport = houseRow.sport_id ?? null;
-      const houseCountry = (houseRow.country_code ?? '').toUpperCase();
+      let houseSport = houseRow.sport_id ?? null;
+      const houseCountryFallback = houseKey.split('_').pop() ?? '';
+      const houseCountry = (houseRow.country_code ?? houseCountryFallback ?? '').toUpperCase();
+      if (!houseSport) {
+        const houseSportCode = houseKey.split('_')[0] ?? '';
+        if (houseSportCode) {
+          const { data: sportRow } = await supabaseAdmin
+            .from('sports')
+            .select('id, code')
+            .ilike('code', houseSportCode)
+            .maybeSingle();
+          if (sportRow?.id) {
+            houseSport = sportRow.id;
+          }
+        }
+      }
       const userSports = [userRow?.primary_sport_id ?? null, userRow?.sport_id ?? null]
         .filter((value): value is string => Boolean(value));
       const userCountry =

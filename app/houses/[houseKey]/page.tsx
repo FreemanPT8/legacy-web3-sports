@@ -239,7 +239,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
                 Nao sao tolerados discursos de odio, assedio, xenofobia ou spam. Mantem a conversa objetiva e respeitosa.
               </div>
               <a
-                href="#house-private-messages"
+                href="#house-private-message-composer"
                 className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
               >
                 Ir para mensagens privadas
@@ -249,7 +249,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
 
         </section>
       </main>
-      <div className="py-12" id="house-private-messages">
+      <div className="py-12">
         <PrivateArea
           houseKey={house.houseKey}
           houseId={house.id}
