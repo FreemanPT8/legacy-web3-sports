@@ -271,7 +271,23 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
 
   const query = supabaseAdmin
     .from('house_private_messages')
-    .select('id, subject, body, created_at, read_at, sender_id, recipient_id, house_id, house_key')
+    .select(
+      [
+        'id',
+        'subject',
+        'body',
+        'created_at',
+        'read_at',
+        'sender_id',
+        'recipient_id',
+        'house_id',
+        'house_key',
+        'sender_archived_at',
+        'recipient_archived_at',
+        'sender_deleted_at',
+        'recipient_deleted_at',
+      ].join(', '),
+    )
     .eq('house_key', house.houseKey)
     .or(`sender_id.eq.${user.userId},recipient_id.eq.${user.userId}`)
     .order('created_at', { ascending: false })
@@ -286,7 +302,18 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     return NextResponse.json({ success: false, error: 'Failed to load private messages.' }, { status: 500 });
   }
 
-  const rows = data ?? [];
+  const includeArchived = request.nextUrl.searchParams.get('includeArchived') === 'true';
+  const rows = (data ?? []).filter((row: any) => {
+    if (row.sender_id === user.userId) {
+      if (row.sender_deleted_at) return false;
+      if (!includeArchived && row.sender_archived_at) return false;
+    }
+    if (row.recipient_id === user.userId) {
+      if (row.recipient_deleted_at) return false;
+      if (!includeArchived && row.recipient_archived_at) return false;
+    }
+    return true;
+  });
   const participantCandidateIds = rows
     .flatMap((row: any) => [row.sender_id, row.recipient_id])
     .filter((id: unknown): id is string => typeof id === 'string');
@@ -461,13 +488,16 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
 
   const payload = await request.json().catch(() => null);
   const messageId = payload?.messageId;
+  const action = payload?.action;
   if (!messageId) {
     return NextResponse.json({ success: false, error: 'Missing message id.' }, { status: 400 });
   }
 
   const { data: messageRow, error: messageError } = await supabaseAdmin
     .from('house_private_messages')
-    .select('id, sender_id, recipient_id, read_at')
+    .select(
+      'id, sender_id, recipient_id, read_at, sender_archived_at, recipient_archived_at, sender_deleted_at, recipient_deleted_at',
+    )
     .eq('id', messageId)
     .maybeSingle();
   if (messageError) {
@@ -478,7 +508,41 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
     return NextResponse.json({ success: false, error: 'Message not found.' }, { status: 404 });
   }
 
-  if (user.userId !== messageRow.recipient_id) {
+  const isSender = user.userId === messageRow.sender_id;
+  const isRecipient = user.userId === messageRow.recipient_id;
+  if (!isSender && !isRecipient) {
+    return NextResponse.json({ success: false, error: 'Access denied.' }, { status: 403 });
+  }
+
+  if (action === 'archive' || action === 'unarchive' || action === 'delete') {
+    const now = new Date().toISOString();
+    const updates: Record<string, string | null> = {};
+    if (isSender) {
+      if (action === 'archive') updates.sender_archived_at = now;
+      if (action === 'unarchive') updates.sender_archived_at = null;
+      if (action === 'delete') updates.sender_deleted_at = now;
+    }
+    if (isRecipient) {
+      if (action === 'archive') updates.recipient_archived_at = now;
+      if (action === 'unarchive') updates.recipient_archived_at = null;
+      if (action === 'delete') updates.recipient_deleted_at = now;
+    }
+    if (!Object.keys(updates).length) {
+      return NextResponse.json({ success: false, error: 'No changes applied.' }, { status: 400 });
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from('house_private_messages')
+      .update(updates)
+      .eq('id', messageId);
+    if (updateError) {
+      console.error('[private-messages] Failed to update message state', updateError);
+      return NextResponse.json({ success: false, error: 'Failed to update message.' }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
+  }
+
+  if (!isRecipient) {
     return NextResponse.json({ success: false, error: 'Access denied.' }, { status: 403 });
   }
 

@@ -49,6 +49,7 @@ export default function AdminHouseMessagesPage() {
   const [sendingReply, setSendingReply] = useState(false);
   const [replyError, setReplyError] = useState<string | null>(null);
   const [markingReadId, setMarkingReadId] = useState<string | null>(null);
+  const [actingOnId, setActingOnId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     house: 'all',
     status: 'all',
@@ -224,6 +225,32 @@ export default function AdminHouseMessagesPage() {
     }
   };
 
+  const handleMessageAction = async (message: any, action: 'archive' | 'delete') => {
+    if (!message?.id) return;
+    setActingOnId(message.id);
+    try {
+      const token = getToken();
+      const response = await fetch(`/api/houses/${message.houseKey}/private-messages`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ messageId: message.id, action }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to update message.');
+      }
+      refreshMessages();
+    } catch (error) {
+      console.error('[admin house messages] action failed', error);
+      setReplyError(t('admin.houses.messages.actionError'));
+    } finally {
+      setActingOnId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -346,6 +373,20 @@ export default function AdminHouseMessagesPage() {
             </Button>
           </CardContent>
         </Card>
+        {houses.length > 0 && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {houses.map((house) => (
+              <Button
+                key={house.houseKey}
+                variant={filters.house === house.houseKey ? 'default' : 'outline'}
+                className="justify-start"
+                onClick={() => handleFilterChange('house', house.houseKey)}
+              >
+                {house.label}
+              </Button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>
@@ -391,12 +432,25 @@ export default function AdminHouseMessagesPage() {
                     </p>
                     <h3 className="text-lg font-semibold text-white">{message.subject}</h3>
                   </div>
-                  <Badge
-                    variant={message.status === "unread" ? "outline" : "secondary"}
-                    className={statusClassName[message.status] || "border-white/20 text-slate-200"}
-                  >
-                    {t(statusLabelKey[message.status] || statusLabelKey.unread)}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${
+                        message.direction === 'incoming'
+                          ? 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30'
+                          : 'bg-rose-500/15 text-rose-200 border border-rose-400/30'
+                      }`}
+                    >
+                      {message.direction === 'incoming'
+                        ? t('admin.houses.messages.direction.incoming')
+                        : t('admin.houses.messages.direction.outgoing')}
+                    </span>
+                    <Badge
+                      variant={message.status === 'unread' ? 'outline' : 'secondary'}
+                      className={statusClassName[message.status] || 'border-white/20 text-slate-200'}
+                    >
+                      {t(statusLabelKey[message.status] || statusLabelKey.unread)}
+                    </Badge>
+                  </div>
                 </div>
                 <p className="mt-3 text-sm text-slate-300 line-clamp-3">{message.body}</p>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
@@ -406,6 +460,30 @@ export default function AdminHouseMessagesPage() {
                     {t("admin.houses.messages.list.to")} {message.recipient?.name ?? "-"}
                   </div>
                   <div>{formatDateTime(message.createdAt)}</div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleMessageAction(message, 'archive');
+                    }}
+                    disabled={actingOnId === message.id}
+                  >
+                    {t('admin.houses.messages.actionArchive')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleMessageAction(message, 'delete');
+                    }}
+                    disabled={actingOnId === message.id}
+                  >
+                    {t('admin.houses.messages.actionDelete')}
+                  </Button>
                 </div>
                 {message.direction === 'incoming' && message.status === 'unread' && message.recipient?.id === user?.id && (
                   <div className="mt-3">
@@ -488,6 +566,28 @@ export default function AdminHouseMessagesPage() {
                             }}
                           >
                             {t("admin.houses.messages.replyCancel")}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleMessageAction(message, 'archive');
+                            }}
+                            disabled={actingOnId === message.id}
+                          >
+                            {t('admin.houses.messages.actionArchive')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleMessageAction(message, 'delete');
+                            }}
+                            disabled={actingOnId === message.id}
+                          >
+                            {t('admin.houses.messages.actionDelete')}
                           </Button>
                         </div>
                       </div>

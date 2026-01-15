@@ -54,6 +54,8 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
   const [inboxMessages, setInboxMessages] = useState<PrivateMessage[]>([]);
   const [inboxLoading, setInboxLoading] = useState(false);
   const [inboxError, setInboxError] = useState<string | null>(null);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyDraft, setReplyDraft] = useState('');
   const xpTotal = user?.xp_total ?? 0;
   const hasXpForMessages = xpTotal >= MESSAGE_XP_THRESHOLD;
 
@@ -224,6 +226,87 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
     }
   };
 
+  const handleInboxReply = async (message: PrivateMessage) => {
+    if (!replyDraft.trim()) {
+      toast({
+        title: t('houses.private.toastMissingMessageTitle'),
+        description: t('houses.private.errorMessage'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    const recipientId = message.isIncoming ? message.sender?.id : message.recipient?.id;
+    if (!recipientId) {
+      toast({
+        title: t('houses.private.toastMissingRecipientTitle'),
+        description: t('houses.private.errorRecipient'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSendingMessage(true);
+    try {
+      const token = getToken();
+      const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          recipientId,
+          subject: `Re: ${message.subject}`.trim(),
+          body: replyDraft.trim(),
+          replyToId: message.id,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to send reply.');
+      }
+      setReplyingToId(null);
+      setReplyDraft('');
+      void loadInboxMessages();
+      window.dispatchEvent(new Event('house:messages:update'));
+    } catch (error: any) {
+      console.error('[house message composer] reply failed', error);
+      const messageText = error?.message || '';
+      toast({
+        title: t('houses.private.toastSendFailTitle'),
+        description: messageText || t('houses.private.toastTryLater'),
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleMessageAction = async (messageId: string, action: 'archive' | 'delete') => {
+    try {
+      const token = getToken();
+      const response = await fetch(`/api/houses/${houseKey}/private-messages`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ messageId, action }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to update message.');
+      }
+      void loadInboxMessages();
+    } catch (error) {
+      console.error('[house message composer] message action failed', error);
+      toast({
+        title: t('houses.private.toastSendFailTitle'),
+        description: t('houses.private.toastTryLater'),
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleMarkRead = async (messageId: string) => {
     try {
       const token = getToken();
@@ -351,6 +434,20 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
         messages={inboxMessages}
         onMarkRead={handleMarkRead}
         formatDate={formatInboxDate}
+        onArchive={(messageId) => handleMessageAction(messageId, 'archive')}
+        onDelete={(messageId) => handleMessageAction(messageId, 'delete')}
+        onReplyStart={(messageId) => {
+          setReplyingToId(messageId);
+          setReplyDraft('');
+        }}
+        onReplyCancel={() => {
+          setReplyingToId(null);
+          setReplyDraft('');
+        }}
+        onReplySend={handleInboxReply}
+        replyingToId={replyingToId}
+        replyDraft={replyDraft}
+        setReplyDraft={setReplyDraft}
         t={t}
       />
     </div>
@@ -363,6 +460,14 @@ function InboxList({
   messages,
   onMarkRead,
   formatDate,
+  onArchive,
+  onDelete,
+  onReplyStart,
+  onReplyCancel,
+  onReplySend,
+  replyingToId,
+  replyDraft,
+  setReplyDraft,
   t,
 }: {
   loading: boolean;
@@ -370,6 +475,14 @@ function InboxList({
   messages: PrivateMessage[];
   onMarkRead: (messageId: string) => void;
   formatDate: (timestamp: string) => string;
+  onArchive: (messageId: string) => void;
+  onDelete: (messageId: string) => void;
+  onReplyStart: (messageId: string) => void;
+  onReplyCancel: () => void;
+  onReplySend: (message: PrivateMessage) => void;
+  replyingToId: string | null;
+  replyDraft: string;
+  setReplyDraft: (value: string) => void;
   t: (key: string) => string;
 }) {
   return (
@@ -411,6 +524,35 @@ function InboxList({
                 >
                   {t('houses.private.markAsRead')}
                 </Button>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              <Button size="sm" variant="ghost" onClick={() => onReplyStart(message.id)}>
+                {t('houses.private.actionReply')}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => onArchive(message.id)}>
+                {t('houses.private.actionArchive')}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => onDelete(message.id)}>
+                {t('houses.private.actionDelete')}
+              </Button>
+            </div>
+            {replyingToId === message.id && (
+              <div className="space-y-2">
+                <Textarea
+                  value={replyDraft}
+                  onChange={(event) => setReplyDraft(event.target.value)}
+                  placeholder={t('houses.private.replyPlaceholder')}
+                  className="min-h-[100px]"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => onReplySend(message)}>
+                    {t('houses.private.replySend')}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={onReplyCancel}>
+                    {t('houses.private.replyCancel')}
+                  </Button>
+                </div>
               </div>
             )}
           </article>

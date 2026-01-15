@@ -294,7 +294,7 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin
       .from('house_private_messages')
       .select(
-        'id, house_id, house_key, subject, body, created_at, read_at, sender_id, recipient_id, reply_to_id',
+        'id, house_id, house_key, subject, body, created_at, read_at, sender_id, recipient_id, reply_to_id, sender_archived_at, recipient_archived_at, sender_deleted_at, recipient_deleted_at',
         { count: 'exact' },
       )
       .in('house_key', allowedHouseKeys)
@@ -320,7 +320,21 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
-    const rows = (data ?? []).slice(offset, offset + limit);
+    const rawRows = (data ?? []).slice(offset, offset + limit);
+    const rows =
+      user.role === 'Super Admin'
+        ? rawRows
+        : rawRows.filter((row: any) => {
+            if (row.sender_id === user.userId) {
+              if (row.sender_deleted_at) return false;
+              if (row.sender_archived_at) return false;
+            }
+            if (row.recipient_id === user.userId) {
+              if (row.recipient_deleted_at) return false;
+              if (row.recipient_archived_at) return false;
+            }
+            return true;
+          });
     const participantCandidateIds = rows
       .flatMap((row: any) => [row.sender_id, row.recipient_id])
       .filter((id: unknown): id is string => typeof id === 'string');
