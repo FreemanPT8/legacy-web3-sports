@@ -504,6 +504,14 @@ export default function AdminHouseMessagesPage() {
                     >
                       {t(statusLabelKey[message.status] || statusLabelKey.unread)}
                     </Badge>
+                    {message.isArchived ? (
+                      <Badge
+                        variant="outline"
+                        className="border-amber-400/40 text-amber-200"
+                      >
+                        {t('admin.houses.messages.status.badge.archived')}
+                      </Badge>
+                    ) : null}
                   </div>
                 </div>
                 <p className="mt-3 text-sm text-slate-300 line-clamp-3">{message.body}</p>

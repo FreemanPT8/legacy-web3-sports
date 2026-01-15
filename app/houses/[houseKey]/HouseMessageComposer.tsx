@@ -572,7 +572,14 @@ function InboxList({
                 <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">
                   {message.isIncoming ? t('houses.private.incomingLabel') : t('houses.private.outgoingLabel')}
                 </p>
-                <p className="text-sm font-semibold text-white">{message.subject}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-white">{message.subject}</p>
+                  {message.isArchived ? (
+                    <span className="rounded-full border border-amber-400/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-amber-200">
+                      {t('houses.private.archived')}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <span className="text-xs text-slate-400">{formatDate(message.createdAt)}</span>
             </div>
