@@ -525,10 +525,14 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { error: updateError } = await supabaseAdmin
+    const { data: updatedRow, error: updateError } = await supabaseAdmin
       .from('house_private_messages')
       .update(updates)
-      .eq('id', messageId);
+      .eq('id', messageId)
+      .select(
+        'id, sender_archived_at, recipient_archived_at, sender_deleted_at, recipient_deleted_at',
+      )
+      .maybeSingle();
     if (updateError) {
       console.error('[admin/houses/messages] Failed to update message', updateError);
       return NextResponse.json(
@@ -536,8 +540,14 @@ export async function PATCH(request: NextRequest) {
         { status: 500 },
       );
     }
+    if (!updatedRow) {
+      return NextResponse.json(
+        { success: false, error: 'Message update did not apply.' },
+        { status: 500 },
+      );
+    }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: updatedRow });
   } catch (error) {
     console.error('[admin/houses/messages] PATCH failed', error);
     return NextResponse.json(

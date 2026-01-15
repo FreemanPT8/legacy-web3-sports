@@ -247,7 +247,24 @@ export default function AdminHouseMessagesPage() {
       if (!response.ok || !data?.success) {
         throw new Error(data?.error || 'Failed to update message.');
       }
+      mutate(
+        apiUrl,
+        (current: any) => {
+          if (!current) return current;
+          const shouldRemove =
+            action === 'delete' || (action === 'archive' && !filters.showArchived);
+          if (!shouldRemove) return current;
+          const filtered = (current.messages || []).filter((item: any) => item.id !== message.id);
+          const nextTotal =
+            typeof current.total === 'number'
+              ? Math.max(current.total - 1, 0)
+              : current.total;
+          return { ...current, messages: filtered, total: nextTotal };
+        },
+        false,
+      );
       refreshMessages();
+      window.dispatchEvent(new Event('house:messages:update'));
     } catch (error) {
       console.error('[admin house messages] action failed', error);
       setReplyError(t('admin.houses.messages.actionError'));
