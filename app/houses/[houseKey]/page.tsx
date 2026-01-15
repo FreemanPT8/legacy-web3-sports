@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { loadHouseProfile, normalizeLocale } from '@/lib/houses/profile';
 import { PrivateArea } from './PrivateArea';
 import { HouseMembersList } from './HouseMembersList';
+import { HouseMessageComposer } from './HouseMessageComposer';
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30',
@@ -238,12 +239,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
               <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
                 Nao sao tolerados discursos de odio, assedio, xenofobia ou spam. Mantem a conversa objetiva e respeitosa.
               </div>
-              <a
-                href="#house-private-message-composer"
-                className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                Ir para mensagens privadas
-              </a>
+              <HouseMessageComposer houseKey={house.houseKey} roster={house.roster} />
             </CardContent>
           </Card>
 
@@ -260,6 +256,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
           roster={house.roster}
           houseLabel={houseBadgeLabel}
           welcomeMessage={house.welcomeMessage ?? null}
+          showComposer={false}
         />
       </div>
       <Footer />

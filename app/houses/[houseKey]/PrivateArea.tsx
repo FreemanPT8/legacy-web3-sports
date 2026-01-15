@@ -128,6 +128,7 @@ type Props = {
   roster: HouseProfilePayload['house']['roster'];
   houseLabel: string;
   welcomeMessage: string | null;
+  showComposer?: boolean;
 };
 
 export function PrivateArea({
@@ -140,6 +141,7 @@ export function PrivateArea({
   roster,
   houseLabel,
   welcomeMessage,
+  showComposer = true,
 }: Props) {
   const { user, loading } = useAuth();
   const [membership, setMembership] = useState<MembershipResponse | null>(null);
@@ -587,69 +589,76 @@ export function PrivateArea({
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!hasXpForMessages && (
-                <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">
-                  {t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString())}
-                </div>
-              )}
-              {recipientOptions.length && hasXpForMessages ? (
-                <form className="space-y-4" onSubmit={handleSendPrivateMessage}>
-                  <div className="space-y-1">
-                    <Label htmlFor="recipient" className="text-xs uppercase tracking-[0.35em] text-slate-400">
-                      {t('houses.private.recipientLabel')}
-                    </Label>
-                    <select
-                      id="recipient"
-                      value={selectedRecipient ?? ''}
-                      onChange={(event) => setSelectedRecipient(event.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#020b16] px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring focus:ring-cyan-400/40"
-                    >
-                      {recipientOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label} ({option.role === 'head' ? t('houses.private.roleHead') : t('houses.private.roleModerator')})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="subject" className="text-xs uppercase tracking-[0.35em] text-slate-400">
-                      {t('houses.private.subjectLabel')}
-                    </Label>
-                    <Input
-                      id="subject"
-                      value={subjectDraft}
-                      onChange={(event) => setSubjectDraft(event.target.value)}
-                      placeholder={t('houses.private.subjectPlaceholder')}
-                      className="bg-[#020b16] border-white/10 text-white"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="private-message" className="text-xs uppercase tracking-[0.35em] text-slate-400">
-                      {t('houses.private.messageLabel')}
-                    </Label>
-                    <Textarea
-                      id="private-message"
-                      value={messageDraft}
-                      onChange={(event) => setMessageDraft(event.target.value)}
-                      placeholder={t('houses.private.messagePlaceholder')}
-                      className="min-h-[120px]"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button
-                      type="submit"
-                      disabled={sendingMessage || !recipientOptions.length}
-                      className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
-                    >
-                      {sendingMessage ? t('houses.private.sending') : t('houses.private.sendMessage')}
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <p className="text-sm text-white/70">
-                  {recipientOptions.length ? t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString()) : t('houses.private.noRecipients')}
-                </p>
-              )}
+              {showComposer ? (
+                <>
+                  {!hasXpForMessages && (
+                    <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">
+                      {t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString())}
+                    </div>
+                  )}
+                  {recipientOptions.length && hasXpForMessages ? (
+                    <form className="space-y-4" onSubmit={handleSendPrivateMessage}>
+                      <div className="space-y-1">
+                        <Label htmlFor="recipient" className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                          {t('houses.private.recipientLabel')}
+                        </Label>
+                        <select
+                          id="recipient"
+                          value={selectedRecipient ?? ''}
+                          onChange={(event) => setSelectedRecipient(event.target.value)}
+                          className="w-full rounded-xl border border-white/10 bg-[#020b16] px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring focus:ring-cyan-400/40"
+                        >
+                          {recipientOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.label}{' '}
+                              ({option.role === 'head' ? t('houses.private.roleHead') : t('houses.private.roleModerator')})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="subject" className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                          {t('houses.private.subjectLabel')}
+                        </Label>
+                        <Input
+                          id="subject"
+                          value={subjectDraft}
+                          onChange={(event) => setSubjectDraft(event.target.value)}
+                          placeholder={t('houses.private.subjectPlaceholder')}
+                          className="bg-[#020b16] border-white/10 text-white"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="private-message" className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                          {t('houses.private.messageLabel')}
+                        </Label>
+                        <Textarea
+                          id="private-message"
+                          value={messageDraft}
+                          onChange={(event) => setMessageDraft(event.target.value)}
+                          placeholder={t('houses.private.messagePlaceholder')}
+                          className="min-h-[120px]"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                          type="submit"
+                          disabled={sendingMessage || !recipientOptions.length}
+                          className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                        >
+                          {sendingMessage ? t('houses.private.sending') : t('houses.private.sendMessage')}
+                        </Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p className="text-sm text-white/70">
+                      {recipientOptions.length
+                        ? t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString())
+                        : t('houses.private.noRecipients')}
+                    </p>
+                  )}
+                </>
+              ) : null}
               <div className="space-y-3">
                 {privateMessagesLoading ? (
                   <div className="flex items-center gap-2 text-sm text-slate-300">
