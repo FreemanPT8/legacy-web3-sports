@@ -249,8 +249,6 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
 
         </section>
       </main>
-      <Footer />
-
       <div className="py-12" id="house-private-messages">
         <PrivateArea
           houseKey={house.houseKey}
@@ -264,6 +262,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
           welcomeMessage={house.welcomeMessage ?? null}
         />
       </div>
+      <Footer />
     </div>
   );
 }

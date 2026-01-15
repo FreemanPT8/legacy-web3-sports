@@ -12,6 +12,7 @@ import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { HouseMembersList } from './HouseMembersList';
 import { ContentComments } from '@/components/comments/ContentComments';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MESSAGE_XP_THRESHOLD } from '@/lib/private-messages';
 
@@ -158,6 +159,7 @@ export function PrivateArea({
   const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
   const [privateMessagesLoading, setPrivateMessagesLoading] = useState(false);
   const [privateMessagesError, setPrivateMessagesError] = useState<string | null>(null);
+  const [subjectDraft, setSubjectDraft] = useState('');
   const [messageDraft, setMessageDraft] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -283,6 +285,14 @@ export function PrivateArea({
       });
       return;
     }
+    if (!subjectDraft.trim()) {
+      toast({
+        title: t('houses.private.toastMissingSubjectTitle'),
+        description: t('houses.private.errorSubject'),
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!messageDraft.trim()) {
       toast({
         title: t('houses.private.toastMissingMessageTitle'),
@@ -307,13 +317,14 @@ export function PrivateArea({
         body: JSON.stringify({
           recipientId: selectedRecipient,
           body: messageDraft.trim(),
-          subject: t('houses.private.messageSubject'),
+          subject: subjectDraft.trim(),
         }),
       });
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.success) {
         throw new Error(data?.error || 'Failed to send private message.');
       }
+      setSubjectDraft('');
       setMessageDraft('');
       void loadPrivateMessages();
       toast({
@@ -578,7 +589,7 @@ export function PrivateArea({
                   {t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString())}
                 </div>
               )}
-              {recipientOptions.length ? (
+              {recipientOptions.length && hasXpForMessages ? (
                 <form className="space-y-4" onSubmit={handleSendPrivateMessage}>
                   <div className="space-y-1">
                     <Label htmlFor="recipient" className="text-xs uppercase tracking-[0.35em] text-slate-400">
@@ -598,6 +609,18 @@ export function PrivateArea({
                     </select>
                   </div>
                   <div className="space-y-1">
+                    <Label htmlFor="subject" className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                      {t('houses.private.subjectLabel')}
+                    </Label>
+                    <Input
+                      id="subject"
+                      value={subjectDraft}
+                      onChange={(event) => setSubjectDraft(event.target.value)}
+                      placeholder={t('houses.private.subjectPlaceholder')}
+                      className="bg-[#020b16] border-white/10 text-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
                     <Label htmlFor="private-message" className="text-xs uppercase tracking-[0.35em] text-slate-400">
                       {t('houses.private.messageLabel')}
                     </Label>
@@ -606,7 +629,6 @@ export function PrivateArea({
                       value={messageDraft}
                       onChange={(event) => setMessageDraft(event.target.value)}
                       placeholder={t('houses.private.messagePlaceholder')}
-                      disabled={!hasXpForMessages}
                       className="min-h-[120px]"
                     />
                   </div>
@@ -621,7 +643,9 @@ export function PrivateArea({
                   </div>
                 </form>
               ) : (
-                <p className="text-sm text-white/70">{t('houses.private.noRecipients')}</p>
+                <p className="text-sm text-white/70">
+                  {recipientOptions.length ? t('houses.private.unlockNotice').replace('{xp}', MESSAGE_XP_THRESHOLD.toString()) : t('houses.private.noRecipients')}
+                </p>
               )}
               <div className="space-y-3">
                 {privateMessagesLoading ? (
