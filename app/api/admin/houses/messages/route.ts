@@ -213,6 +213,28 @@ async function fetchMessageEvents(messageIds: string[]) {
   return data ?? [];
 }
 
+async function logMessageEvent(payload: {
+  messageId: string;
+  houseId: string;
+  houseKey: string;
+  actorId: string;
+  eventType: 'archive' | 'unarchive' | 'delete';
+}) {
+  if (!supabaseAdmin) return;
+  try {
+    await supabaseAdmin.from('house_private_message_events').insert({
+      message_id: payload.messageId,
+      house_id: payload.houseId,
+      house_key: payload.houseKey,
+      actor_id: payload.actorId,
+      event_type: payload.eventType,
+      metadata: {},
+    });
+  } catch (error) {
+    console.error('[admin/houses/messages] Failed to log message event', error);
+  }
+}
+
 function buildMessageResponse(row: any, housesMap: Record<string, string>, userMap: Record<string, any>) {
   const sender = userMap[row.sender_id] ?? null;
   const recipient = userMap[row.recipient_id] ?? null;
@@ -545,6 +567,16 @@ export async function PATCH(request: NextRequest) {
         { success: false, error: 'Message update did not apply.' },
         { status: 500 },
       );
+    }
+
+    if (messageRow.house_id && messageRow.house_key) {
+      await logMessageEvent({
+        messageId,
+        houseId: messageRow.house_id,
+        houseKey: messageRow.house_key,
+        actorId: user.userId,
+        eventType: action,
+      });
     }
 
     return NextResponse.json({ success: true, message: updatedRow });

@@ -202,7 +202,7 @@ async function createMessageEvent(payload: {
   houseId: string;
   houseKey: string;
   actorId: string;
-  eventType: 'read' | 'reply';
+  eventType: 'read' | 'reply' | 'archive' | 'unarchive' | 'delete';
   metadata?: Record<string, unknown>;
 }) {
   if (!supabaseAdmin) return;
@@ -654,6 +654,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
       console.error('[private-messages] Failed to update message state', updateError);
       return NextResponse.json({ success: false, error: 'Failed to update message.' }, { status: 500 });
     }
+
+    await createMessageEvent({
+      messageId,
+      houseId: house.id,
+      houseKey: house.houseKey,
+      actorId: user.userId,
+      eventType: action,
+    });
     return NextResponse.json({ success: true });
   }
 

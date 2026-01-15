@@ -146,6 +146,23 @@ export default function AdminHouseMessagesPage() {
     setReplyingToId(message.id);
   };
 
+  const historyLabelFor = (eventType: string) => {
+    switch (eventType) {
+      case 'read':
+        return t('admin.houses.messages.history.read');
+      case 'reply':
+        return t('admin.houses.messages.history.reply');
+      case 'archive':
+        return t('admin.houses.messages.history.archive');
+      case 'unarchive':
+        return t('admin.houses.messages.history.unarchive');
+      case 'delete':
+        return t('admin.houses.messages.history.delete');
+      default:
+        return t('admin.houses.messages.history.reply');
+    }
+  };
+
   const handleSendReply = async (message: any) => {
     if (!replyDraft.trim()) return;
     const recipientId = message?.direction === 'outgoing'
@@ -541,9 +558,7 @@ export default function AdminHouseMessagesPage() {
                     </p>
                     {message.history.map((event: any) => (
                       <div key={event.id}>
-                        {event.type === "read"
-                          ? t("admin.houses.messages.history.read")
-                          : t("admin.houses.messages.history.reply")}
+                        {historyLabelFor(event.type)}
                         {" "}
                         {event.actor?.name ? `${event.actor.name} ` : ""}
                         {event.createdAt ? formatDateTime(event.createdAt) : ""}
