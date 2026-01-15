@@ -300,6 +300,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
         throw new Error(data?.error || 'Failed to update message.');
       }
       void loadInboxMessages();
+      window.dispatchEvent(new Event('house:messages:update'));
     } catch (error) {
       console.error('[house message composer] message action failed', error);
       toast({

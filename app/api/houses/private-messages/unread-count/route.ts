@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
     .from('house_private_messages')
     .select('id', { count: 'exact' })
     .eq('recipient_id', user.userId)
-    .is('read_at', null);
+    .is('read_at', null)
+    .is('recipient_archived_at', null)
+    .is('recipient_deleted_at', null);
 
   if (error) {
     console.error('[private-messages/unread-count]', error);
