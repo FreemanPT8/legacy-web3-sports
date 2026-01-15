@@ -360,6 +360,20 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
           messages={inboxMessages}
           onMarkRead={handleMarkRead}
           formatDate={formatInboxDate}
+          onArchive={(messageId) => handleMessageAction(messageId, 'archive')}
+          onDelete={(messageId) => handleMessageAction(messageId, 'delete')}
+          onReplyStart={(messageId) => {
+            setReplyingToId(messageId);
+            setReplyDraft('');
+          }}
+          onReplyCancel={() => {
+            setReplyingToId(null);
+            setReplyDraft('');
+          }}
+          onReplySend={handleInboxReply}
+          replyingToId={replyingToId}
+          replyDraft={replyDraft}
+          setReplyDraft={setReplyDraft}
           t={t}
         />
       </div>
