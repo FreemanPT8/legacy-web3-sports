@@ -152,6 +152,45 @@ async function fetchMembershipRoles(houseIds: string[], userIds: string[]) {
     if (!row?.house_id || !row?.user_id) return;
     map.set(`${row.house_id}:${row.user_id}`, (row.membership_role || '').toString().toLowerCase());
   });
+
+  try {
+    const { data: adminAssignments } = await supabaseAdmin
+      .from('admin_assignments')
+      .select('id, user_id')
+      .in('user_id', uniqueUserIds);
+    const adminIdMap = new Map<string, string>();
+    (adminAssignments ?? []).forEach((row: any) => {
+      if (row?.id && row?.user_id) {
+        adminIdMap.set(row.id, row.user_id);
+      }
+    });
+
+    if (adminIdMap.size) {
+      const { data: headRows } = await supabaseAdmin
+        .from('house_heads')
+        .select('house_id, admin_id')
+        .in('house_id', uniqueHouseIds)
+        .in('admin_id', Array.from(adminIdMap.keys()));
+      (headRows ?? []).forEach((row: any) => {
+        const userId = adminIdMap.get(row.admin_id);
+        if (!row?.house_id || !userId) return;
+        map.set(`${row.house_id}:${userId}`, 'head');
+      });
+    }
+
+    const { data: moderatorRows } = await supabaseAdmin
+      .from('house_moderators')
+      .select('house_id, user_id')
+      .in('house_id', uniqueHouseIds)
+      .in('user_id', uniqueUserIds);
+    (moderatorRows ?? []).forEach((row: any) => {
+      if (!row?.house_id || !row?.user_id) return;
+      map.set(`${row.house_id}:${row.user_id}`, 'moderator');
+    });
+  } catch (error) {
+    console.error('[admin/houses/messages] Failed to resolve staff roles', error);
+  }
+
   return map;
 }
 

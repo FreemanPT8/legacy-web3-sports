@@ -506,7 +506,7 @@ export function PrivateArea({
               </div>
             </CardContent>
           </Card>
-          <Card id="house-private-messages" className="border-white/10 bg-[#03131d]/90">
+          <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
               <CardTitle className="text-lg text-white">{t('houses.private.section.recommended')}</CardTitle>
             </CardHeader>
@@ -563,7 +563,7 @@ export function PrivateArea({
               />
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-[#03131d]/90">
+          <Card id="house-private-messages" className="border-white/10 bg-[#03131d]/90">
             <CardHeader className="space-y-1">
               <CardTitle className="text-lg text-white">{t('houses.private.messagesTitle')}</CardTitle>
               <CardDescription className="text-sm text-slate-300">
