@@ -193,6 +193,16 @@ export default function AdminHouseMessagesPage() {
     }
   };
 
+  const handleOpenMessage = (message: any) => {
+    if (
+      message?.direction === 'incoming' &&
+      message?.status === 'unread' &&
+      message?.recipient?.id === user?.id
+    ) {
+      void handleMarkRead(message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -339,7 +349,14 @@ export default function AdminHouseMessagesPage() {
             {messages.map((message: any) => (
               <article
                 key={message.id}
-                className="rounded-3xl border border-white/10 bg-[#020b16]/70 p-4 shadow-[0_15px_45px_rgba(0,0,0,0.45)]"
+                className={`rounded-3xl border border-white/10 bg-[#020b16]/70 p-4 shadow-[0_15px_45px_rgba(0,0,0,0.45)] ${
+                  message.direction === 'incoming' &&
+                  message.status === 'unread' &&
+                  message.recipient?.id === user?.id
+                    ? 'cursor-pointer'
+                    : ''
+                }`}
+                onClick={() => handleOpenMessage(message)}
               >
                 <div className="flex flex-col gap-2 border-b border-white/5 pb-3 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -374,7 +391,10 @@ export default function AdminHouseMessagesPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleMarkRead(message)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleMarkRead(message);
+                      }}
                       disabled={markingReadId === message.id}
                     >
                       {markingReadId === message.id
@@ -406,7 +426,10 @@ export default function AdminHouseMessagesPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleStartReply(message)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleStartReply(message);
+                        }}
                       >
                         {t("admin.houses.messages.replyAction")}
                       </Button>
@@ -417,6 +440,7 @@ export default function AdminHouseMessagesPage() {
                           onChange={(event) => setReplyDraft(event.target.value)}
                           placeholder={t("admin.houses.messages.replyPlaceholder")}
                           className="bg-[#020b16] border-white/10 text-white"
+                          onClick={(event) => event.stopPropagation()}
                         />
                         {replyError ? (
                           <p className="text-xs text-rose-200">{replyError}</p>
@@ -424,7 +448,10 @@ export default function AdminHouseMessagesPage() {
                         <div className="flex flex-wrap gap-2">
                           <Button
                             size="sm"
-                            onClick={() => handleSendReply(message)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleSendReply(message);
+                            }}
                             disabled={sendingReply || !replyDraft.trim()}
                           >
                             {sendingReply
@@ -434,7 +461,10 @@ export default function AdminHouseMessagesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setReplyingToId(null)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setReplyingToId(null);
+                            }}
                           >
                             {t("admin.houses.messages.replyCancel")}
                           </Button>
