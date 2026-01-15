@@ -19,9 +19,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const SUPPORT_LABELS: Record<string, string> = {
-  async: 'Contacto assíncrono (mensagens)',
-  sync: 'Contacto síncrono (calls)',
-  hybrid: 'Modelo híbrido (mensagens + calls pontuais)',
+  async: 'Contacto assincrono (mensagens)',
+  sync: 'Contacto sincrono (calls)',
+  hybrid: 'Modelo hibrido (mensagens + calls pontuais)',
 };
 
 type PageProps = {
@@ -58,7 +58,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
                   {house.governanceStatus === 'active' ? 'Ativa' : house.governanceStatus.replace('_', ' ')}
                 </span>
                 <Badge variant="outline" className="border-cyan-500/30 text-cyan-200">
-                  {house.badge === 'validated' ? 'House validada no Legacy' : 'Pré-visualização'}
+                  {house.badge === 'validated' ? 'House validada no Legacy' : 'Pre-visualizacao'}
                 </Badge>
                 {house.isExemplar ? (
                   <Badge variant="outline" className="border-[#fdd87c]/60 bg-[#fdd87c]/10 text-[#fdd87c]">
@@ -97,7 +97,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
             <CardHeader>
               <CardTitle className="text-lg text-white">Membros oficiais</CardTitle>
               <CardDescription className="text-sm text-white/70">
-                Transparência sobre quem lidera e participa na {house.name}. Atualizado em tempo real.
+                Transparencia sobre quem lidera e participa na {house.name}. Atualizado em tempo real.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -113,7 +113,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
         <section className="grid gap-6 md:grid-cols-2">
           <Card className="border-white/10 bg-[#020c18]/80">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Missão da House</CardTitle>
+              <CardTitle className="text-lg text-white">Missao da House</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-slate-200">
               <p className="text-base font-semibold text-white">{house.mission.title}</p>
@@ -131,7 +131,7 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
               )}
               {house.limits.length > 0 && (
                 <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-100">
-                  <p className="font-semibold text-rose-200">Limitações</p>
+                  <p className="font-semibold text-rose-200">Limitacoes</p>
                   <ul className="mt-2 list-disc pl-5 text-rose-100/90">
                     {house.limits.map((item, index) => (
                       <li key={index}>{item}</li>
@@ -188,11 +188,11 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
         <section className="grid gap-6 lg:grid-cols-2">
           <Card className="border-white/10 bg-[#030f1a]/80">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Para quem é</CardTitle>
+              <CardTitle className="text-lg text-white">Para quem e</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <AudienceList title="Estamos prontos para quem…" items={house.audience.for} />
-              <AudienceList title="Não é para quem…" items={house.audience.notFor} variant="negative" />
+              <AudienceList title="Estamos prontos para quem" items={house.audience.for} />
+              <AudienceList title="Nao e para quem" items={house.audience.notFor} variant="negative" />
             </CardContent>
           </Card>
 
@@ -224,27 +224,29 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
 
         <section className="grid gap-6 lg:grid-cols-2">
           <Card className="border-white/10 bg-[#03121b]/90">
-            <CardHeader>
-              <CardTitle className="text-lg text-white">Cultura da House</CardTitle>
+            <CardHeader className="space-y-2">
+              <CardTitle className="text-lg text-white">Fala com o Head da House</CardTitle>
+              <p className="text-sm text-white/70">
+                O acesso a area privada e automatico quando te registas com o desporto + pais de uma House ativa.
+              </p>
             </CardHeader>
-            <CardContent>
-              {house.culture.length ? (
-                <ul className="space-y-3">
-                  {house.culture.map((item, index) => (
-                    <li key={index} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/80">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-slate-300">Esta House está a preparar a sua cultura interna.</p>
-              )}
+            <CardContent className="space-y-4 text-sm text-white/80">
+              <p>
+                Se tiveres duvidas ou curiosidades, podes enviar uma mensagem ao Head ou Moderadores a partir da area privada.
+                A comunicacao privada desbloqueia com <strong>369 XP</strong>.
+              </p>
+              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
+                Nao sao tolerados discursos de odio, assedio, xenofobia ou spam. Mantem a conversa objetiva e respeitosa.
+              </div>
+              <a
+                href="#house-private-messages"
+                className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Ir para mensagens privadas
+              </a>
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-[#03121b]/90">
-            <CardHeader className="space-y-2">
-              
         </section>
       </main>
       <Footer />
@@ -284,7 +286,10 @@ function AudienceList({
   items: string[];
   variant?: 'default' | 'negative';
 }) {
-  const accent = variant === 'negative' ? 'bg-rose-500/10 border-rose-500/30 text-rose-100' : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-100';
+  const accent =
+    variant === 'negative'
+      ? 'bg-rose-500/10 border-rose-500/30 text-rose-100'
+      : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-100';
   return (
     <div className={`h-full rounded-2xl border p-4 ${accent}`}>
       <p className="text-sm font-semibold">{title}</p>
