@@ -32,6 +32,23 @@ async function resolveHouse(houseKeyRaw: string) {
   return { ...data, houseKey };
 }
 
+async function resolveHouseById(houseId: string) {
+  if (!supabaseAdmin) return null;
+  if (!houseId) return null;
+  const { data, error } = await supabaseAdmin
+    .from('houses_of_sports')
+    .select('id, house_key, name_i18n, country_code, sport_id')
+    .eq('id', houseId)
+    .maybeSingle();
+  if (error) {
+    console.error('[private-messages] Failed to resolve house by id', error);
+    return null;
+  }
+  if (!data?.id) return null;
+  const houseKey = (data.house_key || '').toString().toUpperCase();
+  return { ...data, houseKey };
+}
+
 async function ensureHouseMembership(userId: string, house: { id: string; houseKey: string; sport_id?: string | null; country_code?: string | null }) {
   if (!supabaseAdmin) return false;
   const { data: userRow } = await supabaseAdmin
@@ -491,10 +508,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
   const auth = await requireAuth(request);
   if (!auth.success) return auth.response!;
   const user = auth.user!;
-  const house = await resolveHouse(params.houseKey);
-  if (!house) {
-    return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
-  }
 
   const payload = await request.json().catch(() => null);
   const messageId = payload?.messageId;
@@ -506,7 +519,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
   const { data: messageRow, error: messageError } = await supabaseAdmin
     .from('house_private_messages')
     .select(
-      'id, sender_id, recipient_id, read_at, sender_archived_at, recipient_archived_at, sender_deleted_at, recipient_deleted_at',
+      'id, house_id, house_key, sender_id, recipient_id, read_at, sender_archived_at, recipient_archived_at, sender_deleted_at, recipient_deleted_at',
     )
     .eq('id', messageId)
     .maybeSingle();
@@ -516,6 +529,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
   }
   if (!messageRow) {
     return NextResponse.json({ success: false, error: 'Message not found.' }, { status: 404 });
+  }
+
+  let house = await resolveHouse(params.houseKey);
+  if (!house && messageRow.house_id) {
+    house = await resolveHouseById(messageRow.house_id);
+  }
+  if (!house && messageRow.house_key) {
+    house = await resolveHouse(messageRow.house_key);
+  }
+  if (!house) {
+    return NextResponse.json({ success: false, error: 'House not found.' }, { status: 404 });
   }
 
   const isSender = user.userId === messageRow.sender_id;
