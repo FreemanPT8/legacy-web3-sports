@@ -518,7 +518,42 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
 
   const isSender = user.userId === messageRow.sender_id;
   const isRecipient = user.userId === messageRow.recipient_id;
-  if (!isSender && !isRecipient) {
+  let isStaff = user.role === 'Super Admin';
+
+  if (!isStaff) {
+    try {
+      const { data: assignments } = await supabaseAdmin
+        .from('admin_assignments')
+        .select('id')
+        .eq('user_id', user.userId);
+      const adminIds = (assignments ?? []).map((row: any) => row.id).filter(Boolean);
+      if (adminIds.length) {
+        const { data: headRows } = await supabaseAdmin
+          .from('house_heads')
+          .select('id')
+          .eq('house_id', house.id)
+          .in('admin_id', adminIds);
+        if (headRows && headRows.length > 0) {
+          isStaff = true;
+        }
+      }
+
+      if (!isStaff) {
+        const { data: modRows } = await supabaseAdmin
+          .from('house_moderators')
+          .select('id')
+          .eq('house_id', house.id)
+          .eq('user_id', user.userId);
+        if (modRows && modRows.length > 0) {
+          isStaff = true;
+        }
+      }
+    } catch (error) {
+      console.error('[private-messages] Failed to resolve staff access', error);
+    }
+  }
+
+  if (!isSender && !isRecipient && !isStaff) {
     return NextResponse.json({ success: false, error: 'Access denied.' }, { status: 403 });
   }
 
@@ -534,6 +569,20 @@ export async function PATCH(request: NextRequest, { params }: { params: { houseK
       if (action === 'archive') updates.recipient_archived_at = now;
       if (action === 'unarchive') updates.recipient_archived_at = null;
       if (action === 'delete') updates.recipient_deleted_at = now;
+    }
+    if (!isSender && !isRecipient && isStaff) {
+      if (action === 'archive') {
+        updates.sender_archived_at = now;
+        updates.recipient_archived_at = now;
+      }
+      if (action === 'unarchive') {
+        updates.sender_archived_at = null;
+        updates.recipient_archived_at = null;
+      }
+      if (action === 'delete') {
+        updates.sender_deleted_at = now;
+        updates.recipient_deleted_at = now;
+      }
     }
     if (!Object.keys(updates).length) {
       return NextResponse.json({ success: false, error: 'No changes applied.' }, { status: 400 });
