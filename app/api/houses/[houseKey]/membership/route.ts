@@ -116,10 +116,13 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
       }
       const userSports = [userRow?.primary_sport_id ?? null, userRow?.sport_id ?? null]
         .filter((value): value is string => Boolean(value));
-      const userCountry =
+      let userCountry =
         (userRow?.primary_country_code ?? '') ||
         (getCountryCodeFromName(userRow?.country) ?? '') ||
         '';
+      if (!userCountry && userRow?.country) {
+        userCountry = userRow.country.trim().slice(0, 2).toUpperCase();
+      }
       const hasMatch = Boolean(houseSport && userSports.includes(houseSport) && userCountry.toUpperCase() === houseCountry);
 
       if (hasMatch) {

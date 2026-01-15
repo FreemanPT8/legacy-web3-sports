@@ -76,15 +76,29 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
           return;
         }
         const data = (await response.json()) as MembershipResponse;
+        if (!response.ok || !data?.success) {
+          setMembership(null);
+          toast({
+            title: t('houses.private.toastAccessErrorTitle'),
+            description: t('houses.private.toastAccessErrorBody'),
+            variant: 'destructive',
+          });
+          return;
+        }
         setMembership(data);
       })
       .catch((error) => {
         console.error('[house message composer] membership failed', error);
+        toast({
+          title: t('houses.private.toastAccessErrorTitle'),
+          description: t('houses.private.toastAccessErrorBody'),
+          variant: 'destructive',
+        });
       })
       .finally(() => {
         setLoadingMembership(false);
       });
-  }, [houseKey, user]);
+  }, [houseKey, user, toast, t, getToken]);
 
   const handleSend = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -95,7 +109,7 @@ export function HouseMessageComposer({ houseKey, roster }: Props) {
     if (loadingMembership) {
       return;
     }
-    if (membership && !membership.isMember) {
+    if (!membership || !membership.success || !membership.isMember) {
       toast({
         title: t('houses.private.toastAccessErrorTitle'),
         description: t('houses.private.membershipAccessRequired'),
