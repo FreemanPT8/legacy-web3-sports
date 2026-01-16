@@ -4,7 +4,7 @@
 - **Modelos de dados**: desenhar tabelas `houses`, `house_heads`, `onboarding_popups`, `onboarding_triggers`, `onboarding_logs`, `onboarding_metrics`.
 - **API pública**:
   - `GET /api/onboarding/house?house=slug` → devolve sequência ativa + analytics.
-  - `GET /api/onboarding/logs?userId=` → estado/cooldown por utilizador.
+  - `GET /api/onboarding/logs?userId=` → estado do utilizador.
   - `POST /api/onboarding/logs` → regista ações (deliver/cta/dismiss) com assinatura anti-fraude.
 - **Motor de triggers**: servi?o (cron/edge fun??o) que l? eventos XP/conte?do e agenda pop-ups em `onboarding_queue`.
 - **Segurança**: autenticação JWT para users, headers internos para chamadas do painel, validação do Termo antes de permitir `POST/PUT`.

@@ -1065,7 +1065,7 @@ export default function SportPoolsAdminPage() {
           <DialogHeader>
             <DialogTitle>{assignDialogTitle}</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Seleciona o desporto oficial e a House disponível para desbloquear o onboarding humano.
+              Seleciona o desporto oficial e a House disponível para desbloquear o acompanhamento humano.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

@@ -405,7 +405,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'xp.consumed': 'Completed',
     'xp.available': 'Available',
     'home.sectionTitle': 'LEGACY XP Highlights',
-    'home.sectionDesc': 'A collaborative platform dedicated to onboarding and educating sports professionals in Web3 technologies, particularly the Apertum network.',
+    'home.sectionDesc': 'A collaborative platform dedicated to guiding and educating sports professionals in Web3 technologies, particularly the Apertum network.',
     'home.learnEarn': 'Learn & Earn',
     'home.learnEarnDesc': 'Complete lessons and articles to earn XP. Every action counts toward your growth.',
     'home.leaderboard': 'Global Leaderboard',
