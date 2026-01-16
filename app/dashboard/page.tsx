@@ -106,9 +106,9 @@ export default function DashboardPage() {
         }
         if (Array.isArray(data.missions)) {
           const mapping: Record<ComboKey, ComboMissionMeta> = {
-            quick: { xp: 15, completed: false },
+            quick: { xp: 13, completed: false },
             base: { xp: 21, completed: false },
-            serious: { xp: 33, completed: false },
+            serious: { xp: 47, completed: false },
           };
           data.missions.forEach((mission: any) => {
             const missionType: string | undefined = mission?.type;
@@ -118,7 +118,7 @@ export default function DashboardPage() {
               : mission.user_missions;
             if (missionType === 'combo_quick') {
               mapping.quick = {
-                xp: mission?.xp_reward ?? 15,
+                xp: mission?.xp_reward ?? 13,
                 completed: Boolean(missionData?.completed),
               };
             } else if (missionType === 'combo_base') {
@@ -128,7 +128,7 @@ export default function DashboardPage() {
               };
             } else if (missionType === 'combo_serious') {
               mapping.serious = {
-                xp: mission?.xp_reward ?? 33,
+                xp: mission?.xp_reward ?? 47,
                 completed: Boolean(missionData?.completed),
               };
             }
@@ -524,11 +524,11 @@ export default function DashboardPage() {
 
                       const comboTag =
                         missionType === 'combo_quick'
-                          ? t('dashboard.comboQuick') || 'Rota Rápida'
+                          ? t('dashboard.comboQuick') || 'Rota Basica'
                           : missionType === 'combo_base'
                           ? t('dashboard.comboBase') || 'Rota Base'
                           : missionType === 'combo_serious'
-                          ? t('dashboard.comboSerious') || 'Rota Séria'
+                          ? t('dashboard.comboSerious') || 'Rota Seria'
                           : null;
 
                       const comboCounters = comboProgress && isCombo
@@ -541,11 +541,11 @@ export default function DashboardPage() {
 
                       const comboRequirements =
                         missionType === 'combo_quick'
-                          ? { glossary: 3, blog: 1, lesson: 0 }
+                          ? { glossary: 0, blog: 1, lesson: 1 }
                           : missionType === 'combo_base'
-                          ? { glossary: 5, blog: 1, lesson: 1 }
+                          ? { glossary: 2, blog: 1, lesson: 1 }
                           : missionType === 'combo_serious'
-                          ? { glossary: 10, blog: 2, lesson: 2 }
+                          ? { glossary: 5, blog: 2, lesson: 2 }
                           : null;
 
                       return (

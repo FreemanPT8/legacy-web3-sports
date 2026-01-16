@@ -24,23 +24,23 @@ const COMBO_DEFINITIONS: ComboDefinition[] = [
   {
     key: 'quick',
     missionType: 'combo_quick',
-    label: 'Rota Rápida',
-    requirements: { glossary: 3, blog: 1, lesson: 0 },
-    xp: 15,
+    label: 'Rota Basica',
+    requirements: { glossary: 0, blog: 1, lesson: 1 },
+    xp: 13,
   },
   {
     key: 'base',
     missionType: 'combo_base',
     label: 'Rota Base',
-    requirements: { glossary: 5, blog: 1, lesson: 1 },
+    requirements: { glossary: 2, blog: 1, lesson: 1 },
     xp: 21,
   },
   {
     key: 'serious',
     missionType: 'combo_serious',
-    label: 'Rota Séria',
-    requirements: { glossary: 10, blog: 2, lesson: 2 },
-    xp: 33,
+    label: 'Rota Seria',
+    requirements: { glossary: 5, blog: 2, lesson: 2 },
+    xp: 47,
   },
 ];
 

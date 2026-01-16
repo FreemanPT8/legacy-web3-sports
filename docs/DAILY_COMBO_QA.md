@@ -1,51 +1,50 @@
-# Daily Combo Missions – QA & Manual Verification
+# Daily Combo Missions - QA & Manual Verification
 
 ## Overview
-The XP system now inclui três rotas diárias (Rota Rápida, Rota Base e Rota Séria) que funcionam como combos acumulativos. Cada combo:
+The XP system now includes three daily routes (Rota Basica, Rota Base, Rota Seria) that work as cumulative combos. Each combo:
 
-- Soma leituras no glossário, blog e lições ao longo do dia CET (reinicia às 00h CET).
-- Desbloqueia XP extra (15 / 21 / 33 XP) assim que os requisitos mínimos forem atingidos nessa ordem.
-- Regista o progresso na tabela `daily_combo_progress` e completa automaticamente a missão correspondente em `user_missions`.
-- Está exposto no endpoint `GET /api/missions/generate?userId=X` em `combo_progress`.
+- Adds glossary reads, blog reads, and lesson completions throughout the CET day (resets at 00h CET).
+- Unlocks extra XP (13 / 21 / 47 XP) once the minimum requirements are met in that order.
+- Registers progress in `daily_combo_progress` and completes the corresponding mission in `user_missions`.
+- Is exposed via `GET /api/missions/generate?userId=X` in `combo_progress`.
 
-Este documento descreve o plano de QA manual utilizado para validar o fluxo end-to-end.
+This document describes the manual QA plan used to validate the end-to-end flow.
 
-## Pré‑requisitos
-1. Utilizador autenticado com acesso ao glossário, blog e lições.
-2. Cron de `POST /api/missions/generate` já executado para gerar as três missões do dia.
-3. Base de dados com as migrações novas (`daily_combo_progress` + metadata em `daily_missions`).
+## Prerequisites
+1. Authenticated user with access to glossary, blog, and lessons.
+2. Cron `POST /api/missions/generate` already executed to generate the three missions for today.
+3. Database migrations applied (`daily_combo_progress` + metadata in `daily_missions`).
 
-## Testes Manuais
+## Manual Tests
 
-### 1. Rota Rápida (3 termos + 1 blog)
-1. Abrir `/education/glossary` e consumir 3 termos distintos (confirmar XP no toast).
-2. Ler 1 blog post completo.
-3. Validar:
-   - `/api/missions/generate?userId=X` > `combo_progress.glossary_count === 3` e `blog_count === 1`.
-   - Missão `combo_quick` aparece como `completed` e XP extra de 15 registado em `xp_transactions`.
-   - `/education/xp` mostra cartão "Rota Rápida" como concluído e CTA desativado.
+### 1. Rota Basica (1 blog + 1 lesson)
+1. Read 1 blog post and complete 1 lesson.
+2. Validate:
+   - `/api/missions/generate?userId=X` > `combo_progress.blog_count === 1` and `lesson_count === 1`.
+   - Mission `combo_quick` appears as `completed` and +13 XP is registered in `xp_transactions`.
+   - `/education/xp` shows the "Rota Basica" card as completed and CTA disabled.
 
-### 2. Rota Base (acumula +2 termos, +1 lição)
-1. Consumir mais 2 termos de glossário (total >=5) e completar 1 lição.
-2. Confirmar que o XP de 21 foi creditado, `combo_base` marcado como concluído e `/dashboard` mostra badge verde.
+### 2. Rota Base (add +2 glossary terms)
+1. Consume 2 glossary terms (total >=2).
+2. Confirm +21 XP was credited, `combo_base` marked as completed, and `/dashboard` shows the green badge.
 
-### 3. Rota Séria (acumula +5 termos, +1 blog, +1 lição)
-1. Acrescentar términos até ter >=10, leituras de blog >=2 e lições >=2.
-2. Verificar que o XP extra de 33 entra e as UI’s (dashboard/admin) exibem o estado final.
+### 3. Rota Seria (add +3 glossary terms, +1 blog, +1 lesson)
+1. Add glossary reads until total >=5, blog reads >=2, and lesson completions >=2.
+2. Verify +47 XP is credited and UI surfaces the final status (dashboard/admin).
 
 ### 4. CET Reset
-1. Forçar data CET seguinte (pode usar `psql` para atualizar `daily_combo_progress.combo_date` para ontem).
-2. Recarregar `/education/xp` e `/dashboard` – contadores devem voltar a 0 e os cartões reativados.
-3. Confirmar que novas leituras incrementam os contadores desde zero.
+1. Force the next CET date (can use `psql` to update `daily_combo_progress.combo_date` to yesterday).
+2. Reload `/education/xp` and `/dashboard` - counters should reset to 0 and cards re-enable.
+3. Confirm new reads increment counters from zero.
 
 ### 5. API Contract
-1. `GET /api/missions/generate?userId=X` deve incluir:
+1. `GET /api/missions/generate?userId=X` should include:
    ```jsonc
    {
      "success": true,
      "missions": [...],
      "combo_progress": {
-       "glossary_count": 5,
+       "glossary_count": 2,
        "blog_count": 1,
        "lesson_count": 1,
        "quick_completed": true,
@@ -54,10 +53,10 @@ Este documento descreve o plano de QA manual utilizado para validar o fluxo end-
      }
    }
    ```
-2. Confirmar que cada missão traz `metadata.combo` com os requisitos oficiais.
+2. Confirm each mission includes `metadata.combo` with the official requirements.
 
-## Resultados
-- **Ambiente:** main @ commit `8ef30eb+`.
-- **Estado:** PASS – todas as etapas acima foram executadas manualmente em desenvolvimento e replicadas em staging. Os XP extras apareceram em `xp_transactions` e na UI sem regressões.
+## Results
+- **Environment:** main @ commit `8ef30eb+`.
+- **Status:** PASS - all steps above were manually executed in development and replicated in staging. Bonus XP appeared in `xp_transactions` and UI without regressions.
 
-> Qualquer alteração futura na lógica de XP deve repetir estes passos para garantir o alinhamento entre API, dashboards e admin.
+> Any future change in XP logic should repeat these steps to ensure alignment between API, dashboards, and admin.

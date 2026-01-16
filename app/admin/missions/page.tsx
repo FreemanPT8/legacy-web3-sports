@@ -294,10 +294,10 @@ export default function AdminMissionsPage() {
                           <div>
                             <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">
                               {key === 'quick'
-                                ? 'Rota Rápida'
+                                ? 'Rota Basica'
                                 : key === 'base'
                                 ? 'Rota Base'
-                                : 'Rota Séria'}
+                                : 'Rota Seria'
                             </p>
                             <p className="text-sm text-slate-100">
                               {comboMeta[key]?.completed

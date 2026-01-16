@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
-import { awardXP } from '@/lib/xp';
 
 export async function POST(
   request: NextRequest,
@@ -77,8 +76,6 @@ export async function POST(
         { status: 500 }
       );
     }
-
-    await awardXP(user.id, 'forum_post', 3, post.id);
 
     return NextResponse.json({
       success: true,

@@ -464,7 +464,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     unlockNote:
 
-      'Ao atingir marcos, desbloqueias casas, fóruns privados, missões e desafios. O objectivo é elevar o padrão, não coleccionar "pontos".',
+      'Ao atingir marcos, desbloqueias comentarios privados, mensagens com a House, missoes e desafios. O objectivo e elevar o padrao, nao coleccionar "pontos".',
 
 
 
@@ -496,27 +496,27 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
 
 
-    planQuick: 'Rota Rápida',
+    planQuick: 'Rota Basica',
 
     planBase: 'Rota Base',
 
-    planSerious: 'Rota Séria',
+    planSerious: 'Rota Seria',
 
     planCTA: 'Executar',
 
 
 
-    planQuickDesc: '3 termos no glossário + 1 leitura de blog.',
+    planQuickDesc: '1 blog post + 1 licao.',
 
-    planBaseDesc: '1 lição + 1 blog post + 5 termos no glossário.',
+    planBaseDesc: '2 termos no glossario + 1 blog post + 1 licao.',
 
-    planSeriousDesc: '2 lições + 2 blog posts + 10 termos no glossário.',
+    planSeriousDesc: '5 termos no glossario + 2 blog posts + 2 licoes.',
 
-    planQuickXP: '15 XP extra',
+    planQuickXP: '13 XP extra',
 
     planBaseXP: '21 XP extra',
 
-    planSeriousXP: '33 XP extra',
+    planSeriousXP: '47 XP extra',
 
 
 
@@ -624,7 +624,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     unlockNote:
 
-      'Al alcanzar hitos, desbloqueas casas, foros privados, misiones y desafíos. El objetivo es elevar el estándar, no coleccionar "puntos".',
+      'Al alcanzar hitos, desbloqueas comentarios privados, mensajes con la House, misiones y desafios. El objetivo es elevar el estandar, no coleccionar "puntos".',
 
 
 
@@ -656,7 +656,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
 
 
-    planQuick: 'Ruta Rápida',
+    planQuick: 'Ruta Basica',
 
     planBase: 'Ruta Base',
 
@@ -666,17 +666,17 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
 
 
-    planQuickDesc: '3 términos en el glosario + 1 lectura de blog.',
+    planQuickDesc: '1 blog post + 1 leccion.',
 
-    planBaseDesc: '1 lección + 1 blog post + 5 términos en el glosario.',
+    planBaseDesc: '2 terminos en el glosario + 1 blog post + 1 leccion.',
 
-    planSeriousDesc: '2 lecciones + 2 blog posts + 10 términos en el glosario.',
+    planSeriousDesc: '5 terminos en el glosario + 2 blog posts + 2 lecciones.',
 
-    planQuickXP: '15 XP extra',
+    planQuickXP: '13 XP extra',
 
     planBaseXP: '21 XP extra',
 
-    planSeriousXP: '33 XP extra',
+    planSeriousXP: '47 XP extra',
 
 
 
@@ -784,7 +784,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     unlockNote:
 
-      'Hit milestones to unlock houses, private comments, missions, and challenges. The goal is standards, not points.',
+      'Hit milestones to unlock private comments, House private messages, missions, and challenges. The goal is standards, not points.',
 
 
 
@@ -814,7 +814,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
 
 
-    planQuick: 'Quick Route',
+    planQuick: 'Basic Route',
 
     planBase: 'Base Route',
 
@@ -824,17 +824,17 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
 
 
-    planQuickDesc: '3 glossary terms + 1 blog read.',
+    planQuickDesc: '1 blog post + 1 lesson.',
 
-    planBaseDesc: '1 lesson + 1 blog post + 5 glossary terms.',
+    planBaseDesc: '2 glossary terms + 1 blog post + 1 lesson.',
 
-    planSeriousDesc: '2 lessons + 2 blog posts + 10 glossary terms.',
+    planSeriousDesc: '5 glossary terms + 2 blog posts + 2 lessons.',
 
-    planQuickXP: '15 XP extra',
+    planQuickXP: '13 XP extra',
 
     planBaseXP: '21 XP extra',
 
-    planSeriousXP: '33 XP extra',
+    planSeriousXP: '47 XP extra',
 
 
 
@@ -870,11 +870,11 @@ const DEFAULT_COMBO_PROGRESS: ComboProgressState = {
 
 const COMBO_REQUIREMENTS: Record<ComboKey, { glossary: number; blog: number; lesson: number }> = {
 
-  quick: { glossary: 3, blog: 1, lesson: 0 },
+  quick: { glossary: 0, blog: 1, lesson: 1 },
 
-  base: { glossary: 5, blog: 1, lesson: 1 },
+  base: { glossary: 2, blog: 1, lesson: 1 },
 
-  serious: { glossary: 10, blog: 2, lesson: 2 },
+  serious: { glossary: 5, blog: 2, lesson: 2 },
 
 };
 
@@ -894,11 +894,11 @@ const MISSION_TYPE_BY_KEY: Record<ComboKey, string> = {
 
 const DEFAULT_COMBO_META: Record<ComboKey, ComboMissionMeta> = {
 
-  quick: { xp: 15, completed: false },
+  quick: { xp: 13, completed: false },
 
   base: { xp: 21, completed: false },
 
-  serious: { xp: 33, completed: false },
+  serious: { xp: 47, completed: false },
 
 };
 
@@ -1743,7 +1743,7 @@ type CommentRulesCopy = {
 const COMMENT_RULES_COPY: Record<SupportedCopyLang, CommentRulesCopy> = {
   pt: {
     title: 'Sistema de comentarios privados',
-    intro: 'Desbloqueias aos 369 XP e partilhas contexto dentro de licoes, blog posts e Houses com login feito.',
+    intro: 'Desbloqueias aos 369 XP e comentas em licoes e blog posts com login feito. Mensagens privadas com a tua House tambem ficam disponiveis.',
     points: [
       '0 XP base: comentarios servem para contexto, nao para farming.',
       'Limites diarios: 8 comentarios por dia para membros (33 para Super Admin, Admin, Heads e Moderadores).',
@@ -1754,18 +1754,18 @@ const COMMENT_RULES_COPY: Record<SupportedCopyLang, CommentRulesCopy> = {
   },
   es: {
     title: 'Sistema de comentarios privados',
-    intro: 'Se desbloquea a los 369 XP para que solo miembros comprometidos comenten en lecciones, posts y Houses.',
+    intro: 'Se desbloquea a los 369 XP para comentar en lecciones y posts con inicio de sesion. Los mensajes privados con tu House tambien se activan.',
     points: [
       '0 XP base: comentar sirve para aportar contexto, no para farmear.',
       'Limites diarios: 8 comentarios por miembro (33 para Super Admin, Admin, Heads y Moderadores).',
       'Limites de emoji: +1 (5/dia), fuego (1/dia) y -1 (1/dia). Ninguno da XP directo.',
-      'Los comentarios en Houses privadas solo son visibles para administradores, moderadores y miembros de esa House.',
+      'Los comentarios solo existen en lecciones y posts, visibles para miembros con inicio de sesion.',
     ],
     badge: 'El comentario publico con mas reaction points (positivo + 2*fuego) en la semana gana 88 XP + el badge "Comentario de la Semana".',
   },
   en: {
     title: 'Private comments system',
-    intro: 'Unlocks at 369 XP so committed members interact inside lessons, blog posts, and Houses.',
+    intro: 'Unlocks at 369 XP so committed members comment in lessons and blog posts. House private messages also unlock.',
     points: [
       '0 XP base: comments exist for context, not XP farming.',
       'Daily limits: 8 comments per member (33 for Super Admin, Admin, Heads, and Moderators).',
@@ -3296,11 +3296,11 @@ export default function EducationXpPage() {
 
   const xpFallbackByKey: Record<ComboKey, string> = {
 
-    quick: copy.planQuickXP || '+15 XP',
+    quick: copy.planQuickXP || '+13 XP',
 
     base: copy.planBaseXP || '+21 XP',
 
-    serious: copy.planSeriousXP || '+33 XP',
+    serious: copy.planSeriousXP || '+47 XP',
 
   };
 
@@ -3308,7 +3308,7 @@ export default function EducationXpPage() {
 
   const planCardBase: Record<ComboKey, { title: string; desc: string; href: string; icon: typeof Eye; featured?: boolean }> = {
 
-    quick: { title: copy.planQuick, desc: copy.planQuickDesc, href: '/education/glossary', icon: Eye },
+    quick: { title: copy.planQuick, desc: copy.planQuickDesc, href: '/blog', icon: Eye },
 
     base: { title: copy.planBase, desc: copy.planBaseDesc, href: '/education', icon: Target, featured: true },
 
@@ -4458,13 +4458,13 @@ export default function EducationXpPage() {
 
                           {language === 'pt'
 
-                            ? 'Comentarios privados desbloqueiam aos 369 XP e vivem dentro de licoes, blog posts e Houses.'
+                            ? 'Comentarios privados desbloqueiam aos 369 XP e vivem dentro de licoes e blog posts. As mensagens privadas com a House tambem desbloqueiam.'
 
                             : language === 'es'
 
-                            ? 'Los comentarios privados se desbloquean a los 369 XP y viven dentro de lecciones, posts y Houses.'
+                            ? 'Los comentarios privados se desbloquean a los 369 XP y viven dentro de lecciones y posts. Los mensajes privados con la House tambien se activan.'
 
-                            : 'Private comments unlock at 369 XP and live inside lessons, blog posts, and Houses.'}
+                            : 'Private comments unlock at 369 XP inside lessons and blog posts. Private messages with your House also unlock.'}
 
                         </p>
 

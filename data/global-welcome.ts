@@ -84,7 +84,7 @@ const DEFAULT_GLOBAL_WELCOME_COPY: Record<OnboardingPopupLanguage, GlobalWelcome
       {
         title: 'Private messages (for committed members only)',
         body:
-          'At 369 XP, you unlock private messages with the Head or Moderators. This protects Heads from noise and keeps focus on active members.',
+          'At 369 XP, you unlock private comments in lessons and blog posts plus private messages with the Head or Moderators. This protects Heads from noise and keeps focus on active members.',
       },
       {
         title: 'Pop-ups are official communication',
@@ -134,7 +134,7 @@ const DEFAULT_GLOBAL_WELCOME_COPY: Record<OnboardingPopupLanguage, GlobalWelcome
       {
         title: 'Mensajes privados (solo para comprometidos)',
         body:
-          'A partir de 369 XP, desbloqueas mensajes privados con el Head o Moderadores. Esto protege a los Heads del ruido y mantiene el foco en miembros activos.',
+          'A partir de 369 XP, desbloqueas comentarios en lecciones y posts y mensajes privados con el Head o Moderadores. Esto protege a los Heads del ruido y mantiene el foco en miembros activos.',
       },
       {
         title: 'Los pop-ups son comunicación oficial',

@@ -25,8 +25,6 @@ export const XP_REWARDS = {
   PROFILE_FACEBOOK: 9,
   PROFILE_INSTAGRAM: 9,
   COMMENT_RELEVANT: 5,
-  FORUM_POST: 3,
-  FORUM_TOPIC: 12,
   LIKE_CREATOR: 0.5,
   DAILY_MISSION: 12,
   STREAK_7_DAY: 222,
@@ -35,17 +33,12 @@ export const XP_REWARDS = {
 
 export const XP_THRESHOLDS = {
   PROFILE_UNLOCK: 99,
-  FORUM_READ: 369,
-  FORUM_INTERACT: 444,
-  FORUM_POST: 555,
   HALL_OF_FAME: 3333,
   NATIONAL_COMPETITION_USERS: 50,
 };
 
 export const DAILY_LIMITS = {
   COMMENT: { max: 25, xpCap: 25 },
-  FORUM_POST: { max: 30, xpCap: 30 },
-  FORUM_TOPIC: { max: 36, xpCap: 36 },
 };
 
 export async function awardXP(
