@@ -16,8 +16,8 @@ Al aceptar el papel de Head of House of Sport en el ecosistema Legacy, declaro d
 3. Comunico con claridad, verdad y responsabilidad
    - Me comprometo a no hacer promesas de ingresos, no garantizar resultados, no omitir riesgos y no usar lenguaje enganoso o ambiguo.
 
-4. Cumplo los limites operativos definidos por la plataforma
-   - Acepto plenamente los limites de frecuencia de comunicacion, el uso obligatorio de plantillas aprobadas, la auditoria de mensajes y los mecanismos anti-spam con feedback de los miembros.
+4. Cumplo las reglas operativas definidas por la plataforma
+   - Acepto plenamente las reglas de comunicacion, el uso obligatorio de plantillas aprobadas, la auditoria de mensajes y los mecanismos anti-spam con feedback de los miembros.
 
 5. Actuo como guardian de la reputacion de Legacy
    - Entiendo que cualquier abuso de mi posicion perjudica la confianza de los usuarios, la integridad del ecosistema y la reputacion global de Legacy.

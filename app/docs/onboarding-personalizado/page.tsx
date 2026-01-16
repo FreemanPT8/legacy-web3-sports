@@ -21,7 +21,7 @@ const sections: Section[] = [
     bullets: [
       'Os Heads orientam pelo exemplo: pop-ups validados e CTA conscientes substituem promessas vazias.',
       'Governanca clara protege utilizadores, Heads e a reputacao da plataforma.',
-      'Cada passo identifica limites e responsabilidades para manter autonomia e reduzir atrito.',
+      'Cada passo identifica responsabilidades para manter autonomia e reduzir atrito.',
     ],
   },
   {
@@ -31,7 +31,7 @@ const sections: Section[] = [
     bullets: [
       'Pop-up inicial enviado pela conta FreemanPT: explica que o proximo contacto vira do Head.',
       'Triggers por XP e por conclusao de conteudos (perfil completo, glossario, curso Comeca Aqui).',
-      'Limites automaticos: maximo 1 pop-up por dia e 3 por semana, registados no motor de onboarding.',
+      'Pop-ups disparam por XP ou consumo de conteudos e ficam auditados nos logs.',
     ],
   },
   {
@@ -41,7 +41,7 @@ const sections: Section[] = [
     bullets: [
       'Colocar o interesse da House acima do interesse pessoal; nada de pressao comercial ou hype.',
       'Respeitar autonomia: seguir links, contactar Heads ou aderir a projetos e sempre opcional.',
-      'Cumprir limites operacionais (templates, frequencia, auditoria, anti-spam) e aceitar avaliacao continua.',
+      'Cumprir regras operacionais (templates, frequencia, auditoria, anti-spam) e aceitar avaliacao continua.',
     ],
   },
   {
@@ -49,7 +49,6 @@ const sections: Section[] = [
     description: 'Indicadores minimos para manter o estatuto de House ativa no ecossistema Legacy.',
     bullets: [
       'Zero submissões sem responsavel ou plano de resposta em execucao.',
-      'Sem limites di?rios/semanais: pop-ups disparam por XP ou consumo de conte?do e ficam auditados nos logs.',
       'Heads utilizam o painel admin para gerir governaça, alerts e pedidos CTA.',
     ],
   },
