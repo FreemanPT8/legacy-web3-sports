@@ -312,7 +312,7 @@ export default function GlobalOnboardingGate() {
                   <details
                     key={section.title}
                     className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
-                    defaultOpen={index === 0}
+                    open={index === 0}
                   >
                     <summary className="cursor-pointer text-sm font-semibold text-white">
                       {section.title}
