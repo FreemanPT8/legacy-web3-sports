@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 const LOCK_SECONDS = 5;
 const HOUSE_KEY = 'LEGACY';
+const LOCAL_ACK_PREFIX = 'global_onboarding_ack';
 
 type SupportedCopyLang = 'pt' | 'es' | 'en';
 
@@ -208,11 +209,37 @@ export default function GlobalOnboardingGate() {
 
   const token = getToken?.() ?? null;
 
+  const getLocalAckKey = useCallback(
+    (userId: string) => `${LOCAL_ACK_PREFIX}:${HOUSE_KEY}:${userId}`,
+    [],
+  );
+
+  const readLocalAck = useCallback(
+    (userId: string) => {
+      if (typeof window === 'undefined') return false;
+      return localStorage.getItem(getLocalAckKey(userId)) === '1';
+    },
+    [getLocalAckKey],
+  );
+
+  const writeLocalAck = useCallback(
+    (userId: string) => {
+      if (typeof window === 'undefined') return;
+      localStorage.setItem(getLocalAckKey(userId), '1');
+    },
+    [getLocalAckKey],
+  );
+
   const canConfirm = ackChecked && !lockActive && !ackLoading;
 
   const loadAckStatus = useCallback(async () => {
-    if (!user || !token) {
+    if (!user) {
       setOpen(false);
+      return;
+    }
+    const localAck = readLocalAck(user.id);
+    if (!token) {
+      setOpen(!localAck);
       return;
     }
     try {
@@ -227,12 +254,12 @@ export default function GlobalOnboardingGate() {
       if (!response.ok || !data.success) {
         throw new Error(data.success ? 'Failed to load' : data.error || 'Failed to load');
       }
-      setOpen(!data.acknowledged);
+      setOpen(!(data.acknowledged || localAck));
     } catch (error) {
       console.error('[global-onboarding] failed to load ack', error);
-      setOpen(true);
+      setOpen(!localAck);
     }
-  }, [token, user]);
+  }, [readLocalAck, token, user]);
 
   useEffect(() => {
     void loadAckStatus();
@@ -264,7 +291,11 @@ export default function GlobalOnboardingGate() {
   }, [user]);
 
   const persistAck = useCallback(async () => {
-    if (!user || !token) return false;
+    if (!user) return false;
+    if (!token) {
+      writeLocalAck(user.id);
+      return true;
+    }
     try {
       setAckLoading(true);
       setAckError(null);
@@ -282,15 +313,16 @@ export default function GlobalOnboardingGate() {
       if (!response.ok || !data.success) {
         throw new Error(data.success ? 'Failed to save' : data.error || 'Failed to save');
       }
+      writeLocalAck(user.id);
       return true;
     } catch (error) {
       console.error('[global-onboarding] failed to persist ack', error);
-      setAckError(copy.errorLabel);
-      return false;
+      writeLocalAck(user.id);
+      return true;
     } finally {
       setAckLoading(false);
     }
-  }, [copy.errorLabel, token, user]);
+  }, [token, user, writeLocalAck]);
 
   const handleConfirm = useCallback(
     async (target?: string) => {
