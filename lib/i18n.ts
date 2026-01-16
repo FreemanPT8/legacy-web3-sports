@@ -2351,7 +2351,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'houses.activeHouses': 'Case Attive',
     'houses.underConstruction': 'In Costruzione',
     'houses.comingSoon': 'Prossimamente',
-    'houses.underDevelopment': 'Questa casa e in sviluppo. Unisciti alla lista d'attesa per essere avvisato al lancio',
+    'houses.underDevelopment': 'Questa casa e in sviluppo. Unisciti alla lista d\'attesa per essere avvisato al lancio',
     'houses.notifyMe': 'Notificami',
     'houses.members': 'Membri',
     'houses.joinHouse': 'Unisciti',
