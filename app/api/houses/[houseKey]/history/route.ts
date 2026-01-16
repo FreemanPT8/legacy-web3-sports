@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { isAdminRole } from '@/lib/roles';
 import { isMissingColumn, isMissingTable, formatMissingResourceError } from '@/lib/postgres';
+import { extractUuid } from '@/lib/lesson-id';
 
 const DEFAULT_LIMIT = 40;
 const MAX_LIMIT = 200;
@@ -91,12 +92,14 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
         .from('user_houses')
         .select('user_id')
         .eq('house_id', houseId)
+        .eq('membership_role', 'MEMBER')
         .is('removed_at', null);
       if (membershipError && isMissingColumn(membershipError)) {
         const retry = await supabaseAdmin
           .from('user_houses')
           .select('user_id')
-          .eq('house_id', houseId);
+          .eq('house_id', houseId)
+          .eq('membership_role', 'MEMBER');
         membershipData = retry.data ?? null;
         membershipError = retry.error ?? null;
       }
@@ -168,7 +171,13 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     }
 
     const blogIds = Array.from(new Set((blogReads.data ?? []).map((row: any) => row.blog_post_id).filter(Boolean)));
-    const lessonIds = Array.from(new Set((lessonCompletions.data ?? []).map((row: any) => row.lesson_id).filter(Boolean)));
+    const lessonIds = Array.from(
+      new Set(
+        (lessonCompletions.data ?? [])
+          .map((row: any) => extractUuid(row.lesson_id) ?? null)
+          .filter(Boolean),
+      ),
+    );
     const courseIds = Array.from(new Set((courseCompletions.data ?? []).map((row: any) => row.course_id).filter(Boolean)));
     const termIds = Array.from(new Set((glossaryReads.data ?? []).map((row: any) => row.term_id).filter(Boolean)));
     const messageUsers = Array.from(
