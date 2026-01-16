@@ -162,7 +162,7 @@ export function RichTextEditor({
   const [imageSizePopoverOpen, setImageSizePopoverOpen] = useState(false);
   const [ctaPopoverOpen, setCtaPopoverOpen] = useState(false);
   const [ctaConfig, setCtaConfig] = useState({
-    text: 'Quero fazer onboarding',
+    text: 'Quero saber mais',
     href: '/sports/houses',
     textColor: '#001014',
     bg: '#06b6d4',
@@ -405,7 +405,7 @@ export function RichTextEditor({
 
   const insertCTAButton = useCallback(() => {
     if (!editor) return;
-    const safeText = ctaConfig.text.trim() || 'Quero fazer onboarding';
+    const safeText = ctaConfig.text.trim() || 'Quero saber mais';
     const safeHref = ctaConfig.href.trim() || '/sports/houses';
     const finalHtml = `<p><a class="legacy-cta-button" href="${safeHref}" target="_blank" rel="noopener" style="--legacy-cta-bg:${ctaConfig.bg};--legacy-cta-hover:${ctaConfig.hover};--legacy-cta-text:${ctaConfig.textColor};">${safeText}</a></p>`;
     editor.chain().focus().insertContent(finalHtml).run();
@@ -614,7 +614,7 @@ export function RichTextEditor({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label="Insert onboarding CTA"
+              aria-label="Insert CTA"
             >
               <MousePointerClick className="h-4 w-4" />
             </Button>

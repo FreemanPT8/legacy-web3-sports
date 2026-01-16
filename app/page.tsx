@@ -122,7 +122,7 @@ const faqs = [
   {
     question: 'Preciso de experiência em cripto?',
     answer:
-      'Não. Temos glossário integrado, cursos introdutórios e onboarding guiado. Começas do zero e evoluis com contexto.',
+      'Não. Temos glossário integrado, cursos introdutórios e pop-ups guiados. Começas do zero e evoluis com contexto.',
   },
   {
     question: 'Isto é para atletas apenas?',
