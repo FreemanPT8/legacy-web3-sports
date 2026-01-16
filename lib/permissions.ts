@@ -9,7 +9,6 @@ export type PermissionKey =
   | 'canManageOnboarding'
   | 'canManageCourses'
   | 'canManageBlog'
-  | 'canManageForum'
   | 'canManageXP'
   | 'canManageAnalytics'
   | 'canManageSettings'
@@ -24,7 +23,6 @@ export const PERMISSION_KEYS: PermissionKey[] = [
   'canManageOnboarding',
   'canManageCourses',
   'canManageBlog',
-  'canManageForum',
   'canManageXP',
   'canManageAnalytics',
   'canManageSettings',
@@ -38,7 +36,6 @@ export interface AdminPermissions {
   canManageOnboarding: boolean;
   canManageCourses: boolean;
   canManageBlog: boolean;
-  canManageForum: boolean;
   canManageXP: boolean;
   canManageAnalytics: boolean;
   canManageSettings: boolean;
@@ -52,7 +49,6 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   canManageOnboarding: 'Manage Onboarding',
   canManageCourses: 'Manage Courses, Modules & Lessons',
   canManageBlog: 'Manage Blog Articles',
-  canManageForum: 'Manage Forum (global moderation)',
   canManageXP: 'Manage XP (manual adjustments)',
   canManageAnalytics: 'View Analytics & Reports',
   canManageSettings: 'Manage Platform Settings',
@@ -68,7 +64,6 @@ export const SUPER_ADMIN_PERMISSIONS: AdminPermissions = {
   canManageOnboarding: true,
   canManageCourses: true,
   canManageBlog: true,
-  canManageForum: true,
   canManageXP: true,
   canManageAnalytics: true,
   canManageSettings: true,
@@ -82,7 +77,6 @@ const ADMIN_DEFAULT_PERMISSIONS: AdminPermissions = {
   canManageOnboarding: false,
   canManageCourses: false,
   canManageBlog: false,
-  canManageForum: false,
   canManageXP: false,
   canManageAnalytics: false,
   canManageSettings: false,
@@ -96,7 +90,6 @@ const MEMBER_PERMISSIONS: AdminPermissions = {
   canManageOnboarding: false,
   canManageCourses: false,
   canManageBlog: false,
-  canManageForum: false,
   canManageXP: false,
   canManageAnalytics: false,
   canManageSettings: false,

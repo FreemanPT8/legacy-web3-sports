@@ -22,7 +22,6 @@ type LegacyPermissionColumn =
   | 'can_manage_onboarding'
   | 'can_manage_courses'
   | 'can_manage_blog'
-  | 'can_manage_forum'
   | 'can_manage_xp'
   | 'can_manage_analytics'
   | 'can_manage_settings';
@@ -39,7 +38,6 @@ const LEGACY_COLUMN_MAP: Partial<Record<PermissionKey, LegacyPermissionColumn>> 
   canManageOnboarding: 'can_manage_onboarding',
   canManageCourses: 'can_manage_courses',
   canManageBlog: 'can_manage_blog',
-  canManageForum: 'can_manage_forum',
   canManageXP: 'can_manage_xp',
   canManageAnalytics: 'can_manage_analytics',
   canManageSettings: 'can_manage_settings',
@@ -88,7 +86,6 @@ function mapRowToPermissions(
     ),
     canManageCourses: withOverrides('canManageCourses', base.canManageCourses),
     canManageBlog: withOverrides('canManageBlog', base.canManageBlog),
-    canManageForum: withOverrides('canManageForum', base.canManageForum),
     canManageXP: withOverrides('canManageXP', base.canManageXP),
     canManageAnalytics: withOverrides(
       'canManageAnalytics',

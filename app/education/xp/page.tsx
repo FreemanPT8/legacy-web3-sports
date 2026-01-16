@@ -3237,7 +3237,7 @@ export default function EducationXpPage() {
 
     return (xpData?.rewards ?? []).filter(
 
-      (r) => !hiddenActions.has(r.action_type) && !r.action_type?.startsWith('forum_'),
+      (r) => !hiddenActions.has(r.action_type),
 
     );
 
