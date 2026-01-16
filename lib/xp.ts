@@ -372,3 +372,94 @@ export async function updateStreak(
     return { newStreak: 0, longStreak: 0, bonus: 0 };
   }
 }
+
+const extractLessonIdsFromCurriculum = (curriculum: any): string[] => {
+  const topics: any[] = Array.isArray(curriculum?.topics)
+    ? curriculum.topics
+    : [];
+  const lessonIds: string[] = [];
+
+  topics.forEach((topic: any, topicIndex: number) => {
+    const topicId = topic?.id || `topic-${topicIndex + 1}`;
+    const lessons: any[] = Array.isArray(topic?.lessons) ? topic.lessons : [];
+    lessons.forEach((lesson: any, lessonIndex: number) => {
+      const lessonId =
+        lesson?.id || `${topicId}-lesson-${lessonIndex + 1}`;
+      if (lessonId) {
+        lessonIds.push(lessonId);
+      }
+    });
+  });
+
+  return lessonIds;
+};
+
+export async function markCourseCompleteIfReady(
+  userId: string,
+  courseId: string,
+  curriculum: any,
+): Promise<{ completed: boolean }> {
+  if (!userId || !courseId) {
+    return { completed: false };
+  }
+
+  const lessonIds = extractLessonIdsFromCurriculum(curriculum);
+  if (lessonIds.length === 0) {
+    return { completed: false };
+  }
+
+  const requiredSet = new Set<string>();
+  const queryIds = new Set<string>();
+
+  lessonIds.forEach((lessonId) => {
+    const normalized = normalizeLessonIdForStorage(lessonId) || lessonId;
+    requiredSet.add(normalized);
+    queryIds.add(normalized);
+    buildLessonIdVariants(lessonId).forEach((variant) => {
+      if (variant) queryIds.add(variant);
+    });
+  });
+
+  const { data, error } = await db
+    .from('lesson_completions')
+    .select('lesson_id')
+    .eq('user_id', userId)
+    .in('lesson_id', Array.from(queryIds));
+
+  if (error) {
+    console.error('markCourseCompleteIfReady: failed to load lesson completions', error);
+    return { completed: false };
+  }
+
+  const completedSet = new Set<string>();
+  (data || []).forEach((row: any) => {
+    const normalized =
+      normalizeLessonIdForStorage(row.lesson_id) || row.lesson_id;
+    if (normalized) {
+      completedSet.add(normalized);
+    }
+  });
+
+  if (completedSet.size < requiredSet.size) {
+    return { completed: false };
+  }
+
+  const { error: upsertError } = await db
+    .from('course_completions')
+    .upsert(
+      {
+        user_id: userId,
+        course_id: courseId,
+        xp_earned: 0,
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,course_id' },
+    );
+
+  if (upsertError) {
+    console.error('markCourseCompleteIfReady: failed to store course completion', upsertError);
+    return { completed: false };
+  }
+
+  return { completed: true };
+}

@@ -5,6 +5,7 @@ import {
   awardXP,
   hasCompletedContent,
   markContentComplete,
+  markCourseCompleteIfReady,
 } from '@/lib/xp';
 import { fetchLessonContext } from '@/lib/lesson-context';
 import { recordComboEvent } from '@/lib/comboMissions';
@@ -145,6 +146,14 @@ export async function POST(
     }
 
     await recordComboEvent(userId, 'lesson');
+
+    if (lessonContext?.course?.id) {
+      await markCourseCompleteIfReady(
+        userId,
+        lessonContext.course.id,
+        lessonContext.course.curriculum,
+      );
+    }
 
     return NextResponse.json({
       success: true,

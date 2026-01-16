@@ -18,7 +18,8 @@
     "sync:pool-pending": "ts-node scripts/process_sport_pending_pool.ts",
     "seed:house-messages": "cross-env DOTENV_CONFIG_PATH=.env.local ts-node -r dotenv/config -P tsconfig.scripts.json scripts/seed_house_messages.ts",
     "seed:house-roles": "cross-env DOTENV_CONFIG_PATH=.env.local ts-node -r dotenv/config -P tsconfig.scripts.json scripts/seed_house_roles.ts",
-    "backfill:pool-sources": "ts-node scripts/tag_pool_entry_sources.ts"
+    "backfill:pool-sources": "ts-node scripts/tag_pool_entry_sources.ts",
+    "backfill:course-completions": "cross-env DOTENV_CONFIG_PATH=.env.local ts-node -r dotenv/config -P tsconfig.scripts.json scripts/backfill_course_completions.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.0.8",
