@@ -8,19 +8,19 @@ const TEMPLATE_MESSAGES = [
     type: 'head-to-member' as const,
     subject: (houseKey: string) => `Boas-vindas da House ${houseKey}`,
     body: (houseName: string) =>
-      `Queremos que tenhas o melhor começo possível na ${houseName}. Se precisares de ajuda, responde a esta mensagem.`,
+      `Queremos que tenhas o melhor comeco possivel na ${houseName}. Se precisares de ajuda, responde a esta mensagem.`,
   },
   {
     type: 'member-to-head' as const,
-    subject: (houseKey: string) => `Dúvida sobre a ${houseKey}`,
+    subject: (houseKey: string) => `Duvida sobre a ${houseKey}`,
     body: (houseName: string) =>
-      `Já atingi o mínimo de XP exigido e gostava de partilhar uma ideia para o próximo encontro da ${houseName}.`,
+      `Ja atingi o minimo de XP exigido e gostava de partilhar uma ideia para o proximo encontro da ${houseName}.`,
   },
   {
     type: 'moderator-to-member' as const,
     subject: (houseKey: string) => `Resumo semanal da ${houseKey}`,
     body: (houseName: string) =>
-      `Esta é uma nota rápida da equipa de moderação da ${houseName}. Continua o bom trabalho e marca presença nos eventos.`,
+      `Esta e uma nota rapida da equipa de moderacao da ${houseName}. Continua o bom trabalho e mantem-te presente na comunidade.`,
   },
 ];
 
@@ -172,3 +172,6 @@ seedHouseMessages()
     console.error('Failed to seed house messages', error);
     process.exit(1);
   });
+
+
+

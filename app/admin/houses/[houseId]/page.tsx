@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, ShieldCheck, Calendar, Trash2, Pencil } from 'lucide-react';
+import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { SafeImage } from '@/app/components/SafeImage';
 import { Separator } from '@/components/ui/separator';
@@ -113,32 +113,6 @@ type HistoryResponse = {
   entries: HistoryEntry[];
 };
 
-type HouseEvent = {
-  id: string;
-  title: string;
-  description: string;
-  startAt: string;
-  endAt: string | null;
-  location: string | null;
-  visibility: 'public' | 'members';
-  linkUrl: string | null;
-};
-
-type EventsResponse = {
-  success: true;
-  events: HouseEvent[];
-};
-
-type EventFormState = {
-  title: string;
-  description: string;
-  startAt: string;
-  endAt: string;
-  location: string;
-  linkUrl: string;
-  visibility: 'members' | 'public';
-};
-
 type QualityMetrics = {
   members: number;
   completionRate: number;
@@ -232,12 +206,6 @@ export default function AdminHouseGovernancePage() {
     mutate: mutateInvites,
   } = useSWR<HeadInviteResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/head-invites` : null, fetcher);
   const {
-    data: eventsData,
-    error: eventsError,
-    isLoading: eventsLoading,
-    mutate: mutateEvents,
-  } = useSWR<EventsResponse>(params?.houseId ? `/api/admin/houses/${params.houseId}/events` : null, fetcher);
-  const {
     data: feedbackData,
     error: feedbackError,
     isLoading: feedbackLoading,
@@ -260,18 +228,6 @@ export default function AdminHouseGovernancePage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteExpiry, setInviteExpiry] = useState('7');
   const [creatingInvite, setCreatingInvite] = useState(false);
-  const [eventForm, setEventForm] = useState({
-    title: '',
-    description: '',
-    startAt: '',
-    endAt: '',
-    location: '',
-    linkUrl: '',
-    visibility: 'members' as 'members' | 'public',
-  });
-  const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [eventSaving, setEventSaving] = useState(false);
-  const [eventDeletingId, setEventDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (data?.house) {
@@ -1183,7 +1139,7 @@ export default function AdminHouseGovernancePage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-white/70">Sem eventos recentes registados para esta House.</p>
+                <p className="text-sm text-white/70">Sem registos recentes para esta House.</p>
               )}
             </CardContent>
           </Card>

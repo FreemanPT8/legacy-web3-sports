@@ -284,8 +284,8 @@ export default function HomePage() {
             <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">PORQUÊ COMEÇAR PELA EDUCAÇÃO?</p>
             <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">{LEGACY_SIGNATURE}</h2>
             <p className="mt-3 text-sm text-slate-200">
-              A Web3 recompensa quem entende o contexto antes de agir. Por isso mostramos produto — Academia e Glossário — antes de falar de comunidade,
-              eventos ou Houses. Conhecimento primeiro, exposição depois.
+              A Web3 recompensa quem entende o contexto antes de agir. Por isso mostramos produto - Academia e Glossário - antes de falar de comunidade
+              e Houses. Conhecimento primeiro, exposição depois.
             </p>
           </div>
         </section>
@@ -641,7 +641,7 @@ export default function HomePage() {
               </p>
               <p className="text-sm text-slate-200">
                 São comunidades distribuídas por várias cidades que ligam atletas, profissionais e entusiastas que querem crescer no universo Web3 + Desporto.
-                Mentores, eventos, treino e networking num só lugar.
+                Mentores, treino e networking num só lugar.
               </p>
               <ul className="space-y-2 text-sm text-slate-200">
                 <li className="flex items-center gap-2">
@@ -650,7 +650,7 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CircleDot className="h-4 w-4 text-cyan-300" />
-                  Eventos presenciais e digitais com a comunidade Legacy.
+                  Momentos presenciais e digitais com a comunidade Legacy.
                 </li>
                 <li className="flex items-center gap-2">
                   <CircleDot className="h-4 w-4 text-cyan-300" />

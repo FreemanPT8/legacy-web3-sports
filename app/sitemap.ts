@@ -7,7 +7,6 @@ const staticRoutes = [
   '/blog',
   '/education/courses',
   '/sports/houses',
-  '/events',
   '/login',
   '/signup',
 ];

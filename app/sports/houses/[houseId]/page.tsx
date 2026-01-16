@@ -382,7 +382,7 @@ export default function PublicHouseProfilePage() {
                     </p>
                     <p className="mt-2 text-[11px] text-muted-custom">
                       O Head of House é responsável por orientar a comunidade,
-                      definir prioridades de conteúdo, missões e eventos, sempre
+                      definir prioridades de conteúdo, missões e cultura, sempre
                       ligado à visão da SPORTS OFFICES e ao ecossistema da
                       Apertum.
                     </p>

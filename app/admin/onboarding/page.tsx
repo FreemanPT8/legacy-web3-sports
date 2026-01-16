@@ -1817,7 +1817,7 @@ export default function AdminOnboardingPage() {
                 ))
               ) : (
                 <p className="text-sm text-slate-400">
-                  {logActionFilter === 'ALL' ? 'Sem eventos registados.' : 'Sem eventos para este filtro.'}
+                  {logActionFilter === 'ALL' ? 'Sem registos.' : 'Sem registos para este filtro.'}
                 </p>
               )}
             </div>

@@ -194,7 +194,7 @@ const COPY = {
       {
         title: 'Passo 3',
         description:
-          'Partilha rituais, experiências e eventos exclusivos que marcam a cultura da tua comunidade.',
+          'Partilha rituais e experiências exclusivas que marcam a cultura da tua comunidade.',
       },
     ],
   },
@@ -286,7 +286,7 @@ const COPY = {
       {
         title: 'Step 3',
         description:
-          'Launch shared rituals, learning moments, and local events that set the tone.',
+          'Launch shared rituals and learning moments that set the tone.',
       },
     ],
   },
@@ -378,7 +378,7 @@ const COPY = {
       {
         title: 'Paso 3',
         description:
-          'Lanza experiencias, eventos y rituales que marquen la cultura de tu comunidad.',
+          'Lanza experiencias y rituales que marquen la cultura de tu comunidad.',
       },
     ],
   },

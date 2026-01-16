@@ -14,8 +14,8 @@ alteracoes estruturais.
 2. Preparar pelo menos uma House com os campos e conteudo preenchidos
    (`mission_i18n`, `support_model_i18n`, `culture_i18n`, etc.).
 3. Criar uma conta Admin/Super Admin para testar convites e governanca.
-4. Garantir que a base de dados contem alguns registos em `house_events`,
-   `house_feedback` e `house_join_requests`.
+4. Garantir que a base de dados contem alguns registos em `house_feedback`
+   e `house_join_requests`.
 
 ## 1. Pagina publica + CTA consciente
 
@@ -31,7 +31,6 @@ alteracoes estruturais.
    - Progresso (metricas corretas).
    - Conteudos recomendados (sequencia de pop-ups).
    - Cultura e mensagens.
-   - Eventos: listar itens de `house_events` com visibilidade `members`.
 2. Entrar com utilizador sem membership -> ver aviso de acesso restrito.
 3. Utilizador nao autenticado -> CTA "Iniciar sessao".
 

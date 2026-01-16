@@ -180,7 +180,6 @@ find app/api -name "route.ts" | wc -l
 /education/leaderboard ........... Tabela de classificação
 /education/xp .................... Sistema XP
 /education/lessons/[id] .......... Lição individual
-/events .......................... Eventos
 ```
 
 #### Comentários Privados / Legacy Forum

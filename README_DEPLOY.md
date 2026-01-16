@@ -57,7 +57,6 @@ UPDATE users SET role = 'Super Admin' WHERE email = 'SEU_EMAIL';
 - ✅ Gestão de utilizadores
 - ✅ Gestão de cursos e lições
 - ✅ Gestão de blog
-- ✅ Gestão de eventos
 - ✅ Moderação das Houses e comentários privados
 - ✅ Sistema de XP manual
 - ✅ Analytics da plataforma

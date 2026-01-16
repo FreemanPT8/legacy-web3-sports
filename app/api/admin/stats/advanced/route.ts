@@ -226,7 +226,7 @@ export async function GET(request: NextRequest) {
         week: w.label,
         lessons: lessonsCount,
         courses: courseSet.size,
-        blog: 0, // ainda não temos eventos de leitura → 0 mas real
+        blog: 0, // ainda não temos leituras registadas → 0 mas real
         xp: xpSum,
       };
     });

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Calendar } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { HouseMembersList } from './HouseMembersList';
@@ -35,17 +35,6 @@ type HouseMessage = {
   body: string;
   badgeLabel: string | null;
   updatedAt: string | null;
-};
-
-type HouseEvent = {
-  id: string;
-  title: string;
-  description: string;
-  startAt: string;
-  endAt: string | null;
-  location: string | null;
-  visibility: 'public' | 'members';
-  linkUrl: string | null;
 };
 
 type PrivateMessage = {
@@ -78,39 +67,6 @@ const applyTemplate = (value: string, replacements: Record<string, string>) =>
   Object.entries(replacements).reduce((current, [key, replacement]) => {
     return current.replace(new RegExp(`{${key}}`, 'g'), replacement);
   }, value);
-
-const EVENT_EMPTY_COPY = {
-  pt: 'Sem eventos programados para ja. Quando o Head agendar sessoes exclusivas, ficam disponiveis aqui.',
-  es: 'Sin eventos programados por ahora. Cuando el Head programe sesiones exclusivas apareceran aqui.',
-  en: 'No events scheduled yet. Once the Head posts exclusive sessions they will show up here.',
-} as const;
-
-const EVENT_SECTION_TITLES = {
-  pt: {
-    upcoming: 'Proximos eventos',
-    past: 'Eventos anteriores',
-  },
-  es: {
-    upcoming: 'Proximos eventos',
-    past: 'Eventos pasados',
-  },
-  en: {
-    upcoming: 'Upcoming events',
-    past: 'Past events',
-  },
-} as const;
-
-const EVENT_VISIBILITY = {
-  pt: { open: 'Aberto', reserved: 'Reservado' },
-  es: { open: 'Abierto', reserved: 'Reservado' },
-  en: { open: 'Open', reserved: 'Members only' },
-} as const;
-
-const EVENT_DETAIL_LINK = {
-  pt: 'Ver detalhes',
-  es: 'Ver detalles',
-  en: 'View details',
-} as const;
 
 const HISTORY_COPY = {
   pt: {
@@ -183,27 +139,12 @@ const HISTORY_COPY = {
 
 const HISTORY_STAFF_ROLES = new Set(['head', 'moderator', 'super-admin', 'admin']);
 
-function resolveEventEmptyCopy(locale: string) {
-  const normalized = locale.toLowerCase();
-  if (normalized.startsWith('es')) return EVENT_EMPTY_COPY.es;
-  if (normalized.startsWith('en')) return EVENT_EMPTY_COPY.en;
-  return EVENT_EMPTY_COPY.pt;
-}
-
-function resolveLocaleBucket(locale: string): keyof typeof EVENT_SECTION_TITLES {
-  const normalized = locale.toLowerCase();
-  if (normalized.startsWith('es')) return 'es';
-  if (normalized.startsWith('en')) return 'en';
-  return 'pt';
-}
-
 type Props = {
   houseKey: string;
   houseId: string;
   recommendedContent: RecommendedContent[];
   culture: string[];
   metrics: HouseProfilePayload['house']['metrics'];
-  events: HouseEvent[];
   roster: HouseProfilePayload['house']['roster'];
   houseLabel: string;
   welcomeMessage: string | null;
@@ -216,7 +157,6 @@ export function PrivateArea({
   recommendedContent,
   culture,
   metrics,
-  events,
   roster,
   houseLabel,
   welcomeMessage,
@@ -229,13 +169,6 @@ export function PrivateArea({
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [houseEvents, setHouseEvents] = useState<HouseEvent[]>(events);
-  const [eventsLoading, setEventsLoading] = useState(false);
-  const [eventsError, setEventsError] = useState<string | null>(null);
-  const localeGuess = typeof navigator !== 'undefined' ? navigator.language || 'pt-PT' : 'pt-PT';
-  const eventsEmptyCopy = resolveEventEmptyCopy(localeGuess);
-  const localeBucket = resolveLocaleBucket(localeGuess);
-  const sectionTitles = EVENT_SECTION_TITLES[localeBucket];
   const { language, t } = useLanguage();
   const historyLanguage = language === 'es' || language === 'en' ? language : 'pt';
   const historyCopy = HISTORY_COPY[historyLanguage];
@@ -560,57 +493,6 @@ export function PrivateArea({
       void markMessageRead(message.id);
     }
   };
-
-  useEffect(() => {
-    if (!membership?.isMember) {
-      setHouseEvents(events);
-      setEventsError(null);
-      setEventsLoading(false);
-      return;
-    }
-
-    let active = true;
-    setEventsLoading(true);
-    setEventsError(null);
-    const eventParams = new URLSearchParams();
-    if (localeGuess) {
-      eventParams.set('locale', localeGuess);
-    }
-    const querySuffix = eventParams.toString();
-    const token = getToken();
-    fetch(`/api/houses/${houseKey}/events${querySuffix ? `?${querySuffix}` : ''}`, {
-      cache: 'no-store',
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    })
-      .then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as
-          | { success: true; events: HouseEvent[] }
-          | { success: false; error?: string }
-          | null;
-        if (!active) return;
-        if (!response.ok || !payload || !payload.success) {
-          const errorMessage =
-            !payload || payload.success
-              ? t('houses.private.errorEventsLoad')
-              : payload.error || t('houses.private.errorEventsLoad');
-          throw new Error(errorMessage);
-        }
-        setHouseEvents(payload.events ?? []);
-      })
-      .catch((error) => {
-        if (!active) return;
-        console.error('[house events] failed', error);
-        setEventsError(error instanceof Error ? error.message : t('houses.private.errorEventsLoad'));
-        setHouseEvents([]);
-      })
-      .finally(() => {
-        if (active) setEventsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [events, houseKey, membership?.isMember, getToken]);
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 px-4 md:px-8">
@@ -1000,29 +882,6 @@ export function PrivateArea({
           </Card>
           <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg text-white">{t('houses.private.section.events')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-white/80">
-              {eventsLoading ? (
-                <div className="flex items-center gap-2 text-white/70">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>{t('houses.private.loadingEvents')}</span>
-                </div>
-              ) : eventsError ? (
-                <p className="text-rose-200">{eventsError}</p>
-              ) : (
-                <EventsSection
-                  events={houseEvents}
-                  localeBucket={localeBucket}
-                  sectionTitles={sectionTitles}
-                  emptyCopy={eventsEmptyCopy}
-                  locationLabel={t('houses.private.locationLabel')}
-                />
-              )}
-            </CardContent>
-          </Card>
-          <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
-            <CardHeader>
               <CardTitle className="text-lg text-white">{t('houses.private.section.comments')}</CardTitle>
             </CardHeader>
             <CardContent>
@@ -1041,28 +900,6 @@ export function PrivateArea({
   );
 }
 
-function formatEventDate(startAt: string, endAt?: string | null) {
-  const locale = 'pt-PT';
-  const start = new Date(startAt);
-  const base = start.toLocaleDateString(locale, {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-  if (!endAt) return base;
-  const end = new Date(endAt);
-  const sameDay = start.toDateString() === end.toDateString();
-  const endPart = end.toLocaleDateString(locale, {
-    day: sameDay ? undefined : '2-digit',
-    month: sameDay ? undefined : 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-  const endTime = end.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-  return sameDay ? `${base} - ${endTime}` : `${base} -> ${endPart}`;
-}
-
 function ProgressStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
@@ -1072,76 +909,3 @@ function ProgressStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EventsSection({
-  events,
-  localeBucket,
-  sectionTitles,
-  emptyCopy,
-  locationLabel,
-}: {
-  events: HouseEvent[];
-  localeBucket: keyof typeof EVENT_SECTION_TITLES;
-  sectionTitles: (typeof EVENT_SECTION_TITLES)[keyof typeof EVENT_SECTION_TITLES];
-  emptyCopy: string;
-  locationLabel: string;
-}) {
-  if (!events.length) {
-    return <p className="text-sm text-white/70">{emptyCopy}</p>;
-  }
-
-  const now = Date.now();
-  const upcoming = [...events]
-    .filter((event) => new Date(event.startAt).getTime() >= now)
-    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-  const past = [...events]
-    .filter((event) => new Date(event.startAt).getTime() < now)
-    .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
-
-  const visibilityLabels = EVENT_VISIBILITY[localeBucket];
-  const detailLabel = EVENT_DETAIL_LINK[localeBucket];
-
-  const renderEvent = (event: HouseEvent) => (
-    <div key={event.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-cyan-300">
-        <Calendar className="h-4 w-4" />
-        {event.visibility === 'members' ? visibilityLabels.reserved : visibilityLabels.open}
-      </div>
-      <p className="mt-2 text-base font-semibold text-white">{event.title}</p>
-      <p className="text-sm text-white/60">{formatEventDate(event.startAt, event.endAt)}</p>
-      {event.location ? (
-        <p className="text-xs text-white/60">
-          {locationLabel}: {event.location}
-        </p>
-      ) : null}
-      {event.description ? <p className="mt-2 text-sm text-white/70 line-clamp-3">{event.description}</p> : null}
-      {event.linkUrl ? (
-        <a
-          href={event.linkUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-flex text-sm font-semibold text-cyan-300 hover:text-cyan-200"
-        >
-          {detailLabel}
-        </a>
-      ) : null}
-    </div>
-  );
-
-  return (
-    <div className="space-y-6">
-      {upcoming.length ? (
-        <section>
-          <p className="mb-3 text-xs uppercase tracking-[0.4em] text-white/60">{sectionTitles.upcoming}</p>
-          <div className="space-y-4">{upcoming.map(renderEvent)}</div>
-        </section>
-      ) : null}
-      {past.length ? (
-        <section>
-          <p className="mb-3 mt-4 text-xs uppercase tracking-[0.4em] text-white/60">{sectionTitles.past}</p>
-          <div className="space-y-4">{past.map(renderEvent)}</div>
-        </section>
-      ) : null}
-      {!upcoming.length && !past.length ? <p className="text-sm text-white/70">{emptyCopy}</p> : null}
-    </div>
-  );
-}

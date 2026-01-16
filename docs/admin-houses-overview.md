@@ -124,16 +124,6 @@ This contract will be implemented in the next step along with the UI.
 
 ---
 
-## Eventos privados na área da House
-
-- A API `GET /api/houses/[houseKey]/events` devolve apenas eventos com visibilidade `members` ou `public` classificados por data.
-- No painel público (`/houses/[houseKey]`) o cartão “Eventos” deve aparecer logo após “Mensagens oficiais”, utilizando o mesmo gradiente do módulo `/education/xp`.
-- A copy base:
-  - PT: “Sem eventos programados para já…”
-  - EN: “No events queued yet…”
-  - ES: “Sin eventos programados…”
-- Quando o Head cria eventos no painel admin (`/admin/houses/[houseId]`), as ações devem ser registadas com `logHouseHistory` (`events.created`, `events.updated`, `events.deleted`) para manter auditoria.
-
 ## Alert Automation (Cron)
 
 - O endpoint de varredura é `POST /api/admin/houses/alerts/run` (proteção `requireAdmin`). Para uso em cron existe o wrapper

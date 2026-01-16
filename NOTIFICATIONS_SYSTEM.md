@@ -410,4 +410,5 @@ Sistema de notificações **totalmente funcional** e **pronto para produção**:
 ✅ Segurança implementada
 ✅ Build passa sem erros
 
-**O sistema está pronto para começar a gerar notificações automáticas em eventos da plataforma!** 🚀
+**O sistema está pronto para começar a gerar notificações automáticas na plataforma!** 🚀
+

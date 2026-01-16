@@ -252,7 +252,6 @@ export default async function HouseProfilePage({ params, searchParams }: PagePro
           recommendedContent={house.recommendedContent}
           culture={house.culture}
           metrics={house.metrics}
-          events={house.events}
           roster={house.roster}
           houseLabel={houseBadgeLabel}
           welcomeMessage={house.welcomeMessage ?? null}

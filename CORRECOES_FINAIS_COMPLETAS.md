@@ -320,7 +320,6 @@ npm run build
 - ✅ app/blog/page.tsx
 - ✅ app/dashboard/page.tsx
 - ✅ app/education/page.tsx ← **CORRIGIDA**
-- ✅ app/events/page.tsx
 - ✅ app/forum/page.tsx
 - ✅ app/login/page.tsx
 - ✅ app/notifications/page.tsx

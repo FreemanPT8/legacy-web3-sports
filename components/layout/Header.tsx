@@ -419,15 +419,6 @@ export const Header = memo(function Header() {
               </NavigationMenuItem>
 
               {/* EVENTS (só se user) */}
-              {user && (
-                <NavigationMenuItem>
-                  <Link href="/events" legacyBehavior passHref>
-                    <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white">
-                      {t('nav.events')}
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
-              )}
 
             </NavigationMenuList>
           </NavigationMenu>
@@ -802,13 +793,6 @@ export const Header = memo(function Header() {
                   className="text-lg"
                 >
                   {t('nav.about')}
-                </Link>
-                <Link
-                  href="/events"
-                  onClick={() => setMobileOpen(false)}
-                  className="text-lg"
-                >
-                  {t('nav.events')}
                 </Link>
 
                 {user && (

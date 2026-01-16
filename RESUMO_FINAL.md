@@ -81,7 +81,6 @@
 ### Média Prioridade
 6. **Notificações** - Sistema completo
 7. **Wallet** - Integração blockchain
-8. **Events** - Sistema de eventos
 9. **Blog Comments** - Sistema de comentários
 10. **Course Reviews** - Ratings e feedback
 

@@ -123,14 +123,10 @@
 **Implementado:**
 - ✅ Estrutura da página
 - ✅ UI completa
-- ✅ Mock data de eventos
 - ✅ Filtros e tabs
 
 **Falta:**
-- ❌ Tabela de eventos na BD
-- ❌ CRUD de eventos via admin
 - ❌ Sistema de inscrição real
-- ❌ Notificações de eventos
 
 **Razão:** Funcionalidade secundária, pode ser adicionada conforme necessidade
 
@@ -213,7 +209,6 @@
 | **Traduções** | 100% | ✅ | 6 idiomas |
 | **Performance** | 100% | ✅ | Optimizado |
 | **Wallet** | 70% | ⚠️ | Mock data |
-| **Eventos** | 80% | ⚠️ | Mock data |
 | **Conquistas** | 50% | ⚠️ | Parcial |
 | **Pagamentos** | 0% | ❌ | Aguarda config |
 | **Email Real** | 0% | ❌ | Aguarda config |
@@ -273,7 +268,6 @@ A plataforma está **100% pronta para produção** com as seguintes característ
    - Página dedicada
    - Progresso trackable
 
-2. **Eventos com Base de Dados**
    - CRUD via admin
    - Inscrições reais
    - Notificações automáticas
@@ -373,7 +367,6 @@ A plataforma está **100% pronta para produção** com as seguintes característ
 ⬜ Pagamentos (aguarda Stripe)
 ⬜ Email real (aguarda SMTP)
 ⬜ Blockchain real (aguarda web3)
-⬜ Eventos persistentes (pode adicionar)
 ⬜ Conquistas avançadas (nice to have)
 
 ### Resposta Final:
@@ -382,7 +375,6 @@ A plataforma está **100% pronta para produção** com as seguintes característ
 
 As funcionalidades que faltam são:
 1. **Opcionais** (Stripe, SMTP, Web3)
-2. **Secondary** (Eventos persistentes, Conquistas)
 3. **Advanced** (Testes, Monitoring, Analytics)
 
 **Nada crítico está em falta. Pode fazer deploy AGORA!** 🚀
