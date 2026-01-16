@@ -32,7 +32,7 @@
 ## 5. Governança & compliance (Fase 5)
 - **Termo de responsabilidade**: fluxo digital (checkbox + assinatura + timestamp) bloqueando edição se expirado (>90 dias).
 - **Auditoria**: logs imutáveis por pop-up (quem alterou, diff), revisões automáticas de copy (detetar linguagem proibida).
-- **Triggers sem limites fixos**: pop-ups disparam por XP/conte?do e ficam auditados nos logs.
+- **Triggers sem caps fixos**: pop-ups disparam por XP/conte?do e ficam auditados nos logs.
 - **DAO1 / contacto humano**: workflow com aprovação manual, estado (pendente/aprovado/recusado) e logs.
 
 ## 6. QA, testes e rollout (Fase 6)
