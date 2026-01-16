@@ -40,9 +40,9 @@ type CopyPack = {
 };
 
 const LANGUAGE_OPTIONS: Array<{ id: OnboardingPopupLanguage; label: string }> = [
-  { id: 'pt', label: '\u{1F1F5}\u{1F1F9} PT-PT \u2014 Portugu\u00eas de Portugal' },
-  { id: 'en', label: '\u{1F1EC}\u{1F1E7} EN \u2014 English' },
-  { id: 'es', label: '\u{1F1EA}\u{1F1F8} ES \u2014 Espa\u00f1ol' },
+  { id: 'pt', label: 'PT' },
+  { id: 'en', label: 'EN' },
+  { id: 'es', label: 'ES' },
 ];
 
 const PANEL_BASE =
@@ -56,6 +56,7 @@ export default function GlobalOnboardingGate() {
   const [globalWelcome, setGlobalWelcome] = useState<GlobalWelcomeConfig | null>(null);
 
   const [open, setOpen] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
   const [lockActive, setLockActive] = useState(true);
   const [remaining, setRemaining] = useState(LOCK_SECONDS);
   const [ackChecked, setAckChecked] = useState(false);
@@ -87,6 +88,7 @@ export default function GlobalOnboardingGate() {
   );
 
   const canConfirm = ackChecked && !lockActive && !ackLoading;
+  const canAdvance = !lockActive;
 
   const loadAckStatus = useCallback(async () => {
     if (!user) {
@@ -123,6 +125,11 @@ export default function GlobalOnboardingGate() {
 
   useEffect(() => {
     if (!open) return;
+    setPageIndex(0);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     setLockActive(true);
     setRemaining(LOCK_SECONDS);
     const started = Date.now();
@@ -136,7 +143,7 @@ export default function GlobalOnboardingGate() {
       }
     }, 200);
     return () => clearInterval(interval);
-  }, [open]);
+  }, [open, pageIndex]);
 
   useEffect(() => {
     if (!user) {
@@ -247,12 +254,22 @@ export default function GlobalOnboardingGate() {
   );
 
   const sections = useMemo(() => copy.sections, [copy.sections]);
+  const pageCount = 2;
+  const pageSections = useMemo(
+    () => ({
+      first: sections.slice(0, 2),
+      second: sections.slice(2),
+    }),
+    [sections],
+  );
   const copyLoadingLabel =
     language === 'pt'
       ? 'A carregar copy atualizada...'
       : language === 'es'
       ? 'Cargando copy actualizada...'
       : 'Loading updated copy...';
+  const nextLabel = language === 'pt' ? 'Seguinte' : language === 'es' ? 'Siguiente' : 'Next';
+  const backLabel = language === 'pt' ? 'Voltar' : language === 'es' ? 'Volver' : 'Back';
 
   if (!open) return null;
 
@@ -272,7 +289,7 @@ export default function GlobalOnboardingGate() {
               </h2>
             </div>
             <div className="flex flex-col items-end gap-3">
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] text-slate-200">
                 {LANGUAGE_OPTIONS.map((option) => (
                   <Button
                     key={option.id}
@@ -282,7 +299,7 @@ export default function GlobalOnboardingGate() {
                     aria-pressed={language === option.id}
                     onClick={() => setLanguage(option.id)}
                     className={cn(
-                      'h-8 justify-end border-white/25 px-3 text-[11px] uppercase tracking-[0.08em]',
+                      'h-7 rounded-full border-white/25 px-2 text-[10px] uppercase tracking-[0.2em]',
                       language === option.id
                         ? 'border-cyan-300/70 bg-cyan-500/10 text-cyan-100'
                         : 'text-slate-200 hover:bg-white/10',
@@ -298,27 +315,29 @@ export default function GlobalOnboardingGate() {
             </div>
           </div>
 
-          <ScrollArea className="max-h-[52vh] pr-2">
-            <div className="space-y-4 pb-2">
-              <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span>{copy.eyebrow}</span>
+            <span>
+              {pageIndex + 1}/{pageCount}
+            </span>
+          </div>
+
+          {pageIndex === 0 ? (
+            <ScrollArea className="max-h-[52vh] pr-2">
+              <div className="space-y-4 pb-2">
                 {copy.intro.map((line) => (
                   <p key={line} className="text-sm text-slate-300">
                     {line}
                   </p>
                 ))}
-              </div>
-              <div className="space-y-3">
-                {sections.map((section, index) => (
-                  <details
-                    key={section.title}
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
-                    open={index === 0}
-                  >
-                    <summary className="cursor-pointer text-sm font-semibold text-white">
-                      {section.title}
-                    </summary>
-                    <div className="mt-2 space-y-2">
-                      <p className="text-sm text-slate-200">{section.body}</p>
+                <div className="space-y-3">
+                  {pageSections.first.map((section) => (
+                    <div
+                      key={section.title}
+                      className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+                    >
+                      <p className="text-sm font-semibold text-white">{section.title}</p>
+                      <p className="mt-1 text-sm text-slate-200">{section.body}</p>
                       {section.bullets?.length ? (
                         <ul className="mt-2 space-y-2 text-sm text-slate-200">
                           {section.bullets.map((item) => (
@@ -330,64 +349,117 @@ export default function GlobalOnboardingGate() {
                         </ul>
                       ) : null}
                     </div>
-                  </details>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </ScrollArea>
+            </ScrollArea>
+          ) : (
+            <ScrollArea className="max-h-[52vh] pr-2">
+              <div className="space-y-4 pb-2">
+                <div className="space-y-3">
+                  {pageSections.second.map((section) => (
+                    <div
+                      key={section.title}
+                      className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+                    >
+                      <p className="text-sm font-semibold text-white">{section.title}</p>
+                      <p className="mt-1 text-sm text-slate-200">{section.body}</p>
+                      {section.bullets?.length ? (
+                        <ul className="mt-2 space-y-2 text-sm text-slate-200">
+                          {section.bullets.map((item) => (
+                            <li key={item} className="flex items-start gap-2">
+                              <ShieldCheck className="mt-0.5 h-4 w-4 text-cyan-300" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollArea>
+          )}
 
-          <div className="rounded-2xl border border-white/10 bg-[#031923] p-4">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={ackChecked}
-                onCheckedChange={(value) => setAckChecked(Boolean(value))}
-                className="mt-0.5 border-white/30 data-[state=checked]:bg-amber-400 data-[state=checked]:text-[#1e1500]"
-              />
-              <div>
-                <p className="text-sm text-white">{copy.checklistLabel}</p>
-                <p className="text-xs text-slate-400">{copy.helper}</p>
-              </div>
-            </div>
-            <div className="mt-3 flex items-center gap-2 text-xs text-slate-300">
+          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#031923] px-4 py-3 text-xs text-slate-300">
+            <div className="flex items-center gap-2">
               <Clock3 className="h-4 w-4 text-cyan-200" />
               <span>{lockActive ? copy.lockedLabel(remaining) : copy.unlockedLabel}</span>
             </div>
-            {ackError ? <p className="mt-2 text-xs text-rose-200">{ackError}</p> : null}
-            {copyLoading ? <p className="mt-2 text-xs text-slate-400">{copyLoadingLabel}</p> : null}
+            {pageIndex === 0 ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPageIndex(1)}
+                disabled={!canAdvance}
+                className="border-white/30 text-white hover:bg-white/10"
+              >
+                {nextLabel}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPageIndex(0)}
+                className="border-white/30 text-white hover:bg-white/10"
+              >
+                {backLabel}
+              </Button>
+            )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Button
-              size="lg"
-              onClick={() => void handleConfirm('/education/xp')}
-              disabled={!canConfirm}
-              className={cn(
-                'w-full justify-center bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]',
-                ackLoading && 'opacity-80',
-              )}
-            >
-              {copy.confirmPrimary}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => void handleConfirm('/education/courses')}
-              disabled={!canConfirm}
-              className="w-full border-white/30 text-white hover:bg-white/10"
-            >
-              {copy.confirmSecondary}
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => void handleConfirm()}
-              disabled={!canConfirm}
-              className="w-full border-white/30 text-white hover:bg-white/10"
-            >
-              {copy.confirmTertiary}
-            </Button>
-          </div>
+          {pageIndex === 1 ? (
+            <>
+              <div className="rounded-2xl border border-white/10 bg-[#031923] p-4">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    checked={ackChecked}
+                    onCheckedChange={(value) => setAckChecked(Boolean(value))}
+                    className="mt-0.5 border-white/30 data-[state=checked]:bg-amber-400 data-[state=checked]:text-[#1e1500]"
+                  />
+                  <div>
+                    <p className="text-sm text-white">{copy.checklistLabel}</p>
+                    <p className="text-xs text-slate-400">{copy.helper}</p>
+                  </div>
+                </div>
+                {ackError ? <p className="mt-2 text-xs text-rose-200">{ackError}</p> : null}
+                {copyLoading ? <p className="mt-2 text-xs text-slate-400">{copyLoadingLabel}</p> : null}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Button
+                  size="lg"
+                  onClick={() => void handleConfirm('/education/xp')}
+                  disabled={!canConfirm}
+                  className={cn(
+                    'w-full justify-center bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]',
+                    ackLoading && 'opacity-80',
+                  )}
+                >
+                  {copy.confirmPrimary}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => void handleConfirm('/education/courses')}
+                  disabled={!canConfirm}
+                  className="w-full border-white/30 text-white hover:bg-white/10"
+                >
+                  {copy.confirmSecondary}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => void handleConfirm()}
+                  disabled={!canConfirm}
+                  className="w-full border-white/30 text-white hover:bg-white/10"
+                >
+                  {copy.confirmTertiary}
+                </Button>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
     </div>
