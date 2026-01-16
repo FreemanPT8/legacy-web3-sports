@@ -1,9 +1,9 @@
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '../lib/supabase';
 import {
   extractLessonContext,
   type CourseLike,
-} from '@/lib/admin/courseXpHelpers';
-import { normalizeLessonIdForStorage } from '@/lib/lesson-id';
+} from '../lib/admin/courseXpHelpers';
+import { normalizeLessonIdForStorage } from '../lib/lesson-id';
 
 type CompletionRow = {
   user_id: string;
