@@ -36,18 +36,6 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     return jwt.verify(token, JWT_SECRET) as JWTPayload;
   } catch (error: any) {
-    const isExpiredError =
-      error &&
-      typeof error === 'object' &&
-      'name' in error &&
-      error.name === 'TokenExpiredError';
-
-    if (isExpiredError) {
-      const decoded = jwt.decode(token);
-      if (decoded && typeof decoded === 'object') {
-        return decoded as JWTPayload;
-      }
-    }
     return null;
   }
 }

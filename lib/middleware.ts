@@ -160,7 +160,9 @@ export async function requireAdmin(
  * Helper opcional para extrair só o userId de um request,
  * usado em algumas rotas.
  */
-export function getUserIdFromRequest(request: NextRequest): string | null {
+export async function getUserIdFromRequest(
+  request: NextRequest,
+): Promise<string | null> {
   const authHeader = request.headers.get('authorization');
   let token = extractTokenFromHeader(authHeader);
 
@@ -177,13 +179,8 @@ export function getUserIdFromRequest(request: NextRequest): string | null {
 
   if (!token) return null;
 
-  try {
-    const base64Payload = token.split('.')[1];
-    const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
-    return payload.userId || null;
-  } catch {
-    return null;
-  }
+  const payload = await verifyToken(token);
+  return payload?.userId || null;
 }
 
 /**
