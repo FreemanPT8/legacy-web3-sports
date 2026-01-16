@@ -270,6 +270,19 @@ export default function GlobalOnboardingGate() {
       : 'Loading updated copy...';
   const nextLabel = language === 'pt' ? 'Seguinte' : language === 'es' ? 'Siguiente' : 'Next';
   const backLabel = language === 'pt' ? 'Voltar' : language === 'es' ? 'Volver' : 'Back';
+  const renderWithHighlight = (text: string) => {
+    const parts = text.split(/(freemanpt)/gi);
+    return parts.map((part, index) => {
+      if (part.toLowerCase() === 'freemanpt') {
+        return (
+          <span key={`${part}-${index}`} className="font-semibold text-[#fdd87c]">
+            {part}
+          </span>
+        );
+      }
+      return <span key={`${part}-${index}`}>{part}</span>;
+    });
+  };
 
   if (!open) return null;
 
@@ -283,8 +296,8 @@ export default function GlobalOnboardingGate() {
         <div className="relative space-y-5 p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-200">{copy.eyebrow}</p>
-              <h2 id="global-onboarding-title" className="text-3xl font-semibold text-white">
+              <p className="text-[11px] uppercase tracking-[0.35em] text-[#fdd87c]">{copy.eyebrow}</p>
+              <h2 id="global-onboarding-title" className="text-3xl font-semibold text-[#fdd87c]">
                 {copy.title}
               </h2>
             </div>
@@ -316,7 +329,7 @@ export default function GlobalOnboardingGate() {
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>{copy.eyebrow}</span>
+            <span className="uppercase tracking-[0.35em] text-[#fdd87c]">{copy.eyebrow}</span>
             <span>
               {pageIndex + 1}/{pageCount}
             </span>
@@ -327,7 +340,7 @@ export default function GlobalOnboardingGate() {
               <div className="space-y-4 pb-2">
                 {copy.intro.map((line) => (
                   <p key={line} className="text-sm text-slate-300">
-                    {line}
+                    {renderWithHighlight(line)}
                   </p>
                 ))}
                 <div className="space-y-3">
@@ -336,7 +349,7 @@ export default function GlobalOnboardingGate() {
                       key={section.title}
                       className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
                     >
-                      <p className="text-sm font-semibold text-white">{section.title}</p>
+                      <p className="text-sm font-semibold text-[#fdd87c]">{section.title}</p>
                       <p className="mt-1 text-sm text-slate-200">{section.body}</p>
                       {section.bullets?.length ? (
                         <ul className="mt-2 space-y-2 text-sm text-slate-200">
@@ -362,7 +375,7 @@ export default function GlobalOnboardingGate() {
                       key={section.title}
                       className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
                     >
-                      <p className="text-sm font-semibold text-white">{section.title}</p>
+                      <p className="text-sm font-semibold text-[#fdd87c]">{section.title}</p>
                       <p className="mt-1 text-sm text-slate-200">{section.body}</p>
                       {section.bullets?.length ? (
                         <ul className="mt-2 space-y-2 text-sm text-slate-200">
@@ -418,7 +431,7 @@ export default function GlobalOnboardingGate() {
                     className="mt-0.5 border-white/30 data-[state=checked]:bg-amber-400 data-[state=checked]:text-[#1e1500]"
                   />
                   <div>
-                    <p className="text-sm text-white">{copy.checklistLabel}</p>
+                    <p className="text-sm text-white">{renderWithHighlight(copy.checklistLabel)}</p>
                     <p className="text-xs text-slate-400">{copy.helper}</p>
                   </div>
                 </div>
