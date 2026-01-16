@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAuth } from '@/lib/middleware';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { extractTokenFromHeader } from '@/lib/jwt';
 import { supabaseAdmin, supabase } from '@/lib/supabase';
 
-const db = supabaseAdmin ?? supabase;
 const TABLE_NAME = 'onboarding_global_ack';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function normalizeHouseKey(value?: string | null) {
   const trimmed = (value || '').trim();
   return trimmed ? trimmed.toUpperCase() : 'LEGACY';
+}
+
+function getDb(request: NextRequest) {
+  if (supabaseAdmin) return supabaseAdmin;
+  const token = extractTokenFromHeader(request.headers.get('authorization'));
+  if (!token || !SUPABASE_URL || !SUPABASE_ANON_KEY) return supabase;
+  return createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -16,6 +29,7 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return auth.response!;
   const user = auth.user!;
 
+  const db = getDb(request);
   if (!db) {
     return NextResponse.json({ success: true, acknowledged: false });
   }
@@ -46,6 +60,7 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response!;
   const user = auth.user!;
 
+  const db = getDb(request);
   if (!db) {
     return NextResponse.json({ success: true });
   }
