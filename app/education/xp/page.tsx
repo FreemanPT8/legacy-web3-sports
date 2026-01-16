@@ -1067,7 +1067,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
       },
       {
         title: 'Governanca e bloqueio de 3 s',
-        description: 'Sem limites di?rios/semanais; bloqueio de 3 s e auditoria autom?tica em cada entrega.',
+        description: 'Bloqueio de 3 s e auditoria automatica em cada entrega.',
       },
     ],
     sequenceTitle: 'Sequencia oficial (exemplo)',
@@ -1141,7 +1141,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
       },
       {
         title: 'Gobernanza y bloqueo de 3 s',
-        description: 'Sin limites diarios/semanales; bloqueo de 3 s y auditoria automatica en cada entrega.',
+        description: 'Bloqueo de 3 s y auditoria automatica en cada entrega.',
       },
     ],
     sequenceTitle: 'Secuencia oficial (ejemplo)',
