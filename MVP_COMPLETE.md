@@ -74,7 +74,7 @@ O projeto LEGACY está **100% funcional** e pronto para deploy em produção com
 - ✅ Criação de cursos com módulos e lições
 - ✅ Criação de blog posts multi-idioma
 - ✅ Gestão de usuários
-- ✅ Review de onboarding submissions
+- ✅ Gestao de pop-ups de onboarding
 - ✅ Gerador de missions diárias
 - ✅ Analytics (estrutura pronta)
 
@@ -140,9 +140,8 @@ Adicionada verificação de autenticação em:
 13. **forum_room_members** - Membros das salas
 14. **daily_missions** - Missões diárias globais
 15. **user_missions** - Progresso individual
-16. **onboarding_submissions** - Formulários de onboarding
-17. **contact_submissions** - Formulários de contato
-18. **content_likes** - Likes em conteúdo
+16. **contact_submissions** - Formulários de contato
+17. **content_likes** - Likes em conteúdo
 
 ### Migrations Aplicadas
 

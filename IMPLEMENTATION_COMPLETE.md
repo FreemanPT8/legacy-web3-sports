@@ -88,7 +88,7 @@ The LEGACY platform is now **fully implemented** and ready for production deploy
 4. Blog Management (list, status, author info)
 5. XP Management (award, history, stats)
 6. Analytics Dashboard (metrics, growth)
-7. Onboarding Review (existing)
+7. Onboarding Pop-ups (House-driven)
 
 ### User Features
 1. Daily Missions (3 per day)
@@ -272,7 +272,7 @@ All API endpoints are documented in `NEW_FEATURES.md` with:
 - View course and blog content
 - Award XP manually
 - View platform analytics
-- Review onboarding submissions
+- Manage onboarding pop-ups
 - Monitor XP transactions
 
 ---

@@ -91,7 +91,7 @@ They will:
 - [x] Create blog posts at `/admin/blog`
 - [x] Award XP manually at `/admin/xp`
 - [x] View analytics at `/admin/analytics`
-- [x] Review onboarding submissions at `/admin/onboarding`
+- [x] Manage onboarding pop-ups at `/admin/onboarding`
 
 ### For Regular Users
 - [x] Register at `/signup`

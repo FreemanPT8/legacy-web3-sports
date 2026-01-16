@@ -42,11 +42,10 @@ LEGACY is a fully functional gamified Web3 education platform for sports profess
 9. Blog Article - Full article with ContentTracker
 10. Private Comments - XP-gated (369 XP) threads inside lessons, blog posts, and Houses
 11. Houses of Sports - Community pages
-12. Personalized Onboarding - Multi-step form
-13. About - Platform info + contact form
-14. Admin Dashboard - Content management hub
-15. Admin Onboarding - Submission review
-16. 404 - Custom error page
+12. About - Platform info + contact form
+13. Admin Dashboard - Content management hub
+14. Admin Onboarding - Pop-up management
+15. 404 - Custom error page
 
 #### **API Routes (15 endpoints)**
 - `/api/auth/login` & `/api/auth/signup`
@@ -56,7 +55,6 @@ LEGACY is a fully functional gamified Web3 education platform for sports profess
 - `/api/blog` & `/api/blog/[id]` & `/api/blog/[id]/read`
 - `/api/profile`
 - `/api/leaderboard`
-- `/api/forms/onboarding`
 
 #### **Database Schema (18 tables)**
 All tables have Row Level Security enabled with proper policies.
@@ -157,7 +155,6 @@ Demo user:
 ### Community Tables
 - `content_comments` - Private comments + emoji reactions
 - `forum_rooms`, `forum_topics`, `forum_posts` (legacy - retained for reference/history)
-- `onboarding_submissions`
 - `contact_submissions`
 
 ### Missions & Tracking
@@ -209,7 +206,7 @@ Admin dashboard includes:
 - User management
 - Course management (placeholder)
 - Blog management (placeholder)
-- Onboarding submission review
+- Onboarding pop-up management
 - Forum moderation (placeholder)
 - XP management (placeholder)
 - Analytics (placeholder)
@@ -286,7 +283,7 @@ The app is a standard Next.js application and can be deployed to:
   /education               # Courses, leaderboard, XP
   /blog                    # Blog listing & articles
   /forum                   # Legacy route showing private comment unlock notice
-  /sports                  # Houses & onboarding
+  /sports                  # Houses
   /admin                   # Admin dashboard
   /api                     # API routes
 
@@ -317,7 +314,7 @@ The app is a standard Next.js application and can be deployed to:
 - [ ] Content reading with XP rewards
 - [ ] Forum access at XP thresholds
 - [ ] Admin dashboard access
-- [ ] Onboarding form submission
+- [ ] Onboarding pop-up flow
 - [ ] Language switching
 - [ ] Mobile responsiveness
 
