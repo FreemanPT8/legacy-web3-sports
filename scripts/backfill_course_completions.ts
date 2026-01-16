@@ -1,14 +1,23 @@
 import { supabaseAdmin } from '../lib/supabase';
-import {
-  extractLessonContext,
-  type CourseLike,
-} from '../lib/admin/courseXpHelpers';
-import { normalizeLessonIdForStorage } from '../lib/lesson-id';
+import { extractUuid, normalizeLessonIdForStorage } from '../lib/lesson-id';
 
 type CompletionRow = {
   user_id: string;
   lesson_id: string | null;
   course_id: string | null;
+};
+
+type CourseLike = {
+  id: string;
+  curriculum?: {
+    topics?: any[];
+  };
+};
+
+type LessonMeta = {
+  courseId: string;
+  lessonId: string;
+  normalizedId: string;
 };
 
 const CHUNK_SIZE = 800;
@@ -19,6 +28,60 @@ const chunkArray = <T,>(items: T[], size: number): T[][] => {
     chunks.push(items.slice(i, i + size));
   }
   return chunks;
+};
+
+const resolveLessonIds = (courses: CourseLike[]) => {
+  const lessonIdSet = new Set<string>();
+  const lessonToCourse: Record<string, string> = {};
+  const lessonMeta: Record<string, LessonMeta> = {};
+
+  courses.forEach((course) => {
+    const topics: any[] = Array.isArray(course.curriculum?.topics)
+      ? course.curriculum!.topics || []
+      : [];
+
+    topics.forEach((topic: any, topicIndex: number) => {
+      const topicId = topic?.id || `topic-${topicIndex + 1}`;
+      const lessons: any[] = Array.isArray(topic?.lessons)
+        ? topic.lessons
+        : [];
+
+      lessons.forEach((lesson: any, lessonIndex: number) => {
+        const lessonId =
+          lesson?.id || `${topicId}-lesson-${lessonIndex + 1}`;
+        const normalizedId =
+          normalizeLessonIdForStorage(lessonId) || lessonId;
+
+        const meta: LessonMeta = {
+          courseId: course.id,
+          lessonId,
+          normalizedId,
+        };
+
+        const registerVariant = (variant?: string | null) => {
+          if (!variant) return;
+          const key = variant.trim();
+          if (!key) return;
+          lessonIdSet.add(key);
+          lessonToCourse[key] = course.id;
+          lessonMeta[key] = meta;
+        };
+
+        registerVariant(lessonId);
+        registerVariant(normalizedId);
+        const maybeUuid = extractUuid(lessonId);
+        if (maybeUuid) {
+          registerVariant(maybeUuid);
+        }
+      });
+    });
+  });
+
+  return {
+    lessonIds: Array.from(lessonIdSet),
+    lessonToCourse,
+    lessonMeta,
+  };
 };
 
 const run = async () => {
@@ -41,7 +104,7 @@ const run = async () => {
   }
 
   const { lessonIds, lessonMeta, lessonToCourse } =
-    extractLessonContext(safeCourses);
+    resolveLessonIds(safeCourses);
 
   const requiredByCourse = new Map<string, Set<string>>();
   Object.values(lessonMeta).forEach((meta) => {
