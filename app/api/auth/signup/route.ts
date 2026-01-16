@@ -236,23 +236,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (userEmail) {
-        try {
-          const payload: Record<string, unknown> = { user_id: userId, sport_id };
-          const { error: linkError } = await supabaseAdmin
-            .from('onboarding_submissions')
-            .update(payload)
-            .is('user_id', null)
-            .eq('email', userEmail);
-
-          if (linkError) {
-            console.error('Failed to backfill onboarding_submissions.user_id:', linkError);
-          }
-        } catch (linkErr) {
-          console.error('Unexpected error while linking onboarding submissions to user:', linkErr);
-        }
-      }
-
       try {
         const welcomeEmail = getWelcomeEmailTemplate(result.user.username, result.user.email);
         await sendEmail(welcomeEmail);

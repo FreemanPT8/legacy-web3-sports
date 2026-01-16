@@ -6,7 +6,7 @@
   - `GET /api/onboarding/house?house=slug` → devolve sequência ativa + analytics.
   - `GET /api/onboarding/logs?userId=` → estado/cooldown por utilizador.
   - `POST /api/onboarding/logs` → regista ações (deliver/cta/dismiss) com assinatura anti-fraude.
-- **Motor de triggers**: serviço (cron/edge função) que lê eventos XP/conteúdo, aplica limites globais e agenda pop-ups em `onboarding_queue`.
+- **Motor de triggers**: servi?o (cron/edge fun??o) que l? eventos XP/conte?do e agenda pop-ups em `onboarding_queue`.
 - **Segurança**: autenticação JWT para users, headers internos para chamadas do painel, validação do Termo antes de permitir `POST/PUT`.
 
 ## 2. Painel Admin (Fase 2)
@@ -32,11 +32,11 @@
 ## 5. Governança & compliance (Fase 5)
 - **Termo de responsabilidade**: fluxo digital (checkbox + assinatura + timestamp) bloqueando edição se expirado (>90 dias).
 - **Auditoria**: logs imutáveis por pop-up (quem alterou, diff), revisões automáticas de copy (detetar linguagem proibida).
-- **Limites**: enforcement central para 1 pop-up/dia, 3/semana, cooldown configurable por House.
+- **Triggers sem limites fixos**: pop-ups disparam por XP/conte?do e ficam auditados nos logs.
 - **DAO1 / contacto humano**: workflow com aprovação manual, estado (pendente/aprovado/recusado) e logs.
 
 ## 6. QA, testes e rollout (Fase 6)
-- **Testes unitários**: motor de triggers, limites, API.
+- **Testes unit?rios**: motor de triggers, API, persist?ncia de logs.
 - **Testes E2E**: simular fluxos (XP 0 → 500+) em PT/EN/ES.
 - **Testes de carga**: garantir que o motor lida com milhares de eventos sem duplicar pop-ups.
 - **Rollout progressivo**: piloto (1-2 Houses), recolha feedback, ajusta métricas, depois abertura global.

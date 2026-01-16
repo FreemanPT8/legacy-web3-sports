@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, BarChart3, Globe2, Activity } from 'lucide-react';
+import { Loader2, BarChart3 } from 'lucide-react';
 
 type AdminStats = {
   users?: {
@@ -44,11 +44,6 @@ type AdminStats = {
       last30d: { id: string; title: any; views: number }[];
     };
   };
-  onboarding?: {
-    pendingTotal: number;
-    pendingPorAbrir: number;
-    pendingByStatus: Record<string, number>;
-  };
   houses?: {
     total: number;
     active: number;
@@ -66,43 +61,6 @@ const MetricCard = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
-const TopList = ({
-  title,
-  items,
-}: {
-  title: string;
-  items: { id: string; title: any; views: number }[];
-}) => (
-  <Card className="border border-white/10 border-dashed bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm text-white">{title}</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-2 text-sm text-slate-300">
-      {items && items.length > 0 ? (
-        items.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between gap-3"
-          >
-            <span className="truncate text-white">
-              {typeof item.title === 'string'
-                ? item.title
-                : (item.title as any)?.pt ??
-                  (item.title as any)?.en ??
-                  item.title ??
-                  'Sem titulo'}
-            </span>
-            <span className="font-semibold text-white">
-              {item.views.toLocaleString('pt-PT')}
-            </span>
-          </div>
-        ))
-      ) : (
-        <p className="text-xs text-slate-400">Sem dados</p>
-      )}
-    </CardContent>
-  </Card>
-);
 
 export default function AdminAnalyticsPage() {
   const router = useRouter();
@@ -181,11 +139,6 @@ export default function AdminAnalyticsPage() {
         views: { total: 0, logged: 0 },
         topPosts: { last7d: [], last30d: [] },
       },
-      onboarding: stats?.onboarding ?? {
-        pendingTotal: 0,
-        pendingPorAbrir: 0,
-        pendingByStatus: {},
-      },
       houses: stats?.houses ?? {
         total: 0,
         active: 0,
@@ -200,14 +153,8 @@ export default function AdminAnalyticsPage() {
       { label: 'Total de utilizadores', value: safeStats.users.total },
       { label: 'Cursos ativos', value: safeStats.courses.activeCourses },
       { label: 'Blog posts publicados', value: safeStats.blog.totalPosts },
-      { label: 'Onboardings pendentes', value: safeStats.onboarding.pendingTotal },
     ],
     [safeStats],
-  );
-
-  const onboardingEntries = useMemo(
-    () => Object.entries(safeStats.onboarding.pendingByStatus),
-    [safeStats.onboarding.pendingByStatus],
   );
 
   if (loading || !user || !isAdmin) {
@@ -247,69 +194,6 @@ export default function AdminAnalyticsPage() {
       </section>
 
       <section className="space-y-6">
-        <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold text-[#fdd87c]">
-              Indicadores principais
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-200">
-              Dados frescos diretamente do /api/admin/stats.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-4 text-slate-300">
-            {loadingStats ? (
-              <div className="md:col-span-4 text-center text-sm text-slate-400">
-                A carregar metricas...
-              </div>
-            ) : (
-              metrics.map((metric) => (
-                <MetricCard key={metric.label} label={metric.label} value={metric.value} />
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
-                <Globe2 className="h-4 w-4 text-blue-400" />
-                Top blog posts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <TopList title="Ultimos 7 dias" items={safeStats.blog.topPosts.last7d} />
-              <TopList title="Ultimos 30 dias" items={safeStats.blog.topPosts.last30d} />
-            </CardContent>
-          </Card>
-
-          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
-            <CardHeader>
-              <CardTitle className="text-[#fdd87c]">
-                Onboarding pipeline
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-200">
-                Agrupamento real por estados.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-slate-300">
-              {onboardingEntries.length > 0 ? (
-                <div className="grid gap-2">
-                  {onboardingEntries.map(([status, value]) => (
-                    <div
-                      key={status}
-                      className="flex items-center justify-between rounded-md border border-white/10 bg-[#021824]/80 px-3 py-2 text-xs text-slate-200 shadow-[0_15px_40px_rgba(3,10,25,0.45)]"
-                    >
-                      <span>{status}</span>
-                      <span className="font-semibold">{value.toLocaleString('pt-PT')}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400">Sem dados</p>
-              )}
-            </CardContent>
-          </Card>
 
           <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
             <CardHeader>

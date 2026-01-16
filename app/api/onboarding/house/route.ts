@@ -274,9 +274,6 @@ async function canEditHouseSequence(
 ) {
   if (!db) return true;
   if (isAdminRole(role)) return true;
-  if (username && username.toLowerCase() === 'freemanpt') {
-    return true;
-  }
   if (houseKey === 'LEGACY') {
     return false;
   }

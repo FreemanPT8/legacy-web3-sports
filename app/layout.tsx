@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from '@/components/ui/toaster';
+import GlobalOnboardingGate from '@/components/onboarding/GlobalOnboardingGate';
 import Script from 'next/script';
 
 // Antes usávamos Inter de next/font/google, que agora está removido
@@ -99,6 +100,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <LanguageProvider>
+              <GlobalOnboardingGate />
               {children}
               <Toaster />
             </LanguageProvider>

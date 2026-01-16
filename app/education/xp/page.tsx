@@ -925,62 +925,6 @@ const POPUP_LANGUAGE_FALLBACK: Record<SupportedCopyLang, SupportedCopyLang[]> = 
   en: ['en', 'pt', 'es'],
 };
 
-const LEGACY_HOUSE_KEY = 'LEGACY';
-
-const LEGACY_WELCOME_LOCALIZED_SOURCE: Record<SupportedCopyLang, OnboardingPopupLocalizedFields> = {
-  pt: {
-    title: 'Bem-vindo ao Legacy',
-    body: 'Esta é a porta oficial. Lês isto primeiro para garantir onboarding justo antes de falares com o Head do teu desporto (ou antes de definirmos um por ti).',
-    highlights: [
-      'Legacy faz o brief inicial; o próximo pop-up vem do Head da tua House.',
-      'Se delegaste ou sugeriste um desporto novo, avisamos-te assim que a House estiver pronta.',
-    ],
-    badgeLabel: 'Legacy',
-    primaryCtaLabel: 'Começar pelos 3 passos',
-    secondaryCtaLabel: 'Conhecer as Houses',
-  },
-  es: {
-    title: 'Bienvenido a Legacy',
-    body: 'Esta es la puerta oficial. Todos empiezan aquí para que el onboarding sea justo antes de hablar con el Head de tu deporte (o antes de que el Legacy elija uno por ti).',
-    highlights: [
-      'Legacy da el briefing inicial; el próximo pop-up llegará del Head de tu House.',
-      'Si sugeriste un deporte nuevo o delegaste, te avisamos cuando la House esté lista.',
-    ],
-    badgeLabel: 'Legacy',
-    primaryCtaLabel: 'Empezar por los 3 pasos',
-    secondaryCtaLabel: 'Conocer las Houses',
-  },
-  en: {
-    title: 'Welcome to Legacy',
-    body: 'This is the official doorway. Legacy talks to you first so onboarding stays fair before your sport Head shows up (or before we assign one for you).',
-    highlights: [
-      'Legacy delivers the first briefing; the next pop-up comes from your House Head.',
-      'If you delegated or suggested a sport, we notify you as soon as that House is ready.',
-    ],
-    badgeLabel: 'Legacy',
-    primaryCtaLabel: 'Start with the 3 essentials',
-    secondaryCtaLabel: 'Explore the Houses',
-  },
-};
-
-const cloneLegacyLocalizedCopy = () => {
-  const payload: Record<SupportedCopyLang, OnboardingPopupLocalizedFields> = {
-    pt: {
-      ...LEGACY_WELCOME_LOCALIZED_SOURCE.pt,
-      highlights: [...(LEGACY_WELCOME_LOCALIZED_SOURCE.pt.highlights ?? [])],
-    },
-    es: {
-      ...LEGACY_WELCOME_LOCALIZED_SOURCE.es,
-      highlights: [...(LEGACY_WELCOME_LOCALIZED_SOURCE.es.highlights ?? [])],
-    },
-    en: {
-      ...LEGACY_WELCOME_LOCALIZED_SOURCE.en,
-      highlights: [...(LEGACY_WELCOME_LOCALIZED_SOURCE.en.highlights ?? [])],
-    },
-  };
-  return payload;
-};
-
 const resolvePopupCopyForLanguage = (popup: OnboardingPopupData, language: SupportedCopyLang): OnboardingPopupData => {
   if (!popup.localized) return popup;
   let localizedEntry: OnboardingPopupLocalizedFields | undefined;
@@ -1123,7 +1067,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
       },
       {
         title: 'Governanca e bloqueio de 3 s',
-        description: 'Mensagens respeitam limites 1/dia e 3/semana com bloqueio anti-fechar e auditoria automatica.',
+        description: 'Sem limites di?rios/semanais; bloqueio de 3 s e auditoria autom?tica em cada entrega.',
       },
     ],
     sequenceTitle: 'Sequencia oficial (exemplo)',
@@ -1171,7 +1115,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
     governancePoints: [
       'Heads gerem sequencias no Painel Admin com historico completo.',
       'Termo de responsabilidade precisa estar assinado antes de editar pop-ups.',
-      'Motor aplica os limites globais (1 pop-up por dia e 3 por semana).',
+      'Motor segue triggers de XP/conte?do e regista cada entrega.',
       'Logs guardam trigger, idioma, CTA clicado e cumprimento do bloqueio de 3 s.',
       'Mapa do utilizador mostra pop-ups enviados, triggers futuros e pedidos pendentes.',
     ],
@@ -1197,7 +1141,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
       },
       {
         title: 'Gobernanza y bloqueo de 3 s',
-        description: 'Mensajes respetan limites 1/dia y 3/semana con bloqueo anti-cierre y auditoria automatica.',
+        description: 'Sin limites diarios/semanales; bloqueo de 3 s y auditoria automatica en cada entrega.',
       },
     ],
     sequenceTitle: 'Secuencia oficial (ejemplo)',
@@ -1245,7 +1189,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
     governancePoints: [
       'Heads gestionan secuencias en el Panel Admin con historial completo.',
       'El Termino de responsabilidad debe firmarse antes de editar pop-ups.',
-      'El motor aplica los limites globales (1 pop-up por dia y 3 por semana).',
+      'El motor sigue triggers de XP/contenido y registra cada entrega.',
       'Los logs guardan trigger, idioma, CTA y cumplimiento del bloqueo de 3 s.',
       'El mapa del usuario muestra pop-ups enviados, triggers futuros y solicitudes.',
     ],
@@ -1319,7 +1263,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
     governancePoints: [
       'Heads manage sequences in the Admin Panel with full history.',
       'Responsibility Term must be signed before editing any pop-up.',
-      'The engine enforces the global limits (1 per day, 3 per week).',
+      'The engine follows XP/content triggers and logs every delivery.',
       'Logs keep trigger, language, CTA clicks, and the 3 second lock proof.',
       'User map displays sent pop-ups, upcoming triggers, and pending requests.',
     ],
@@ -1341,7 +1285,6 @@ type DemoPopupEntry = {
 type DemoPopupCopy = {
   welcome: DemoPopupEntry;
   autonomy: DemoPopupEntry;
-  cooldown: { daily: string; weekly: string; idle: string };
   logLabels: Record<QueueLogAction, string>;
 };
 
@@ -1368,11 +1311,6 @@ const POPUP_DEMO_TEXT: Record<SupportedCopyLang, DemoPopupCopy> = {
       primary: 'Abrir tutorial seguro',
       secondary: 'Falar com a House',
       badge: 'XP 130 - Autonomia',
-    },
-    cooldown: {
-      daily: 'Já enviaste 1 pop-up hoje. Espera até amanhã para o próximo.',
-      weekly: 'Limite semanal atingido (3). A fila aguarda a próxima janela.',
-      idle: 'Sem mensagens pendentes — triggers aguardam novo evento.',
     },
     logLabels: {
       delivered: 'Mostrado',
@@ -1404,11 +1342,6 @@ const POPUP_DEMO_TEXT: Record<SupportedCopyLang, DemoPopupCopy> = {
       secondary: 'Hablar con la House',
       badge: 'XP 130 - Autonomía',
     },
-    cooldown: {
-      daily: 'Ya viste 1 pop-up hoy. El siguiente llega mañana.',
-      weekly: 'Límite semanal (3) alcanzado. Espera la próxima ventana.',
-      idle: 'Sin mensajes pendientes — esperando nuevo trigger.',
-    },
     logLabels: {
       delivered: 'Mostrado',
       primary: 'CTA principal',
@@ -1438,11 +1371,6 @@ const POPUP_DEMO_TEXT: Record<SupportedCopyLang, DemoPopupCopy> = {
       primary: 'Open safe tutorial',
       secondary: 'Talk to the House',
       badge: 'XP 130 - Autonomy',
-    },
-    cooldown: {
-      daily: 'Daily limit reached (1). Next message unlocks tomorrow.',
-      weekly: 'Weekly limit hit (3). Queue waits for the next window.',
-      idle: 'No pending pop-ups — waiting for the next trigger.',
     },
     logLabels: {
       delivered: 'Displayed',
@@ -1950,9 +1878,6 @@ export default function EducationXpPage() {
     }
   }, [rawHouseName, userSportId, fallbackHouseKey]);
 
-  const [legacyPopupRaw, setLegacyPopupRaw] = useState<OnboardingPopupData | null>(null);
-  const [legacyReloadKey, setLegacyReloadKey] = useState(0);
-
   useEffect(() => {
     if (!userSportId) return;
     let active = true;
@@ -1981,37 +1906,6 @@ export default function EducationXpPage() {
       active = false;
     };
   }, [userSportId, language, fallbackHouseKey]);
-
-  useEffect(() => {
-    let active = true;
-    const loadLegacyWelcome = async () => {
-      try {
-        const response = await fetch(`/api/onboarding/house?house=${LEGACY_HOUSE_KEY}`, {
-          cache: 'no-store',
-        });
-        const data = (await response.json()) as OnboardingResponse;
-        if (!active) return;
-        if (!response.ok || !data.success) {
-          setLegacyPopupRaw(null);
-          return;
-        }
-        const published =
-          (data.sequence.popups ?? []).find((popup) => popup.status === 'published') ??
-          data.sequence.popups?.[0] ??
-          null;
-        setLegacyPopupRaw(published ?? null);
-      } catch (error) {
-        if (active) {
-          console.error('[education/xp] Failed to load Legacy welcome popup', error);
-          setLegacyPopupRaw(null);
-        }
-      }
-    };
-    void loadLegacyWelcome();
-    return () => {
-      active = false;
-    };
-  }, [legacyReloadKey]);
 
   const buildDemoQueue = useCallback(
     (houseName: string): OnboardingPopupData[] => {
@@ -2132,12 +2026,6 @@ export default function EducationXpPage() {
     recordAction,
     logs: popupLogs,
     pending: queuePendingCount,
-    deliveredToday,
-    deliveredWeek,
-    dailyLimit,
-    weeklyLimit,
-    cooldownReason,
-    canDeliver,
     queueSnapshot,
   } = useOnboardingQueue();
 
@@ -2156,7 +2044,6 @@ export default function EducationXpPage() {
   const [remoteQueueSignature, setRemoteQueueSignature] = useState<string | null>(null);
   const [remoteQueuePayload, setRemoteQueuePayload] = useState<OnboardingPopupData[] | null>(null);
   const [queueSeedSignature, setQueueSeedSignature] = useState<string | null>(null);
-  const [remoteCooldownReason, setRemoteCooldownReason] = useState<'daily' | 'weekly' | null>(null);
   const [remoteQueueUpdatedAt, setRemoteQueueUpdatedAt] = useState<number | null>(null);
   const [queueReloadKey, setQueueReloadKey] = useState(0);
   const [remoteLogs, setRemoteLogs] = useState<OnboardingLogEntry[]>([]);
@@ -2167,40 +2054,6 @@ export default function EducationXpPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [analyticsReloadKey, setAnalyticsReloadKey] = useState(0);
-  const buildLegacyFallbackPopup = useCallback((): OnboardingPopupData => {
-    const localized = cloneLegacyLocalizedCopy();
-    const active = localized[language] ?? localized.en;
-    const xpLabel =
-      language === 'pt'
-        ? 'XP 0 - primeiro login'
-        : language === 'es'
-        ? 'XP 0 - primer inicio'
-        : 'XP 0 - first login';
-    return {
-      id: 'legacy-welcome-popup',
-      house: LEGACY_HOUSE_KEY,
-      xpGate: xpLabel,
-      trigger: { type: 'xp', value: 0, label: xpLabel },
-      title: active.title,
-      body: active.body,
-      highlights: active.highlights ?? [],
-      badgeLabel: active.badgeLabel ?? 'Legacy',
-      primaryCta: {
-        label:
-          active.primaryCtaLabel ??
-          (language === 'pt' ? 'Começar pelos 3 passos' : language === 'es' ? 'Empezar por los 3 pasos' : 'Start with the 3 steps'),
-        href: '/education/xp',
-      },
-      secondaryCta: {
-        label:
-          active.secondaryCtaLabel ??
-          (language === 'pt' ? 'Conhecer as Houses' : language === 'es' ? 'Conocer las Houses' : 'Explore the Houses'),
-        href: '/education/houses',
-      },
-      localized,
-      status: 'published',
-    };
-  }, [language]);
   const lastPersistedQueueHashRef = useRef<string | null>(null);
   const persistQueue = useCallback(
     async (payload: OnboardingPopupData[], signature: string | null) => {
@@ -2227,23 +2080,10 @@ export default function EducationXpPage() {
     [getToken, houseKey, user],
   );
   const queueSource = houseSequence?.popups?.length ? houseSequence.popups : demoQueue;
-const localizedQueueSource = useMemo(
-  () => queueSource.map((popup) => resolvePopupCopyForLanguage(popup, language)),
-  [queueSource, language],
-);
-  const localizedLegacyPopup = useMemo(
-    () => (legacyPopupRaw ? resolvePopupCopyForLanguage(legacyPopupRaw, language) : null),
-    [legacyPopupRaw, language],
+  const localizedQueueSource = useMemo(
+    () => queueSource.map((popup) => resolvePopupCopyForLanguage(popup, language)),
+    [queueSource, language],
   );
-  const fallbackLegacyPopup = useMemo(() => buildLegacyFallbackPopup(), [buildLegacyFallbackPopup]);
-  const globalLegacyEntry = localizedLegacyPopup ?? fallbackLegacyPopup;
-  const queueWithLegacy = useMemo(() => {
-    if (!globalLegacyEntry) return localizedQueueSource;
-    const legacyId = globalLegacyEntry.id || 'legacy-welcome-popup';
-    const sanitized = { ...globalLegacyEntry, id: legacyId };
-    const rest = localizedQueueSource.filter((popup) => popup.id !== legacyId);
-    return [sanitized, ...rest];
-  }, [globalLegacyEntry, localizedQueueSource]);
   const computeQueueHash = useCallback((payload: OnboardingPopupData[]) => {
     return payload.map((popup) => popup.id).join('|');
   }, []);
@@ -2292,7 +2132,6 @@ const localizedQueueSource = useMemo(
       setRemoteQueuePayload(null);
       setRemoteQueueSignature(null);
       setQueueSeedSignature(null);
-      setRemoteCooldownReason(null);
       setRemoteQueueUpdatedAt(null);
       setRemoteLogs([]);
       setRemoteLogsError(null);
@@ -2304,7 +2143,6 @@ const localizedQueueSource = useMemo(
     const token = getToken?.();
     if (!token) {
       setRemoteQueueLoaded(true);
-      setRemoteCooldownReason(null);
       setRemoteQueueUpdatedAt(null);
       setRemoteLogs([]);
       setRemoteLogsError(null);
@@ -2319,15 +2157,13 @@ const localizedQueueSource = useMemo(
           cache: 'no-store',
         });
         const data = (await response.json().catch(() => null)) as
-          | { success: boolean; cooldownReason?: 'daily' | 'weekly'; error?: string }
+          | { success: boolean; error?: string }
           | null;
         if (!response.ok || !data?.success) {
           throw new Error(data?.error || 'Failed to run onboarding engine');
         }
-        setRemoteCooldownReason((data.cooldownReason as 'daily' | 'weekly' | null) ?? null);
       } catch (error) {
         console.error('[education/xp] Failed to run onboarding engine', error);
-        setRemoteCooldownReason(null);
       }
     };
     const loadQueue = async () => {
@@ -2481,7 +2317,6 @@ const localizedQueueSource = useMemo(
   }, [activePopup, logRemoteAction]);
 
   const logLabels = demoCopy.logLabels;
-  const cooldownCopy = demoCopy.cooldown;
   const historyLogs = useMemo(() => {
     const remoteNormalized = remoteLogs.map((log) => ({
       popupId: log.popupId,
@@ -2511,13 +2346,6 @@ const localizedQueueSource = useMemo(
       }),
     [locale],
   );
-  const effectiveCooldown = remoteCooldownReason ?? cooldownReason;
-  const cooldownMessage =
-    effectiveCooldown === 'daily'
-      ? cooldownCopy.daily
-      : effectiveCooldown === 'weekly'
-      ? cooldownCopy.weekly
-      : cooldownCopy.idle;
   const userXP = user?.xp_total ?? 0;
 
 
@@ -2742,8 +2570,8 @@ const localizedQueueSource = useMemo(
     };
   }, [language, houseLabel]);
   const readyPopups = useMemo(
-    () => queueWithLegacy.filter((popup) => isTriggerSatisfied(popup)),
-    [queueWithLegacy, isTriggerSatisfied],
+    () => localizedQueueSource.filter((popup) => isTriggerSatisfied(popup)),
+    [localizedQueueSource, isTriggerSatisfied],
   );
   useEffect(() => {
     if (!user) return;
@@ -2754,8 +2582,8 @@ const localizedQueueSource = useMemo(
     void persistQueue(queueSnapshot, queueSeedSignature);
   }, [queueHash, queueSeedSignature, queueSnapshot, persistQueue, readyPopups.length, user]);
   const blockedPopups = useMemo(
-    () => queueWithLegacy.filter((popup) => !isTriggerSatisfied(popup)),
-    [queueWithLegacy, isTriggerSatisfied],
+    () => localizedQueueSource.filter((popup) => !isTriggerSatisfied(popup)),
+    [localizedQueueSource, isTriggerSatisfied],
   );
   const filteredBlockedPopups = useMemo(() => {
     if (blockedFilter === 'all') return blockedPopups;
@@ -2775,10 +2603,7 @@ const localizedQueueSource = useMemo(
     if (!remoteQueueLoaded && user) return;
     const remotePayload = Array.isArray(remoteQueuePayload) ? remoteQueuePayload : [];
     const remoteSignature = remoteQueueSignature ?? computeQueueHash(remotePayload);
-    const shouldUseRemote =
-      !!user &&
-      remoteQueueLoaded &&
-      (remoteCooldownReason !== null || remotePayload.length > 0 || Boolean(remoteQueueSignature));
+    const shouldUseRemote = Boolean(user && remoteQueueLoaded && Array.isArray(remoteQueuePayload));
     const payload = shouldUseRemote ? remotePayload : readyPopups;
     const nextSignature = shouldUseRemote ? remoteSignature : readySignature;
     if (queueSyncRef.current === nextSignature && queueSeedSignature === nextSignature) return;
@@ -2792,7 +2617,6 @@ const localizedQueueSource = useMemo(
     computeQueueHash,
     readyPopups,
     readySignature,
-    remoteCooldownReason,
     remoteQueueLoaded,
     remoteQueuePayload,
     remoteQueueSignature,
@@ -2812,7 +2636,7 @@ const localizedQueueSource = useMemo(
     ? 'Demo oficial Legacy'
     : 'Legacy demo sequence';
 
-  const queueMode = effectiveCooldown ? 'cooldown' : houseSequence ? 'live' : 'demo';
+  const queueMode = houseSequence ? 'live' : 'demo';
   const queueModeCopy = useMemo(() => {
     if (language === 'pt') {
       return {
@@ -2823,10 +2647,6 @@ const localizedQueueSource = useMemo(
         demo: {
           badge: 'Demo',
           description: 'Sequência fundacional (sem dados reais).',
-        },
-        cooldown: {
-          badge: 'Cooldown',
-          description: 'Limite atingido. O sistema reativa após o reset automático.',
         },
       };
     }
@@ -2840,10 +2660,6 @@ const localizedQueueSource = useMemo(
           badge: 'Demo',
           description: 'Secuencia fundacional (sin datos reales).',
         },
-        cooldown: {
-          badge: 'Cooldown',
-          description: 'Límite alcanzado. El sistema vuelve tras el reinicio automático.',
-        },
       };
     }
     return {
@@ -2855,18 +2671,12 @@ const localizedQueueSource = useMemo(
         badge: 'Demo',
         description: 'Foundational sequence (no live data).',
       },
-      cooldown: {
-        badge: 'Cooldown',
-        description: 'Limit reached. Engine resumes after the automatic reset.',
-      },
     };
   }, [language]);
   const queueStatusCopy = queueModeCopy[queueMode];
   const queueBadgeClass =
-    queueMode === 'cooldown'
+    queueMode === 'live'
       ? 'border-amber-300/40 bg-amber-400/10 text-amber-100'
-      : queueMode === 'live'
-      ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
       : 'border-cyan-400/40 bg-cyan-500/10 text-cyan-100';
   const queueLastUpdateLabel = useMemo(() => {
     if (!remoteQueueUpdatedAt) return null;
@@ -2961,11 +2771,11 @@ const localizedQueueSource = useMemo(
 
   const sequencePreview = useMemo(
     () =>
-      queueWithLegacy.map((popup) => ({
+      localizedQueueSource.map((popup) => ({
         popup,
         status: readyIdSet.has(popup.id) ? 'ready' : 'blocked',
       })),
-    [queueWithLegacy, readyIdSet],
+    [localizedQueueSource, readyIdSet],
   );
 
   const diagnostics = useMemo(
@@ -3064,7 +2874,6 @@ const localizedQueueSource = useMemo(
     setHouseReloadKey((key) => key + 1);
     setXpReloadKey((key) => key + 1);
     setComboReloadKey((key) => key + 1);
-    setLegacyReloadKey((key) => key + 1);
     refreshProgress();
     refreshQueue();
     refreshAnalytics();
@@ -5302,37 +5111,18 @@ const localizedQueueSource = useMemo(
                         </div>
                       </div>
 
-                      <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="grid gap-3 sm:grid-cols-1">
                         <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-center">
                           <p className={UI.micro}>{language === 'pt' ? 'Pendentes' : language === 'es' ? 'Pendientes' : 'Pending'}</p>
                           <p className="text-2xl font-semibold text-white">{queuePendingCount}</p>
                         </div>
-                        <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-center">
-                          <p className={UI.micro}>
-                            {language === 'pt' ? 'Hoje' : language === 'es' ? 'Hoy' : 'Today'}
-                          </p>
-                          <p className="text-2xl font-semibold text-white">
-                            {deliveredToday}/{dailyLimit}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-center">
-                          <p className={UI.micro}>
-                            {language === 'pt' ? 'Semana' : language === 'es' ? 'Semana' : 'Week'}
-                          </p>
-                          <p className="text-2xl font-semibold text-white">
-                            {deliveredWeek}/{weeklyLimit}
-                          </p>
-                        </div>
                       </div>
-
-                      <p className={cn(UI.bodyMuted, 'text-sm')}>{cooldownMessage}</p>
 
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => resetQueue(readyPopups)}
                         className="border-white/30 text-white hover:bg-white/10"
-                        disabled={Boolean(remoteCooldownReason)}
                       >
                         {queueResetLabel}
                       </Button>

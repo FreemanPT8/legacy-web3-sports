@@ -20,7 +20,6 @@ import {
   Users,
   BookOpen,
   FileText,
-  Mail,
   Building2,
   Activity,
   TrendingUp,
@@ -39,8 +38,6 @@ type AdminStats = {
   totalCourses?: number;
   totalLessons?: number;
   totalBlogPosts?: number;
-  totalOnboardingPending?: number;
-  onboardingByStatus?: Record<string, number>;
   totalHouses?: number;
   activeHouses?: number;
   buildingHouses?: number;
@@ -81,12 +78,6 @@ type AdminStats = {
       last30d: { id: string; title: any; views: number }[];
       last365d: { id: string; title: any; views: number }[];
     };
-  };
-  onboarding?: {
-    pendingTotal: number;
-    pendingByStatus: Record<string, number>;
-    pendingPorAbrir: number;
-    byResponsible: Record<string, number>;
   };
   houses?: {
     total: number;
@@ -286,14 +277,6 @@ export default function AdminDashboardPage() {
       views: { total: 0, logged: 0 },
       topPosts: { last7d: [], last30d: [], last365d: [] },
     };
-
-    const onboarding = stats?.onboarding || {
-      pendingTotal: stats?.totalOnboardingPending ?? 0,
-      pendingByStatus: stats?.onboardingByStatus ?? {},
-      pendingPorAbrir: 0,
-      byResponsible: {},
-    };
-
     const houses = stats?.houses || {
       total: stats?.totalHouses ?? 0,
       active: stats?.activeHouses ?? 0,
@@ -301,13 +284,8 @@ export default function AdminDashboardPage() {
       developing: stats?.developingHouses ?? 0,
     };
 
-    return { users, courses, blog, onboarding, houses };
+    return { users, courses, blog, houses };
   }, [stats]);
-
-  const onboardingStatusEntries = useMemo(
-    () => Object.entries(safeStats.onboarding.pendingByStatus || {}),
-    [safeStats.onboarding.pendingByStatus],
-  );
 
   const userGrowthData = useMemo(
     () =>
@@ -360,8 +338,7 @@ export default function AdminDashboardPage() {
             Admin Dashboard
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-100">
-            Visão rápida sobre utilizadores, cursos, blog, onboarding e Houses of
-            Sports. Usa este painel para perceber se o LEGACY cresce de forma
+            Vis??o r??pida sobre utilizadores, cursos, blog e Houses of Sports. Usa este painel para perceber se o LEGACY cresce de forma
             saudável ou se algo precisa da tua atenção.
           </p>
           {statsError && (
@@ -606,80 +583,6 @@ export default function AdminDashboardPage() {
                 title="Top 365 dias"
                 items={safeStats.blog.topPosts.last365d}
               />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ONBOARDING */}
-        <div className="space-y-3">
-          <h2 className="text-xs uppercase tracking-[0.4em] text-cyan-200">
-            Onboarding & Leads
-          </h2>
-          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.65)]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-[#fdd87c]">
-                <Mail className="h-5 w-5 text-orange-400" />
-                Pending Onboarding
-              </CardTitle>
-              <CardDescription className="text-slate-200">
-                Estados e responsáveis.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-slate-200">
-              <div className="grid md:grid-cols-3 gap-4">
-                <StatTile
-                  label="Pendentes (total)"
-                  value={safeStats.onboarding.pendingTotal}
-                />
-                <StatTile
-                  label="Por abrir"
-                  value={safeStats.onboarding.pendingPorAbrir}
-                />
-                <StatTile
-                  label="Estados distintos"
-                  value={onboardingStatusEntries.length}
-                />
-              </div>
-              {onboardingStatusEntries.length > 0 && (
-                <div className="grid md:grid-cols-3 gap-3 text-xs">
-                  {onboardingStatusEntries.map(([status, count]) => (
-                    <div
-                      key={status}
-                      className="rounded border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]"
-                    >
-                      <div className="font-semibold text-[#fdd87c]">
-                        {status}
-                      </div>
-                      <div className="text-sm text-slate-200">{count}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {Object.keys(safeStats.onboarding.byResponsible || {}).length >
-                0 && (
-                <div className="space-y-2 text-xs">
-                  <div className="font-semibold text-[#fdd87c]">
-                    Responsáveis (by user_id)
-                  </div>
-                  <div className="grid md:grid-cols-4 gap-2">
-                    {Object.entries(safeStats.onboarding.byResponsible).map(
-                      ([uid, count]) => (
-                        <div
-                          key={uid}
-                          className="rounded border border-white/10 bg-[#021824]/80 p-2 shadow-[0_10px_30px_rgba(3,10,25,0.45)]"
-                        >
-                          <div className="text-[11px] text-slate-200 break-all">
-                            {uid}
-                          </div>
-                          <div className="text-sm font-semibold text-slate-200">
-                            {count}
-                          </div>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>

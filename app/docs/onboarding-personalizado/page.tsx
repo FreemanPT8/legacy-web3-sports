@@ -49,7 +49,7 @@ const sections: Section[] = [
     description: 'Indicadores minimos para manter o estatuto de House ativa no ecossistema Legacy.',
     bullets: [
       'Zero submissões sem responsavel ou plano de resposta em execucao.',
-      'Limites oficiais comunicados aos membros: 1 pop-up/dia, 3/semana, logs de broadcast e botao Silenciar.',
+      'Sem limites di?rios/semanais: pop-ups disparam por XP ou consumo de conte?do e ficam auditados nos logs.',
       'Heads utilizam o painel admin para gerir governaça, alerts e pedidos CTA.',
     ],
   },

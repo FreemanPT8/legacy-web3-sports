@@ -30,14 +30,12 @@ import {
   ArrowDown,
   Plus,
   Trash2,
-  MessageSquare,
   ShieldCheck,
   AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', { label: string }> = {
   delivered: { label: 'Entregues' },
@@ -252,38 +250,6 @@ const DEFAULT_DRAFT: OnboardingPopupData = {
   status: 'draft',
   localized: cloneLocalizedCopy(BASE_LOCALIZED_COPY),
 };
-type AdminOnboardingStatus =
-  | 'PENDING_RESPONSE'
-  | 'RESPONDED_WAITING'
-  | 'FIRST_CONTACT_SCHEDULED'
-  | 'FIRST_CONTACT_DONE'
-  | 'ONBOARDING_LEGACY'
-  | 'ONBOARDING_DAO1'
-  | 'ONBOARDING_TELEGRAM';
-
-const SUBMISSION_STATUS_LABELS: Record<AdminOnboardingStatus, string> = {
-  PENDING_RESPONSE: 'Pendente',
-  RESPONDED_WAITING: 'A aguardar resposta',
-  FIRST_CONTACT_SCHEDULED: 'Primeiro contacto agendado',
-  FIRST_CONTACT_DONE: 'Primeiro contacto feito',
-  ONBOARDING_LEGACY: 'Onboarding Legacy',
-  ONBOARDING_DAO1: 'Onboarding DAO1',
-  ONBOARDING_TELEGRAM: 'Onboarding Telegram',
-};
-
-const SUBMISSION_STATUS_OPTIONS: { value: 'ALL' | AdminOnboardingStatus; label: string }[] = [
-  { value: 'PENDING_RESPONSE', label: 'Pendentes' },
-  { value: 'RESPONDED_WAITING', label: 'A aguardar' },
-  { value: 'FIRST_CONTACT_SCHEDULED', label: '1.º contacto agendado' },
-  { value: 'FIRST_CONTACT_DONE', label: '1.º contacto feito' },
-  { value: 'ONBOARDING_LEGACY', label: 'Legacy' },
-  { value: 'ONBOARDING_DAO1', label: 'DAO1' },
-  { value: 'ONBOARDING_TELEGRAM', label: 'Telegram' },
-  { value: 'ALL', label: 'Todos' },
-];
-const SUBMISSION_STATUS_CHOICES = SUBMISSION_STATUS_OPTIONS.filter(
-  (option) => option.value !== 'ALL',
-) as Array<{ value: AdminOnboardingStatus; label: string }>;
 const POPUP_STATUS_OPTIONS = [
   { value: 'draft', label: 'Rascunho' },
   { value: 'ready', label: 'Pronto' },
@@ -316,29 +282,6 @@ function validatePopup(popup: OnboardingPopupData): string | null {
   }
   return null;
 }
-
-type SubmissionSummary = {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-  status: AdminOnboardingStatus | null;
-  created_at: string | null;
-  assigned_to_full_name: string | null;
-  assigned_to_username: string | null;
-  sports_category: string | null;
-  sequence_number: number | null;
-};
-
-type SubmissionNote = {
-  id: string;
-  submission_id: string;
-  author_user_id: string | null;
-  author_full_name: string | null;
-  author_username: string | null;
-  author_email: string | null;
-  note: string;
-  created_at: string;
-};
 
 type HeadTermContextState = {
   house: { id: string; houseKey: string; name: string };
@@ -399,18 +342,6 @@ export default function AdminOnboardingPage() {
     () => (logActionFilter === 'ALL' ? latestLogs : latestLogs.filter((log) => log.action === logActionFilter)),
     [latestLogs, logActionFilter],
   );
-  const [submissionStatusFilter, setSubmissionStatusFilter] = useState<'ALL' | AdminOnboardingStatus>('PENDING_RESPONSE');
-  const [submissionSearch, setSubmissionSearch] = useState('');
-  const [submissions, setSubmissions] = useState<SubmissionSummary[]>([]);
-  const [submissionsLoading, setSubmissionsLoading] = useState(false);
-  const [submissionsError, setSubmissionsError] = useState<string | null>(null);
-  const [assigningSubmissionId, setAssigningSubmissionId] = useState<string | null>(null);
-  const [updatingSubmissionId, setUpdatingSubmissionId] = useState<string | null>(null);
-  const [notesModalSubmission, setNotesModalSubmission] = useState<SubmissionSummary | null>(null);
-  const [notesLoading, setNotesLoading] = useState(false);
-  const [notesError, setNotesError] = useState<string | null>(null);
-  const [notes, setNotes] = useState<SubmissionNote[]>([]);
-  const [newNote, setNewNote] = useState('');
   const [analyticsOverride, setAnalyticsOverride] = useState<HouseOnboardingSequence['analytics'] | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
@@ -426,221 +357,6 @@ export default function AdminOnboardingPage() {
     updatedAt: number | null;
   } | null>(null);
   const [inspectorRebuildLoading, setInspectorRebuildLoading] = useState(false);
-  const unassignedSubmissions = useMemo(
-    () => submissions.filter((submission) => !submission.assigned_to_full_name && !submission.assigned_to_username).length,
-    [submissions],
-  );
-  const filteredSubmissions = useMemo(() => {
-    const query = submissionSearch.trim().toLowerCase();
-    if (!query) return submissions;
-    return submissions.filter((submission) => {
-      const haystack = [
-        submission.full_name || '',
-        submission.email || '',
-        submission.sports_category || '',
-        submission.sequence_number ? `#${submission.sequence_number}` : '',
-      ]
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [submissionSearch, submissions]);
-  const fetchSubmissions = useCallback(async () => {
-    const token = getToken?.();
-    if (!token) {
-      setSubmissionsError('Precisas de sessão ativa para consultar submissões.');
-      setSubmissions([]);
-      return;
-    }
-    try {
-      setSubmissionsLoading(true);
-      setSubmissionsError(null);
-      const params = new URLSearchParams();
-      params.set('pageSize', '6');
-      if (houseKey) params.set('sport', houseKey);
-      if (submissionStatusFilter !== 'ALL') params.set('status', submissionStatusFilter);
-      const query = params.toString();
-      const response = await fetch(`/api/admin/onboarding?${query}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store',
-      });
-      const data = (await response.json()) as
-        | { success: true; submissions?: any[] }
-        | { success: false; error?: string };
-      if (!response.ok || !data.success) {
-        throw new Error(data.success ? 'Failed to load submissions' : data.error || 'Failed to load submissions');
-      }
-      const payload = (data.submissions ?? []) as any[];
-      setSubmissions(
-        payload.map(
-          (item): SubmissionSummary => ({
-            id: item.id,
-            full_name: item.full_name ?? null,
-            email: item.email ?? null,
-            status: (item.status ?? null) as AdminOnboardingStatus | null,
-            created_at: item.created_at ?? null,
-            assigned_to_full_name: item.assigned_to_full_name ?? null,
-            assigned_to_username: item.assigned_to_username ?? null,
-            sports_category: item.sports_category ?? null,
-            sequence_number: item.sequence_number ?? null,
-          }),
-        ),
-      );
-    } catch (error) {
-      console.error('[admin/onboarding] Failed to load submissions', error);
-      setSubmissionsError('Falha ao carregar submissões.');
-    } finally {
-      setSubmissionsLoading(false);
-    }
-  }, [getToken, houseKey, submissionStatusFilter]);
-
-  useEffect(() => {
-    void fetchSubmissions();
-  }, [fetchSubmissions]);
-
-  const handleAssignSubmission = useCallback(
-    async (submissionId: string) => {
-      const token = getToken?.();
-      if (!token) {
-        setSubmissionsError('Precisas de sessão ativa para assumir uma submissão.');
-        return;
-      }
-      try {
-        setAssigningSubmissionId(submissionId);
-        setSubmissionsError(null);
-        const response = await fetch('/api/admin/onboarding', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ submissionId, assignToMe: true }),
-        });
-        const data = (await response.json()) as { success: boolean; error?: string };
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || 'Failed to assign submission');
-        }
-        await fetchSubmissions();
-      } catch (error) {
-        console.error('[admin/onboarding] Failed to assign submission', error);
-        setSubmissionsError('Falha ao assumir submissão.');
-      } finally {
-        setAssigningSubmissionId(null);
-      }
-    },
-    [fetchSubmissions, getToken],
-  );
-  const handleUpdateSubmissionStatus = useCallback(
-    async (submissionId: string, status: AdminOnboardingStatus) => {
-      const token = getToken?.();
-      if (!token) {
-        setSubmissionsError('Precisas de sessão ativa para atualizar o estado.');
-        return;
-      }
-      try {
-        setUpdatingSubmissionId(submissionId);
-        const response = await fetch('/api/admin/onboarding', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ submissionId, status }),
-        });
-        const data = (await response.json()) as { success: boolean; error?: string };
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || 'Failed to update submission status');
-        }
-        await fetchSubmissions();
-      } catch (error) {
-        console.error('[admin/onboarding] Failed to update status', error);
-        setSubmissionsError('Falha ao atualizar o estado.');
-      } finally {
-        setUpdatingSubmissionId(null);
-      }
-    },
-    [fetchSubmissions, getToken],
-  );
-
-  const fetchSubmissionNotes = useCallback(
-    async (submissionId: string) => {
-      const token = getToken?.();
-      if (!token) {
-        setNotesError('Sessão necessária para carregar notas.');
-        return;
-      }
-      try {
-        setNotesLoading(true);
-        setNotesError(null);
-        const response = await fetch(`/api/admin/onboarding/notes?submissionId=${submissionId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: 'no-store',
-        });
-        const data = (await response.json()) as
-          | { success: true; notes?: SubmissionNote[] }
-          | { success: false; error?: string };
-        if (!response.ok || !data.success) {
-          throw new Error(data.success ? 'Failed to load notes' : data.error || 'Failed to load notes');
-        }
-        setNotes(data.notes ?? []);
-      } catch (error) {
-        console.error('[admin/onboarding] Failed to load notes', error);
-        setNotesError('Falha ao carregar notas.');
-      } finally {
-        setNotesLoading(false);
-      }
-    },
-    [getToken],
-  );
-
-  const handleOpenNotesModal = useCallback(
-    async (submission: SubmissionSummary) => {
-      setNotesModalSubmission(submission);
-      setNewNote('');
-      await fetchSubmissionNotes(submission.id);
-    },
-    [fetchSubmissionNotes],
-  );
-
-  const handleSaveNote = useCallback(async () => {
-    if (!notesModalSubmission || !newNote.trim()) return;
-    const token = getToken?.();
-    if (!token) {
-      setNotesError('Sessão necessária para adicionar notas.');
-      return;
-    }
-    try {
-      setNotesLoading(true);
-      setNotesError(null);
-      const response = await fetch('/api/admin/onboarding/notes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ submissionId: notesModalSubmission.id, note: newNote.trim() }),
-      });
-      const data = (await response.json()) as { success: boolean; note?: SubmissionNote; error?: string };
-      if (!response.ok || !data.success || !data.note) {
-        throw new Error(data.error || 'Failed to save note');
-      }
-      setNotes((prev) => [...prev, data.note!]);
-      setNewNote('');
-    } catch (error) {
-      console.error('[admin/onboarding] Failed to save note', error);
-      setNotesError('Não foi possível guardar a nota.');
-    } finally {
-      setNotesLoading(false);
-    }
-  }, [getToken, newNote, notesModalSubmission]);
-
-  const handleCloseNotesModal = useCallback(() => {
-    setNotesModalSubmission(null);
-    setNotes([]);
-    setNotesError(null);
-    setNewNote('');
-  }, []);
-
   const normalizeTrigger = useCallback((popup: OnboardingPopupData): OnboardingPopupData => {
     const base = clonePopup(popup);
     if (base.trigger) {
@@ -1304,32 +1020,26 @@ export default function AdminOnboardingPage() {
   };
 
   const complianceChecklist = useMemo(
-    () => [
-      {
-        label: 'Sem leads por atribuir',
-        ok: unassignedSubmissions === 0,
-        hint:
-          unassignedSubmissions === 0
-            ? 'Todas as submissões têm responsável.'
-            : `${unassignedSubmissions} lead(s) sem responsável.`,
-      },
-      {
-        label: 'Limites oficiais comunicados',
-        ok: true,
-        hint: '1 pop-up/dia · 3/semana (revisto semanalmente).',
-      },
-    ],
-    [unassignedSubmissions],
+    () => {
+      const popups = houseSequence?.popups ?? [];
+      const published = popups.filter((popup) => popup.status === 'published');
+      const publishedCount = published.length;
+      const triggersOk = published.every((popup) => Boolean(popup.trigger));
+      return [
+        {
+          label: 'Pop-ups publicados',
+          ok: publishedCount > 0,
+          hint: publishedCount > 0 ? `${publishedCount} pop-up(s) ativos.` : 'Publica pelo menos 1 pop-up.',
+        },
+        {
+          label: 'Triggers definidos',
+          ok: triggersOk,
+          hint: triggersOk ? 'Todos os pop-ups publicados t??m trigger.' : 'Faltam triggers em pop-ups publicados.',
+        },
+      ];
+    },
+    [houseSequence?.popups],
   );
-
-  const formatSubmissionDate = useCallback((timestamp: string | null) => {
-    if (!timestamp) return '--';
-    return new Date(timestamp).toLocaleString('pt-PT', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   }, []);
 
   return (
@@ -1384,8 +1094,7 @@ export default function AdminOnboardingPage() {
                 </Link>
               </Button>
               <span className="text-xs text-slate-400">
-                Última verificação: {new Date().toLocaleDateString('pt-PT')} · Leads sem dono:{' '}
-                {unassignedSubmissions}
+                Última verificação: {new Date().toLocaleDateString('pt-PT')}
               </span>
             </div>
           </CardContent>
@@ -1845,151 +1554,6 @@ export default function AdminOnboardingPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-white/10 bg-[#04131b]/80">
-          <CardContent className="space-y-4 p-6">
-            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Submissões</p>
-                <h2 className="text-xl font-semibold text-white">Funil desta House</h2>
-                <p className="text-xs text-slate-500">
-                  Mostra os pedidos mais recentes associados a <span className="font-semibold text-white">{houseKey}</span>.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 md:w-72">
-                <label className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Estado</label>
-                <Select
-                  value={submissionStatusFilter}
-                  onValueChange={(value) => setSubmissionStatusFilter(value as 'ALL' | AdminOnboardingStatus)}
-                >
-                  <SelectTrigger className="border-white/10 bg-[#010913] text-white">
-                    <SelectValue placeholder="Filtrar estado" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#010913] text-white">
-                    {SUBMISSION_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={submissionSearch}
-                  onChange={(event) => setSubmissionSearch(event.target.value)}
-                  placeholder="Pesquisar por nome, email ou desporto"
-                  className="border-white/10 bg-[#010913] text-white placeholder:text-slate-500"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void fetchSubmissions()}
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  <RefreshCcw className="mr-2 h-4 w-4" /> Atualizar
-                </Button>
-              </div>
-            </div>
-            {submissionsError ? <p className="text-sm text-amber-300">{submissionsError}</p> : null}
-            <div className="space-y-3">
-              {submissionsLoading ? (
-                <p className="text-sm text-slate-400">A carregar submissões...</p>
-              ) : filteredSubmissions.length ? (
-                filteredSubmissions.map((submission) => {
-                  const statusLabel = submission.status ? SUBMISSION_STATUS_LABELS[submission.status] : 'Sem estado';
-                  const assignedLabel =
-                    submission.assigned_to_full_name ??
-                    submission.assigned_to_username ??
-                    'Sem responsável atribuído';
-                  const isAssignedToMe = Boolean(
-                    submission.assigned_to_username &&
-                      user?.username &&
-                      submission.assigned_to_username === user.username,
-                  );
-                  return (
-                    <div
-                      key={submission.id}
-                      className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4 text-sm text-slate-200"
-                    >
-                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div>
-                          <p className="text-base font-semibold text-white">
-                            {submission.full_name ?? 'Sem nome'}{' '}
-                            {submission.sequence_number ? (
-                              <span className="text-xs text-slate-500">#{submission.sequence_number}</span>
-                            ) : null}
-                          </p>
-                          <p className="text-xs text-slate-400">{submission.email ?? 'Sem email registado'}</p>
-                          <p className="text-xs text-slate-400">{submission.sports_category ?? 'Sem desporto'}</p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline" className="border-cyan-400/40 bg-cyan-500/10 text-cyan-100">
-                            {statusLabel}
-                          </Badge>
-                          <span className="text-xs text-slate-400">{formatSubmissionDate(submission.created_at)}</span>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-                          <p className="text-xs text-slate-400">Responsável: {assignedLabel}</p>
-                          <div className="flex flex-col gap-1 md:w-60">
-                            <label className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Atualizar estado</label>
-                            <Select
-                              value={(submission.status ?? 'PENDING_RESPONSE') as AdminOnboardingStatus}
-                              onValueChange={(value) =>
-                                handleUpdateSubmissionStatus(submission.id, value as AdminOnboardingStatus)
-                              }
-                              disabled={updatingSubmissionId === submission.id}
-                            >
-                              <SelectTrigger className="border-white/10 bg-[#010913] text-white">
-                                <SelectValue placeholder="Estado" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-[#010913] text-white">
-                                {SUBMISSION_STATUS_CHOICES.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => void handleAssignSubmission(submission.id)}
-                            disabled={assigningSubmissionId === submission.id || isAssignedToMe}
-                            className="border-white/20 text-white hover:bg-white/10"
-                          >
-                            {assigningSubmissionId === submission.id ? (
-                              <>
-                                <Loader2 className="mr-1 h-4 w-4 animate-spin" /> A assumir...
-                              </>
-                            ) : isAssignedToMe ? (
-                              'És o responsável'
-                            ) : (
-                              'Assumir lead'
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => void handleOpenNotesModal(submission)}
-                            className="border-white/20 text-white hover:bg-white/10"
-                          >
-                            <MessageSquare className="mr-1 h-4 w-4" /> Notas
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-slate-400">Sem submissões para este filtro.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {requiresTermAudit ? (
           termContext?.needsAcceptance ? (
             <div className="rounded-3xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-amber-100">
@@ -2278,64 +1842,6 @@ export default function AdminOnboardingPage() {
           }}
         />
       ) : null}
-      <Dialog open={Boolean(notesModalSubmission)} onOpenChange={(open) => (!open ? handleCloseNotesModal() : null)}>
-        <DialogContent className="max-w-xl border-white/10 bg-[#010913] text-white">
-          <DialogHeader>
-            <DialogTitle>Notas da submissão</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              {notesModalSubmission
-                ? `${notesModalSubmission.full_name ?? 'Sem nome'} · ${notesModalSubmission.email ?? 'Sem email'}`
-                : 'Seleciona uma submissão para ver notas.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            {notesError ? <p className="text-xs text-amber-300">{notesError}</p> : null}
-            <div className="max-h-64 space-y-3 overflow-y-auto pr-2">
-              {notesLoading ? (
-                <p className="text-sm text-slate-400">A carregar notas...</p>
-              ) : notes.length ? (
-                notes.map((note) => (
-                  <div key={note.id} className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm">
-                    <p className="whitespace-pre-line text-slate-100">{note.note}</p>
-                    <div className="mt-2 flex flex-col gap-1 text-[11px] text-slate-400">
-                      <span>
-                        Autor:{' '}
-                        {note.author_full_name ||
-                          note.author_username ||
-                          note.author_email ||
-                          'Utilizador removido'}
-                      </span>
-                      <span>{new Date(note.created_at).toLocaleString('pt-PT')}</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400">Sem notas guardadas.</p>
-              )}
-            </div>
-            {notesModalSubmission ? (
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Adicionar nova nota..."
-                  value={newNote}
-                  onChange={(event) => setNewNote(event.target.value)}
-                  rows={3}
-                  className="border-white/10 bg-[#030a12]"
-                />
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" onClick={handleCloseNotesModal} className="text-slate-300">
-                    Fechar
-                  </Button>
-                  <Button onClick={() => void handleSaveNote()} disabled={notesLoading || !newNote.trim()}>
-                    {notesLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Guardar nota
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

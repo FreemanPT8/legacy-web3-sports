@@ -172,13 +172,6 @@ type CourseRow = {
   curriculum?: any;
 };
 
-type OnboardingRow = {
-  id: string;
-  status?: string | null;
-  assigned_to_user_id?: string | null;
-  created_at?: string | null;
-};
-
 type HouseRow = {
   id: string;
   status?: string | null;
@@ -230,7 +223,6 @@ export async function GET(request: NextRequest) {
       users,
       courses,
       blogPosts,
-      onboardingSubmissions,
       houses,
       courseXp,
       lessonXp,
@@ -244,12 +236,6 @@ export async function GET(request: NextRequest) {
       ),
       fetchAllRows<BlogPostRow>(({ from, to }) =>
         db.from('blog_posts').select('id, published, views, title').range(from, to),
-      ),
-      fetchAllRows<OnboardingRow>(({ from, to }) =>
-        db
-          .from('onboarding_submissions')
-          .select('id, status, assigned_to_user_id, created_at')
-          .range(from, to),
       ),
       fetchAllRows<HouseRow>(({ from, to }) =>
         db.from('houses_of_sports').select('id, status').range(from, to),
@@ -327,44 +313,6 @@ export async function GET(request: NextRequest) {
       blogPosts,
     );
 
-    const pendingStatuses = [
-      'PENDING_RESPONSE',
-      'RESPONDED_WAITING',
-      'FIRST_CONTACT_SCHEDULED',
-      'FIRST_CONTACT_DONE',
-      'ONBOARDING_LEGACY',
-      'ONBOARDING_DAO1',
-    ];
-
-    const totalOnboardingPending =
-      onboardingSubmissions?.filter((f: OnboardingRow) =>
-        pendingStatuses.includes(f.status || ''),
-      ).length || 0;
-
-    const onboardingByStatus = (onboardingSubmissions || []).reduce(
-      (acc: Record<string, number>, form: OnboardingRow) => {
-        const s = form?.status || 'unknown';
-        acc[s] = (acc[s] || 0) + 1;
-        return acc;
-      },
-      {},
-    );
-
-    const onboardingByResponsible = (onboardingSubmissions || []).reduce(
-      (acc: Record<string, number>, form: OnboardingRow) => {
-        const uid = form?.assigned_to_user_id;
-        if (!uid) return acc;
-        acc[uid] = (acc[uid] || 0) + 1;
-        return acc;
-      },
-      {},
-    );
-
-    const pendingPorAbrir =
-      onboardingSubmissions?.filter(
-        (f: OnboardingRow) => f.status === 'PENDING_RESPONSE',
-      ).length || 0;
-
     const statusMap = {
       active: 'active',
       building: 'building',
@@ -400,8 +348,6 @@ export async function GET(request: NextRequest) {
         totalCourses,
         totalLessons,
         totalBlogPosts,
-        totalOnboardingPending,
-        onboardingByStatus,
         totalHouses,
         activeHouses,
         buildingHouses,
@@ -457,12 +403,6 @@ export async function GET(request: NextRequest) {
             last30d: blogTop30d,
             last365d: blogTop365d,
           },
-        },
-        onboarding: {
-          pendingTotal: totalOnboardingPending,
-          pendingByStatus: onboardingByStatus,
-          pendingPorAbrir,
-          byResponsible: onboardingByResponsible,
         },
         houses: {
           total: totalHouses,

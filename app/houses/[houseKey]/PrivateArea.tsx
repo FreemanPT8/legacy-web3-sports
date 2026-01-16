@@ -60,6 +60,14 @@ type PrivateMessage = {
   recipient: { id: string; username: string | null; name: string; avatarUrl: string | null } | null;
 };
 
+type HouseHistoryEntry = {
+  type: 'blog' | 'lesson' | 'course' | 'glossary' | 'dm';
+  timestamp: string;
+  title: string | Record<string, string> | null;
+  user: { id: string; username: string | null; full_name: string | null } | null;
+  meta?: Record<string, unknown> | null;
+};
+
 type RecipientOption = {
   id: string;
   label: string;
@@ -103,6 +111,77 @@ const EVENT_DETAIL_LINK = {
   es: 'Ver detalles',
   en: 'View details',
 } as const;
+
+const HISTORY_COPY = {
+  pt: {
+    title: 'Histórico da House',
+    subtitle: 'Consumo de conteúdos e mensagens privadas dos membros.',
+    empty: 'Sem actividade recente.',
+    loading: 'A carregar histórico...',
+    error: 'Não foi possível carregar o histórico.',
+    refresh: 'Atualizar histórico',
+    columns: {
+      member: 'Membro',
+      action: 'Acção',
+      content: 'Conteúdo',
+      time: 'Data',
+    },
+    actions: {
+      blog: 'Leitura de blog',
+      lesson: 'Lição concluída',
+      course: 'Curso concluído',
+      glossary: 'Glossário lido',
+      dm: 'Mensagem privada',
+    },
+    noTitle: 'Sem título',
+  },
+  es: {
+    title: 'Historial de la House',
+    subtitle: 'Consumo de contenidos y mensajes privados de los miembros.',
+    empty: 'Sin actividad reciente.',
+    loading: 'Cargando historial...',
+    error: 'No se pudo cargar el historial.',
+    refresh: 'Actualizar historial',
+    columns: {
+      member: 'Miembro',
+      action: 'Acción',
+      content: 'Contenido',
+      time: 'Fecha',
+    },
+    actions: {
+      blog: 'Lectura de blog',
+      lesson: 'Lección completada',
+      course: 'Curso completado',
+      glossary: 'Glosario leído',
+      dm: 'Mensaje privado',
+    },
+    noTitle: 'Sin título',
+  },
+  en: {
+    title: 'House history',
+    subtitle: 'Content consumption and private messages from members.',
+    empty: 'No recent activity.',
+    loading: 'Loading history...',
+    error: 'Failed to load history.',
+    refresh: 'Refresh history',
+    columns: {
+      member: 'Member',
+      action: 'Action',
+      content: 'Content',
+      time: 'Date',
+    },
+    actions: {
+      blog: 'Blog read',
+      lesson: 'Lesson completed',
+      course: 'Course completed',
+      glossary: 'Glossary read',
+      dm: 'Private message',
+    },
+    noTitle: 'Untitled',
+  },
+} as const;
+
+const HISTORY_STAFF_ROLES = new Set(['head', 'moderator', 'super-admin', 'admin']);
 
 function resolveEventEmptyCopy(locale: string) {
   const normalized = locale.toLowerCase();
@@ -158,9 +237,15 @@ export function PrivateArea({
   const localeBucket = resolveLocaleBucket(localeGuess);
   const sectionTitles = EVENT_SECTION_TITLES[localeBucket];
   const { language, t } = useLanguage();
+  const historyLanguage = language === 'es' || language === 'en' ? language : 'pt';
+  const historyCopy = HISTORY_COPY[historyLanguage];
   const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
   const [privateMessagesLoading, setPrivateMessagesLoading] = useState(false);
   const [privateMessagesError, setPrivateMessagesError] = useState<string | null>(null);
+  const [history, setHistory] = useState<HouseHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyReloadKey, setHistoryReloadKey] = useState(0);
   const [subjectDraft, setSubjectDraft] = useState('');
   const [messageDraft, setMessageDraft] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState<string | null>(null);
@@ -177,6 +262,11 @@ export function PrivateArea({
     });
     return entries;
   }, [roster.head, roster.moderators]);
+
+  const isStaff = useMemo(() => {
+    const roles = (membership?.roles ?? []).map((role) => role.toLowerCase());
+    return roles.some((role) => HISTORY_STAFF_ROLES.has(role));
+  }, [membership?.roles]);
 
   useEffect(() => {
     if (!selectedRecipient && recipientOptions.length > 0) {
@@ -307,6 +397,70 @@ export function PrivateArea({
       language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US',
       { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' },
     );
+
+  const resolveHistoryTitle = useCallback(
+    (value: HouseHistoryEntry['title']) => {
+      if (!value) return historyCopy.noTitle;
+      if (typeof value === 'string') return value;
+      const localized =
+        value?.[historyLanguage] ??
+        value?.pt ??
+        value?.en ??
+        value?.es ??
+        Object.values(value)[0];
+      return localized || historyCopy.noTitle;
+    },
+    [historyCopy.noTitle, historyLanguage],
+  );
+
+  const resolveHistoryAction = useCallback(
+    (entry: HouseHistoryEntry) => historyCopy.actions[entry.type] ?? entry.type,
+    [historyCopy.actions],
+  );
+
+  const formatHistoryDate = useCallback(
+    (timestamp: string) =>
+      new Date(timestamp).toLocaleString(
+        historyLanguage === 'pt' ? 'pt-PT' : historyLanguage === 'es' ? 'es-ES' : 'en-US',
+        { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' },
+      ),
+    [historyLanguage],
+  );
+
+  const loadHistory = useCallback(async () => {
+    if (!membership?.isMember || !isStaff) {
+      setHistory([]);
+      return;
+    }
+    const token = getToken();
+    if (!token) return;
+    try {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      const response = await fetch(`/api/houses/${houseKey}/history?limit=40`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { success: true; history?: HouseHistoryEntry[] }
+        | { success: false; error?: string }
+        | null;
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to load history');
+      }
+      setHistory(data.history ?? []);
+    } catch (error) {
+      console.error('[house history] failed', error);
+      setHistoryError(historyCopy.error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [getToken, historyCopy.error, houseKey, isStaff, membership?.isMember]);
+
+  useEffect(() => {
+    if (!membership?.isMember || !isStaff) return;
+    void loadHistory();
+  }, [loadHistory, membership?.isMember, isStaff, historyReloadKey]);
 
   const handleSendPrivateMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -582,6 +736,61 @@ export function PrivateArea({
               )}
             </CardContent>
           </Card>
+          {isStaff ? (
+            <Card className="border-white/10 bg-[#03131d]/90">
+              <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="text-lg text-white">{historyCopy.title}</CardTitle>
+                  <CardDescription className="text-sm text-slate-300">{historyCopy.subtitle}</CardDescription>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setHistoryReloadKey((key) => key + 1)}
+                  className="border-white/20 text-white hover:bg-white/10"
+                  disabled={historyLoading}
+                >
+                  {historyLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {historyCopy.refresh}
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-white/80">
+                {historyLoading ? (
+                  <div className="flex items-center gap-2 text-white/70">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{historyCopy.loading}</span>
+                  </div>
+                ) : historyError ? (
+                  <p className="text-rose-200">{historyError}</p>
+                ) : history.length ? (
+                  <div className="space-y-2">
+                    <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-[0.3em] text-slate-400 md:grid-cols-[1.2fr_1fr_2fr_1fr]">
+                      <span>{historyCopy.columns.member}</span>
+                      <span>{historyCopy.columns.action}</span>
+                      <span>{historyCopy.columns.content}</span>
+                      <span>{historyCopy.columns.time}</span>
+                    </div>
+                    {history.map((entry, index) => {
+                      const memberLabel = entry.user?.full_name || entry.user?.username || '—';
+                      return (
+                        <div
+                          key={`${entry.type}-${entry.user?.id ?? 'unknown'}-${entry.timestamp}-${index}`}
+                          className="grid gap-2 rounded-2xl border border-white/10 bg-black/10 px-3 py-2 text-xs md:grid-cols-[1.2fr_1fr_2fr_1fr]"
+                        >
+                          <span className="text-white">{memberLabel}</span>
+                          <span className="text-slate-300">{resolveHistoryAction(entry)}</span>
+                          <span className="text-slate-200">{resolveHistoryTitle(entry.title)}</span>
+                          <span className="text-slate-400">{formatHistoryDate(entry.timestamp)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400">{historyCopy.empty}</p>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
           <Card className="border-white/10 bg-[#03131d]/90">
             <CardHeader>
               <CardTitle className="text-lg text-white">{t('houses.private.section.culture')}</CardTitle>

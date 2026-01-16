@@ -46,9 +46,6 @@ type AdminStatsSummary = {
   blog?: {
     totalPosts?: number;
   };
-  onboarding?: {
-    pendingTotal?: number;
-  };
 };
 
 type RewardConfig = {
@@ -273,7 +270,6 @@ export default function AdminXpPage() {
       xp30d: stats?.courses?.xp?.allActions?.last30d ?? 0,
       blogPosts: stats?.blog?.totalPosts ?? 0,
       coursesActive: stats?.courses?.activeCourses ?? 0,
-      onboardingPending: stats?.onboarding?.pendingTotal ?? 0,
     }),
     [stats],
   );

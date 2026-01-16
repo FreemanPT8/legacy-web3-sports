@@ -15,37 +15,16 @@ export type QueueLog = {
 };
 
 type UseOnboardingQueueOptions = {
-  dailyLimit?: number;
-  weeklyLimit?: number;
   initialQueue?: OnboardingPopupData[];
 };
 
-const DAY_MS = 1000 * 60 * 60 * 24;
-const WEEK_MS = DAY_MS * 7;
-
 export function useOnboardingQueue(options: UseOnboardingQueueOptions = {}) {
-  const { dailyLimit = 1, weeklyLimit = 3, initialQueue = [] } = options;
+  const { initialQueue = [] } = options;
   const [queue, setQueue] = useState<QueueItem[]>(initialQueue.map((item) => ({ ...item, scheduledAt: Date.now() })));
   const [active, setActive] = useState<QueueItem | null>(null);
   const [logs, setLogs] = useState<QueueLog[]>([]);
-  const [cooldownReason, setCooldownReason] = useState<string | null>(null);
   const evaluating = useRef(false);
   const activeRef = useRef<QueueItem | null>(null);
-
-  const now = Date.now();
-  const deliveredLogs = useMemo(() => logs.filter((log) => log.action === 'delivered'), [logs]);
-
-  const deliveredToday = useMemo(() => {
-    const cutoff = now - DAY_MS;
-    return deliveredLogs.filter((log) => log.timestamp >= cutoff).length;
-  }, [deliveredLogs, now]);
-
-  const deliveredWeek = useMemo(() => {
-    const cutoff = now - WEEK_MS;
-    return deliveredLogs.filter((log) => log.timestamp >= cutoff).length;
-  }, [deliveredLogs, now]);
-
-  const canDeliver = deliveredToday < dailyLimit && deliveredWeek < weeklyLimit;
 
   const pushLog = useCallback((entry: QueueLog) => {
     setLogs((prev) => [...prev, entry]);
@@ -57,21 +36,16 @@ export function useOnboardingQueue(options: UseOnboardingQueueOptions = {}) {
     setTimeout(() => {
       evaluating.current = false;
     }, 0);
-    setCooldownReason(null);
     if (activeRef.current) return;
     setQueue((currentQueue) => {
       if (currentQueue.length === 0) return currentQueue;
-      if (!canDeliver) {
-        setCooldownReason(deliveredToday >= dailyLimit ? 'daily' : 'weekly');
-        return currentQueue;
-      }
       const [next, ...rest] = currentQueue;
       setActive(next);
       activeRef.current = next;
       pushLog({ popupId: next.id, action: 'delivered', timestamp: Date.now() });
       return rest;
     });
-  }, [canDeliver, deliveredToday, dailyLimit, pushLog]);
+  }, [pushLog]);
 
   useEffect(() => {
     if (!active) {
@@ -87,7 +61,6 @@ export function useOnboardingQueue(options: UseOnboardingQueueOptions = {}) {
     activeRef.current = null;
     setActive(null);
     setLogs([]);
-    setCooldownReason(null);
     setQueue(items.map((item) => ({ ...item, scheduledAt: Date.now() })));
   }, []);
 
@@ -116,12 +89,6 @@ export function useOnboardingQueue(options: UseOnboardingQueueOptions = {}) {
     recordAction,
     logs,
     pending,
-    deliveredToday,
-    deliveredWeek,
-    dailyLimit,
-    weeklyLimit,
-    cooldownReason,
-    canDeliver,
     queueSnapshot,
   };
 }

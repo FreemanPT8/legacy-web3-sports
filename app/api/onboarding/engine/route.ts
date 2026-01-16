@@ -13,11 +13,6 @@ const QUEUE_TABLE = 'onboarding_queue';
 const LOG_TABLE = 'onboarding_popup_logs';
 const USERS_TABLE = 'users';
 
-const DAILY_LIMIT = 1;
-const WEEKLY_LIMIT = 3;
-const DAY_MS = 1000 * 60 * 60 * 24;
-const WEEK_MS = DAY_MS * 7;
-
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (!auth.success) return auth.response!;
@@ -58,21 +53,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let cooldownReason: 'daily' | 'weekly' | null = null;
-    if (logStats.dailyDelivered >= DAILY_LIMIT) {
-      cooldownReason = 'daily';
-    } else if (logStats.weeklyDelivered >= WEEKLY_LIMIT) {
-      cooldownReason = 'weekly';
-    }
-
-    const signature = eligiblePopups.length ? buildSignature(eligiblePopups) : null;
-    await persistQueue(targetUserId, houseKey, cooldownReason ? [] : eligiblePopups, cooldownReason ? null : signature);
+    const signature = buildSignature(eligiblePopups);
+    await persistQueue(targetUserId, houseKey, eligiblePopups, signature);
 
     return NextResponse.json({
       success: true,
-      queue: cooldownReason ? [] : eligiblePopups,
-      signature: cooldownReason ? null : signature,
-      cooldownReason,
+      queue: eligiblePopups,
+      signature,
       user: targetUserId,
     });
   } catch (error) {
@@ -121,9 +108,9 @@ type LogRow = {
 
 async function fetchUserLogStats(userId: string) {
   if (!db) {
-    return { logs: [] as LogRow[], dailyDelivered: 0, weeklyDelivered: 0 };
+    return { logs: [] as LogRow[] };
   }
-  const weekCutoff = new Date(Date.now() - WEEK_MS).toISOString();
+  const weekCutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString();
   const { data, error } = await db
     .from(LOG_TABLE)
     .select('popup_id, action, created_at')
@@ -133,19 +120,10 @@ async function fetchUserLogStats(userId: string) {
     .limit(200);
   if (error) {
     console.error('[onboarding.engine] failed to fetch logs', error);
-    return { logs: [] as LogRow[], dailyDelivered: 0, weeklyDelivered: 0 };
+    return { logs: [] as LogRow[] };
   }
   const logs = (data as LogRow[]) ?? [];
-  const now = Date.now();
-  const dailyCutoff = now - DAY_MS;
-  const weeklyCutoff = now - WEEK_MS;
-  const dailyDelivered = logs.filter(
-    (log) => log.action === 'delivered' && new Date(log.created_at).getTime() >= dailyCutoff,
-  ).length;
-  const weeklyDelivered = logs.filter(
-    (log) => log.action === 'delivered' && new Date(log.created_at).getTime() >= weeklyCutoff,
-  ).length;
-  return { logs, dailyDelivered, weeklyDelivered };
+  return { logs };
 }
 
 async function evaluateTrigger(
