@@ -72,9 +72,9 @@ export default function AdminMissionsPage() {
       }
       if (Array.isArray(data.missions)) {
         const mapping: Record<ComboKey, ComboMissionMeta> = {
-          quick: { xp: 15, completed: false },
+          quick: { xp: 13, completed: false },
           base: { xp: 21, completed: false },
-          serious: { xp: 33, completed: false },
+          serious: { xp: 47, completed: false },
         };
         data.missions.forEach((mission: any) => {
           const missionType: string | undefined = mission?.type;
@@ -84,7 +84,7 @@ export default function AdminMissionsPage() {
             : mission.user_missions;
           if (missionType === 'combo_quick') {
             mapping.quick = {
-              xp: mission?.xp_reward ?? 15,
+              xp: mission?.xp_reward ?? 13,
               completed: Boolean(missionData?.completed),
             };
           } else if (missionType === 'combo_base') {
@@ -94,7 +94,7 @@ export default function AdminMissionsPage() {
             };
           } else if (missionType === 'combo_serious') {
             mapping.serious = {
-              xp: mission?.xp_reward ?? 33,
+              xp: mission?.xp_reward ?? 47,
               completed: Boolean(missionData?.completed),
             };
           }
@@ -297,7 +297,7 @@ export default function AdminMissionsPage() {
                                 ? 'Rota Basica'
                                 : key === 'base'
                                 ? 'Rota Base'
-                                : 'Rota Seria'
+                                : 'Rota Seria'}
                             </p>
                             <p className="text-sm text-slate-100">
                               {comboMeta[key]?.completed
