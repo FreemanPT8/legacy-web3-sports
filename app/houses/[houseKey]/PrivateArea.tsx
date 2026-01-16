@@ -446,7 +446,9 @@ export function PrivateArea({
         | { success: false; error?: string }
         | null;
       if (!response.ok || !data?.success) {
-        throw new Error(data?.error || 'Failed to load history');
+        const errorMessage =
+          data && !data.success ? data.error : 'Failed to load history';
+        throw new Error(errorMessage || 'Failed to load history');
       }
       setHistory(data.history ?? []);
     } catch (error) {
