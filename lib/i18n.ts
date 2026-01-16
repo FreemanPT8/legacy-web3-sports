@@ -2092,7 +2092,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'houses.activeHouses': 'Maisons Actives',
     'houses.underConstruction': 'En Construction',
     'houses.comingSoon': 'Bientôt',
-    'houses.underDevelopment': 'Cette maison est en developpement. Rejoignez la liste d'attente pour etre notifiee lors du lancement',
+    'houses.underDevelopment': 'Cette maison est en developpement. Rejoignez la liste d\'attente pour etre notifiee lors du lancement',
     'houses.notifyMe': 'Me Notifier',
     'houses.members': 'Membres',
     'houses.joinHouse': 'Rejoindre',
