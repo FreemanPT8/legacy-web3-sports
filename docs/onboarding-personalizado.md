@@ -1,7 +1,7 @@
 # Legacy Onboarding Personalizado
 
 ## Visao Geral
-- Objetivo: escalar onboarding sem acompanhamento humano constante, mantendo orientacao justa, progressiva e auditavel.
+- Objetivo: escalar comunicacao por pop-ups sem acompanhamento humano constante, mantendo orientacao justa, progressiva e auditavel.
 - Responsaveis: cada Head of House of Sport desenha a narrativa, a sequencia e os triggers da sua House diretamente no Painel Admin.
 - Fundamentos: 1 pop-up = 1 decisao util, mensagem nunca parece venda e CTA principal e sempre opcional.
 

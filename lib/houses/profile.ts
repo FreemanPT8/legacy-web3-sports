@@ -504,7 +504,7 @@ export async function loadHouseProfile(houseKeyRaw: string, locale?: string): Pr
       body:
         popup.localized?.[normalizedLocale]?.body ||
         popup.body ||
-        'Conteúdo recomendado pela House para acelerar o onboarding.',
+        'Conteudo recomendado pela House para acelerar o percurso.'
     })) ?? [];
 
   const { data: eventRows, error: eventError } = await supabaseAdmin

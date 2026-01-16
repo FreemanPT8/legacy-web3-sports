@@ -4,7 +4,7 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Plano Oficial de Onboarding Legacy',
   description:
-    'Guia de referencia para Heads e equipas internas aplicarem o plano de onboarding personalizado do Legacy.',
+    'Guia de referencia para Heads e equipas internas aplicarem o plano de pop-ups personalizados do Legacy.',
 };
 
 type Section = {
@@ -78,7 +78,7 @@ export default function OnboardingDocsPage() {
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
         <header className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_35px_80px_rgba(1,14,25,0.55)]">
           <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">Manual oficial</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">Plano de Onboarding Personalizado</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-white">Plano de Pop-ups Personalizados</h1>
           <p className="mt-3 text-sm text-slate-200">
             Esta pagina resume o plano oficial aprovado para Houses do Legacy. Utiliza como referencia antes de
             publicar pop-ups, aceitar termos ou ligar CTA publicos.
@@ -125,7 +125,7 @@ export default function OnboardingDocsPage() {
 
         <footer className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-200">
           Este guia resume o plano validado em janeiro de 2026. Atualiza este documento sempre que o motor de
-          onboarding ou os termos dos Heads receberem nova versao. Mantem logs atualizados no painel admin para
+          os pop-ups ou os termos dos Heads receberem nova versao. Mantem logs atualizados no painel admin para
           garantir conformidade.
         </footer>
       </div>

@@ -1127,7 +1127,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
     eyebrow: 'ONBOARDING PERSONALIZADO',
     title: 'Las Houses controlan el ritmo.',
     subtitle:
-      'Los Heads definen pop-ups, triggers y copy dentro del Panel Admin. El onboarding sigue justo, auditado y en tres idiomas.',
+      'Los Heads definen pop-ups, triggers y copy dentro del Panel Admin. El flujo de pop-ups se mantiene justo, auditado y en tres idiomas.',
     featuresTitle: 'Infraestructura oficial',
     featuresSubtitle: 'Los flujos usan la misma paleta oscura de /education con gradientes, bordes suaves y brillos cian/dorado.',
     features: [
@@ -1201,7 +1201,7 @@ const ONBOARDING_COPY: Record<SupportedCopyLang, OnboardingCopy> = {
     eyebrow: 'PERSONALIZED ONBOARDING',
     title: 'Houses control the pace.',
     subtitle:
-      'Heads design pop-ups, triggers, and copy inside the Admin Panel so onboarding stays fair, auditable, and multilingual.',
+      'Heads design pop-ups, triggers, and copy inside the Admin Panel so the pop-up flow stays fair, auditable, and multilingual.',
     featuresTitle: 'Official infrastructure',
     featuresSubtitle: 'Flows keep the /education palette: deep gradients, subtle borders, cyan and gold highlights.',
     features: [
@@ -5531,10 +5531,10 @@ export default function EducationXpPage() {
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <p className={cn(UI.micro, 'text-slate-400')}>
                   {language === 'pt'
-                    ? 'Fonte das métricas de onboarding'
+                    ? 'Fonte das metricas de pop-ups'
                     : language === 'es'
-                    ? 'Fuente de las métricas de onboarding'
-                    : 'Onboarding metrics source'}
+                    ? 'Fuente de las metricas de pop-ups'
+                    : 'Pop-up metrics source'}
                 </p>
                 <Badge className={cn('border px-3', analyticsBadgeClass)}>{analyticsBadgeLabel}</Badge>
               </div>

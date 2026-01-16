@@ -1058,7 +1058,7 @@ export default function AdminOnboardingPage() {
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Centro de Conformidade</p>
               <h2 className="text-xl font-semibold text-white">Checklist operacional</h2>
               <p className="text-xs text-slate-500">
-                Baseado no plano oficial de onboarding escalável. Atualiza semanalmente para manter o estatuto de Head.
+                Baseado no plano oficial de pop-ups escalavel. Atualiza semanalmente para manter o estatuto de Head.
               </p>
             </div>
             <div className="space-y-3">
