@@ -194,35 +194,43 @@ export default function AdminAnalyticsPage() {
       </section>
 
       <section className="space-y-6">
-
-          <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
-            <CardHeader>
-              <CardTitle className="text-[#fdd87c]">
-                Houses of Sports
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
-                  <p className="text-[11px] uppercase text-slate-300">Active</p>
-                  <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.active.toLocaleString('pt-PT')}</p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
-                  <p className="text-[11px] uppercase text-slate-300">Building</p>
-                  <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.building.toLocaleString('pt-PT')}</p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
-                  <p className="text-[11px] uppercase text-slate-300">Developing</p>
-                  <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.developing.toLocaleString('pt-PT')}</p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
-                  <p className="text-[11px] uppercase text-slate-300">Total</p>
-                  <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.total.toLocaleString('pt-PT')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-3">
+          {metrics.map((metric) => (
+            <MetricCard
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+            />
+          ))}
         </div>
+
+        <Card className="border border-white/10 bg-[#04131b] shadow-[0_25px_70px_rgba(3,10,25,0.55)]">
+          <CardHeader>
+            <CardTitle className="text-[#fdd87c]">
+              Houses of Sports
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                <p className="text-[11px] uppercase text-slate-300">Active</p>
+                <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.active.toLocaleString('pt-PT')}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                <p className="text-[11px] uppercase text-slate-300">Building</p>
+                <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.building.toLocaleString('pt-PT')}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                <p className="text-[11px] uppercase text-slate-300">Developing</p>
+                <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.developing.toLocaleString('pt-PT')}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-[#021824]/80 p-3 shadow-[0_15px_40px_rgba(3,10,25,0.45)]">
+                <p className="text-[11px] uppercase text-slate-300">Total</p>
+                <p className="text-2xl font-semibold text-[#fdd87c]">{safeStats.houses.total.toLocaleString('pt-PT')}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="space-y-3 border-t border-white/10 pt-4">
           <div className="flex items-center justify-between">

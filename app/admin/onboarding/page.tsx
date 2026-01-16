@@ -1040,7 +1040,6 @@ export default function AdminOnboardingPage() {
     },
     [houseSequence?.popups],
   );
-  }, []);
 
   return (
     <div className="min-h-screen bg-[#010913] text-white">
