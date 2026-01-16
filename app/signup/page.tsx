@@ -226,7 +226,7 @@ export default function SignupPage() {
         <h1 className="text-3xl font-semibold text-white md:text-4xl">Regista-te para desbloquear XP e a tua House</h1>
         <p className="text-sm text-slate-200">
           O registo é gratuito. Precisas apenas de escolher o teu país, definir um desporto oficial e começar o percurso
-          cadete para entrares no novo onboarding personalizado.
+          cadete para entrares no onboarding por pop-ups da tua House.
         </p>
       </div>
 

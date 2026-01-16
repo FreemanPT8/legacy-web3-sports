@@ -3,9 +3,13 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    const { count: totalOnboardingCompleted } = await supabase
-      .from('onboarding_responses')
-      .select('*', { count: 'exact', head: true });
+    const { count: totalOnboardingCompleted, error: onboardingError } =
+      await supabase
+        .from('onboarding_global_ack')
+        .select('id', { count: 'exact', head: true });
+    if (onboardingError) {
+      console.warn('[sports.stats] onboarding_global_ack count failed', onboardingError);
+    }
 
     const { count: totalUsers } = await supabase
       .from('users')
