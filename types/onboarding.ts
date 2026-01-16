@@ -31,6 +31,29 @@ export type OnboardingPopupLocalizedFields = {
 
 export type OnboardingPopupLocalizedCopy = Partial<Record<OnboardingPopupLanguage, OnboardingPopupLocalizedFields>>;
 
+export type GlobalWelcomeSection = {
+  title: string;
+  body: string;
+  bullets?: string[];
+};
+
+export type GlobalWelcomeCopy = {
+  eyebrow: string;
+  title: string;
+  intro: string[];
+  sections: GlobalWelcomeSection[];
+  checklistLabel: string;
+  helper: string;
+  confirmPrimary: string;
+  confirmSecondary: string;
+  confirmTertiary: string;
+};
+
+export type GlobalWelcomeConfig = {
+  languages: Record<OnboardingPopupLanguage, GlobalWelcomeCopy>;
+  updatedAt?: string | null;
+};
+
 export type OnboardingPopup = {
   id: string;
   house: string;
@@ -61,6 +84,7 @@ export type HouseOnboardingSequence = {
   popups: OnboardingPopup[];
   analytics: HouseOnboardingAnalytics;
   houseId?: string;
+  globalWelcome?: GlobalWelcomeConfig;
 };
 
 export type OnboardingLogAction = 'delivered' | 'primary' | 'secondary' | 'dismiss';

@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { OnboardingPopup, type OnboardingPopupData } from '@/components/education/OnboardingPopup';
 import type {
   HouseOnboardingSequence,
+  GlobalWelcomeConfig,
+  GlobalWelcomeCopy,
   OnboardingLogEntry,
   OnboardingTrigger,
   OnboardingPopupLanguage,
@@ -36,6 +38,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { DEFAULT_GLOBAL_WELCOME_CONFIG } from '@/data/global-welcome';
 
 const ACTION_LABELS: Record<'delivered' | 'primary' | 'secondary' | 'dismiss', { label: string }> = {
   delivered: { label: 'Entregues' },
@@ -105,6 +108,50 @@ const BASE_LOCALIZED_COPY: Record<PopupLanguage, OnboardingPopupLocalizedFields>
     secondaryCtaLabel: 'Secondary CTA',
   },
 };
+
+const normalizeLines = (value: string) =>
+  value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+const normalizeParagraphs = (value: string) =>
+  value
+    .split(/\r?\n\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+function normalizeGlobalWelcome(config?: GlobalWelcomeConfig | null): GlobalWelcomeConfig {
+  const base = DEFAULT_GLOBAL_WELCOME_CONFIG;
+  const languages = {} as Record<PopupLanguage, GlobalWelcomeCopy>;
+  for (const lang of POPUP_LANGUAGES) {
+    const source = config?.languages?.[lang] ?? base.languages[lang];
+    languages[lang] = {
+      eyebrow: source?.eyebrow ?? base.languages[lang].eyebrow,
+      title: source?.title ?? base.languages[lang].title,
+      intro: Array.isArray(source?.intro) && source.intro.length ? source.intro : base.languages[lang].intro,
+      sections:
+        Array.isArray(source?.sections) && source.sections.length
+          ? source.sections.map((section) => ({
+              title: section.title ?? '',
+              body: section.body ?? '',
+              bullets: Array.isArray(section.bullets)
+                ? section.bullets.filter((item) => typeof item === 'string' && item.trim())
+                : [],
+            }))
+          : base.languages[lang].sections,
+      checklistLabel: source?.checklistLabel ?? base.languages[lang].checklistLabel,
+      helper: source?.helper ?? base.languages[lang].helper,
+      confirmPrimary: source?.confirmPrimary ?? base.languages[lang].confirmPrimary,
+      confirmSecondary: source?.confirmSecondary ?? base.languages[lang].confirmSecondary,
+      confirmTertiary: source?.confirmTertiary ?? base.languages[lang].confirmTertiary,
+    };
+  }
+  return {
+    languages,
+    updatedAt: config?.updatedAt ?? null,
+  };
+}
 
 function cloneLocalizedCopy(copy?: Partial<Record<PopupLanguage, OnboardingPopupLocalizedFields>> | null): Record<
   PopupLanguage,
@@ -305,6 +352,10 @@ export default function AdminOnboardingPage() {
   const [sequenceDraft, setSequenceDraft] = useState<OnboardingPopupData[]>(() => [clonePopup(DEFAULT_DRAFT)]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
   const [activeLanguage, setActiveLanguage] = useState<PopupLanguage>(DEFAULT_POPUP_LANGUAGE);
+  const [globalWelcomeDraft, setGlobalWelcomeDraft] = useState<GlobalWelcomeConfig>(() =>
+    normalizeGlobalWelcome(null),
+  );
+  const [globalWelcomeLanguage, setGlobalWelcomeLanguage] = useState<PopupLanguage>(DEFAULT_POPUP_LANGUAGE);
   const { user, getToken } = useAuth();
   const [headHouseOptions, setHeadHouseOptions] = useState<{ key: string; label: string }[]>([]);
   const [housesLoading, setHousesLoading] = useState(false);
@@ -407,6 +458,8 @@ export default function AdminOnboardingPage() {
   const localizedFields = useMemo(() => getLocalizedFields(resolvedDraft, activeLanguage), [resolvedDraft, activeLanguage]);
   const translationSummary = useMemo(() => computeTranslationSummary(sequenceDraft), [sequenceDraft]);
   const [translationFilter, setTranslationFilter] = useState<'all' | 'missing' | PopupLanguage>('all');
+  const globalWelcomeCopy =
+    globalWelcomeDraft.languages[globalWelcomeLanguage] ?? DEFAULT_GLOBAL_WELCOME_CONFIG.languages[globalWelcomeLanguage];
 
   const filteredSequenceDraft = useMemo(() => {
     const items = sequenceDraft.map((popup, index) => ({ popup, index }));
@@ -618,6 +671,10 @@ export default function AdminOnboardingPage() {
       setDraft(popup);
       setHighlightInputs(buildHighlightInputs(popup));
       setActiveLanguage(DEFAULT_POPUP_LANGUAGE);
+      if (canEditLegacyWelcome && houseKey === 'LEGACY') {
+        setGlobalWelcomeDraft(normalizeGlobalWelcome(normalizedSequence.globalWelcome));
+        setGlobalWelcomeLanguage(DEFAULT_POPUP_LANGUAGE);
+      }
       setStatus('Sequencia importada de ' + data.sequence.house + '.');
     } catch (error) {
       console.error('[admin/onboarding] sync failed', error);
@@ -739,6 +796,81 @@ export default function AdminOnboardingPage() {
     });
   };
 
+  const updateGlobalWelcome = useCallback(
+    (lang: PopupLanguage, updater: (current: GlobalWelcomeCopy) => GlobalWelcomeCopy) => {
+      setGlobalWelcomeDraft((prev) => {
+        const current = prev.languages[lang] ?? DEFAULT_GLOBAL_WELCOME_CONFIG.languages[lang];
+        return {
+          ...prev,
+          languages: {
+            ...prev.languages,
+            [lang]: updater(current),
+          },
+        };
+      });
+    },
+    [],
+  );
+
+  const handleGlobalWelcomeField = (lang: PopupLanguage, field: keyof GlobalWelcomeCopy, value: string) => {
+    updateGlobalWelcome(lang, (current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const handleGlobalWelcomeIntro = (lang: PopupLanguage, value: string) => {
+    updateGlobalWelcome(lang, (current) => ({
+      ...current,
+      intro: normalizeParagraphs(value),
+    }));
+  };
+
+  const handleGlobalWelcomeSectionField = (
+    lang: PopupLanguage,
+    index: number,
+    field: keyof GlobalWelcomeCopy['sections'][number],
+    value: string,
+  ) => {
+    updateGlobalWelcome(lang, (current) => {
+      const sections = [...(current.sections ?? [])];
+      if (!sections[index]) return current;
+      sections[index] = {
+        ...sections[index],
+        [field]: value,
+      };
+      return { ...current, sections };
+    });
+  };
+
+  const handleGlobalWelcomeSectionBullets = (lang: PopupLanguage, index: number, value: string) => {
+    updateGlobalWelcome(lang, (current) => {
+      const sections = [...(current.sections ?? [])];
+      if (!sections[index]) return current;
+      sections[index] = {
+        ...sections[index],
+        bullets: normalizeLines(value),
+      };
+      return { ...current, sections };
+    });
+  };
+
+  const handleAddGlobalWelcomeSection = (lang: PopupLanguage) => {
+    updateGlobalWelcome(lang, (current) => ({
+      ...current,
+      sections: [...(current.sections ?? []), { title: 'Nova secção', body: '', bullets: [] }],
+    }));
+  };
+
+  const handleRemoveGlobalWelcomeSection = (lang: PopupLanguage, index: number) => {
+    updateGlobalWelcome(lang, (current) => {
+      const sections = [...(current.sections ?? [])];
+      if (!sections[index]) return current;
+      sections.splice(index, 1);
+      return { ...current, sections };
+    });
+  };
+
   const handlePreview = () => {
     setPreviewOpen(true);
   };
@@ -773,6 +905,14 @@ export default function AdminOnboardingPage() {
       analytics: houseSequence?.analytics || DEFAULT_ANALYTICS,
       popups: normalizedSequence,
     };
+    if (canEditLegacyWelcome && houseKey === 'LEGACY') {
+      sequencePayload.globalWelcome = {
+        ...globalWelcomeDraft,
+        updatedAt: new Date().toISOString(),
+      };
+    } else if (houseSequence?.globalWelcome) {
+      sequencePayload.globalWelcome = houseSequence.globalWelcome;
+    }
     setSequenceDraft(normalizedSequence);
     try {
       setSaving(true);
@@ -1147,6 +1287,193 @@ export default function AdminOnboardingPage() {
             {status ? <p className="text-sm text-emerald-200">{status}</p> : null}
           </CardContent>
         </Card>
+
+        {canEditLegacyWelcome && houseKey === 'LEGACY' ? (
+          <Card className="border-white/10 bg-[#04131b]/80">
+            <CardContent className="space-y-5 p-6">
+              <div className="flex flex-col gap-1">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Legacy · Global</p>
+                <h2 className="text-xl font-semibold text-white">Pop-up inicial (primeiro acesso)</h2>
+                <p className="text-xs text-slate-500">
+                  Esta mensagem aparece antes de qualquer outro pop-up. Edita por idioma e guarda para aplicar no site.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Idioma da copy</label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {POPUP_LANGUAGES.map((lang) => (
+                    <Button
+                      key={lang}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setGlobalWelcomeLanguage(lang)}
+                      className={cn(
+                        'border-white/20 text-white hover:bg-white/10',
+                        globalWelcomeLanguage === lang && 'border-[#fdd87c] bg-[#fdd87c]/20 text-[#fdd87c]',
+                      )}
+                    >
+                      {LANGUAGE_LABELS[lang]}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Eyebrow</label>
+                  <Input
+                    value={globalWelcomeCopy.eyebrow}
+                    onChange={(event) =>
+                      handleGlobalWelcomeField(globalWelcomeLanguage, 'eyebrow', event.target.value)
+                    }
+                    className="mt-2 border-white/10 bg-[#010913]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Título</label>
+                  <Input
+                    value={globalWelcomeCopy.title}
+                    onChange={(event) =>
+                      handleGlobalWelcomeField(globalWelcomeLanguage, 'title', event.target.value)
+                    }
+                    className="mt-2 border-white/10 bg-[#010913]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                  Intro (parágrafos separados por linha em branco)
+                </label>
+                <Textarea
+                  value={(globalWelcomeCopy.intro ?? []).join('\n\n')}
+                  onChange={(event) => handleGlobalWelcomeIntro(globalWelcomeLanguage, event.target.value)}
+                  rows={4}
+                  className="mt-2 border-white/10 bg-[#010913]"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Secções</label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAddGlobalWelcomeSection(globalWelcomeLanguage)}
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Adicionar secção
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {(globalWelcomeCopy.sections ?? []).map((section, index) => (
+                    <div key={`${section.title}-${index}`} className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Secção {index + 1}</p>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleRemoveGlobalWelcomeSection(globalWelcomeLanguage, index)}
+                          className="h-8 w-8 text-rose-200 hover:bg-rose-500/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        <Input
+                          value={section.title}
+                          onChange={(event) =>
+                            handleGlobalWelcomeSectionField(globalWelcomeLanguage, index, 'title', event.target.value)
+                          }
+                          placeholder="Título da secção"
+                          className="border-white/10 bg-[#010913]"
+                        />
+                        <Textarea
+                          value={section.body}
+                          onChange={(event) =>
+                            handleGlobalWelcomeSectionField(globalWelcomeLanguage, index, 'body', event.target.value)
+                          }
+                          placeholder="Texto principal"
+                          rows={3}
+                          className="border-white/10 bg-[#010913]"
+                        />
+                        <Textarea
+                          value={(section.bullets ?? []).join('\n')}
+                          onChange={(event) => handleGlobalWelcomeSectionBullets(globalWelcomeLanguage, index, event.target.value)}
+                          placeholder="Bullet points (1 por linha)"
+                          rows={3}
+                          className="border-white/10 bg-[#010913]"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Texto do checklist</label>
+                  <Textarea
+                    value={globalWelcomeCopy.checklistLabel}
+                    onChange={(event) =>
+                      handleGlobalWelcomeField(globalWelcomeLanguage, 'checklistLabel', event.target.value)
+                    }
+                    rows={3}
+                    className="mt-2 border-white/10 bg-[#010913]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Helper</label>
+                  <Textarea
+                    value={globalWelcomeCopy.helper}
+                    onChange={(event) =>
+                      handleGlobalWelcomeField(globalWelcomeLanguage, 'helper', event.target.value)
+                    }
+                    rows={3}
+                    className="mt-2 border-white/10 bg-[#010913]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">CTA principal</label>
+                  <Input
+                    value={globalWelcomeCopy.confirmPrimary}
+                    onChange={(event) =>
+                      handleGlobalWelcomeField(globalWelcomeLanguage, 'confirmPrimary', event.target.value)
+                    }
+                    className="mt-2 border-white/10 bg-[#010913]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">CTA secundário</label>
+                  <Input
+                    value={globalWelcomeCopy.confirmSecondary}
+                    onChange={(event) =>
+                      handleGlobalWelcomeField(globalWelcomeLanguage, 'confirmSecondary', event.target.value)
+                    }
+                    className="mt-2 border-white/10 bg-[#010913]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-400">CTA terciário</label>
+                  <Input
+                    value={globalWelcomeCopy.confirmTertiary}
+                    onChange={(event) =>
+                      handleGlobalWelcomeField(globalWelcomeLanguage, 'confirmTertiary', event.target.value)
+                    }
+                    className="mt-2 border-white/10 bg-[#010913]"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card className="border-white/10 bg-[#04131b]/80">
           <CardContent className="space-y-4 p-6">
