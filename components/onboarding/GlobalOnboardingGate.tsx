@@ -26,64 +26,77 @@ type CopySection = {
 type CopyPack = {
   eyebrow: string;
   title: string;
-  intro: string;
+  intro: string[];
   sections: CopySection[];
   checklistLabel: string;
   helper: string;
   confirmPrimary: string;
   confirmSecondary: string;
+  confirmTertiary: string;
   lockedLabel: (seconds: number) => string;
   unlockedLabel: string;
   errorLabel: string;
 };
 
+const LANGUAGE_OPTIONS: Array<{ id: SupportedCopyLang; label: string }> = [
+  { id: 'pt', label: '\u{1F1F5}\u{1F1F9} PT-PT \u2014 Portugu\u00eas de Portugal' },
+  { id: 'en', label: '\u{1F1EC}\u{1F1E7} EN \u2014 English' },
+  { id: 'es', label: '\u{1F1EA}\u{1F1F8} ES \u2014 Espa\u00f1ol' },
+];
+
 const COPY: Record<SupportedCopyLang, CopyPack> = {
   pt: {
     eyebrow: 'APERTUM LEGACY',
     title: 'Bem-vindo ao Apertum Legacy',
-    intro:
-      'Entraste na base oficial do Legacy. Aqui o foco n\u00e3o \u00e9 hype: \u00e9 contexto, consist\u00eancia e prepara\u00e7\u00e3o real.',
+    intro: [
+      'Sou o freemanpt.',
+      'Entraste na base oficial do Legacy \u2014 um espa\u00e7o para quem quer compreender, n\u00e3o apenas consumir.',
+      'Aqui n\u00e3o h\u00e1 promessas f\u00e1ceis nem atalhos artificiais. H\u00e1 contexto, consist\u00eancia e prepara\u00e7\u00e3o real.',
+      'Se \u00e9s novo, faz isto com calma. A plataforma foi pensada para te guiar passo a passo.',
+    ],
     sections: [
       {
-        title: 'Como ganhas XP (Experience)',
-        body: 'O XP \u00e9 a tua prova de compromisso. Ganhas XP quando:',
+        title: 'Como ganhas XP (Experi\u00eancia)',
+        body: 'XP prova compromisso. Ganhas XP quando:',
         bullets: [
-          'Fazes login com a sess\u00e3o ativa',
           'Consomes blog posts oficiais',
           'Concluis cursos completos',
-          'Fechas topics e lessons',
-          'L\u00eas termos do gloss\u00e1rio',
+          'Terminas t\u00f3picos e li\u00e7\u00f5es',
+          'Exploras e l\u00eas termos do gloss\u00e1rio',
         ],
       },
       {
-        title: 'Respons\u00e1vel pela tua House',
+        title: 'Quem lidera a tua House',
         body:
-          'Um Head vai ser designado para a tua House com base no desporto + pa\u00eds que escolheste. O objetivo \u00e9 garantir acompanhamento real e alinhado com o teu contexto.',
+          'Cada House tem um Head, atribu\u00eddo com base no desporto e pa\u00eds que escolheste. O papel do Head \u00e9 orientar, n\u00e3o vender nem prometer resultados.',
       },
       {
-        title: 'Guia r\u00e1pido de XP',
-        body: 'Vai a /education/xp para veres como subir XP e desbloquear conte\u00fados mais exigentes.',
+        title: 'Queres perceber o sistema de XP?',
+        body:
+          'Vai \u00e0 p\u00e1gina \u201cComo Funciona o XP\u201d para entenderes como o progresso desbloqueia conte\u00fado mais profundo.',
       },
       {
-        title: 'Mensagens privadas s\u00f3 para comprometidos',
+        title: 'Mensagens privadas (apenas para comprometidos)',
         body:
-          'A partir de 369 XP desbloqueias mensagens privadas com o Head ou Moderadores. Isto protege os Heads de curiosos e garante foco nos membros ativos.',
+          'A partir dos 369 XP, desbloqueias mensagens privadas com o Head ou Moderadores. Isto protege os Heads do ru\u00eddo e mant\u00e9m o foco em membros realmente ativos.',
       },
       {
         title: 'Pop-ups s\u00e3o comunica\u00e7\u00e3o oficial',
         body:
-          'A tua House comunica primeiro atrav\u00e9s de pop-ups como este. N\u00e3o ignores estas mensagens durante a tua aprendizagem.',
+          'A tua House comunica atrav\u00e9s de pop-ups como este. L\u00ea-os com aten\u00e7\u00e3o \u2014 fazem parte do teu percurso no Legacy.',
       },
       {
-        title: 'Aten\u00e7\u00e3o ao mindset',
+        title: 'Mindset (sem filtros)',
         body:
-          'Se procuras enriquecer r\u00e1pido, esta n\u00e3o \u00e9 a tua plataforma. Aqui ganhas base s\u00f3lida antes de ver oportunidades. Podes acelerar o processo se consumires r\u00e1pido os conte\u00fados.',
+          'Se procuras resultados r\u00e1pidos sem base, esta n\u00e3o \u00e9 a tua plataforma. Aqui constroem-se fundamentos primeiro. Quem \u00e9 consistente, acelera depois.',
       },
     ],
-    checklistLabel: 'Li e compreendi a mensagem inicial do freemanpt.',
-    helper: 'Este aviso \u00e9 obrigat\u00f3rio no teu primeiro login.',
-    confirmPrimary: 'Ir para XP agora',
-    confirmSecondary: 'Continuar na plataforma',
+    checklistLabel:
+      'Declaro que li, compreendi e aceito a Mensagem Inicial do freemanpt (vers\u00e3o atual), e entendo que o Legacy n\u00e3o \u00e9 uma empresa e que os Heads de House atuam de forma independente.',
+    helper: 'Obrigat\u00f3rio no primeiro acesso.',
+    confirmPrimary: 'Ir para \u201cComo Funciona o XP\u201d \u2192',
+    confirmSecondary: 'Entrar em Cursos',
+    confirmTertiary: 'Continuar na plataforma',
     lockedLabel: (seconds) => `Espera ${seconds}s para continuares.`,
     unlockedLabel: 'Ok para continuar.',
     errorLabel: 'Falha ao registar a tua confirma\u00e7\u00e3o. Tenta novamente.',
@@ -91,49 +104,55 @@ const COPY: Record<SupportedCopyLang, CopyPack> = {
   es: {
     eyebrow: 'APERTUM LEGACY',
     title: 'Bienvenido a Apertum Legacy',
-    intro:
-      'Entraste en la base oficial de Legacy. Aqu\u00ed el enfoque no es hype: es contexto, consistencia y preparaci\u00f3n real.',
+    intro: [
+      'Soy freemanpt.',
+      'Has entrado en la base oficial de Legacy \u2014 un espacio para quien quiere comprender, no solo consumir.',
+      'Aqu\u00ed no hay hype. Hay contexto, constancia y preparaci\u00f3n real.',
+      'Si eres nuevo, ve paso a paso. La plataforma est\u00e1 pensada para guiarte.',
+    ],
     sections: [
       {
-        title: 'C\u00f3mo ganas XP (Experience)',
-        body: 'El XP demuestra tu compromiso. Ganar\u00e1s XP cuando:',
+        title: 'C\u00f3mo ganas XP (Experiencia)',
+        body: 'XP demuestra compromiso. Ganas XP cuando:',
         bullets: [
-          'Inicias sesi\u00f3n con la cuenta activa',
           'Consumes blog posts oficiales',
-          'Finalizas cursos completos',
-          'Completas topics y lessons',
-          'Lees t\u00e9rminos del glosario',
+          'Completas cursos completos',
+          'Finalizas temas y lecciones',
+          'Exploras y lees t\u00e9rminos del glosario',
         ],
       },
       {
-        title: 'Responsable de tu House',
+        title: 'Qui\u00e9n dirige tu House',
         body:
-          'Un Head ser\u00e1 asignado a tu House seg\u00fan el deporte + pa\u00eds que elegiste. El objetivo es acompa\u00f1amiento real y alineado con tu contexto.',
+          'Cada House tiene un Head, asignado seg\u00fan el deporte y pa\u00eds que elegiste. El rol del Head es orientar, no vender ni prometer resultados.',
       },
       {
-        title: 'Gu\u00eda r\u00e1pida de XP',
-        body: 'Ve a /education/xp para entender c\u00f3mo subir XP y desbloquear contenido m\u00e1s exigente.',
+        title: '\u00bfQuieres entender el sistema de XP?',
+        body:
+          'Ve a la p\u00e1gina \u201cC\u00f3mo Funciona el XP\u201d para ver c\u00f3mo el progreso desbloquea contenido m\u00e1s profundo.',
       },
       {
-        title: 'Mensajes privados solo para comprometidos',
+        title: 'Mensajes privados (solo para comprometidos)',
         body:
-          'A partir de 369 XP desbloqueas mensajes privados con el Head o Moderadores. Esto protege a los Heads de curiosos y garantiza foco en miembros activos.',
+          'A partir de 369 XP, desbloqueas mensajes privados con el Head o Moderadores. Esto protege a los Heads del ruido y mantiene el foco en miembros activos.',
       },
       {
         title: 'Los pop-ups son comunicaci\u00f3n oficial',
         body:
-          'Tu House comunica primero a trav\u00e9s de pop-ups como este. No ignores estos mensajes durante tu aprendizaje.',
+          'Tu House se comunica mediante pop-ups como este. L\u00e9elos con atenci\u00f3n \u2014 forman parte de tu recorrido en Legacy.',
       },
       {
-        title: 'Mentalidad correcta',
+        title: 'Mindset (sin filtros)',
         body:
-          'Si buscas hacerte rico r\u00e1pido, esta no es tu plataforma. Aqu\u00ed construyes base s\u00f3lida antes de ver oportunidades. Puedes acelerar el proceso consumiendo contenido r\u00e1pido.',
+          'Si buscas resultados r\u00e1pidos sin base, esta no es tu plataforma. Aqu\u00ed se construyen fundamentos primero. La constancia acelera despu\u00e9s.',
       },
     ],
-    checklistLabel: 'He le\u00eddo y comprendido el mensaje inicial de freemanpt.',
-    helper: 'Este aviso es obligatorio en tu primer inicio de sesi\u00f3n.',
-    confirmPrimary: 'Ir a XP ahora',
-    confirmSecondary: 'Continuar en la plataforma',
+    checklistLabel:
+      'Declaro que he le\u00eddo, entendido y aceptado el Mensaje Inicial de freemanpt (versi\u00f3n actual), y entiendo que Legacy no es una empresa y que los Heads de House act\u00faan de forma independiente.',
+    helper: 'Obligatorio en el primer acceso.',
+    confirmPrimary: 'Ir a \u201cC\u00f3mo Funciona el XP\u201d \u2192',
+    confirmSecondary: 'Entrar en Cursos',
+    confirmTertiary: 'Continuar en la plataforma',
     lockedLabel: (seconds) => `Espera ${seconds}s para continuar.`,
     unlockedLabel: 'Puedes continuar.',
     errorLabel: 'No se pudo registrar la confirmaci\u00f3n. Int\u00e9ntalo de nuevo.',
@@ -141,49 +160,55 @@ const COPY: Record<SupportedCopyLang, CopyPack> = {
   en: {
     eyebrow: 'APERTUM LEGACY',
     title: 'Welcome to Apertum Legacy',
-    intro:
-      'You just entered the official Legacy base. This is not hype: it is context, consistency, and real preparation.',
+    intro: [
+      'I\u2019m freemanpt.',
+      'You\u2019ve entered the official Legacy base \u2014 a space for those who want to understand, not just consume.',
+      'No hype here. Just context, consistency, and real preparation.',
+      'If you\u2019re new, take it step by step. The platform is designed to guide you.',
+    ],
     sections: [
       {
         title: 'How you earn XP (Experience)',
         body: 'XP proves commitment. You earn XP when you:',
         bullets: [
-          'Log in with an active session',
           'Consume official blog posts',
           'Complete full courses',
           'Finish topics and lessons',
-          'Read glossary terms',
+          'Explore and read glossary terms',
         ],
       },
       {
         title: 'Who runs your House',
         body:
-          'A Head will be assigned to your House based on the sport + country you chose. The goal is real guidance aligned with your context.',
+          'Each House has a Head, assigned based on the sport and country you selected. The Head\u2019s role is guidance \u2014 not selling, not promising outcomes.',
       },
       {
-        title: 'XP fast track',
-        body: 'Go to /education/xp to learn how XP works and unlock deeper content.',
-      },
-      {
-        title: 'Private messages only for committed members',
+        title: 'Want to understand the XP system?',
         body:
-          'At 369 XP you unlock private messages with the Head or Moderators. This protects Heads from curiosity-only noise and keeps focus on active members.',
+          'Go to the \u201cHow XP Works\u201d page to learn how progression unlocks deeper content.',
+      },
+      {
+        title: 'Private messages (for committed members only)',
+        body:
+          'At 369 XP, you unlock private messages with the Head or Moderators. This protects Heads from noise and keeps focus on active members.',
       },
       {
         title: 'Pop-ups are official communication',
         body:
-          'Your House starts communication through pop-ups like this. Do not ignore these messages as you learn.',
+          'Your House communicates through pop-ups like this one. Read them carefully \u2014 they\u2019re part of your Legacy journey.',
       },
       {
-        title: 'Mindset check',
+        title: 'Mindset (no filters)',
         body:
-          'If you want to get rich fast, this is not your platform. We build solid foundations before opportunities. You can accelerate by consuming content quickly.',
+          'If you\u2019re looking for fast results without foundations, this isn\u2019t your platform. We build first. Those who stay consistent accelerate later.',
       },
     ],
-    checklistLabel: 'I read and understood freemanpt\u2019s initial message.',
-    helper: 'This notice is mandatory on your first login.',
-    confirmPrimary: 'Go to XP now',
-    confirmSecondary: 'Continue inside the platform',
+    checklistLabel:
+      'I declare that I have read, understood, and accepted freemanpt\u2019s Initial Message (current version), and I understand that Legacy is not a company and that House Heads operate independently.',
+    helper: 'Mandatory on first access.',
+    confirmPrimary: 'Go to \u201cHow XP Works\u201d \u2192',
+    confirmSecondary: 'Enter Courses',
+    confirmTertiary: 'Continue inside the platform',
     lockedLabel: (seconds) => `Wait ${seconds}s to continue.`,
     unlockedLabel: 'You can continue.',
     errorLabel: 'Failed to record your confirmation. Please try again.',
@@ -195,7 +220,7 @@ const PANEL_BASE =
 
 export default function GlobalOnboardingGate() {
   const { user, getToken } = useAuth();
-  const { language: rawLang } = useLanguage();
+  const { language: rawLang, setLanguage } = useLanguage();
   const router = useRouter();
   const language = (rawLang === 'pt' || rawLang === 'es' || rawLang === 'en' ? rawLang : 'en') as SupportedCopyLang;
   const copy = COPY[language] ?? COPY.en;
@@ -355,11 +380,39 @@ export default function GlobalOnboardingGate() {
               <h2 id="global-onboarding-title" className="text-3xl font-semibold text-white">
                 {copy.title}
               </h2>
-              <p className="text-sm text-slate-300">{copy.intro}</p>
+              <div className="space-y-2">
+                {copy.intro.map((line) => (
+                  <p key={line} className="text-sm text-slate-300">
+                    {line}
+                  </p>
+                ))}
+              </div>
             </div>
-            <Badge variant="outline" className="border-amber-300/40 bg-amber-400/10 text-amber-100">
-              {HOUSE_KEY}
-            </Badge>
+            <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-col items-end gap-2">
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <Button
+                    key={option.id}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    aria-pressed={language === option.id}
+                    onClick={() => setLanguage(option.id)}
+                    className={cn(
+                      'h-8 justify-end border-white/25 px-3 text-[11px] uppercase tracking-[0.08em]',
+                      language === option.id
+                        ? 'border-cyan-300/70 bg-cyan-500/10 text-cyan-100'
+                        : 'text-slate-200 hover:bg-white/10',
+                    )}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              <Badge variant="outline" className="border-amber-300/40 bg-amber-400/10 text-amber-100">
+                {HOUSE_KEY}
+              </Badge>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -400,7 +453,7 @@ export default function GlobalOnboardingGate() {
             {ackError ? <p className="mt-2 text-xs text-rose-200">{ackError}</p> : null}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Button
               size="lg"
               onClick={() => void handleConfirm('/education/xp')}
@@ -416,11 +469,20 @@ export default function GlobalOnboardingGate() {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => void handleConfirm()}
+              onClick={() => void handleConfirm('/education/courses')}
               disabled={!canConfirm}
               className="w-full border-white/30 text-white hover:bg-white/10"
             >
               {copy.confirmSecondary}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => void handleConfirm()}
+              disabled={!canConfirm}
+              className="w-full border-white/30 text-white hover:bg-white/10"
+            >
+              {copy.confirmTertiary}
             </Button>
           </div>
         </div>
