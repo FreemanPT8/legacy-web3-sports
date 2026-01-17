@@ -3178,7 +3178,6 @@ export default function EducationXpPage() {
 
       profile: [] as XpReward[],
 
-      contribute: [] as XpReward[],
 
       consistency: [] as XpReward[],
 
@@ -4217,7 +4216,7 @@ export default function EducationXpPage() {
 
 
 
-                  {/* Perfil + Contribuir */}
+                  {/* Perfil */}
 
                   <div className="lg:col-span-6 grid gap-4">
 
@@ -4303,89 +4302,6 @@ export default function EducationXpPage() {
 
                     </Card>
 
-
-
-                    <Card className={cn(UI.cardSurface)}>
-
-                      <CardContent className="p-5">
-
-                        <p className={UI.goldStatLabel}>
-
-                          {language === 'pt' ? 'Contribuir' : language === 'es' ? 'Contribuir' : 'Contribute'}
-
-                        </p>
-
-                        <p className={cn(UI.micro, 'mt-1 text-slate-400')}>
-
-                          {language === 'pt'
-
-                            ? 'Mensagens privadas com a House desbloqueiam aos 369 XP.'
-
-                            : language === 'es'
-
-                            ? 'Los mensajes privados con la House se desbloquean a los 369 XP.'
-
-                            : 'House private messages unlock at 369 XP.'}
-
-                        </p>
-
-
-
-                        <div className="mt-4 grid gap-3">
-
-                          {(groupedRewards.contribute.length ? groupedRewards.contribute : []).map((reward) => {
-
-                            const meta = getRewardMeta(reward.action_type, language);
-
-                            return (
-
-                              <div
-
-                                key={reward.action_type}
-
-                                className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
-
-                              >
-
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-
-                                  <p className={cn('text-sm font-semibold', getRewardTitleClass(reward.action_type))}>
-
-                                    {meta.title}
-
-                                  </p>
-
-                                  <span className="rounded-full border border-white/15 bg-[#000c12]/30 px-3 py-1 text-xs text-slate-200">
-
-                                    {formatRange(reward.min_xp, reward.max_xp)}
-
-                                  </span>
-
-                                </div>
-
-                                {meta.creatorBonus ? (
-
-                                  <p className={cn(UI.micro, 'mt-2 text-slate-300')}>
-
-                                    <span className="text-cyan-200">{copy.creatorBonusLabel}:</span> {meta.creatorBonus}
-
-                                  </p>
-
-                                ) : null}
-
-                              </div>
-
-                            );
-
-                          })}
-
-
-
-                          </div>
-
-                        </div>
-
-                      </CardContent>
 
                     </Card>
 
