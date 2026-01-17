@@ -5,6 +5,7 @@ import {
   normalizeLessonIdForStorage,
   extractUuid,
 } from './lesson-id';
+import { getTodayCETDate } from './timezone';
 
 // Usamos sempre o client admin quando existir (bypass RLS)
 // e caímos para o client normal em dev/local se faltar a service role.
@@ -281,7 +282,7 @@ export async function updateStreak(
       return { newStreak: 0, longStreak: 0, bonus: 0 };
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayCETDate();
     const lastUpdate = user.streak_updated_at as string | null;
     const lastLongUpdate = user.streak_long_updated_at as string | null;
 
@@ -293,27 +294,23 @@ export async function updateStreak(
       };
     }
 
-    const todayStart = new Date();
-    todayStart.setUTCHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
-
-    const { data: todayTransactions } = await db
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const { data: recentTransactions } = await db
       .from('xp_transactions')
-      .select('xp_earned')
-      .gte('created_at', todayStart.toISOString())
-      .lt('created_at', todayEnd.toISOString())
+      .select('xp_earned, created_at')
+      .gte('created_at', since.toISOString())
       .eq('user_id', userId);
 
     const xpToday =
-      (todayTransactions || [])
+      (recentTransactions || [])
+        .filter((tx: { created_at?: string | null }) =>
+          tx.created_at ? getTodayCETDate(new Date(tx.created_at)) === today : false,
+        )
         .map((tx: { xp_earned?: number | null }) => tx.xp_earned ?? 0)
         .reduce((sum: number, xp: number) => sum + xp, 0) || 0;
 
     let effectiveXpToday = xpToday;
     if (effectiveXpToday <= 0) {
-      const startISO = todayStart.toISOString();
-      const endISO = todayEnd.toISOString();
       const activityChecks = [
         { table: 'lesson_completions', timeField: 'completed_at' },
         { table: 'blog_reads', timeField: 'completed_at' },
@@ -323,14 +320,18 @@ export async function updateStreak(
       for (const check of activityChecks) {
         const { data: rows } = await db
           .from(check.table)
-          .select('id, xp_earned')
+          .select(`id, ${check.timeField}`)
           .eq('user_id', userId)
-          .gt('xp_earned', 0)
-          .gte(check.timeField, startISO)
-          .lt(check.timeField, endISO)
-          .limit(1);
+          .gte(check.timeField, since.toISOString())
+          .limit(5);
 
-        if (rows && rows.length > 0) {
+        const hasTodayActivity = (rows || []).some((row: any) => {
+          const ts = row?.[check.timeField];
+          if (!ts) return false;
+          return getTodayCETDate(new Date(ts)) === today;
+        });
+
+        if (hasTodayActivity) {
           effectiveXpToday = 1;
           break;
         }
@@ -347,7 +348,7 @@ export async function updateStreak(
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = getTodayCETDate(yesterday);
 
     let newStreak = 1;
     if (lastUpdate === yesterdayStr) {

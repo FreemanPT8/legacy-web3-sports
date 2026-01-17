@@ -462,7 +462,7 @@ export default function DashboardPage() {
                       {t('dashboard.loadingMissions')}
                     </p>
                   </div>
-                ) : missions.length === 0 ? (
+                ) : !comboProgress && missions.length === 0 ? (
                   <div className="py-8 text-center">
                     <Target className="mx-auto mb-3 h-12 w-12 text-slate-500" />
                     <p className="text-slate-300">
@@ -477,157 +477,130 @@ export default function DashboardPage() {
                     {comboError && (
                       <p className="text-sm text-rose-300">{comboError}</p>
                     )}
-                    {comboProgress && !comboError && (
-                      <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-slate-200">
-                        <p className="font-semibold text-white">
-                          {t('dashboard.comboProgress') || 'Progresso das Rotas Diárias'}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {t('dashboard.comboHint') ||
-                            'Consumos acumulam durante o dia e reiniciam às 00h CET.'}
-                        </p>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                          {[
-                            { key: 'glossary', label: t('dashboard.glossaryTerms') || 'Glossário' },
-                            { key: 'blog', label: t('dashboard.blogReads') || 'Blog' },
-                            { key: 'lesson', label: t('dashboard.lessons') || 'Lições' },
-                          ].map((item) => (
-                            <div
-                              key={item.key}
-                              className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
-                                  {item.label}
-                                </span>
-                                <Sparkles className="h-3 w-3 text-[#fdd87c]" />
-                              </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-slate-200">
+                      <p className="font-semibold text-white">
+                        {t('dashboard.comboProgress')}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {t('dashboard.comboHint')}
+                      </p>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                        {[
+                          { key: 'glossary', label: t('dashboard.glossaryTerms') },
+                          { key: 'blog', label: t('dashboard.blogReads') },
+                          { key: 'lesson', label: t('dashboard.lessons') },
+                        ].map((item) => (
+                          <div
+                            key={item.key}
+                            className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                                {item.label}
+                              </span>
+                              <Sparkles className="h-3 w-3 text-[#fdd87c]" />
+                            </div>
+                            <p className="mt-1 text-base font-semibold text-white">
+                              {item.key === 'glossary'
+                                ? comboProgress?.glossary_count ?? 0
+                                : item.key === 'blog'
+                                ? comboProgress?.blog_count ?? 0
+                                : comboProgress?.lesson_count ?? 0}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {[
+                      {
+                        key: 'quick',
+                        title: t('dashboard.comboQuick'),
+                        xp: comboMeta?.quick?.xp ?? 13,
+                        completed: comboMeta?.quick?.completed ?? false,
+                        requirements: { glossary: 0, blog: 1, lesson: 1 },
+                      },
+                      {
+                        key: 'base',
+                        title: t('dashboard.comboBase'),
+                        xp: comboMeta?.base?.xp ?? 21,
+                        completed: comboMeta?.base?.completed ?? false,
+                        requirements: { glossary: 2, blog: 1, lesson: 1 },
+                      },
+                      {
+                        key: 'serious',
+                        title: t('dashboard.comboSerious'),
+                        xp: comboMeta?.serious?.xp ?? 47,
+                        completed: comboMeta?.serious?.completed ?? false,
+                        requirements: { glossary: 5, blog: 2, lesson: 2 },
+                      },
+                    ].map((route) => (
+                      <div
+                        key={route.key}
+                        className={`rounded-2xl border p-4 ${
+                          route.completed
+                            ? 'border-emerald-500/60 bg-emerald-500/10'
+                            : 'border-white/10 bg-black/30'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                              {route.title}
+                            </p>
+                            <p className="text-sm text-slate-300">
+                              {route.completed
+                                ? t('dashboard.completedMission')
+                                : t('dashboard.inProgress')}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={route.completed ? 'default' : 'outline'}
+                            className={
+                              route.completed
+                                ? 'bg-emerald-500 text-emerald-50'
+                                : 'border-white/20 text-slate-200'
+                            }
+                          >
+                            {route.completed ? t('dashboard.completedMission') : `+${route.xp} XP`}
+                          </Badge>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {route.requirements.glossary > 0 && (
+                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200">
+                              <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                                {t('dashboard.glossaryTerms')}
+                              </span>
                               <p className="mt-1 text-base font-semibold text-white">
-                                {(comboProgress as any)[item.key]}
+                                {Math.min(comboProgress?.glossary_count ?? 0, route.requirements.glossary)}/
+                                {route.requirements.glossary}
                               </p>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {missions.map((mission: any) => {
-                      const missionData = Array.isArray(mission.user_missions)
-                        ? mission.user_missions[0]
-                        : mission.user_missions;
-                      const progress = missionData?.progress || 0;
-                      const completed = missionData?.completed || false;
-                      const missionType: string | undefined = mission?.type;
-                      const isCombo =
-                        missionType === 'combo_quick' ||
-                        missionType === 'combo_base' ||
-                        missionType === 'combo_serious';
-
-                      const comboTag =
-                        missionType === 'combo_quick'
-                          ? t('dashboard.comboQuick') || 'Rota Basica'
-                          : missionType === 'combo_base'
-                          ? t('dashboard.comboBase') || 'Rota Base'
-                          : missionType === 'combo_serious'
-                          ? t('dashboard.comboSerious') || 'Rota Seria'
-                          : null;
-
-                      const comboCounters = comboProgress && isCombo
-                        ? {
-                            glossary: comboProgress.glossary_count,
-                            blog: comboProgress.blog_count,
-                            lesson: comboProgress.lesson_count,
-                          }
-                        : null;
-
-                      const comboRequirements =
-                        missionType === 'combo_quick'
-                          ? { glossary: 0, blog: 1, lesson: 1 }
-                          : missionType === 'combo_base'
-                          ? { glossary: 2, blog: 1, lesson: 1 }
-                          : missionType === 'combo_serious'
-                          ? { glossary: 5, blog: 2, lesson: 2 }
-                          : null;
-
-                      return (
-                        <div
-                          key={mission.id}
-                          className={`rounded-2xl border p-4 ${
-                            completed
-                              ? 'border-emerald-500/60 bg-emerald-500/10'
-                              : 'border-white/10 bg-black/30'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              {completed && (
-                                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                              )}
-                              <div>
-                                {comboTag && (
-                                  <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
-                                    {comboTag}
-                                  </p>
-                                )}
-                                <p
-                                  className={`font-medium ${
-                                    completed ? 'text-emerald-300' : 'text-white'
-                                  }`}
-                                >
-                                  {mission.description}
-                                </p>
-                                <p className="text-sm text-slate-300">
-                                  {progress}/{mission.target_count}{' '}
-                                  {t('dashboard.completed')}
-                                </p>
-                              </div>
+                          )}
+                          {route.requirements.blog > 0 && (
+                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200">
+                              <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                                {t('dashboard.blogReads')}
+                              </span>
+                              <p className="mt-1 text-base font-semibold text-white">
+                                {Math.min(comboProgress?.blog_count ?? 0, route.requirements.blog)}/
+                                {route.requirements.blog}
+                              </p>
                             </div>
-                            <Badge
-                              variant={completed ? 'default' : 'outline'}
-                              className={
-                                completed
-                                  ? 'bg-emerald-500 text-emerald-50'
-                                  : 'border-white/20 text-slate-200'
-                              }
-                            >
-                              {completed
-                                ? t('dashboard.completedMission')
-                                : `+${mission.xp_reward} XP`}
-                            </Badge>
-                          </div>
-                          {comboCounters && comboRequirements && (
-                            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                              {(['glossary', 'blog', 'lesson'] as Array<
-                                'glossary' | 'blog' | 'lesson'
-                              >).map((key) => {
-                                const required = comboRequirements[key];
-                                if (!required) return null;
-                                const value = comboCounters[key];
-                                return (
-                                  <div
-                                    key={`${mission.id}-${key}`}
-                                    className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
-                                        {key === 'glossary'
-                                          ? t('dashboard.glossaryTerms') || 'Glossário'
-                                          : key === 'blog'
-                                          ? t('dashboard.blogReads') || 'Blog'
-                                          : t('dashboard.lessons') || 'Lições'}
-                                      </span>
-                                      <Sparkles className="h-3 w-3 text-[#fdd87c]" />
-                                    </div>
-                                    <p className="mt-1 text-base font-semibold text-white">
-                                      {Math.min(value, required)}/{required}
-                                    </p>
-                                  </div>
-                                );
-                              })}
+                          )}
+                          {route.requirements.lesson > 0 && (
+                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200">
+                              <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                                {t('dashboard.lessons')}
+                              </span>
+                              <p className="mt-1 text-base font-semibold text-white">
+                                {Math.min(comboProgress?.lesson_count ?? 0, route.requirements.lesson)}/
+                                {route.requirements.lesson}
+                              </p>
                             </div>
                           )}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
