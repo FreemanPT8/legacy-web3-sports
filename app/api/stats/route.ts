@@ -46,7 +46,6 @@ export async function GET(request: NextRequest) {
     const xpBreakdown = {
       lessons: 0,
       articles: 0,
-      community: 0,
       missions: 0,
       streaks: 0,
       profile: 0,
@@ -78,8 +77,6 @@ export async function GET(request: NextRequest) {
         xp: tx.amount,
       }));
 
-    const reactionTotals = { positive: 0, fire: 0 };
-    const reactionPoints = 0;
 
     return NextResponse.json({
       success: true,
@@ -98,13 +95,6 @@ export async function GET(request: NextRequest) {
           totalLessons: totalLessons?.length || 0,
           articlesRead: articlesRead || 0,
           totalReadingTime: (articlesRead || 0) * 5,
-        },
-        community: {
-          commentsAuthored: 0,
-          positiveReactions: reactionTotals.positive,
-          fireReactions: reactionTotals.fire,
-          reactionPoints,
-          totalContributions: 0,
         },
         xpBreakdown,
         recentAchievements,
