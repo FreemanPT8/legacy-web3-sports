@@ -267,7 +267,10 @@ export async function GET(request: Request) {
     }
 
     const userMissionsMap = new Map(
-      (userMissions || []).map(um => [um.mission_id, um])
+      (userMissions || []).map((um: { mission_id: string }) => [
+        um.mission_id,
+        um,
+      ])
     );
 
     const missionsWithProgress = dailyMissions.map(mission => ({
