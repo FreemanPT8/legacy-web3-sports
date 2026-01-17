@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { awardXP, checkDailyLimit, updateDailyLimit } from '@/lib/xp';
+import { awardXP } from '@/lib/xp';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,27 +11,6 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
-    }
-
-    if (actionType) {
-      const { canAward, remaining } = await checkDailyLimit(userId, actionType);
-
-      if (!canAward) {
-        return NextResponse.json(
-          { success: false, error: 'Daily limit reached for this action' },
-          { status: 429 }
-        );
-      }
-
-      const actualXP = Math.min(xpAmount, remaining);
-
-      const result = await awardXP(userId, action, actualXP, referenceId, referenceType);
-
-      if (result.success) {
-        await updateDailyLimit(userId, actionType, actualXP);
-      }
-
-      return NextResponse.json(result);
     }
 
     const result = await awardXP(userId, action, xpAmount, referenceId, referenceType);

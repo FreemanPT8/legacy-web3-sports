@@ -104,18 +104,6 @@ type XpReward = {
 
 
 
-type XpLimit = {
-
-  action_type: string;
-
-  xp_earned: number | null;
-
-  count: number | null;
-
-};
-
-
-
 type XpThreshold = {
 
   xp_total: number;
@@ -158,8 +146,6 @@ type EducationXpData = {
 
   rewards: XpReward[];
 
-  limits: XpLimit[];
-
   thresholds: XpThreshold[];
 
 };
@@ -172,7 +158,7 @@ type OnboardingResponse =
 
 type ApiResponse =
 
-  | { success: true; rewards: XpReward[]; limits: XpLimit[]; thresholds: XpThreshold[] }
+  | { success: true; rewards: XpReward[]; thresholds: XpThreshold[] }
 
   | { success: false; error: string };
 
@@ -1517,7 +1503,7 @@ const DIAGNOSTICS_COPY: Record<SupportedCopyLang, DiagnosticsCopy> = {
     subtitle: 'Heads confirmam se cada sistema sincronizou antes de contactar suporte.',
     labels: {
       house: 'Sequência da House',
-      xp: 'API XP & limites',
+      xp: 'API XP',
       missions: 'Combos/Missões',
       progress: 'Progresso do utilizador',
     },
@@ -1551,7 +1537,7 @@ const DIAGNOSTICS_COPY: Record<SupportedCopyLang, DiagnosticsCopy> = {
     subtitle: 'Heads verify each system before escalating to support.',
     labels: {
       house: 'House sequence',
-      xp: 'XP & limits API',
+      xp: 'XP API',
       missions: 'Combos/Missions',
       progress: 'User progress',
     },
@@ -1768,8 +1754,6 @@ const COMMENT_RULES_COPY: Record<SupportedCopyLang, CommentRulesCopy> = {
     intro: 'Unlocks at 369 XP so committed members comment in lessons and blog posts. House private messages also unlock.',
     points: [
       '0 XP base: comments exist for context, not XP farming.',
-      'Daily limits: 8 comments per member (33 for Super Admin, Admin, Heads, and Moderators).',
-      'Emoji limits: +1 (5/day), fire (1/day), -1 (1/day). None award XP directly.',
       'House conversations stay private to admins, moderators, and members of that House.',
     ],
     badge: 'The public comment with the most reaction points (positive + 2*fire) each week earns 88 XP and the "Comment of the Week" badge.',
@@ -2948,8 +2932,6 @@ export default function EducationXpPage() {
 
             rewards: data.rewards ?? [],
 
-            limits: data.limits ?? [],
-
             thresholds: data.thresholds ?? [],
 
           });
@@ -3214,18 +3196,6 @@ export default function EducationXpPage() {
     return map;
 
   }, [xpData?.rewards]);
-
-
-
-  const dailyCap = useMemo(() => {
-
-    // tenta ler de limits/metadata; fallback para o valor oficial do copy
-
-    // (mantemos o número do copy como fonte de verdade visual)
-
-    return 369;
-
-  }, []);
 
 
 
@@ -3668,13 +3638,13 @@ export default function EducationXpPage() {
 
                             {language === 'pt'
 
-                              ? 'Limite diário global e streaks existem para travar spam e premiar disciplina.'
+                              ? 'Os streaks existem para premiar disciplina.'
 
                               : language === 'es'
 
-                              ? 'El límite diario y los streaks frenan spam y premian disciplina.'
+                              ? 'Los streaks premian la disciplina.'
 
-                              : 'Daily cap and streaks stop spam and reward discipline.'}
+                              : 'Streaks reward discipline.'}
 
                           </p>
 
@@ -3696,37 +3666,7 @@ export default function EducationXpPage() {
 
 
 
-                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-
-                        <div className={cn('rounded-2xl border border-white/10 bg-[#000c12]/40 p-4')}>
-
-                          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
-
-                            <ShieldCheck className="h-4 w-4 text-cyan-300" />
-
-                            {language === 'pt' ? 'Limite diário' : language === 'es' ? 'Límite diario' : 'Daily cap'}
-
-                          </div>
-
-                          <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>{dailyCap} XP</p>
-
-                          <p className={cn(UI.micro, 'mt-1')}>
-
-                            {language === 'pt'
-
-                              ? 'Depois disso, aprendes na mesma — mas não acumulas XP.'
-
-                              : language === 'es'
-
-                              ? 'Después, sigues aprendiendo — pero no acumulas XP.'
-
-                              : 'After that, you can still learn — XP stops accumulating.'}
-
-                          </p>
-
-                        </div>
-
-
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
 
                         <div className={cn('rounded-2xl border border-white/10 bg-[#000c12]/40 p-4')}>
 

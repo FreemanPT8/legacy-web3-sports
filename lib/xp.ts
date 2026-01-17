@@ -38,10 +38,6 @@ export const XP_THRESHOLDS = {
   NATIONAL_COMPETITION_USERS: 50,
 };
 
-export const DAILY_LIMITS = {
-  COMMENT: { max: 25, xpCap: 25 },
-};
-
 export async function awardXP(
   userId: string,
   action: string,
@@ -100,89 +96,12 @@ export async function awardXP(
     }
 
     if (!skipStreakUpdate && !action.toLowerCase().includes('streak bonus')) {
-      await updateStreak(userId);
+      await updateStreak(userId, true);
     }
 
     return { success: true, newTotal };
   } catch (error) {
     return { success: false, error: 'XP award failed' };
-  }
-}
-
-export async function checkDailyLimit(
-  userId: string,
-  actionType: string,
-): Promise<{ canAward: boolean; remaining: number }> {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-
-    const { data: limit, error } = await db
-      .from('xp_daily_limits')
-      .select('count, xp_earned')
-      .eq('user_id', userId)
-      .eq('action_type', actionType)
-      .eq('date', today)
-      .maybeSingle();
-
-    // Se houver erro inesperado, bloqueamos
-    if (error && (error as any).code !== 'PGRST116') {
-      return { canAward: false, remaining: 0 };
-    }
-
-    const dailyLimit = DAILY_LIMITS[actionType as keyof typeof DAILY_LIMITS];
-    if (!dailyLimit) {
-      return { canAward: true, remaining: 999 };
-    }
-
-    const currentCount = limit?.count || 0;
-    const currentXP = limit?.xp_earned || 0;
-
-    if (currentXP >= dailyLimit.xpCap) {
-      return { canAward: false, remaining: 0 };
-    }
-
-    return {
-      canAward: true,
-      remaining: dailyLimit.xpCap - currentXP,
-    };
-  } catch (error) {
-    return { canAward: false, remaining: 0 };
-  }
-}
-
-export async function updateDailyLimit(
-  userId: string,
-  actionType: string,
-  xpEarned: number,
-): Promise<void> {
-  const today = new Date().toISOString().split('T')[0];
-
-  const { data: existing } = await db
-    .from('xp_daily_limits')
-    .select('count, xp_earned')
-    .eq('user_id', userId)
-    .eq('action_type', actionType)
-    .eq('date', today)
-    .maybeSingle();
-
-  if (existing) {
-    await db
-      .from('xp_daily_limits')
-      .update({
-        count: existing.count + 1,
-        xp_earned: existing.xp_earned + xpEarned,
-      })
-      .eq('user_id', userId)
-      .eq('action_type', actionType)
-      .eq('date', today);
-  } else {
-    await db.from('xp_daily_limits').insert({
-      user_id: userId,
-      action_type: actionType,
-      count: 1,
-      xp_earned: xpEarned,
-      date: today,
-    });
   }
 }
 
@@ -296,6 +215,7 @@ async function hasStreakBonusToday(
 
 export async function updateStreak(
   userId: string,
+  activityHint?: boolean,
 ): Promise<{ newStreak: number; longStreak: number; bonus: number; bonusDays?: number }> {
   try {
     const { data: user, error } = await db
@@ -328,25 +248,30 @@ export async function updateStreak(
     }
 
     const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    const { data: recentTransactions, error: recentTransactionsError } = await db
-      .from('xp_transactions')
-      .select('xp_earned, created_at')
-      .gte('created_at', since.toISOString())
-      .eq('user_id', userId);
+    let effectiveXpToday = activityHint ? 1 : 0;
 
-    if (recentTransactionsError) {
-      console.error('updateStreak failed to load xp_transactions:', recentTransactionsError);
+    if (!activityHint) {
+      const { data: recentTransactions, error: recentTransactionsError } = await db
+        .from('xp_transactions')
+        .select('xp_earned, created_at')
+        .gte('created_at', since.toISOString())
+        .eq('user_id', userId);
+
+      if (recentTransactionsError) {
+        console.error('updateStreak failed to load xp_transactions:', recentTransactionsError);
+      }
+
+      const xpToday =
+        (recentTransactions ?? [])
+          .filter((tx: { created_at?: string | null }) =>
+            tx.created_at ? getTodayCETDate(new Date(tx.created_at)) === today : false,
+          )
+          .map((tx: { xp_earned?: number | null }) => tx.xp_earned ?? 0)
+          .reduce((sum: number, xp: number) => sum + xp, 0) || 0;
+
+      effectiveXpToday = xpToday;
     }
 
-    const xpToday =
-      (recentTransactions ?? [])
-        .filter((tx: { created_at?: string | null }) =>
-          tx.created_at ? getTodayCETDate(new Date(tx.created_at)) === today : false,
-        )
-        .map((tx: { xp_earned?: number | null }) => tx.xp_earned ?? 0)
-        .reduce((sum: number, xp: number) => sum + xp, 0) || 0;
-
-    let effectiveXpToday = xpToday;
     if (effectiveXpToday <= 0) {
       const activityChecks = [
         { table: 'lesson_completions', timeField: 'completed_at' },

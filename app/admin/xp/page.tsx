@@ -57,12 +57,6 @@ type RewardConfig = {
   creator_bonus_pct?: number | null;
 };
 
-type LimitConfig = {
-  action_type: string;
-  xp_earned: number;
-  count: number;
-};
-
 type ThresholdConfig = {
   id: string;
   xp_total: number;
@@ -95,7 +89,6 @@ export default function AdminXpPage() {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [xpConfig, setXpConfig] = useState<{
     rewards: RewardConfig[];
-    limits: LimitConfig[];
     thresholds: ThresholdConfig[];
   } | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
@@ -163,7 +156,6 @@ export default function AdminXpPage() {
       }
       setXpConfig({
         rewards: data.rewards || [],
-        limits: data.limits || [],
         thresholds: data.thresholds || [],
       });
       setConfigError(null);
@@ -310,8 +302,8 @@ export default function AdminXpPage() {
               XP Control Room
             </h1>
             <p className="max-w-3xl text-sm text-slate-100 md:text-base">
-              Controla recompensas, limites diarios e thresholds que movem o XP
-              publico. Todas as alteracoes ficam registadas no sistema.
+              Controla recompensas e thresholds que movem o XP publico. Todas as
+              alteracoes ficam registadas no sistema.
             </p>
             {(statsError || configError) && (
               <p className="text-xs text-rose-400">
@@ -330,7 +322,7 @@ export default function AdminXpPage() {
                     XP Rules
                   </Badge>
                   <CardTitle className="text-sm font-semibold text-[#fdd87c]">
-                    Recompensas, limites e thresholds
+                    Recompensas e thresholds
                   </CardTitle>
                 </div>
                 <CardDescription className="text-xs text-slate-200">
@@ -415,66 +407,6 @@ export default function AdminXpPage() {
                                 });
                               }}
                               placeholder="Bonus criador (%)"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
-                      Limites diarios
-                    </p>
-                    <div className="mt-3 grid gap-4 md:grid-cols-2">
-                      {xpConfig.limits.map((limit, index) => (
-                        <div
-                          key={limit.action_type}
-                          className="rounded-xl border border-white/10 bg-[#021824]/80 p-4 shadow-[0_20px_60px_rgba(3,10,25,0.45)]"
-                        >
-                          <p className="text-sm font-semibold text-white">
-                            {limit.action_type}
-                          </p>
-                          <div className="mt-2 grid gap-2">
-                            <Input
-                              type="number"
-                              value={limit.xp_earned}
-                              className={getInputClass()}
-                              onChange={(event) => {
-                                const value = Number(event.target.value);
-                                setXpConfig((prev) => {
-                                  if (!prev) return prev;
-                                  const next = [...prev.limits];
-                                  next[index] = {
-                                    ...next[index],
-                                    xp_earned: Number.isFinite(value)
-                                      ? Math.trunc(value)
-                                      : 0,
-                                  };
-                                  return { ...prev, limits: next };
-                                });
-                              }}
-                              placeholder="XP diario"
-                            />
-                            <Input
-                              type="number"
-                              value={limit.count}
-                              className={getInputClass()}
-                              onChange={(event) => {
-                                const value = Number(event.target.value);
-                                setXpConfig((prev) => {
-                                  if (!prev) return prev;
-                                  const next = [...prev.limits];
-                                  next[index] = {
-                                    ...next[index],
-                                    count: Number.isFinite(value)
-                                      ? Math.trunc(value)
-                                      : 0,
-                                  };
-                                  return { ...prev, limits: next };
-                                });
-                              }}
-                              placeholder="Maximo de acoes"
                             />
                           </div>
                         </div>

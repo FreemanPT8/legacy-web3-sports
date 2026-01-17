@@ -24,18 +24,16 @@ export async function GET(request: NextRequest) {
     }
 
     const rewards = await db.from('xp_rewards').select('*');
-    const limits = await db.from('xp_daily_limits').select('*');
     const thresholds = await db.from('xp_thresholds').select('*').order('xp_total', { ascending: true });
 
-    if (rewards.error || limits.error || thresholds.error) {
-      console.error('Failed to load xp config', rewards.error || limits.error || thresholds.error);
+    if (rewards.error || thresholds.error) {
+      console.error('Failed to load xp config', rewards.error || thresholds.error);
       return NextResponse.json({ success: false, error: 'Database error' }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
       rewards: rewards.data,
-      limits: limits.data,
       thresholds: thresholds.data,
     });
   } catch (error) {
@@ -54,14 +52,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid body' }, { status: 400 });
     }
 
-    const { rewards, limits, thresholds } = body as {
+    const { rewards, thresholds } = body as {
       rewards?: Array<{ action_type: string; min_xp: number; max_xp: number; creator_bonus_pct?: number }>;
-      limits?: Array<{ action_type: string; xp_earned: number; count: number }>;
       thresholds?: Array<{ id?: string; xp_total: number; feature_name: string; description: string }>;
     };
 
     await db.from('xp_rewards').upsert(rewards || [], { onConflict: 'action_type' });
-    await db.from('xp_daily_limits').upsert(limits || [], { onConflict: 'action_type' });
     if (thresholds?.length) {
       for (const threshold of thresholds) {
         if (threshold.id) {

@@ -6,17 +6,15 @@ export async function GET(request: NextRequest) {
   const db = supabase;
   try {
     const rewardsPromise = db.from('xp_rewards').select('*');
-    const limitsPromise = db.from('xp_daily_limits').select('action_type, xp_earned, count').limit(10);
     const thresholdsPromise = db.from('xp_thresholds').select('*').order('xp_total', { ascending: true });
 
-    const [rewards, limits, thresholds] = await Promise.all([
+    const [rewards, thresholds] = await Promise.all([
       rewardsPromise,
-      limitsPromise,
       thresholdsPromise,
     ]);
 
-    if (rewards.error || limits.error || thresholds.error) {
-      console.error('Failed to load xp metadata', rewards.error || limits.error || thresholds.error);
+    if (rewards.error || thresholds.error) {
+      console.error('Failed to load xp metadata', rewards.error || thresholds.error);
       return NextResponse.json({ success: false, error: 'Failed to load XP metadata' }, { status: 500 });
     }
 
@@ -39,7 +37,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       rewards: rewards.data || [],
-      limits: limits.data || [],
       thresholds: thresholds.data || [],
       streak,
     });
