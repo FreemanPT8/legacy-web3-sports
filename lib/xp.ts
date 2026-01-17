@@ -310,7 +310,34 @@ export async function updateStreak(
         .map((tx: { xp_earned?: number | null }) => tx.xp_earned ?? 0)
         .reduce((sum: number, xp: number) => sum + xp, 0) || 0;
 
-    if (xpToday <= 0) {
+    let effectiveXpToday = xpToday;
+    if (effectiveXpToday <= 0) {
+      const startISO = todayStart.toISOString();
+      const endISO = todayEnd.toISOString();
+      const activityChecks = [
+        { table: 'lesson_completions', timeField: 'completed_at' },
+        { table: 'blog_reads', timeField: 'completed_at' },
+        { table: 'glossary_term_reads', timeField: 'completed_at' },
+      ];
+
+      for (const check of activityChecks) {
+        const { data: rows } = await db
+          .from(check.table)
+          .select('id, xp_earned')
+          .eq('user_id', userId)
+          .gt('xp_earned', 0)
+          .gte(check.timeField, startISO)
+          .lt(check.timeField, endISO)
+          .limit(1);
+
+        if (rows && rows.length > 0) {
+          effectiveXpToday = 1;
+          break;
+        }
+      }
+    }
+
+    if (effectiveXpToday <= 0) {
       return {
         newStreak: user.streak_count ?? 0,
         longStreak: user.streak_long_count ?? 0,
