@@ -273,7 +273,14 @@ export async function GET(request: Request) {
       ])
     );
 
-    const missionsWithProgress = dailyMissions.map(mission => ({
+    const missionsWithProgress = dailyMissions.map((mission: {
+      id: string;
+      type: string;
+      description: string;
+      xp_reward: number;
+      target_count: number;
+      metadata?: Record<string, any> | null;
+    }) => ({
       id: mission.id,
       type: mission.type,
       description: mission.description,
