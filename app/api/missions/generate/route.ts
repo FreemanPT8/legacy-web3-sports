@@ -254,7 +254,7 @@ export async function GET(request: Request) {
     }
 
     if (!userMissions || userMissions.length === 0) {
-      const missionsToCreate = dailyMissions.map(mission => ({
+      const missionsToCreate = dailyMissions.map((mission: { id: string }) => ({
         user_id: userId,
         mission_id: mission.id,
         progress: 0,
