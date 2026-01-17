@@ -60,8 +60,6 @@ import {
 
   Flame,
 
-  ShieldCheck,
-
   Sparkles,
 
   Trophy,
@@ -422,8 +420,6 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     consistencyPoints: [
 
-      'Limite diário global: 369 XP.',
-
       'Streak de 7 dias: 222 XP (XP ganho em 7 dias seguidos).',
 
       'Streak de 30 dias: 1.111 XP (XP ganho em 30 dias seguidos).',
@@ -582,8 +578,6 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     consistencyPoints: [
 
-      'Límite diario global: 369 XP.',
-
       'Racha de 7 días: 222 XP (XP ganado 7 días seguidos).',
 
       'Racha de 30 días: 1.111 XP (XP ganado 30 días seguidos).',
@@ -741,8 +735,6 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
       'Streaks don\'t count presence. They count XP earned. You must sign in and earn XP at least once every day. One day without XP resets the streak.',
 
     consistencyPoints: [
-
-      'Global daily cap: 369 XP.',
 
       '7-day streak: 222 XP (XP earned 7 days in a row).',
 
@@ -3672,36 +3664,6 @@ export default function EducationXpPage() {
 
                           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
 
-                            <Flame className="h-4 w-4 text-cyan-300" />
-
-                            7 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
-
-                          </div>
-
-                          <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>222 XP</p>
-
-                          <p className={cn(UI.micro, 'mt-1')}>
-
-                            {language === 'pt'
-
-                              ? 'XP ganho todos os dias. Sem desculpas.'
-
-                              : language === 'es'
-
-                              ? 'XP ganado cada día. Sin excusas.'
-
-                              : 'XP earned daily. No excuses.'}
-
-                          </p>
-
-                        </div>
-
-
-
-                        <div className={cn('rounded-2xl border border-white/10 bg-[#000c12]/40 p-4')}>
-
-                          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
-
                             <CalendarCheck className="h-4 w-4 text-cyan-300" />
 
                             30 {language === 'pt' ? 'dias' : language === 'es' ? 'días' : 'days'}
@@ -4642,25 +4604,7 @@ export default function EducationXpPage() {
 
 
 
-                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
-
-                    <div className={cn(UI.cardSurface, 'p-4')}>
-
-                      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[#fdd87c]">
-
-                        <ShieldCheck className="h-4 w-4 text-cyan-300" />
-
-                        {language === 'pt' ? 'Limite diário' : language === 'es' ? 'Límite diario' : 'Daily cap'}
-
-                      </div>
-
-                      <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>369 XP</p>
-
-                      <p className={cn(UI.micro, 'mt-1')}>{copy.consistencyPoints[0]}</p>
-
-                    </div>
-
-
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
 
                     <div className={cn(UI.cardSurface, 'p-4')}>
 
@@ -4674,7 +4618,7 @@ export default function EducationXpPage() {
 
                       <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>222 XP</p>
 
-                      <p className={cn(UI.micro, 'mt-1')}>{copy.consistencyPoints[1]}</p>
+                      <p className={cn(UI.micro, 'mt-1')}>{copy.consistencyPoints[0]}</p>
 
                     </div>
 
@@ -4692,7 +4636,7 @@ export default function EducationXpPage() {
 
                       <p className={cn('mt-2 text-3xl font-semibold text-[#5af3ff]')}>1.111 XP</p>
 
-                      <p className={cn(UI.micro, 'mt-1')}>{copy.consistencyPoints[2]}</p>
+                      <p className={cn(UI.micro, 'mt-1')}>{copy.consistencyPoints[1]}</p>
 
                     </div>
 
