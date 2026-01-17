@@ -48,6 +48,7 @@ export async function awardXP(
   xpAmount: number,
   referenceId?: string,
   referenceType?: string,
+  skipStreakUpdate?: boolean,
 ): Promise<{ success: boolean; newTotal?: number; error?: string }> {
   try {
     const { data: user, error: userError } = await db
@@ -96,6 +97,10 @@ export async function awardXP(
 
     if (updateError) {
       return { success: false, error: 'Failed to update XP' };
+    }
+
+    if (!skipStreakUpdate && !action.toLowerCase().includes('streak bonus')) {
+      await updateStreak(userId);
     }
 
     return { success: true, newTotal };
@@ -426,7 +431,7 @@ export async function updateStreak(
       if (!alreadyAwarded) {
         bonus = XP_REWARDS.STREAK_7_DAY;
         bonusDays = 7;
-        await awardXP(userId, '7-day streak bonus', bonus);
+      await awardXP(userId, '7-day streak bonus', bonus, undefined, undefined, true);
       }
       newStreak = 0;
     }
@@ -436,7 +441,7 @@ export async function updateStreak(
       if (!alreadyAwarded) {
         bonus = XP_REWARDS.STREAK_30_DAY;
         bonusDays = 30;
-        await awardXP(userId, '30-day streak bonus', bonus);
+      await awardXP(userId, '30-day streak bonus', bonus, undefined, undefined, true);
       }
       newLongStreak = 0;
     }
