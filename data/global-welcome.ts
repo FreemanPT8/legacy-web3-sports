@@ -32,9 +32,9 @@ const DEFAULT_GLOBAL_WELCOME_COPY: Record<OnboardingPopupLanguage, GlobalWelcome
           'Vai à página “Como Funciona o XP” para entenderes como o progresso desbloqueia conteúdo mais profundo.',
       },
       {
-        title: 'Mensagens privadas (apenas para comprometidos)',
+        title: 'Progresso desbloqueia acesso',
         body:
-          'A partir dos 369 XP, desbloqueias mensagens privadas com o Head ou Moderadores. Isto protege os Heads do ruído e mantém o foco em membros realmente ativos.',
+          'O XP desbloqueia camadas mais profundas da plataforma. Mantemos o foco em membros realmente ativos.',
       },
       {
         title: 'Pop-ups são comunicação oficial',
@@ -82,9 +82,9 @@ const DEFAULT_GLOBAL_WELCOME_COPY: Record<OnboardingPopupLanguage, GlobalWelcome
         body: 'Go to the “How XP Works” page to learn how progression unlocks deeper content.',
       },
       {
-        title: 'Private messages (for committed members only)',
+        title: 'Progress unlocks access',
         body:
-          'At 369 XP, you unlock private comments in lessons and blog posts plus private messages with the Head or Moderators. This protects Heads from noise and keeps focus on active members.',
+          'XP unlocks deeper layers of the platform. We keep the focus on active members.',
       },
       {
         title: 'Pop-ups are official communication',
@@ -132,9 +132,9 @@ const DEFAULT_GLOBAL_WELCOME_COPY: Record<OnboardingPopupLanguage, GlobalWelcome
         body: 'Ve a la página “Cómo Funciona el XP” para ver cómo el progreso desbloquea contenido más profundo.',
       },
       {
-        title: 'Mensajes privados (solo para comprometidos)',
+        title: 'El progreso desbloquea acceso',
         body:
-          'A partir de 369 XP, desbloqueas comentarios en lecciones y posts y mensajes privados con el Head o Moderadores. Esto protege a los Heads del ruido y mantiene el foco en miembros activos.',
+          'El XP desbloquea capas mas profundas de la plataforma. Mantenemos el foco en miembros activos.',
       },
       {
         title: 'Los pop-ups son comunicación oficial',
