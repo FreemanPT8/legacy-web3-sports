@@ -540,6 +540,8 @@ function InboxList({
         return t('houses.private.history.read');
       case 'reply':
         return t('houses.private.history.reply');
+      case 'broadcast':
+        return t('houses.private.history.broadcast');
       case 'archive':
         return t('houses.private.history.archive');
       case 'unarchive':

@@ -7,6 +7,7 @@ import useSWR, { useSWRConfig } from 'swr';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -48,6 +49,12 @@ export default function AdminHouseMessagesPage() {
   const [replyDraft, setReplyDraft] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [broadcastHouse, setBroadcastHouse] = useState('');
+  const [broadcastSubject, setBroadcastSubject] = useState('');
+  const [broadcastBody, setBroadcastBody] = useState('');
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastError, setBroadcastError] = useState<string | null>(null);
+  const [broadcastSuccess, setBroadcastSuccess] = useState<string | null>(null);
   const [markingReadId, setMarkingReadId] = useState<string | null>(null);
   const [actingOnId, setActingOnId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
@@ -121,6 +128,11 @@ export default function AdminHouseMessagesPage() {
       });
   }, [hasPurgedSeeded, isLoading, messages, refreshMessages]);
 
+  useEffect(() => {
+    if (broadcastHouse || houses.length !== 1) return;
+    setBroadcastHouse(houses[0].houseKey);
+  }, [broadcastHouse, houses]);
+
   const formatDateTime = (value: string) =>
     new Date(value).toLocaleString(
       language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-US',
@@ -152,6 +164,8 @@ export default function AdminHouseMessagesPage() {
         return t('admin.houses.messages.history.read');
       case 'reply':
         return t('admin.houses.messages.history.reply');
+      case 'broadcast':
+        return t('admin.houses.messages.history.broadcast');
       case 'archive':
         return t('admin.houses.messages.history.archive');
       case 'unarchive':
@@ -212,6 +226,53 @@ export default function AdminHouseMessagesPage() {
       setReplyError(t('admin.houses.messages.replyError'));
     } finally {
       setSendingReply(false);
+    }
+  };
+
+  const handleSendBroadcast = async () => {
+    setBroadcastError(null);
+    setBroadcastSuccess(null);
+
+    if (!broadcastHouse) {
+      setBroadcastError(t('admin.houses.messages.broadcast.houseRequired'));
+      return;
+    }
+    if (!broadcastBody.trim()) {
+      setBroadcastError(t('admin.houses.messages.broadcast.bodyRequired'));
+      return;
+    }
+
+    setBroadcastSending(true);
+    try {
+      const token = getToken();
+      const response = await fetch('/api/admin/houses/messages/broadcast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          houseKey: broadcastHouse,
+          subject: broadcastSubject.trim(),
+          body: broadcastBody.trim(),
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to send broadcast.');
+      }
+      const count = Number(data?.count ?? 0);
+      setBroadcastBody('');
+      setBroadcastSubject('');
+      setBroadcastSuccess(
+        t('admin.houses.messages.broadcast.success').replace('{count}', count.toString()),
+      );
+      refreshMessages();
+    } catch (error) {
+      console.error('[admin house messages] broadcast failed', error);
+      setBroadcastError(t('admin.houses.messages.broadcast.error'));
+    } finally {
+      setBroadcastSending(false);
     }
   };
 
@@ -308,6 +369,76 @@ export default function AdminHouseMessagesPage() {
           <Button variant="outline">{t('admin.houses.backToList')}</Button>
         </Link>
       </div>
+
+      <section>
+        <Card className="border-white/10 bg-[#03131d]/80">
+          <CardHeader>
+            <CardTitle className="text-lg">{t('admin.houses.messages.broadcast.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-slate-300">
+              {t('admin.houses.messages.broadcast.description')}
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <label className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                  {t('admin.houses.messages.broadcast.houseLabel')}
+                </label>
+                <Select
+                  value={broadcastHouse}
+                  onValueChange={(value) => setBroadcastHouse(value)}
+                >
+                  <SelectTrigger className="w-full rounded-xl border border-white/10 bg-[#020b16] text-white">
+                    <SelectValue placeholder={t('admin.houses.messages.broadcast.housePlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#02121c] text-white">
+                    {houses.map((house) => (
+                      <SelectItem key={house.houseKey} value={house.houseKey}>
+                        {house.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                  {t('admin.houses.messages.broadcast.subjectLabel')}
+                </label>
+                <Input
+                  placeholder={t('admin.houses.messages.broadcast.subjectPlaceholder')}
+                  value={broadcastSubject}
+                  onChange={(event) => setBroadcastSubject(event.target.value)}
+                  className="bg-[#020b16] border-white/10 text-white"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                {t('admin.houses.messages.broadcast.messageLabel')}
+              </label>
+              <Textarea
+                placeholder={t('admin.houses.messages.broadcast.messagePlaceholder')}
+                value={broadcastBody}
+                onChange={(event) => setBroadcastBody(event.target.value)}
+                className="min-h-[120px] bg-[#020b16] border-white/10 text-white"
+              />
+            </div>
+            {broadcastError ? (
+              <p className="text-xs text-rose-200">{broadcastError}</p>
+            ) : null}
+            {broadcastSuccess ? (
+              <p className="text-xs text-emerald-200">{broadcastSuccess}</p>
+            ) : null}
+            <div className="flex items-center justify-end">
+              <Button onClick={handleSendBroadcast} disabled={broadcastSending || !houses.length}>
+                {broadcastSending
+                  ? t('admin.houses.messages.broadcast.sending')
+                  : t('admin.houses.messages.broadcast.send')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       <section>
         <Card className="border-white/10 bg-[#03131d]/80">

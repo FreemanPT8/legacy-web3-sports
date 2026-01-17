@@ -22,6 +22,7 @@
 - Responder a uma mensagem e confirmar que gera historico de resposta;
 - Arquivar/eliminar e confirmar que aparece no historico (Archivada/Eliminada por).
 - Verificar que `Total messages` e botao `Refresh inbox` funcionam.
+- Enviar mensagem para todos os membros da House (broadcast) e confirmar que cada membro recebe na inbox e gera notificacao.
 ### 4. Página pública de Houses
 - Navegar para `/sports/houses` em português, inglês e espanhol;
 - Verificar a secção de filtros: alterar estado, desporto, país e ativar o toggle de proximidade (detecta o país do browser);
