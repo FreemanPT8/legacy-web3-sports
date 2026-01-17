@@ -175,7 +175,10 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
       new Set(
         (lessonCompletions.data ?? [])
           .map((row: any) => row.lesson_id as string | null | undefined)
-          .filter((value): value is string => typeof value === 'string' && value.length > 0),
+          .filter(
+            (value: string | null | undefined): value is string =>
+              typeof value === 'string' && value.length > 0,
+          ),
       ),
     );
     const courseIds = Array.from(new Set((courseCompletions.data ?? []).map((row: any) => row.course_id).filter(Boolean)));
