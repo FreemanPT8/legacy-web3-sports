@@ -10,7 +10,6 @@ import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { HouseProfilePayload } from '@/lib/houses/profile';
 import { HouseMembersList } from './HouseMembersList';
-import { ContentComments } from '@/components/comments/ContentComments';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -878,19 +877,6 @@ export function PrivateArea({
               ) : (
                 <p className="text-white/70">{t('houses.private.officialMessages.empty')}</p>
               )}
-            </CardContent>
-          </Card>
-          <Card className="border-white/10 bg-[#03131d]/90 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg text-white">{t('houses.private.section.comments')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ContentComments
-                contentId={houseId}
-                contentType="house"
-                houseId={houseId}
-                title={t('houses.private.commentsTitle')}
-              />
             </CardContent>
           </Card>
         </div>
