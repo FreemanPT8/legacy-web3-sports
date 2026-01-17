@@ -31,12 +31,6 @@ export async function GET(
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    const { count: commentsAuthored } = await supabase
-      .from('content_comments')
-      .select('*', { count: 'exact', head: true })
-      .eq('author_id', user.id)
-      .is('deleted_at', null);
-
     const { data: allUsers } = await supabase
       .from('users')
       .select('id, xp_total')
@@ -73,7 +67,6 @@ export async function GET(
         stats: {
           lessonsCompleted: lessonsCount || 0,
           articlesRead: articlesCount || 0,
-          commentsAuthored: commentsAuthored || 0,
           rank,
         },
         recentActivity,
@@ -94,7 +87,6 @@ function getActivityDescription(reason: string): string {
     profile_bio: 'Added profile bio',
     profile_role: 'Set sports role',
     profile_nft: 'Added DAO1 DID NFT',
-    comment_weekly_top: 'Won Comment of the Week',
     daily_mission: 'Completed daily mission',
     streak_bonus: 'Earned streak bonus',
   };

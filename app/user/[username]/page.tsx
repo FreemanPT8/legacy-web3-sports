@@ -15,7 +15,6 @@ import {
   Award,
   Trophy,
   BookOpen,
-  MessageSquare,
   Calendar,
   Zap
 } from 'lucide-react';
@@ -33,7 +32,6 @@ interface UserProfile {
   stats: {
     lessonsCompleted: number;
     articlesRead: number;
-    commentsAuthored: number;
     rank: number;
   };
   recentActivity: Array<{
@@ -210,20 +208,6 @@ export default function UserProfilePage() {
               <Card className="bg-card border border-border">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Comments Shared
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-sky-500" />
-                    <span className="text-2xl font-bold">{profile.stats.commentsAuthored}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-card border border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
                     Active Streak
                   </CardTitle>
                 </CardHeader>
@@ -305,23 +289,9 @@ export default function UserProfilePage() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Community Engagement</CardTitle>
+                      <CardTitle>Engagement</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Private Comments Shared</span>
-                        <span className="font-bold text-primary">
-                          {profile.stats.commentsAuthored}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Comment Access</span>
-                        <span className="font-bold text-primary">
-                          {profile.xp_total >= 369
-                            ? 'Unlocked'
-                            : `Locked (${Math.max(369 - profile.xp_total, 0)} XP left)`}
-                        </span>
-                      </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Active Streak</span>
                         <span className="font-bold text-primary">

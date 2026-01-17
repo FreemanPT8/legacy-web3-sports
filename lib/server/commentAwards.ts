@@ -5,6 +5,7 @@ const db = supabaseAdmin ?? supabase;
 
 const WEEKLY_COMMENT_BADGE = 'comment-weekly-top';
 const WEEKLY_COMMENT_XP = 88;
+const COMMENT_AWARDS_ENABLED = false;
 
 type CommentRow = {
   id: string;
@@ -60,6 +61,14 @@ function buildCommentLink(row: CommentRow): string | null {
 }
 
 export async function runWeeklyCommentAward(referenceDate?: Date): Promise<CommentAwardResult> {
+  if (!COMMENT_AWARDS_ENABLED) {
+    return {
+      success: false,
+      error: 'Weekly comment awards are disabled.',
+      reason: 'DISABLED',
+    };
+  }
+
   const targetDate = referenceDate ?? new Date();
   const { weekStart, weekEnd } = getWeekRange(targetDate);
   const weekStartDate = formatDateOnly(weekStart);

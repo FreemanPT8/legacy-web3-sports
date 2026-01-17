@@ -31,15 +31,6 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    const {
-      data: commentRows,
-      count: commentsAuthored,
-    } = await supabase
-      .from('content_comments')
-      .select('positive_count, fire_count', { count: 'exact' })
-      .eq('author_id', user.id)
-      .is('deleted_at', null);
-
     const { data: allUsers } = await supabase
       .from('users')
       .select('id, xp_total')
@@ -65,8 +56,6 @@ export async function GET(request: NextRequest) {
       const reason = tx.reason || '';
       if (reason === 'lesson_complete') xpBreakdown.lessons += tx.amount;
       else if (reason === 'article_read') xpBreakdown.articles += tx.amount;
-      else if (reason.includes('comment'))
-        xpBreakdown.community += tx.amount;
       else if (reason === 'daily_mission') xpBreakdown.missions += tx.amount;
       else if (reason === 'streak_bonus') xpBreakdown.streaks += tx.amount;
       else if (reason.includes('profile')) xpBreakdown.profile += tx.amount;
@@ -89,23 +78,8 @@ export async function GET(request: NextRequest) {
         xp: tx.amount,
       }));
 
-    type CommentAggregate = {
-      positive_count: number | null;
-      fire_count: number | null;
-    };
-
-    const commentAggregates = (commentRows || []) as CommentAggregate[];
-
-    const reactionTotals = commentAggregates.reduce(
-      (acc, row) => ({
-        positive: acc.positive + (row.positive_count ?? 0),
-        fire: acc.fire + (row.fire_count ?? 0),
-      }),
-      { positive: 0, fire: 0 }
-    );
-
-    const reactionPoints =
-      reactionTotals.positive + reactionTotals.fire * 2;
+    const reactionTotals = { positive: 0, fire: 0 };
+    const reactionPoints = 0;
 
     return NextResponse.json({
       success: true,
@@ -126,11 +100,11 @@ export async function GET(request: NextRequest) {
           totalReadingTime: (articlesRead || 0) * 5,
         },
         community: {
-          commentsAuthored: commentsAuthored || 0,
+          commentsAuthored: 0,
           positiveReactions: reactionTotals.positive,
           fireReactions: reactionTotals.fire,
           reactionPoints,
-          totalContributions: commentsAuthored || 0,
+          totalContributions: 0,
         },
         xpBreakdown,
         recentAchievements,
@@ -150,7 +124,6 @@ function getAchievementTitle(reason: string, amount: number): string {
     article_read: 'Avid Reader',
     streak_bonus: 'Streak Champion',
     daily_mission: 'Mission Complete',
-    comment_weekly_top: 'Comment of the Week',
     profile_bio: 'Profile Complete',
   };
 
@@ -163,7 +136,6 @@ function getAchievementDescription(reason: string): string {
     article_read: 'Read an article',
     streak_bonus: 'Maintained a 7-day streak',
     daily_mission: 'Completed a daily mission',
-    comment_weekly_top: 'Won Comment of the Week',
     profile_bio: 'Added profile bio',
   };
 
