@@ -1009,7 +1009,11 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
     '';
 
   const modulesArray = Array.isArray(course.modules) ? course.modules : [];
-  const lessonsCountFallback = modulesArray.reduce(
+  const topicsArray = Array.isArray(course.curriculum?.topics)
+    ? course.curriculum.topics
+    : [];
+  const modulesList = modulesArray.length > 0 ? modulesArray : topicsArray;
+  const lessonsCountFallback = modulesList.reduce(
     (acc: number, module: any) =>
       acc + (Array.isArray(module.lessons) ? module.lessons.length : 0),
     0,
@@ -1067,7 +1071,7 @@ function transformCourseRecord(course: any, language: Language): LevelCourseSumm
     modulesCount:
       typeof course.total_modules === 'number'
         ? course.total_modules
-        : modulesArray.length,
+        : modulesList.length,
     lessonsCount:
       typeof course.total_lessons === 'number'
         ? course.total_lessons

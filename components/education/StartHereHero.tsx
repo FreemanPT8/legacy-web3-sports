@@ -384,7 +384,11 @@ export function StartHereHero({ summary, state, preferredLanguage }: StartHereHe
         });
         const data = await response.json();
         if (response.ok && data?.success && data?.course) {
-          const modules = Array.isArray(data.course.modules) ? data.course.modules : [];
+          const modulesArray = Array.isArray(data.course.modules) ? data.course.modules : [];
+          const topicsArray = Array.isArray(data.course.curriculum?.topics)
+            ? data.course.curriculum.topics
+            : [];
+          const modules = modulesArray.length > 0 ? modulesArray : topicsArray;
           const lessons = modules.reduce((acc: number, mod: any) => {
             if (!Array.isArray(mod?.lessons)) return acc;
             return acc + mod.lessons.length;
