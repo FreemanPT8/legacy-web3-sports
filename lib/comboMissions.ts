@@ -92,11 +92,15 @@ type DailyMissionSummary = {
 async function ensureDailyMissionsForDate(
   comboDate: string,
 ): Promise<Map<string, DailyMissionSummary>> {
-  const { data: existing } = await db
+  const { data: existing, error: existingError } = await db
     .from('daily_missions')
     .select('id, type, xp_reward')
     .eq('date', comboDate)
     .eq('is_active', true);
+
+  if (existingError) {
+    logger.warn?.('combo missions load error', existingError);
+  }
 
   const existingMap = new Map<string, DailyMissionSummary>(
     (existing || []).map((row: DailyMissionSummary) => [row.type, row]),
@@ -107,24 +111,52 @@ async function ensureDailyMissionsForDate(
   );
 
   if (missing.length > 0) {
-    const { data: inserted } = await db
+    const missionsPayload = missing.map((combo) => ({
+      date: comboDate,
+      type: combo.missionType,
+      description: combo.label,
+      xp_reward: combo.xp,
+      target_count: 1,
+      is_active: true,
+      metadata: {
+        combo: combo.key,
+        requirements: combo.requirements,
+        xp: combo.xp,
+      },
+    }));
+
+    let inserted: DailyMissionSummary[] | null = null;
+    const { data: insertedData, error: insertError } = await db
       .from('daily_missions')
-      .insert(
-        missing.map((combo) => ({
+      .insert(missionsPayload)
+      .select('id, type, xp_reward');
+
+    if (insertError) {
+      const message = (insertError as any)?.message || '';
+      if (message.toLowerCase().includes('metadata')) {
+        const fallbackPayload = missing.map((combo) => ({
           date: comboDate,
           type: combo.missionType,
           description: combo.label,
           xp_reward: combo.xp,
           target_count: 1,
           is_active: true,
-          metadata: {
-            combo: combo.key,
-            requirements: combo.requirements,
-            xp: combo.xp,
-          },
-        })),
-      )
-      .select('id, type, xp_reward');
+        }));
+        const { data: fallbackData, error: fallbackError } = await db
+          .from('daily_missions')
+          .insert(fallbackPayload)
+          .select('id, type, xp_reward');
+        if (fallbackError) {
+          logger.warn?.('combo missions insert fallback error', fallbackError);
+        } else {
+          inserted = fallbackData as DailyMissionSummary[] | null;
+        }
+      } else {
+        logger.warn?.('combo missions insert error', insertError);
+      }
+    } else {
+      inserted = insertedData as DailyMissionSummary[] | null;
+    }
 
     (inserted || []).forEach((row: DailyMissionSummary) => {
       existingMap.set(row.type, row);
