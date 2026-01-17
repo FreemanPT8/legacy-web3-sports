@@ -98,7 +98,7 @@ async function ensureDailyMissionsForDate(
     .eq('date', comboDate)
     .eq('is_active', true);
 
-  const existingMap = new Map(
+  const existingMap = new Map<string, DailyMissionSummary>(
     (existing || []).map((row: DailyMissionSummary) => [row.type, row]),
   );
 
