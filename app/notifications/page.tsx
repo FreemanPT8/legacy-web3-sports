@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Bell,
   Award,
-  MessageSquare,
   BookOpen,
   Trophy,
   Check,
@@ -29,7 +28,7 @@ import {
 
 interface Notification {
   id: string;
-  type: 'achievement' | 'comment' | 'course' | 'xp' | 'system';
+  type: 'achievement' | 'course' | 'xp' | 'system';
   title: string;
   message: string;
   read: boolean;
@@ -129,8 +128,6 @@ export default function NotificationsPage() {
         return <Trophy className="h-5 w-5 text-yellow-500" />;
       case 'xp':
         return <Award className="h-5 w-5 text-primary" />;
-      case 'comment':
-        return <MessageSquare className="h-5 w-5 text-emerald-400" />;
       case 'course':
         return <BookOpen className="h-5 w-5 text-fuchsia-400" />;
       default:
