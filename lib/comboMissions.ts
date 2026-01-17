@@ -277,6 +277,29 @@ function meetsRequirements(
   );
 }
 
+async function hasComboRewardForToday(
+  userId: string,
+  comboLabel: string,
+  comboDate: string,
+): Promise<boolean> {
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await db
+    .from('xp_transactions')
+    .select('id, created_at')
+    .eq('user_id', userId)
+    .eq('action', `Daily combo: ${comboLabel}`)
+    .gte('created_at', since);
+
+  if (error) {
+    logger.warn?.('combo reward lookup error', error);
+    return false;
+  }
+
+  return (data || []).some((row: any) =>
+    row?.created_at ? getTodayCETDate(new Date(row.created_at)) === comboDate : false,
+  );
+}
+
 async function getActivityCountsForDate(
   userId: string,
   comboDate: string,
@@ -407,10 +430,31 @@ export async function getComboProgressForUser(userId: string): Promise<ComboProg
   for (const combo of COMBO_DEFINITIONS) {
     if (!meetsRequirements(combo, mergedCounts)) continue;
     const missionId = missionsMap.get(combo.missionType)?.id;
-    if (!missionId) continue;
-    const mission = await ensureUserMission(userId, missionId);
-    if (mission?.completed) continue;
-    await completeMission(userId, missionId, combo);
+    if (missionId) {
+      const mission = await ensureUserMission(userId, missionId);
+      if (mission?.completed) {
+        mergedCompletions[combo.key] = true;
+        continue;
+      }
+      await completeMission(userId, missionId, combo);
+      mergedCompletions[combo.key] = true;
+      continue;
+    }
+
+    const alreadyRewarded = await hasComboRewardForToday(
+      userId,
+      combo.label,
+      comboDate,
+    );
+    if (!alreadyRewarded) {
+      await awardXP(
+        userId,
+        `Daily combo: ${combo.label}`,
+        combo.xp,
+        undefined,
+        'daily_combo',
+      );
+    }
     mergedCompletions[combo.key] = true;
   }
 
