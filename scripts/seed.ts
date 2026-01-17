@@ -70,88 +70,85 @@ async function seed() {
       },
       order: 1,
       xp_threshold: 0,
-      published: true
+      published: true,
+      curriculum: {
+        metadata: {
+          xpReward: 0,
+          xpThreshold: 0,
+          level: 'beginner'
+        },
+        topics: [
+          {
+            id: 'topic-blockchain-basics',
+            title: {
+              en: 'Blockchain Basics',
+              pt: 'Fundamentos do Blockchain',
+              es: 'Fundamentos de Blockchain',
+              fr: 'Bases de la Blockchain',
+              it: 'Basi della Blockchain',
+              de: 'Blockchain-Grundlagen'
+            },
+            description: {
+              en: 'Understanding what blockchain is and how it works',
+              pt: 'Compreendendo o que Ç¸ blockchain e como funciona',
+              es: 'Comprender quÇ¸ es blockchain y cÇümo funciona',
+              fr: 'Comprendre ce qu\'est la blockchain et comment elle fonctionne',
+              it: 'Capire cos\'Çù la blockchain e come funziona',
+              de: 'Verstehen, was Blockchain ist und wie es funktioniert'
+            },
+            lessons: [
+              {
+                id: 'lesson-what-is-blockchain',
+                title: {
+                  en: 'What is Blockchain?',
+                  pt: 'O que Ç¸ Blockchain?',
+                  es: '¶¨QuÇ¸ es Blockchain?',
+                  fr: 'Qu\'est-ce que la Blockchain?',
+                  it: 'Cos\'Çù la Blockchain?',
+                  de: 'Was ist Blockchain?'
+                },
+                content: {
+                  en: 'Blockchain is a distributed ledger technology that enables secure, transparent, and immutable record-keeping...',
+                  pt: 'Blockchain Ç¸ uma tecnologia de contabilidade distribuÇðda que permite manutenÇõÇœo de registros segura, transparente e imutÇ­vel...',
+                  es: 'Blockchain es una tecnologÇða de contabilidad distribuida que permite el mantenimiento de registros seguro, transparente e inmutable...',
+                  fr: 'La blockchain est une technologie de registre distribuÇ¸ qui permet une tenue de registres sÇ¸curisÇ¸e, transparente et immuable...',
+                  it: 'La blockchain Çù una tecnologia di registro distribuito che consente una tenuta dei registri sicura, trasparente e immutabile...',
+                  de: 'Blockchain ist eine verteilte Ledger-Technologie, die sichere, transparente und unverÇÏnderliche Aufzeichnungen ermÇôglicht...'
+                },
+                xp_reward: 20,
+                xp_required: 0,
+                estimated_time: 10
+              },
+              {
+                id: 'lesson-how-blockchain-works',
+                title: {
+                  en: 'How Blockchain Works',
+                  pt: 'Como Funciona o Blockchain',
+                  es: 'CÇümo Funciona Blockchain',
+                  fr: 'Comment Fonctionne la Blockchain',
+                  it: 'Come Funziona la Blockchain',
+                  de: 'Wie Blockchain Funktioniert'
+                },
+                content: {
+                  en: 'Blockchain works by creating blocks of data that are linked together in a chain...',
+                  pt: 'Blockchain funciona criando blocos de dados que sÇœo vinculados em uma cadeia...',
+                  es: 'Blockchain funciona creando bloques de datos que estÇ­n vinculados en una cadena...',
+                  fr: 'La blockchain fonctionne en crÇ¸ant des blocs de donnÇ¸es qui sont liÇ¸s ensemble dans une chaÇ©ne...',
+                  it: 'La blockchain funziona creando blocchi di dati che sono collegati insieme in una catena...',
+                  de: 'Blockchain funktioniert durch die Erstellung von DatenblÇôcken, die in einer Kette miteinander verbunden sind...'
+                },
+                xp_reward: 25,
+                xp_required: 0,
+                estimated_time: 15
+              }
+            ],
+            quizzes: []
+          }
+        ]
+      }
     })
     .select()
     .single();
-
-  if (course1) {
-    const { data: module1 } = await supabase
-      .from('modules')
-      .insert({
-        course_id: course1.id,
-        title: {
-          en: 'Blockchain Basics',
-          pt: 'Fundamentos do Blockchain',
-          es: 'Fundamentos de Blockchain',
-          fr: 'Bases de la Blockchain',
-          it: 'Basi della Blockchain',
-          de: 'Blockchain-Grundlagen'
-        },
-        description: {
-          en: 'Understanding what blockchain is and how it works',
-          pt: 'Compreendendo o que é blockchain e como funciona',
-          es: 'Comprender qué es blockchain y cómo funciona',
-          fr: 'Comprendre ce qu\'est la blockchain et comment elle fonctionne',
-          it: 'Capire cos\'è la blockchain e come funziona',
-          de: 'Verstehen, was Blockchain ist und wie es funktioniert'
-        },
-        order: 1
-      })
-      .select()
-      .single();
-
-    if (module1) {
-      await supabase.from('lessons').insert([
-        {
-          module_id: module1.id,
-          title: {
-            en: 'What is Blockchain?',
-            pt: 'O que é Blockchain?',
-            es: '¿Qué es Blockchain?',
-            fr: 'Qu\'est-ce que la Blockchain?',
-            it: 'Cos\'è la Blockchain?',
-            de: 'Was ist Blockchain?'
-          },
-          content: {
-            en: 'Blockchain is a distributed ledger technology that enables secure, transparent, and immutable record-keeping...',
-            pt: 'Blockchain é uma tecnologia de contabilidade distribuída que permite manutenção de registros segura, transparente e imutável...',
-            es: 'Blockchain es una tecnología de contabilidad distribuida que permite el mantenimiento de registros seguro, transparente e inmutable...',
-            fr: 'La blockchain est une technologie de registre distribué qui permet une tenue de registres sécurisée, transparente et immuable...',
-            it: 'La blockchain è una tecnologia di registro distribuito che consente una tenuta dei registri sicura, trasparente e immutabile...',
-            de: 'Blockchain ist eine verteilte Ledger-Technologie, die sichere, transparente und unveränderliche Aufzeichnungen ermöglicht...'
-          },
-          xp_reward: 20,
-          xp_threshold: 0,
-          order: 1,
-          estimated_time: 10
-        },
-        {
-          module_id: module1.id,
-          title: {
-            en: 'How Blockchain Works',
-            pt: 'Como Funciona o Blockchain',
-            es: 'Cómo Funciona Blockchain',
-            fr: 'Comment Fonctionne la Blockchain',
-            it: 'Come Funziona la Blockchain',
-            de: 'Wie Blockchain Funktioniert'
-          },
-          content: {
-            en: 'Blockchain works by creating blocks of data that are linked together in a chain...',
-            pt: 'Blockchain funciona criando blocos de dados que são vinculados em uma cadeia...',
-            es: 'Blockchain funciona creando bloques de datos que están vinculados en una cadena...',
-            fr: 'La blockchain fonctionne en créant des blocs de données qui sont liés ensemble dans une chaîne...',
-            it: 'La blockchain funziona creando blocchi di dati che sono collegati insieme in una catena...',
-            de: 'Blockchain funktioniert durch die Erstellung von Datenblöcken, die in einer Kette miteinander verbunden sind...'
-          },
-          xp_reward: 25,
-          xp_threshold: 0,
-          order: 2,
-          estimated_time: 15
-        }
-      ]);
-    }
-  }
 
   console.log('✅ Created course: Introduction to Blockchain\n');
 

@@ -71,6 +71,7 @@ type Course = {
       academyLevelSlug?: string | null;
       xpThreshold?: number | null;
     };
+    topics?: Module[];
   };
   author_id?: string | null;
   author_name?: string | null;
@@ -787,14 +788,23 @@ export default function CoursesPage() {
                       const title = getMultilingualContent(course.title, language);
                       const description = stripHtml(getMultilingualContent(course.description, language));
 
-                      const modulesArray: Module[] = Array.isArray(course.modules) ? (course.modules as Module[]) : [];
-                      const totalModules = course.total_modules ?? modulesArray.length;
+                      const modulesArray: Module[] = Array.isArray(course.modules)
+                        ? (course.modules as Module[])
+                        : [];
+                      const topicsArray: Module[] = Array.isArray(course.curriculum?.topics)
+                        ? (course.curriculum?.topics as Module[])
+                        : [];
+                      const modulesList = modulesArray.length > 0 ? modulesArray : topicsArray;
+                      const totalModules = course.total_modules ?? modulesList.length;
 
                       const totalLessons =
                         course.total_lessons ??
-                        modulesArray.reduce((acc, m) => acc + (Array.isArray(m.lessons) ? m.lessons.length : 0), 0);
+                        modulesList.reduce(
+                          (acc, m) => acc + (Array.isArray(m.lessons) ? m.lessons.length : 0),
+                          0,
+                        );
 
-                      const totalXP = formatTotalXP(course, modulesArray);
+                      const totalXP = formatTotalXP(course, modulesList);
                       const completionsCount =
                         course.completions_count ??
                         (course as any)?.completionsCount ??
