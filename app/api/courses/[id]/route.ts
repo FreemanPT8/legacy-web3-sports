@@ -115,27 +115,6 @@ export async function GET(
 
     const courseRecordId = rawCourse.id;
 
-    const { data: legacyModules, error: legacyModulesError } = await db
-      .from('modules')
-      .select('xp_reward')
-      .eq('course_id', courseRecordId);
-
-    if (legacyModulesError) {
-      console.error(
-        'Error fetching legacy module rewards for course detail:',
-        legacyModulesError,
-      );
-    }
-
-    const legacyModuleBonus = (legacyModules || []).reduce(
-      (sum: number, moduleRow: any) =>
-        sum +
-        (typeof moduleRow?.xp_reward === 'number'
-          ? moduleRow.xp_reward
-          : 0),
-      0,
-    );
-
     // 2) Curriculum (tópicos -> lessons)
     const curriculumTopics: any[] = Array.isArray(
       rawCourse.curriculum?.topics,
@@ -434,7 +413,6 @@ export async function GET(
     const totalXP =
       lessonsXP +
       moduleBonusesFromCurriculum +
-      legacyModuleBonus +
       courseCompletionBonus;
 
     const courseXpDistributed = normalizedModules.reduce(

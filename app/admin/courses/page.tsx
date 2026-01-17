@@ -62,7 +62,6 @@ type Course = {
   author_name?: string | null;
   xp_total_distributed?: number | null;
   xp_creator_distributed?: number | null;
-  modules?: any[];
   xp_threshold?: number | null;
   xpThreshold?: number | null;
 };
@@ -113,19 +112,6 @@ const getCurriculumSnapshot = (course: Course): CurriculumSnapshot => {
     lessons,
     quizzes,
   };
-};
-
-const getLegacyModuleSnapshot = (course: Course): {
-  modules: number;
-  lessons: number;
-} => {
-  const modules = Array.isArray(course.modules) ? course.modules : [];
-  const lessons = modules.reduce(
-    (sum: number, module: any) =>
-      sum + (Array.isArray(module?.lessons) ? module.lessons.length : 0),
-    0,
-  );
-  return { modules: modules.length, lessons };
 };
 
 type PermissionsResponse = {
@@ -247,51 +233,11 @@ const buildStatsFromTopics = (topics: any[], course: Course) => {
   };
 };
 
-const buildStatsFromLegacyModules = (modules: any[], course: Course) => {
-  const lessonsCount = modules.reduce(
-    (acc, module) =>
-      acc + (Array.isArray(module?.lessons) ? module.lessons.length : 0),
-    0,
-  );
-
-  const lessonsXP = modules.reduce((acc, module) => {
-    if (!Array.isArray(module?.lessons)) return acc;
-    return (
-      acc +
-      module.lessons.reduce(
-        (sum: number, lesson: any) => sum + getLessonReward(lesson),
-        0,
-      )
-    );
-  }, 0);
-
-  const moduleBonus = modules.reduce(
-    (acc, module) => acc + getModuleBonus(module),
-    0,
-  );
-
-  const totalXP =
-    lessonsXP + moduleBonus + getCourseCompletionBonus(course);
-
-  return {
-    totalModules: modules.length,
-    totalLessons: lessonsCount,
-    totalXP,
-  };
-};
-
 const getCourseStats = (course: Course) => {
   const curriculumTopics = Array.isArray(course?.curriculum?.topics)
     ? course.curriculum?.topics || []
     : [];
-  if (curriculumTopics.length > 0) {
-    return buildStatsFromTopics(curriculumTopics, course);
-  }
-
-  const legacyModules = Array.isArray(course?.modules)
-    ? course.modules || []
-    : [];
-  return buildStatsFromLegacyModules(legacyModules, course);
+  return buildStatsFromTopics(curriculumTopics, course);
 };
 
 
@@ -573,9 +519,8 @@ export default function CoursesManagementPage() {
   const totalSnapshot = courses.reduce(
     (acc, course) => {
       const curriculum = getCurriculumSnapshot(course);
-      const legacy = getLegacyModuleSnapshot(course);
-      const topics = curriculum.topics || legacy.modules;
-      const lessons = curriculum.lessons || legacy.lessons;
+      const topics = curriculum.topics;
+      const lessons = curriculum.lessons;
       return {
         topics: acc.topics + topics,
         lessons: acc.lessons + lessons,
@@ -815,8 +760,8 @@ export default function CoursesManagementPage() {
 
             <Card className="border border-white/10 bg-[#04131b] shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-[#fdd87c]">
-                  Modules / Lessons
+              <CardTitle className="text-sm font-medium text-[#fdd87c]">
+                  Topics / Lessons
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -901,11 +846,8 @@ export default function CoursesManagementPage() {
                     ? course.xp_total_distributed
                     : 0;
                 const curriculumStats = getCurriculumSnapshot(course);
-                const legacyStats = getLegacyModuleSnapshot(course);
-                const topicsCount =
-                  curriculumStats.topics || legacyStats.modules;
-                const lessonsCount =
-                  curriculumStats.lessons || legacyStats.lessons;
+                const topicsCount = curriculumStats.topics;
+                const lessonsCount = curriculumStats.lessons;
                 const level = getLevelLabelFromCourse(course as any, 'pt');
                 const imageUrl = course.image_url || null;
                 const xpRequired = course.xp_threshold ?? 0;
@@ -1037,7 +979,7 @@ export default function CoursesManagementPage() {
                               Estrutura
                             </p>
                             <p className="text-lg font-semibold text-[#fdd87c]">
-                              {(topicsCount || totalModules) || 0} módulos
+                              {(topicsCount || totalModules) || 0} tópicos
                             </p>
                             <p className="text-[11px] text-slate-400">
                               {(lessonsCount || totalLessons) || 0} lições

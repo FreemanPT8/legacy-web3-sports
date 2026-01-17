@@ -34,23 +34,6 @@ interface CoursePayload {
   cover_asset?: any;
 }
 
-interface LessonPayload {
-  order?: number;
-  titles: Record<LangCode, string>;
-  descriptions: Record<LangCode, string>;
-  content: Record<string, string>; // HTML por língua
-  xp_reward?: number;
-  xp_threshold?: number;
-  estimated_time?: number;
-}
-
-interface ModulePayload {
-  order?: number;
-  titles: Record<LangCode, string>;
-  descriptions: Record<LangCode, string>;
-  lessons: LessonPayload[];
-}
-
 const buildCurriculumMetadata = (
   course: CoursePayload,
   attachments: any[],
@@ -110,10 +93,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as {
       course?: CoursePayload;
-      modules?: ModulePayload[];
     };
 
-    const { course, modules } = body;
+    const { course } = body;
 
     if (!course || !course.title || !course.description) {
       return NextResponse.json(
@@ -212,56 +194,6 @@ export async function POST(request: NextRequest) {
         },
         { status: 500 },
       );
-    }
-
-    // 2) Criar módulos + lições (opcional, hoje estamos a passar modules: [])
-    if (modules && Array.isArray(modules) && modules.length > 0) {
-      for (let moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
-        const modulePayload = modules[moduleIndex];
-
-        const { data: newModule, error: moduleError } = await supabase
-          .from('modules')
-          .insert({
-            course_id: newCourse.id,
-            title: modulePayload.titles,
-            description: modulePayload.descriptions,
-            order: modulePayload.order ?? moduleIndex + 1,
-          })
-          .select()
-          .single();
-
-        if (moduleError || !newModule) {
-          console.error('Error creating module:', moduleError);
-          continue;
-        }
-
-        if (
-          modulePayload.lessons &&
-          Array.isArray(modulePayload.lessons) &&
-          modulePayload.lessons.length > 0
-        ) {
-          const lessonsToInsert = modulePayload.lessons.map(
-            (lesson, lessonIndex) => ({
-              module_id: newModule.id,
-              title: lesson.titles,
-              description: lesson.descriptions,
-              content: lesson.content,
-              xp_reward: lesson.xp_reward ?? 20,
-              xp_threshold: lesson.xp_threshold ?? 0,
-              order: lesson.order ?? lessonIndex + 1,
-              estimated_time: lesson.estimated_time ?? 10,
-            }),
-          );
-
-          const { error: lessonsError } = await supabase
-            .from('lessons')
-            .insert(lessonsToInsert);
-
-          if (lessonsError) {
-            console.error('Error creating lessons:', lessonsError);
-          }
-        }
-      }
     }
 
     return NextResponse.json({

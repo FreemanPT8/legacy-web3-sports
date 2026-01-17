@@ -223,7 +223,6 @@ export default function CreateCoursePage() {
           headers,
           body: JSON.stringify({
             course: buildCourseRequestPayload(state),
-            modules: [],
           }),
         });
         const data: CreateCourseResponse = await res.json();
@@ -240,7 +239,7 @@ export default function CreateCoursePage() {
         await clearDraft();
         toast({
           title: 'Course created',
-          description: 'Continue konfigurating details or add modules.',
+          description: 'Continue konfigurating details or add topics.',
         });
 
         router.push(`/admin/courses/${data.course.id}/edit`);

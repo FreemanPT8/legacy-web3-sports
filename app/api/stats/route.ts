@@ -16,15 +16,29 @@ export async function GET(request: NextRequest) {
     }
 
     const { count: lessonsCompleted } = await supabase
-      .from('content_consumption')
+      .from('lesson_completions')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('completed', true)
-      .not('lesson_id', 'is', null);
+      .eq('user_id', user.id);
 
-    const { data: totalLessons } = await supabase
-      .from('lessons')
-      .select('id', { count: 'exact', head: true });
+    const { data: courses, error: coursesError } = await supabase
+      .from('courses')
+      .select('curriculum');
+
+    if (coursesError) {
+      console.error('Failed to load courses for lesson stats:', coursesError);
+    }
+
+    const totalLessons = (courses || []).reduce((acc, course: any) => {
+      const topics = Array.isArray(course?.curriculum?.topics)
+        ? course.curriculum.topics
+        : [];
+      const lessonsInCourse = topics.reduce(
+        (sum: number, topic: any) =>
+          sum + (Array.isArray(topic?.lessons) ? topic.lessons.length : 0),
+        0,
+      );
+      return acc + lessonsInCourse;
+    }, 0);
 
     const { count: articlesRead } = await supabase
       .from('blog_reads')
@@ -52,12 +66,13 @@ export async function GET(request: NextRequest) {
     };
 
     (xpTransactions || []).forEach((tx) => {
-      const reason = tx.reason || '';
-      if (reason === 'lesson_complete') xpBreakdown.lessons += tx.amount;
-      else if (reason === 'article_read') xpBreakdown.articles += tx.amount;
-      else if (reason === 'daily_mission') xpBreakdown.missions += tx.amount;
-      else if (reason === 'streak_bonus') xpBreakdown.streaks += tx.amount;
-      else if (reason.includes('profile')) xpBreakdown.profile += tx.amount;
+      const action = (tx.action || '').toLowerCase();
+      const amount = Number(tx.xp_earned || 0);
+      if (action.includes('lesson')) xpBreakdown.lessons += amount;
+      else if (action.includes('blog')) xpBreakdown.articles += amount;
+      else if (action.includes('mission')) xpBreakdown.missions += amount;
+      else if (action.includes('streak')) xpBreakdown.streaks += amount;
+      else if (action.includes('profile')) xpBreakdown.profile += amount;
     });
 
     const { data: recentXP } = await supabase
@@ -68,13 +83,13 @@ export async function GET(request: NextRequest) {
       .limit(5);
 
     const recentAchievements = (recentXP || [])
-      .filter((tx) => tx.amount >= 10)
+      .filter((tx) => (tx.xp_earned ?? 0) >= 10)
       .map((tx) => ({
         id: tx.id,
-        title: getAchievementTitle(tx.reason, tx.amount),
-        description: getAchievementDescription(tx.reason),
+        title: getAchievementTitle(tx.action, tx.xp_earned),
+        description: getAchievementDescription(tx.action),
         date: new Date(tx.created_at).toLocaleDateString(),
-        xp: tx.amount,
+        xp: tx.xp_earned,
       }));
 
 
@@ -92,7 +107,7 @@ export async function GET(request: NextRequest) {
           coursesStarted: 0,
           coursesCompleted: 0,
           lessonsCompleted: lessonsCompleted || 0,
-          totalLessons: totalLessons?.length || 0,
+          totalLessons,
           articlesRead: articlesRead || 0,
           totalReadingTime: (articlesRead || 0) * 5,
         },
@@ -108,26 +123,22 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function getAchievementTitle(reason: string, amount: number): string {
-  const titles: Record<string, string> = {
-    lesson_complete: 'Lesson Master',
-    article_read: 'Avid Reader',
-    streak_bonus: 'Streak Champion',
-    daily_mission: 'Mission Complete',
-    profile_bio: 'Profile Complete',
-  };
-
-  return titles[reason] || 'Achievement Unlocked';
+function getAchievementTitle(action: string, amount: number): string {
+  const key = (action || '').toLowerCase();
+  if (key.includes('lesson')) return 'Lesson Master';
+  if (key.includes('blog')) return 'Avid Reader';
+  if (key.includes('streak')) return 'Streak Champion';
+  if (key.includes('mission')) return 'Mission Complete';
+  if (key.includes('profile')) return 'Profile Complete';
+  return amount >= 50 ? 'Big XP Gain' : 'Achievement Unlocked';
 }
 
-function getAchievementDescription(reason: string): string {
-  const descriptions: Record<string, string> = {
-    lesson_complete: 'Completed a lesson',
-    article_read: 'Read an article',
-    streak_bonus: 'Maintained a 7-day streak',
-    daily_mission: 'Completed a daily mission',
-    profile_bio: 'Added profile bio',
-  };
-
-  return descriptions[reason] || 'Earned XP';
+function getAchievementDescription(action: string): string {
+  const key = (action || '').toLowerCase();
+  if (key.includes('lesson')) return 'Completed a lesson';
+  if (key.includes('blog')) return 'Read an article';
+  if (key.includes('streak')) return 'Maintained a streak';
+  if (key.includes('mission')) return 'Completed a daily mission';
+  if (key.includes('profile')) return 'Updated profile details';
+  return 'Earned XP';
 }

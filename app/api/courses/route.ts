@@ -299,30 +299,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const moduleBonusByCourse: Record<string, number> = {};
-    if (courseIds.length > 0) {
-      const { data: moduleRows, error: moduleRowsError } = await db
-        .from('modules')
-        .select('course_id, xp_reward')
-        .in('course_id', courseIds);
-
-      if (moduleRowsError) {
-        console.error('Error fetching legacy modules xp rewards:', moduleRowsError);
-      } else {
-        (moduleRows || []).forEach((moduleRow: any) => {
-          const bonusValue =
-            typeof moduleRow?.xp_reward === 'number'
-              ? moduleRow.xp_reward
-              : 0;
-          if (!moduleRow?.course_id || !Number.isFinite(bonusValue)) {
-            return;
-          }
-          moduleBonusByCourse[moduleRow.course_id] =
-            (moduleBonusByCourse[moduleRow.course_id] || 0) + bonusValue;
-        });
-      }
-    }
-
     const extractModuleBonus = (moduleLike: any) => {
       if (typeof moduleLike?.xp_reward === 'number') return moduleLike.xp_reward;
       if (typeof moduleLike?.xpReward === 'number') return moduleLike.xpReward;
@@ -445,12 +421,10 @@ export async function GET(request: NextRequest) {
         0,
       );
 
-      const legacyModuleBonus = moduleBonusByCourse[course.id] || 0;
       const courseCompletionBonus = extractCourseBonus(course);
       const totalXP =
         lessonsXP +
         moduleBonusesFromCurriculum +
-        legacyModuleBonus +
         courseCompletionBonus;
 
       const isCourseCreator =

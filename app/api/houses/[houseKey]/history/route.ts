@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/middleware';
 import { supabaseAdmin } from '@/lib/supabase';
 import { isAdminRole } from '@/lib/roles';
 import { isMissingColumn, isMissingTable, formatMissingResourceError } from '@/lib/postgres';
-import { extractUuid } from '@/lib/lesson-id';
+import { buildLessonIdVariants, normalizeLessonIdForStorage } from '@/lib/lesson-id';
 
 const DEFAULT_LIMIT = 40;
 const MAX_LIMIT = 200;
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     const lessonIds = Array.from(
       new Set(
         (lessonCompletions.data ?? [])
-          .map((row: any) => extractUuid(row.lesson_id) ?? null)
+          .map((row: any) => row.lesson_id as string)
           .filter(Boolean),
       ),
     );
@@ -188,12 +188,9 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
       ),
     );
 
-    const [blogPosts, lessons, courses, glossaryTerms] = await Promise.all([
+    const [blogPosts, courses, glossaryTerms] = await Promise.all([
       blogIds.length
         ? supabaseAdmin.from('blog_posts').select('id, title').in('id', blogIds)
-        : Promise.resolve({ data: [], error: null }),
-      lessonIds.length
-        ? supabaseAdmin.from('lessons').select('id, title').in('id', lessonIds)
         : Promise.resolve({ data: [], error: null }),
       courseIds.length
         ? supabaseAdmin.from('courses').select('id, title').in('id', courseIds)
@@ -203,7 +200,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
         : Promise.resolve({ data: [], error: null }),
     ]);
 
-    const contentErrors = [blogPosts.error, lessons.error, courses.error, glossaryTerms.error].filter(Boolean);
+    const contentErrors = [blogPosts.error, courses.error, glossaryTerms.error].filter(Boolean);
     if (contentErrors.length) {
       const missing = contentErrors.find((err) => isMissingTable(err as any));
       if (missing) {
@@ -239,14 +236,13 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
 
     const blogMap = new Map<string, any>();
     (blogPosts.data ?? []).forEach((row: any) => blogMap.set(row.id, row.title ?? null));
-    const lessonMap = new Map<string, any>();
-    (lessons.data ?? []).forEach((row: any) => lessonMap.set(row.id, row.title ?? null));
     const courseMap = new Map<string, any>();
     (courses.data ?? []).forEach((row: any) => courseMap.set(row.id, row.title ?? null));
     const termMap = new Map<string, any>();
     (glossaryTerms.data ?? []).forEach((row: any) =>
       termMap.set(row.id, { pt: row.term_pt, es: row.term_es, en: row.term_en }),
     );
+    const lessonMap = await resolveLessonTitles(lessonIds);
 
     const history: HistoryEntry[] = [];
 
@@ -265,7 +261,10 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
         type: 'lesson',
         timestamp: row.completed_at,
         user: userMap.get(row.user_id) ?? null,
-        title: lessonMap.get(row.lesson_id) ?? null,
+        title:
+          lessonMap.get(normalizeLessonIdForStorage(row.lesson_id) || row.lesson_id) ??
+          lessonMap.get(row.lesson_id) ??
+          null,
         meta: { id: row.lesson_id },
       });
     });
@@ -307,4 +306,71 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     console.error('[houses/history] failed', error);
     return NextResponse.json({ success: false, error: 'Failed to load history.' }, { status: 500 });
   }
+}
+
+const LANGUAGE_KEYS = ['pt', 'en', 'es', 'fr', 'it', 'de'];
+
+const resolveMultilingualText = (raw: any, fallback: string) => {
+  if (!raw) return fallback;
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object') {
+    for (const key of LANGUAGE_KEYS) {
+      if (typeof raw[key] === 'string' && raw[key].trim().length > 0) {
+        return raw[key];
+      }
+    }
+  }
+  return fallback;
+};
+
+async function resolveLessonTitles(lessonIds: string[]): Promise<Map<string, string>> {
+  const uniqueIds = Array.from(new Set(lessonIds.filter(Boolean)));
+  if (uniqueIds.length === 0) return new Map();
+
+  const candidateSet = new Set(
+    uniqueIds.map((id) => normalizeLessonIdForStorage(id) || id),
+  );
+
+  const { data: courses, error } = await supabaseAdmin
+    .from('courses')
+    .select('id, curriculum');
+
+  if (error || !courses) {
+    console.error('Failed to resolve lesson titles for history:', error);
+    return new Map();
+  }
+
+  const map = new Map<string, string>();
+
+  courses.forEach((course: any) => {
+    const topics: any[] = Array.isArray(course?.curriculum?.topics)
+      ? course.curriculum.topics
+      : [];
+
+    topics.forEach((topic: any, topicIndex: number) => {
+      const topicId = topic?.id || `topic-${topicIndex + 1}`;
+      const lessons = Array.isArray(topic?.lessons) ? topic.lessons : [];
+
+      lessons.forEach((lesson: any, lessonIndex: number) => {
+        const lessonId = lesson?.id || `${topicId}-lesson-${lessonIndex + 1}`;
+        const title = resolveMultilingualText(lesson?.title, 'Lesson');
+        const normalized = normalizeLessonIdForStorage(lessonId) || lessonId;
+        const variants = buildLessonIdVariants(lessonId);
+        const keys = new Set<string>([lessonId, normalized, ...variants]);
+
+        const shouldRegister = Array.from(keys).some((key) =>
+          candidateSet.has(normalizeLessonIdForStorage(key) || key),
+        );
+        if (!shouldRegister) return;
+
+        keys.forEach((key) => {
+          const normalizedKey = normalizeLessonIdForStorage(key) || key;
+          map.set(normalizedKey, title);
+          map.set(key, title);
+        });
+      });
+    });
+  });
+
+  return map;
 }

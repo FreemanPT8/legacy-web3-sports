@@ -20,11 +20,9 @@ export async function GET(
     }
 
     const { count: lessonsCount } = await supabase
-      .from('content_consumption')
+      .from('lesson_completions')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('completed', true)
-      .not('lesson_id', 'is', null);
+      .eq('user_id', user.id);
 
     const { count: articlesCount } = await supabase
       .from('blog_reads')
@@ -47,9 +45,9 @@ export async function GET(
 
     const recentActivity = (recentXP || []).map((tx) => ({
       id: tx.id,
-      type: tx.reason,
-      description: getActivityDescription(tx.reason),
-      xp: tx.amount,
+      type: tx.action,
+      description: getActivityDescription(tx.action),
+      xp: tx.xp_earned,
       created_at: tx.created_at,
     }));
 
@@ -80,16 +78,12 @@ export async function GET(
   }
 }
 
-function getActivityDescription(reason: string): string {
-  const descriptions: Record<string, string> = {
-    lesson_complete: 'Completed a lesson',
-    article_read: 'Read an article',
-    profile_bio: 'Added profile bio',
-    profile_role: 'Set sports role',
-    profile_nft: 'Added DAO1 DID NFT',
-    daily_mission: 'Completed daily mission',
-    streak_bonus: 'Earned streak bonus',
-  };
-
-  return descriptions[reason] || 'Earned XP';
+function getActivityDescription(action: string): string {
+  const key = (action || '').toLowerCase();
+  if (key.includes('lesson')) return 'Completed a lesson';
+  if (key.includes('blog')) return 'Read an article';
+  if (key.includes('profile')) return 'Updated profile';
+  if (key.includes('mission')) return 'Completed daily mission';
+  if (key.includes('streak')) return 'Earned streak bonus';
+  return 'Earned XP';
 }

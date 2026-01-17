@@ -18,10 +18,9 @@ export async function GET(
     }
 
     const { data: completedContent, error } = await supabase
-      .from('content_consumption')
+      .from('lesson_completions')
       .select('lesson_id')
-      .eq('user_id', user.id)
-      .eq('completed', true);
+      .eq('user_id', user.id);
 
     if (error) {
       return NextResponse.json(
