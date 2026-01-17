@@ -139,9 +139,46 @@ export async function GET(request: Request) {
     }
 
     if (!dailyMissions || dailyMissions.length === 0) {
+      const missionsToInsert = COMBO_MISSIONS.map(mission => ({
+        date: today,
+        type: mission.type,
+        description: mission.description,
+        xp_reward: mission.xp,
+        target_count: mission.target,
+        is_active: true,
+        metadata: mission.metadata,
+      }));
+
+      const { data: insertedMissions, error: insertError } = await supabase
+        .from('daily_missions')
+        .insert(missionsToInsert)
+        .select();
+
+      if (insertError) {
+        logger.error('Error inserting missions (GET fallback):', insertError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to generate missions' },
+          { status: 500 }
+        );
+      }
+
+      if (insertedMissions) {
+        const missionsToCreate = insertedMissions.map(mission => ({
+          user_id: userId,
+          mission_id: mission.id,
+          progress: 0,
+          completed: false
+        }));
+
+        await supabase
+          .from('user_missions')
+          .insert(missionsToCreate);
+      }
+
       return NextResponse.json({
         success: true,
-        missions: []
+        missions: insertedMissions || [],
+        combo_progress: await getComboProgressForUser(userId),
       });
     }
 
