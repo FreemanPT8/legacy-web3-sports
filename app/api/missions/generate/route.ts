@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { verifyAuth } from '@/lib/auth';
 import { getTodayCETDate } from '@/lib/timezone';
 import { comboDefinitions, getComboProgressForUser } from '@/lib/comboMissions';
+
+const db = supabaseAdmin ?? supabase;
 
 const COMBO_MISSIONS = comboDefinitions.map((combo) => ({
   type: combo.missionType,
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
     }
     const today = getTodayCETDate();
 
-    const { data: existingMissions } = await supabase
+    const { data: existingMissions } = await db
       .from('daily_missions')
       .select('id')
       .eq('date', today)
@@ -60,20 +62,47 @@ export async function POST(request: Request) {
       metadata: mission.metadata,
     }));
 
-    const { data: insertedMissions, error: insertError } = await supabase
+    let insertedMissions: any[] | null = null;
+    const { data: inserted, error: insertError } = await db
       .from('daily_missions')
       .insert(missionsToInsert)
       .select();
 
     if (insertError) {
-      logger.error('Error inserting missions:', insertError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to generate missions' },
-        { status: 500 }
-      );
+      const message = (insertError as any)?.message || '';
+      if (message.toLowerCase().includes('metadata')) {
+        const fallbackMissions = COMBO_MISSIONS.map(mission => ({
+          date: today,
+          type: mission.type,
+          description: mission.description,
+          xp_reward: mission.xp,
+          target_count: mission.target,
+          is_active: true,
+        }));
+        const { data: fallbackData, error: fallbackError } = await db
+          .from('daily_missions')
+          .insert(fallbackMissions)
+          .select();
+        if (fallbackError) {
+          logger.error('Error inserting missions (fallback):', fallbackError);
+          return NextResponse.json(
+            { success: false, error: 'Failed to generate missions' },
+            { status: 500 }
+          );
+        }
+        insertedMissions = fallbackData as any[] | null;
+      } else {
+        logger.error('Error inserting missions:', insertError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to generate missions' },
+          { status: 500 }
+        );
+      }
+    } else {
+      insertedMissions = inserted as any[] | null;
     }
 
-    const { data: users } = await supabase
+    const { data: users } = await db
       .from('users')
       .select('id');
 
@@ -87,7 +116,7 @@ export async function POST(request: Request) {
         }))
       );
 
-      const { error: userMissionError } = await supabase
+      const { error: userMissionError } = await db
         .from('user_missions')
         .insert(userMissions);
 
@@ -124,7 +153,7 @@ export async function GET(request: Request) {
 
     const today = getTodayCETDate();
 
-    const { data: dailyMissions, error: missionsError } = await supabase
+    const { data: dailyMissions, error: missionsError } = await db
       .from('daily_missions')
       .select('*')
       .eq('date', today)
@@ -149,17 +178,44 @@ export async function GET(request: Request) {
         metadata: mission.metadata,
       }));
 
-      const { data: insertedMissions, error: insertError } = await supabase
+      let insertedMissions: any[] | null = null;
+      const { data: inserted, error: insertError } = await db
         .from('daily_missions')
         .insert(missionsToInsert)
         .select();
 
       if (insertError) {
-        logger.error('Error inserting missions (GET fallback):', insertError);
-        return NextResponse.json(
-          { success: false, error: 'Failed to generate missions' },
-          { status: 500 }
-        );
+        const message = (insertError as any)?.message || '';
+        if (message.toLowerCase().includes('metadata')) {
+          const fallbackMissions = COMBO_MISSIONS.map(mission => ({
+            date: today,
+            type: mission.type,
+            description: mission.description,
+            xp_reward: mission.xp,
+            target_count: mission.target,
+            is_active: true,
+          }));
+          const { data: fallbackData, error: fallbackError } = await db
+            .from('daily_missions')
+            .insert(fallbackMissions)
+            .select();
+          if (fallbackError) {
+            logger.error('Error inserting missions (GET fallback):', fallbackError);
+            return NextResponse.json(
+              { success: false, error: 'Failed to generate missions' },
+              { status: 500 }
+            );
+          }
+          insertedMissions = fallbackData as any[] | null;
+        } else {
+          logger.error('Error inserting missions (GET fallback):', insertError);
+          return NextResponse.json(
+            { success: false, error: 'Failed to generate missions' },
+            { status: 500 }
+          );
+        }
+      } else {
+        insertedMissions = inserted as any[] | null;
       }
 
       if (insertedMissions) {
@@ -170,7 +226,7 @@ export async function GET(request: Request) {
           completed: false
         }));
 
-        await supabase
+        await db
           .from('user_missions')
           .insert(missionsToCreate);
       }
@@ -184,7 +240,7 @@ export async function GET(request: Request) {
 
     const missionIds = dailyMissions.map(m => m.id);
 
-    const { data: userMissions, error: userMissionsError } = await supabase
+    const { data: userMissions, error: userMissionsError } = await db
       .from('user_missions')
       .select('mission_id, progress, completed, completed_at')
       .eq('user_id', userId)
@@ -202,7 +258,7 @@ export async function GET(request: Request) {
         completed: false
       }));
 
-      await supabase
+      await db
         .from('user_missions')
         .insert(missionsToCreate);
     }
