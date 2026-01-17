@@ -384,6 +384,47 @@ export async function GET(request: NextRequest) {
         .map((tx) => getTodayCETDate(new Date(tx.created_at))),
     );
 
+    if (activityDates.size === 0) {
+      const sinceISO = thirtyDaysAgoISO;
+      const [
+        { data: lessonRows },
+        { data: blogRows },
+        { data: glossaryRows },
+      ] = await Promise.all([
+        db
+          .from('lesson_completions')
+          .select('completed_at')
+          .eq('user_id', userId)
+          .gte('completed_at', sinceISO),
+        db
+          .from('blog_reads')
+          .select('completed_at')
+          .eq('user_id', userId)
+          .gte('completed_at', sinceISO),
+        db
+          .from('glossary_term_reads')
+          .select('completed_at')
+          .eq('user_id', userId)
+          .gte('completed_at', sinceISO),
+      ]);
+
+      (lessonRows || []).forEach((row: any) => {
+        if (row?.completed_at) {
+          activityDates.add(getTodayCETDate(new Date(row.completed_at)));
+        }
+      });
+      (blogRows || []).forEach((row: any) => {
+        if (row?.completed_at) {
+          activityDates.add(getTodayCETDate(new Date(row.completed_at)));
+        }
+      });
+      (glossaryRows || []).forEach((row: any) => {
+        if (row?.completed_at) {
+          activityDates.add(getTodayCETDate(new Date(row.completed_at)));
+        }
+      });
+    }
+
     let consecutiveDays = 0;
     const cursor = new Date();
     for (let i = 0; i < 30; i += 1) {
