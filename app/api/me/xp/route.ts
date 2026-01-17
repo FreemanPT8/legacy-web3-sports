@@ -2,11 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
+import { getTodayCETDate } from '@/lib/timezone';
+import { awardXP, updateStreak } from '@/lib/xp';
 import {
   buildLessonIdVariants,
   normalizeLessonIdForStorage,
 } from '@/lib/lesson-id';
-import { updateStreak } from '@/lib/xp';
 
 const db = supabaseAdmin ?? supabase;
 
@@ -375,6 +376,55 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       console.error('Failed to refresh streak in /api/me/xp:', error);
+    }
+
+    const activityDates = new Set(
+      transactions
+        .filter((tx) => (tx.xp_earned ?? 0) > 0 && tx.created_at)
+        .map((tx) => getTodayCETDate(new Date(tx.created_at))),
+    );
+
+    let consecutiveDays = 0;
+    const cursor = new Date();
+    for (let i = 0; i < 30; i += 1) {
+      const dayKey = getTodayCETDate(cursor);
+      if (!activityDates.has(dayKey)) break;
+      consecutiveDays += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    if (consecutiveDays > 0) {
+      const computedShort = consecutiveDays % 7;
+      const computedLong = consecutiveDays % 30;
+
+      streakCount = Math.max(streakCount, computedShort);
+      longStreakCount = Math.max(longStreakCount, computedLong);
+
+      if (computedShort === 0 && consecutiveDays >= 7) {
+        const bonus = 222;
+        const hasBonus = transactions.some(
+          (tx) =>
+            tx.action === '7-day streak bonus' &&
+            tx.created_at &&
+            getTodayCETDate(new Date(tx.created_at)) === getTodayCETDate(),
+        );
+        if (!hasBonus) {
+          await awardXP(userId, '7-day streak bonus', bonus, undefined, undefined, true);
+        }
+      }
+
+      if (computedLong === 0 && consecutiveDays >= 30) {
+        const bonus = 1111;
+        const hasBonus = transactions.some(
+          (tx) =>
+            tx.action === '30-day streak bonus' &&
+            tx.created_at &&
+            getTodayCETDate(new Date(tx.created_at)) === getTodayCETDate(),
+        );
+        if (!hasBonus) {
+          await awardXP(userId, '30-day streak bonus', bonus, undefined, undefined, true);
+        }
+      }
     }
 
     const lessonReferenceIds = recentTransactions
