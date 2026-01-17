@@ -171,7 +171,7 @@ export async function GET(request: NextRequest, { params }: { params: { houseKey
     }
 
     const blogIds = Array.from(new Set((blogReads.data ?? []).map((row: any) => row.blog_post_id).filter(Boolean)));
-    const lessonIds = Array.from(
+    const lessonIds: string[] = Array.from(
       new Set(
         (lessonCompletions.data ?? [])
           .map((row: any) => row.lesson_id as string | null | undefined)
