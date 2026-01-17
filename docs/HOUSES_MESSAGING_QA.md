@@ -7,6 +7,7 @@
 - Enviar mensagem ao Head/moderador e confirmar que aparece na lista com indicador “Entrante”/“Enviada” conforme o caso;
 - Abrir uma mensagem recebida e clicar em “Marcar como lida”; garantir que o Head recebe notificação (ver tabela `notifications`);
 - Repetir fluxo com Head/moderador enviando para membro; membros não devem conseguir contactar outros membros ou staff sem XP.
+- Confirmar que membros nao conseguem enviar mensagens para Heads/Mods de outras Houses.
 
 ### 2. Global/header
 - Logar como qualquer conta e verificar o novo ícone de mensagens ao lado da campainha (`components/layout/Header.tsx`);
@@ -23,6 +24,7 @@
 - Arquivar/eliminar e confirmar que aparece no historico (Archivada/Eliminada por).
 - Verificar que `Total messages` e botao `Refresh inbox` funcionam.
 - Enviar mensagem para todos os membros da House (broadcast) e confirmar que cada membro recebe na inbox e gera notificacao.
+- Confirmar que o broadcast so aparece para Heads/Moderadores da House selecionada.
 ### 4. Página pública de Houses
 - Navegar para `/sports/houses` em português, inglês e espanhol;
 - Verificar a secção de filtros: alterar estado, desporto, país e ativar o toggle de proximidade (detecta o país do browser);
