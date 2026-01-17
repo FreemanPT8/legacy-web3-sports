@@ -200,6 +200,54 @@ function meetsRequirements(
   );
 }
 
+async function getActivityCountsForDate(
+  userId: string,
+  comboDate: string,
+): Promise<{ glossary: number; blog: number; lesson: number }> {
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
+  const [
+    { data: lessonRows, error: lessonError },
+    { data: blogRows, error: blogError },
+    { data: glossaryRows, error: glossaryError },
+  ] = await Promise.all([
+    db
+      .from('lesson_completions')
+      .select('completed_at')
+      .eq('user_id', userId)
+      .gte('completed_at', since),
+    db
+      .from('blog_reads')
+      .select('completed_at')
+      .eq('user_id', userId)
+      .gte('completed_at', since),
+    db
+      .from('glossary_term_reads')
+      .select('completed_at')
+      .eq('user_id', userId)
+      .gte('completed_at', since),
+  ]);
+
+  if (lessonError) logger.warn?.('combo activity lesson error', lessonError);
+  if (blogError) logger.warn?.('combo activity blog error', blogError);
+  if (glossaryError) logger.warn?.('combo activity glossary error', glossaryError);
+
+  const isSameCETDay = (value?: string | null) =>
+    value ? getTodayCETDate(new Date(value)) === comboDate : false;
+
+  return {
+    lesson: (lessonRows || []).filter((row: any) =>
+      isSameCETDay(row?.completed_at),
+    ).length,
+    blog: (blogRows || []).filter((row: any) =>
+      isSameCETDay(row?.completed_at),
+    ).length,
+    glossary: (glossaryRows || []).filter((row: any) =>
+      isSameCETDay(row?.completed_at),
+    ).length,
+  };
+}
+
 export async function recordComboEvent(
   userId: string,
   event: ComboEventType,
@@ -254,15 +302,57 @@ export async function recordComboEvent(
 
 export async function getComboProgressForUser(userId: string): Promise<ComboProgressState> {
   const comboDate = getTodayCETDate();
-  const existing = await getComboProgress(userId, comboDate);
-  if (!existing) return createEmptyProgress();
+  const [existing, activityCounts] = await Promise.all([
+    getComboProgress(userId, comboDate),
+    getActivityCountsForDate(userId, comboDate),
+  ]);
+
+  const mergedCounts = {
+    glossary: Math.max(existing?.glossary_count ?? 0, activityCounts.glossary),
+    blog: Math.max(existing?.blog_count ?? 0, activityCounts.blog),
+    lesson: Math.max(existing?.lesson_count ?? 0, activityCounts.lesson),
+  };
+
+  const mergedCompletions: Record<ComboKey, boolean> = {
+    quick: existing?.quick_completed ?? false,
+    base: existing?.base_completed ?? false,
+    serious: existing?.serious_completed ?? false,
+  };
+
+  for (const combo of COMBO_DEFINITIONS) {
+    if (mergedCompletions[combo.key]) continue;
+    if (meetsRequirements(combo, mergedCounts)) {
+      mergedCompletions[combo.key] = true;
+    }
+  }
+
+  const needsSync =
+    !existing ||
+    mergedCounts.glossary !== (existing?.glossary_count ?? 0) ||
+    mergedCounts.blog !== (existing?.blog_count ?? 0) ||
+    mergedCounts.lesson !== (existing?.lesson_count ?? 0) ||
+    mergedCompletions.quick !== (existing?.quick_completed ?? false) ||
+    mergedCompletions.base !== (existing?.base_completed ?? false) ||
+    mergedCompletions.serious !== (existing?.serious_completed ?? false);
+
+  if (needsSync) {
+    await upsertComboProgress(userId, comboDate, {
+      glossary_count: mergedCounts.glossary,
+      blog_count: mergedCounts.blog,
+      lesson_count: mergedCounts.lesson,
+      quick_completed: mergedCompletions.quick,
+      base_completed: mergedCompletions.base,
+      serious_completed: mergedCompletions.serious,
+    });
+  }
+
   return {
-    glossary_count: existing.glossary_count,
-    blog_count: existing.blog_count,
-    lesson_count: existing.lesson_count,
-    quick_completed: existing.quick_completed,
-    base_completed: existing.base_completed,
-    serious_completed: existing.serious_completed,
+    glossary_count: mergedCounts.glossary,
+    blog_count: mergedCounts.blog,
+    lesson_count: mergedCounts.lesson,
+    quick_completed: mergedCompletions.quick,
+    base_completed: mergedCompletions.base,
+    serious_completed: mergedCompletions.serious,
   };
 }
 
