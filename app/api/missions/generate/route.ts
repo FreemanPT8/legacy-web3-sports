@@ -106,9 +106,10 @@ export async function POST(request: Request) {
       .from('users')
       .select('id');
 
-    if (users && users.length > 0 && insertedMissions) {
+    if (users && users.length > 0 && insertedMissions && insertedMissions.length > 0) {
+      const missionRows = insertedMissions;
       const userMissions = users.flatMap((user) =>
-        insertedMissions.map((mission: any) => ({
+        missionRows.map((mission) => ({
           user_id: user.id,
           mission_id: mission.id,
           progress: 0,
