@@ -102,13 +102,13 @@ export async function POST(request: Request) {
       insertedMissions = inserted as any[] | null;
     }
 
-    const { data: users } = await db
+    const { data: users }: { data: Array<{ id: string }> | null } = await db
       .from('users')
       .select('id');
 
     if (users && users.length > 0 && insertedMissions) {
-      const userMissions = users.flatMap(user =>
-        insertedMissions.map(mission => ({
+      const userMissions = users.flatMap((user) =>
+        insertedMissions.map((mission: any) => ({
           user_id: user.id,
           mission_id: mission.id,
           progress: 0,
