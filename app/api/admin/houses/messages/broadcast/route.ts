@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, count: 0 });
     }
 
-    const messages = recipientIds.map((recipientId) => ({
+    const messages = recipientIds.map((recipientId: string) => ({
       house_id: house.id,
       house_key: house.houseKey,
       sender_id: user.userId,
