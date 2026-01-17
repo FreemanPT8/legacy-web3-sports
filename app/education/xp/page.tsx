@@ -2786,7 +2786,7 @@ export default function EducationXpPage() {
       ? { lesson: 'Lições/Módulos', course: 'Cursos', blog: 'Artigos do blog' }
       : language === 'es'
       ? { lesson: 'Lecciones/Módulos', course: 'Cursos', blog: 'Artículos del blog' }
-      : { lesson: 'Lessons/Modules', course: 'Courses', blog: 'Blog posts' };
+      : { lesson: 'Lessons/Topics', course: 'Courses', blog: 'Blog posts' };
 
   const handlePopupAction = useCallback(
     ({ id, action }: { id: string; action: 'primary' | 'secondary' | 'dismiss' }) => {

@@ -47,7 +47,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   canManageHouses: 'Manage Houses of Sports',
   canManageHeads: 'Set / Manage Heads of House',
   canManageOnboarding: 'Manage Onboarding',
-  canManageCourses: 'Manage Courses, Modules & Lessons',
+  canManageCourses: 'Manage Courses & Curriculum',
   canManageBlog: 'Manage Blog Articles',
   canManageXP: 'Manage XP (manual adjustments)',
   canManageAnalytics: 'View Analytics & Reports',
