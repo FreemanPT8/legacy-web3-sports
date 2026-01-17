@@ -22,7 +22,6 @@ ALTER TABLE public.notifications
   ADD CONSTRAINT notifications_type_check CHECK (
     type IN (
       'achievement',
-      'forum',
       'course',
       'xp',
       'system',

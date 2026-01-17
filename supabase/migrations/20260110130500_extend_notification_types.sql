@@ -5,7 +5,6 @@ alter table public.notifications
   add constraint notifications_type_check check (
     type in (
       'achievement',
-      'forum',
       'course',
       'xp',
       'system',

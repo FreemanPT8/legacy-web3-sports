@@ -5,7 +5,7 @@
     - `notifications`
       - `id` (uuid, primary key)
       - `user_id` (uuid, foreign key to users)
-      - `type` (text) - achievement, forum, course, xp, system
+      - `type` (text) - achievement, course, xp, system, mission
       - `title` (text)
       - `message` (text)
       - `read` (boolean)
@@ -29,7 +29,7 @@
 CREATE TABLE IF NOT EXISTS notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type text NOT NULL CHECK (type IN ('achievement', 'forum', 'course', 'xp', 'system', 'mission')),
+  type text NOT NULL CHECK (type IN ('achievement', 'course', 'xp', 'system', 'mission')),
   title text NOT NULL,
   message text NOT NULL,
   read boolean DEFAULT false,

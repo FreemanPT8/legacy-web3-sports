@@ -291,17 +291,6 @@ INSERT INTO achievement_badges (
     'rare'
   ),
   (
-    'forum-playmaker',
-    jsonb_build_object('pt', 'Playmaker', 'en', 'Playmaker', 'es', 'Playmaker'),
-    jsonb_build_object('pt', 'Partilha a tua primeira participacao no forum.', 'en', 'Post your first contribution in the forum.', 'es', 'Comparte tu primer aporte en el foro.'),
-    'community',
-    'icon-forum',
-    '#d946ef',
-    jsonb_build_object('type', 'forum_post_count', 'min', 1),
-    15,
-    'uncommon'
-  ),
-  (
     'streak-7',
     jsonb_build_object('pt', 'Foco 7x7', 'en', 'Seven Day Focus', 'es', 'Enfoque 7x7'),
     jsonb_build_object('pt', 'Mantem uma sequencia de 7 dias a ganhar XP.', 'en', 'Maintain a seven-day XP streak.', 'es', 'Manten una racha de XP de siete dias.'),
