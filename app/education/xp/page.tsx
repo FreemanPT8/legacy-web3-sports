@@ -4302,9 +4302,6 @@ export default function EducationXpPage() {
 
                     </Card>
 
-
-                    </Card>
-
                   </div>
 
                 </div>
