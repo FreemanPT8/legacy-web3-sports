@@ -196,7 +196,7 @@
   ### 18. `xp_daily_limits` - Track daily XP action limits
     - `id` (uuid, primary key)
     - `user_id` (uuid, foreign key to users)
-    - `action_type` (text) - comment, forum_post, forum_topic
+    - `action_type` (text) - forum_post, forum_topic
     - `count` (integer) - Actions today
     - `xp_earned` (integer) - XP earned today for this action
     - `date` (date)

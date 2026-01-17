@@ -10,7 +10,6 @@ alter table public.notifications
       'xp',
       'system',
       'mission',
-      'comment',
       'head_invite',
       'head_promo'
     )
