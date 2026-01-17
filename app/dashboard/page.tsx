@@ -257,6 +257,16 @@ export default function DashboardPage() {
     [xpTotal],
   );
 
+  const shortStreakProgress = useMemo(
+    () => Math.min((streak / 7) * 100, 100),
+    [streak],
+  );
+
+  const longStreakProgress = useMemo(
+    () => Math.min((longStreak / 30) * 100, 100),
+    [longStreak],
+  );
+
   const xpHistory = useMemo(
     () => xpSummary?.recent_transactions || [],
     [xpSummary],
@@ -401,12 +411,26 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-4 space-y-1 text-xs text-slate-300">
                   <p>
+                    {t('dashboard.shortStreakLabel')} {streak}/7
+                  </p>
+                  <div className="h-2 w-full rounded-full bg-[#020b11]">
+                    <div
+                      className="h-2 rounded-full bg-emerald-500 transition-all"
+                      style={{ width: `${shortStreakProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-cyan-300">{t('dashboard.bonusAt7Days')}</p>
+                  <p className="mt-3">
                     {t('dashboard.longStreakLabel')} {longStreak}/30
                   </p>
+                  <div className="h-2 w-full rounded-full bg-[#020b11]">
+                    <div
+                      className="h-2 rounded-full bg-cyan-400 transition-all"
+                      style={{ width: `${longStreakProgress}%` }}
+                    />
+                  </div>
                   <p>{t('dashboard.longStreakTooltip')}</p>
-                  <p className="text-cyan-300">
-                    {t('dashboard.bonusAt30Days')}
-                  </p>
+                  <p className="text-cyan-300">{t('dashboard.bonusAt30Days')}</p>
                 </div>
               </CardContent>
             </Card>

@@ -6,7 +6,6 @@ import {
   buildLessonIdVariants,
   normalizeLessonIdForStorage,
 } from '@/lib/lesson-id';
-import { getTodayCETDate } from '@/lib/timezone';
 import { updateStreak } from '@/lib/xp';
 
 const db = supabaseAdmin ?? supabase;
@@ -366,25 +365,16 @@ export async function GET(request: NextRequest) {
     // Últimas 20 transações para mostrar na dashboard
     const recentTransactions = transactions.slice(0, 20);
 
-    const todayCET = getTodayCETDate();
-    const hasTodayCETActivity = transactions.some((tx) =>
-      tx.created_at
-        ? getTodayCETDate(new Date(tx.created_at)) === todayCET
-        : false,
-    );
-
-    if (hasTodayCETActivity) {
-      try {
-        const streakResult = await updateStreak(userId);
-        if (typeof streakResult.newStreak === 'number') {
-          streakCount = streakResult.newStreak;
-        }
-        if (typeof streakResult.longStreak === 'number') {
-          longStreakCount = streakResult.longStreak;
-        }
-      } catch (error) {
-        console.error('Failed to refresh streak in /api/me/xp:', error);
+    try {
+      const streakResult = await updateStreak(userId);
+      if (typeof streakResult.newStreak === 'number') {
+        streakCount = streakResult.newStreak;
       }
+      if (typeof streakResult.longStreak === 'number') {
+        longStreakCount = streakResult.longStreak;
+      }
+    } catch (error) {
+      console.error('Failed to refresh streak in /api/me/xp:', error);
     }
 
     const lessonReferenceIds = recentTransactions

@@ -83,6 +83,52 @@ const createEmptyProgress = (): ComboProgressState => ({
   ...BASE_PROGRESS_STATE,
 });
 
+async function ensureDailyMissionsForDate(comboDate: string) {
+  const { data: existing } = await db
+    .from('daily_missions')
+    .select('id, type, xp_reward')
+    .eq('date', comboDate)
+    .eq('is_active', true);
+
+  const existingMap = new Map(
+    (existing || []).map((row: { id: string; type: string; xp_reward: number }) => [
+      row.type,
+      row,
+    ]),
+  );
+
+  const missing = COMBO_DEFINITIONS.filter(
+    (combo) => !existingMap.has(combo.missionType),
+  );
+
+  if (missing.length > 0) {
+    const { data: inserted } = await db
+      .from('daily_missions')
+      .insert(
+        missing.map((combo) => ({
+          date: comboDate,
+          type: combo.missionType,
+          description: combo.label,
+          xp_reward: combo.xp,
+          target_count: 1,
+          is_active: true,
+          metadata: {
+            combo: combo.key,
+            requirements: combo.requirements,
+            xp: combo.xp,
+          },
+        })),
+      )
+      .select('id, type, xp_reward');
+
+    (inserted || []).forEach((row: { id: string; type: string; xp_reward: number }) => {
+      existingMap.set(row.type, row);
+    });
+  }
+
+  return existingMap;
+}
+
 async function getComboProgress(
   userId: string,
   comboDate: string,
@@ -179,14 +225,8 @@ async function resolveMissionId(
   missionType: string,
   comboDate: string,
 ) {
-  const { data } = await db
-    .from('daily_missions')
-    .select('id')
-    .eq('type', missionType)
-    .eq('date', comboDate)
-    .eq('is_active', true)
-    .maybeSingle();
-  return data?.id as string | undefined;
+  const missionsMap = await ensureDailyMissionsForDate(comboDate);
+  return missionsMap.get(missionType)?.id as string | undefined;
 }
 
 function meetsRequirements(
@@ -324,6 +364,17 @@ export async function getComboProgressForUser(userId: string): Promise<ComboProg
     if (meetsRequirements(combo, mergedCounts)) {
       mergedCompletions[combo.key] = true;
     }
+  }
+
+  const missionsMap = await ensureDailyMissionsForDate(comboDate);
+  for (const combo of COMBO_DEFINITIONS) {
+    if (!meetsRequirements(combo, mergedCounts)) continue;
+    const missionId = missionsMap.get(combo.missionType)?.id;
+    if (!missionId) continue;
+    const mission = await ensureUserMission(userId, missionId);
+    if (mission?.completed) continue;
+    await completeMission(userId, missionId, combo);
+    mergedCompletions[combo.key] = true;
   }
 
   const needsSync =
