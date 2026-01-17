@@ -123,17 +123,17 @@ const HERO_COPY: Record<SupportedHeroLanguage, HeroCopy> = {
 
 const HERO_TIPS: Record<SupportedHeroLanguage, Array<{ label: string; description: string; href: (slug: string) => string }>> = {
   en: [
-    { label: 'Explore Courses', description: 'Choose new modules to earn XP quickly.', href: () => '/education/courses' },
+    { label: 'Explore Courses', description: 'Pick new topics and lessons to earn XP quickly.', href: () => '/education/courses' },
     { label: 'Back to START HERE', description: 'Finish missing lessons to unlock Cadets.', href: (slug) => `/education/courses/${slug}` },
     { label: 'Read the Blog', description: 'Learn daily and gain extra XP from activities.', href: () => '/blog' },
   ],
   pt: [
-    { label: 'Explorar Cursos', description: 'Escolhe novos módulos para acumular XP rapidamente.', href: () => '/education/courses' },
+    { label: 'Explorar Cursos', description: 'Escolhe novos tópicos e lições para acumular XP rapidamente.', href: () => '/education/courses' },
     { label: 'Voltar ao COMEÇA AQUI', description: 'Completa lições em falta para desbloquear Cadetes.', href: (slug) => `/education/courses/${slug}` },
     { label: 'Ler o Blog', description: 'Aprende diariamente e garante XP adicional por atividade.', href: () => '/blog' },
   ],
   es: [
-    { label: 'Explorar Cursos', description: 'Elige nuevos módulos para acumular XP rápidamente.', href: () => '/education/courses' },
+    { label: 'Explorar Cursos', description: 'Elige nuevos temas y lecciones para acumular XP rápidamente.', href: () => '/education/courses' },
     { label: 'Volver a EMPIEZA AQUÍ', description: 'Termina las lecciones pendientes para desbloquear Cadetes.', href: (slug) => `/education/courses/${slug}` },
     { label: 'Leer el Blog', description: 'Aprende cada día y consigue XP adicional por actividad.', href: () => '/blog' },
   ],
