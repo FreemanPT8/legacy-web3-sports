@@ -343,6 +343,27 @@ export async function updateStreak(
     }
 
     if (effectiveXpToday <= 0) {
+      const { data: comboRow, error: comboError } = await db
+        .from('daily_combo_progress')
+        .select('glossary_count, blog_count, lesson_count')
+        .eq('user_id', userId)
+        .eq('combo_date', today)
+        .maybeSingle();
+
+      if (comboError) {
+        console.error('updateStreak failed to load daily_combo_progress:', comboError);
+      } else if (comboRow) {
+        const comboTotal =
+          (comboRow.glossary_count ?? 0) +
+          (comboRow.blog_count ?? 0) +
+          (comboRow.lesson_count ?? 0);
+        if (comboTotal > 0) {
+          effectiveXpToday = 1;
+        }
+      }
+    }
+
+    if (effectiveXpToday <= 0) {
       return {
         newStreak: user.streak_count ?? 0,
         longStreak: user.streak_long_count ?? 0,
