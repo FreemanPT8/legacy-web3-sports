@@ -266,6 +266,29 @@ export function getRandomXP(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+async function hasStreakBonusToday(
+  userId: string,
+  action: string,
+  today: string,
+): Promise<boolean> {
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await db
+    .from('xp_transactions')
+    .select('created_at')
+    .eq('user_id', userId)
+    .eq('action', action)
+    .gte('created_at', since);
+
+  if (error) {
+    console.error('Failed to check streak bonus transactions:', error);
+    return false;
+  }
+
+  return (data || []).some((row: any) =>
+    row?.created_at ? getTodayCETDate(new Date(row.created_at)) === today : false,
+  );
+}
+
 export async function updateStreak(
   userId: string,
 ): Promise<{ newStreak: number; longStreak: number; bonus: number; bonusDays?: number }> {
@@ -287,11 +310,16 @@ export async function updateStreak(
     const lastLongUpdate = user.streak_long_updated_at as string | null;
 
     if (lastUpdate === today) {
-      return {
-        newStreak: user.streak_count ?? 0,
-        longStreak: user.streak_long_count ?? 0,
-        bonus: 0,
-      };
+      const currentStreak = user.streak_count ?? 0;
+      const currentLongStreak = user.streak_long_count ?? 0;
+
+      if (currentStreak > 0 || currentLongStreak > 0) {
+        return {
+          newStreak: currentStreak,
+          longStreak: currentLongStreak,
+          bonus: 0,
+        };
+      }
     }
 
     const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
@@ -378,32 +406,42 @@ export async function updateStreak(
     let newStreak = 1;
     if (lastUpdate === yesterdayStr) {
       newStreak = (user.streak_count ?? 0) + 1;
+    } else if (lastUpdate === today) {
+      newStreak = Math.max(user.streak_count ?? 0, 1);
     }
 
     let newLongStreak = 1;
     const previousLongStreak = user.streak_long_count ?? 0;
     if (lastLongUpdate === yesterdayStr) {
       newLongStreak = previousLongStreak + 1;
+    } else if (lastLongUpdate === today) {
+      newLongStreak = Math.max(previousLongStreak, 1);
     }
 
     let bonus = 0;
     let bonusDays: number | undefined;
 
     if (newStreak >= 7) {
-      bonus = XP_REWARDS.STREAK_7_DAY;
-      bonusDays = 7;
-      await awardXP(userId, '7-day streak bonus', bonus);
+      const alreadyAwarded = await hasStreakBonusToday(userId, '7-day streak bonus', today);
+      if (!alreadyAwarded) {
+        bonus = XP_REWARDS.STREAK_7_DAY;
+        bonusDays = 7;
+        await awardXP(userId, '7-day streak bonus', bonus);
+      }
       newStreak = 0;
     }
 
     if (newLongStreak >= 30) {
-      bonus = XP_REWARDS.STREAK_30_DAY;
-      bonusDays = 30;
-      await awardXP(userId, '30-day streak bonus', bonus);
+      const alreadyAwarded = await hasStreakBonusToday(userId, '30-day streak bonus', today);
+      if (!alreadyAwarded) {
+        bonus = XP_REWARDS.STREAK_30_DAY;
+        bonusDays = 30;
+        await awardXP(userId, '30-day streak bonus', bonus);
+      }
       newLongStreak = 0;
     }
 
-    await db
+    const { error: streakUpdateError } = await db
       .from('users')
       .update({
         streak_count: newStreak,
@@ -412,6 +450,10 @@ export async function updateStreak(
         streak_long_updated_at: today,
       })
       .eq('id', userId);
+
+    if (streakUpdateError) {
+      console.error('Failed to persist streak update:', streakUpdateError);
+    }
 
     return { newStreak, longStreak: newLongStreak, bonus, bonusDays };
   } catch (error) {
