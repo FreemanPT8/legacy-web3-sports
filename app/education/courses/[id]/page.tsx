@@ -90,6 +90,9 @@ type Course = {
   author?: AuthorIdentity | null;
   isCreator?: boolean;
   modules?: Module[];
+  curriculum?: {
+    topics?: Module[];
+  };
   total_modules?: number;
   total_lessons?: number;
   total_xp?: number;
@@ -393,15 +396,29 @@ const sanitizeCourseDescription = (html: string) =>
   const modules: Module[] = Array.isArray(course.modules)
     ? (course.modules as Module[])
     : [];
+  const curriculumModules: Module[] = Array.isArray(course.curriculum?.topics)
+    ? (course.curriculum?.topics as Module[])
+    : [];
+  const modulesList = modules.length > 0 ? modules : curriculumModules;
 
-  const totalModules = course.total_modules ?? 0;
-  const totalLessons = course.total_lessons ?? 0;
-  const totalXP = course.total_xp ?? 0;
+  const totalModules =
+    course.total_modules ??
+    (modulesList.length > 0 ? modulesList.length : 0);
+  const totalLessons =
+    course.total_lessons ??
+    modulesList.reduce(
+      (acc, mod) =>
+        acc + (Array.isArray(mod.lessons) ? mod.lessons.length : 0),
+      0,
+    );
+  const totalXP =
+    course.total_xp ??
+    modulesList.reduce((acc, mod) => acc + (mod.xp_available ?? 0), 0);
   const xpRequired = course.xp_threshold ?? 0;
   const xpDistributed = course.xp_distributed ?? 0;
   const userXpInCourse = course.xp_earned_by_user ?? 0;
 
-  const authorName = resolveCourseAuthorName(course, modules);
+  const authorName = resolveCourseAuthorName(course, modulesList);
   const isCourseCreator =
     isFlagTrue(course.isCreator) ||
     (!!user &&
@@ -555,7 +572,7 @@ const sanitizeCourseDescription = (html: string) =>
             </Card>
 
             {/* MÓDULOS & LIÇÕES */}
-            {modules.length === 0 ? (
+            {modulesList.length === 0 ? (
               <Card className="border border-white/10 bg-[#04131b]/80">
                 <CardContent className="py-8 text-center text-slate-300">
                   {tr(
@@ -566,7 +583,7 @@ const sanitizeCourseDescription = (html: string) =>
               </Card>
             ) : (
               <div className="space-y-6">
-              {modules.map((mod, moduleIndex) => {
+              {modulesList.map((mod, moduleIndex) => {
                 const moduleLabel = tr('courses.moduleLabel', 'Tópico');
                   const modTitle = getLocalizedText(
                     mod.title,
