@@ -468,7 +468,7 @@ const sanitizeCourseDescription = (html: string) =>
                       )}
                     </div>
 
-                    <CardTitle className="text-3xl font-semibold text-white">
+                    <CardTitle className="text-3xl font-semibold text-[#fdd87c]">
                       {title}
                     </CardTitle>
 
@@ -610,7 +610,7 @@ const sanitizeCourseDescription = (html: string) =>
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start gap-3">
                           <div>
-                            <CardTitle className="text-lg flex items-center gap-2 text-white">
+                            <CardTitle className="text-lg flex items-center gap-2 text-[#fdd87c]">
                               {modTitle}
                               {isModuleCreator && (
                                 <Badge className="bg-purple-600 text-white flex items-center gap-1">
@@ -648,7 +648,7 @@ const sanitizeCourseDescription = (html: string) =>
                       <CardContent className="pt-0 space-y-4">
                         {hasModuleDescription && (
                           <div
-                            className="rounded-2xl border border-white/10 bg-[#04131b]/70 p-4 text-sm leading-relaxed text-slate-200 [&_strong]:text-white"
+                            className="rounded-2xl border border-white/10 bg-[#04131b]/70 p-4 text-sm leading-relaxed text-cyan-100 [&_strong]:text-white"
                             dangerouslySetInnerHTML={{
                               __html: moduleDescriptionHtml,
                             }}
