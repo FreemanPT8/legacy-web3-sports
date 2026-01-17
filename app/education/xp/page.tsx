@@ -446,7 +446,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     unlockNote:
 
-      'Ao atingir marcos, desbloqueias comentarios privados, mensagens com a House, missoes e desafios. O objectivo e elevar o padrao, nao coleccionar "pontos".',
+      'Ao atingir marcos, desbloqueias mensagens privadas com a House, missoes e desafios. O objectivo e elevar o padrao, nao coleccionar "pontos".',
 
 
 
@@ -604,7 +604,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     unlockNote:
 
-      'Al alcanzar hitos, desbloqueas comentarios privados, mensajes con la House, misiones y desafios. El objetivo es elevar el estandar, no coleccionar "puntos".',
+      'Al alcanzar hitos, desbloqueas mensajes privados con la House, misiones y desafios. El objetivo es elevar el estandar, no coleccionar "puntos".',
 
 
 
@@ -762,7 +762,7 @@ const XP_COPY: Record<SupportedCopyLang, CopyPack> = {
 
     unlockNote:
 
-      'Hit milestones to unlock private comments, House private messages, missions, and challenges. The goal is standards, not points.',
+      'Hit milestones to unlock House private messages, missions, and challenges. The goal is standards, not points.',
 
 
 
@@ -1711,46 +1711,6 @@ const getRewardMeta = (action: string, language: SupportedCopyLang): { title: st
 
 };
 
-type CommentRulesCopy = {
-  title: string;
-  intro: string;
-  points: string[];
-  badge: string;
-};
-
-const COMMENT_RULES_COPY: Record<SupportedCopyLang, CommentRulesCopy> = {
-  pt: {
-    title: 'Sistema de comentarios privados',
-    intro: 'Desbloqueias aos 369 XP e comentas em licoes e blog posts com login feito. Mensagens privadas com a tua House tambem ficam disponiveis.',
-    points: [
-      '0 XP base: comentarios servem para contexto, nao para farming.',
-      'Limites diarios: 8 comentarios por dia para membros (33 para Super Admin, Admin, Heads e Moderadores).',
-      'Limites de emoji: +1 (5/dia), fogo (1/dia) e -1 (1/dia). Nenhum gera XP direto.',
-      'Casas sao privadas: apenas administracao, moderadores e membros dessa House leem.',
-    ],
-    badge: 'O comentario publico com mais reaction points (positivo + 2*fogo) na semana recebe 88 XP + o badge "Comentario da Semana".',
-  },
-  es: {
-    title: 'Sistema de comentarios privados',
-    intro: 'Se desbloquea a los 369 XP para comentar en lecciones y posts con inicio de sesion. Los mensajes privados con tu House tambien se activan.',
-    points: [
-      '0 XP base: comentar sirve para aportar contexto, no para farmear.',
-      'Limites diarios: 8 comentarios por miembro (33 para Super Admin, Admin, Heads y Moderadores).',
-      'Limites de emoji: +1 (5/dia), fuego (1/dia) y -1 (1/dia). Ninguno da XP directo.',
-      'Los comentarios solo existen en lecciones y posts, visibles para miembros con inicio de sesion.',
-    ],
-    badge: 'El comentario publico con mas reaction points (positivo + 2*fuego) en la semana gana 88 XP + el badge "Comentario de la Semana".',
-  },
-  en: {
-    title: 'Private comments system',
-    intro: 'Unlocks at 369 XP so committed members comment in lessons and blog posts. House private messages also unlock.',
-    points: [
-      '0 XP base: comments exist for context, not XP farming.',
-      'House conversations stay private to admins, moderators, and members of that House.',
-    ],
-    badge: 'The public comment with the most reaction points (positive + 2*fire) each week earns 88 XP and the "Comment of the Week" badge.',
-  },
-};
 
 const formatRange = (min: number | null, max: number | null) => {
 
@@ -1825,7 +1785,6 @@ export default function EducationXpPage() {
 
   const copy = XP_COPY[language] ?? XP_COPY.en;
 
-  const commentRulesCopy = COMMENT_RULES_COPY[language] ?? COMMENT_RULES_COPY.en;
 
   const onboardingCopy = ONBOARDING_COPY[language] ?? ONBOARDING_COPY.en;
 
@@ -4360,13 +4319,13 @@ export default function EducationXpPage() {
 
                           {language === 'pt'
 
-                            ? 'Comentarios privados desbloqueiam aos 369 XP e vivem dentro de licoes e blog posts. As mensagens privadas com a House tambem desbloqueiam.'
+                            ? 'Mensagens privadas com a House desbloqueiam aos 369 XP.'
 
                             : language === 'es'
 
-                            ? 'Los comentarios privados se desbloquean a los 369 XP y viven dentro de lecciones y posts. Los mensajes privados con la House tambien se activan.'
+                            ? 'Los mensajes privados con la House se desbloquean a los 369 XP.'
 
-                            : 'Private comments unlock at 369 XP inside lessons and blog posts. Private messages with your House also unlock.'}
+                            : 'House private messages unlock at 369 XP.'}
 
                         </p>
 
@@ -4421,34 +4380,6 @@ export default function EducationXpPage() {
                           })}
 
 
-
-                          <div className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4">
-
-                            <p className="text-sm font-semibold text-white">{commentRulesCopy.title}</p>
-
-                            <p className={cn(UI.micro, 'mt-1 text-slate-300')}>{commentRulesCopy.intro}</p>
-
-                            <ul className="mt-3 space-y-2 text-sm text-slate-200">
-
-                              {commentRulesCopy.points.map((point) => (
-
-                                <li key={point} className="flex items-start gap-2">
-
-                                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-400" />
-
-                                  <span>{point}</span>
-
-                                </li>
-
-                              ))}
-
-                            </ul>
-
-                            <div className="mt-3 rounded-lg border border-amber-300/40 bg-amber-400/10 p-3 text-xs text-amber-100">
-
-                              {commentRulesCopy.badge}
-
-                            </div>
 
                           </div>
 

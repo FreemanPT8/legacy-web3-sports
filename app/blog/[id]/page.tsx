@@ -34,7 +34,6 @@ import type { Language } from '@/lib/i18n';
 import type { LangCode } from '@/types/builder';
 import { TranslationFallbackDialog } from '@/components/language/TranslationFallbackDialog';
 import { GlossaryRichText } from '@/components/glossary/GlossaryRichText';
-import { ContentComments } from '@/components/comments/ContentComments';
 
 type MultiLang = Record<string, string>;
 
@@ -497,13 +496,6 @@ export default function BlogPostPage() {
               </Card>
             )}
 
-            {post && (
-              <ContentComments
-                contentId={post.id}
-                contentType="blog_post"
-                title="Comentários privados deste artigo"
-              />
-            )}
           </div>
         </div>
       </main>

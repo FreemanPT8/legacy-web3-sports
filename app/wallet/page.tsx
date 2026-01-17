@@ -364,7 +364,6 @@ export default function WalletPage() {
                 </p>
                 <ul className="space-y-2 text-sm text-gray-700">
                   <li>✓ Complete lessons and courses</li>
-                  <li>✓ Share private comments & emoji reactions</li>
                   <li>✓ Maintain daily streaks</li>
                   <li>✓ Achieve milestones</li>
                 </ul>
