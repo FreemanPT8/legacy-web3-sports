@@ -111,44 +111,7 @@
     - `completed_at` (timestamptz)
     - `xp_earned` (integer)
 
-  ### 10. `forum_rooms` - Forum categories/rooms
-    - `id` (uuid, primary key)
-    - `name` (jsonb) - Multilingual names
-    - `description` (jsonb) - Multilingual descriptions
-    - `is_private` (boolean) - Invite-only rooms
-    - `house` (text) - Associated House of Sports
-    - `created_at` (timestamptz)
-
-  ### 11. `forum_room_members` - Private room access
-    - `id` (uuid, primary key)
-    - `room_id` (uuid, foreign key to forum_rooms)
-    - `user_id` (uuid, foreign key to users)
-    - `invited_by` (uuid, foreign key to users)
-    - `joined_at` (timestamptz)
-
-  ### 12. `forum_topics` - Forum discussion topics
-    - `id` (uuid, primary key)
-    - `room_id` (uuid, foreign key to forum_rooms)
-    - `user_id` (uuid, foreign key to users)
-    - `title` (text)
-    - `content` (text)
-    - `pinned` (boolean)
-    - `locked` (boolean)
-    - `views` (integer)
-    - `created_at` (timestamptz)
-    - `updated_at` (timestamptz)
-
-  ### 13. `forum_posts` - Forum replies
-    - `id` (uuid, primary key)
-    - `topic_id` (uuid, foreign key to forum_topics)
-    - `user_id` (uuid, foreign key to users)
-    - `content` (text)
-    - `likes` (integer)
-    - `moderated` (boolean) - Flagged by admin
-    - `created_at` (timestamptz)
-    - `updated_at` (timestamptz)
-
-  ### 14. `daily_missions` - Daily XP challenges
+  ### 10. `daily_missions` - Daily XP challenges
     - `id` (uuid, primary key)
     - `user_id` (uuid, foreign key to users)
     - `mission_type` (text) - Action to complete
@@ -189,14 +152,14 @@
   ### 17. `content_likes` - Track user likes on content
     - `id` (uuid, primary key)
     - `user_id` (uuid, foreign key to users)
-    - `content_id` (uuid) - References blog/forum posts
-    - `content_type` (text) - blog_post, forum_post
+    - `content_id` (uuid) - References blog posts
+    - `content_type` (text) - blog_post
     - `created_at` (timestamptz)
 
   ### 18. `xp_daily_limits` - Track daily XP action limits
     - `id` (uuid, primary key)
     - `user_id` (uuid, foreign key to users)
-    - `action_type` (text) - forum_post, forum_topic
+    - `action_type` (text)
     - `count` (integer) - Actions today
     - `xp_earned` (integer) - XP earned today for this action
     - `date` (date)
@@ -206,7 +169,6 @@
   - Super Admin and Admin roles can manage content
   - Members can only access/modify their own data
   - Public content is readable by all
-  - Forum access gated by XP thresholds
 */
 
 -- Create users table
@@ -334,52 +296,7 @@ CREATE TABLE IF NOT EXISTS blog_reads (
   UNIQUE(user_id, blog_post_id)
 );
 
--- Create forum rooms
-CREATE TABLE IF NOT EXISTS forum_rooms (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name jsonb NOT NULL DEFAULT '{}',
-  description jsonb NOT NULL DEFAULT '{}',
-  is_private boolean DEFAULT false,
-  house text,
-  created_at timestamptz DEFAULT now()
-);
-
--- Create forum room members
-CREATE TABLE IF NOT EXISTS forum_room_members (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  room_id uuid REFERENCES forum_rooms(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
-  invited_by uuid REFERENCES users(id) ON DELETE SET NULL,
-  joined_at timestamptz DEFAULT now(),
-  UNIQUE(room_id, user_id)
-);
-
--- Create forum topics
-CREATE TABLE IF NOT EXISTS forum_topics (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  room_id uuid REFERENCES forum_rooms(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
-  title text NOT NULL,
-  content text NOT NULL,
-  pinned boolean DEFAULT false,
-  locked boolean DEFAULT false,
-  views integer DEFAULT 0,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
--- Create forum posts
-CREATE TABLE IF NOT EXISTS forum_posts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  topic_id uuid REFERENCES forum_topics(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
-  content text NOT NULL,
-  likes integer DEFAULT 0,
-  moderated boolean DEFAULT false,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
+ 
 -- Create daily missions
 CREATE TABLE IF NOT EXISTS daily_missions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -430,7 +347,7 @@ CREATE TABLE IF NOT EXISTS content_likes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES users(id) ON DELETE CASCADE,
   content_id uuid NOT NULL,
-  content_type text NOT NULL CHECK (content_type IN ('blog_post', 'forum_post')),
+  content_type text NOT NULL CHECK (content_type IN ('blog_post')),
   created_at timestamptz DEFAULT now(),
   UNIQUE(user_id, content_id, content_type)
 );
@@ -457,8 +374,8 @@ CREATE INDEX IF NOT EXISTS idx_lessons_module ON lessons(module_id);
 CREATE INDEX IF NOT EXISTS idx_modules_course ON modules(course_id);
 CREATE INDEX IF NOT EXISTS idx_blog_posts_published ON blog_posts(published, published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_blog_posts_category ON blog_posts(category);
-CREATE INDEX IF NOT EXISTS idx_forum_topics_room ON forum_topics(room_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_forum_posts_topic ON forum_posts(topic_id, created_at);
+
+
 CREATE INDEX IF NOT EXISTS idx_daily_missions_user_date ON daily_missions(user_id, date);
 
 -- Enable Row Level Security
@@ -471,10 +388,10 @@ ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lesson_completions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_reads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE forum_rooms ENABLE ROW LEVEL SECURITY;
-ALTER TABLE forum_room_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE forum_topics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE forum_posts ENABLE ROW LEVEL SECURITY;
+
+
+
+
 ALTER TABLE daily_missions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE onboarding_submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
@@ -615,88 +532,6 @@ CREATE POLICY "Users can view own blog reads"
 CREATE POLICY "Users can insert own blog reads"
   ON blog_reads FOR INSERT
   TO authenticated
-  WITH CHECK (user_id = auth.uid());
-
--- RLS Policies for forum_rooms
-CREATE POLICY "Members can view accessible rooms"
-  ON forum_rooms FOR SELECT
-  TO authenticated
-  USING (
-    is_private = false OR
-    EXISTS (SELECT 1 FROM forum_room_members WHERE room_id = forum_rooms.id AND user_id = auth.uid())
-  );
-
-CREATE POLICY "Admins can manage forum rooms"
-  ON forum_rooms FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('Super Admin', 'Admin'))
-  )
-  WITH CHECK (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('Super Admin', 'Admin'))
-  );
-
--- RLS Policies for forum_room_members
-CREATE POLICY "Members can view room membership"
-  ON forum_room_members FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY "Admins can manage room membership"
-  ON forum_room_members FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('Super Admin', 'Admin'))
-  )
-  WITH CHECK (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('Super Admin', 'Admin'))
-  );
-
--- RLS Policies for forum_topics
-CREATE POLICY "Members can view topics in accessible rooms"
-  ON forum_topics FOR SELECT
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM forum_rooms r
-      WHERE r.id = forum_topics.room_id
-      AND (r.is_private = false OR EXISTS (SELECT 1 FROM forum_room_members WHERE room_id = r.id AND user_id = auth.uid()))
-    )
-  );
-
-CREATE POLICY "Members can create topics"
-  ON forum_topics FOR INSERT
-  TO authenticated
-  WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY "Users can update own topics"
-  ON forum_topics FOR UPDATE
-  TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
-
--- RLS Policies for forum_posts
-CREATE POLICY "Members can view posts in accessible topics"
-  ON forum_posts FOR SELECT
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM forum_topics t
-      JOIN forum_rooms r ON r.id = t.room_id
-      WHERE t.id = forum_posts.topic_id
-      AND (r.is_private = false OR EXISTS (SELECT 1 FROM forum_room_members WHERE room_id = r.id AND user_id = auth.uid()))
-    )
-  );
-
-CREATE POLICY "Members can create posts"
-  ON forum_posts FOR INSERT
-  TO authenticated
-  WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY "Users can update own posts"
-  ON forum_posts FOR UPDATE
-  TO authenticated
-  USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
 -- RLS Policies for daily_missions
