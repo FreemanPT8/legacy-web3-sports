@@ -314,7 +314,7 @@ export default function BlogPostPage() {
             </button>
 
             {post.image_url && (
-              <div className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-[#03151d]">
+              <div className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-[#04131b]/80">
                 <div className="relative w-full pb-[56.25%]">
                   <Image
                     src={post.image_url}
@@ -337,13 +337,13 @@ export default function BlogPostPage() {
             )}
 
             {/* Header do artigo */}
-            <Card className="mb-4 border border-white/10 bg-[#000c12]">
+            <Card className="mb-4 border border-white/10 bg-[#04131b]/80">
               <CardHeader>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="outline"
-                      className="border-white/20 bg-[#05212b] text-slate-200"
+                      className="border-white/20 bg-[#000c12]/40 text-slate-200"
                     >
                       {post.category || 'General'}
                     </Badge>
@@ -417,7 +417,7 @@ export default function BlogPostPage() {
             </Card>
 
             {/* Meta info: stats de XP e leitores */}
-            <Card className="mb-6 border border-white/10 bg-[#000c12]">
+            <Card className="mb-6 border border-white/10 bg-[#04131b]/80">
               <CardContent className="py-4 text-sm text-slate-300">
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
@@ -460,7 +460,7 @@ export default function BlogPostPage() {
             </Card>
 
             {/* Conteúdo + ContentTracker */}
-            <Card className="mb-6 border border-white/10 bg-[#000c12]">
+            <Card className="mb-6 border border-white/10 bg-[#04131b]/80">
               <CardContent className="prose prose-invert prose-headings:text-white prose-p:text-slate-200 prose-strong:text-white max-w-none py-8">
                 {!isAuthor ? (
                   <ContentTracker
@@ -529,3 +529,4 @@ export default function BlogPostPage() {
     </div>
   );
 }
+

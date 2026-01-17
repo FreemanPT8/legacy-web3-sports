@@ -426,10 +426,10 @@ const sanitizeCourseDescription = (html: string) =>
             </div>
 
             {/* HEADER DO CURSO */}
-            <Card className="mb-6 overflow-hidden border border-white/10 bg-[#000c12]">
+            <Card className="mb-6 overflow-hidden border border-white/10 bg-[#04131b]/80">
               {/* Thumbnail / Placeholder */}
               {imageUrl ? (
-                <div className="w-full h-72 md:h-[420px] border-b border-white/10 bg-[#000c12] overflow-hidden">
+                <div className="w-full h-72 md:h-[420px] border-b border-white/10 bg-[#04131b]/80 overflow-hidden">
                   <img
                     src={imageUrl}
                     alt={title}
@@ -437,7 +437,7 @@ const sanitizeCourseDescription = (html: string) =>
                   />
                 </div>
               ) : (
-                <div className="w-full h-72 md:h-[420px] bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 flex items-center justify-center">
+                <div className="w-full h-72 md:h-[420px] bg-gradient-to-br from-[#021c27] via-[#033042] to-[#0a3b4a] flex items-center justify-center">
                   <div className="flex flex-col items-center text-white">
                     <div className="flex items-center gap-2 mb-1">
                       <BookOpen className="h-7 w-7" />
@@ -531,7 +531,7 @@ const sanitizeCourseDescription = (html: string) =>
                   ].map((stat) => (
                     <div
                       key={stat.key}
-                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#05212b]/70 px-3 py-3"
+                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#04131b]/70 px-3 py-3"
                     >
                       {stat.icon}
                       <div>
@@ -556,7 +556,7 @@ const sanitizeCourseDescription = (html: string) =>
 
             {/* MÓDULOS & LIÇÕES */}
             {modules.length === 0 ? (
-              <Card className="border border-white/10 bg-[#000c12]">
+              <Card className="border border-white/10 bg-[#04131b]/80">
                 <CardContent className="py-8 text-center text-slate-300">
                   {tr(
                     'courses.noModules',
@@ -605,7 +605,7 @@ const sanitizeCourseDescription = (html: string) =>
                   return (
                     <Card
                       key={mod.id}
-                      className="border border-white/10 bg-[#05212b]"
+                      className="border border-white/10 bg-[#04131b]/80"
                     >
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start gap-3">
@@ -648,7 +648,7 @@ const sanitizeCourseDescription = (html: string) =>
                       <CardContent className="pt-0 space-y-4">
                         {hasModuleDescription && (
                           <div
-                            className="rounded-2xl border border-white/10 bg-[#000c12]/70 p-4 text-sm leading-relaxed text-slate-200 [&_strong]:text-white"
+                            className="rounded-2xl border border-white/10 bg-[#04131b]/70 p-4 text-sm leading-relaxed text-slate-200 [&_strong]:text-white"
                             dangerouslySetInnerHTML={{
                               __html: moduleDescriptionHtml,
                             }}
@@ -816,7 +816,7 @@ const sanitizeCourseDescription = (html: string) =>
             if (!open) setLockedLesson(null);
           }}
         >
-          <DialogContent className="border border-white/10 bg-[#000c12] text-white">
+          <DialogContent className="border border-white/10 bg-[#04131b]/80 text-white">
             <DialogHeader>
               <DialogTitle>{lockedCopy.title}</DialogTitle>
               <DialogDescription className="text-slate-300">
@@ -853,3 +853,4 @@ const sanitizeCourseDescription = (html: string) =>
     </div>
   );
 }
+
