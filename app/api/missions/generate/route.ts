@@ -126,10 +126,12 @@ export async function POST(request: Request) {
       }
     }
 
+    const insertedCount = insertedMissions?.length ?? 0;
+
     return NextResponse.json({
       success: true,
-      missions: insertedMissions,
-      message: `Generated ${insertedMissions.length} missions for today`
+      missions: insertedMissions || [],
+      message: `Generated ${insertedCount} missions for today`
     });
   } catch (error) {
     logger.error('Mission generation error:', error);
