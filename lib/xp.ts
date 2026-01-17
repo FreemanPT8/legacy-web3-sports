@@ -49,7 +49,9 @@ export async function awardXP(
   try {
     const { data: user, error: userError } = await db
       .from('users')
-      .select('xp_total')
+      .select(
+        'xp_total, streak_count, streak_updated_at, streak_long_count, streak_long_updated_at',
+      )
       .eq('id', userId)
       .maybeSingle();
 
@@ -96,7 +98,10 @@ export async function awardXP(
     }
 
     if (!skipStreakUpdate && !action.toLowerCase().includes('streak bonus')) {
-      await updateStreak(userId, true);
+      const streakResult = await updateStreak(userId, true);
+      if (streakResult.newStreak === 0) {
+        await forceStartStreak(userId, user, getTodayCETDate());
+      }
     }
 
     return { success: true, newTotal };
@@ -188,6 +193,54 @@ export async function markContentComplete(
 
 export function getRandomXP(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+async function forceStartStreak(
+  userId: string,
+  user: {
+    streak_count?: number | null;
+    streak_updated_at?: string | null;
+    streak_long_count?: number | null;
+    streak_long_updated_at?: string | null;
+  } | null,
+  today: string,
+) {
+  if (!user) return;
+
+  const lastUpdate = user.streak_updated_at ?? null;
+  const lastLongUpdate = user.streak_long_updated_at ?? null;
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = getTodayCETDate(yesterday);
+
+  let nextStreak = 1;
+  if (lastUpdate === yesterdayStr) {
+    nextStreak = (user.streak_count ?? 0) + 1;
+  } else if (lastUpdate === today) {
+    nextStreak = Math.max(user.streak_count ?? 0, 1);
+  }
+
+  let nextLongStreak = 1;
+  if (lastLongUpdate === yesterdayStr) {
+    nextLongStreak = (user.streak_long_count ?? 0) + 1;
+  } else if (lastLongUpdate === today) {
+    nextLongStreak = Math.max(user.streak_long_count ?? 0, 1);
+  }
+
+  const { error } = await db
+    .from('users')
+    .update({
+      streak_count: nextStreak,
+      streak_long_count: nextLongStreak,
+      streak_updated_at: today,
+      streak_long_updated_at: today,
+    })
+    .eq('id', userId);
+
+  if (error) {
+    console.error('forceStartStreak failed:', error);
+  }
 }
 
 async function hasStreakBonusToday(
