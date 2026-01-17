@@ -1136,11 +1136,14 @@ export default function EducationPage() {
                     const title = getMultilingualContent(course.title, language);
                     const description = getMultilingualContent(course.description, language);
                     const isLockedByXp = course.xp_required > (user?.xp_total || 0);
-                    const modulesArray = Array.isArray(course.modules) ? course.modules : [];
-                    const lessonsCount = modulesArray.reduce((acc: number, mod: any) => {
-                      const lessonsArray = Array.isArray(mod.lessons) ? mod.lessons : [];
+                    const topicsArray = Array.isArray(course?.curriculum?.topics)
+                      ? course.curriculum.topics
+                      : [];
+                    const lessonsCount = topicsArray.reduce((acc: number, topic: any) => {
+                      const lessonsArray = Array.isArray(topic?.lessons) ? topic.lessons : [];
                       return acc + lessonsArray.length;
                     }, 0);
+                    const topicsCount = topicsArray.length;
 
                     const courseHref = `/education/courses/${course.id}`;
                     const startHref = gate(courseHref);
@@ -1170,7 +1173,7 @@ export default function EducationPage() {
                             <div className="flex items-center gap-2 text-sm text-slate-200">
                               <BookOpen className="h-4 w-4 text-cyan-300" />
                               <span>
-                                {modulesArray.length} {t('education.modules')} / {lessonsCount} {t('education.lessons')}
+                                {topicsCount} {t('education.modules')} / {lessonsCount} {t('education.lessons')}
                               </span>
                             </div>
 
