@@ -6,6 +6,7 @@ import {
   hasCompletedContent,
   markContentComplete,
   markCourseCompleteIfReady,
+  updateStreak,
 } from '@/lib/xp';
 import { fetchLessonContext } from '@/lib/lesson-context';
 import { recordComboEvent } from '@/lib/comboMissions';
@@ -146,6 +147,14 @@ export async function POST(
     }
 
     await recordComboEvent(userId, 'lesson');
+
+    if (effectiveXpForReader > 0) {
+      try {
+        await updateStreak(userId);
+      } catch (error) {
+        console.error('Failed to update streak after lesson completion:', error);
+      }
+    }
 
     if (lessonContext?.course?.id) {
       await markCourseCompleteIfReady(

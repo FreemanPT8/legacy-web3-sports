@@ -477,38 +477,44 @@ export default function DashboardPage() {
                     {comboError && (
                       <p className="text-sm text-rose-300">{comboError}</p>
                     )}
-                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-slate-200">
-                      <p className="font-semibold text-white">
-                        {t('dashboard.comboProgress')}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {t('dashboard.comboHint')}
-                      </p>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-white/10 bg-[#04131b]/80 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-200">
+                            {t('dashboard.comboProgress')}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-300">
+                            {t('dashboard.comboHint')}
+                          </p>
+                        </div>
+                        <Sparkles className="h-4 w-4 text-[#fdd87c]" />
+                      </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
                         {[
                           { key: 'glossary', label: t('dashboard.glossaryTerms') },
                           { key: 'blog', label: t('dashboard.blogReads') },
                           { key: 'lesson', label: t('dashboard.lessons') },
-                        ].map((item) => (
-                          <div
-                            key={item.key}
-                            className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                        ].map((item) => {
+                          const count =
+                            item.key === 'glossary'
+                              ? comboProgress?.glossary_count ?? 0
+                              : item.key === 'blog'
+                              ? comboProgress?.blog_count ?? 0
+                              : comboProgress?.lesson_count ?? 0;
+                          return (
+                            <div
+                              key={item.key}
+                              className="rounded-xl border border-white/10 bg-black/30 px-3 py-3"
+                            >
+                              <p className="text-[10px] uppercase tracking-[0.35em] text-[#fdd87c]">
                                 {item.label}
-                              </span>
-                              <Sparkles className="h-3 w-3 text-[#fdd87c]" />
+                              </p>
+                              <p className="mt-2 text-2xl font-semibold text-white">
+                                {count}
+                              </p>
                             </div>
-                            <p className="mt-1 text-base font-semibold text-white">
-                              {item.key === 'glossary'
-                                ? comboProgress?.glossary_count ?? 0
-                                : item.key === 'blog'
-                                ? comboProgress?.blog_count ?? 0
-                                : comboProgress?.lesson_count ?? 0}
-                            </p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                     {[
@@ -536,18 +542,14 @@ export default function DashboardPage() {
                     ].map((route) => (
                       <div
                         key={route.key}
-                        className={`rounded-2xl border p-4 ${
-                          route.completed
-                            ? 'border-emerald-500/60 bg-emerald-500/10'
-                            : 'border-white/10 bg-black/30'
-                        }`}
+                        className="rounded-2xl border border-white/10 bg-[#000c12]/40 p-4"
                       >
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+                            <p className="text-[11px] uppercase tracking-[0.4em] text-[#fdd87c]">
                               {route.title}
                             </p>
-                            <p className="text-sm text-slate-300">
+                            <p className="mt-1 text-xs text-slate-300">
                               {route.completed
                                 ? t('dashboard.completedMission')
                                 : t('dashboard.inProgress')}
@@ -564,38 +566,74 @@ export default function DashboardPage() {
                             {route.completed ? t('dashboard.completedMission') : `+${route.xp} XP`}
                           </Badge>
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
                           {route.requirements.glossary > 0 && (
-                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200">
-                              <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                            <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-3">
+                              <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-200">
                                 {t('dashboard.glossaryTerms')}
-                              </span>
-                              <p className="mt-1 text-base font-semibold text-white">
+                              </p>
+                              <p className="mt-2 text-base font-semibold text-white">
                                 {Math.min(comboProgress?.glossary_count ?? 0, route.requirements.glossary)}/
                                 {route.requirements.glossary}
                               </p>
+                              <div className="mt-2 h-1.5 rounded-full bg-white/10">
+                                <div
+                                  className="h-1.5 rounded-full bg-cyan-400"
+                                  style={{
+                                    width: `${Math.min(
+                                      (comboProgress?.glossary_count ?? 0) /
+                                        route.requirements.glossary,
+                                      1,
+                                    ) * 100}%`,
+                                  }}
+                                />
+                              </div>
                             </div>
                           )}
                           {route.requirements.blog > 0 && (
-                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200">
-                              <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                            <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-3">
+                              <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-200">
                                 {t('dashboard.blogReads')}
-                              </span>
-                              <p className="mt-1 text-base font-semibold text-white">
+                              </p>
+                              <p className="mt-2 text-base font-semibold text-white">
                                 {Math.min(comboProgress?.blog_count ?? 0, route.requirements.blog)}/
                                 {route.requirements.blog}
                               </p>
+                              <div className="mt-2 h-1.5 rounded-full bg-white/10">
+                                <div
+                                  className="h-1.5 rounded-full bg-cyan-400"
+                                  style={{
+                                    width: `${Math.min(
+                                      (comboProgress?.blog_count ?? 0) /
+                                        route.requirements.blog,
+                                      1,
+                                    ) * 100}%`,
+                                  }}
+                                />
+                              </div>
                             </div>
                           )}
                           {route.requirements.lesson > 0 && (
-                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-200">
-                              <span className="uppercase tracking-[0.2em] text-[10px] text-cyan-200">
+                            <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-3">
+                              <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-200">
                                 {t('dashboard.lessons')}
-                              </span>
-                              <p className="mt-1 text-base font-semibold text-white">
+                              </p>
+                              <p className="mt-2 text-base font-semibold text-white">
                                 {Math.min(comboProgress?.lesson_count ?? 0, route.requirements.lesson)}/
                                 {route.requirements.lesson}
                               </p>
+                              <div className="mt-2 h-1.5 rounded-full bg-white/10">
+                                <div
+                                  className="h-1.5 rounded-full bg-cyan-400"
+                                  style={{
+                                    width: `${Math.min(
+                                      (comboProgress?.lesson_count ?? 0) /
+                                        route.requirements.lesson,
+                                      1,
+                                    ) * 100}%`,
+                                  }}
+                                />
+                              </div>
                             </div>
                           )}
                         </div>

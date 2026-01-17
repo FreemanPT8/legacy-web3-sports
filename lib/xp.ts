@@ -295,14 +295,18 @@ export async function updateStreak(
     }
 
     const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    const { data: recentTransactions } = await db
+    const { data: recentTransactions, error: recentTransactionsError } = await db
       .from('xp_transactions')
       .select('xp_earned, created_at')
       .gte('created_at', since.toISOString())
       .eq('user_id', userId);
 
+    if (recentTransactionsError) {
+      console.error('updateStreak failed to load xp_transactions:', recentTransactionsError);
+    }
+
     const xpToday =
-      (recentTransactions || [])
+      (recentTransactions ?? [])
         .filter((tx: { created_at?: string | null }) =>
           tx.created_at ? getTodayCETDate(new Date(tx.created_at)) === today : false,
         )

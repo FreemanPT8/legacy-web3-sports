@@ -4,6 +4,7 @@ import {
   awardXP,
   hasCompletedContent,
   markContentComplete,
+  updateStreak,
 } from '@/lib/xp';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { recordComboEvent } from '@/lib/comboMissions';
@@ -177,6 +178,14 @@ export async function POST(
     }
 
     await recordComboEvent(userId, 'blog');
+
+    if (effectiveXpForReader > 0) {
+      try {
+        await updateStreak(userId);
+      } catch (error) {
+        console.error('Failed to update streak after blog read:', error);
+      }
+    }
 
     return NextResponse.json({
       success: true,

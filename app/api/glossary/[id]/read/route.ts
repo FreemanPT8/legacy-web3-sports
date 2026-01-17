@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
-import { awardXP } from '@/lib/xp';
+import { awardXP, updateStreak } from '@/lib/xp';
 import { recordComboEvent } from '@/lib/comboMissions';
 
 const db = supabaseAdmin ?? supabase;
@@ -108,6 +108,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     await recordComboEvent(userId, 'glossary');
+
+    try {
+      await updateStreak(userId);
+    } catch (error) {
+      console.error('Failed to update streak after glossary read:', error);
+    }
 
     return NextResponse.json({
       success: true,
