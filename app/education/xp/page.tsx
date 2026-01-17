@@ -1730,14 +1730,9 @@ const clamp0 = (n: number) => (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
 
 const formatCourseProgress = (lang: SupportedCopyLang, completed: number, total: number) => {
   if (total <= 0) return '';
-  const plural =
-    lang === 'en'
-      ? total === 1
-        ? 'course'
-        : 'courses'
-      : total === 1
-      ? 'curso'
-  : 'cursos';
+  const isEnglish = lang === 'en';
+  const isSingular = total === 1;
+  const plural = isEnglish ? (isSingular ? 'course' : 'courses') : isSingular ? 'curso' : 'cursos';
   return `${completed}/${total} ${plural}`;
 };
 
