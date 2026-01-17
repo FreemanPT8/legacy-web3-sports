@@ -241,7 +241,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const missionIds = dailyMissions.map(m => m.id);
+    const missionIds = dailyMissions.map((m: { id: string }) => m.id);
 
     const { data: userMissions, error: userMissionsError } = await db
       .from('user_missions')
