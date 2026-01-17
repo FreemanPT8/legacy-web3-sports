@@ -83,7 +83,15 @@ const createEmptyProgress = (): ComboProgressState => ({
   ...BASE_PROGRESS_STATE,
 });
 
-async function ensureDailyMissionsForDate(comboDate: string) {
+type DailyMissionSummary = {
+  id: string;
+  type: string;
+  xp_reward?: number | null;
+};
+
+async function ensureDailyMissionsForDate(
+  comboDate: string,
+): Promise<Map<string, DailyMissionSummary>> {
   const { data: existing } = await db
     .from('daily_missions')
     .select('id, type, xp_reward')
@@ -91,10 +99,7 @@ async function ensureDailyMissionsForDate(comboDate: string) {
     .eq('is_active', true);
 
   const existingMap = new Map(
-    (existing || []).map((row: { id: string; type: string; xp_reward: number }) => [
-      row.type,
-      row,
-    ]),
+    (existing || []).map((row: DailyMissionSummary) => [row.type, row]),
   );
 
   const missing = COMBO_DEFINITIONS.filter(
@@ -121,7 +126,7 @@ async function ensureDailyMissionsForDate(comboDate: string) {
       )
       .select('id, type, xp_reward');
 
-    (inserted || []).forEach((row: { id: string; type: string; xp_reward: number }) => {
+    (inserted || []).forEach((row: DailyMissionSummary) => {
       existingMap.set(row.type, row);
     });
   }
