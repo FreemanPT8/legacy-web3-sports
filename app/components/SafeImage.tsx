@@ -18,6 +18,26 @@ type Props = {
 
 const defaultFallback = '/favicon.ico';
 
+const shouldProxy = (value?: string | null) => {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return (
+      parsed.protocol === 'https:' &&
+      parsed.hostname.endsWith('.supabase.co') &&
+      parsed.pathname.startsWith('/storage/v1/object/public/')
+    );
+  } catch {
+    return false;
+  }
+};
+
+const resolveSrc = (value?: string | null) => {
+  if (!value) return value;
+  if (!shouldProxy(value)) return value;
+  return `/api/media/proxy?url=${encodeURIComponent(value)}`;
+};
+
 export function SafeImage({
   src,
   alt = '',
@@ -31,11 +51,12 @@ export function SafeImage({
   fill = false,
 }: Props) {
   const fallback = fallbackSrc || defaultFallback;
-  const [currentSrc, setCurrentSrc] = React.useState(src || fallback);
+  const resolvedSrc = resolveSrc(src);
+  const [currentSrc, setCurrentSrc] = React.useState(resolvedSrc || fallback);
 
   React.useEffect(() => {
-    setCurrentSrc(src || fallback);
-  }, [src, fallback]);
+    setCurrentSrc(resolvedSrc || fallback);
+  }, [resolvedSrc, fallback]);
 
   return (
     <Image
