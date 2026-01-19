@@ -55,7 +55,11 @@ export async function GET(request: NextRequest) {
     const etag = upstream.headers.get('etag');
 
     if (contentType) headers.set('content-type', contentType);
-    if (cacheControl) headers.set('cache-control', cacheControl);
+    if (cacheControl) {
+      headers.set('cache-control', cacheControl);
+    } else {
+      headers.set('cache-control', 'public, max-age=86400, s-maxage=86400');
+    }
     if (etag) headers.set('etag', etag);
 
     return new NextResponse(body, { status: 200, headers });
