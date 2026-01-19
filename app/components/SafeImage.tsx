@@ -30,8 +30,12 @@ export function SafeImage({
   style,
   fill = false,
 }: Props) {
-  const [currentSrc, setCurrentSrc] = React.useState(src || fallbackSrc || defaultFallback);
   const fallback = fallbackSrc || defaultFallback;
+  const [currentSrc, setCurrentSrc] = React.useState(src || fallback);
+
+  React.useEffect(() => {
+    setCurrentSrc(src || fallback);
+  }, [src, fallback]);
 
   return (
     <Image

@@ -1,4 +1,20 @@
 /** @type {import('next').NextConfig} */
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+let supabasePattern = null;
+
+if (supabaseUrl) {
+  try {
+    const parsed = new URL(supabaseUrl);
+    supabasePattern = {
+      protocol: parsed.protocol.replace(':', ''),
+      hostname: parsed.hostname,
+      ...(parsed.port ? { port: parsed.port } : {}),
+    };
+  } catch (error) {
+    console.warn('Invalid NEXT_PUBLIC_SUPABASE_URL for image patterns:', error);
+  }
+}
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -8,7 +24,11 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    formats: ['image/webp']
+    formats: ['image/webp'],
+    remotePatterns: [
+      ...(supabasePattern ? [supabasePattern] : []),
+      { protocol: 'https', hostname: '*.supabase.co' },
+    ],
   },
   swcMinify: true,
   compiler: {
