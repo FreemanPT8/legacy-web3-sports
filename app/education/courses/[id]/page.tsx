@@ -509,7 +509,7 @@ const sanitizeCourseDescription = (html: string) =>
                   {[
                     {
                       key: 'modules',
-                      label: tr('courses.modules', 'Módulos'),
+                      label: tr('courses.modules', 'Tópicos'),
                       value: `${totalModules}`,
                       icon: <BookOpen className="h-5 w-5 text-cyan-300" />,
                     },
@@ -575,10 +575,10 @@ const sanitizeCourseDescription = (html: string) =>
             {modulesList.length === 0 ? (
               <Card className="border border-white/10 bg-[#04131b]/80">
                 <CardContent className="py-8 text-center text-slate-300">
-                  {tr(
-                    'courses.noModules',
-                    'Este curso ainda não tem módulos publicados.',
-                  )}
+                    {tr(
+                      'courses.noModules',
+                      'Este curso ainda não tem tópicos publicados.',
+                    )}
                 </CardContent>
               </Card>
             ) : (

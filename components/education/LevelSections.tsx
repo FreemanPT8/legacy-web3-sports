@@ -175,9 +175,9 @@ export function LevelSections({ summary }: Props) {
       de: 'Kurs ansehen',
     },
     modules: {
-      pt: 'modulos',
-      es: 'modulos',
-      en: 'modules',
+      pt: 'tópicos',
+      es: 'temas',
+      en: 'topics',
       fr: 'modules',
       it: 'moduli',
       de: 'module',

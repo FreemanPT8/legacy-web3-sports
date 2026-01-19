@@ -895,7 +895,7 @@ export default function CoursesPage() {
                                 <div className="flex items-center gap-2">
                                   <BookOpen className="h-4 w-4 text-[#5af3ff]" />
                                   <span>
-                                    {totalModules} {tr('courses.modules', 'módulos')}
+                                    {totalModules} {tr('courses.modules', 'tópicos')}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
