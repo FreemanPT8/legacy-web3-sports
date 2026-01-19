@@ -37,6 +37,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [lastSyncId, setLastSyncId] = useState<string | null>(null);
   const [hasSyncedProfile, setHasSyncedProfile] = useState(false);
 
+  const decodeJwtPayload = (token: string) => {
+    try {
+      const payloadPart = token.split('.')[1];
+      if (!payloadPart) return null;
+      const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(
+        normalized.length + ((4 - (normalized.length % 4)) % 4),
+        '=',
+      );
+      const payloadJson = atob(padded);
+      return JSON.parse(payloadJson) as { exp?: number };
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const isTokenExpired = (token: string) => {
+    const payload = decodeJwtPayload(token);
+    if (!payload?.exp) return false;
+    return payload.exp * 1000 <= Date.now();
+  };
+
   useEffect(() => {
     setIsHydrated(true);
     if (typeof window === 'undefined') return;
@@ -46,6 +68,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = localStorage.getItem('token');
       if (storedUser && storedToken) {
         const parsed = JSON.parse(storedUser);
+        if (isTokenExpired(storedToken)) {
+          void (async () => {
+            try {
+              const response = await fetch('/api/auth/refresh', {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${storedToken}`,
+                },
+                credentials: 'include',
+              });
+              const data = await response.json();
+              if (response.ok && data?.success && data?.user && data?.token) {
+                const safeUser = withCanonicalUserRole(data.user);
+                setUser(safeUser);
+                localStorage.setItem('user', JSON.stringify(safeUser));
+                localStorage.setItem('token', data.token);
+                setHasSyncedProfile(true);
+                setLastSyncId(null);
+              } else {
+                setUser(null);
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+              }
+            } catch (error) {
+              console.error('AuthProvider refresh error:', error);
+              setUser(null);
+              localStorage.removeItem('user');
+              localStorage.removeItem('token');
+            } finally {
+              setLoading(false);
+            }
+          })();
+          return;
+        }
         setUser(withCanonicalUserRole(parsed));
       }
     } catch (error) {

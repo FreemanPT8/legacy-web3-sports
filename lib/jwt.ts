@@ -40,6 +40,15 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
   }
 }
 
+export function verifyTokenIgnoringExpiration(token: string): JWTPayload | null {
+  if (!JWT_SECRET) return null;
+  try {
+    return jwt.verify(token, JWT_SECRET, { ignoreExpiration: true }) as JWTPayload;
+  } catch (error: any) {
+    return null;
+  }
+}
+
 // Extrai o token do header Authorization
 export function extractTokenFromHeader(header: string | null): string | null {
   if (!header) return null;
