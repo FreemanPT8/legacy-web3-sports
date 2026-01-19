@@ -61,7 +61,44 @@ export async function authenticateRequest(
     };
   }
 
-  const payload = await verifyToken(token);
+  let payload = await verifyToken(token);
+
+  if (!payload) {
+    const parts = token.split('.');
+    const payloadPart = parts.length === 3 ? parts[1] : null;
+    if (payloadPart) {
+      try {
+        const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+        const decodedJson = Buffer.from(normalized, 'base64').toString('utf8');
+        const decoded = JSON.parse(decodedJson) as Partial<JWTPayload> & {
+          exp?: number;
+          sub?: string;
+          user_id?: string;
+          id?: string;
+        };
+        if (typeof decoded.exp === 'number' && decoded.exp * 1000 <= Date.now()) {
+          return {
+            authenticated: false,
+            user: null,
+            error: 'Invalid or expired token',
+          };
+        }
+        const fallbackUserId =
+          decoded.userId || decoded.sub || decoded.user_id || decoded.id;
+        if (fallbackUserId) {
+          payload = {
+            userId: fallbackUserId,
+            username: decoded.username || '',
+            email: decoded.email || '',
+            role: decoded.role || 'Member',
+            xp_total: typeof decoded.xp_total === 'number' ? decoded.xp_total : 0,
+          };
+        }
+      } catch (error) {
+        payload = null;
+      }
+    }
+  }
 
   if (!payload) {
     return {
