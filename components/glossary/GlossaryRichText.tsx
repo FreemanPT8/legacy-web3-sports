@@ -116,6 +116,7 @@ export function GlossaryRichText({ html, className }: Props) {
     try {
       const res = await fetch(`/api/glossary/${termData.id}/read`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -312,6 +313,7 @@ export function GlossaryRichText({ html, className }: Props) {
       try {
         const token = getToken?.();
         const res = await fetch(`/api/glossary/by-slug/${activeTerm.slug}`, {
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),

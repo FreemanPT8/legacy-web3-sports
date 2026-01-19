@@ -627,6 +627,7 @@ export default function GlossaryPage() {
       try {
         const res = await fetch(`/api/glossary/${termId}/read`, {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
@@ -687,6 +688,7 @@ export default function GlossaryPage() {
         const token = getToken?.();
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
         const res = await fetch(`/api/glossary?${params.toString()}`, {
+          credentials: 'include',
           headers,
         });
         const data = await res.json();
@@ -896,6 +898,7 @@ export default function GlossaryPage() {
         editingTerm ? `/api/glossary/${editingTerm.id}` : '/api/glossary',
         {
           method: editingTerm ? 'PATCH' : 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             ...(authHeaders || {}),
@@ -929,6 +932,7 @@ export default function GlossaryPage() {
       const authHeaders = buildAuthHeaders();
       const res = await fetch(`/api/glossary/${editingTerm.id}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: authHeaders ? { ...authHeaders } : undefined,
       });
       const data = await res.json();
@@ -1270,14 +1274,17 @@ export default function GlossaryPage() {
                                   {renderTermTitle(term)}
                                 </button>
                               </div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                {completedTerms[term.id] && (
+                              <div className="flex flex-wrap items-center gap-2">
+
+                                {completedTerms[term.id] && (
+
                                   <Badge className="flex items-center gap-1 border border-emerald-400/40 bg-emerald-400/10 text-emerald-100">
                                     <CheckCircle2 className="h-3.5 w-3.5" />
                                     {copy.badges.xpComplete}
                                   </Badge>
                                 )}
-                                {canEditTerm && <StatusBadge status={term.status} />}
+                                {canEditTerm && <StatusBadge status={term.status} />}
+
                                 <Button
                                   size="icon"
                                   className="h-9 w-9 rounded-full bg-gradient-to-r from-[#fdd87c] via-[#ffd37b] to-[#f7b733] text-[#04121c] shadow-[0_0_18px_rgba(253,216,124,0.25)] transition hover:from-[#ffe5aa] hover:to-[#ffc85c]"
