@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { XP_LEVELS, getXpLevelLabel } from '@/lib/education/xpLevels';
 import { getMultilingualContent } from '@/lib/i18n';
-import { getMultilingualContent } from '@/lib/i18n';
 
 import {
   HeroContent,
