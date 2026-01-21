@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { XP_LEVELS, getXpLevelLabel } from '@/lib/education/xpLevels';
 import { getMultilingualContent } from '@/lib/i18n';
+import { getMultilingualContent } from '@/lib/i18n';
 
 import {
   HeroContent,
@@ -137,6 +138,30 @@ const PREVIEW_LEVELS: Record<EducationLanguage, { title: string; range: string }
   en: XP_LEVEL_BLOCK_COPY.en.slice(0, 4),
 };
 
+const stripHtml = (value?: string) =>
+  (value ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const COURSE_TITLE_ORDER = [
+  'comeca aqui',
+  'i — o dinheiro antes de ti historia padroes e falhancos inevitaveis',
+  'ii — o sistema em que vives moeda divida e psicologia',
+];
+
+const normalizeForOrder = (value?: string) =>
+  (value ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const resolveCourseOrder = (course: any) => {
+  const title = getMultilingualContent(course.title, 'pt');
+  const normalized = normalizeForOrder(title);
+  const index = COURSE_TITLE_ORDER.findIndex((entry) => normalized.startsWith(entry));
+  return index >= 0 ? index : COURSE_TITLE_ORDER.length;
+};
+
 const stringValue = (input: string | string[]) =>
   Array.isArray(input) ? input.join(' ') : input;
 
@@ -186,7 +211,19 @@ export default function EducationPage() {
     fetchData();
   }, []);
 
-  const featuredCourses = useMemo(() => topCourses.slice(0, 3), [topCourses]);
+  const featuredCourses = useMemo(() => {
+    const sorted = [...topCourses].sort((a, b) => {
+      const orderA = resolveCourseOrder(a);
+      const orderB = resolveCourseOrder(b);
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      const aModules = a.curriculum?.topics?.length ?? a.modules?.length ?? 0;
+      const bModules = b.curriculum?.topics?.length ?? b.modules?.length ?? 0;
+      return bModules - aModules;
+    });
+    return sorted.slice(0, 3);
+  }, [topCourses]);
   const leaderboardTop = leaderboard.slice(0, 3);
 
   const formatStat = (value?: number | null) =>
@@ -349,9 +386,9 @@ export default function EducationPage() {
         <section className="px-6">
           <div className="mx-auto max-w-6xl space-y-6">
             <div>
-              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">Cursos em destaque</p>
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">Cursos iniciais</p>
               <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">
-                Escolhe a tua entrada na Academia
+                Escolhe o teu percurso fundador
               </h2>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
@@ -363,52 +400,99 @@ export default function EducationPage() {
                     ? 'rounded-[32px] border border-white/10 bg-gradient-to-b from-[#02111d] to-[#02060e] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.75)]'
                     : 'rounded-2xl border border-white/10 bg-[#04131b]/80 p-5';
                 const title = getMultilingualContent(course.title, language);
-                const description = getMultilingualContent(course.description, language);
+                const description = stripHtml(getMultilingualContent(course.description, language));
+                const hasDescription = Boolean(description);
+                const displayDescription = hasDescription ? description : 'Curso preparado para a Academia.';
+                const showViewMore = hasDescription && description.length < 140;
+                const imageUrl =
+                  course.image_url ?? course.thumbnail_url ?? course.cover ?? course.image ?? '';
+                const descriptionHeight = 'min-h-[4.25rem]';
                 return (
-                  <Card key={course.id} className={`${highlightClass} flex flex-col gap-5`}>
-                    <div>
-                      <CardTitle className="text-lg font-semibold text-white">{title}</CardTitle>
-                      <CardDescription className="text-sm text-slate-200 mt-2">
-                        {description}
-                      </CardDescription>
+                  <Card
+                    key={course.id}
+                    className={`${highlightClass} flex h-full flex-col gap-5 border border-white/10 bg-gradient-to-b from-[#03101a]/80 to-[#01060c]`}
+                  >
+                    <div
+                      className="rounded-2xl border border-white/5 bg-[#020f19] bg-cover bg-center"
+                      style={{
+                        backgroundImage: imageUrl
+                          ? `linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url(${imageUrl})`
+                          : 'linear-gradient(180deg, rgba(2,26,46,0.8), rgba(0,0,0,0.9))',
+                        minHeight: '10rem',
+                      }}
+                    >
+                      {!imageUrl && (
+                        <div className="flex h-full items-center justify-center text-xs uppercase tracking-[0.35em] text-cyan-200">
+                          Imagem do curso
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col gap-3">
+                      <CardTitle
+                        className="text-lg font-semibold text-white leading-tight"
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {title}
+                      </CardTitle>
+                      <div className={`text-sm text-slate-200 ${descriptionHeight}`}>
+                        <p className="leading-relaxed">{displayDescription}</p>
+                        {showViewMore && (
+                          <Link
+                            href={gate('/education/courses')}
+                            className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-cyan-200"
+                          >
+                            Ver mais
+                          </Link>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-xs uppercase tracking-[0.5em] text-slate-400">
                       <span>Nível {course.level?.toUpperCase() ?? '-'}</span>
                       <span>{xpRequired} XP</span>
                     </div>
-                    {user ? (
-                      isUnlocked ? (
-                        <Button
-                          size="sm"
-                          asChild
-                          className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold"
-                        >
-                          <Link href={gate('/education/courses')} className="flex items-center justify-center gap-2">
-                            Iniciar curso
-                            <ArrowRight className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                    <div className="mt-auto">
+                      {user ? (
+                        isUnlocked ? (
+                          <Button
+                            size="sm"
+                            asChild
+                            className="w-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold"
+                          >
+                            <Link
+                              href={gate('/education/courses')}
+                              className="flex items-center justify-center gap-2"
+                            >
+                              Iniciar curso
+                              <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            disabled
+                            className="w-full border border-white/30 bg-white/5 text-slate-400 cursor-not-allowed"
+                          >
+                            Requer XP
+                          </Button>
+                        )
                       ) : (
                         <Button
                           size="sm"
-                          disabled
-                          className="w-full border border-white/30 bg-white/5 text-slate-400 cursor-not-allowed"
+                          asChild
+                          className="w-full bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold"
                         >
-                          Requer XP
+                          <Link href="/signup" className="flex items-center justify-center gap-2">
+                            Entrar / Criar conta
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
                         </Button>
-                      )
-                    ) : (
-                      <Button
-                        size="sm"
-                        asChild
-                        className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold"
-                      >
-                        <Link href="/signup" className="flex items-center justify-center gap-2">
-                          Entrar / Criar conta
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    )}
+                      )}
+                    </div>
                   </Card>
                 );
               })}
