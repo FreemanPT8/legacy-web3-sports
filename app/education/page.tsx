@@ -400,9 +400,8 @@ export default function EducationPage() {
                     : 'rounded-2xl border border-white/10 bg-[#04131b]/80 p-5';
                 const title = getMultilingualContent(course.title, language);
                 const description = stripHtml(getMultilingualContent(course.description, language));
-                const hasDescription = Boolean(description);
-                const displayDescription = hasDescription ? description : 'Curso preparado para a Academia.';
-                const showViewMore = hasDescription && description.length < 140;
+                const displayDescription = description || 'Curso preparado para a Academia.';
+                const previewDescription = `${displayDescription.slice(0, 120)}${displayDescription.length > 120 ? '...' : ''}`;
                 const imageUrl =
                   course.image_url ?? course.thumbnail_url ?? course.cover ?? course.image ?? '';
                 const descriptionHeight = 'min-h-[4.25rem]';
@@ -439,15 +438,13 @@ export default function EducationPage() {
                         {title}
                       </CardTitle>
                       <div className={`text-sm text-slate-200 ${descriptionHeight}`}>
-                        <p className="leading-relaxed">{displayDescription}</p>
-                        {showViewMore && (
-                          <Link
-                            href={gate('/education/courses')}
-                            className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-cyan-200"
-                          >
-                            Ver mais
-                          </Link>
-                        )}
+                        <p className="leading-relaxed">{previewDescription}</p>
+                        <Link
+                          href={gate('/education/courses')}
+                          className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-cyan-200"
+                        >
+                          Ver mais
+                        </Link>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-xs uppercase tracking-[0.5em] text-slate-400">
