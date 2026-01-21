@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Activity, ArrowRight, CircleDot, GraduationCap, ShieldCheck } from 'lucide-react';
+import { Activity, ArrowRight, ChevronDown, CircleDot, GraduationCap, ShieldCheck } from 'lucide-react';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { MediaLibraryDialog } from '@/components/media/MediaLibraryDialog';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -75,6 +75,15 @@ const faqs = [
     answer: 'XP regista cada lição e interação no teu perfil e leaderboard para mostrar consistência ao longo do tempo.',
   },
   {
+    question: 'Posso mostrar o XP fora da Academia?',
+    answer:
+      'O painel e o leaderboard capturam streaks e progresso para que possas provar consistência antes de enviar emails ou candidaturas.',
+  },
+  {
+    question: 'Quanto tempo posso voltar à Academia?',
+    answer: 'O acesso mantém-se. Basta iniciares sessão novamente para continuar exatamente onde paraste.',
+  },
+  {
     question: 'Isto é aconselhamento financeiro?',
     answer:
       'Não. É educação e comunidade. Não prometemos ganhos nem damos recomendações financeiras.',
@@ -96,6 +105,7 @@ export default function HomePage() {
   });
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
   const [showAllWins, setShowAllWins] = useState(false);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
   const openHeroMediaLibrary = () => {
     setHeroDialogOpen(true);
     void mediaLibrary.openLibrary();
@@ -354,19 +364,6 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
-            <div className="rounded-3xl border border-white/10 bg-[#04131b]/60 p-6 text-sm text-slate-200">
-              <p className="text-white">Cada lição concluída deixa rasto.</p>
-              <p>Vês streaks e progressão.</p>
-              <p>O XP é parcialmente variável para reduzir abuso.</p>
-              <div className="mt-4 flex flex-wrap gap-4 text-xs text-cyan-200">
-                <Link href="/education/xp" className="hover:text-white">
-                  Ver Painel de XP
-                </Link>
-                <Link href="/education/leaderboard" className="hover:text-white">
-                  Ver XP e Leaderboard
-                </Link>
-              </div>
-            </div>
             <div className="rounded-3xl border border-white/10 bg-[#04131b]/60 p-6">
               <p className="text-xs uppercase tracking-[0.5em] text-cyan-300">Houses (opcional)</p>
               <p className="mt-2 text-sm text-slate-200">
@@ -376,15 +373,40 @@ export default function HomePage() {
                 Explorar Houses
               </Link>
             </div>
+            <div className="text-center text-xs text-cyan-200">
+              <Link href="/education/leaderboard" className="hover:text-white">
+                Ver XP e Leaderboard
+              </Link>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">PERGUNTAS FREQUENTES</p>
+              <h3 className="text-2xl font-semibold text-white">Dúvidas que já foram feitas antes</h3>
+              <p className="text-sm text-slate-200">
+                Sem ruído, abrimos o que já foi perguntado para que possas seguir em frente com clareza.
+              </p>
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {faqs.map((faq) => (
-                <Card key={faq.question} className="border border-white/10 bg-[#04131b]/70 p-6 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-white">{faq.question}</CardTitle>
-                    <CardDescription className="text-sm text-slate-200">{faq.answer}</CardDescription>
-                  </CardHeader>
-                </Card>
-              ))}
+              {faqs.map((faq) => {
+                const isOpen = openFaq === faq.question;
+                return (
+                  <Card
+                    key={faq.question}
+                    className="border border-white/10 bg-[#04131b]/70 p-6 shadow-[0_20px_60px_rgba(3,10,25,0.55)]"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(isOpen ? null : faq.question)}
+                      className="flex w-full items-center justify-between text-left text-sm font-semibold text-white"
+                    >
+                      <span>{faq.question}</span>
+                      <ChevronDown
+                        className={`h-4 w-4 transition ${isOpen ? 'rotate-180 text-cyan-200' : 'text-slate-400'}`}
+                      />
+                    </button>
+                    {isOpen && <p className="mt-4 text-sm text-slate-200">{faq.answer}</p>}
+                  </Card>
+                );
+              })}
             </div>
             <div className="text-center">
               <Button variant="default" asChild className="mx-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
