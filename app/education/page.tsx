@@ -426,17 +426,19 @@ export default function EducationPage() {
                       )}
                     </div>
                     <div className="flex flex-1 flex-col gap-3">
-                      <CardTitle
-                        className="text-lg font-semibold text-white leading-tight"
-                        style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {title}
-                      </CardTitle>
+                      <div className="min-h-[3rem]">
+                        <CardTitle
+                          className="text-lg font-semibold text-white leading-tight"
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {title}
+                        </CardTitle>
+                      </div>
                       <div className={`text-sm text-slate-200 ${descriptionHeight}`}>
                         <p className="leading-relaxed">{previewDescription}</p>
                         <Link
