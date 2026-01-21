@@ -192,7 +192,7 @@ export default function EducationPage() {
     translate(t, 'education.xp.proofTwo', 'Vês streaks e progressão.'),
   ];
 
-  const xpParagraph = translate(t, 'education.xp.desc', copy.xpDesc, { preferFallback: true });
+  const xpParagraph = translate(t, 'education.xp.desc', copy.xpDesc as string, { preferFallback: true });
 
   const handleCourseLink = (course: any) => gate('/education/courses');
 
