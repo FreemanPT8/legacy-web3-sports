@@ -294,7 +294,6 @@ export default function EducationPage() {
                   <p className="text-sm text-slate-200">Login guarda progresso, XP e desbloqueios.</p>
                   <Button
                     asChild
-                    size="md"
                     className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                   >
                     <Link href={gate('/signup')} className="flex items-center justify-center gap-2">
