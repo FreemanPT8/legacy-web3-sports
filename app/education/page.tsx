@@ -136,6 +136,9 @@ const PREVIEW_LEVELS: Record<EducationLanguage, { title: string; range: string }
   en: XP_LEVEL_BLOCK_COPY.en.slice(0, 4),
 };
 
+const stringValue = (input: string | string[]) =>
+  Array.isArray(input) ? input.join(' ') : input;
+
 const translate = (
   t: (key: string) => string,
   key: string,
@@ -192,7 +195,7 @@ export default function EducationPage() {
     translate(t, 'education.xp.proofTwo', 'Vês streaks e progressão.'),
   ];
 
-  const xpParagraph = translate(t, 'education.xp.desc', copy.xpDesc as string, { preferFallback: true });
+  const xpParagraph = translate(t, 'education.xp.desc', stringValue(copy.xpDesc), { preferFallback: true });
 
   const handleCourseLink = (course: any) => gate('/education/courses');
 
@@ -211,13 +214,13 @@ export default function EducationPage() {
                 <div className="space-y-3">
                   <HeroEyebrow>{t('nav.education')}</HeroEyebrow>
                   <HeroTitle className="leading-tight font-bold tracking-tight text-[#fdd87c] text-4xl md:text-6xl">
-                    {translate(t, 'education.hero.title', copy.heroTitle)}
+                    {translate(t, 'education.hero.title', stringValue(copy.heroTitle))}
                   </HeroTitle>
                   <HeroDescription className="text-base text-slate-100">
-                    {translate(t, 'education.hero.subtitle', copy.heroSubtitle)}
+                    {translate(t, 'education.hero.subtitle', stringValue(copy.heroSubtitle))}
                   </HeroDescription>
                   <HeroDescription className="text-slate-200">
-                    {translate(t, 'education.hero.tension', copy.heroTension)}
+                    {translate(t, 'education.hero.tension', stringValue(copy.heroTension))}
                   </HeroDescription>
                   <p className="text-sm font-semibold text-cyan-200/90">{copy.heroAnchor}</p>
                   <p className="text-xs text-slate-200">{copy.heroTrust}</p>
