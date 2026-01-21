@@ -234,8 +234,8 @@ export default function EducationPage() {
   ];
 
   const xpProofs = [
-    translate(t, 'education.xp.proofOne', 'Cada li‡Æo conclu¡da deixa rasto.'),
-    translate(t, 'education.xp.proofTwo', 'Vˆs streaks e progressÆo.'),
+    translate(t, 'education.xp.proofOne', 'Cada lição concluída deixa rasto.'),
+    translate(t, 'education.xp.proofTwo', 'Vês streaks e progressão.'),
   ];
 
   const xpParagraph = translate(t, 'education.xp.desc', stringValue(copy.xpDesc), {
