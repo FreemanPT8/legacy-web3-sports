@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { XP_LEVELS, getXpLevelLabel, type XpLevelKey } from '@/lib/education/xpLevels';
+import { XP_LEVELS, getXpLevelLabel } from '@/lib/education/xpLevels';
 
 import {
   HeroContent,
@@ -188,16 +188,22 @@ export default function EducationPage() {
   const featuredCourses = useMemo(() => topCourses.slice(0, 3), [topCourses]);
   const leaderboardTop = leaderboard.slice(0, 3);
 
-  const formatStat = (value?: number | null) => (value === null || value === undefined ? (loading ? '...' : '0') : value.toLocaleString());
+  const formatStat = (value?: number | null) =>
+    value === null || value === undefined ? (loading ? '...' : '0') : value.toLocaleString();
 
-  const xpProofs = [
-    translate(t, 'education.xp.proofOne', 'Cada lição concluída deixa rasto.'),
-    translate(t, 'education.xp.proofTwo', 'Vês streaks e progressão.'),
+  const statTiles = [
+    { label: 'Cursos publicados', value: formatStat(stats?.totalCourses) },
+    { label: 'Lições publicadas', value: formatStat(stats?.totalLessons) },
   ];
 
-  const xpParagraph = translate(t, 'education.xp.desc', stringValue(copy.xpDesc), { preferFallback: true });
+  const xpProofs = [
+    translate(t, 'education.xp.proofOne', 'Cada li‡Æo conclu¡da deixa rasto.'),
+    translate(t, 'education.xp.proofTwo', 'Vˆs streaks e progressÆo.'),
+  ];
 
-  const handleCourseLink = (course: any) => gate('/education/courses');
+  const xpParagraph = translate(t, 'education.xp.desc', stringValue(copy.xpDesc), {
+    preferFallback: true,
+  });
 
   const getLevel = (xp: number | undefined) => getXpLevelLabel(xp ?? 0);
 
@@ -205,7 +211,7 @@ export default function EducationPage() {
     <div className="min-h-screen bg-[#000c12] text-white flex flex-col">
       <Header />
 
-      <main className="flex-1 space-y-12">
+      <main className="flex-1 space-y-12 pb-16">
         {/* BLOCK 1: HERO */}
         <HeroSection className="px-6 py-16" overlayVariant="inverse">
           <div className="relative mx-auto max-w-6xl">
@@ -216,7 +222,7 @@ export default function EducationPage() {
                   <HeroTitle className="leading-tight font-bold tracking-tight text-[#fdd87c] text-4xl md:text-6xl">
                     {translate(t, 'education.hero.title', stringValue(copy.heroTitle))}
                   </HeroTitle>
-                  <HeroDescription className="text-base text-slate-100">
+                  <HeroDescription className="text-base text-slate-100 max-w-2xl">
                     {translate(t, 'education.hero.subtitle', stringValue(copy.heroSubtitle))}
                   </HeroDescription>
                   <HeroDescription className="text-slate-200">
@@ -241,7 +247,12 @@ export default function EducationPage() {
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
-                  <Button size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10" asChild>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/40 text-white hover:bg-white/10"
+                    asChild
+                  >
                     <Link href="/education/courses" className="flex items-center gap-2">
                       {copy.heroSecondaryCta}
                       <BookOpen className="h-4 w-4" />
@@ -258,11 +269,15 @@ export default function EducationPage() {
           <div className="mx-auto max-w-5xl space-y-6 rounded-3xl border border-white/10 bg-[#020b16] px-8 py-10 shadow-[0_20px_60px_rgba(3,10,25,0.55)]">
             <div>
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">O teu próximo passo</p>
-              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">Progresso guardado. Sem pressão.</h2>
+              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">Progresso guardado. Sem pressa.</h2>
+              <p className="text-sm text-slate-300 max-w-3xl">
+                O login garante histórico, XP e desbloqueios automáticos na Academia. Quem já está dentro
+                recebe um lembrete direto para continuar o percurso certo.
+              </p>
             </div>
             {user ? (
               <Card className="border border-white/10 bg-[#04131b]/60">
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <CardTitle className="text-lg font-semibold text-white">O teu progresso</CardTitle>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div>
@@ -275,10 +290,16 @@ export default function EducationPage() {
                     </div>
                     <div>
                       <p className="text-sm text-slate-300">Streak</p>
-                      <p className="text-xl font-semibold text-cyan-200">{user.streak_count ?? 0} dias</p>
+                      <p className="text-xl font-semibold text-cyan-200">
+                        {user.streak_count ?? 0} dias
+                      </p>
                     </div>
                   </div>
-                  <Button asChild className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
+                  <Button
+                    size="lg"
+                    asChild
+                    className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
+                  >
                     <Link href={gate('/education/courses')} className="flex items-center justify-center gap-2">
                       Continuar na Academia
                       <ArrowRight className="h-4 w-4" />
@@ -288,11 +309,12 @@ export default function EducationPage() {
               </Card>
             ) : (
               <Card className="border border-white/10 bg-[#04131b]/60">
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <CardTitle className="text-lg font-semibold text-white">Cria conta para guardar progresso</CardTitle>
                   <p className="text-sm text-slate-200">O conteúdo é gratuito.</p>
-                  <p className="text-sm text-slate-200">Login guarda progresso, XP e desbloqueios.</p>
+                  <p className="text-sm text-slate-200">O login guarda progresso, XP e desbloqueios.</p>
                   <Button
+                    size="lg"
                     asChild
                     className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                   >
@@ -308,22 +330,17 @@ export default function EducationPage() {
               </Card>
             )}
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-[#04131b]/50 p-4">
-                <p className="text-xs uppercase tracking-[0.5em] text-slate-400">Cursos publicados</p>
-                <p className="text-2xl font-semibold text-white">{formatStat(stats?.totalCourses)}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-[#04131b]/50 p-4">
-                <p className="text-xs uppercase tracking-[0.5em] text-slate-400">Lições</p>
-                <p className="text-2xl font-semibold text-white">{formatStat(stats?.totalLessons)}</p>
-              </div>
+              {statTiles.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl border border-white/10 bg-[#04131b]/50 p-4"
+                >
+                  <p className="text-xs uppercase tracking-[0.5em] text-slate-400">{stat.label}</p>
+                  <p className="text-2xl font-semibold text-white">{stat.value}</p>
+                </div>
+              ))}
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-cyan-200 font-semibold">{copy.cadetTitle}</p>
-              <p className="text-xs text-slate-400">{copy.cadetDesc}</p>
-              <Link href={gate('/education/courses')} className="text-sm font-semibold text-white hover:text-cyan-200">
-                {copy.cadetCta}
-              </Link>
-            </div>
+            <p className="text-xs text-slate-400">{copy.cadetDesc}</p>
           </div>
         </section>
 
@@ -332,7 +349,9 @@ export default function EducationPage() {
           <div className="mx-auto max-w-6xl space-y-6">
             <div>
               <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">Cursos em destaque</p>
-              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">Escolhe a tua entrada na Academia</h2>
+              <h2 className="mt-3 text-3xl font-semibold text-[#fdd87c]">
+                Escolhe a tua entrada na Academia
+              </h2>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               {featuredCourses.map((course, idx) => {
@@ -343,30 +362,60 @@ export default function EducationPage() {
                     ? 'rounded-[32px] border border-white/10 bg-gradient-to-b from-[#02111d] to-[#02060e] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.75)]'
                     : 'rounded-2xl border border-white/10 bg-[#04131b]/80 p-5';
                 return (
-                  <Card key={course.id} className={`${highlightClass} flex flex-col gap-6`}>
+                  <Card key={course.id} className={`${highlightClass} flex flex-col gap-5`}>
                     <div>
                       <CardTitle className="text-lg font-semibold text-white">{course.title}</CardTitle>
-                      <CardDescription className="text-sm text-slate-200 mt-2">{course.description}</CardDescription>
+                      <CardDescription className="text-sm text-slate-200 mt-2">
+                        {course.description}
+                      </CardDescription>
                     </div>
                     <div className="flex items-center justify-between text-xs uppercase tracking-[0.5em] text-slate-400">
-                      <span>Nível {course.level?.toUpperCase() ?? '—'}</span>
+                      <span>Nível {course.level?.toUpperCase() ?? '-'}</span>
                       <span>{xpRequired} XP</span>
                     </div>
-                    <div>
-                      <span
-                        className={`rounded-full px-4 py-1 text-xs font-semibold ${
-                          isUnlocked ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/10 text-slate-200'
-                        }`}
+                    {user ? (
+                      isUnlocked ? (
+                        <Button
+                          size="sm"
+                          asChild
+                          className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold"
+                        >
+                          <Link href={gate('/education/courses')} className="flex items-center justify-center gap-2">
+                            Iniciar curso
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          disabled
+                          className="w-full border border-white/30 bg-white/5 text-slate-400 cursor-not-allowed"
+                        >
+                          Requer XP
+                        </Button>
+                      )
+                    ) : (
+                      <Button
+                        size="sm"
+                        asChild
+                        className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold"
                       >
-                        {user ? (isUnlocked ? 'Iniciável' : 'Requer XP') : 'Login necessário'}
-                      </span>
-                    </div>
+                        <Link href="/signup" className="flex items-center justify-center gap-2">
+                          Entrar / Criar conta
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    )}
                   </Card>
                 );
               })}
             </div>
             <div className="flex justify-center">
-              <Button size="lg" asChild className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)]">
+              <Button
+                size="lg"
+                asChild
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)]"
+              >
                 <Link href={gate('/education/courses')} className="flex items-center gap-2">
                   Ver todos os cursos
                   <ArrowRight className="h-4 w-4" />
@@ -393,7 +442,10 @@ export default function EducationPage() {
                   ))}
                 </ul>
                 <p className="text-xs text-slate-400">{copy.glossaryMicro}</p>
-                <Button asChild className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500]">
+                <Button
+                  asChild
+                  className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500]"
+                >
                   <Link href={gate('/education/glossary')} className="flex items-center justify-center gap-2">
                     {copy.glossaryCta}
                     <ArrowRight className="h-4 w-4" />
@@ -401,7 +453,7 @@ export default function EducationPage() {
                 </Button>
               </div>
               <div className="rounded-[32px] border border-white/10 bg-[#04131b]/70 p-6">
-                <p className="text-sm text-slate-200">Demo do glossário ativo dentro das aulas.</p>
+                <p className="text-sm text-slate-200">Demo do glossário activo dentro das aulas.</p>
                 <div className="mt-8 space-y-3 rounded-2xl border border-white/10 bg-[#020f19] p-6">
                   <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">Apertum Blockchain</p>
                   <p className="text-sm text-slate-100">Rede modular focada em desporto e creators.</p>
@@ -412,10 +464,10 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* BLOCK 5: XP / LEADERBOARD + CTA FINAL */}
+        {/* BLOCK 5: XP + LEADERBOARD + CTA FINAL */}
         <section className="px-6">
           <div className="mx-auto max-w-6xl space-y-10 rounded-3xl border border-white/10 bg-[#020b16] px-8 py-12 shadow-[0_25px_60px_rgba(3,10,25,0.55)]">
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-8 lg:grid-cols-2">
               <div className="space-y-4">
                 <p className="text-xs uppercase tracking-[0.6em] text-cyan-300">{copy.xpEyebrow}</p>
                 <h3 className="text-2xl font-semibold text-white">{copy.xpTitle}</h3>
@@ -430,7 +482,10 @@ export default function EducationPage() {
                 </ul>
                 <div className="flex flex-wrap gap-2">
                   {previewLevels.map((level) => (
-                    <span key={level.title} className="rounded-full border border-white/20 px-3 py-1 text-xs text-slate-200">
+                    <span
+                      key={level.title}
+                      className="rounded-full border border-white/20 px-3 py-1 text-xs text-slate-200"
+                    >
                       {level.title} · {level.range}
                     </span>
                   ))}
@@ -447,23 +502,29 @@ export default function EducationPage() {
                 <h3 className="text-2xl font-semibold text-white">{copy.leaderboardTitle}</h3>
                 <p className="text-sm text-slate-200">{copy.leaderboardDesc}</p>
                 {user ? (
-                  <div className="space-y-3">
-                    {leaderboardTop.map((person) => (
-                      <div
-                        key={person.id}
-                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#04131b]/60 px-4 py-3"
-                      >
-                        <div>
-                          <p className="text-sm text-slate-200">{person.username}</p>
-                          <p className="text-xs text-slate-400">{person.country ?? '—'}</p>
+                  leaderboardTop.length > 0 ? (
+                    <div className="space-y-3">
+                      {leaderboardTop.map((person) => (
+                        <div
+                          key={person.id}
+                          className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#04131b]/60 px-4 py-3"
+                        >
+                          <div>
+                            <p className="text-sm text-slate-200">{person.username}</p>
+                            <p className="text-xs text-slate-400">{person.country ?? '-'}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-white">{person.xp_total ?? 0} XP</p>
+                            <p className="text-xs text-slate-400">
+                              {translate(t, 'education.leaderboard.position', 'Ranking')}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-white">{person.xp_total ?? 0} XP</p>
-                          <p className="text-xs text-slate-400">{translate(t, 'education.leaderboard.position', 'Ranking')}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400">Sem registos suficientes para mostrar ainda.</p>
+                  )
                 ) : (
                   <Card className="border border-white/10 bg-[#04131b]/60">
                     <CardContent className="space-y-3">
@@ -471,7 +532,11 @@ export default function EducationPage() {
                       <CardDescription className="text-sm text-slate-200">
                         Regista-te para ver a tabela completa e mostrar consistência.
                       </CardDescription>
-                      <Button size="sm" asChild className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500]">
+                      <Button
+                        size="sm"
+                        asChild
+                        className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500]"
+                      >
                         <Link href={gate('/education/leaderboard')} className="flex items-center justify-center gap-2">
                           Ir para o leaderboard
                           <ArrowRight className="h-4 w-4" />
@@ -486,7 +551,11 @@ export default function EducationPage() {
               </div>
             </div>
             <div className="text-center">
-              <Button size="lg" asChild className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)]">
+              <Button
+                size="lg"
+                asChild
+                className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_10px_30px_rgba(253,216,124,0.35)]"
+              >
                 <Link href={gate('/education/courses')} className="flex items-center justify-center gap-2">
                   {copy.finalCta}
                   <ArrowRight className="h-4 w-4" />
