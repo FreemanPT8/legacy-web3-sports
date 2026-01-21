@@ -393,7 +393,7 @@ export default function EducationPage() {
                   ))}
                 </ul>
                 <p className="text-xs text-slate-400">{copy.glossaryMicro}</p>
-                <Button size="md" asChild className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500]">
+                <Button asChild className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500]">
                   <Link href={gate('/education/glossary')} className="flex items-center justify-center gap-2">
                     {copy.glossaryCta}
                     <ArrowRight className="h-4 w-4" />
