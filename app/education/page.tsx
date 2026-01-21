@@ -232,7 +232,11 @@ export default function EducationPage() {
                     asChild
                     className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] font-semibold shadow-[0_15px_35px_rgba(253,216,124,0.35)] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]"
                   >
-                    <Link href={gate('/education/courses')} className="flex items-center gap-2" aria-label={copy.heroPrimaryCta}>
+                    <Link
+                      href={gate('/education/courses')}
+                      className="flex items-center gap-2"
+                      aria-label={stringValue(copy.heroPrimaryCta)}
+                    >
                       {copy.heroPrimaryCta}
                       <ArrowRight className="h-4 w-4" />
                     </Link>
