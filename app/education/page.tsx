@@ -278,7 +278,7 @@ export default function EducationPage() {
                       <p className="text-xl font-semibold text-cyan-200">{user.streak_count ?? 0} dias</p>
                     </div>
                   </div>
-                  <Button asChild size="md" className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
+                  <Button asChild className="bg-gradient-to-r from-[#fdd87c] via-[#ffd35f] to-[#fcb045] text-[#1e1500] hover:from-[#ffe7a6] hover:via-[#ffd35f] hover:to-[#fcb045]">
                     <Link href={gate('/education/courses')} className="flex items-center justify-center gap-2">
                       Continuar na Academia
                       <ArrowRight className="h-4 w-4" />
