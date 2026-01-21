@@ -9,6 +9,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { XP_LEVELS, getXpLevelLabel } from '@/lib/education/xpLevels';
+import { getMultilingualContent } from '@/lib/i18n';
 
 import {
   HeroContent,
@@ -361,12 +362,14 @@ export default function EducationPage() {
                   idx === 0
                     ? 'rounded-[32px] border border-white/10 bg-gradient-to-b from-[#02111d] to-[#02060e] p-5 shadow-[0_20px_60px_rgba(3,10,25,0.75)]'
                     : 'rounded-2xl border border-white/10 bg-[#04131b]/80 p-5';
+                const title = getMultilingualContent(course.title, language);
+                const description = getMultilingualContent(course.description, language);
                 return (
                   <Card key={course.id} className={`${highlightClass} flex flex-col gap-5`}>
                     <div>
-                      <CardTitle className="text-lg font-semibold text-white">{course.title}</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-white">{title}</CardTitle>
                       <CardDescription className="text-sm text-slate-200 mt-2">
-                        {course.description}
+                        {description}
                       </CardDescription>
                     </div>
                     <div className="flex items-center justify-between text-xs uppercase tracking-[0.5em] text-slate-400">
